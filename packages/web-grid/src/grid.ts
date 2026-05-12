@@ -887,6 +887,9 @@ export class WebGrid<T = unknown> {
 		this._onrowaction = value
 	}
 
+	get oncontextmenuopen(): ((context: ContextMenuContext<T>) => void) | undefined {
+		return this._oncontextmenuopen
+	}
 	set oncontextmenuopen(value: ((context: ContextMenuContext<T>) => void) | undefined) {
 		this._oncontextmenuopen = value
 	}

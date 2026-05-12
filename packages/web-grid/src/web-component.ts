@@ -678,6 +678,9 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		this.grid.onrowaction = value
 	}
 
+	get oncontextmenuopen(): ((context: ContextMenuContext<T>) => void) | undefined {
+		return this.grid.oncontextmenuopen
+	}
 	set oncontextmenuopen(value: ((context: ContextMenuContext<T>) => void) | undefined) {
 		this.grid.oncontextmenuopen = value
 	}
