@@ -230,14 +230,18 @@ test.describe('pagination', () => {
 		await expect(cell(page, 0, 1)).toContainText('Alice Johnson')
 	})
 
-	// KNOWN BUG: when isPageable is toggled false → true at runtime, the new
-	// .wg__pagination element rendered via the surgical-render path does NOT get
-	// click listeners attached. attachEventListeners() only runs on the full-rebuild
-	// path (web-component.ts L3382), while the surgical path replaces the bottom-area
-	// innerHTML (L3328) without re-wiring. Re-enable this test once the renderer
-	// either re-attaches listeners on surgical render or uses event delegation on a
-	// stable parent.
-	test.skip('clicking pagination "next" advances the page (renderer bug)', async () => {})
+	test('clicking pagination "next" advances the page', async ({ page }) => {
+		await gotoBasicDemo(page)
+		await page.locator('#isPageable').check()
+		await expect(gridLocator(page).locator('.wg__pagination-info').first()).toBeVisible()
+		await expect(cell(page, 0, 1)).toContainText('Alice Johnson')
+
+		await gridLocator(page).locator('.wg__pagination-btn[data-action="next"]:not([disabled])').first().click()
+		await expect(cell(page, 0, 1)).toContainText('Frank Lee')
+
+		await gridLocator(page).locator('.wg__pagination-btn[data-action="prev"]:not([disabled])').first().click()
+		await expect(cell(page, 0, 1)).toContainText('Alice Johnson')
+	})
 })
 
 test.describe('multi-sort (cascading)', () => {

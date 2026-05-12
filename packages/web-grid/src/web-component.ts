@@ -2875,27 +2875,30 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		}
 
 		// =========================================================================
-		// Pagination Events (handles multiple pagination elements)
+		// Pagination Events (delegated on the .wg container so the listeners
+		// survive surgical renders — when isPageable toggles or pagination is
+		// re-rendered, the .wg__pagination element is replaced via innerHTML and
+		// loses any listeners attached directly to it.)
 		// =========================================================================
-		const paginations = this.shadow.querySelectorAll('.wg__pagination')
-		paginations.forEach(pagination => {
-			// Page navigation buttons
-			pagination.addEventListener('click', (e: Event) => {
-				if (handlePaginationClick(this, e)) {
-					this.render()
-				}
-			})
-
-			// Page size selector
-			const pageSizeSelect = pagination.querySelector('.wg__pagination-select') as HTMLSelectElement
-			if (pageSizeSelect) {
-				pageSizeSelect.addEventListener('change', () => {
-					if (handlePageSizeChange(this, pageSizeSelect)) {
+		const wgContainer = this.shadow.querySelector('.wg') as HTMLElement | null
+		if (wgContainer) {
+			wgContainer.addEventListener('click', (e: Event) => {
+				const target = e.target as HTMLElement
+				if (target.closest('.wg__pagination-btn')) {
+					if (handlePaginationClick(this, e)) {
 						this.render()
 					}
-				})
-			}
-		})
+				}
+			})
+			wgContainer.addEventListener('change', (e: Event) => {
+				const target = e.target as HTMLElement
+				if (target.matches('.wg__pagination-select')) {
+					if (handlePageSizeChange(this, target as HTMLSelectElement)) {
+						this.render()
+					}
+				}
+			})
+		}
 	}
 
 	// ==========================================================================
