@@ -3699,11 +3699,15 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			row: item,
 			rowIndex,
 			field,
-			commit: (newValue: unknown) => {
-				// Commit the value and exit edit mode
-				this.grid.commitEdit(rowIndex, field, newValue)
+			commit: async (newValue: unknown) => {
+				// Same order as the canonical edit-executor commit path:
+				//   1. clearEditingVisual BEFORE commitEdit (so editingCell is still
+				//      set and the wg__cell--editing class can be located and removed)
+				//   2. await commitEdit (it's async — may run beforeCommitCallback)
+				//   3. renderCell so the cell picks up the committed draft value
 				clearEditingVisual(this)
-				// Return focus to the cell
+				await this.grid.commitEdit(rowIndex, field, newValue)
+				renderCell(this, rowIndex, colIndex)
 				requestAnimationFrame(() => {
 					moveFocus(this, rowIndex, colIndex)
 				})
@@ -3712,6 +3716,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				// Cancel edit mode without saving
 				clearEditingVisual(this)
 				this.grid.cancelEdit()
+				renderCell(this, rowIndex, colIndex)
 				// Return focus to the cell
 				requestAnimationFrame(() => {
 					moveFocus(this, rowIndex, colIndex)
