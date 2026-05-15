@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — paste fixture</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>paste fixture</h1>
+	<p>
+		Targeted by <code>e2e/paste.spec.ts</code>. Exercises single-cell paste and
+		multi-cell TSV paste (executePaste / handlePaste in
+		<code>src/modules/paste/index.ts</code> + <code>web-component.ts</code>).
+		Reload resets all state.
+	</p>
+
+	<div class="controls">
+		<label>pasteMode:
+			<select id="paste-mode">
+				<option value="skip-non-editable" selected>skip-non-editable</option>
+				<option value="all-columns">all-columns</option>
+				<option value="editable-only">editable-only</option>
+			</select>
+		</label>
+		<label><input type="checkbox" id="validate" checked> shouldValidateOnPaste</label>
+		<label><input type="checkbox" id="cancel-next"> cancel next paste (onbeforepaste)</label>
+	</div>
+
+	<web-grid id="grid" style="max-width: 720px; max-height: 320px;"></web-grid>
+
+	<div class="state-panel">
+		<div class="row">last paste summary: <b data-testid="paste-summary">none</b></div>
+		<div class="row">last beforepaste: <b data-testid="beforepaste-info">none</b></div>
+		<div class="row">items: <code data-testid="items-json"></code></div>
+	</div>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+
+		/*
+		 * Deterministic seed — 4 rows, 5 columns.
+		 *
+		 *  col idx:  0    1               2                3     4
+		 *  field:    id   name            email            age   role
+		 *  editor:   -    text            text             num   text
+		 *  ---------------------------------------------------------------------
+		 *  row 0  |  1 | Alice Johnson | alice@example.com | 31 | Engineer
+		 *  row 1  |  2 | Bob Smith     | bob@example.com   | 28 | Designer
+		 *  row 2  |  3 | Carol Brown   | carol@example.com | 42 | Manager
+		 *  row 3  |  4 | David Lee     | david@example.com | 35 | Engineer
+		 *
+		 * Notes the spec relies on:
+		 *  - id (col 0) is read-only (isEditable: false).
+		 *  - email (col 2) has beforePasteCallback that lowercases the value.
+		 *  - age (col 3) has beforeCommitCallback that rejects values < 0
+		 *    (only enforced when shouldValidateOnPaste is true).
+		 *  - column titles ("Name", "Email", "Age", "Role") drive header detection
+		 *    when a TSV's first row contains them.
+		 */
+		const seed = () => [
+			{ id: 1, name: 'Alice Johnson', email: 'alice@example.com', age: 31, role: 'Engineer' },
+			{ id: 2, name: 'Bob Smith',     email: 'bob@example.com',   age: 28, role: 'Designer' },
+			{ id: 3, name: 'Carol Brown',   email: 'carol@example.com', age: 42, role: 'Manager' },
+			{ id: 4, name: 'David Lee',     email: 'david@example.com', age: 35, role: 'Engineer' }
+		]
+
+		const columns = [
+			{ field: 'id',    title: 'ID',    width: '60px',  isEditable: false },
+			{ field: 'name',  title: 'Name',  width: '160px', editor: 'text' },
+			{
+				field: 'email', title: 'Email', width: '200px', editor: 'text',
+				beforePasteCallback: (value) => String(value).toLowerCase()
+			},
+			{
+				field: 'age', title: 'Age', width: '70px', editor: 'number',
+				beforeCommitCallback: ({ value }) => {
+					const n = Number(value)
+					if (Number.isFinite(n) && n < 0) return 'Age must be >= 0'
+					return true
+				}
+			},
+			{ field: 'role',  title: 'Role',  width: '140px', editor: 'text' }
+		]
+
+		const grid = document.getElementById('grid')
+		grid.items = seed()
+		grid.columns = columns
+		grid.isEditable = true
+		grid.editTrigger = 'navigate'
+		grid.isRowNumbersVisible = true
+
+		// State surface ------------------------------------------------------
+		const itemsEl = document.querySelector('[data-testid="items-json"]')
+		function refreshItems() {
+			itemsEl.textContent = JSON.stringify(grid.items)
+		}
+		refreshItems()
+
+		const summaryEl = document.querySelector('[data-testid="paste-summary"]')
+		const beforeEl = document.querySelector('[data-testid="beforepaste-info"]')
+
+		// NOTE: onpaste / onbeforepaste are not (yet) proxied through the
+		// web-component, so we wire them on the underlying WebGrid core directly.
+		// Setting `grid.onpaste` on the HTMLElement would register a native
+		// ClipboardEvent listener instead.
+		grid.grid.onbeforepaste = (detail) => {
+			beforeEl.textContent = `rows=${detail.parsedRows.length} headers=${detail.hasHeaders} newRows=${detail.newRowsCount}`
+			if (document.getElementById('cancel-next').checked) {
+				detail.cancel = true
+			}
+		}
+		grid.grid.onpaste = (detail) => {
+			summaryEl.textContent =
+				`total=${detail.totalCells} ok=${detail.successfulCells} fail=${detail.failedCells} ` +
+				`skip=${detail.skippedCells} newRows=${detail.newRowsCreated} headers=${detail.hadHeaders}`
+			refreshItems()
+		}
+
+		// Items also refresh after edits so single-cell paste assertions hold.
+		grid.onrowchange = () => refreshItems()
+
+		// Controls -----------------------------------------------------------
+		// pasteMode / shouldValidateOnPaste are also not proxied through the
+		// web-component, so set them on the underlying core directly.
+		document.getElementById('paste-mode').addEventListener('change', (e) => {
+			grid.grid.pasteMode = e.target.value
+		})
+		document.getElementById('validate').addEventListener('change', (e) => {
+			grid.grid.shouldValidateOnPaste = e.target.checked
+		})
+	</script>
+</body>
+</html>

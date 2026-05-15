@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.2] - 2026-05-15
+
+### Fixed
+
+- **Datepicker executor ignored `outputFormat`**: when a date column declared `editorOptions.outputFormat: 'timestamp'` (or `'date'`), the pipeline executor (`modules/actions/executors/datepicker-executor.ts`) committed an ISO string anyway because `handleDateSelect` was hardcoded to `toISODateString(date)`. The legacy commit path on `web-component.ts` already honored the format, so the bug only showed up under `editTrigger='always'` and on keyboard-driven select (Enter / Tab) from the action pipeline. Now branches on `iso` / `date` / `timestamp` like the legacy `commitDateEditor`.
+- **Removed `[LEGACY]` stack-trace dumps from the hot path**: `console.trace('[LEGACY] …')` calls in `web-component.ts` (`openDatePicker`, `handleDatePickerSelect`, `commitDateEditor`) and `modules/editing/lifecycle.ts` (`toggleCheckboxAndMove`) dumped a full stack trace on every datepicker open / day select / commit and on every navigate-mode checkbox toggle. Leftover instrumentation from a half-finished migration to the action pipeline — should not have shipped in 1.2.x.
+
+### Tests
+
+- **E2E coverage for paste, virtual scroll, tree scroll, and the date editor**: 40 new tests across four spec files (`e2e/paste.spec.ts`, `e2e/virtual-scroll.spec.ts`, `e2e/tree-scroll.spec.ts`, `e2e/datepicker.spec.ts`) with matching `docs/test/*.html` fixtures. Total: 248 passing, 5 skipped. The paste fixture exercises single-cell paste, multi-cell TSV with header detection, paste-mode (`skip-non-editable` / `all-columns`), new-row creation when the paste extends past the grid, and `onbeforepaste` cancel. The virtual-scroll fixture asserts the spacer-row pattern (DOM body row count stays small even when `items.length === 1000`) and exercises infinite scroll via `ondatarequest` with `mode='append'`. The tree-scroll fixture combines tree mode with both scroll primitives — a 850-row 3-level tree with `defaultExpandDepth=1` plus an infinite-scroll grid that appends full root subtrees in batches. The datepicker fixture covers F2-open / click-to-select / arrow / Enter / Escape / outside-click flows and verifies `outputFormat='iso'` / `'timestamp'` and `dateFormat='DD.MM.YYYY'`.
+
+### Known issues
+
+- **Paste API not proxied through `<web-grid>`**: `onpaste`, `onbeforepaste`, `pasteMode`, and `shouldValidateOnPaste` exist on the core WebGrid but aren't exposed as proxies on the GridElement web-component. Setting `el.onpaste = fn` registers a *native* HTMLElement paste listener (which fires with a raw `ClipboardEvent`, not a `PasteDetail`), and setting any of the other three lands as a dead expando property. Consumers must currently use `el.grid.onpaste = fn` etc. to reach the core.
+- **Datepicker closes when you click its own chevrons / month-year header / disabled days**: the picker mounts in `document.body`, so any click on its chrome registers as a `focusout` from the date input. `handleTableFocusOut` then clears focus + re-renders the cell, the editor anchor goes off-DOM, and Floating UI's `autoUpdate` detects the disconnected anchor and silently closes the picker. Keyboard navigation is unaffected. Two e2e tests are `test.skip`'d on this path.
+
 ## [1.2.1] - 2026-05-15
 
 ### Fixed

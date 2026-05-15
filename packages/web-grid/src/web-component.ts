@@ -3586,7 +3586,6 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	 * Open the date picker for a date input
 	 */
 	private openDatePicker(input: HTMLInputElement, anchor: HTMLElement): void {
-		console.trace('[LEGACY] openDatePicker')
 		// Close any existing datepicker silently (don't trigger onClose - we're opening a new one)
 		if (this.datepicker) {
 			this.datepicker.close(true)
@@ -3642,7 +3641,6 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	 * Handle date selection from the date picker
 	 */
 	private handleDatePickerSelect(input: HTMLInputElement, date: Date, direction?: 'down' | 'next'): void {
-		console.trace('[LEGACY] handleDatePickerSelect')
 		const dateFormat = input.dataset.dateFormat || 'YYYY-MM-DD'
 		const formatInfo = parseFormat(dateFormat)
 
@@ -3669,7 +3667,6 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	 * @param commitEmptyRow - If true and editing empty row, add it to items (Enter key behavior)
 	 */
 	private async commitDateEditor(input: HTMLInputElement, commitEmptyRow: boolean = false): Promise<void> {
-		console.trace('[LEGACY] commitDateEditor')
 		if (!this.grid.editingCell) return
 
 		const rowIndex = parseInt(input.dataset.row || '0', 10)

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — tree-scroll fixture</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>tree-scroll fixture</h1>
+	<p>
+		Targeted by <code>e2e/tree-scroll.spec.ts</code>. Combines tree mode with
+		virtual scroll on <code>#vsGrid</code> and infinite scroll on
+		<code>#isGrid</code>.
+	</p>
+
+	<h2>#vsGrid — 50 roots × 4 subs × 3 teams = 850 rows, virtual scroll on</h2>
+	<div class="controls">
+		<button type="button" id="expand-all">Expand all</button>
+		<button type="button" id="collapse-all">Collapse all</button>
+	</div>
+	<web-grid id="vsGrid" style="max-width: 700px; max-height: 380px;"></web-grid>
+	<div class="state-panel">
+		<div class="row">total items in data: <b data-testid="vs-total-items">0</b></div>
+		<div class="row">rendered body rows: <b data-testid="vs-rendered-rows">?</b></div>
+		<div class="row">first rendered row-index: <b data-testid="vs-first-rendered">?</b></div>
+		<div class="row">expanded paths count: <b data-testid="vs-expanded-count">0</b></div>
+	</div>
+
+	<h2>#isGrid — infinite tree (BATCH=5 roots, MAX=20 roots)</h2>
+	<web-grid id="isGrid" style="max-width: 700px; max-height: 380px;"></web-grid>
+	<div class="state-panel">
+		<div class="row">loaded items: <b data-testid="is-loaded-items">0</b></div>
+		<div class="row">hasMore: <b data-testid="is-has-more">true</b></div>
+		<div class="row">datarequest log: <div data-testid="is-req-log"></div></div>
+	</div>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+
+		/*
+		 * Deterministic 3-level tree.
+		 *
+		 *  level:    root (l0)        sub (l1)            team (l2)
+		 *  path:     "rN"             "rN.sM"             "rN.sM.tK"
+		 *  per parent: ROOTS (50)     SUBS_PER_ROOT (4)   TEAMS_PER_SUB (3)
+		 *  total leaves: 50*4*3 = 600 teams + 50*4 = 200 subs + 50 roots = 850 rows
+		 *
+		 * Notes the spec relies on:
+		 *  - defaultExpandDepth=1 → roots expand on initial load; sub paths visible,
+		 *    team paths hidden.
+		 *  - virtualScrollRowHeight=38; viewport ~380 → ~18 rows max in DOM (plus
+		 *    spacer rows for off-screen).
+		 *  - Each row has data-row-index (current visible index) — the row-index
+		 *    space contracts/expands as you collapse/expand.
+		 *  - Chevrons render at `.wg__tree-chevron[data-tree-toggle="<path>"]`.
+		 */
+		const ROOTS = 50, SUBS_PER_ROOT = 4, TEAMS_PER_SUB = 3
+		function buildSubtree(r) {
+			const out = []
+			const rp = `r${r}`
+			out.push({ path: rp, name: `Org ${r}`, level: 0, headcount: 100 + r })
+			for (let s = 1; s <= SUBS_PER_ROOT; s++) {
+				const sp = `${rp}.s${s}`
+				out.push({ path: sp, name: `Sub ${r}.${s}`, level: 1, headcount: 20 + s })
+				for (let t = 1; t <= TEAMS_PER_SUB; t++) {
+					out.push({ path: `${sp}.t${t}`, name: `Team ${r}.${s}.${t}`, level: 2, headcount: 4 + t })
+				}
+			}
+			return out
+		}
+		const allData = []
+		for (let r = 1; r <= ROOTS; r++) allData.push(...buildSubtree(r))
+
+		const columns = [
+			{ field: 'name', title: 'Organization', width: '300px', isTree: true },
+			{ field: 'headcount', title: 'Headcount', width: '110px', horizontalAlign: 'right' },
+			{ field: 'path', title: 'Path', width: '180px' }
+		]
+
+		// #vsGrid — tree + virtual scroll -------------------------------------
+		const vsGrid = document.getElementById('vsGrid')
+		vsGrid.columns = columns
+		vsGrid.items = allData
+		vsGrid.treePathMember = 'path'
+		vsGrid.treeLevelMember = 'level'
+		vsGrid.treeDataSorted = true
+		vsGrid.defaultExpandDepth = 1
+		vsGrid.treeDoubleClickBehavior = 'toggle'
+		vsGrid.isVirtualScrollEnabled = true
+		vsGrid.virtualScrollRowHeight = 38
+
+		const vsTotalEl = document.querySelector('[data-testid="vs-total-items"]')
+		const vsRenderedEl = document.querySelector('[data-testid="vs-rendered-rows"]')
+		const vsFirstEl = document.querySelector('[data-testid="vs-first-rendered"]')
+		const vsExpandedEl = document.querySelector('[data-testid="vs-expanded-count"]')
+		vsTotalEl.textContent = String(allData.length)
+
+		function refreshVs() {
+			const root = vsGrid.shadowRoot
+			if (!root) return
+			const bodyRows = root.querySelectorAll('tbody tr.wg__row')
+			vsRenderedEl.textContent = String(bodyRows.length)
+			const first = bodyRows[0]?.getAttribute('data-row-index')
+			vsFirstEl.textContent = first != null ? first : '?'
+			vsExpandedEl.textContent = String(vsGrid.expandedPaths?.size ?? 0)
+		}
+		new MutationObserver(refreshVs).observe(vsGrid.shadowRoot, { childList: true, subtree: true })
+		requestAnimationFrame(() => requestAnimationFrame(refreshVs))
+
+		document.getElementById('expand-all').addEventListener('click', () => {
+			vsGrid.expandAll()
+			refreshVs()
+		})
+		document.getElementById('collapse-all').addEventListener('click', () => {
+			vsGrid.collapseAll()
+			refreshVs()
+		})
+
+		// #isGrid — tree + infinite scroll ------------------------------------
+		const isGrid = document.getElementById('isGrid')
+		const BATCH = 5
+		const MAX = 20
+		let nextRoot = 1
+
+		isGrid.columns = columns
+		isGrid.treePathMember = 'path'
+		isGrid.treeLevelMember = 'level'
+		isGrid.treeDataSorted = true
+		isGrid.defaultExpandDepth = 1
+		isGrid.treeDoubleClickBehavior = 'toggle'
+		isGrid.isVirtualScrollEnabled = true
+		isGrid.virtualScrollRowHeight = 38
+		isGrid.isInfiniteScrollEnabled = true
+		isGrid.infiniteScrollThreshold = 100
+		isGrid.hasMoreItems = true
+
+		function loadBatch() {
+			const out = []
+			const end = Math.min(nextRoot + BATCH - 1, MAX)
+			for (let r = nextRoot; r <= end; r++) out.push(...buildSubtree(r))
+			nextRoot = end + 1
+			return out
+		}
+		isGrid.items = loadBatch()
+
+		const isLoadedEl = document.querySelector('[data-testid="is-loaded-items"]')
+		const isHasMoreEl = document.querySelector('[data-testid="is-has-more"]')
+		const isReqLog = document.querySelector('[data-testid="is-req-log"]')
+
+		function refreshIs() {
+			isLoadedEl.textContent = String(isGrid.items.length)
+			isHasMoreEl.textContent = String(isGrid.hasMoreItems)
+		}
+		refreshIs()
+
+		isGrid.ondatarequest = async (detail) => {
+			const line = document.createElement('div')
+			line.className = 'row'
+			line.textContent = `trigger=${detail.trigger} mode=${detail.mode}`
+			isReqLog.insertBefore(line, isReqLog.firstChild)
+
+			if (detail.trigger === 'loadMore') {
+				if (nextRoot > MAX) {
+					isGrid.hasMoreItems = false
+					refreshIs()
+					return
+				}
+				isGrid.items = [...isGrid.items, ...loadBatch()]
+				if (nextRoot > MAX) isGrid.hasMoreItems = false
+				refreshIs()
+			}
+		}
+	</script>
+</body>
+</html>

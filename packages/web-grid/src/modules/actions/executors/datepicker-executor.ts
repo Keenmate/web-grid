@@ -102,8 +102,26 @@ function handleDateSelect(
 	// Clear datepicker reference
 	ctx.datepicker = null
 
+	// Convert to the format the column expects. Default 'iso' matches the
+	// legacy commitDateEditor behavior.
+	const column = ctx.grid.columns[colIndex]
+	const outputFormat = column?.editorOptions?.outputFormat ?? 'iso'
+	let value: unknown
+	switch (outputFormat) {
+		case 'date':
+			value = date
+			break
+		case 'timestamp':
+			value = date.getTime()
+			break
+		case 'iso':
+		default:
+			value = toISODateString(date)
+			break
+	}
+
 	// Commit the date value (clears editingCell state)
-	ctx.grid.commitEdit(rowIndex, field, toISODateString(date))
+	ctx.grid.commitEdit(rowIndex, field, value)
 
 	// Re-render cell in display mode with the committed value
 	renderCell(ctx, rowIndex, colIndex)

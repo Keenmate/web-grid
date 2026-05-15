@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — virtual-scroll fixture</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>virtual-scroll fixture</h1>
+	<p>
+		Targeted by <code>e2e/virtual-scroll.spec.ts</code>. Exercises the virtual
+		scroll module (<code>src/modules/scroll/</code>) + infinite-scroll
+		<code>ondatarequest</code> with <code>mode='append'</code>. Reload resets
+		all state.
+	</p>
+
+	<h2>#grid — 1,000 rows, virtual scroll enabled</h2>
+	<web-grid id="grid" style="max-width: 700px; max-height: 380px;"></web-grid>
+	<div class="state-panel">
+		<div class="row">rendered body rows: <b data-testid="rendered-rows">?</b></div>
+		<div class="row">top spacer height: <b data-testid="top-spacer">0</b></div>
+		<div class="row">bottom spacer height: <b data-testid="bottom-spacer">0</b></div>
+		<div class="row">first rendered row index: <b data-testid="first-rendered">?</b></div>
+	</div>
+
+	<h2>#infiniteGrid — infinite scroll, BATCH_SIZE=200, MAX=600</h2>
+	<web-grid id="infiniteGrid" style="max-width: 700px; max-height: 380px;"></web-grid>
+	<div class="state-panel">
+		<div class="row">loaded items: <b data-testid="loaded-items">0</b></div>
+		<div class="row">hasMoreItems: <b data-testid="has-more">true</b></div>
+		<div class="row">datarequest log (newest first): <div data-testid="datarequest-log"></div></div>
+	</div>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+
+		/*
+		 * Deterministic seed — 1000 rows, 4 columns for #grid.
+		 *
+		 *  col idx:  0    1                2                  3
+		 *  field:    id   name             email              role
+		 *  ---------------------------------------------------------------
+		 *  row N  |  N+1 | Employee N+1  | emp{N+1}@k.io   | Engineer|Designer|Manager (N%3)
+		 *
+		 * Notes the spec relies on:
+		 *  - virtualScrollRowHeight=38, virtualScrollBuffer=5 → at viewport
+		 *    height 380 you'd render ~20 rows max even though items.length=1000.
+		 *  - rows are exposed via data-row attribute; first rendered row index
+		 *    advances as you scrollTop.
+		 *  - #infiniteGrid loads 200 items at a time up to 600 max via
+		 *    ondatarequest mode='append' trigger='loadMore'.
+		 */
+		const ROLES = ['Engineer', 'Designer', 'Manager']
+		function generate(count, startId = 1) {
+			const items = []
+			for (let i = 0; i < count; i++) {
+				const id = startId + i
+				items.push({
+					id,
+					name: `Employee ${id}`,
+					email: `emp${id}@k.io`,
+					role: ROLES[id % 3]
+				})
+			}
+			return items
+		}
+
+		const columns = [
+			{ field: 'id',    title: 'ID',    width: '70px',  horizontalAlign: 'center' },
+			{ field: 'name',  title: 'Name',  width: '180px' },
+			{ field: 'email', title: 'Email', width: '220px' },
+			{ field: 'role',  title: 'Role',  width: '120px' }
+		]
+
+		// #grid — virtual scroll over 1000 items -----------------------------
+		const grid = document.getElementById('grid')
+		grid.columns = columns
+		grid.items = generate(1000)
+		grid.isVirtualScrollEnabled = true
+		grid.virtualScrollRowHeight = 38
+		grid.virtualScrollBuffer = 5
+		grid.isRowNumbersVisible = true
+
+		const renderedEl = document.querySelector('[data-testid="rendered-rows"]')
+		const topSpacerEl = document.querySelector('[data-testid="top-spacer"]')
+		const bottomSpacerEl = document.querySelector('[data-testid="bottom-spacer"]')
+		const firstRenderedEl = document.querySelector('[data-testid="first-rendered"]')
+
+		function refresh() {
+			const root = grid.shadowRoot
+			if (!root) return
+			const bodyRows = root.querySelectorAll('tbody tr.wg__row')
+			renderedEl.textContent = String(bodyRows.length)
+			const topSpacer = root.querySelector('tbody tr.wg__spacer-top td')
+			const bottomSpacer = root.querySelector('tbody tr.wg__spacer-bottom td')
+			topSpacerEl.textContent = topSpacer ? parseInt(topSpacer.style.height) || 0 : 0
+			bottomSpacerEl.textContent = bottomSpacer ? parseInt(bottomSpacer.style.height) || 0 : 0
+			const first = bodyRows[0]?.getAttribute('data-row-index')
+			firstRenderedEl.textContent = first != null ? first : '?'
+		}
+
+		// MutationObserver on the shadow root catches surgical re-renders.
+		const observer = new MutationObserver(refresh)
+		observer.observe(grid.shadowRoot, { childList: true, subtree: true })
+
+		// First paint settle (virtual scroll measures viewport in next frame).
+		requestAnimationFrame(() => requestAnimationFrame(refresh))
+
+		// #infiniteGrid — append-mode datarequest -----------------------------
+		const infiniteGrid = document.getElementById('infiniteGrid')
+		const BATCH = 200
+		const MAX = 600
+		infiniteGrid.columns = columns
+		infiniteGrid.items = generate(BATCH)
+		infiniteGrid.hasMoreItems = true
+		infiniteGrid.isVirtualScrollEnabled = true
+		infiniteGrid.virtualScrollRowHeight = 38
+		infiniteGrid.isInfiniteScrollEnabled = true
+		infiniteGrid.infiniteScrollThreshold = 100
+
+		const loadedEl = document.querySelector('[data-testid="loaded-items"]')
+		const hasMoreEl = document.querySelector('[data-testid="has-more"]')
+		const reqLog = document.querySelector('[data-testid="datarequest-log"]')
+
+		function updateInfiniteStats() {
+			loadedEl.textContent = String(infiniteGrid.items.length)
+			hasMoreEl.textContent = String(infiniteGrid.hasMoreItems)
+		}
+		updateInfiniteStats()
+
+		infiniteGrid.ondatarequest = (detail) => {
+			const line = document.createElement('div')
+			line.className = 'row'
+			line.textContent = `trigger=${detail.trigger} mode=${detail.mode} skip=${detail.skip}`
+			reqLog.insertBefore(line, reqLog.firstChild)
+
+			if (detail.trigger === 'loadMore' && detail.mode === 'append') {
+				const nextStart = infiniteGrid.items.length + 1
+				const remaining = MAX - infiniteGrid.items.length
+				const toLoad = Math.min(BATCH, remaining)
+				if (toLoad > 0) {
+					infiniteGrid.items = [...infiniteGrid.items, ...generate(toLoad, nextStart)]
+				}
+				if (infiniteGrid.items.length >= MAX) {
+					infiniteGrid.hasMoreItems = false
+				}
+				updateInfiniteStats()
+			}
+		}
+	</script>
+</body>
+</html>

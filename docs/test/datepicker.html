@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — datepicker fixture</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>datepicker fixture</h1>
+	<p>
+		Targeted by <code>e2e/datepicker.spec.ts</code>. Exercises the date editor
+		(<code>src/modules/datepicker/</code>) — open/close, click-to-select,
+		keyboard navigation, min/max constraints, Today button, output formats.
+		Reload resets all state.
+	</p>
+
+	<h2>#grid — editTrigger='navigate' (default legacy path)</h2>
+	<web-grid id="grid" style="max-width: 760px; max-height: 320px;"></web-grid>
+	<div class="state-panel">
+		<div class="row">last commit log (newest first):</div>
+		<div data-testid="commit-log"></div>
+	</div>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+
+		/*
+		 * Deterministic seed — 4 rows, 5 columns.
+		 *
+		 *  col idx:  0   1                  2                   3                4
+		 *  field:    id  name               iso (default fmt)   eu (DD.MM.YYYY)  ts (timestamp out)
+		 *  editor:   -   text               date                date             date
+		 *  -------------------------------------------------------------------------------
+		 *  row 0  |  1 | Alice Johnson    | 2026-06-15        | 2026-06-15       | 1750118400000
+		 *  row 1  |  2 | Bob Smith        | 2026-06-20        | 2026-06-20       | 1750550400000
+		 *  row 2  |  3 | Carol Williams   | 2026-06-10        | 2026-06-10       | 1749686400000
+		 *  row 3  |  4 | David Brown      | (empty)           | (empty)          | (empty)
+		 *
+		 * Notes the spec relies on:
+		 *  - "iso" column uses default dateFormat 'YYYY-MM-DD', outputFormat 'iso' (string).
+		 *  - "eu" column uses dateFormat 'DD.MM.YYYY' to verify localized display.
+		 *  - "ts" column has outputFormat 'timestamp' (number).
+		 *  - All date columns are bounded to 2026-06-01 .. 2026-06-30 to make
+		 *    min/max behavior assertable.
+		 *  - Picker renders in document.body with selectors `.wg-datepicker__*`.
+		 *  - Today (when tests run) lies outside the 2026-06 range, so the Today
+		 *    button is disabled in this fixture.
+		 */
+		const seed = () => [
+			{ id: 1, name: 'Alice Johnson',   iso: '2026-06-15', eu: '2026-06-15', ts: new Date(2026, 5, 17).getTime() },
+			{ id: 2, name: 'Bob Smith',       iso: '2026-06-20', eu: '2026-06-20', ts: new Date(2026, 5, 22).getTime() },
+			{ id: 3, name: 'Carol Williams',  iso: '2026-06-10', eu: '2026-06-10', ts: new Date(2026, 5, 11).getTime() },
+			{ id: 4, name: 'David Brown',     iso: null,         eu: null,         ts: null }
+		]
+
+		const columns = [
+			{ field: 'id',   title: 'ID',   width: '60px',  isEditable: false },
+			{ field: 'name', title: 'Name', width: '160px', editor: 'text' },
+			{
+				field: 'iso', title: 'ISO Date', width: '140px', editor: 'date',
+				editorOptions: {
+					dateFormat: 'YYYY-MM-DD',
+					outputFormat: 'iso',
+					minDate: '2026-06-01',
+					maxDate: '2026-06-30'
+				}
+			},
+			{
+				field: 'eu', title: 'EU Date', width: '140px', editor: 'date',
+				editorOptions: {
+					dateFormat: 'DD.MM.YYYY',
+					outputFormat: 'iso',
+					minDate: '2026-06-01',
+					maxDate: '2026-06-30'
+				}
+			},
+			{
+				field: 'ts', title: 'Timestamp', width: '180px', editor: 'date',
+				editorOptions: {
+					dateFormat: 'YYYY-MM-DD',
+					outputFormat: 'timestamp',
+					minDate: '2026-06-01',
+					maxDate: '2026-06-30'
+				},
+				// Format in local time (the picker stores local Date.getTime()).
+				// Using toISOString() would shift the date by the local UTC offset.
+				formatCallback: (v) => {
+					if (!v) return ''
+					const d = new Date(v)
+					return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+				}
+			}
+		]
+
+		const grid = document.getElementById('grid')
+		grid.items = seed()
+		grid.columns = columns
+		grid.isEditable = true
+		grid.editTrigger = 'navigate'
+		grid.isRowNumbersVisible = true
+
+		// State surface ------------------------------------------------------
+		const logEl = document.querySelector('[data-testid="commit-log"]')
+		function logCommit(rowIndex, field, value) {
+			const line = document.createElement('div')
+			line.className = 'row'
+			const display = value === null || value === undefined ? 'null' :
+				typeof value === 'number' ? `${value}` : `"${value}"`
+			line.textContent = `row=${rowIndex} field=${field} value=${display} type=${typeof value}`
+			logEl.insertBefore(line, logEl.firstChild)
+		}
+		grid.onrowchange = (detail) => {
+			logCommit(detail.rowIndex, detail.field, detail.newValue)
+		}
+	</script>
+</body>
+</html>
