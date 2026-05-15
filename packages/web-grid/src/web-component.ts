@@ -8,6 +8,7 @@ import type {
 	CellValidationState,
 	RowToolbarConfig,
 	ContextMenuItem,
+	ContextMenuConfig,
 	RowShortcut,
 	ShortcutContext,
 	ParsedKeyCombo,
@@ -50,7 +51,10 @@ import type {
 import styles from './css/main.css?inline'
 
 // Logging
-import { initLogger, uiLogger } from './logger.js'
+import { initLogger, uiLogger, perfLogger } from './logger.js'
+
+// Perf instrumentation (temporary — investigating tree-toggle slowness)
+import { gridPerf } from './perf.js'
 
 // Import module functions
 import {
@@ -118,6 +122,7 @@ import { DatePicker, parseFormat, formatDate, normalizeDate, toISODateString } f
 import {
 	openContextMenu,
 	closeContextMenu,
+	normalizeContextMenu,
 	openHeaderContextMenu,
 	normalizeHeaderMenuItems,
 	executeHeaderMenuAction
@@ -342,8 +347,13 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		this.styleElement.textContent = styles
 		this.shadow.appendChild(this.styleElement)
 
-		// Override requestUpdate to trigger DOM render
-		;(this.grid as unknown as { requestUpdate: () => void }).requestUpdate = () => this.requestUpdate()
+		// Override requestUpdate to invalidate the data-pipeline cache and trigger DOM render.
+		// Every state-changing setter on WebGrid funnels through requestUpdate(), so this is
+		// the single canonical point to drop cached paginatedItems / displayItems.
+		;(this.grid as unknown as { requestUpdate: () => void }).requestUpdate = () => {
+			this.grid.invalidateDisplayCache()
+			this.requestUpdate()
+		}
 
 		// Handle interaction changes (cleanup dropdown when editing is cancelled externally)
 		;(this.grid as unknown as { _onInteractionChange: ((type: string, detail: { prev: unknown, current: unknown }) => void) | null })._onInteractionChange = (type, detail) => {
@@ -419,6 +429,16 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	get isFilterable(): boolean { return this.grid.isFilterable }
 	set isFilterable(value: boolean) { this.grid.isFilterable = value }
 
+	get onfilterchange(): ((filters: Record<string, string>) => void) | undefined { return this.grid.onfilterchange }
+	set onfilterchange(value: ((filters: Record<string, string>) => void) | undefined) { this.grid.onfilterchange = value }
+
+	get columnMinWidth(): string | undefined { return this.grid.columnMinWidth }
+	set columnMinWidth(value: string | undefined) { this.grid.columnMinWidth = value }
+
+	get filters(): Record<string, string> { return this.grid.filters }
+	set filters(value: Record<string, string>) { this.grid.filters = value }
+	setFilter(field: string, value: string): void { this.grid.setFilter(field, value) }
+
 	get isPageable(): boolean { return this.grid.isPageable }
 	set isPageable(value: boolean) { this.grid.isPageable = value }
 
@@ -439,6 +459,9 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 	get isEditable(): boolean { return this.grid.isEditable }
 	set isEditable(value: boolean) { this.grid.isEditable = value }
+
+	get isRowEditable(): boolean | ((row: T) => boolean) | undefined { return this.grid.isRowEditable }
+	set isRowEditable(value: boolean | ((row: T) => boolean) | undefined) { this.grid.isRowEditable = value }
 
 	get editTrigger(): EditTrigger { return this.grid.editTrigger }
 	set editTrigger(value: EditTrigger) { this.grid.editTrigger = value }
@@ -526,8 +549,8 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	get inlineActionsTitle(): string { return this.grid.inlineActionsTitle }
 	set inlineActionsTitle(value: string) { this.grid.inlineActionsTitle = value }
 
-	get contextMenu(): ContextMenuItem<T>[] | undefined { return this.grid.contextMenu }
-	set contextMenu(value: ContextMenuItem<T>[] | undefined) { this.grid.contextMenu = value }
+	get contextMenu(): ContextMenuConfig<T>[] | undefined { return this.grid.contextMenu }
+	set contextMenu(value: ContextMenuConfig<T>[] | undefined) { this.grid.contextMenu = value }
 
 	get contextMenuXOffset(): number { return this.grid.contextMenuXOffset }
 	set contextMenuXOffset(value: number) { this.grid.contextMenuXOffset = value }
@@ -590,6 +613,9 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	set createEmptyRowCallback(value) { this.grid.createEmptyRowCallback = value }
 
 	// Tree / hierarchy
+	get idMember(): string | null { return this.grid.idMember }
+	set idMember(value: string | null) { this.grid.idMember = value }
+
 	get treePathMember(): string | null { return this.grid.treePathMember }
 	set treePathMember(value: string | null) { this.grid.treePathMember = value }
 
@@ -979,11 +1005,15 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		if (this.updatePending) return
 		uiLogger.debug('requestUpdate: scheduling render')
 		this.updatePending = true
+		const __reqT0 = performance.now()
 
 		// Batch updates using microtask
 		queueMicrotask(() => {
 			this.updatePending = false
+			const __renderT0 = performance.now()
+			perfLogger.debug('microtask delay:', (__renderT0 - __reqT0).toFixed(2), 'ms')
 			this.render()
+			perfLogger.debug('render() total:', (performance.now() - __renderT0).toFixed(2), 'ms')
 		})
 	}
 
@@ -1020,8 +1050,10 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		const columns = this.grid.columns
 		const displayItems = this.grid.displayItems
 
-		// For Tab navigation, we still use editable columns only
-		const editableCols = this.grid.getEditableColumns()
+		// For Tab navigation, we still use editable columns only — recomputed per row
+		// so heterogeneous trees (some rows entirely read-only) traverse correctly.
+		const currentRowForTab = displayItems[rowIndex]
+		const editableCols = this.grid.getEditableColumns(currentRowForTab)
 		const currentEditableIndex = editableCols.findIndex(ec => ec.index === colIndex)
 
 		// Ctrl+C - Copy to clipboard
@@ -1126,6 +1158,8 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 			case 'ArrowLeft':
 				e.preventDefault()
+				// Ctrl/Cmd+ArrowLeft tree-collapse is handled at the table-keydown level,
+				// before pipelineAdapter — this branch only runs for plain ArrowLeft.
 				if (colIndex > 0) {
 					moveFocus(this, rowIndex, colIndex - 1)
 				}
@@ -1133,36 +1167,47 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 			case 'ArrowRight':
 				e.preventDefault()
+				// Ctrl/Cmd+ArrowRight tree-expand is handled at the table-keydown level.
 				if (colIndex < columns.length - 1) {
 					moveFocus(this, rowIndex, colIndex + 1)
 				}
 				break
 
-			case 'Tab':
+			case 'Tab': {
 				e.preventDefault()
-				if (e.shiftKey) {
-					if (currentEditableIndex > 0) {
-						const newColIndex = editableCols[currentEditableIndex - 1].index
-						moveFocus(this, rowIndex, newColIndex)
-					} else if (rowIndex > 0) {
-						const newColIndex = editableCols[editableCols.length - 1].index
-						moveFocus(this, rowIndex - 1, newColIndex)
-					}
-				} else {
-					if (currentEditableIndex >= 0 && currentEditableIndex < editableCols.length - 1) {
-						const newColIndex = editableCols[currentEditableIndex + 1].index
-						moveFocus(this, rowIndex, newColIndex)
-					} else if (currentEditableIndex === -1 && editableCols.length > 0) {
-						moveFocus(this, rowIndex, editableCols[0].index)
-					} else if (rowIndex < displayItems.length - 1) {
-						const newColIndex = editableCols[0].index
-						moveFocus(this, rowIndex + 1, newColIndex)
-					} else if (this.grid.isEmptyRowIndex(rowIndex)) {
-						// On last cell of empty row - wrap to first editable cell
-						moveFocus(this, rowIndex, editableCols[0].index)
+				const direction: 'forward' | 'backward' = e.shiftKey ? 'backward' : 'forward'
+
+				// If currently focused on a non-editable cell (now possible since all cells are
+				// focusable in navigate mode), find the nearest editable column on this row first.
+				let fromEditableIdx = currentEditableIndex
+				if (fromEditableIdx === -1 && editableCols.length > 0) {
+					if (direction === 'forward') {
+						const next = editableCols.find(ec => ec.index > colIndex)
+						if (next) {
+							moveFocus(this, rowIndex, next.index)
+							break
+						}
+						// No editable column to the right on this row; fall through with sentinel
+						fromEditableIdx = editableCols.length - 1
+					} else {
+						const prev = [...editableCols].reverse().find(ec => ec.index < colIndex)
+						if (prev) {
+							moveFocus(this, rowIndex, prev.index)
+							break
+						}
+						fromEditableIdx = 0
 					}
 				}
+
+				const next = this.grid.findNextEditableCell(rowIndex, fromEditableIdx, direction)
+				if (next) {
+					moveFocus(this, next.rowIndex, next.colIndex)
+				} else if (direction === 'forward' && this.grid.isEmptyRowIndex(rowIndex) && editableCols.length > 0) {
+					// On last cell of empty row - wrap to first editable cell
+					moveFocus(this, rowIndex, editableCols[0].index)
+				}
 				break
+			}
 
 			case 'Home':
 				e.preventDefault()
@@ -1334,7 +1379,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				const isDate = col?.editor === 'date'
 				const isCustom = col?.editor === 'custom'
 
-				if (isCheckbox && col && this.grid.isCellEditable(col)) {
+				if (isCheckbox && col && this.grid.isCellEditable(col, displayItems[rowIndex])) {
 					toggleCheckboxAndMove(this, rowIndex, colIndex)
 				} else if (isDropdown) {
 					tryStartEdit(this, rowIndex, colIndex)
@@ -1395,7 +1440,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 					}
 				} else {
 					// Delete: Clear cell content
-					if (column && this.grid.isCellEditable(column)) {
+					if (column && this.grid.isCellEditable(column, row)) {
 						this.grid.commitEdit(rowIndex, String(column.field), null)
 						this.render()
 						// Restore focus to the same cell
@@ -1570,7 +1615,8 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				this.isCommittingFromKeyboard = true
 
 				// Check if we're on the empty row's last editable cell (Tab should commit)
-				const tabEditableCols = this.grid.getEditableColumns()
+				const tabRow = this.grid.displayItems[rowIndex]
+				const tabEditableCols = this.grid.getEditableColumns(tabRow)
 				const tabColIndex = this.grid.columns.findIndex(c => String(c.field) === field)
 				const tabCurrentEditableIndex = tabEditableCols.findIndex(ec => ec.index === tabColIndex)
 				const isOnEmptyRow = this.grid.isEmptyRowIndex(rowIndex)
@@ -1752,6 +1798,63 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		// Keydown events
 		table.addEventListener('keydown', (e: Event) => {
 			const target = e.target as HTMLElement
+			const ke = e as KeyboardEvent
+
+			// Tree shortcuts (Ctrl/Cmd + ArrowLeft/Right) run BEFORE pipelineAdapter
+			// because the pipeline consumes plain arrow keys for cell-focus navigation
+			// (regardless of editTrigger), which would swallow the modified arrow too.
+			// Direct grid-method calls — same as chevron click and dblclick paths.
+			if (
+				this.grid.isTreeMode &&
+				this.grid.focusedCell &&
+				!this.grid.editingCell &&
+				(ke.ctrlKey || ke.metaKey) &&
+				(ke.key === 'ArrowLeft' || ke.key === 'ArrowRight')
+			) {
+				const { rowIndex, colIndex } = this.grid.focusedCell
+				const item = this.grid.displayItems[rowIndex]
+				const info = item ? this.grid.getRowTreeInfo(item) : null
+				if (info) {
+					e.preventDefault()
+					e.stopPropagation()
+					// Compute which path's row should hold focus AFTER the toggle. For
+					// same-row expand/collapse it's `info.path` (the row itself stays
+					// in displayItems at some index). For ancestor-walk collapse it's
+					// the ancestor (the focused row is about to be hidden).
+					let targetPath: string | null = null
+					if (ke.key === 'ArrowRight') {
+						if (info.hasChildren && !this.grid.isPathExpanded(info.path)) {
+							this.grid.toggleExpandedPath(info.path)
+							targetPath = info.path
+						}
+					} else {
+						if (info.hasChildren && this.grid.isPathExpanded(info.path)) {
+							this.grid.toggleExpandedPath(info.path)
+							targetPath = info.path
+						} else {
+							const ancestor = this.grid.findNearestExpandedAncestor(info.path)
+							if (ancestor !== null) {
+								this.grid.toggleExpandedPath(ancestor)
+								targetPath = ancestor
+							}
+						}
+					}
+					// Restore focus after the render. toggleExpandedPath queues a
+					// microtask render; ours queues after it, so displayItems is fresh
+					// and the new <td> exists when moveFocus tries to focus it.
+					if (targetPath !== null) {
+						const path = targetPath
+						queueMicrotask(() => {
+							const idx = this.grid.displayItems
+								.findIndex(it => this.grid.getRowTreeInfo(it)?.path === path)
+							if (idx >= 0) {
+								moveFocus(this, idx, colIndex)
+							}
+						})
+					}
+					return
+				}
+			}
 
 			// Try action pipeline first (handles 'always' editTrigger mode)
 			if (this.pipelineAdapter?.tryHandleKeyDown(e as KeyboardEvent)) {
@@ -1788,7 +1891,10 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			}
 		})
 
-		// Double-click to edit
+		// Double-click to edit. Tree-column dblclick-to-toggle is handled in the
+		// mousedown listener (via MouseEvent.detail === 2) because surgical render
+		// rebuilds the cell's <td> when focus changes between clicks, which causes
+		// the browser to drop the native dblclick (its two click targets differ).
 		table.addEventListener('dblclick', (e: Event) => {
 			const target = e.target as HTMLElement
 
@@ -2082,7 +2188,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 							const clickX = mouseEvent.clientX
 							requestAnimationFrame(() => {
 								this.isTransitioningCells = false
-								if (trigger === 'click' && newColumn && this.grid.isCellEditable(newColumn)) {
+								if (trigger === 'click' && newColumn && this.grid.isCellEditable(newColumn, this.grid.displayItems[rowIndex])) {
 									// For click trigger, immediately start editing the new cell
 									// Find the new cell and calculate cursor position
 									const newCell = this.shadow.querySelector(
@@ -3074,6 +3180,11 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	}
 
 	private render(): void {
+		// Drop any stale data-pipeline cache. Normally requestUpdate() has already
+		// done this, but render() is also called directly in a few places.
+		this.grid.invalidateDisplayCache()
+		gridPerf.reset()
+		const __renderStartT = performance.now()
 		uiLogger.debug('render:', this.grid.displayItems.length, 'rows,', this.grid.visualColumns.length, 'columns')
 		// Preserve scroll position before re-render
 		// When tableBorderOnly is enabled, scroll container is .wg__table-container
@@ -3086,20 +3197,6 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 		// Preserve focused cell position (for restoring after re-render)
 		const focusedCell = this.grid.focusedCell
-
-		// Remove old content (except the style element)
-		if (oldContainer) {
-			oldContainer.remove()
-		}
-
-		// Create the container
-		const container = document.createElement('div')
-		container.className = getContainerClasses(this)
-
-		// Set scroll max-height CSS variable if scrollable mode is enabled
-		if (this.grid.isScrollable && this.grid.scrollMaxHeight !== '100vh') {
-			container.style.setProperty('--wg-scroll-max-height', this.grid.scrollMaxHeight)
-		}
 
 		// Parse pagination positions (e.g., "bottom-center" or "top-right|bottom-right")
 		const paginationPositions = this.grid.paginationPosition.split('|').map(p => p.trim())
@@ -3192,58 +3289,104 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			dataRowsHtml = renderDataRows(this)
 		}
 
-		// Add modifier class for virtual scroll
-		if (useVirtualScroll) {
-			container.classList.add('wg--virtual-scroll')
-		}
-
 		// Render shortcuts help icon if enabled
 		const shortcutsHelpHtml = this.renderShortcutsHelpIcon()
 
-		// Build the table HTML
-		// When tableBorderOnly is true, wrap table in a scroll container with border
-		const tableCore = `
-			<table class="wg__table">
-				<thead>
-					${renderHeaderRow(this)}
-				</thead>
-				<tbody>
-					${dataRowsHtml}
-				</tbody>
-			</table>
-		`
+		const headerRowHtml = renderHeaderRow(this)
 
-		const tableWithContainer = this.grid.tableBorderOnly
-			? `<div class="wg__table-container">${tableCore}</div>`
-			: tableCore
+		// Decide between surgical update (keep container, table, and listeners
+		// alive — replace only the slot contents) and full rebuild. Surgical path
+		// is the hot path for ~every render after the first; it skips the ~10
+		// addEventListener calls in attachEventListeners and saves the cost of
+		// recreating the .wg / .wg__table elements.
+		const existingTable = oldContainer?.querySelector('.wg__table') as HTMLTableElement | null
+		const existingThead = existingTable?.querySelector('thead') as HTMLElement | null
+		const existingTbody = existingTable?.querySelector('tbody') as HTMLElement | null
+		const existingTopArea = oldContainer?.querySelector(':scope > .wg__top-area') as HTMLElement | null
+		const existingBottomArea = oldContainer?.querySelector(':scope > .wg__bottom-area') as HTMLElement | null
+		const currentlyHasTableContainer = !!oldContainer?.querySelector(':scope > .wg__table-container')
+		const wantsTableContainer = !!this.grid.tableBorderOnly
+		const canSurgicalUpdate = !!oldContainer
+			&& !!existingTable
+			&& !!existingThead
+			&& !!existingTbody
+			&& !!existingTopArea
+			&& !!existingBottomArea
+			&& currentlyHasTableContainer === wantsTableContainer
 
-		const tableHtml = `
-			${shortcutsHelpHtml}
-			${topContent}
-			${tableWithContainer}
-			${bottomContent}
-		`
+		let container: HTMLElement
 
-		container.innerHTML = tableHtml
-		this.shadow.appendChild(container)
+		if (canSurgicalUpdate) {
+			// Surgical path: container, table, and listeners survive untouched.
+			container = oldContainer!
+			container.className = getContainerClasses(this)
+			if (useVirtualScroll) container.classList.add('wg--virtual-scroll')
 
-		// Restore scroll position after re-render
-		// When tableBorderOnly is enabled, scroll container is .wg__table-container
-		const scrollContainer = this.grid.tableBorderOnly
-			? (container.querySelector('.wg__table-container') as HTMLElement) || container
-			: container
+			if (this.grid.isScrollable && this.grid.scrollMaxHeight !== '100vh') {
+				container.style.setProperty('--wg-scroll-max-height', this.grid.scrollMaxHeight)
+			} else {
+				container.style.removeProperty('--wg-scroll-max-height')
+			}
 
-		// For virtual scroll, clamp to valid range (items may have changed)
-		if (useVirtualScroll) {
-			const maxScrollTop = Math.max(0, this.grid.displayItems.length * this.grid.virtualScrollRowHeight - scrollContainer.clientHeight)
-			scrollContainer.scrollTop = Math.min(scrollTop, maxScrollTop)
+			existingTopArea!.innerHTML = `${shortcutsHelpHtml}${topContent}`
+			existingThead!.innerHTML = headerRowHtml
+			existingTbody!.innerHTML = dataRowsHtml
+			existingBottomArea!.innerHTML = bottomContent
+
+			// Virtual scroll may have changed visible window — clamp scrollTop if it's now out of range
+			if (useVirtualScroll) {
+				const sc = this.grid.tableBorderOnly
+					? (container.querySelector('.wg__table-container') as HTMLElement) || container
+					: container
+				const maxScrollTop = Math.max(0, this.grid.displayItems.length * this.grid.virtualScrollRowHeight - sc.clientHeight)
+				if (sc.scrollTop > maxScrollTop) sc.scrollTop = maxScrollTop
+			}
 		} else {
-			scrollContainer.scrollTop = scrollTop
-		}
-		scrollContainer.scrollLeft = scrollLeft
+			// Full rebuild path: first render, or structure changed (tableBorderOnly toggled).
+			if (oldContainer) oldContainer.remove()
 
-		// Wire up event listeners
-		this.attachEventListeners()
+			container = document.createElement('div')
+			container.className = getContainerClasses(this)
+			if (useVirtualScroll) container.classList.add('wg--virtual-scroll')
+
+			if (this.grid.isScrollable && this.grid.scrollMaxHeight !== '100vh') {
+				container.style.setProperty('--wg-scroll-max-height', this.grid.scrollMaxHeight)
+			}
+
+			const tableCore = `
+				<table class="wg__table">
+					<thead>${headerRowHtml}</thead>
+					<tbody>${dataRowsHtml}</tbody>
+				</table>
+			`
+			const tableWithContainer = this.grid.tableBorderOnly
+				? `<div class="wg__table-container">${tableCore}</div>`
+				: tableCore
+
+			container.innerHTML = `
+				<div class="wg__top-area">${shortcutsHelpHtml}${topContent}</div>
+				${tableWithContainer}
+				<div class="wg__bottom-area">${bottomContent}</div>
+			`
+
+			this.shadow.appendChild(container)
+
+			// Restore scroll position (only needed when container was replaced)
+			const scrollContainer = this.grid.tableBorderOnly
+				? (container.querySelector('.wg__table-container') as HTMLElement) || container
+				: container
+
+			if (useVirtualScroll) {
+				const maxScrollTop = Math.max(0, this.grid.displayItems.length * this.grid.virtualScrollRowHeight - scrollContainer.clientHeight)
+				scrollContainer.scrollTop = Math.min(scrollTop, maxScrollTop)
+			} else {
+				scrollContainer.scrollTop = scrollTop
+			}
+			scrollContainer.scrollLeft = scrollLeft
+
+			// Wire up event listeners (only on full rebuild — surgical path keeps them alive)
+			this.attachEventListeners()
+		}
 
 		// Auto-focus editor if in edit mode
 		if (this.grid.editingCell) {
@@ -3344,6 +3487,8 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		} else {
 			removeColumnSelectionBorders()
 		}
+
+		perfLogger.debug('render() body:', (performance.now() - __renderStartT).toFixed(2), 'ms |', gridPerf.summary())
 	}
 
 	/**
@@ -3750,10 +3895,12 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		}
 
 		// Handle cell context menu
-		const contextMenuItems = this.grid.contextMenu
-		if (!contextMenuItems || contextMenuItems.length === 0) {
+		const contextMenuConfig = this.grid.contextMenu
+		if (!contextMenuConfig || contextMenuConfig.length === 0) {
 			return // No context menu defined, use browser default
 		}
+		// Expand string shorthand and `type`-based items into fully-defined items
+		const contextMenuItems = normalizeContextMenu(contextMenuConfig, this.grid)
 
 		const cell = target.closest('.wg__cell') as HTMLElement
 		if (!cell) {
@@ -3878,6 +4025,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			columnIndex,
 			sortDirection,
 			isFrozen,
+			isTreeMode: this.grid.isTreeMode,
 			allColumns: this.grid.columns,  // Include all columns for visibility submenu
 			labels: this.grid.labels
 		}
@@ -3994,6 +4142,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			columnIndex: -1,
 			sortDirection: null,
 			isFrozen: false,
+			isTreeMode: this.grid.isTreeMode,
 			allColumns: this.grid.columns,
 			labels: this.grid.labels
 		}
@@ -4576,7 +4725,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			if (!column || !row) return
 
 			// Check if cell is editable
-			if (!this.grid.isCellEditable(column)) return
+			if (!this.grid.isCellEditable(column, row)) return
 
 			e.preventDefault()
 

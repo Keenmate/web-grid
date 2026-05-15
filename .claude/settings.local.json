@@ -33,7 +33,23 @@
       "Bash(npx:*)",
       "Bash(git status:*)",
       "Bash(npm run:*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(cp \"C:/Git/KM/web-multiselect/src/vendor/loglevel/loglevel-esm.js\" \"C:/Git/KM/web-grid/packages/web-grid/src/vendor/loglevel/loglevel-esm.js\")",
+      "Bash(cp \"C:/Git/KM/web-multiselect/src/vendor/loglevel/loglevel-plugin-prefix-esm.js\" \"C:/Git/KM/web-grid/packages/web-grid/src/vendor/loglevel/loglevel-plugin-prefix-esm.js\")",
+      "Bash(cp \"C:/Git/KM/web-multiselect/src/vendor/loglevel/index.js\" \"C:/Git/KM/web-grid/packages/web-grid/src/vendor/loglevel/index.js\")",
+      "Bash(cp \"C:/Git/KM/web-multiselect/src/vendor/loglevel/prefix.js\" \"C:/Git/KM/web-grid/packages/web-grid/src/vendor/loglevel/prefix.js\")",
+      "Bash(kill %1)",
+      "Bash(jobs -p)",
+      "Bash(xargs -r kill)",
+      "Bash(curl *)",
+      "Bash(make check *)",
+      "Bash(tee /tmp/svelte-check.log)",
+      "Bash(wait)",
+      "Bash(node --check docs/examples-product-search.html)",
+      "Bash(awk '{print $NF}')",
+      "Bash(node *)",
+      "Read(//c/Git/KM/svelte-treeview/src/routes/test/**)",
+      "Read(//c/Git/KM/svelte-treeview/e2e/**)"
     ]
   }
 }

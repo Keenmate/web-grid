@@ -2,70 +2,68 @@
    TREE COLUMN
    ==============================================================================
    Indent + chevron rendered inside a cell when column.isTree is true.
-   The chevron is absolutely positioned so it can't affect row height; the
-   wrapper's padding-left reserves space for (level * indent + chevron + gap).
+   Inline-flex wrapper: chevron (or leaf spacer) + cell-body sit on one row.
+   Per-level depth comes from `padding-inline-start: level * --wg-tree-indent`,
+   set inline by JS.
 */
 
 :host {
-  --wg-tree-indent: 1.6rem;        /* per-level indent */
-  --wg-tree-chevron-size: 1.6rem;  /* chevron width/height */
+  --wg-tree-indent: 1.25rem;             /* per-level indent */
+  --wg-tree-chevron-size: 1rem;          /* chevron width/height (also used for leaf spacer) */
   --wg-tree-chevron-color: var(--wg-text-color-2);
-  --wg-tree-chevron-gap: var(--wg-spacing-xs);
+  --wg-tree-chevron-gap: 4px;            /* gap between chevron and content */
 }
 
 .wg__tree-cell {
-  position: relative;
-  width: 100%;
-  min-width: 0;
-  /* padding-left + width: 100% would overflow the cell with content-box; force
-     padding to be included in the width so the wrapper exactly fills the cell. */
-  box-sizing: border-box;
-  /* Fill the cell vertically so clicks anywhere inside the cell land on the
-     wrapper, not the cell's padding band. Helps for the dblclick-toggle hit area. */
-  min-height: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--wg-tree-chevron-gap);
+  /* `padding-inline-start: level * --wg-tree-indent` is set inline by JS */
 }
 
-.wg__tree-cell-content {
+.wg__tree-cell-body {
+  min-width: 0;
   overflow: hidden;
   text-overflow: inherit;
   white-space: inherit;
 }
 
 .wg__tree-chevron {
-  position: absolute;
-  top: 50%;
-  /* `left` is set inline by JS = level * indent */
-  transform: translateY(-50%);
+  all: unset;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: var(--wg-tree-chevron-size);
   height: var(--wg-tree-chevron-size);
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--wg-tree-chevron-color);
-  font-size: 0.9em;
+  border-radius: 2px;
+  font-size: 0.85em;
   line-height: 1;
+  color: var(--wg-tree-chevron-color);
   cursor: pointer;
-  user-select: none;
-  border-radius: 3px;
+  flex-shrink: 0;
+  transition: transform 0.12s ease, background 0.1s ease;
 }
 
 .wg__tree-chevron:hover:not(.wg__tree-chevron--leaf) {
   background: var(--wg-hover-bg);
 }
 
-.wg__tree-chevron--leaf {
-  cursor: default;
-  pointer-events: none;
-  background: transparent;
+.wg__tree-chevron--expanded {
+  transform: rotate(90deg);
+}
+
+.wg__tree-leaf-spacer {
+  display: inline-block;
+  width: var(--wg-tree-chevron-size);
+  height: var(--wg-tree-chevron-size);
+  flex-shrink: 0;
 }
 
 /* While the cell is being edited, let the editor absolute-fill the <td> as it
    normally does. The chevron/indent are visual aids for display mode; they come
    back when editing ends. */
-.wg__cell--editing .wg__tree-chevron {
+.wg__cell--editing .wg__tree-chevron,
+.wg__cell--editing .wg__tree-leaf-spacer {
   display: none;
 }
 .wg__cell--editing .wg__tree-cell {

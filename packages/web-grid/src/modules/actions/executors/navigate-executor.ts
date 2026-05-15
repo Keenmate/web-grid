@@ -78,8 +78,10 @@ function calculateTarget(
 	const maxRow = displayItems.length - 1
 	const maxCol = columns.length - 1
 
-	// For Tab navigation, use editable columns only
-	const editableCols = ctx.grid.getEditableColumns()
+	// For Tab navigation, use editable columns only — recomputed per row so heterogeneous
+	// trees (some rows entirely read-only) traverse correctly.
+	const currentRowForTab = displayItems[rowIndex]
+	const editableCols = ctx.grid.getEditableColumns(currentRowForTab)
 
 	// Clear tab traversal tracking on non-tab/non-enter navigation (arrow keys, etc.)
 	if (direction !== 'tab' && direction !== 'tab-back' && direction !== 'enter') {
@@ -114,6 +116,9 @@ function calculateTarget(
 		case 'tab': {
 			// Read-only grid: traverse all columns, wrapping to next row
 			if (editableCols.length === 0) {
+				// If next row(s) have editable columns, walk to them
+				const next = ctx.grid.findNextEditableCell(rowIndex, -1, 'forward')
+				if (next) return next
 				if (colIndex < maxCol) {
 					return { rowIndex, colIndex: colIndex + 1 }
 				} else if (rowIndex < maxRow) {
@@ -129,16 +134,20 @@ function calculateTarget(
 			// Find current position in editable columns
 			const currentEditableIndex = editableCols.findIndex(ec => ec.index === colIndex)
 
-			if (currentEditableIndex >= 0 && currentEditableIndex < editableCols.length - 1) {
-				// Move to next editable column in same row
-				return { rowIndex, colIndex: editableCols[currentEditableIndex + 1].index }
-			} else if (currentEditableIndex === -1 && editableCols.length > 0) {
-				// Not on an editable column, go to first editable
-				return { rowIndex, colIndex: editableCols[0].index }
-			} else if (rowIndex < maxRow) {
-				// Last editable column - wrap to first editable of next row
-				return { rowIndex: rowIndex + 1, colIndex: editableCols[0].index }
-			} else if (ctx.grid.isEmptyRowIndex(rowIndex)) {
+			if (currentEditableIndex === -1) {
+				// Not on an editable column - find first editable to the right on this row
+				const next = editableCols.find(ec => ec.index > colIndex)
+				if (next) return { rowIndex, colIndex: next.index }
+				// None to the right — walk forward to next row with editable columns
+				const walked = ctx.grid.findNextEditableCell(rowIndex, editableCols.length - 1, 'forward')
+				if (walked) return walked
+				break
+			}
+
+			// Walk forward, skipping rows with zero editable columns
+			const next = ctx.grid.findNextEditableCell(rowIndex, currentEditableIndex, 'forward')
+			if (next) return next
+			if (ctx.grid.isEmptyRowIndex(rowIndex)) {
 				// On empty row's last cell - wrap to first editable cell of same row
 				return { rowIndex, colIndex: editableCols[0].index }
 			}
@@ -148,6 +157,8 @@ function calculateTarget(
 		case 'tab-back': {
 			// Read-only grid: traverse all columns backwards, wrapping to previous row
 			if (editableCols.length === 0) {
+				const prev = ctx.grid.findNextEditableCell(rowIndex, 0, 'backward')
+				if (prev) return prev
 				if (colIndex > 0) {
 					return { rowIndex, colIndex: colIndex - 1 }
 				} else if (rowIndex > 0) {
@@ -163,13 +174,19 @@ function calculateTarget(
 			// Find current position in editable columns
 			const currentEditableIndex = editableCols.findIndex(ec => ec.index === colIndex)
 
-			if (currentEditableIndex > 0) {
-				// Move to previous editable column in same row
-				return { rowIndex, colIndex: editableCols[currentEditableIndex - 1].index }
-			} else if (rowIndex > 0) {
-				// First editable column - wrap to last editable of previous row
-				return { rowIndex: rowIndex - 1, colIndex: editableCols[editableCols.length - 1].index }
+			if (currentEditableIndex === -1) {
+				// Not on an editable column - find first editable to the left on this row
+				const prev = [...editableCols].reverse().find(ec => ec.index < colIndex)
+				if (prev) return { rowIndex, colIndex: prev.index }
+				// None to the left — walk backward to previous row with editable columns
+				const walked = ctx.grid.findNextEditableCell(rowIndex, 0, 'backward')
+				if (walked) return walked
+				break
 			}
+
+			// Walk backward, skipping rows with zero editable columns
+			const prev = ctx.grid.findNextEditableCell(rowIndex, currentEditableIndex, 'backward')
+			if (prev) return prev
 			break
 		}
 

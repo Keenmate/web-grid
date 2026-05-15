@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — fill-handle fixture</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>fill-handle fixture</h1>
+	<p>Targeted by <code>e2e/fill-handle.spec.ts</code>. Reload resets all state.</p>
+
+	<div class="fixture">
+		<h2>#grid — basic vertical fill</h2>
+		<web-grid id="grid" style="max-width: 720px; max-height: 280px;"></web-grid>
+		<div class="state-panel">fill log: <b data-testid="fill-log">none</b></div>
+	</div>
+
+	<div class="fixture">
+		<h2>#grid2 — cancellation via fillDragCallback returning false</h2>
+		<web-grid id="grid2" style="max-width: 720px; max-height: 280px;"></web-grid>
+		<div class="state-panel">fill log: <b data-testid="fill-log-2">none</b></div>
+	</div>
+
+	<div class="fixture">
+		<h2>#gridVertical — narrow vertical-fill grid</h2>
+		<web-grid id="gridVertical" style="max-width: fit-content; max-height: 240px;"></web-grid>
+	</div>
+
+	<div class="fixture">
+		<h2>#gridHorizontal — horizontal-drag direction constraint</h2>
+		<web-grid id="gridHorizontal" style="max-width: fit-content; max-height: 200px;"></web-grid>
+	</div>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+
+		/*
+		 * #grid / #grid2 share this seed — 6 rows, 6 columns.
+		 *
+		 *  col index:  0      1       2        3            4             5
+		 *  field:      id     name    salary   startDate    department    status
+		 *  editor:     -      text    number   text         text          combobox
+		 *  -----------------------------------------------------------------------------
+		 *  row 0   | 1000 | Alice  |  50000 | 2024-01-10 | Engineering | Active
+		 *  row 1   | 1001 | Bob    |  55000 | 2024-02-11 | Marketing   | Pending
+		 *  row 2   | 1002 | Carol  |  60000 | 2024-03-12 | Sales       | Pending
+		 *  row 3   | 1003 | David  |  65000 | 2024-04-13 | HR          | Active
+		 *  row 4   | 1004 | Eve    |  70000 | 2024-05-14 | Finance     | Pending
+		 *  row 5   | 1005 | Frank  |  75000 | 2024-06-15 | Engineering | Active
+		 *
+		 * Notes the spec relies on:
+		 *  - id is read-only; grid is in navigate mode so clicking a cell focuses it
+		 *    and the fill handle attaches at the cell's bottom-right corner.
+		 *  - #grid logs every fill into [data-testid="fill-log"].
+		 *  - #grid2's fillDragCallback returns false for the `status` column, writing
+		 *    "BLOCKED ..." to [data-testid="fill-log-2"]; any other column writes
+		 *    "ALLOWED ...".
+		 *  - status is a combobox so clicking the cell centre opens the dropdown —
+		 *    the spec focuses status cells programmatically via focusCell().
+		 */
+		const seed = () => [
+			{ id: 1000, name: 'Alice', salary: 50000, startDate: '2024-01-10', department: 'Engineering', status: 'Active' },
+			{ id: 1001, name: 'Bob', salary: 55000, startDate: '2024-02-11', department: 'Marketing', status: 'Pending' },
+			{ id: 1002, name: 'Carol', salary: 60000, startDate: '2024-03-12', department: 'Sales', status: 'Pending' },
+			{ id: 1003, name: 'David', salary: 65000, startDate: '2024-04-13', department: 'HR', status: 'Active' },
+			{ id: 1004, name: 'Eve', salary: 70000, startDate: '2024-05-14', department: 'Finance', status: 'Pending' },
+			{ id: 1005, name: 'Frank', salary: 75000, startDate: '2024-06-15', department: 'Engineering', status: 'Active' }
+		]
+
+		const statusOptions = [
+			{ value: 'Active', label: 'Active' },
+			{ value: 'Pending', label: 'Pending' },
+			{ value: 'Inactive', label: 'Inactive' }
+		]
+
+		const columns = [
+			{ field: 'id', title: 'ID', width: '60px', isEditable: false },
+			{ field: 'name', title: 'Name', width: '110px', editor: 'text' },
+			{ field: 'salary', title: 'Salary', width: '100px', editor: 'number' },
+			{ field: 'startDate', title: 'Start', width: '110px', editor: 'text' },
+			{ field: 'department', title: 'Dept', width: '120px', editor: 'text' },
+			{
+				field: 'status',
+				title: 'Status',
+				width: '120px',
+				editor: 'combobox',
+				editorOptions: { options: statusOptions }
+			}
+		]
+
+		// #grid — basic fill, logs every operation.
+		const grid = document.getElementById('grid')
+		grid.items = seed()
+		grid.columns = columns
+		grid.isEditable = true
+		grid.editTrigger = 'navigate'
+		const fillLog = document.querySelector('[data-testid="fill-log"]')
+		grid.fillDragCallback = (detail) => {
+			fillLog.textContent =
+				`Fill operation: source "${detail.sourceCell.field}" = ${JSON.stringify(detail.sourceCell.value)}, ` +
+				`Direction: ${detail.direction}, Target cells: ${detail.targetCells.length} cells`
+		}
+
+		// #grid2 — cancel fills on the status column.
+		const grid2 = document.getElementById('grid2')
+		grid2.items = seed()
+		grid2.columns = columns
+		grid2.isEditable = true
+		grid2.editTrigger = 'navigate'
+		const fillLog2 = document.querySelector('[data-testid="fill-log-2"]')
+		grid2.fillDragCallback = (detail) => {
+			if (detail.sourceCell.field === 'status') {
+				fillLog2.textContent = `BLOCKED: cannot fill the status column`
+				return false
+			}
+			fillLog2.textContent =
+				`ALLOWED: filling ${detail.targetCells.length} cells in "${detail.sourceCell.field}"`
+		}
+
+		// #gridVertical — narrow grid, row 0 value=100, rest empty.
+		const gridVertical = document.getElementById('gridVertical')
+		gridVertical.items = Array.from({ length: 6 }, (_, i) => ({
+			description: `Row ${i + 1}`,
+			value: i === 0 ? 100 : ''
+		}))
+		gridVertical.columns = [
+			{ field: 'description', title: 'Row', width: '80px', isEditable: false },
+			{ field: 'value', title: 'Value', width: '150px', editor: 'number' }
+		]
+		gridVertical.isEditable = true
+		gridVertical.editTrigger = 'navigate'
+
+		// #gridHorizontal — row of cells; default fillDirection ('vertical') means a
+		// horizontal drag must NOT spill into adjacent columns.
+		const gridHorizontal = document.getElementById('gridHorizontal')
+		gridHorizontal.items = [
+			{ label: 'Values', col1: 'Hello', col2: '', col3: '', col4: '' },
+			{ label: 'Numbers', col1: 42, col2: '', col3: '', col4: '' }
+		]
+		gridHorizontal.columns = [
+			{ field: 'label', title: 'Type', width: '80px', isEditable: false },
+			{ field: 'col1', title: 'A', width: '80px', editor: 'text' },
+			{ field: 'col2', title: 'B', width: '80px', editor: 'text' },
+			{ field: 'col3', title: 'C', width: '80px', editor: 'text' },
+			{ field: 'col4', title: 'D', width: '80px', editor: 'text' }
+		]
+		gridHorizontal.isEditable = true
+		gridHorizontal.editTrigger = 'navigate'
+	</script>
+</body>
+</html>

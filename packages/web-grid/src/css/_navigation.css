@@ -19,8 +19,13 @@
     inset calc(-1 * var(--wg-cell-splitter-width)) 0 0 var(--wg-cell-splitter-color);
 }
 
-/* Focused cell styling for editable navigate mode (.wg__cell--focused class) */
-.wg--editable .wg__cell.wg__cell--focused {
+/* Focused cell styling (.wg__cell--focused class).
+   Applies whenever focusedCell state is set, in any grid mode. Read-only grids
+   (default editTrigger, isEditable: false) still set focusedCell on click via
+   the cell-selection module; the indicator needs to be visible there too,
+   otherwise tree-shortcut Ctrl+Arrows look like they're losing focus after a
+   re-render destroys/rebuilds the tbody. */
+.wg__cell.wg__cell--focused {
   box-shadow:
     inset 0 0 0 var(--wg-focus-border-width) var(--wg-focus-border-color),
     inset calc(-1 * var(--wg-cell-splitter-width)) 0 0 var(--wg-cell-splitter-color);

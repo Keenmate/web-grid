@@ -59,7 +59,13 @@ export function handleComboboxInput<T>(ctx: GridContext<T>, e: Event): void {
  */
 export function handleAutocompleteInput<T>(ctx: GridContext<T>, e: Event): void {
 	const input = e.target as HTMLInputElement
-	ctx.filterText = input.value
+	// Capture in a local — renderDropdown() below calls removeDropdown() which
+	// resets ctx.filterText to ''. Without this, a single `input` event (paste,
+	// programmatic value set) loses the query before we read it for minLength /
+	// the debounced search. Typing only "works" because keystrokes 2+ skip the
+	// `if (!ctx.dropdownOpen)` branch and avoid the wipe.
+	const query = input.value
+	ctx.filterText = query
 
 	// Try editingCell first, then fall back to input's data-field attribute (for 'always' mode)
 	let column = ctx.getCurrentEditingColumn()
@@ -88,10 +94,12 @@ export function handleAutocompleteInput<T>(ctx: GridContext<T>, e: Event): void 
 		attachDropdownListeners(ctx, dropdown)
 		ctx.highlightedIndex = ctx.dropdownOptions.length > 0 ? 0 : -1
 		updateDropdownHighlight(ctx)
+		// renderDropdown -> removeDropdown wiped ctx.filterText; restore.
+		ctx.filterText = query
 	}
 
 	// Check minimum length
-	if (ctx.filterText.length < minLength) {
+	if (query.length < minLength) {
 		ctx.dropdownOptions = opts.initialOptions || []
 		if (wrapper) {
 			const dropdown = renderDropdown(ctx, wrapper, ctx.dropdownOptions, opts)
@@ -104,7 +112,7 @@ export function handleAutocompleteInput<T>(ctx: GridContext<T>, e: Event): void 
 
 	// Debounced search
 	ctx.searchDebounceTimer = setTimeout(() => {
-		performAutocompleteSearch(ctx, ctx.filterText, column)
+		performAutocompleteSearch(ctx, query, column)
 	}, debounceMs)
 }
 

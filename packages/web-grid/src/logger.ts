@@ -55,6 +55,7 @@ export const initLogger = log.getLogger('GRID:INIT')
 export const dataLogger = log.getLogger('GRID:DATA')
 export const uiLogger = log.getLogger('GRID:UI')
 export const interactionLogger = log.getLogger('GRID:INTERACTION')
+export const perfLogger = log.getLogger('GRID:PERF')
 
 // Export the default logger
 export default log
@@ -66,7 +67,8 @@ export const LOGGING_CATEGORIES = [
 	'GRID:INIT',
 	'GRID:DATA',
 	'GRID:UI',
-	'GRID:INTERACTION'
+	'GRID:INTERACTION',
+	'GRID:PERF'
 ]
 
 /**

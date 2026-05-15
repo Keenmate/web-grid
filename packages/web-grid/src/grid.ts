@@ -7,6 +7,7 @@ import type {
 	CellValidationState,
 	RowToolbarConfig,
 	ContextMenuItem,
+	ContextMenuConfig,
 	RowShortcut,
 	RowChangeDetail,
 	ToolbarClickDetail,
@@ -76,7 +77,10 @@ type TreeIndex = {
 import { parseFormat, formatDate } from './modules/datepicker/index.js'
 
 // Logging
-import { initLogger, dataLogger, interactionLogger } from './logger.js'
+import { initLogger, dataLogger, interactionLogger, perfLogger } from './logger.js'
+
+// Perf instrumentation (temporary — investigating tree-toggle slowness)
+import { gridPerf } from './perf.js'
 
 // Default labels (English)
 const DEFAULT_LABELS: GridLabels = {
@@ -135,6 +139,7 @@ export class WebGrid<T = unknown> {
 	protected _isStriped: boolean = true
 	protected _isHoverable: boolean = true
 	protected _isEditable: boolean = false
+	protected _isRowEditable: boolean | ((row: T) => boolean) | undefined = undefined
 	protected _editTrigger: EditTrigger = "dblclick"
 	protected _editStartSelection: EditStartSelection = "mousePosition"
 	protected _mode: GridMode = "excel"
@@ -159,7 +164,7 @@ export class WebGrid<T = unknown> {
 	protected _cellToolbarOffset: number | string = 0.2
 	protected _toolbarBtnMinWidth: string | undefined = undefined
 	protected _inlineActionsTitle: string = ''
-	protected _contextMenu: ContextMenuItem<T>[] | undefined = undefined
+	protected _contextMenu: ContextMenuConfig<T>[] | undefined = undefined
 	protected _contextMenuXOffset: number = 8
 	protected _contextMenuYOffset: number = 0
 	protected _headerContextMenu: HeaderMenuConfig<T>[] | undefined = undefined
@@ -218,6 +223,8 @@ export class WebGrid<T = unknown> {
 
 	// Filtering
 	protected _filters: Record<string, string> = {}
+	protected _onfilterchange: ((filters: Record<string, string>) => void) | undefined = undefined
+	protected _columnMinWidth: string | undefined = undefined
 
 	// Pagination
 	protected _currentPage: number = 1
@@ -309,6 +316,8 @@ export class WebGrid<T = unknown> {
 	protected _treePathMember: string | null = null
 	protected _treeLevelMember: string | null = null
 	protected _treeParentMember: string | null = null
+	protected _idMember: string | null = null
+	protected _hasWarnedAboutMissingRowId: boolean = false
 	protected _treeSeparator: string | null = null  // null = auto-detect
 	protected _treeDataSorted: boolean = false
 	protected _expandedPaths: Set<string> = new Set()       // Active set used for visibility checks
@@ -318,11 +327,19 @@ export class WebGrid<T = unknown> {
 	protected _onexpandedpathschange: ((detail: TreeExpandedChangeDetail) => void) | undefined
 	protected _treeDoubleClickBehavior: TreeDoubleClickBehavior = 'none'
 	// Chevron customization
-	protected _treeExpandedGlyph: string = '▼'
+	protected _treeExpandedGlyph: string = '▶'
 	protected _treeCollapsedGlyph: string = '▶'
 	protected _treeChevronCallback: TreeChevronCallback<T> | undefined = undefined
 	// WeakMap<row, Map<state-key, html>>; cleared when callback or items change
 	protected _treeChevronCache: WeakMap<object, Map<string, string>> = new WeakMap()
+
+	// Memoized data-pipeline output. Invalidated by invalidateDisplayCache(),
+	// which is called from the requestUpdate() override on every state change.
+	// The pipeline (filter → sort → tree-visible → paginate) used to re-run on
+	// every getter access; tree-mode renders touch displayItems hundreds of
+	// times per pass, so the un-cached cost was ~600ms for a 678-row tree.
+	protected _paginatedItemsCache: T[] | null = null
+	protected _displayItemsCache: T[] | null = null
 
 	// ==========================================================================
 	// Public API - Getters/Setters
@@ -353,6 +370,17 @@ export class WebGrid<T = unknown> {
 	get isFilterable(): boolean { return this._isFilterable }
 	set isFilterable(value: boolean) {
 		this._isFilterable = value
+		this.requestUpdate()
+	}
+
+	get onfilterchange(): ((filters: Record<string, string>) => void) | undefined { return this._onfilterchange }
+	set onfilterchange(value: ((filters: Record<string, string>) => void) | undefined) {
+		this._onfilterchange = value
+	}
+
+	get columnMinWidth(): string | undefined { return this._columnMinWidth }
+	set columnMinWidth(value: string | undefined) {
+		this._columnMinWidth = value || undefined
 		this.requestUpdate()
 	}
 
@@ -396,6 +424,13 @@ export class WebGrid<T = unknown> {
 	set isEditable(value: boolean) {
 		this._isEditable = value
 		this.checkEditTriggerConflicts()
+		this.maybeWarnAboutRowIdentity()
+		this.requestUpdate()
+	}
+
+	get isRowEditable(): boolean | ((row: T) => boolean) | undefined { return this._isRowEditable }
+	set isRowEditable(value: boolean | ((row: T) => boolean) | undefined) {
+		this._isRowEditable = value
 		this.requestUpdate()
 	}
 
@@ -646,8 +681,8 @@ export class WebGrid<T = unknown> {
 		this.requestUpdate()
 	}
 
-	get contextMenu(): ContextMenuItem<T>[] | undefined { return this._contextMenu }
-	set contextMenu(value: ContextMenuItem<T>[] | undefined) {
+	get contextMenu(): ContextMenuConfig<T>[] | undefined { return this._contextMenu }
+	set contextMenu(value: ContextMenuConfig<T>[] | undefined) {
 		this._contextMenu = value
 		this.requestUpdate()
 	}
@@ -1232,6 +1267,49 @@ export class WebGrid<T = unknown> {
 	}
 
 	// ==========================================================================
+	// Stable row identity
+	// ==========================================================================
+
+	get idMember(): string | null { return this._idMember }
+	set idMember(value: string | null) {
+		this._idMember = value || null
+		// Editable grid without idMember/treePathMember produces drift on reorder; warn once.
+		this.maybeWarnAboutRowIdentity()
+	}
+
+	/**
+	 * Return a stable string key for a row. Coalesce order: idMember value → treePathMember
+	 * value → displayed-index string fallback. Used to key drafts and invalid-cell markers
+	 * so they don't drift when the displayed order changes (sort, filter, page, tree toggle).
+	 *
+	 * Distinct from `getRowId` which is the row-locking identifier (any type).
+	 */
+	getStableRowKey(item: T, displayedIndex: number): string {
+		if (this._idMember) {
+			const v = (item as Record<string, unknown>)[this._idMember]
+			if (v !== undefined && v !== null) return String(v)
+		}
+		if (this._treePathMember) {
+			const v = (item as Record<string, unknown>)[this._treePathMember]
+			if (v !== undefined && v !== null) return String(v)
+		}
+		return String(displayedIndex)
+	}
+
+	private maybeWarnAboutRowIdentity(): void {
+		if (this._hasWarnedAboutMissingRowId) return
+		if (!this._isEditable) return
+		if (this._idMember || this._treePathMember) return
+		this._hasWarnedAboutMissingRowId = true
+		console.warn(
+			'[WebGrid] editable grid has no `idMember` (and no `treePathMember`). ' +
+			'Internal state (drafts, invalid-cell markers) will be keyed by displayed index, ' +
+			'so re-ordering (sort, filter, pagination) can move state to the wrong row. ' +
+			'Set `idMember` to the field that uniquely identifies each row.'
+		)
+	}
+
+	// ==========================================================================
 	// Tree / Hierarchy
 	// ==========================================================================
 
@@ -1303,6 +1381,7 @@ export class WebGrid<T = unknown> {
 
 	toggleExpandedPath(path: string): void {
 		const wasExpanded = this._expandedPaths.has(path)
+		perfLogger.debug('toggleExpandedPath start:', path, '| willExpand:', !wasExpanded, '| _items.length:', this._items.length, '| treeNodes:', this._treeIndex?.nodes.size ?? 0)
 		if (wasExpanded) this._expandedPaths.delete(path)
 		else this._expandedPaths.add(path)
 		interactionLogger.debug('tree toggle:', path, wasExpanded ? 'expanded → collapsed' : 'collapsed → expanded', '| set size now:', this._expandedPaths.size)
@@ -1328,6 +1407,58 @@ export class WebGrid<T = unknown> {
 		this.requestUpdate()
 	}
 
+	/**
+	 * Expand a path's entire subtree (the path itself + all descendants).
+	 * Used by the per-row "expand all" context-menu action — file-explorer convention
+	 * is "expand everything *under here*", not the entire dataset.
+	 */
+	expandSubtree(path: string): void {
+		if (!this._treeIndex) return
+		const root = this._treeIndex.nodes.get(path)
+		if (!root) return
+		// BFS over descendants
+		const queue: string[] = [path]
+		while (queue.length) {
+			const p = queue.shift()!
+			this._expandedPaths.add(p)
+			const node = this._treeIndex.nodes.get(p)
+			if (node) queue.push(...node.childPaths)
+		}
+		this.requestUpdate()
+	}
+
+	/**
+	 * Collapse a path's entire subtree (the path itself + all descendants).
+	 */
+	collapseSubtree(path: string): void {
+		if (!this._treeIndex) return
+		const root = this._treeIndex.nodes.get(path)
+		if (!root) return
+		const queue: string[] = [path]
+		while (queue.length) {
+			const p = queue.shift()!
+			this._expandedPaths.delete(p)
+			const node = this._treeIndex.nodes.get(p)
+			if (node) queue.push(...node.childPaths)
+		}
+		this.requestUpdate()
+	}
+
+	/**
+	 * Walk up the path's ancestor chain looking for the nearest expanded ancestor.
+	 * Used by Ctrl+ArrowLeft: when the focused row has no expanded children to collapse,
+	 * step up to the closest ancestor that is expanded so the user gets meaningful action.
+	 */
+	findNearestExpandedAncestor(path: string): string | null {
+		if (!this._treeIndex) return null
+		let p: string | null = this._treeIndex.nodes.get(path)?.parent ?? null
+		while (p !== null) {
+			if (this._expandedPaths.has(p)) return p
+			p = this._treeIndex.nodes.get(p)?.parent ?? null
+		}
+		return null
+	}
+
 	/** Returns tree info for a row (used by rendering) */
 	getRowTreeInfo(item: T): { path: string; level: number; hasChildren: boolean } | null {
 		if (!this.isTreeMode) return null
@@ -1345,7 +1476,7 @@ export class WebGrid<T = unknown> {
 
 	get treeExpandedGlyph(): string { return this._treeExpandedGlyph }
 	set treeExpandedGlyph(value: string) {
-		this._treeExpandedGlyph = value ?? '▼'
+		this._treeExpandedGlyph = value ?? '▶'
 		this.requestUpdate()
 	}
 
@@ -1543,7 +1674,12 @@ export class WebGrid<T = unknown> {
 
 	/** Items in tree-aware sort order (depth-first, sibling-sorted), with filter applied */
 	protected getTreeSortedItems(): T[] {
-		if (!this._treeIndex) return this._items
+		const __t0 = performance.now()
+		gridPerf.counters.treeSorted++
+		if (!this._treeIndex) {
+			gridPerf.counters.treeSortedMs += performance.now() - __t0
+			return this._items
+		}
 		const allowed = this.getTreeFilterAllowedPaths()
 
 		// `treeDataSorted: true` means "trust me, don't re-sort". When the caller
@@ -1560,6 +1696,7 @@ export class WebGrid<T = unknown> {
 				if (allowed && !allowed.has(path)) continue
 				result.push(item)
 			}
+			gridPerf.counters.treeSortedMs += performance.now() - __t0
 			return result
 		}
 
@@ -1577,12 +1714,18 @@ export class WebGrid<T = unknown> {
 			}
 		}
 		walk(idx.rootPaths)
+		gridPerf.counters.treeSortedMs += performance.now() - __t0
 		return result
 	}
 
 	/** Items currently visible (post-collapse). When filter is active, ancestors of matches are auto-expanded. */
 	protected getTreeVisibleItems(): T[] {
-		if (!this._treeIndex) return this._items
+		const __t0 = performance.now()
+		gridPerf.counters.treeVisible++
+		if (!this._treeIndex) {
+			gridPerf.counters.treeVisibleMs += performance.now() - __t0
+			return this._items
+		}
 		const sorted = this.getTreeSortedItems()
 		const idx = this._treeIndex
 		// When filter is active, ancestors of matches are forced visible regardless of collapse
@@ -1603,6 +1746,7 @@ export class WebGrid<T = unknown> {
 			}
 			if (visible) result.push(item)
 		}
+		gridPerf.counters.treeVisibleMs += performance.now() - __t0
 		return result
 	}
 
@@ -1869,6 +2013,10 @@ export class WebGrid<T = unknown> {
 	}
 
 	get filteredItems(): T[] {
+		// When `onfilterchange` is set, filtering is delegated to the consumer (server-side).
+		// The grid still tracks `_filters` to drive the input UI, but doesn't apply them.
+		if (this._onfilterchange) return this._items
+
 		if (!this._isFilterable || Object.keys(this._filters).length === 0) {
 			return this._items
 		}
@@ -1876,10 +2024,55 @@ export class WebGrid<T = unknown> {
 		return this._items.filter((item) => {
 			return Object.entries(this._filters).every(([field, filterValue]) => {
 				if (!filterValue) return true
+				const column = this._columns.find(c => String(c.field) === field)
+				// Per-column custom filter callback overrides built-in substring match
+				if (column?.filter) {
+					const result = column.filter(filterValue, item)
+					// null = input incomplete → ignore this filter (all rows pass for it)
+					if (result === null) return true
+					return result
+				}
 				const cellValue = String((item as Record<string, unknown>)[field] ?? "").toLowerCase()
 				return cellValue.includes(filterValue.toLowerCase())
 			})
 		})
+	}
+
+	/**
+	 * Returns the set of fields whose current filter input is "incomplete" (column.filter
+	 * returned null when probed against the first row). Renderers can use this to mark the
+	 * input visually (red border) without excluding all rows.
+	 */
+	getInvalidFilterFields(): Set<string> {
+		const invalid = new Set<string>()
+		const probe = this._items[0]
+		if (!probe) return invalid
+		for (const [field, value] of Object.entries(this._filters)) {
+			if (!value) continue
+			const column = this._columns.find(c => String(c.field) === field)
+			if (column?.filter) {
+				if (column.filter(value, probe) === null) invalid.add(field)
+			}
+		}
+		return invalid
+	}
+
+	get filters(): Record<string, string> { return { ...this._filters } }
+	set filters(value: Record<string, string>) {
+		this._filters = { ...value }
+		this._onfilterchange?.({ ...this._filters })
+		this.requestUpdate()
+	}
+
+	setFilter(field: string, value: string): void {
+		if (value) this._filters = { ...this._filters, [field]: value }
+		else {
+			const next = { ...this._filters }
+			delete next[field]
+			this._filters = next
+		}
+		this._onfilterchange?.({ ...this._filters })
+		this.requestUpdate()
 	}
 
 	get sortedItems(): T[] {
@@ -1915,20 +2108,28 @@ export class WebGrid<T = unknown> {
 	}
 
 	get paginatedItems(): T[] {
+		if (this._paginatedItemsCache !== null) return this._paginatedItemsCache
+		const __t0 = performance.now()
+		gridPerf.counters.paginatedItems++
 		// In tree mode, slice over visible (post-collapse) items, not the full sorted list
 		const baseItems = this.isTreeMode ? this.getTreeVisibleItems() : this.sortedItems
 
-		if (!this._isPageable) return baseItems
-
-		// Server-side pagination: items are already the current page, don't slice
-		if (this._paginationMode === 'server') {
-			return baseItems
+		let result: T[]
+		if (!this._isPageable) {
+			result = baseItems
+		} else if (this._paginationMode === 'server') {
+			// Server-side pagination: items are already the current page, don't slice
+			result = baseItems
+		} else {
+			// Client-side pagination: slice the items array
+			const start = (this._currentPage - 1) * this._pageSize
+			const end = start + this._pageSize
+			result = baseItems.slice(start, end)
 		}
 
-		// Client-side pagination: slice the items array
-		const start = (this._currentPage - 1) * this._pageSize
-		const end = start + this._pageSize
-		return baseItems.slice(start, end)
+		this._paginatedItemsCache = result
+		gridPerf.counters.paginatedItemsMs += performance.now() - __t0
+		return result
 	}
 
 	get totalPages(): number {
@@ -1946,13 +2147,22 @@ export class WebGrid<T = unknown> {
 	}
 
 	get displayItems(): T[] {
+		if (this._displayItemsCache !== null) return this._displayItemsCache
+		const __t0 = performance.now()
+		gridPerf.counters.displayItems++
 		const items = this.paginatedItems
-		if (!this._isNewRowEnabled) return items
-
-		const emptyRow = this.getEmptyRow()
-		return this._newRowPosition === 'top'
-			? [emptyRow, ...items]
-			: [...items, emptyRow]
+		let result: T[]
+		if (!this._isNewRowEnabled) {
+			result = items
+		} else {
+			const emptyRow = this.getEmptyRow()
+			result = this._newRowPosition === 'top'
+				? [emptyRow, ...items]
+				: [...items, emptyRow]
+		}
+		this._displayItemsCache = result
+		gridPerf.counters.displayItemsMs += performance.now() - __t0
+		return result
 	}
 
 	// ==========================================================================
@@ -2212,6 +2422,16 @@ export class WebGrid<T = unknown> {
 		// Override in GridElement to trigger DOM re-render
 	}
 
+	/**
+	 * Drop memoized pipeline output. The web-component's requestUpdate override
+	 * calls this on every state mutation, so callers don't need to invoke it
+	 * directly — but it's safe to call any time the cache might be stale.
+	 */
+	invalidateDisplayCache(): void {
+		this._paginatedItemsCache = null
+		this._displayItemsCache = null
+	}
+
 	// ==========================================================================
 	// Draft Row Management
 	// ==========================================================================
@@ -2246,7 +2466,10 @@ export class WebGrid<T = unknown> {
 
 	discardRowDraft(rowIndex: number): void {
 		this._draftRows.delete(rowIndex)
-		this._invalidCells = this._invalidCells.filter(c => c.rowIndex !== rowIndex)
+		const rowKey = this.rowKeyForIndex(rowIndex)
+		if (rowKey !== null) {
+			this._invalidCells = this._invalidCells.filter(c => c.rowKey !== rowKey)
+		}
 		this.requestUpdate()
 	}
 
@@ -2282,9 +2505,12 @@ export class WebGrid<T = unknown> {
 		}
 
 		// Clear any invalid cell state for this field
-		this._invalidCells = this._invalidCells.filter(
-			c => !(c.rowIndex === rowIndex && c.field === field)
-		)
+		const rowKey = this.rowKeyForIndex(rowIndex)
+		if (rowKey !== null) {
+			this._invalidCells = this._invalidCells.filter(
+				c => !(c.rowKey === rowKey && c.field === field)
+			)
+		}
 	}
 
 	getDraftRowIndices(): number[] {
@@ -2344,26 +2570,41 @@ export class WebGrid<T = unknown> {
 	// Validation Helpers
 	// ==========================================================================
 
+	/** Compute the stable rowKey for a displayed-row index, or null if no row at that index. */
+	private rowKeyForIndex(rowIndex: number): string | null {
+		const item = this.displayItems[rowIndex]
+		if (item === undefined) return null
+		return this.getStableRowKey(item, rowIndex)
+	}
+
 	isCellInvalid(rowIndex: number, field: string): boolean {
-		return this._invalidCells.some(c => c.rowIndex === rowIndex && c.field === field)
+		const rowKey = this.rowKeyForIndex(rowIndex)
+		if (rowKey === null) return false
+		return this._invalidCells.some(c => c.rowKey === rowKey && c.field === field)
 	}
 
 	getCellValidationError(rowIndex: number, field: string): string | null {
-		const cell = this._invalidCells.find(c => c.rowIndex === rowIndex && c.field === field)
+		const rowKey = this.rowKeyForIndex(rowIndex)
+		if (rowKey === null) return null
+		const cell = this._invalidCells.find(c => c.rowKey === rowKey && c.field === field)
 		return cell?.error || null
 	}
 
 	addInvalidCell(rowIndex: number, field: string, error: string): void {
-		const existingIndex = this._invalidCells.findIndex(c => c.rowIndex === rowIndex && c.field === field)
+		const rowKey = this.rowKeyForIndex(rowIndex)
+		if (rowKey === null) return
+		const existingIndex = this._invalidCells.findIndex(c => c.rowKey === rowKey && c.field === field)
 		if (existingIndex >= 0) {
-			this._invalidCells[existingIndex] = { rowIndex, field, error }
+			this._invalidCells[existingIndex] = { rowKey, field, error }
 		} else {
-			this._invalidCells = [...this._invalidCells, { rowIndex, field, error }]
+			this._invalidCells = [...this._invalidCells, { rowKey, field, error }]
 		}
 	}
 
 	removeInvalidCell(rowIndex: number, field: string): void {
-		this._invalidCells = this._invalidCells.filter(c => !(c.rowIndex === rowIndex && c.field === field))
+		const rowKey = this.rowKeyForIndex(rowIndex)
+		if (rowKey === null) return
+		this._invalidCells = this._invalidCells.filter(c => !(c.rowKey === rowKey && c.field === field))
 	}
 
 	// ==========================================================================
@@ -2573,18 +2814,11 @@ export class WebGrid<T = unknown> {
 						? 0
 						: this._items.length
 
-					// Shift invalid cell indices: empty row becomes real row
-					this._invalidCells = this._invalidCells.map(c => {
-						if (c.rowIndex === rowIndex) {
-							// This was the empty row, now it's at newRowIndex
-							return { ...c, rowIndex: newRowIndex }
-						}
-						// Shift other indices if inserting at top
-						if (this._newRowPosition === 'top') {
-							return { ...c, rowIndex: c.rowIndex + 1 }
-						}
-						return c
-					})
+					// Capture the empty row's rowKey BEFORE inserting so we can rewrite its
+					// invalid-cell markers to the post-commit rowKey. Indexed-fallback keys
+					// (when neither idMember nor treePathMember is set) need shifting; stable
+					// id keys carry over unchanged.
+					const oldRowKey = this.getStableRowKey(this._emptyRowDraft as T, rowIndex)
 
 					if (this._newRowPosition === 'top') {
 						this._items = [newRow, ...this._items]
@@ -2592,8 +2826,24 @@ export class WebGrid<T = unknown> {
 						this._items = [...this._items, newRow]
 					}
 
+					const newRowKey = this.getStableRowKey(newRow, newRowIndex)
+					const usingIndexFallback = !this._idMember && !this._treePathMember
+					this._invalidCells = this._invalidCells.map(c => {
+						if (c.rowKey === oldRowKey) {
+							return { ...c, rowKey: newRowKey }
+						}
+						// With index-string fallback, inserting at top shifts every other rowKey
+						if (usingIndexFallback && this._newRowPosition === 'top') {
+							const n = Number(c.rowKey)
+							if (!Number.isNaN(n)) {
+								return { ...c, rowKey: String(n + 1) }
+							}
+						}
+						return c
+					})
+
 					// Check if the committed row has any invalid cells
-					const rowHasInvalidCells = this._invalidCells.some(c => c.rowIndex === newRowIndex)
+					const rowHasInvalidCells = this._invalidCells.some(c => c.rowKey === newRowKey)
 
 					// Fire onrowchange with validation state
 					this._onrowchange?.({
@@ -2728,23 +2978,105 @@ export class WebGrid<T = unknown> {
 	// ==========================================================================
 
 	/**
-	 * Check if a column's cells can be edited
+	 * Check if a column's cells can be edited.
+	 * `row` is required to evaluate function-form predicates; pass it for per-row checks,
+	 * omit it for static column-level checks (e.g. building toolbar UI). When omitted and a
+	 * predicate exists, conservatively returns true so the column isn't hidden.
+	 *
+	 * Resolution order:
+	 *   0. tree column in tree mode → not editable (the tree column displays hierarchy, not data)
+	 *   1. column.isEditable === false → not editable (hard veto)
+	 *   2. column.isEditable === function with row → must return true to continue
+	 *   3. grid.isRowEditable with row → must pass to continue
+	 *   4. column.isEditable === true → editable (overrides grid-level)
+	 *   5. else → defer to grid-level isEditable
 	 */
-	isCellEditable(column: Column<T>): boolean {
-		// Column-level explicit override takes priority
+	isCellEditable(column: Column<T>, row?: T): boolean {
+		// 0. Tree column is always read-only when tree mode is active. The column hosts
+		// indent + chevron and (typically) the row's display name; editing it inline
+		// conflicts with the toggle interaction and rarely matches user intent.
+		if (this.isTreeMode && column.isTree) return false
+
+		// 1. Hard veto from column
 		if (column.isEditable === false) return false
+
+		// 2. Column-level function predicate
+		if (typeof column.isEditable === 'function') {
+			if (row !== undefined && !column.isEditable(row)) return false
+			// Without a row we can't evaluate; let it through to subsequent gates
+		}
+
+		// 3. Grid-level row gate
+		if (this._isRowEditable !== undefined && row !== undefined) {
+			const rowGate = typeof this._isRowEditable === 'function'
+				? this._isRowEditable(row)
+				: this._isRowEditable
+			if (!rowGate) return false
+		}
+
+		// 4. Column explicit true overrides grid-level (preserves existing web-grid semantic)
 		if (column.isEditable === true) return true
-		// Otherwise defer to grid-level isEditable
+
+		// 5. Function-form column, having passed its predicate, also overrides grid-level
+		//    so a column can opt rows in even on a read-only grid via per-row callback.
+		if (typeof column.isEditable === 'function' && row !== undefined) return true
+
+		// 6. Defer to grid-level isEditable
 		return this._isEditable
 	}
 
 	/**
-	 * Get all editable columns with their indices
+	 * Get all editable columns with their indices.
+	 * Pass `row` to evaluate per-row predicates (function-form `isEditable`, `isRowEditable`).
+	 * Without `row`, returns columns that are *potentially* editable (any row could pass).
 	 */
-	getEditableColumns(): { index: number; column: Column<T> }[] {
+	getEditableColumns(row?: T): { index: number; column: Column<T> }[] {
 		return this._columns
 			.map((col, index) => ({ index, column: col }))
-			.filter(({ column }) => this.isCellEditable(column))
+			.filter(({ column }) => this.isCellEditable(column, row))
+	}
+
+	/**
+	 * Walk rows in `direction` looking for the next row that has at least one editable
+	 * column at or beyond `fromColEditableIndex` (or beyond the last when going forward
+	 * past the row's editable list). Used by Tab traversal in heterogeneous trees so the
+	 * cursor skips read-only rows (e.g. team rows) entirely instead of landing on a cell
+	 * with no tabindex and silently losing focus.
+	 *
+	 * Returns null if no editable cell exists in the requested direction.
+	 */
+	findNextEditableCell(
+		fromRowIndex: number,
+		fromColEditableIndex: number,
+		direction: 'forward' | 'backward'
+	): { rowIndex: number; colIndex: number } | null {
+		const items = this.displayItems
+		const step = direction === 'forward' ? 1 : -1
+
+		// First, try staying on the current row
+		const currentRow = items[fromRowIndex]
+		if (currentRow !== undefined) {
+			const cols = this.getEditableColumns(currentRow)
+			const nextIdx = fromColEditableIndex + step
+			if (nextIdx >= 0 && nextIdx < cols.length) {
+				return { rowIndex: fromRowIndex, colIndex: cols[nextIdx].index }
+			}
+		}
+
+		// Walk to subsequent rows, skipping any that have zero editable columns
+		let r = fromRowIndex + step
+		while (r >= 0 && r < items.length) {
+			const row = items[r]
+			const cols = this.getEditableColumns(row)
+			if (cols.length > 0) {
+				// forward → first editable column; backward → last editable column
+				const target = direction === 'forward' ? cols[0] : cols[cols.length - 1]
+				return { rowIndex: r, colIndex: target.index }
+			}
+			r += step
+		}
+
+		return null
 	}
 
 	// ==========================================================================
@@ -3084,10 +3416,12 @@ export class WebGrid<T = unknown> {
 	 */
 	canEditCell(rowIndex: number, field: string): boolean {
 		const column = this._columns.find(c => String(c.field) === field)
-		if (!column || !this.isCellEditable(column)) return false
+		if (!column) return false
 
 		const item = this.displayItems[rowIndex]
 		if (!item) return false
+
+		if (!this.isCellEditable(column, item)) return false
 
 		const lockInfo = this.getRowLockInfo(item)
 		if (!lockInfo?.isLocked) return true  // Not locked

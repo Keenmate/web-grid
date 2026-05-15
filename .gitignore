@@ -26,3 +26,10 @@ npm-debug.log*
 # Local env
 .env
 .env.local
+
+# Playwright run artifacts
+test-results/
+playwright-report/
+
+# Local agent state
+.claude/scheduled_tasks.lock

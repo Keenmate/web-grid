@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — resize / reorder fixture</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>resize / reorder fixture</h1>
+	<p>Targeted by <code>e2e/resize-reorder.spec.ts</code>. Reload resets all state (column-width / order persistence lives in localStorage).</p>
+
+	<div class="fixture">
+		<h2>#grid — basic resize</h2>
+		<web-grid id="grid" style="max-width: 100%; max-height: 240px;"></web-grid>
+	</div>
+
+	<div class="fixture">
+		<h2>#grid2 — resize + localStorage persistence</h2>
+		<web-grid id="grid2" style="max-width: 100%; max-height: 220px;"></web-grid>
+		<div class="state-panel">resize log: <b data-testid="resize-log">none</b></div>
+	</div>
+
+	<div class="fixture">
+		<h2>#grid3 — per-column isResizable opt-out</h2>
+		<web-grid id="grid3" style="max-width: 100%; max-height: 200px;"></web-grid>
+	</div>
+
+	<div class="fixture">
+		<h2>#gridMovable — per-column isMovable opt-out</h2>
+		<web-grid id="gridMovable" style="max-width: 100%; max-height: 200px;"></web-grid>
+	</div>
+
+	<div class="fixture">
+		<h2>#gridReorder — drag-to-reorder (id / name frozen)</h2>
+		<web-grid id="gridReorder" style="max-width: 100%; max-height: 240px;"></web-grid>
+		<div class="state-panel">reorder log: <b data-testid="reorder-log">none</b></div>
+	</div>
+
+	<div class="fixture">
+		<h2>#gridHeaderMenu — header context menu</h2>
+		<web-grid id="gridHeaderMenu" style="max-width: 100%; max-height: 240px;"></web-grid>
+		<div class="state-panel">header menu log: <b data-testid="header-menu-log">none</b></div>
+	</div>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+
+		/*
+		 * Shared 10-row seed. Every grid uses a subset of these fields:
+		 *   id, name, email, department, role, location, salary, status, phone
+		 *
+		 * Per-grid setup the spec relies on:
+		 *  #grid           — basic resize + multi-sort. `name` is 150px.
+		 *  #grid2          — resize + persistence: gridName='resize-test-grid2',
+		 *                    shouldPersistColumnWidths=true, oncolumnresize logs to
+		 *                    [data-testid="resize-log"]. `name` is 150px so the spec
+		 *                    can assert "from 150px".
+		 *  #grid3          — `status` has isResizable:false → its handle gets
+		 *                    wg__resize-handle--disabled and drags are no-ops.
+		 *  #gridMovable    — id / name / status have isMovable:false → Tab/drag
+		 *                    reorder of those columns is blocked.
+		 *  #gridReorder    — drag-to-reorder, freezeColumns=2 (id, name frozen so they
+		 *                    cannot be dragged), oncolumnreorder logs to
+		 *                    [data-testid="reorder-log"].
+		 *  #gridHeaderMenu — right-click header context menu with predefined items
+		 *                    (sortAsc/sortDesc/clearSort/freezeColumn/unfreezeColumn/
+		 *                    hideColumn) plus a custom "Show All Columns" item.
+		 *                    onheadercontextmenuopen logs to
+		 *                    [data-testid="header-menu-log"].
+		 */
+		const seed = () => Array.from({ length: 10 }, (_, i) => ({
+			id: 1000 + i,
+			name: ['Alice', 'Bob', 'Carol', 'David', 'Eve', 'Frank', 'Grace', 'Henry', 'Ivy', 'Jack'][i],
+			email: `user${i}@example.com`,
+			department: ['Engineering', 'Marketing', 'Sales', 'HR', 'Finance'][i % 5],
+			role: ['Manager', 'Senior', 'Junior', 'Lead', 'Director'][i % 5],
+			location: ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix'][i % 5],
+			salary: 50000 + i * 1000,
+			status: i % 7 === 0 ? 'On Leave' : 'Active',
+			phone: `555-${String(i).padStart(4, '0')}`
+		}))
+
+		// #grid — basic resize.
+		const grid = document.getElementById('grid')
+		grid.items = seed()
+		grid.columns = [
+			{ field: 'id', title: 'ID', width: '80px' },
+			{ field: 'name', title: 'Name', width: '150px' },
+			{ field: 'email', title: 'Email', width: '200px' },
+			{ field: 'department', title: 'Department', width: '120px', minWidth: '40px' },
+			{ field: 'salary', title: 'Salary', width: '100px' },
+			{ field: 'status', title: 'Status', width: '100px' },
+			{ field: 'phone', title: 'Phone', width: '120px' }
+		]
+		grid.isRowNumbersVisible = true
+		grid.sortMode = 'multi'
+
+		// #grid2 — resize + persistence.
+		const grid2 = document.getElementById('grid2')
+		grid2.items = seed()
+		grid2.columns = [
+			{ field: 'id', title: 'ID', width: '80px' },
+			{ field: 'name', title: 'Name', width: '150px' },
+			{ field: 'email', title: 'Email', width: '200px' },
+			{ field: 'department', title: 'Department', width: '120px' },
+			{ field: 'salary', title: 'Salary', width: '100px' },
+			{ field: 'status', title: 'Status', width: '100px' },
+			{ field: 'phone', title: 'Phone', width: '120px' }
+		]
+		grid2.isRowNumbersVisible = true
+		grid2.gridName = 'resize-test-grid2'
+		grid2.shouldPersistColumnWidths = true
+		grid2.oncolumnresize = (detail) => {
+			document.querySelector('[data-testid="resize-log"]').textContent =
+				`Last resize: ${detail.field} from ${detail.oldWidth} to ${detail.newWidth}`
+		}
+
+		// #grid3 — per-column isResizable opt-out.
+		const grid3 = document.getElementById('grid3')
+		grid3.items = seed()
+		grid3.columns = [
+			{ field: 'id', title: 'ID', width: '80px' },
+			{ field: 'name', title: 'Name', width: '150px' },
+			{ field: 'email', title: 'Email', width: '200px' },
+			{ field: 'status', title: 'Status', width: '80px', isResizable: false },
+			{ field: 'phone', title: 'Phone', width: '120px' }
+		]
+		grid3.isRowNumbersVisible = true
+
+		// #gridMovable — per-column isMovable opt-out.
+		const gridMovable = document.getElementById('gridMovable')
+		gridMovable.items = seed()
+		gridMovable.columns = [
+			{ field: 'id', title: 'ID', width: '80px', isMovable: false },
+			{ field: 'name', title: 'Name', width: '150px', isMovable: false },
+			{ field: 'email', title: 'Email', width: '200px' },
+			{ field: 'status', title: 'Status', width: '100px', isMovable: false },
+			{ field: 'phone', title: 'Phone', width: '120px' }
+		]
+		gridMovable.isRowNumbersVisible = true
+		gridMovable.isColumnReorderAllowed = true
+
+		// #gridReorder — drag-to-reorder, id / name frozen.
+		const gridReorder = document.getElementById('gridReorder')
+		gridReorder.items = seed()
+		gridReorder.columns = [
+			{ field: 'id', title: 'ID', width: '80px' },
+			{ field: 'name', title: 'Name', width: '150px' },
+			{ field: 'email', title: 'Email', width: '200px' },
+			{ field: 'department', title: 'Department', width: '120px' },
+			{ field: 'role', title: 'Role', width: '100px' },
+			{ field: 'location', title: 'Location', width: '120px' },
+			{ field: 'salary', title: 'Salary', width: '100px' },
+			{ field: 'status', title: 'Status', width: '100px' }
+		]
+		gridReorder.isRowNumbersVisible = true
+		gridReorder.isStickyRowNumbers = true
+		gridReorder.freezeColumns = 2
+		gridReorder.isColumnReorderAllowed = true
+		gridReorder.oncolumnreorder = (detail) => {
+			document.querySelector('[data-testid="reorder-log"]').textContent =
+				`Last reorder: "${detail.field}" from index ${detail.fromIndex} to ${detail.toIndex}`
+		}
+
+		// #gridHeaderMenu — header context menu.
+		const headerMenuColumnDefs = () => [
+			{ field: 'id', title: 'ID', width: '80px' },
+			{ field: 'name', title: 'Name', width: '150px' },
+			{ field: 'email', title: 'Email', width: '200px' },
+			{ field: 'department', title: 'Department', width: '120px' },
+			{ field: 'salary', title: 'Salary', width: '100px' },
+			{ field: 'status', title: 'Status', width: '100px' }
+		]
+		const gridHeaderMenu = document.getElementById('gridHeaderMenu')
+		gridHeaderMenu.items = seed()
+		gridHeaderMenu.columns = headerMenuColumnDefs()
+		gridHeaderMenu.isRowNumbersVisible = true
+		gridHeaderMenu.sortMode = 'multi'
+		gridHeaderMenu.headerContextMenu = [
+			'sortAsc',
+			'sortDesc',
+			'clearSort',
+			{ dividerBefore: true },
+			'freezeColumn',
+			'unfreezeColumn',
+			{ dividerBefore: true },
+			'hideColumn',
+			{
+				id: 'showAllColumns',
+				label: 'Show All Columns',
+				icon: '👁',
+				onclick: () => {
+					gridHeaderMenu.columns = headerMenuColumnDefs()
+					document.querySelector('[data-testid="header-menu-log"]').textContent = 'Restored all columns'
+				}
+			}
+		]
+		gridHeaderMenu.onheadercontextmenuopen = (ctx) => {
+			document.querySelector('[data-testid="header-menu-log"]').textContent =
+				`Menu opened: ${ctx.field} (index ${ctx.columnIndex}, frozen ${ctx.isFrozen}, sort ${ctx.sortDirection || 'none'})`
+		}
+	</script>
+</body>
+</html>

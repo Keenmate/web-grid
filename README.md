@@ -2,6 +2,14 @@
 
 A feature-rich, framework-agnostic data grid web component built with TypeScript. Sorting, filtering, pagination, inline editing (8 editor types), cell range selection, clipboard support, row toolbar, context menus, frozen columns, column reorder/resize, fill handle, virtual scroll, dark mode, and full CSS variable theming — all in a Shadow DOM encapsulated `<web-grid>` element.
 
+## What's New in v1.2.0
+
+- **Tree column is read-only by default**: The column marked `isTree: true` (the one with indent + chevron) is no longer editable. Editing it inline conflicts with the toggle interaction and rarely matches user intent. To allow editing of that data, omit `isTree` on it or move the tree marker to a different column.
+- **Tree-row expand performance**: Memoized the data pipeline (`displayItems` / `paginatedItems`) and added a surgical render path that replaces only `<tbody>` instead of rebuilding the table. Expanding a 700-row tree drops from ~700 ms to ~16 ms (~40× faster). Counters surface via the new `GRID:PERF` logger category.
+- **Predefined tree context-menu items**: `'expand-all'`, `'collapse-all'`, `'expand-tree'`, `'collapse-tree'` — usable as string shorthand or object form (`{ type: 'expand-all' }`) in `grid.contextMenu`. Per-row variants operate on the right-clicked subtree; `*-tree` variants operate on the entire tree. Caller can override label/icon/onclick while keeping the predefined behavior.
+- **Heterogeneous tree navigation**: Tab and Shift-Tab now skip rows where every cell is read-only (e.g., team / category rows above their editable employee rows). After committing with Tab in `dblclick`/`click`/`button` edit modes, the editor auto-opens on the next editable cell instead of leaving focus on an idle `<td>`.
+- **Polished tree chevron**: Single rotating glyph (120 ms transition) and inline-flex layout for cleaner alignment. Per-row `isEditable` predicates now apply consistently across all action paths (checkbox toggle, delete-cell, paste, fill-handle), not just direct cell click. CSS class `wg__tree-cell-content` renamed to `wg__tree-cell-body`.
+
 ## What's New in v1.1.0
 
 - **Tree / hierarchy mode**: Render tree-structured data using ltree-style path strings (`"1.2.3"`, `"/a/b/c"`, `"C:\\Win\\Sys"` — separator auto-detected). Mark one column with `isTree: true` to add depth-based indentation and an expand/collapse chevron. Sort is sibling-aware, filter auto-expands ancestors of matches, pagination operates on visible rows. New props: `treePathMember`, `treeLevelMember`, `treeParentMember`, `treeSeparator`, `treeDataSorted`, `expandedPaths`, `defaultExpandDepth`. Methods: `toggleExpandedPath`, `expandAll`, `collapseAll`, `getRowTreeInfo`. Event: `onexpandedpathschange`.
@@ -9,14 +17,6 @@ A feature-rich, framework-agnostic data grid web component built with TypeScript
 - **Double-click to expand/collapse**: New `treeDoubleClickBehavior: 'none' | 'toggle'`. When set to `'toggle'`, double-clicking anywhere in the tree column expands/collapses the node — works reliably even when the cell DOM is re-rendered between clicks (uses `MouseEvent.detail`, not the unreliable native `dblclick`).
 - **No more spurious `onrowchange` events**: Entering edit mode and exiting via arrow keys without typing no longer fires phantom "X → X" change events. `commitEdit` now only fires `onrowchange` when the value actually changed (or validation failed).
 - **Pathological filler-cell width fix**: Removed `min-width: max-content` from `.wg__table` — it was redundant with `table-layout: fixed` and triggered intrinsic-size computation that ballooned the filler to hundreds of thousands of pixels in some browsers (Firefox especially) when cells contained absolutely-positioned editors.
-
-## What's New in v1.0.5
-
-- **Context menus flip at screen edges**: Both cell and header context menus now correctly flip to the opposite side when opened near a viewport edge (they were clipping before). Switched the root menu to `strategy: 'fixed'` + `position: fixed` so Floating UI's `flip`/`shift` run in viewport coordinates.
-- **Header submenus are viewport-aware**: Header menu submenus (e.g. Column Visibility) now use Floating UI with `placement: 'right-start'` and `flip` fallbacks, replacing the old CSS-only `left: 100%` positioning. A short hide delay lets the cursor cross the gap between parent item and submenu.
-- **Context menu closes on grid-internal scroll**: The menu now subscribes to both the `'window'` and `'container'` scroll sources. Previously, scrolling within the grid didn't close the menu because scroll events aren't composed across shadow DOM.
-- **Context menu offset flips with placement**: `contextMenuXOffset`/`contextMenuYOffset` are now applied via Floating UI's `offset` middleware (`mainAxis` / `alignmentAxis`), so the gap between cursor and menu stays correct even when the menu flips to `*-end` or `top-*`.
-- **Dropdown selected option readable in dark mode**: The selected option in select/combobox/autocomplete dropdowns no longer renders as pale blue against the dark surface. `--wg-accent-color-light` now falls back to a transparent `color-mix` that blends with the underlying surface in either theme.
 
 ## Installation
 

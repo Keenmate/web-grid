@@ -5,7 +5,7 @@
 
 import type { GridContext } from '../types.js'
 import type { DateOutputFormat } from '../../types.js'
-import { moveFocus } from '../navigation/index.js'
+import { moveFocus, tryStartEdit } from '../navigation/index.js'
 import { renderCell } from '../rendering/index.js'
 
 /**
@@ -182,24 +182,20 @@ export function moveFocusAfterCommit<T>(
 		if (ctx.grid.tabTraversalStartColIndex === null) {
 			ctx.grid.tabTraversalStartColIndex = colIndex
 		}
-		// Use existing Tab navigation logic
-		const editableCols = ctx.grid.getEditableColumns()
+		// Use existing Tab navigation logic — recomputed per row so heterogeneous trees
+		// (some rows entirely read-only) skip those rows correctly.
+		const currentRowForLifecycle = displayItems[rowIndex]
+		const editableCols = ctx.grid.getEditableColumns(currentRowForLifecycle)
 		const currentEditableIndex = editableCols.findIndex(ec => ec.index === colIndex)
 
-		if (direction === 'next') {
-			if (currentEditableIndex >= 0 && currentEditableIndex < editableCols.length - 1) {
-				targetCol = editableCols[currentEditableIndex + 1].index
-			} else if (rowIndex < displayItems.length - 1) {
-				targetRow = rowIndex + 1
-				targetCol = editableCols[0].index
-			}
-		} else { // prev
-			if (currentEditableIndex > 0) {
-				targetCol = editableCols[currentEditableIndex - 1].index
-			} else if (rowIndex > 0) {
-				targetRow = rowIndex - 1
-				targetCol = editableCols[editableCols.length - 1].index
-			}
+		const walkDir: 'forward' | 'backward' = direction === 'next' ? 'forward' : 'backward'
+		const fromIdx = currentEditableIndex === -1
+			? (walkDir === 'forward' ? -1 : editableCols.length)
+			: currentEditableIndex
+		const next = ctx.grid.findNextEditableCell(rowIndex, fromIdx, walkDir)
+		if (next) {
+			targetRow = next.rowIndex
+			targetCol = next.colIndex
 		}
 	}
 
@@ -208,6 +204,27 @@ export function moveFocusAfterCommit<T>(
 
 	// Move focus to target cell
 	moveFocus(ctx, targetRow, targetCol)
+
+	// In non-navigate edit modes (dblclick/click/button), auto-open the editor on the
+	// next editable cell after Tab/Shift-Tab. Without this, focus lands on a <td> with
+	// no editor and the spreadsheet pattern breaks. Defer one frame so the previous
+	// editor unmounts before the next mounts (avoids autofocus race).
+	const isNextOrPrev = direction === 'next' || direction === 'prev'
+	const movedCells = targetRow !== rowIndex || targetCol !== colIndex
+	if (isNextOrPrev && movedCells) {
+		const targetColumn = ctx.grid.columns[targetCol]
+		const effectiveTrigger = targetColumn?.editTrigger ?? ctx.grid.editTrigger
+		if (effectiveTrigger === 'dblclick' || effectiveTrigger === 'click' || effectiveTrigger === 'button') {
+			requestAnimationFrame(() => {
+				if (ctx.grid.canEditCell(targetRow, String(targetColumn.field))) {
+					tryStartEdit(ctx, targetRow, targetCol)
+				}
+				ctx.isCommittingFromKeyboard = false
+			})
+			return
+		}
+	}
+
 	ctx.isCommittingFromKeyboard = false
 }
 

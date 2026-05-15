@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — row toolbar fixture</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+	<style>
+		/* Toast notifications — the spec asserts on .toast.success text + visibility. */
+		.toast {
+			position: fixed;
+			bottom: 20px;
+			right: 20px;
+			padding: 10px 20px;
+			background: #444;
+			color: #fff;
+			border-radius: 6px;
+			z-index: 1000;
+		}
+		.toast.success { background: #2f855a; }
+		.toast.error { background: #c53030; }
+	</style>
+</head>
+<body>
+	<h1>row toolbar fixture</h1>
+	<p>
+		Targeted by <code>e2e/toolbar.spec.ts</code>. Four grids, each a different
+		toolbar configuration. Toolbar actions raise <code>.toast</code> notifications.
+		Reload resets all state.
+	</p>
+
+	<div class="fixture">
+		<h2>#grid — floating toolbar (hover trigger, 5 items in 2 groups)</h2>
+		<web-grid id="grid" style="max-width: 100%; max-height: 280px;"></web-grid>
+	</div>
+
+	<div class="fixture">
+		<h2>#grid2 — multi-row toolbar (row 1 + row 2)</h2>
+		<web-grid id="grid2" style="max-width: 100%; max-height: 280px;"></web-grid>
+	</div>
+
+	<div class="fixture">
+		<h2>#grid3 — inline toolbar column (disabled / hidden callbacks)</h2>
+		<web-grid id="grid3" style="max-width: 100%; max-height: 280px;"></web-grid>
+	</div>
+
+	<div class="fixture">
+		<h2>#grid4 — cell-aware toolbar (toolbarFollowsCursor)</h2>
+		<web-grid id="grid4" style="max-width: 100%; max-height: 280px;"></web-grid>
+	</div>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+
+		/*
+		 * Shared 6-row seed. Columns: id, title, priority, status, assignee.
+		 *
+		 *  row | id | title              | priority | status      | assignee
+		 *  ----+----+--------------------+----------+-------------+---------
+		 *   0  |  1 | Design system      | High     | In Progress | Alice
+		 *   1  |  2 | User auth          | High     | Todo        | Bob
+		 *   2  |  3 | Database schema    | Medium   | Done        | Carol
+		 *   3  |  4 | API docs           | Low      | Todo        | David
+		 *   4  |  5 | CI/CD pipeline     | Medium   | In Progress | Eve
+		 *   5  |  6 | Perf optimization  | Low      | Todo        | Frank
+		 *
+		 * Notes the spec relies on:
+		 *  - #grid3 (inline toolbar): row 0 has priority 'High' so its `delete` button
+		 *    is hidden; row 2 has status 'Done' so its `edit` button is disabled.
+		 *  - all toolbars use the default 'hover' trigger.
+		 *  - toolbar handlers raise a .toast (.toast.success / .toast.error).
+		 */
+		const seed = () => [
+			{ id: 1, title: 'Design system', priority: 'High', status: 'In Progress', assignee: 'Alice' },
+			{ id: 2, title: 'User auth', priority: 'High', status: 'Todo', assignee: 'Bob' },
+			{ id: 3, title: 'Database schema', priority: 'Medium', status: 'Done', assignee: 'Carol' },
+			{ id: 4, title: 'API docs', priority: 'Low', status: 'Todo', assignee: 'David' },
+			{ id: 5, title: 'CI/CD pipeline', priority: 'Medium', status: 'In Progress', assignee: 'Eve' },
+			{ id: 6, title: 'Perf optimization', priority: 'Low', status: 'Todo', assignee: 'Frank' }
+		]
+
+		const columns = [
+			{ field: 'id', title: 'ID', width: '50px', horizontalAlign: 'center' },
+			{ field: 'title', title: 'Task' },
+			{ field: 'priority', title: 'Priority', width: '100px' },
+			{ field: 'status', title: 'Status', width: '120px' },
+			{ field: 'assignee', title: 'Assignee', width: '100px' }
+		]
+
+		function showToast(message, type = 'info') {
+			const toast = document.createElement('div')
+			toast.className = `toast ${type}`
+			toast.textContent = message
+			document.body.appendChild(toast)
+			setTimeout(() => toast.remove(), 3000)
+		}
+
+		const nextId = (rows) => Math.max(...rows.map(r => r.id)) + 1
+
+		// Standard add/delete/duplicate/move handler shared by the floating toolbars.
+		function handleStandardClick(rows, grid, detail) {
+			const { item, rowIndex, row } = detail
+			switch (item.id) {
+				case 'add':
+					rows.splice(rowIndex + 1, 0, { id: nextId(rows), title: 'New Task', priority: 'Medium', status: 'Todo', assignee: '' })
+					grid.items = [...rows]
+					showToast('Added new task', 'success')
+					break
+				case 'delete': {
+					const deleted = rows.splice(rowIndex, 1)[0]
+					grid.items = [...rows]
+					showToast(`Deleted: ${deleted.title}`, 'error')
+					break
+				}
+				case 'duplicate':
+					rows.splice(rowIndex + 1, 0, { ...row, id: nextId(rows), title: `${row.title} (copy)` })
+					grid.items = [...rows]
+					showToast(`Duplicated: ${row.title}`, 'success')
+					break
+				case 'moveUp':
+					if (rowIndex > 0) {
+						[rows[rowIndex], rows[rowIndex - 1]] = [rows[rowIndex - 1], rows[rowIndex]]
+						grid.items = [...rows]
+					}
+					break
+				case 'moveDown':
+					if (rowIndex < rows.length - 1) {
+						[rows[rowIndex], rows[rowIndex + 1]] = [rows[rowIndex + 1], rows[rowIndex]]
+						grid.items = [...rows]
+					}
+					break
+			}
+		}
+
+		// #grid — floating toolbar, 5 items in 2 groups (moveUp/moveDown | add/duplicate/delete).
+		const grid = document.getElementById('grid')
+		const rows1 = seed()
+		grid.items = rows1
+		grid.columns = columns
+		grid.isHoverable = true
+		grid.isRowToolbarVisible = true
+		grid.rowToolbar = [
+			{ id: 'moveUp', type: 'moveUp', icon: '↑', title: 'Move up', group: 1 },
+			{ id: 'moveDown', type: 'moveDown', icon: '↓', title: 'Move down', group: 1 },
+			{ id: 'add', type: 'add', icon: '+', title: 'Add', group: 2 },
+			{ id: 'duplicate', type: 'duplicate', icon: '⧉', title: 'Duplicate', group: 2 },
+			{ id: 'delete', type: 'delete', icon: '−', title: 'Delete', group: 2 }
+		]
+		grid.ontoolbarclick = (detail) => handleStandardClick(rows1, grid, detail)
+
+		// #grid2 — multi-row toolbar (row 1: move + CRUD, row 2: export/preview/archive).
+		const grid2 = document.getElementById('grid2')
+		const rows2 = seed()
+		grid2.items = rows2
+		grid2.columns = columns
+		grid2.isHoverable = true
+		grid2.isRowToolbarVisible = true
+		grid2.rowToolbar = [
+			{ id: 'moveUp', type: 'moveUp', icon: '↑', title: 'Move up', row: 1, group: 1 },
+			{ id: 'moveDown', type: 'moveDown', icon: '↓', title: 'Move down', row: 1, group: 1 },
+			{ id: 'add', type: 'add', icon: '+', title: 'Add', row: 1, group: 2 },
+			{ id: 'duplicate', type: 'duplicate', icon: '⧉', title: 'Duplicate', row: 1, group: 2 },
+			{ id: 'delete', type: 'delete', icon: '−', title: 'Delete', danger: true, row: 1, group: 2 },
+			{ id: 'export', icon: '📤', title: 'Export row', row: 2, group: 1 },
+			{ id: 'preview', icon: '👁', title: 'Preview', label: 'View', row: 2, group: 1 },
+			{ id: 'archive', icon: '📦', title: 'Archive', row: 2, group: 2 }
+		]
+		grid2.ontoolbarclick = (detail) => {
+			handleStandardClick(rows2, grid2, detail)
+			if (['export', 'preview', 'archive'].includes(detail.item.id)) {
+				showToast(`${detail.item.title}: ${detail.row.title}`)
+			}
+		}
+
+		// #grid3 — inline toolbar column with disabled / hidden callbacks.
+		const grid3 = document.getElementById('grid3')
+		const rows3 = seed()
+		grid3.items = rows3
+		grid3.columns = columns
+		grid3.isHoverable = true
+		grid3.isRowToolbarVisible = true
+		grid3.toolbarPosition = 'inline'
+		grid3.inlineActionsTitle = 'Actions'
+		grid3.rowToolbar = [
+			{ id: 'edit', icon: '✏️', title: 'Edit task', disabled: (row) => row.status === 'Done' },
+			{ id: 'delete', icon: '🗑️', title: 'Delete task', danger: true, hidden: (row) => row.priority === 'High' },
+			{ id: 'archive', icon: '📦', title: 'Archive task' }
+		]
+		grid3.ontoolbarclick = (detail) => {
+			const { item, rowIndex, row } = detail
+			if (item.id === 'edit') {
+				showToast(`Editing: ${row.title}`)
+			} else if (item.id === 'delete') {
+				const deleted = rows3.splice(rowIndex, 1)[0]
+				grid3.items = [...rows3]
+				showToast(`Deleted: ${deleted.title}`, 'error')
+			} else if (item.id === 'archive') {
+				showToast(`Archived: ${row.title}`, 'success')
+			}
+		}
+
+		// #grid4 — cell-aware toolbar; toolbarFollowsCursor refreshes items per cell.
+		const grid4 = document.getElementById('grid4')
+		const rows4 = seed()
+		grid4.items = rows4
+		grid4.columns = columns
+		grid4.isHoverable = true
+		grid4.isRowToolbarVisible = true
+		grid4.toolbarPosition = 'top'
+		grid4.toolbarFollowsCursor = true
+		grid4.rowToolbar = ['add', 'delete', 'duplicate']
+		grid4.cellToolbar = (row, rowIndex, field) => {
+			switch (field) {
+				case 'priority':
+					return [
+						{ id: 'setHigh', icon: '🔴', title: 'Set High Priority' },
+						{ id: 'setMedium', icon: '🟡', title: 'Set Medium Priority' },
+						{ id: 'setLow', icon: '🟢', title: 'Set Low Priority' }
+					]
+				case 'status':
+					return [
+						{ id: 'setTodo', icon: '📋', title: 'Set Todo' },
+						{ id: 'setProgress', icon: '🔄', title: 'Set In Progress' },
+						{ id: 'setDone', icon: '✅', title: 'Set Done' }
+					]
+				default:
+					return undefined
+			}
+		}
+		grid4.ontoolbarclick = (detail) => {
+			const { item, rowIndex, row } = detail
+			const priorityMap = { setHigh: 'High', setMedium: 'Medium', setLow: 'Low' }
+			const statusMap = { setTodo: 'Todo', setProgress: 'In Progress', setDone: 'Done' }
+			if (priorityMap[item.id]) {
+				rows4[rowIndex].priority = priorityMap[item.id]
+				grid4.items = [...rows4]
+				showToast(`Set "${row.title}" priority`, 'success')
+			} else if (statusMap[item.id]) {
+				rows4[rowIndex].status = statusMap[item.id]
+				grid4.items = [...rows4]
+				showToast(`Set "${row.title}" status`, 'success')
+			} else {
+				handleStandardClick(rows4, grid4, detail)
+			}
+		}
+	</script>
+</body>
+</html>

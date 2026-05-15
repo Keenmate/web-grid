@@ -300,8 +300,10 @@ function executeDeleteCell(ctx: ExecutorContext, action: DeleteCellAction): void
 	const column = ctx.grid.columns[colIndex]
 	if (!column) return
 
+	const row = ctx.grid.displayItems[rowIndex]
+
 	// Check if cell is editable
-	if (!ctx.grid.isCellEditable(column)) return
+	if (!ctx.grid.isCellEditable(column, row)) return
 
 	const field = String(column.field)
 

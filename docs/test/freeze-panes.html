@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — freeze-panes fixture</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>freeze-panes fixture</h1>
+	<p>Targeted by <code>e2e/freeze-panes.spec.ts</code>. Reload resets all state.</p>
+
+	<div class="fixture">
+		<h2>#grid — grid-level freezeColumns + sticky row numbers</h2>
+		<div class="controls">
+			<label><input type="checkbox" id="stickyRowNumbers" checked> isStickyRowNumbers</label>
+			<label>freezeColumns:
+				<select id="freezeColumns">
+					<option value="0">0</option>
+					<option value="1">1</option>
+					<option value="2" selected>2</option>
+					<option value="3">3</option>
+				</select>
+			</label>
+			<label><input type="checkbox" id="showRowNumbers" checked> isRowNumbersVisible</label>
+		</div>
+		<web-grid id="grid" style="max-width: 560px; max-height: 280px;"></web-grid>
+	</div>
+
+	<div class="fixture">
+		<h2>#grid2 — column-level isFrozen flag</h2>
+		<web-grid id="grid2" style="max-width: 560px; max-height: 240px;"></web-grid>
+	</div>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+
+		/*
+		 * Both grids share an 8-field, 10-row dataset. Columns carry explicit
+		 * widths totalling ~990px so the ~560px-wide host scrolls horizontally.
+		 *
+		 *  field:   id   name   email   department   role   location   salary   phone
+		 *  width:   80   150    200     120          100    120        100      120
+		 *
+		 * #grid — freezeColumns=2 (id, name frozen) + isRowNumbersVisible +
+		 *   isStickyRowNumbers. The freezeColumns <select> drives grid.freezeColumns
+		 *   live so the spec can re-check the frozen class wiring at 0 / 2 / 3.
+		 *
+		 * #grid2 — the `status` column is declared LAST but carries `isFrozen: true`.
+		 *   The grid reorders explicitly-frozen columns to the leftmost data slot
+		 *   (see grid.ts buildVisualColumnOrder), so `status` should render first and
+		 *   pick up wg__header--frozen + wg__header--frozen-last.
+		 *
+		 * Behaviour exercised:
+		 *  - frozen headers/body cells get wg__header--frozen / wg__cell--frozen
+		 *  - the last frozen column gets the --frozen-last modifier
+		 *  - changing freezeColumns adds/removes the classes on the right headers
+		 *  - an isFrozen column jumps to the leftmost data-column slot
+		 *  - scrolling horizontally toggles wg--scrolled-horizontal on the .wg container
+		 *
+		 * We assert on class wiring rather than visual sticky offsets — the actual
+		 * CSS `position: sticky` behaviour is browser-driven.
+		 */
+		const wideData = Array.from({ length: 10 }, (_, i) => ({
+			id: 1000 + i,
+			name: ['Alice', 'Bob', 'Carol', 'David', 'Eve', 'Frank', 'Grace', 'Henry', 'Ivy', 'Jack'][i],
+			email: `user${i}@example.com`,
+			department: ['Engineering', 'Marketing', 'Sales', 'HR', 'Finance'][i % 5],
+			role: ['Manager', 'Senior', 'Junior', 'Lead', 'Director'][i % 5],
+			location: ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix'][i % 5],
+			salary: 50000 + i * 1000,
+			phone: `555-${String(i).padStart(4, '0')}`
+		}))
+
+		const baseColumns = [
+			{ field: 'id', title: 'ID', width: '80px' },
+			{ field: 'name', title: 'Name', width: '150px' },
+			{ field: 'email', title: 'Email', width: '200px' },
+			{ field: 'department', title: 'Department', width: '120px' },
+			{ field: 'role', title: 'Role', width: '100px' },
+			{ field: 'location', title: 'Location', width: '120px' },
+			{ field: 'salary', title: 'Salary', width: '100px' },
+			{ field: 'phone', title: 'Phone', width: '120px' }
+		]
+
+		// #grid — grid-level freezeColumns.
+		const grid = document.getElementById('grid')
+		grid.items = wideData
+		grid.columns = baseColumns
+		grid.isRowNumbersVisible = true
+		grid.isStickyRowNumbers = true
+		grid.freezeColumns = 2
+
+		document.getElementById('stickyRowNumbers').addEventListener('change', (e) => {
+			grid.isStickyRowNumbers = e.target.checked
+		})
+		document.getElementById('freezeColumns').addEventListener('change', (e) => {
+			grid.freezeColumns = parseInt(e.target.value, 10)
+		})
+		document.getElementById('showRowNumbers').addEventListener('change', (e) => {
+			grid.isRowNumbersVisible = e.target.checked
+		})
+
+		// #grid2 — column-level isFrozen. `status` is declared last but isFrozen:true
+		// should reorder it to the leftmost data slot.
+		const grid2 = document.getElementById('grid2')
+		grid2.items = wideData
+		grid2.columns = [
+			{ field: 'id', title: 'ID', width: '80px' },
+			{ field: 'name', title: 'Name', width: '150px' },
+			{ field: 'email', title: 'Email', width: '200px' },
+			{ field: 'department', title: 'Department', width: '120px' },
+			{ field: 'role', title: 'Role', width: '100px' },
+			{ field: 'location', title: 'Location', width: '120px' },
+			{ field: 'phone', title: 'Phone', width: '120px' },
+			{ field: 'status', title: 'Status', width: '100px', isFrozen: true }
+		]
+		grid2.items = wideData.map((r, i) => ({ ...r, status: i % 3 === 0 ? 'On Leave' : 'Active' }))
+		grid2.isRowNumbersVisible = true
+		grid2.isStickyRowNumbers = true
+	</script>
+</body>
+</html>

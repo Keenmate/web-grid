@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — grid modes fixture</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>grid modes fixture</h1>
+	<p>Targeted by <code>e2e/grid-modes.spec.ts</code>. Reload resets all state.</p>
+
+	<div class="controls">
+		<button data-mode="excel">excel</button>
+		<button data-mode="read-only">read-only</button>
+		<button data-mode="input-matrix">input-matrix</button>
+	</div>
+
+	<web-grid id="grid" style="max-width: 480px; max-height: 260px;"></web-grid>
+
+	<div class="state-panel">
+		<div class="row">mode: <b data-testid="mode">excel</b></div>
+		<div class="row">resolved: <b data-testid="resolved"></b></div>
+	</div>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+
+		/*
+		 * One grid + three mode buttons. The `mode` preset is a convenience setter
+		 * that applies a bundle of property defaults (see grid.ts applyModeDefaults):
+		 *
+		 *   read-only    — isEditable=false, dropdownToggleVisibility='on-focus',
+		 *                  cellSelectionMode='click'
+		 *   excel        — isEditable=true, editTrigger='navigate',
+		 *                  dropdownToggleVisibility='always',
+		 *                  shouldShowDropdownOnFocus=false, cellSelectionMode='click'
+		 *   input-matrix — isEditable=true, editTrigger='always',
+		 *                  dropdownToggleVisibility='always',
+		 *                  shouldShowDropdownOnFocus=true, cellSelectionMode='shift'
+		 *
+		 * After each mode switch the fixture reads the resolved properties back off
+		 * the grid and writes them to [data-testid="resolved"] so the spec can verify
+		 * the preset applied the right bundle. Behavioural checks (F2 opens an editor
+		 * in excel, not in read-only; input-matrix cells are always editing) run
+		 * against the same grid.
+		 *
+		 *  row | id | name   | score
+		 *  ----+----+--------+------
+		 *   0  |  1 | Alice  |  10
+		 *   1  |  2 | Bob    |  20
+		 *   2  |  3 | Carol  |  30
+		 *   3  |  4 | David  |  40
+		 */
+		const seed = () => [
+			{ id: 1, name: 'Alice', score: 10 },
+			{ id: 2, name: 'Bob', score: 20 },
+			{ id: 3, name: 'Carol', score: 30 },
+			{ id: 4, name: 'David', score: 40 }
+		]
+
+		const grid = document.getElementById('grid')
+		grid.items = seed()
+		grid.columns = [
+			{ field: 'id', title: 'ID', width: '60px', isEditable: false },
+			{ field: 'name', title: 'Name', width: '160px', editor: 'text' },
+			{ field: 'score', title: 'Score', width: '90px', editor: 'number' }
+		]
+
+		const modeEl = document.querySelector('[data-testid="mode"]')
+		const resolvedEl = document.querySelector('[data-testid="resolved"]')
+
+		function renderResolved() {
+			modeEl.textContent = grid.mode
+			resolvedEl.textContent = [
+				`isEditable=${grid.isEditable}`,
+				`editTrigger=${grid.editTrigger}`,
+				`cellSelectionMode=${grid.cellSelectionMode}`,
+				`dropdownToggleVisibility=${grid.dropdownToggleVisibility}`,
+				`shouldShowDropdownOnFocus=${grid.shouldShowDropdownOnFocus}`
+			].join(' | ')
+		}
+
+		function applyMode(mode) {
+			grid.mode = mode
+			renderResolved()
+		}
+
+		document.querySelectorAll('button[data-mode]').forEach(btn => {
+			btn.addEventListener('click', () => applyMode(btn.dataset.mode))
+		})
+
+		// Start in excel mode (also the grid default) so the resolved panel is
+		// populated before any interaction.
+		applyMode('excel')
+	</script>
+</body>
+</html>

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — contextmenu fixture</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>contextmenu fixture</h1>
+	<p>Targeted by <code>e2e/contextmenu.spec.ts</code>. Exercises the cell context menu (dynamic labels, conditional visibility / disabled / danger, dividers, offsets) and the header context menu (predefined items + custom items + <code>onheadercontextmenuopen</code> callback).</p>
+
+	<div class="fixture">
+		<h2>#grid — cell context menu (dynamic + conditional)</h2>
+		<web-grid id="grid" style="max-width: 100%; max-height: 280px;"></web-grid>
+		<div class="state-panel">
+			<div class="row">cell menu log: <b data-testid="cell-menu-log">none</b></div>
+			<div class="row">menu open log: <b data-testid="cell-menu-open-log">none</b></div>
+			<div class="row">stock #1: <b data-testid="stock-1">15</b></div>
+		</div>
+	</div>
+
+	<div class="fixture">
+		<h2>#gridOffset — context menu position offsets</h2>
+		<web-grid id="gridOffset" style="max-width: 100%; max-height: 200px;"></web-grid>
+		<div class="state-panel">
+			<div class="row">offset: <b data-testid="offset-state">x=8 y=4</b></div>
+		</div>
+	</div>
+
+	<div class="fixture">
+		<h2>#gridHeader — header context menu (predefined + custom)</h2>
+		<web-grid id="gridHeader" style="max-width: 100%; max-height: 280px;"></web-grid>
+		<div class="state-panel">
+			<div class="row">header menu log: <b data-testid="header-menu-log">none</b></div>
+			<div class="row">custom export: <b data-testid="header-export-log">none</b></div>
+		</div>
+	</div>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+
+		/*
+		 * Shared seed — 6 rows × cols (id, name, category, price, stock, active).
+		 *  - Row 0 (Laptop):     stock=15,  active=true   — restock visible, delete disabled
+		 *  - Row 1 (Mouse):      stock=120, active=true   — restock hidden,  delete disabled
+		 *  - Row 2 (Chair):      stock=8,   active=true   — restock visible, delete disabled
+		 *  - Row 3 (Desk):       stock=3,   active=false  — restock visible, delete enabled
+		 *  - Row 4 (Monitor):    stock=22,  active=true   — restock hidden,  delete disabled
+		 *  - Row 5 (Lamp):       stock=0,   active=false  — restock visible, delete enabled
+		 *
+		 * The spec asserts on:
+		 *   - dynamic label ("Copy <Column Title>")
+		 *   - visible(): row 0's Price column shows "Convert to EUR", row 0's
+		 *     Name column does not.
+		 *   - disabled(): "Delete" is disabled for active rows.
+		 *   - danger: "Delete" has the --danger class.
+		 *   - dividerBefore: the Export item draws a divider above it.
+		 *   - visible() for "Restock": only when stock < 20.
+		 *   - shortcut: keyboard shortcut firing the action (Y key).
+		 *
+		 * Cell context menu uses gridId='grid'. Click events fired by menu items
+		 * write to the data-testid log nodes (no clipboard / no alert).
+		 */
+		const seed = () => [
+			{ id: 1, name: 'Laptop Pro',     category: 'Electronics', price: 1299, stock: 15,  active: true  },
+			{ id: 2, name: 'Wireless Mouse', category: 'Electronics', price: 49,   stock: 120, active: true  },
+			{ id: 3, name: 'Office Chair',   category: 'Furniture',   price: 299,  stock: 8,   active: true  },
+			{ id: 4, name: 'Standing Desk',  category: 'Furniture',   price: 599,  stock: 3,   active: false },
+			{ id: 5, name: 'Monitor 27"',    category: 'Electronics', price: 449,  stock: 22,  active: true  },
+			{ id: 6, name: 'Desk Lamp',      category: 'Furniture',   price: 45,   stock: 0,   active: false }
+		]
+
+		const baseColumns = () => [
+			{ field: 'id',       title: 'ID',       width: '60px' },
+			{ field: 'name',     title: 'Product Name', width: '160px' },
+			{ field: 'category', title: 'Category', width: '120px' },
+			{ field: 'price',    title: 'Price',    width: '90px', formatCallback: (v) => `$${v.toFixed(2)}` },
+			{ field: 'stock',    title: 'Stock',    width: '80px' },
+			{ field: 'active',   title: 'Active',   width: '80px', formatCallback: (v) => v ? '✓' : '✗' }
+		]
+
+		const cellLog = document.querySelector('[data-testid="cell-menu-log"]')
+		const cellOpenLog = document.querySelector('[data-testid="cell-menu-open-log"]')
+		const stock1El = document.querySelector('[data-testid="stock-1"]')
+
+		// =====================================================================
+		// #grid — cell context menu
+		// =====================================================================
+		const grid = document.getElementById('grid')
+		let rows = seed()
+		grid.items = rows
+		grid.columns = baseColumns()
+		grid.isRowNumbersVisible = true
+		grid.contextMenu = [
+			{
+				id: 'view',
+				label: 'View Details',
+				icon: '👁',
+				onclick: (ctx) => {
+					cellLog.textContent = `View: ${ctx.row.name}`
+				}
+			},
+			{
+				// Dynamic label — depends on column title at click time.
+				id: 'copy-cell',
+				label: (ctx) => `Copy "${ctx.column.title}"`,
+				icon: '📋',
+				shortcut: 'C',
+				onclick: (ctx) => {
+					cellLog.textContent = `Copied ${ctx.column.field}=${ctx.cellValue}`
+				}
+			},
+			{
+				// Conditional visibility — only on the Price column.
+				id: 'convert-eur',
+				label: 'Convert to EUR',
+				icon: '€',
+				shortcut: 'Y',
+				visible: (ctx) => ctx.column.field === 'price',
+				onclick: (ctx) => {
+					cellLog.textContent = `EUR(${ctx.row.name}): ${(ctx.cellValue * 0.92).toFixed(2)}`
+				}
+			},
+			{
+				// Conditional visibility — only for low-stock rows.
+				id: 'restock',
+				label: 'Restock (+10)',
+				icon: '📦',
+				visible: (ctx) => ctx.row.stock < 20,
+				onclick: (ctx) => {
+					rows[ctx.rowIndex].stock += 10
+					grid.items = [...rows]
+					cellLog.textContent = `Restocked ${ctx.row.name} → ${rows[ctx.rowIndex].stock}`
+					stock1El.textContent = String(rows[0].stock)
+				}
+			},
+			{
+				// Danger + conditional disabled + dividerBefore.
+				id: 'delete',
+				label: 'Delete',
+				icon: '🗑',
+				danger: true,
+				dividerBefore: true,
+				disabled: (ctx) => ctx.row.active === true,
+				onclick: (ctx) => {
+					cellLog.textContent = `Deleted ${ctx.row.name}`
+				}
+			}
+		]
+		grid.oncontextmenuopen = (ctx) => {
+			cellOpenLog.textContent = `open: ${ctx.column.field} row=${ctx.rowIndex} value=${ctx.cellValue}`
+		}
+
+		// =====================================================================
+		// #gridOffset — context menu position offsets
+		// =====================================================================
+		const gridOffset = document.getElementById('gridOffset')
+		gridOffset.items = seed().slice(0, 3)
+		gridOffset.columns = baseColumns().slice(0, 4)
+		gridOffset.contextMenuXOffset = 40
+		gridOffset.contextMenuYOffset = 24
+		gridOffset.contextMenu = [
+			{ id: 'a', label: 'Action A', icon: '①' },
+			{ id: 'b', label: 'Action B', icon: '②' }
+		]
+		document.querySelector('[data-testid="offset-state"]').textContent =
+			`x=${gridOffset.contextMenuXOffset} y=${gridOffset.contextMenuYOffset}`
+
+		// =====================================================================
+		// #gridHeader — header context menu
+		// =====================================================================
+		const headerLog = document.querySelector('[data-testid="header-menu-log"]')
+		const headerExportLog = document.querySelector('[data-testid="header-export-log"]')
+
+		const gridHeader = document.getElementById('gridHeader')
+		gridHeader.items = seed()
+		gridHeader.columns = baseColumns()
+		gridHeader.isRowNumbersVisible = true
+		gridHeader.sortMode = 'single'
+		gridHeader.headerContextMenu = [
+			'sortAsc',
+			'sortDesc',
+			'clearSort',
+			{ dividerBefore: true },
+			{
+				id: 'exportColumn',
+				label: (ctx) => `Export "${ctx.column.title}"`,
+				icon: '📊',
+				onclick: (ctx) => {
+					headerExportLog.textContent = `Exported ${ctx.field}`
+				}
+			}
+		]
+		gridHeader.onheadercontextmenuopen = (ctx) => {
+			headerLog.textContent =
+				`open: ${ctx.field} index=${ctx.columnIndex} sort=${ctx.sortDirection || 'none'}`
+		}
+	</script>
+</body>
+</html>

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — keyboard shortcuts fixture</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>keyboard shortcuts fixture</h1>
+	<p>Targeted by <code>e2e/shortcuts.spec.ts</code>. Reload resets all state.</p>
+
+	<web-grid id="grid" style="max-width: 560px; max-height: 320px;"></web-grid>
+
+	<div class="state-panel">
+		<div class="row">last shortcut: <b data-testid="shortcut-log">none</b></div>
+	</div>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+
+		/*
+		 * Deterministic seed — 6 rows, 3 columns.
+		 *
+		 *  row | id | name     | category
+		 *  ----+----+----------+------------
+		 *   0  |  1 | Laptop   | Electronics
+		 *   1  |  2 | Mouse    | Electronics
+		 *   2  |  3 | Chair    | Furniture
+		 *   3  |  4 | Desk     | Furniture
+		 *   4  |  5 | Monitor  | Electronics
+		 *   5  |  6 | Lamp     | Accessories
+		 *
+		 * The grid is in navigate mode. rowShortcuts fire against the currently
+		 * focused row:
+		 *  - Ctrl+K  — delete the focused row
+		 *  - Ctrl+D  — duplicate the focused row (copy inserted at index+1)
+		 *  - Ctrl+U  — move the focused row up; `disabled` when rowIndex === 0
+		 *  - Ctrl+E  — "export" the focused row (logs only)
+		 *
+		 * NOTE: the bindings deliberately avoid Delete / arrow keys. The action
+		 * pipeline (modules/actions/adapter.ts) consumes those by `e.key` alone —
+		 * ignoring modifiers — and returns before rowShortcuts are ever checked, so
+		 * a `Delete` or `Ctrl+ArrowUp` rowShortcut would silently never fire.
+		 *
+		 * Every shortcut writes "<id> row <rowIndex>" to [data-testid="shortcut-log"].
+		 * isShortcutsHelpVisible is on, so the .wg__shortcuts-help overlay renders.
+		 */
+		const seed = () => [
+			{ id: 1, name: 'Laptop', category: 'Electronics' },
+			{ id: 2, name: 'Mouse', category: 'Electronics' },
+			{ id: 3, name: 'Chair', category: 'Furniture' },
+			{ id: 4, name: 'Desk', category: 'Furniture' },
+			{ id: 5, name: 'Monitor', category: 'Electronics' },
+			{ id: 6, name: 'Lamp', category: 'Accessories' }
+		]
+
+		let items = seed()
+		let nextId = 7
+
+		const grid = document.getElementById('grid')
+		grid.items = items
+		grid.idMember = 'id'
+		grid.columns = [
+			{ field: 'id', title: 'ID', width: '60px', isEditable: false },
+			{ field: 'name', title: 'Name', width: '200px', editor: 'text' },
+			{ field: 'category', title: 'Category', width: '160px', editor: 'text' }
+		]
+		grid.isEditable = true
+		grid.editTrigger = 'navigate'
+
+		const logEl = document.querySelector('[data-testid="shortcut-log"]')
+		const log = (id, ctx) => { logEl.textContent = `${id} row ${ctx.rowIndex}` }
+
+		grid.rowShortcuts = [
+			{
+				key: 'Ctrl+K',
+				id: 'delete',
+				label: 'Delete row',
+				action: (ctx) => {
+					items = items.filter((_, i) => i !== ctx.rowIndex)
+					grid.items = items
+					log('delete', ctx)
+				}
+			},
+			{
+				key: 'Ctrl+D',
+				id: 'duplicate',
+				label: 'Duplicate row',
+				action: (ctx) => {
+					const copy = { ...ctx.row, id: nextId++ }
+					items = [...items.slice(0, ctx.rowIndex + 1), copy, ...items.slice(ctx.rowIndex + 1)]
+					grid.items = items
+					log('duplicate', ctx)
+				}
+			},
+			{
+				key: 'Ctrl+U',
+				id: 'moveUp',
+				label: 'Move row up',
+				disabled: (ctx) => ctx.rowIndex === 0,
+				action: (ctx) => {
+					if (ctx.rowIndex === 0) return
+					const tmp = items[ctx.rowIndex]
+					items[ctx.rowIndex] = items[ctx.rowIndex - 1]
+					items[ctx.rowIndex - 1] = tmp
+					grid.items = [...items]
+					grid.focusCell(ctx.rowIndex - 1, ctx.colIndex)
+					log('moveUp', ctx)
+				}
+			},
+			{
+				key: 'Ctrl+E',
+				id: 'export',
+				label: 'Export row',
+				action: (ctx) => log('export', ctx)
+			}
+		]
+
+		grid.isShortcutsHelpVisible = true
+		grid.shortcutsHelpPosition = 'top-right'
+	</script>
+</body>
+</html>

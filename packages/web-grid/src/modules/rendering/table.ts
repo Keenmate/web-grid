@@ -124,8 +124,9 @@ export function renderHeaderRow<T>(ctx: GridContext<T>): string {
 
 		// Build style with width, minWidth, maxWidth, and sticky positioning
 		// Only use explicit minWidth (allows resizing below original width)
+		// Fall back to grid-level columnMinWidth when column has no explicit minWidth
 		// Add max-width equal to width to enforce column width for text-overflow
-		const effectiveMinWidth = column.minWidth
+		const effectiveMinWidth = column.minWidth ?? ctx.grid.columnMinWidth
 		const hAlign = column.headerHorizontalAlign || column.horizontalAlign || 'left'
 		const vAlign = column.headerVerticalAlign || column.verticalAlign || 'middle'
 		const styleProps = [
@@ -135,6 +136,7 @@ export function renderHeaderRow<T>(ctx: GridContext<T>): string {
 			colWidth ? `width: ${colWidth}` : '',
 			colWidth ? `max-width: ${colWidth}` : '',
 			effectiveMinWidth ? `min-width: ${effectiveMinWidth}` : '',
+			column.nowrap ? `white-space: nowrap` : '',
 			`text-align: ${hAlign}`,
 			`vertical-align: ${vAlign}`
 		].filter(Boolean).join('; ')
@@ -316,7 +318,11 @@ export function renderDataRows<T>(ctx: GridContext<T>): string {
 			// Use runtime width override if set (from column resize), otherwise column definition
 			const runtimeWidth = ctx.grid.getColumnWidth(field)
 			const cellWidth = runtimeWidth || column.width
-			const effectiveMinWidth = column.minWidth  // Only use explicit minWidth
+			// Mirror the header's min-width logic so HTML auto table-layout can't drag a
+			// body-cell-wide column past the header's caps (rc16 fix). Without this,
+			// nowrap + maxWidth columns wouldn't actually clamp because body widths
+			// determined the column's natural width.
+			const effectiveMinWidth = column.minWidth ?? ctx.grid.columnMinWidth
 			const cellStyleProps = [
 				isFrozen ? `position: sticky` : '',
 				isFrozen ? `left: ${cumulativeOffset}px` : '',
@@ -324,8 +330,10 @@ export function renderDataRows<T>(ctx: GridContext<T>): string {
 				`text-align: ${align}`,
 				`vertical-align: ${vAlign}`,
 				cellWidth ? `width: ${cellWidth}` : '',
+				cellWidth ? `max-width: ${cellWidth}` : '',
 				effectiveMinWidth ? `min-width: ${effectiveMinWidth}` : '',
-				column.maxWidth ? `max-width: ${column.maxWidth}` : ''
+				column.maxWidth ? `max-width: ${column.maxWidth}` : '',
+				column.nowrap ? `white-space: nowrap` : ''
 			].filter(Boolean).join('; ')
 
 			// Increment offset for next frozen column
@@ -628,7 +636,11 @@ export function renderDataRowsVirtual<T>(ctx: GridContext<T>, params: VirtualScr
 			// Use runtime width override if set (from column resize), otherwise column definition
 			const runtimeWidth = ctx.grid.getColumnWidth(field)
 			const cellWidth = runtimeWidth || column.width
-			const effectiveMinWidth = column.minWidth  // Only use explicit minWidth
+			// Mirror the header's min-width logic so HTML auto table-layout can't drag a
+			// body-cell-wide column past the header's caps (rc16 fix). Without this,
+			// nowrap + maxWidth columns wouldn't actually clamp because body widths
+			// determined the column's natural width.
+			const effectiveMinWidth = column.minWidth ?? ctx.grid.columnMinWidth
 			const cellStyleProps = [
 				isFrozen ? `position: sticky` : '',
 				isFrozen ? `left: ${cumulativeOffset}px` : '',
@@ -636,8 +648,10 @@ export function renderDataRowsVirtual<T>(ctx: GridContext<T>, params: VirtualScr
 				`text-align: ${align}`,
 				`vertical-align: ${vAlign}`,
 				cellWidth ? `width: ${cellWidth}` : '',
+				cellWidth ? `max-width: ${cellWidth}` : '',
 				effectiveMinWidth ? `min-width: ${effectiveMinWidth}` : '',
-				column.maxWidth ? `max-width: ${column.maxWidth}` : ''
+				column.maxWidth ? `max-width: ${column.maxWidth}` : '',
+				column.nowrap ? `white-space: nowrap` : ''
 			].filter(Boolean).join('; ')
 
 			// Increment offset for next frozen column

@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2026-05-15
+
+### Fixed
+
+- **Pasting into an autocomplete cell did not trigger the search**: `handleAutocompleteInput` set `ctx.filterText = input.value`, then called `renderDropdown(...)` on the "show dropdown immediately" branch. `renderDropdown` calls `removeDropdown` on entry, which resets `ctx.filterText` to `''`. The handler then read the empty string back for the `minLength` check and bailed without scheduling the debounced search. Typing only "worked" because keystrokes 2+ skipped the `if (!ctx.dropdownOpen)` branch and avoided the wipe — a single bubbling `input` event (paste, programmatic value set, `fill()`) had no follow-up keystroke to recover. Fix: capture `const query = input.value` at the top of `handleAutocompleteInput`, use it for the `minLength` check and the debounced `performAutocompleteSearch` call, and restore `ctx.filterText = query` after the render. Regression test in `e2e/dropdowns.spec.ts`.
+- **Cell did not re-render after a custom editor's commit or cancel**: `cellEditCallback`-driven editors that called `ctx.commit(value)` or `ctx.cancel()` left the cell's DOM in its mid-edit state until the next render pass. Now the cell re-renders synchronously after either path.
+- **`oncontextmenuopen` callback was settable but not readable**: assigning the handler worked, but reading `grid.oncontextmenuopen` returned `undefined`. Added the missing getter so the property round-trips like other `on*` event hooks.
+- **Pagination event listeners detached after surgical renders**: the surgical-update path in `render()` (from 1.2.0) replaced inner contents of the top/bottom-area wrappers but didn't re-bind the pagination button listeners attached to those wrappers. Clicking pagination buttons after any state change that triggered a surgical render became a no-op. Listeners are now reattached as part of the surgical pass.
+
+### Tests
+
+- **E2E suite migrated to dedicated test-fixture pages**: Playwright specs now target purpose-built `docs/test/*.html` fixtures instead of the user-facing `docs/examples-*.html` demos. Each fixture exposes grid state through `[data-testid="…"]` nodes, so specs assert against deterministic seeds rather than the marketing chrome of the demos. Coverage added for selection, validation, keyboard shortcuts, edit-trigger modes, dropdowns (select / combobox / autocomplete), grid-mode preset, height-mode tableBorderOnly, custom-styling callbacks, column visibility (API + `hideColumn` / `columnVisibility` header context menu items), and the cell + header context menu module (dynamic labels, visible / disabled / danger / divider / shortcut, `oncontextmenuopen` / `onheadercontextmenuopen`). Fixture pages are dev-server-only (the docs `vite build` bundles `index.html` only). Total: 208 passing tests across 17 spec files.
+
+## [1.2.0] - 2026-05-09 [PUBLISHED]
+
+### Added
+
+- **Predefined tree context-menu items**: `expand-all`, `collapse-all`, `expand-tree`, `collapse-tree` are now usable as string shorthand or `{ type: ... }` object form in `grid.contextMenu`. Per-row `expand-all` / `collapse-all` operate on the right-clicked subtree (file-explorer convention); `expand-tree` / `collapse-tree` operate on the entire tree. Caller can override `label`, `icon`, `onclick`, or `visible` while keeping the predefined behavior. New types: `ContextMenuConfig`, `PredefinedContextMenuItemType`. New helper: `normalizeContextMenu(config, grid)`.
+- **`GRID:PERF` logger category**: Tree-toggle and render timings (data-pipeline cache, microtask delay, render body + summary, render total) route through `perfLogger.debug()`. Toggle on/off via `window.components['web-grid'].logging.setCategoryLevel('GRID:PERF', 'debug' | 'silent')`. Counters live in a small `gridPerf` object exposed for ad-hoc instrumentation.
+
+### Changed
+
+- **Tree column is now read-only when tree mode is active**: The column marked `isTree: true` hosts indent + chevron and (typically) the row's display name — editing it inline conflicts with the toggle interaction and rarely matches user intent. `column.isEditable: true` on the tree column is ignored. To make a column editable, omit `isTree: true` on it or move the tree marker to a different column.
+- **Tree chevron uses a single rotating glyph** with a 120ms CSS transition. Default `treeExpandedGlyph` and `treeCollapsedGlyph` are both `▶`; `.wg__tree-chevron--expanded` rotates 90° on expand. Users who set distinct glyphs continue to get the swap behavior (no rotation).
+- **Tree cell layout switched to inline-flex**: Replaced absolute-positioned chevron + computed `padding-left` with `display: inline-flex; gap` plus `padding-inline-start: level * --wg-tree-indent` on the wrapper. Leaf rows get a `wg__tree-leaf-spacer` for alignment with branches. Renamed CSS class `wg__tree-cell-content` → `wg__tree-cell-body`.
+- **Tab navigation in heterogeneous trees**: Tab and Shift-Tab now skip rows with zero editable columns (e.g., team / category rows whose every cell is read-only) and walk forward / backward to the next row that has at least one editable column. Previously focus would land on a `<td>` with no editor and the spreadsheet pattern broke.
+- **Auto-open editor after Tab/Shift-Tab in `dblclick`/`click`/`button` edit modes**: After committing a cell with Tab, the next editable cell now auto-opens its editor instead of leaving the user on an idle `<td>`. Deferred one frame so the previous editor unmounts before the next mounts.
+- **Focus outline now applies in read-only navigate mode**: `.wg__cell--focused` outline applies under `.wg--navigate-mode` as well as `.wg--editable`. Read-only trees were focus-invisible before.
+
+### Fixed
+
+- **Tree-row expand was 700 ms+ on ~700 rows**: the `displayItems` getter ran the full sort → filter → page → tree-flatten pipeline on every cell render — ~800 invocations per render, totaling ~615 ms of recomputation. Memoized `paginatedItems` and `displayItems`; cache invalidated in the `requestUpdate` override on every state change. Render body dropped from ~615 ms to ~16 ms (~40× speedup).
+- **Render now does a surgical DOM update** when the container, table, thead, tbody, and top/bottom-area wrappers already exist: replaces only the inner contents of those slots; preserves event listeners on `<table>`, scroll position, focus, and external references. Falls back to a full rebuild when the structure isn't in place.
+- **Per-row `isEditable` predicates now apply in all action paths**: checkbox toggle, delete-cell, paste, fill-handle drag, and Tab navigation now all pass the row to `isCellEditable`. Previously many call sites omitted the row, so per-row read-only conditions silently let edits through. Heterogeneous trees (only leaves editable) now work correctly across every interaction, not just direct cell click.
+- **Body-cell width could exceed header's `maxWidth`** with auto table-layout: body cells now mirror the header's `min-width: column.minWidth ?? grid.columnMinWidth`, get `max-width: cellWidth` when an explicit width is set, and apply `white-space: nowrap` directly when `column.nowrap` is true. Previously body cells could drag a column past the header's clamps because their intrinsic width determined the column's natural width.
+
 ## [1.1.0] - 2026-04-30 [PUBLISHED]
 
 ### Added

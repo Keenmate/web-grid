@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — custom styling fixture</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>custom styling fixture</h1>
+	<p>Targeted by <code>e2e/custom-styling.spec.ts</code>. Reload resets all state.</p>
+
+	<web-grid id="grid" style="max-width: 640px; max-height: 320px;"></web-grid>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+
+		/*
+		 * Deterministic seed — 6 rows, 5 columns.
+		 *
+		 *  row | id | name   | salary  | status   | flag
+		 *  ----+----+--------+---------+----------+------
+		 *   0  |  1 | Alice  |  95000  | Active   | star
+		 *   1  |  2 | Bob    |  62000  | Active   | none
+		 *   2  |  3 | Carol  |  78000  | Inactive | none
+		 *   3  |  4 | David  |  88000  | Active   | star
+		 *   4  |  5 | Eve    | 105000  | Active   | none
+		 *   5  |  6 | Frank  |  67000  | Inactive | none
+		 *
+		 * Styling wiring:
+		 *  - name   — static `cellClass: 'name-cell'` on every cell of the column.
+		 *  - salary — `cellClassCallback` buckets the value into salary-low (<70k),
+		 *    salary-mid (<90k) or salary-high. Low: Bob, Frank. Mid: Carol, David.
+		 *    High: Alice, Eve.
+		 *  - flag   — `templateCallback` renders a <span class="flag-star">★</span>
+		 *    for flag === 'star', empty otherwise.
+		 *  - `rowClassCallback` tags Inactive rows (Carol, Frank) with `row-inactive`.
+		 *  - `customStylesCallback` injects the CSS for all of the above into the
+		 *    shadow DOM (with explicit, unambiguous colours the spec asserts on).
+		 */
+		const seed = () => [
+			{ id: 1, name: 'Alice', salary: 95000, status: 'Active', flag: 'star' },
+			{ id: 2, name: 'Bob', salary: 62000, status: 'Active', flag: 'none' },
+			{ id: 3, name: 'Carol', salary: 78000, status: 'Inactive', flag: 'none' },
+			{ id: 4, name: 'David', salary: 88000, status: 'Active', flag: 'star' },
+			{ id: 5, name: 'Eve', salary: 105000, status: 'Active', flag: 'none' },
+			{ id: 6, name: 'Frank', salary: 67000, status: 'Inactive', flag: 'none' }
+		]
+
+		const salaryClass = (value) => {
+			if (value < 70000) return 'salary-low'
+			if (value < 90000) return 'salary-mid'
+			return 'salary-high'
+		}
+
+		const grid = document.getElementById('grid')
+		grid.items = seed()
+		grid.columns = [
+			{ field: 'id', title: 'ID', width: '60px', isEditable: false },
+			{ field: 'name', title: 'Name', width: '140px', cellClass: 'name-cell' },
+			{
+				field: 'salary',
+				title: 'Salary',
+				width: '110px',
+				horizontalAlign: 'right',
+				formatCallback: (v) => v != null ? `$${v.toLocaleString()}` : '',
+				cellClassCallback: (value) => salaryClass(value)
+			},
+			{ field: 'status', title: 'Status', width: '110px' },
+			{
+				field: 'flag',
+				title: 'Flag',
+				width: '70px',
+				horizontalAlign: 'center',
+				templateCallback: (row) => row.flag === 'star'
+					? '<span class="flag-star">★</span>'
+					: ''
+			}
+		]
+		grid.isStriped = false
+
+		grid.rowClassCallback = (row) => row.status === 'Inactive' ? 'row-inactive' : null
+
+		// Shadow DOM can't be reached by page CSS — inject the rules for every
+		// dynamically-applied class here. Colours are explicit so the spec can
+		// assert on computed styles.
+		grid.customStylesCallback = () => `
+			.name-cell { font-weight: 700; }
+			.salary-low { background-color: rgb(254, 226, 226) !important; }
+			.salary-mid { background-color: rgb(254, 249, 195) !important; }
+			.salary-high { background-color: rgb(209, 250, 229) !important; }
+			.row-inactive { opacity: 0.5; }
+			.flag-star { color: rgb(245, 158, 11); }
+		`
+	</script>
+</body>
+</html>

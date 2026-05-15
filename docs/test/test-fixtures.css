@@ -1,0 +1,95 @@
+/*
+ * Styling for the e2e test fixture pages in docs/test/.
+ *
+ * Deliberately minimal — no marketing chrome. Just enough to lay out the
+ * grid(s) and a state panel that the Playwright specs read via data-testid
+ * hooks. These pages are dev-server-only (vite build bundles index.html
+ * only) and are NOT part of the published docs site.
+ */
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	padding: 16px;
+	font: 14px/1.4 system-ui, -apple-system, sans-serif;
+	color: #1a1a1a;
+}
+
+h1 {
+	font-size: 18px;
+	margin: 0 0 4px;
+}
+
+h2 {
+	font-size: 14px;
+	margin: 20px 0 6px;
+	color: #444;
+}
+
+p {
+	margin: 4px 0 12px;
+	color: #555;
+}
+
+.fixture {
+	margin-bottom: 28px;
+}
+
+web-grid {
+	display: block;
+	border: 1px solid #d0d0d0;
+}
+
+.controls {
+	margin: 8px 0;
+	display: flex;
+	gap: 12px;
+	flex-wrap: wrap;
+	align-items: center;
+}
+
+.controls label {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+}
+
+/* State panel — specs assert against the data-testid nodes inside it. */
+.state-panel {
+	margin-top: 8px;
+	padding: 8px 10px;
+	background: #f5f5f5;
+	border: 1px solid #e0e0e0;
+	font-family: ui-monospace, "Cascadia Mono", Menlo, monospace;
+	font-size: 12px;
+	white-space: pre-wrap;
+}
+
+.state-panel .row {
+	margin: 2px 0;
+}
+
+.state-panel b {
+	color: #0050a0;
+	font-weight: 600;
+}
+
+button {
+	font: inherit;
+	padding: 2px 10px;
+	cursor: pointer;
+}
+
+a {
+	color: #0050a0;
+}
+
+code {
+	font-family: ui-monospace, "Cascadia Mono", Menlo, monospace;
+	background: #eee;
+	padding: 1px 4px;
+	border-radius: 3px;
+}

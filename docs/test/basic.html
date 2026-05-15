@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — basic grid fixture</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>basic grid fixture</h1>
+	<p>Targeted by <code>e2e/basic.spec.ts</code>. Reload resets all state.</p>
+
+	<div class="controls">
+		<label><input type="checkbox" id="striped" checked> Striped</label>
+		<label><input type="checkbox" id="sortable" checked> Sortable</label>
+		<label><input type="checkbox" id="editable" checked> Editable</label>
+		<label><input type="checkbox" id="pageable"> Pageable</label>
+	</div>
+
+	<web-grid id="grid" style="max-width: 700px; max-height: 320px;"></web-grid>
+
+	<div class="state-panel">
+		<div class="row">sort: <b data-testid="sort-state">none</b></div>
+		<div class="row">focused row: <b data-testid="focused-row">none</b></div>
+	</div>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+
+		/*
+		 * Deterministic seed — 8 rows, 5 columns.
+		 *
+		 *  col index:   0     1                2                    3        4
+		 *  field:       id    name             email                salary   status
+		 *  -------------------------------------------------------------------------
+		 *  row 0    | 1847 | Alice Johnson  | alice@example.com  |  85000 | Active
+		 *  row 1    | 2391 | Bob Smith      | bob@example.com    |  72000 | Active
+		 *  row 2    | 1052 | Carol Williams | carol@example.com  |  92000 | Active
+		 *  row 3    | 3764 | David Brown    | david@example.com  |  68000 | Active
+		 *  row 4    | 2908 | Eva Martinez   | eva@example.com    |  95000 | On Leave
+		 *  row 5    | 1523 | Frank Lee      | frank@example.com  |  88000 | Active
+		 *  row 6    | 4592 | Grace Kim      | grace@example.com  |  61000 | Active
+		 *  row 7    | 3156 | Henry Chen     | henry@example.com  |  79000 | Active
+		 *
+		 * Notes the spec relies on:
+		 *  - id is read-only; ascending id sort puts Carol (1052) first, descending
+		 *    puts Grace (4592) first.
+		 *  - salary >= 90000 (Carol, Eva) picks up the `salary-high` cell class.
+		 *  - Eva (row 4) is `On Leave` -> row is locked + gets the `row-inactive` class.
+		 *  - pageSize is 5: page 1 shows rows 0-4, page 2 shows rows 5-7 (Frank first).
+		 */
+		const seed = () => [
+			{ id: 1847, name: 'Alice Johnson', email: 'alice@example.com', salary: 85000, status: 'Active' },
+			{ id: 2391, name: 'Bob Smith', email: 'bob@example.com', salary: 72000, status: 'Active' },
+			{ id: 1052, name: 'Carol Williams', email: 'carol@example.com', salary: 92000, status: 'Active' },
+			{ id: 3764, name: 'David Brown', email: 'david@example.com', salary: 68000, status: 'Active' },
+			{ id: 2908, name: 'Eva Martinez', email: 'eva@example.com', salary: 95000, status: 'On Leave' },
+			{ id: 1523, name: 'Frank Lee', email: 'frank@example.com', salary: 88000, status: 'Active' },
+			{ id: 4592, name: 'Grace Kim', email: 'grace@example.com', salary: 61000, status: 'Active' },
+			{ id: 3156, name: 'Henry Chen', email: 'henry@example.com', salary: 79000, status: 'Active' }
+		]
+
+		const columns = [
+			{ field: 'id', title: 'ID', width: '70px', horizontalAlign: 'center', isEditable: false },
+			{ field: 'name', title: 'Name', width: '150px', editor: 'text' },
+			{ field: 'email', title: 'Email', width: '180px', editor: 'text' },
+			{
+				field: 'salary',
+				title: 'Salary',
+				width: '110px',
+				horizontalAlign: 'right',
+				editor: 'number',
+				cellClassCallback: (val) => val >= 90000 ? 'salary-high' : null,
+				formatCallback: (val) => val != null ? `$${val.toLocaleString('en-US')}` : ''
+			},
+			{ field: 'status', title: 'Status', width: '110px', editor: 'text' }
+		]
+
+		const grid = document.getElementById('grid')
+		grid.items = seed()
+		grid.columns = columns
+		grid.pageSize = 5
+		grid.isEditable = true
+		grid.editTrigger = 'navigate'
+		grid.isRowNumbersVisible = true
+		grid.isDirtyIndicatorVisible = true
+		grid.sortMode = 'multi'
+
+		// Lock rows that are On Leave.
+		grid.rowLocking = {
+			isLockedCallback: (row) => row.status === 'On Leave'
+		}
+
+		// Shadow DOM needs styles for dynamically-applied classes injected in.
+		grid.customStylesCallback = () => `
+			.salary-high { background-color: #d1fae5 !important; color: #065f46; }
+			.row-inactive { opacity: 0.6; background-color: #f3f4f6 !important; }
+		`
+
+		grid.rowClassCallback = (row) =>
+			row.status === 'On Leave' ? 'row-inactive' : null
+
+		// State hooks --------------------------------------------------------
+		const sortStateEl = document.querySelector('[data-testid="sort-state"]')
+		grid.ondatarequest = ({ sort }) => {
+			sortStateEl.textContent = (!sort || sort.length === 0)
+				? 'none'
+				: sort.map(s => `${s.column}:${s.direction}`).join(', ')
+		}
+
+		const focusedRowEl = document.querySelector('[data-testid="focused-row"]')
+		grid.onrowfocus = ({ rowIndex, row }) => {
+			focusedRowEl.textContent = `${rowIndex} — ${row.name}`
+		}
+
+		// Controls -----------------------------------------------------------
+		document.getElementById('striped').addEventListener('change', (e) => {
+			grid.isStriped = e.target.checked
+		})
+		document.getElementById('sortable').addEventListener('change', (e) => {
+			grid.sortMode = e.target.checked ? 'multi' : 'none'
+		})
+		document.getElementById('editable').addEventListener('change', (e) => {
+			grid.isEditable = e.target.checked
+		})
+		document.getElementById('pageable').addEventListener('change', (e) => {
+			grid.isPageable = e.target.checked
+		})
+	</script>
+</body>
+</html>

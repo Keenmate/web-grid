@@ -1,0 +1,355 @@
+================================================================================
+WEB-GRID FEATURES DOCUMENTATION
+Notes for reimplementation after reset
+================================================================================
+
+================================================================================
+1. ROW FOCUS (FOR MASTER/DETAIL)
+================================================================================
+
+PURPOSE:
+- When clicking anywhere on a row in read-only mode, the row becomes "focused"
+- Used for master/detail patterns where clicking a row shows details elsewhere
+- Different from cell focus (which is for editing/navigation)
+
+STATE:
+- _focusedRowIndex: number | null  (protected in grid.ts)
+- Getter/setter: focusedRowIndex
+
+API:
+- focusedRowIndex: number | null   - get/set the focused row
+- onrowfocus: (detail) => void     - callback when row focus changes
+- isRowFocused(rowIndex): boolean  - check if row is focused
+- clearRowFocus(): void            - clear focus
+
+RowFocusDetail type (types.ts:254):
+  {
+    rowIndex: number
+    row: T
+    previousRowIndex: number | null
+  }
+
+CSS CLASSES:
+- .wg__row--focused - applied to the <tr> element
+- Styles in _table.css (lines 81-116):
+  - Row number cell gets --wg-row-focus-row-number-bg background
+  - Data cells get --wg-row-focus-bg background + top/bottom borders
+  - First cell gets left border, last cell gets right border
+  - Uses box-shadow for borders (inset technique)
+- Frozen column override in _freeze.css (line 70)
+
+HOW IT'S TRIGGERED:
+- Click on row when grid is NOT editable (isEditable: false)
+- Or when cell is not editable
+- Sets focusedRowIndex and fires onrowfocus callback
+
+RENDERING:
+- table.ts lines 378 and 673: adds .wg__row--focused class based on isRowFocused()
+
+
+================================================================================
+2. COLUMN RESIZE (VERTICAL SPLITTERS)
+================================================================================
+
+PURPOSE:
+- Drag the edge of a column header to resize the column width
+- Visual feedback during resize
+- Persists to localStorage if gridName is set
+
+FILES:
+- modules/resize/index.ts - main logic
+- css/_resize.css - styling for resize handle
+
+KEY CONCEPTS:
+
+ResizeState interface:
+  {
+    isResizing: boolean
+    startX: number
+    startWidth: number
+    field: string
+    headerCell: HTMLElement | null
+    minWidth: number
+    maxWidth: number | null
+  }
+
+FLOW:
+1. handleResizeStart() - mousedown on resize handle
+   - Gets column min/max from column definition
+   - Stores startX, startWidth
+   - Adds .wg--resizing class to container
+   - Attaches document-level mousemove/mouseup listeners
+
+2. handleDocumentMouseMove() - during drag
+   - Calculates deltaX from startX
+   - Clamps to min/max width
+   - Updates header cell width inline (immediate feedback)
+   - Updates all body cells in column via updateAllColumnCells()
+   - If frozen columns: updates left offsets via updateFrozenColumnOffsets()
+
+3. handleDocumentMouseUp() - end drag
+   - Calculates final width
+   - Stores in grid state via setColumnWidth(field, width, skipRender=true)
+   - Updates <col> element in colgroup
+   - Fires oncolumnresize callback
+   - Persists to localStorage if enabled
+   - Cleans up listeners and state
+
+COLUMN DEFINITION OPTIONS:
+- isResizable: boolean (default true) - can disable per column
+- minWidth: string (e.g., "50px") - minimum width (default 30px)
+- maxWidth: string (e.g., "300px") - maximum width (optional)
+
+PERSISTENCE:
+- If shouldPersistColumnWidths=true and gridName is set
+- Saves to localStorage via savePersistedWidths()
+
+CSS:
+- .wg__resize-handle - the draggable element (positioned at right edge of header)
+- .wg__resize-handle--active - while dragging
+- .wg--resizing - on container during resize (cursor: col-resize)
+
+
+================================================================================
+3. NEW EMPTY ROW (INLINE DATA ENTRY)
+================================================================================
+
+PURPOSE:
+- An always-visible empty row for quick data entry
+- User types in the row, presses Enter to commit
+- After commit, a fresh empty row appears automatically
+
+REQUIREMENT: NAVIGATE MODE
+- The empty row feature REQUIRES editTrigger: "navigate" to work properly
+- Tab navigation between cells is a navigate mode behavior
+- Without navigate mode, Tab doesn't move focus between cells
+
+STATE:
+- _isNewRowEnabled: boolean (default false)
+- _newRowPosition: 'top' | 'bottom' (default 'bottom')
+- _createEmptyRowCallback: (() => T | Promise<T>) | undefined
+- _emptyRowDraft: T | null - tracks edits before commit
+- _isEmptyRowLoading: boolean - for async callback
+
+API:
+- isNewRowEnabled: boolean
+- newRowPosition: 'top' | 'bottom'
+- createEmptyRowCallback: () => T | Promise<T>  (can be async!)
+- newRowIndicator: string (default '+')
+
+HOW IT WORKS:
+
+1. Display:
+   - displayItems getter appends/prepends empty row based on newRowPosition
+   - getEmptyRow() returns cached _emptyRowDraft or creates new via createNewEmptyRow()
+   - Row number shows newRowIndicator ('+') instead of number
+
+2. Index handling:
+   - isEmptyRowIndex(displayIndex) - checks if index is the empty row
+   - getDataIndexFromDisplayIndex(displayIndex) - converts display index to data index
+   - Empty row at top: displayIndex 0 is empty, data starts at 1
+   - Empty row at bottom: last displayIndex is empty
+
+3. Editing (THE TRICKY PART):
+   - User clicks cell in empty row, starts editing
+   - User types value
+   - On Tab: save value to _emptyRowDraft, move to next cell, DON'T commit row
+   - On Enter: if row has data, commit to items[] and fire onrowchange
+
+4. Commit logic (commitEdit in grid.ts):
+   - Takes commitEmptyRow: boolean parameter
+   - If editing empty row and commitEmptyRow=true (Enter pressed):
+     - Check if row has any data via emptyRowHasData()
+     - If yes: add to _items[], fire onrowchange, reset _emptyRowDraft to null
+   - If commitEmptyRow=false (Tab pressed):
+     - Just update _emptyRowDraft, exit edit mode, keep draft
+
+5. Draft handling:
+   - _emptyRowDraft caches the current empty row state
+   - getCellRawValue() must skip _draftRows lookup for empty row index
+     (otherwise it returns stale data from regular draft system)
+   - getEmptyRow() caches result immediately to avoid multiple callback calls
+
+CSS:
+- .wg__row--empty-row - on the empty row <tr>
+- .wg__empty-row-indicator - the '+' indicator in row number cell
+
+PROBLEMS WE ENCOUNTERED:
+1. Tab was committing the row - fixed with commitEmptyRow parameter
+2. Value disappeared after Tab - _draftRows and _emptyRowDraft conflicted
+3. createEmptyRowCallback called multiple times - needed caching
+4. tabindex was null on empty row cells - focusCellElement needed to add it
+5. Keyboard navigation didn't work - grid wasn't in navigate mode!
+
+
+================================================================================
+4. NAVIGATE MODE vs CLICK-TO-EDIT
+================================================================================
+
+editTrigger options:
+- "dblclick" (default) - double-click to edit
+- "click" - single click to edit
+- "navigate" - cells are focusable, click to focus, Enter/F2 to edit
+- "always" - always in edit mode (for forms)
+
+isNavigateMode getter:
+- Returns true if editTrigger === "navigate" OR any column has editTrigger: "navigate"
+
+NAVIGATE MODE BEHAVIOR:
+- Cells have tabindex="0" (focusable)
+- Click focuses cell (doesn't start edit)
+- Arrow keys move focus between cells
+- Tab moves to next editable cell
+- Enter/F2 starts editing
+- Escape exits edit mode and focuses cell
+- Enter in edit mode commits and moves down
+
+CLICK-TO-EDIT BEHAVIOR:
+- Click starts editing immediately
+- No focused state between edits
+- Tab behavior is browser default (moves to next focusable element)
+- No arrow key navigation
+
+
+================================================================================
+5. TECHNICAL DETAILS FOR REIMPLEMENTATION
+================================================================================
+
+SURGICAL CELL UPDATES:
+- renderCell() in modules/rendering/cell.ts
+- Updates a single cell's DOM without full re-render
+- Handles classes, content, editor focus
+- Call this instead of requestUpdate() for single cell changes
+
+FOCUS MANAGEMENT:
+- focusCellElement() in modules/navigation/focus.ts
+- Must add tabindex="0" if missing (cells are <td>, not naturally focusable)
+- Uses cell.focus({ preventScroll: true }) then scrollIntoView
+
+DRAFT SYSTEM:
+- _draftRows: Map<rowIndex, draftRow> - for regular rows during edit
+- _emptyRowDraft: T | null - separate draft for empty row
+- getCellRawValue() checks _draftRows first, then falls back to item
+- For empty row: skip _draftRows check, use item directly (which is _emptyRowDraft)
+
+ASYNC CALLBACK:
+- createEmptyRowCallback can return Promise<T>
+- createNewEmptyRow() handles both sync and async
+- Sets _isEmptyRowLoading while waiting
+- Caches result in _emptyRowDraft when resolved
+
+COMMIT FLOW:
+1. User presses Enter/Tab in editor
+2. Keyboard handler calls commitCurrentEditor(ctx, editor, commitEmptyRow)
+3. commitCurrentEditor extracts value and calls ctx.grid.commitEdit(...)
+4. commitEdit validates, updates draft, optionally adds to items
+5. Keyboard handler calls moveFocusAfterCommit() for Tab, or handles focus for Enter
+
+
+================================================================================
+6. EXAMPLE CONFIGURATION FOR EMPTY ROW
+================================================================================
+
+// Grid must be in navigate mode for Tab to work
+grid.editTrigger = 'navigate'
+grid.isEditable = true
+grid.isNewRowEnabled = true
+grid.newRowPosition = 'bottom'  // or 'top'
+
+// Optional: custom factory for default values
+grid.createEmptyRowCallback = () => ({
+  id: generateId(),
+  name: '',
+  status: 'draft',
+  createdAt: new Date()
+})
+
+// Or async version:
+grid.createEmptyRowCallback = async () => {
+  const defaults = await fetchDefaults()
+  return { id: generateId(), ...defaults }
+}
+
+
+================================================================================
+7. DEBUG SESSION STATE - 2026-02-13 - Dropdown bugs in 'always' editTrigger mode
+================================================================================
+
+WHAT WE'RE DEBUGGING:
+After selecting a value from a Department dropdown (combobox), clicking on the
+Status cell (select) doesn't open its dropdown. Requires a second click.
+
+The pipeline IS dispatching correctly — openDropdownForCurrentEditor IS called
+(confirmed by logs at adapter.ts), but the dropdown doesn't visually appear.
+Something inside openDropdownForCurrentEditor silently fails/exits early.
+
+DIAGNOSTIC LOGGING ADDED (DO NOT REMOVE UNTIL USER SAYS SO):
+
+File: packages/web-grid/src/modules/dropdown/interaction.ts
+  openDropdownForCurrentEditor() now has detailed logging at every exit point:
+  - [openDropdown] START — shows justSelected, filterText, dropdownOpen
+  - [openDropdown] EXIT: justSelected=true — if justSelected guard fires
+  - [openDropdown] editingCell/focusedCell/cellInfo — which cell info is used
+  - [openDropdown] EXIT: no cellInfo — if no cell found
+  - [openDropdown] EXIT: no column — if column lookup fails
+  - [openDropdown] column/editor — which editor type
+  - [openDropdown] wrapper/dropdownOptions/filterText — DOM element + options count
+  - [openDropdown] EXIT: wrapper=.../options=... — if wrapper missing or 0 options
+
+File: packages/web-grid/src/modules/actions/adapter.ts
+  - [isAlwaysMode] — logs when returning false (isEditable or editTrigger mismatch)
+  - [mousedown] — full cell/state dump on every mousedown
+
+File: packages/web-grid/src/modules/actions/executors/selection-executor.ts
+  - [clearSelection] — logs selection clearing details
+
+SUSPECTS (NOT YET CONFIRMED — waiting for user to reproduce with new logs):
+
+1. ctx.justSelected still true — set when dropdown option is selected, reset in
+   requestAnimationFrame. Should be cleared long before next click (~3 seconds
+   gap) but maybe something prevents the rAF from running?
+
+2. ctx.filterText leak — we fixed this for the cell→cell direction by not
+   re-rendering 'always' mode cells in updateFocusVisual, but the selection
+   commit path (selectDropdownOption) calls renderCell() which could re-set it.
+
+3. Missing wrapper — after selecting from Department, the Status cell's editor
+   wrapper might not be in the DOM yet (focusCell/renderCell hasn't run for it).
+
+4. focusedCell not updated — the pipeline dispatches focusCell before openDropdown,
+   but maybe focusedCell still points to the old Department cell, so the wrapper
+   query finds nothing for Status.
+
+NEXT STEP:
+Run the repro: click Department → select option → click Status.
+Read the new [openDropdown] logs to see exactly which exit path is taken.
+That tells us the root cause.
+
+FIXES ALREADY APPLIED (uncommitted since last commit 34ae118):
+
+1. Legacy select click handler guard (web-component.ts ~line 1997)
+   Skip legacy .wg__select-trigger click handler when editTrigger='always'
+   (was toggle-closing the dropdown that pipeline just opened)
+
+2. outsideClick removes always-edit-focused (web-component.ts ~line 2402)
+   Added wg__cell--always-edit-focused to classList.remove in outsideClick
+
+3. updateFocusVisual skips renderCell for 'always' mode (focus.ts ~line 174)
+   Prevents ctx.filterText leak when moving between cells — just removes CSS
+   classes instead of re-rendering the old cell
+
+4. CHANGELOG.md updated with 3 additional fixes for rc15
+
+5. Diagnostic logging in openDropdownForCurrentEditor (interaction.ts)
+
+TEST PAGE:
+http://localhost:12400/examples-grid-modes.html
+Use the "GM05 - Playground" grid, set mode to "input-matrix" (which sets
+editTrigger='always'). Department = combobox, Status = select.
+
+REPRO STEPS:
+1. Set mode to input-matrix
+2. Click Department cell → dropdown opens
+3. Select a value from dropdown
+4. Click Status cell → dropdown SHOULD open but doesn't (bug)
+5. Click Status cell again → now it opens (workaround)

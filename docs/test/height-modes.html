@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — height modes fixture</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>height modes fixture</h1>
+	<p>Targeted by <code>e2e/height-modes.spec.ts</code>. Reload resets all state.</p>
+
+	<div class="fixture">
+		<h2>#containerGrid — capped with max-height, scrolls internally</h2>
+		<web-grid id="containerGrid" style="max-width: 520px; max-height: 200px;"></web-grid>
+	</div>
+
+	<div class="fixture">
+		<h2>#fullGrid — tableBorderOnly, sizes to its content</h2>
+		<web-grid id="fullGrid" style="max-width: 520px;"></web-grid>
+	</div>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+
+		/*
+		 * Two grids, two height strategies:
+		 *
+		 *  #containerGrid — host has `max-height: 200px`. The shadow-DOM scroll
+		 *    container `.wg` uses `max-height: inherit` + `overflow: auto`, so it
+		 *    picks up the cap and scrolls internally. Seeded with 30 rows (well
+		 *    past the cap) so scrollHeight > clientHeight. Sticky headers stay
+		 *    pinned because `.wg` is the single scroll container.
+		 *
+		 *  #fullGrid — host has NO max-height and `tableBorderOnly = true`. With no
+		 *    cap the grid sizes to its content; tableBorderOnly also moves the
+		 *    scroll container inward to `.wg__table-container` and tags `.wg` with
+		 *    the `wg--table-border-only` class. Seeded with just 6 rows so
+		 *    everything fits with no internal scroll.
+		 *
+		 * Both grids share these columns: id, name, email, department.
+		 */
+		const rowAt = (i) => ({
+			id: 1000 + i,
+			name: ['Alice', 'Bob', 'Carol', 'David', 'Eve', 'Frank', 'Grace', 'Henry'][i % 8] + ' ' + (i + 1),
+			email: `user${i}@example.com`,
+			department: ['Engineering', 'Marketing', 'Sales', 'HR'][i % 4]
+		})
+
+		const columns = [
+			{ field: 'id', title: 'ID', width: '80px' },
+			{ field: 'name', title: 'Name', width: '150px' },
+			{ field: 'email', title: 'Email', width: '180px' },
+			{ field: 'department', title: 'Department', width: '120px' }
+		]
+
+		// #containerGrid — 30 rows, capped at 200px.
+		const containerGrid = document.getElementById('containerGrid')
+		containerGrid.items = Array.from({ length: 30 }, (_, i) => rowAt(i))
+		containerGrid.columns = columns
+		containerGrid.isStriped = true
+		containerGrid.isRowNumbersVisible = true
+
+		// #fullGrid — 6 rows, no cap, tableBorderOnly.
+		const fullGrid = document.getElementById('fullGrid')
+		fullGrid.items = Array.from({ length: 6 }, (_, i) => rowAt(i))
+		fullGrid.columns = columns
+		fullGrid.isStriped = true
+		fullGrid.isRowNumbersVisible = true
+		fullGrid.tableBorderOnly = true
+	</script>
+</body>
+</html>

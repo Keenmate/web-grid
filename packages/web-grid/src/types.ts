@@ -125,9 +125,12 @@ export type CustomEditorContext<T> = {
 	cancel: () => void
 }
 
-// Validation state for a cell
+// Validation state for a cell.
+// `rowKey` is a stable id derived from `idMember` (preferred), `treePathMember` (tree mode),
+// or the displayed-index fallback as a string. Keying by stable id (not displayed index) means
+// invalid markers survive sort/filter/pagination/tree-toggle reorderings.
 export type CellValidationState = {
-	rowIndex: number
+	rowKey: string
 	field: string
 	error: string
 }
@@ -170,6 +173,15 @@ export type Column<T> = {
 	maxWidth?: string
 	textOverflow?: 'wrap' | 'ellipsis'
 	maxLines?: number  // Maximum visible lines when textOverflow is 'wrap' (uses CSS line-clamp)
+	// Body cells in this column never wrap (white-space: nowrap). Combine with `maxWidth` for
+	// single-line cells with ellipsis truncation. Header mirrors the body's nowrap so a
+	// body-nowrap column doesn't end up with a wrapping header above single-line cells.
+	nowrap?: boolean
+	// Custom filter predicate for this column. Replaces the built-in case-insensitive substring
+	// match. Return true → row passes filter; false → row excluded; null → input is incomplete
+	// (e.g. user typed `>` without a number) — grid ignores this filter (all rows pass) AND adds
+	// a visual `.invalid` class to the input so the user gets a red border instead of an empty grid.
+	filter?: (filterValue: string, row: T) => boolean | null
 	horizontalAlign?: "left" | "center" | "right" | "justify"  // Horizontal alignment for cells (default: "left", also used by dropdown options)
 	verticalAlign?: "top" | "middle" | "bottom"  // Vertical alignment for cells (default: "middle")
 	headerHorizontalAlign?: "left" | "center" | "right" | "justify"  // Header horizontal alignment (defaults to horizontalAlign)
@@ -181,7 +193,9 @@ export type Column<T> = {
 	// Render callback (replaces Svelte snippet)
 	renderCallback?: CellRenderCallback<T>
 	// Editing props
-	isEditable?: boolean
+	// boolean = static editability for the column; (row) => boolean = per-row editability
+	// (e.g. column is editable only on employee rows in a teams + employees tree)
+	isEditable?: boolean | ((row: T) => boolean)
 	editor?: EditorType
 	editTrigger?: EditTrigger  // Per-column override
 	dropdownToggleVisibility?: ToggleVisibility  // Per-column override for toggle visibility
@@ -343,18 +357,32 @@ export type ContextMenuContext<T> = {
 	cellValue: unknown
 }
 
-// Context menu item configuration
+// Predefined row/cell context-menu actions. Use these as plain strings in `contextMenu`
+// to wire common tree commands without hand-rolling onclick / visibility logic.
+//   - 'expand-all' / 'collapse-all': operate on the right-clicked row's branch
+//     (file-explorer convention: per-row "collapse all" means "collapse everything *under here*",
+//     not the entire dataset). Auto-hidden on leaf rows.
+//   - 'expand-tree' / 'collapse-tree': operate on the entire dataset (the rarer power-user
+//     "reset everything" action). Auto-hidden when there's nothing to do.
+export type PredefinedContextMenuItemType = 'expand-all' | 'collapse-all' | 'expand-tree' | 'collapse-tree'
+
+// Context menu item configuration. `label` becomes optional when `type` is supplied — the
+// predefined action provides a default label.
 export type ContextMenuItem<T> = {
 	id: string
-	label: string | ((context: ContextMenuContext<T>) => string)
+	label?: string | ((context: ContextMenuContext<T>) => string)
 	icon?: string | ((context: ContextMenuContext<T>) => string)
 	shortcut?: string  // Keyboard shortcut (e.g., "c", "Delete", "Ctrl+C")
 	disabled?: boolean | ((context: ContextMenuContext<T>) => boolean)
 	visible?: boolean | ((context: ContextMenuContext<T>) => boolean)
 	danger?: boolean
 	dividerBefore?: boolean
+	type?: PredefinedContextMenuItemType  // Use built-in handler/label/visibility
 	onclick?: (context: ContextMenuContext<T>) => void | Promise<void>
 }
+
+// Context menu configuration shorthand: predefined string OR full item object.
+export type ContextMenuConfig<T> = PredefinedContextMenuItemType | ContextMenuItem<T>
 
 // =============================================================================
 // Header Context Menu Types
@@ -367,6 +395,7 @@ export type HeaderMenuContext<T> = {
 	columnIndex: number
 	sortDirection: 'asc' | 'desc' | null
 	isFrozen: boolean
+	isTreeMode: boolean      // True when grid has treePathMember set (used to lock the tree column visible)
 	allColumns: Column<T>[]  // All columns (including hidden) for visibility submenu
 	labels: GridLabels       // Grid labels for translations
 }
@@ -469,6 +498,15 @@ export type QuickGridProps<T> = {
 	items: T[]
 	columns: Column<T>[]
 	isFilterable?: boolean
+	// Default `min-width` applied to every column header that doesn't specify its own `minWidth`.
+	// Useful with `fillerColumn` so content-sized columns don't collapse too far when the filler
+	// claims leftover space. Skipped on columns that opted into `autoWidth`.
+	columnMinWidth?: string
+	// Filter changed callback. When set, internal client-side filtering is bypassed entirely:
+	// the grid still renders the filter inputs, fires this callback on every keystroke with a
+	// `{field: value}` map of the current filters, and trusts the consumer to update `items`.
+	// Typical pattern: debounce, post the filter map to a backend, replace `items` with the result.
+	onfilterchange?: (filters: Record<string, string>) => void
 	isPageable?: boolean
 	pageSize?: number
 	isStriped?: boolean
@@ -481,6 +519,11 @@ export type QuickGridProps<T> = {
 	style?: string
 	customStylesCallback?: () => string  // Callback returning custom CSS to inject into shadow DOM
 	rowClassCallback?: (row: T, rowIndex: number) => string | null  // Dynamic CSS class for rows
+	// Field on each row uniquely identifying it. Internal state (drafts, invalid-cell markers)
+	// is keyed by this value, so pagination, filter, sort, and tree expand/collapse no longer
+	// cause an in-flight edit / invalid marker to land on the wrong row when the displayed
+	// order changes. Falls back to `treePathMember` (tree mode) → displayed-row index string.
+	idMember?: keyof T | string
 	// Sorting
 	sort?: SortState[]  // Current sort state (can be set for initial/server-side sort)
 	sortMode?: SortMode  // Sort mode: "none" (disabled), "single", or "multi" (default: "none")
@@ -499,6 +542,10 @@ export type QuickGridProps<T> = {
 	isSummaryInline?: boolean  // Share row with pagination when in same area (default: true)
 	// Editing props
 	isEditable?: boolean
+	// Row-level editability gate. Combined with grid-level `isEditable` and column-level `isEditable`:
+	// all three must pass for a cell to be editable. Use when every editable column shares the same
+	// row predicate — cheaper than repeating the predicate on every column.
+	isRowEditable?: boolean | ((row: T) => boolean)
 	editTrigger?: EditTrigger
 	editStartSelection?: EditStartSelection  // Default cursor position when entering edit via navigate mode (default: selectAll)
 	mode?: GridMode  // Grid mode - sets sensible defaults (read-only, excel, input-matrix)
@@ -521,8 +568,8 @@ export type QuickGridProps<T> = {
 	cellToolbarOffset?: number | string  // Horizontal offset: number 0-1 as fraction of cell width, or CSS length string (e.g. '2rem'). Default: 0.2
 	toolbarBtnMinWidth?: string  // Min-width for toolbar buttons (CSS value, e.g. '32px'). Overrides --wg-toolbar-btn-min-width
 	inlineActionsTitle?: string  // Header title for inline actions column (when toolbarPosition="inline")
-	// Context menu (row/cell)
-	contextMenu?: ContextMenuItem<T>[]
+	// Context menu (row/cell). Items can be plain strings (predefined types) or full objects.
+	contextMenu?: ContextMenuConfig<T>[]
 	contextMenuXOffset?: number           // Horizontal offset from click (default: 0)
 	contextMenuYOffset?: number           // Vertical offset from click (default: 4)
 	oncontextmenuopen?: (context: ContextMenuContext<T>) => void
@@ -587,8 +634,8 @@ export type QuickGridProps<T> = {
 	treeDoubleClickBehavior?: TreeDoubleClickBehavior  // What happens when user double-clicks a tree-column cell (default: 'none')
 	onexpandedpathschange?: (detail: TreeExpandedChangeDetail) => void
 	// Chevron customization (static glyphs are defaults; callback overrides per-row)
-	treeExpandedGlyph?: string                         // HTML/text shown when node is expanded (default: '▼')
-	treeCollapsedGlyph?: string                        // HTML/text shown when node is collapsed (default: '▶')
+	treeExpandedGlyph?: string                         // HTML/text shown when node is expanded (default: '▶' — same glyph as collapsed; CSS rotates 90° via .wg__tree-chevron--expanded)
+	treeCollapsedGlyph?: string                        // HTML/text shown when node is collapsed (default: '▶'). When expanded and collapsed glyphs are equal, CSS rotates the glyph; when they differ, the glyph is swapped (no rotation).
 	treeChevronCallback?: TreeChevronCallback<T>       // Per-row override; cached per (row, expanded)
 
 	// New empty row (inline data entry) — EXPERIMENTAL: API may change in future releases

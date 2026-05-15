@@ -1,7 +1,7 @@
 import { test, expect, Page, Locator } from '@playwright/test'
 
 /**
- * E2E coverage for the editors demo (examples-editors.html), which exercises:
+ * E2E coverage for the editors fixture (docs/test/editors.html), which exercises:
  *  - text editor       (Name, col 1)
  *  - select editor     (Department, col 2; Status, col 3)
  *  - custom editor     (Notes, col 4 — opens a native prompt via cellEditCallback)
@@ -9,12 +9,13 @@ import { test, expect, Page, Locator } from '@playwright/test'
  *  - contextMenu       (right-click → array-driven custom items with callbacks)
  *
  * The grid is in navigate mode + isEditable=true, so editing starts on F2/Space
- * (or dblclick for the custom one). The page also has an event log in
- * #eventLog that gets a new entry for every custom-editor open/commit/cancel
- * and every context-menu interaction — handy for asserting handlers fired.
+ * (or dblclick for the custom one). The page surfaces an event log through the
+ * [data-testid="event-log"] node — it gets a new line for every custom-editor
+ * open/commit/cancel and every context-menu interaction. See the comment block
+ * in editors.html for the full seed-data table.
  */
 
-const PAGE = '/examples-editors.html'
+const PAGE = '/test/editors.html'
 const GRID = 'web-grid#grid'
 
 function gridLocator(page: Page) {
@@ -23,6 +24,10 @@ function gridLocator(page: Page) {
 
 function cell(page: Page, rowIndex: number, colIndex: number) {
 	return gridLocator(page).locator(`.wg__cell[data-row="${rowIndex}"][data-col="${colIndex}"]`)
+}
+
+function eventLog(page: Page) {
+	return page.locator('[data-testid="event-log"]')
 }
 
 async function gotoDemo(page: Page) {
@@ -99,8 +104,8 @@ test.describe('select editor (Department / Status)', () => {
 		await deptCell.click()
 		await page.keyboard.press('F2')
 
-		// Dropdown lives in the shadow root (appended to ctx.shadow); use the grid
-		// host as scope so Playwright pierces correctly.
+		// Dropdown lives in the shadow root; use the grid host as scope so
+		// Playwright pierces correctly.
 		const dropdown = gridLocator(page).locator('.wg__dropdown')
 		await expect(dropdown).toBeVisible()
 
@@ -206,8 +211,8 @@ test.describe('custom editor (Notes)', () => {
 		await page.keyboard.press('F2')
 
 		await expect(notesCell).toContainText('NEW NOTES')
-		await expect(page.locator('#eventLog')).toContainText('Custom Editor')
-		await expect(page.locator('#eventLog')).toContainText('Commit')
+		await expect(eventLog(page)).toContainText('Custom Editor')
+		await expect(eventLog(page)).toContainText('Commit')
 	})
 
 	test('a null prompt result cancels and leaves the value unchanged', async ({ page }) => {
@@ -221,7 +226,7 @@ test.describe('custom editor (Notes)', () => {
 		await page.keyboard.press('F2')
 
 		await expect(notesCell).toContainText(original)
-		await expect(page.locator('#eventLog')).toContainText('Cancel')
+		await expect(eventLog(page)).toContainText('Cancel')
 	})
 
 	test('Space also opens the custom editor', async ({ page }) => {
@@ -257,7 +262,7 @@ test.describe('contextMenu — custom items', () => {
 		const menu = page.locator('.wg-context-menu')
 		await expect(menu).toBeVisible()
 
-		// All five items configured in the demo.
+		// All five items configured in the fixture.
 		await expect(menu.locator('.wg-context-menu__item', { hasText: 'Copy value' })).toBeVisible()
 		await expect(menu.locator('.wg-context-menu__item', { hasText: 'Edit name' })).toBeVisible()       // label callback uses ctx.column.field
 		await expect(menu.locator('.wg-context-menu__item', { hasText: 'View row details' })).toBeVisible()
@@ -276,7 +281,7 @@ test.describe('contextMenu — custom items', () => {
 	test('protected row: Protect/Unprotect label flips and Delete is disabled', async ({ page }) => {
 		await gotoDemo(page)
 
-		// Eva (row 4) is protected:true in the demo data.
+		// Eva (row 4) is protected:true in the seed.
 		await openContextMenuOn(cell(page, 4, 1), page)
 
 		const menu = page.locator('.wg-context-menu')
@@ -303,8 +308,8 @@ test.describe('contextMenu — custom items', () => {
 		await page.locator('.wg-context-menu__item', { hasText: 'Copy value' })
 			.evaluate((el) => (el as HTMLElement).click())
 
-		// The handler writes to clipboard AND logs to #eventLog.
-		await expect(page.locator('#eventLog')).toContainText('"Bob Smith" copied to clipboard')
+		// The handler writes to clipboard AND logs to the event log.
+		await expect(eventLog(page)).toContainText('"Bob Smith" copied to clipboard')
 	})
 
 	test('oncontextmenuopen event fires with the right field name', async ({ page }) => {
@@ -313,9 +318,9 @@ test.describe('contextMenu — custom items', () => {
 		await openContextMenuOn(cell(page, 0, 2), page)  // department cell
 		await expect(page.locator('.wg-context-menu')).toBeVisible()
 
-		// Demo wires oncontextmenuopen to log:
+		// Fixture wires oncontextmenuopen to log:
 		//   'opened at row N, column "<field>"'
-		await expect(page.locator('#eventLog')).toContainText('opened at row 1, column "department"')
+		await expect(eventLog(page)).toContainText('opened at row 1, column "department"')
 	})
 
 	test('danger item carries the danger modifier class', async ({ page }) => {
@@ -330,8 +335,8 @@ test.describe('contextMenu — custom items', () => {
 		await gotoDemo(page)
 		await openContextMenuOn(cell(page, 0, 1), page)
 
-		// Two items declare dividerBefore: 'view-row' and 'delete' → expect at least
-		// two .wg-context-menu__divider elements inside the open menu.
+		// Two items declare dividerBefore: 'view-row' and 'delete' → expect two
+		// .wg-context-menu__divider elements inside the open menu.
 		const dividers = page.locator('.wg-context-menu .wg-context-menu__divider')
 		await expect(dividers).toHaveCount(2)
 	})

@@ -149,7 +149,8 @@ export function updateFillHandle<T>(ctx: GridContext<T>): void {
 
 	// Don't show fill handle if the focused cell's column is not editable
 	const column = ctx.grid.visualColumns[colIndex]?.column
-	if (!column || !ctx.grid.isCellEditable(column)) {
+	const focusedRow = ctx.grid.displayItems[rowIndex]
+	if (!column || !ctx.grid.isCellEditable(column, focusedRow)) {
 		removeFillHandle(hostElement)
 		return
 	}

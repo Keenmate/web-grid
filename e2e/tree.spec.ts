@@ -1,16 +1,23 @@
 import { test, expect, Page, Locator } from '@playwright/test'
 
 /**
- * Smoke tests for tree mode against the Organizations grid in
- * examples-tree.html. The first card is in editTrigger: 'navigate' mode
- * with treeDoubleClickBehavior: 'toggle', so it exercises chevron toggle,
- * dblclick toggle, Ctrl+Arrow shortcuts, and focus state.
+ * Smoke tests for tree mode against the tree fixture (docs/test/tree.html).
+ * The page hosts four grids:
+ *   #grid        — editTrigger:'navigate', treeDoubleClickBehavior:'toggle',
+ *                  defaultExpandDepth:2. Exercises chevron toggle, dblclick
+ *                  toggle, Ctrl+Arrow shortcuts, and focus state.
+ *   #navGrid     — heterogeneous tree, fully expanded; only leaf rows editable.
+ *   #rowGateGrid — grid-level isRowEditable gate (status === 'Active').
+ *   #cvGrid      — column visibility in tree mode (tree column locked-visible).
+ *
+ * See the comment block in tree.html for the full 23-row path/index table the
+ * Tab-navigation tests depend on.
  *
  * Selectors all pierce the <web-grid> shadow DOM via Playwright's locator
  * engine — no manual shadow-root traversal needed.
  */
 
-const PAGE = '/examples-tree.html'
+const PAGE = '/test/tree.html'
 const GRID = 'web-grid#grid'
 
 // Helpers ---------------------------------------------------------------------
@@ -35,7 +42,7 @@ async function gotoTreeDemo(page: Page) {
 
 // Tests -----------------------------------------------------------------------
 
-test.describe('tree mode — Organizations grid', () => {
+test.describe('tree mode — #grid', () => {
 	test('renders rows and shows chevrons on parent rows', async ({ page }) => {
 		await gotoTreeDemo(page)
 
@@ -72,7 +79,7 @@ test.describe('tree mode — Organizations grid', () => {
 		const before = await visibleRowCount(page)
 
 		// Find Acme's name cell (row 0, col 0 in the visible order). Dblclick the
-		// cell body, not the chevron — the demo wires `treeDoubleClickBehavior: 'toggle'`.
+		// cell body, not the chevron — the fixture wires treeDoubleClickBehavior:'toggle'.
 		const acmeCell = cellAt(page, 0, 0)
 		await acmeCell.dblclick()
 
@@ -148,10 +155,7 @@ test.describe('cellContextMenu — predefined tree items', () => {
 
 	async function openCellContextMenuOn(locator: Locator, page: Page) {
 		// Scroll the cell to the top of the viewport so the menu (which opens BELOW
-		// the click point) has room to render fully inside the viewport. Without
-		// this, when the cell sits near the bottom, the menu's items end up at
-		// y-coords Playwright considers outside the viewport and `click()` retries
-		// forever even with `force: true`.
+		// the click point) has room to render fully inside the viewport.
 		await locator.evaluate((el: Element) => el.scrollIntoView({ block: 'start' }))
 		await page.waitForTimeout(50)  // tiny settle so post-scroll bounds are stable
 		const box = await locator.boundingBox()
@@ -193,15 +197,6 @@ test.describe('cellContextMenu — predefined tree items', () => {
 	test.skip('"Expand all" / "Collapse all" do NOT appear on leaf rows', async ({ page }) => {
 		await gotoTreeDemo(page)
 
-		// Find a leaf row (Infra at path '1.1.1.1') — visible because defaultExpandDepth=2
-		// makes paths up to level 2 expanded by default. With expandDepth=2, level-2 nodes
-		// are visible (1.1.1) but their children (1.1.1.1) are not. So expand once first.
-		await gridLocator(page).locator('.wg__tree-chevron[data-tree-toggle="1.1.1"]').first().click()
-
-		// Now Infra (row 4 in current ordering) is a leaf without children.
-		// Use locator targeting by path attribute would be more robust, but with
-		// default order Infra is at row 4. Check its tree-info on the cell.
-		// Easier: right-click the row with path '1.1.1.1' — we know it's a leaf.
 		const leafRow = gridLocator(page)
 			.locator('tbody tr')
 			.filter({ has: page.locator('.wg__tree-chevron--leaf') })
@@ -225,11 +220,8 @@ test.describe('cellContextMenu — predefined tree items', () => {
 		await openCellContextMenu(page, GRID, 0, 0)
 		const menu = page.locator('.wg-context-menu').first()
 		await expect(menu).toBeVisible()
-		// force: true — menu uses position:fixed, Playwright's in-viewport check
-		// triggers a retry loop on top of the already-positioned-correctly element.
 		await menu.locator('text=Expand entire tree').click({ force: true })
 
-		// Default depth was 2; expand-tree should reveal more rows.
 		await expect.poll(() => visibleRowCount(page)).toBeGreaterThan(before)
 	})
 
@@ -246,7 +238,7 @@ test.describe('cellContextMenu — predefined tree items', () => {
 	})
 })
 
-test.describe('Tab navigation — heterogeneous tree (navGrid)', () => {
+test.describe('Tab navigation — heterogeneous tree (#navGrid)', () => {
 	const NAV_GRID = 'web-grid#navGrid'
 
 	function navCell(page: Page, rowIndex: number, colIndex: number) {
@@ -259,9 +251,10 @@ test.describe('Tab navigation — heterogeneous tree (navGrid)', () => {
 	})
 
 	test('Tab from last leaf in a subtree skips the parent row of the next subtree', async ({ page }) => {
-		// In navGrid (defaultExpandDepth=99, all visible) only leaf rows are editable.
-		// Row 9 = Data Science (leaf, last leaf of Engineering subtree). Row 10 = Sales (parent, all read-only).
-		// Row 11 = Enterprise (first leaf of Sales subtree). Tab from row 9 col 4 should skip row 10 → row 11 col 1.
+		// navGrid (defaultExpandDepth=99) — only leaf rows are editable.
+		// Row 9 = Data Science (leaf, last leaf of Engineering subtree). Row 10 = Sales
+		// (parent, all read-only). Row 11 = Enterprise (first leaf of Sales subtree).
+		// Tab from row 9 col 4 should skip row 10 → row 11 col 1.
 		await navCell(page, 9, 4).click()
 		await expect(navCell(page, 9, 4)).toHaveClass(/wg__cell--focused/)
 
@@ -280,19 +273,18 @@ test.describe('Tab navigation — heterogeneous tree (navGrid)', () => {
 	})
 
 	test('tree column is never the Tab target (always read-only)', async ({ page }) => {
-		// Focus a non-tree col on a leaf, Tab back through the row's editable cols.
+		// Focus a non-tree col on a leaf, Shift-Tab back through the row's editable cols.
 		// At col 1 (first editable), Shift-Tab should NOT land on col 0 (tree column);
-		// it should jump to the previous row's last editable col.
+		// it should jump to the previous leaf row's last editable col.
 		await navCell(page, 11, 1).click()
 		await page.keyboard.press('Shift+Tab')
 
-		// Should be on row 9 col 4 (last editable col of previous leaf row), not row 11 col 0.
 		await expect(navCell(page, 11, 0)).not.toHaveClass(/wg__cell--focused/)
 		await expect(navCell(page, 9, 4)).toHaveClass(/wg__cell--focused/)
 	})
 })
 
-test.describe('isRowEditable — Tab skips read-only rows (rowGateGrid)', () => {
+test.describe('isRowEditable — Tab skips read-only rows (#rowGateGrid)', () => {
 	const ROW_GATE_GRID = 'web-grid#rowGateGrid'
 
 	function rgCell(page: Page, rowIndex: number, colIndex: number) {
@@ -324,7 +316,7 @@ test.describe('isRowEditable — Tab skips read-only rows (rowGateGrid)', () => 
 	})
 })
 
-test.describe('column visibility — tree column locked', () => {
+test.describe('column visibility — tree column locked (#cvGrid)', () => {
 	const CV_GRID = 'web-grid#cvGrid'
 
 	async function rightClickHeader(page: Page, gridSelector: string, headerIndex: number) {

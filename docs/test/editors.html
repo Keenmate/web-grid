@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — editors fixture</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>editors fixture</h1>
+	<p>Targeted by <code>e2e/editors.spec.ts</code>. One column per editor type plus a cell context menu. Reload resets all state.</p>
+
+	<web-grid id="grid" style="max-width: 760px; max-height: 320px;"></web-grid>
+
+	<div class="state-panel">
+		<div class="row">event log (newest first):</div>
+		<div data-testid="event-log"></div>
+	</div>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+
+		/*
+		 * Deterministic seed — 6 rows, 6 columns.
+		 *
+		 *  col index:  0    1                2             3          4              5
+		 *  field:      id   name             department    status     notes          protected
+		 *  editor:     -    text             select        select     custom         checkbox
+		 *  ---------------------------------------------------------------------------------------
+		 *  row 0   |  1 | Alice Johnson  | Engineering | Active   | Team lead     | false
+		 *  row 1   |  2 | Bob Smith      | Marketing   | Active   | Remote worker | false
+		 *  row 2   |  3 | Carol Williams | Engineering | Active   | (empty)       | false
+		 *  row 3   |  4 | David Brown    | Sales       | Active   | New hire      | false
+		 *  row 4   |  5 | Eva Martinez   | HR          | On Leave | Back in March | true
+		 *  row 5   |  6 | Frank Lee      | Engineering | Active   | (empty)       | false
+		 *
+		 * Notes the spec relies on:
+		 *  - id is read-only; editing starts on F2/Space (navigate mode).
+		 *  - status options are ordered Active, Inactive, On Leave — ArrowDown twice
+		 *    from Active lands on On Leave.
+		 *  - notes uses editor:'custom' + cellEditCallback that opens window.prompt.
+		 *  - protected renders ✅/❌ via formatCallback; Eva (row 4) is protected.
+		 *  - the context menu's "Delete row" is disabled when row.protected is true,
+		 *    and the protect/unprotect label flips on row.protected.
+		 */
+		const seed = () => [
+			{ id: 1, name: 'Alice Johnson', department: 'Engineering', status: 'Active', notes: 'Team lead', protected: false },
+			{ id: 2, name: 'Bob Smith', department: 'Marketing', status: 'Active', notes: 'Remote worker', protected: false },
+			{ id: 3, name: 'Carol Williams', department: 'Engineering', status: 'Active', notes: '', protected: false },
+			{ id: 4, name: 'David Brown', department: 'Sales', status: 'Active', notes: 'New hire', protected: false },
+			{ id: 5, name: 'Eva Martinez', department: 'HR', status: 'On Leave', notes: 'Back in March', protected: true },
+			{ id: 6, name: 'Frank Lee', department: 'Engineering', status: 'Active', notes: '', protected: false }
+		]
+
+		const departmentOptions = [
+			{ value: 'Engineering', label: 'Engineering' },
+			{ value: 'Marketing', label: 'Marketing' },
+			{ value: 'Sales', label: 'Sales' },
+			{ value: 'HR', label: 'HR' }
+		]
+
+		const statusOptions = [
+			{ value: 'Active', label: 'Active' },
+			{ value: 'Inactive', label: 'Inactive' },
+			{ value: 'On Leave', label: 'On Leave' }
+		]
+
+		// Event log — specs read this via [data-testid="event-log"]. Newest first.
+		const logEl = document.querySelector('[data-testid="event-log"]')
+		function logEvent(action, details) {
+			const line = document.createElement('div')
+			line.className = 'row'
+			line.textContent = `${action} ${details}`
+			logEl.insertBefore(line, logEl.firstChild)
+		}
+
+		const columns = [
+			{ field: 'id', title: 'ID', width: '50px', isEditable: false },
+			{ field: 'name', title: 'Name', width: '150px', editor: 'text' },
+			{
+				field: 'department',
+				title: 'Department',
+				width: '130px',
+				editor: 'select',
+				editorOptions: { options: departmentOptions }
+			},
+			{
+				field: 'status',
+				title: 'Status',
+				width: '110px',
+				editor: 'select',
+				editorOptions: { options: statusOptions }
+			},
+			{
+				field: 'notes',
+				title: 'Notes (custom)',
+				width: '150px',
+				editor: 'custom',
+				cellEditCallback: (context) => {
+					logEvent('Custom Editor', `opened for ${context.field} (row ${context.rowIndex + 1})`)
+					const newValue = prompt('Edit notes:', context.value || '')
+					if (newValue !== null) {
+						logEvent('Commit', `"${newValue}" saved to ${context.field}`)
+						context.commit(newValue)
+					} else {
+						logEvent('Cancel', `edit cancelled for ${context.field}`)
+						context.cancel()
+					}
+				}
+			},
+			{
+				field: 'protected',
+				title: 'Protected',
+				width: '80px',
+				horizontalAlign: 'center',
+				editor: 'checkbox',
+				formatCallback: (val) => val ? '✅' : '❌'
+			}
+		]
+
+		const grid = document.getElementById('grid')
+		grid.items = seed()
+		grid.columns = columns
+		grid.isEditable = true
+		grid.editTrigger = 'navigate'
+
+		// Array-driven cell context menu.
+		grid.contextMenu = [
+			{
+				id: 'copy',
+				label: 'Copy value',
+				icon: '📋',
+				onclick: (ctx) => {
+					navigator.clipboard.writeText(String(ctx.cellValue || ''))
+					logEvent('Copy', `"${ctx.cellValue}" copied to clipboard`)
+				}
+			},
+			{
+				id: 'edit',
+				label: (ctx) => `Edit ${ctx.column.field}`,
+				icon: '✏️',
+				onclick: (ctx) => {
+					logEvent('Edit', `requested for ${ctx.column.field} = "${ctx.cellValue}"`)
+				}
+			},
+			{
+				id: 'view-row',
+				label: 'View row details',
+				dividerBefore: true,
+				onclick: (ctx) => {
+					logEvent('View', `row ${ctx.rowIndex + 1} details`)
+				}
+			},
+			{
+				id: 'toggle-protection',
+				label: (ctx) => ctx.row.protected ? 'Unprotect row' : 'Protect row',
+				icon: (ctx) => ctx.row.protected ? '🔓' : '🔒',
+				onclick: (ctx) => {
+					ctx.row.protected = !ctx.row.protected
+					grid.items = [...grid.items]
+					logEvent('Toggle', `row ${ctx.rowIndex + 1} protection: ${ctx.row.protected}`)
+				}
+			},
+			{
+				id: 'delete',
+				label: 'Delete row',
+				icon: '🗑️',
+				danger: true,
+				dividerBefore: true,
+				disabled: (ctx) => ctx.row.protected,
+				onclick: (ctx) => {
+					grid.items = grid.items.filter(item => item.id !== ctx.row.id)
+					logEvent('Delete', `row ${ctx.rowIndex + 1} (${ctx.row.name}) deleted`)
+				}
+			}
+		]
+
+		grid.oncontextmenuopen = (ctx) => {
+			logEvent('Context Menu', `opened at row ${ctx.rowIndex + 1}, column "${ctx.column.field}"`)
+		}
+	</script>
+</body>
+</html>

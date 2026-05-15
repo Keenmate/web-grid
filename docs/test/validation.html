@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — validation fixture</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>validation fixture</h1>
+	<p>Targeted by <code>e2e/validation.spec.ts</code>. Reload resets all state.</p>
+
+	<web-grid id="grid" style="max-width: 720px; max-height: 320px;"></web-grid>
+
+	<div class="state-panel">
+		<div class="row">last validation error: <b data-testid="validation-log">none</b></div>
+	</div>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+
+		/*
+		 * Deterministic seed — 5 rows, 5 columns. All rows start valid.
+		 *
+		 *  col index:  0    1        2                    3       4
+		 *  field:      id   name     email                code    score
+		 *  validation: -    req'd    must contain '@'     UPPER   <= 100
+		 *  ---------------------------------------------------------------------
+		 *  row 0   | 1 | Alice    | alice@example.com  | a1   |  80
+		 *  row 1   | 2 | Bob      | bob@example.com    | b2   |  90
+		 *  row 2   | 3 | Carol    | carol@example.com  | c3   |  70
+		 *  row 3   | 4 | David    | david@example.com  | d4   |  60
+		 *  row 4   | 5 | Eve      | eve@example.com    | e5   |  85
+		 *
+		 * Validation wiring (grid in navigate mode, isEditable):
+		 *  - name  — beforeCommitCallback returns a STRING error when empty.
+		 *  - email — beforeCommitCallback returns a ValidationResult object
+		 *            ({ valid:false, message }) when the value has no '@'.
+		 *  - code  — beforeCommitCallback returns { valid:true, transformedValue }
+		 *            to uppercase the committed value (transform, not block).
+		 *  - score — legacy validateCallback returns an error string when > 100.
+		 *
+		 * web-grid validation is LENIENT: an invalid commit is NOT blocked — the
+		 * (invalid) value still lands in the draft, the cell gets the
+		 * `wg__cell--invalid` class, and `onvalidationerror` fires. Specs assert on
+		 * that class + the [data-testid="validation-log"] hook.
+		 */
+		const seed = () => [
+			{ id: 1, name: 'Alice', email: 'alice@example.com', code: 'a1', score: 80 },
+			{ id: 2, name: 'Bob', email: 'bob@example.com', code: 'b2', score: 90 },
+			{ id: 3, name: 'Carol', email: 'carol@example.com', code: 'c3', score: 70 },
+			{ id: 4, name: 'David', email: 'david@example.com', code: 'd4', score: 60 },
+			{ id: 5, name: 'Eve', email: 'eve@example.com', code: 'e5', score: 85 }
+		]
+
+		const grid = document.getElementById('grid')
+		grid.items = seed()
+		grid.idMember = 'id'
+		grid.columns = [
+			{ field: 'id', title: 'ID', width: '60px', isEditable: false },
+			{
+				field: 'name',
+				title: 'Name',
+				width: '150px',
+				editor: 'text',
+				// STRING return → invalid with that message.
+				beforeCommitCallback: ({ value }) =>
+					(value == null || String(value).trim() === '') ? 'Name is required' : null
+			},
+			{
+				field: 'email',
+				title: 'Email',
+				width: '200px',
+				editor: 'text',
+				// ValidationResult object form.
+				beforeCommitCallback: ({ value }) =>
+					String(value).includes('@')
+						? { valid: true }
+						: { valid: false, message: 'Invalid email' }
+			},
+			{
+				field: 'code',
+				title: 'Code',
+				width: '100px',
+				editor: 'text',
+				// Transform — valid, but rewrites the committed value to uppercase.
+				beforeCommitCallback: ({ value }) =>
+					({ valid: true, transformedValue: String(value).toUpperCase() })
+			},
+			{
+				field: 'score',
+				title: 'Score',
+				width: '90px',
+				editor: 'number',
+				// LEGACY validateCallback — returns an error string or null.
+				validateCallback: (value) => Number(value) > 100 ? 'Max 100' : null
+			}
+		]
+		grid.isEditable = true
+		grid.editTrigger = 'navigate'
+
+		const logEl = document.querySelector('[data-testid="validation-log"]')
+		grid.onvalidationerror = ({ field, error }) => {
+			logEl.textContent = `${field}: ${error}`
+		}
+	</script>
+</body>
+</html>

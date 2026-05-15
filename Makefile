@@ -8,7 +8,7 @@ SHELL := cmd.exe
 .SHELLFLAGS := /c
 endif
 
-.PHONY: setup dev build package create-link unlink publish publish-rc publish-dry clean help
+.PHONY: setup dev build package create-link unlink publish publish-rc publish-dry test-e2e test-e2e-ui test-e2e-headed clean help
 
 # Default target
 help:
@@ -23,12 +23,17 @@ help:
 	@echo   unlink       - Remove global npm link for @keenmate/web-grid
 	@echo.
 	@echo Publishing:
-	@echo   publish      - Publish stable version to npm (latest tag)
-	@echo   publish-rc   - Publish RC/prerelease version to npm (rc tag)
-	@echo   publish-dry  - Dry run publish (show what would be published)
+	@echo   publish        - Publish stable version to npm (latest tag)
+	@echo   publish-rc     - Publish RC/prerelease version to npm (rc tag)
+	@echo   publish-dry    - Dry run publish (show what would be published)
+	@echo.
+	@echo Testing:
+	@echo   test-e2e       - Run Playwright e2e tests (headless)
+	@echo   test-e2e-ui    - Run Playwright e2e tests in UI mode
+	@echo   test-e2e-headed - Run Playwright e2e tests headed
 	@echo.
 	@echo Cleanup:
-	@echo   clean        - Clean build artifacts
+	@echo   clean          - Clean build artifacts
 
 setup:
 	@echo Installing workspace dependencies...
@@ -103,6 +108,15 @@ publish-rc: package
 publish-dry: package
 	@echo Dry run - showing what would be published...
 	cd packages/web-grid && npm publish --dry-run --tag rc
+
+test-e2e: ## Run Playwright e2e tests (headless)
+	npm run test:e2e
+
+test-e2e-ui: ## Run Playwright e2e tests in UI mode
+	npm run test:e2e:ui
+
+test-e2e-headed: ## Run Playwright e2e tests headed
+	npm run test:e2e:headed
 
 clean:
 	@echo Cleaning build artifacts...

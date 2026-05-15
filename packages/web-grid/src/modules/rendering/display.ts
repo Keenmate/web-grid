@@ -6,6 +6,7 @@
 import type { Column } from '../../types.js'
 import type { GridContext } from '../types.js'
 import { getOptionDisplayValue } from '../dropdown/options.js'
+import { gridPerf } from '../../perf.js'
 
 /**
  * Render a cell in display mode (not editing)
@@ -31,6 +32,7 @@ export function renderCellDisplay<T>(
 			return `<span class="wg__cell-text">${ctx.escapeHtml(value)}</span>`
 		}
 		// Default: render checkbox
+		gridPerf.counters.cellDisplayItemsLookup++
 		const item = ctx.grid.displayItems[rowIndex]
 		const rawValue = item ? ctx.grid.getCellRawValue(item, rowIndex, field) : false
 		const opts = column.editorOptions || {}
@@ -53,6 +55,7 @@ export function renderCellDisplay<T>(
 
 	if (isDropdown) {
 		// Get display value using proper fallback chain (getDisplayCallback -> displayMember -> label -> raw value)
+		gridPerf.counters.cellDisplayItemsLookup++
 		const item = ctx.grid.displayItems[rowIndex]
 		const rawValue = item ? ctx.grid.getCellRawValue(item, rowIndex, field) : undefined
 		const opts = column.editorOptions || {}

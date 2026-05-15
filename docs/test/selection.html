@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — selection fixture</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>selection fixture</h1>
+	<p>Targeted by <code>e2e/selection.spec.ts</code>. Reload resets all state.</p>
+
+	<web-grid id="grid" style="max-width: 720px; max-height: 320px;"></web-grid>
+
+	<div class="state-panel">
+		<div class="row">selected rows: <b data-testid="selected-rows">none</b></div>
+		<div class="row">selected cells: <b data-testid="selected-cells">0</b></div>
+		<div class="row">focused row: <b data-testid="focused-row">none</b></div>
+	</div>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+
+		/*
+		 * Deterministic seed — 8 rows, 4 columns.
+		 *
+		 *  col index:   0     1                2        3
+		 *  field:       id    name             dept     salary
+		 *  ----------------------------------------------------
+		 *  row 0    | 1000 | Alice          | Eng    | 50000
+		 *  row 1    | 1001 | Bob            | Mkt    | 55000
+		 *  row 2    | 1002 | Carol          | Sales  | 60000
+		 *  row 3    | 1003 | David          | HR     | 65000
+		 *  row 4    | 1004 | Eve            | Eng    | 70000
+		 *  row 5    | 1005 | Frank          | Mkt    | 75000
+		 *  row 6    | 1006 | Grace          | Sales  | 80000
+		 *  row 7    | 1007 | Henry          | HR     | 85000
+		 *
+		 * The grid runs in navigate mode with cellSelectionMode='click' and row
+		 * numbers visible, so it exercises:
+		 *  - row selection via clicks on the .wg__row-number cells (replace / Ctrl
+		 *    toggle / Shift range)
+		 *  - column selection via Shift+click on a header
+		 *  - cell range selection via click+drag across data cells
+		 *  - row focus via a plain cell click (onrowfocus)
+		 *
+		 * State is surfaced through three data-testid nodes. selectedRows has no
+		 * dedicated change event, so it is polled; cell selection and row focus use
+		 * their events.
+		 */
+		const seed = () => [
+			{ id: 1000, name: 'Alice', dept: 'Eng', salary: 50000 },
+			{ id: 1001, name: 'Bob', dept: 'Mkt', salary: 55000 },
+			{ id: 1002, name: 'Carol', dept: 'Sales', salary: 60000 },
+			{ id: 1003, name: 'David', dept: 'HR', salary: 65000 },
+			{ id: 1004, name: 'Eve', dept: 'Eng', salary: 70000 },
+			{ id: 1005, name: 'Frank', dept: 'Mkt', salary: 75000 },
+			{ id: 1006, name: 'Grace', dept: 'Sales', salary: 80000 },
+			{ id: 1007, name: 'Henry', dept: 'HR', salary: 85000 }
+		]
+
+		const grid = document.getElementById('grid')
+		grid.items = seed()
+		grid.columns = [
+			{ field: 'id', title: 'ID', width: '70px' },
+			{ field: 'name', title: 'Name', width: '160px' },
+			{ field: 'dept', title: 'Dept', width: '120px' },
+			{ field: 'salary', title: 'Salary', width: '110px', editor: 'number' }
+		]
+		grid.isRowNumbersVisible = true
+		grid.isHoverable = true
+		grid.editTrigger = 'navigate'
+		grid.cellSelectionMode = 'click'
+		grid.sortMode = 'multi'
+
+		const selectedRowsEl = document.querySelector('[data-testid="selected-rows"]')
+		const selectedCellsEl = document.querySelector('[data-testid="selected-cells"]')
+		const focusedRowEl = document.querySelector('[data-testid="focused-row"]')
+
+		// No dedicated row-selection event — poll the selectedRows getter.
+		setInterval(() => {
+			const rows = grid.selectedRows
+			selectedRowsEl.textContent = rows.length === 0 ? 'none' : rows.join(', ')
+		}, 100)
+
+		grid.oncellselectionchange = (detail) => {
+			selectedCellsEl.textContent = detail.range
+				? String(grid.getSelectedCells().length)
+				: '0'
+		}
+
+		grid.onrowfocus = ({ rowIndex, row }) => {
+			focusedRowEl.textContent = `${rowIndex} — ${row.name}`
+		}
+	</script>
+</body>
+</html>

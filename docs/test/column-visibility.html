@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — column-visibility fixture</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>column-visibility fixture</h1>
+	<p>Targeted by <code>e2e/column-visibility.spec.ts</code>. Exercises <code>column.isHidden</code> via API + the predefined <code>hideColumn</code> / <code>columnVisibility</code> header context menu items.</p>
+
+	<div class="fixture">
+		<h2>#grid — toggle visibility via API + header context menu</h2>
+
+		<div class="controls">
+			<button type="button" data-testid="hide-email">Hide email</button>
+			<button type="button" data-testid="show-email">Show email</button>
+			<button type="button" data-testid="hide-all">Hide all but ID</button>
+			<button type="button" data-testid="show-all">Show all</button>
+		</div>
+
+		<web-grid id="grid" style="max-width: 100%; max-height: 280px;"></web-grid>
+
+		<div class="state-panel">
+			<div class="row">visible: <b data-testid="visible-fields">id,name,email,department,salary,phone</b></div>
+			<div class="row">hidden: <b data-testid="hidden-fields">none</b></div>
+		</div>
+	</div>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+
+		/*
+		 * Seed: 5 rows × 6 columns. Column order in HTML matches state-panel
+		 * "visible" baseline. The spec relies on:
+		 *   - all six columns initially visible (no isHidden flags)
+		 *   - email being column index 2 (so hiding it reorders thead)
+		 *   - column.field strings are exactly: id, name, email, department,
+		 *     salary, phone — used to read/write isHidden by field
+		 *   - 'hideColumn' + 'columnVisibility' wired into headerContextMenu
+		 *
+		 * Reassigning grid.columns is what triggers the re-render (the grid
+		 * tracks the setter, not the array contents).
+		 */
+		const seed = () => [
+			{ id: 101, name: 'Alice',  email: 'alice@x.com',  department: 'Engineering', salary: 85000, phone: '555-0101' },
+			{ id: 102, name: 'Bob',    email: 'bob@x.com',    department: 'Marketing',   salary: 72000, phone: '555-0102' },
+			{ id: 103, name: 'Carol',  email: 'carol@x.com',  department: 'Engineering', salary: 92000, phone: '555-0103' },
+			{ id: 104, name: 'David',  email: 'david@x.com',  department: 'Sales',       salary: 68000, phone: '555-0104' },
+			{ id: 105, name: 'Eva',    email: 'eva@x.com',    department: 'HR',          salary: 65000, phone: '555-0105' }
+		]
+
+		const columnDefs = () => [
+			{ field: 'id',         title: 'ID',         width: '70px' },
+			{ field: 'name',       title: 'Name',       width: '120px' },
+			{ field: 'email',      title: 'Email',      width: '180px' },
+			{ field: 'department', title: 'Department', width: '130px' },
+			{ field: 'salary',     title: 'Salary',     width: '90px' },
+			{ field: 'phone',      title: 'Phone',      width: '110px' }
+		]
+
+		const grid = document.getElementById('grid')
+		grid.items = seed()
+		grid.columns = columnDefs()
+		grid.isRowNumbersVisible = true
+		grid.headerContextMenu = [
+			'sortAsc',
+			'sortDesc',
+			'clearSort',
+			{ dividerBefore: true },
+			'hideColumn',
+			'columnVisibility'
+		]
+
+		// Surface visible / hidden field lists so the spec doesn't need to read
+		// the shadow DOM. Recomputed via a MutationObserver on the grid host
+		// because the header context menu mutates columns directly (no event).
+		const visibleEl = document.querySelector('[data-testid="visible-fields"]')
+		const hiddenEl = document.querySelector('[data-testid="hidden-fields"]')
+
+		function refreshState() {
+			const visible = grid.columns.filter(c => !c.isHidden).map(c => c.field)
+			const hidden = grid.columns.filter(c => c.isHidden).map(c => c.field)
+			visibleEl.textContent = visible.join(',') || 'none'
+			hiddenEl.textContent = hidden.join(',') || 'none'
+		}
+		refreshState()
+
+		// The header context menu's 'hideColumn' / 'columnVisibility' both
+		// reassign grid.columns, which re-renders thead. Observe and refresh.
+		const shadow = grid.shadowRoot
+		if (shadow) {
+			const obs = new MutationObserver(() => refreshState())
+			obs.observe(shadow, { childList: true, subtree: true })
+		}
+
+		// External toggle buttons.
+		document.querySelector('[data-testid="hide-email"]').addEventListener('click', () => {
+			grid.columns.find(c => c.field === 'email').isHidden = true
+			grid.columns = [...grid.columns]
+			refreshState()
+		})
+		document.querySelector('[data-testid="show-email"]').addEventListener('click', () => {
+			grid.columns.find(c => c.field === 'email').isHidden = false
+			grid.columns = [...grid.columns]
+			refreshState()
+		})
+		document.querySelector('[data-testid="hide-all"]').addEventListener('click', () => {
+			grid.columns.forEach((c, i) => c.isHidden = i > 0)
+			grid.columns = [...grid.columns]
+			refreshState()
+		})
+		document.querySelector('[data-testid="show-all"]').addEventListener('click', () => {
+			grid.columns.forEach(c => c.isHidden = false)
+			grid.columns = [...grid.columns]
+			refreshState()
+		})
+	</script>
+</body>
+</html>

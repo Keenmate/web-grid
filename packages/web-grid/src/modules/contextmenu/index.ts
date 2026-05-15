@@ -5,7 +5,9 @@
 import { computePosition, flip, offset, shift } from '@floating-ui/dom'
 import type {
 	ContextMenuItem,
+	ContextMenuConfig,
 	ContextMenuContext,
+	PredefinedContextMenuItemType,
 	HeaderMenuConfig,
 	HeaderMenuItem,
 	HeaderMenuContext,
@@ -13,6 +15,98 @@ import type {
 	GridLabels
 } from '../../types.js'
 import type { GridContext } from '../types.js'
+
+/**
+ * Normalize a ContextMenuConfig list (which may contain string shorthand and/or items
+ * with `type` set) into a flat list of fully-defined ContextMenuItem objects.
+ * Predefined types get default labels, icons, visibility predicates, and onclick handlers.
+ *
+ * The grid is needed at click time for `expand-all` etc. to call `expandSubtree(path)`,
+ * so we close over it rather than passing it through later.
+ */
+export function normalizeContextMenu<T>(
+	config: ContextMenuConfig<T>[],
+	grid: GridContext<T>['grid']
+): ContextMenuItem<T>[] {
+	return config.map(entry => {
+		if (typeof entry === 'string') {
+			return buildPredefinedContextItem(entry, grid)
+		}
+		if (entry.type) {
+			// Object form with `type` — built-in handler/visibility, but caller may override label/icon/etc.
+			const base = buildPredefinedContextItem(entry.type, grid)
+			return {
+				...base,
+				...entry,
+				// Caller-provided onclick wins; otherwise keep the predefined handler
+				onclick: entry.onclick ?? base.onclick,
+				// Label/icon: caller value (if provided) overrides default
+				label: entry.label ?? base.label,
+				icon: entry.icon ?? base.icon,
+				visible: entry.visible ?? base.visible
+			}
+		}
+		return entry as ContextMenuItem<T>
+	})
+}
+
+function buildPredefinedContextItem<T>(
+	type: PredefinedContextMenuItemType,
+	grid: GridContext<T>['grid']
+): ContextMenuItem<T> {
+	switch (type) {
+		case 'expand-all':
+			return {
+				id: 'expand-all',
+				type,
+				label: 'Expand all',
+				icon: '▾',
+				// File-explorer convention: per-row "expand all" means expand everything *under here*
+				visible: (ctx) => {
+					const info = grid.getRowTreeInfo(ctx.row)
+					return !!info?.hasChildren
+				},
+				onclick: (ctx) => {
+					const info = grid.getRowTreeInfo(ctx.row)
+					if (info) grid.expandSubtree(info.path)
+				}
+			}
+		case 'collapse-all':
+			return {
+				id: 'collapse-all',
+				type,
+				label: 'Collapse all',
+				icon: '▸',
+				visible: (ctx) => {
+					const info = grid.getRowTreeInfo(ctx.row)
+					return !!info?.hasChildren
+				},
+				onclick: (ctx) => {
+					const info = grid.getRowTreeInfo(ctx.row)
+					if (info) grid.collapseSubtree(info.path)
+				}
+			}
+		case 'expand-tree':
+			return {
+				id: 'expand-tree',
+				type,
+				label: 'Expand entire tree',
+				icon: '⤓',
+				// Hide when there's no tree, or every node is already expanded
+				visible: () => grid.isTreeMode,
+				onclick: () => grid.expandAll()
+			}
+		case 'collapse-tree':
+			return {
+				id: 'collapse-tree',
+				type,
+				label: 'Collapse entire tree',
+				icon: '⤒',
+				visible: () => grid.isTreeMode && grid.expandedPaths.size > 0,
+				onclick: () => grid.collapseAll()
+			}
+	}
+}
 
 // Context menu styles (injected into document.head)
 const CONTEXT_MENU_STYLES = `
@@ -413,6 +507,10 @@ export function normalizeHeaderMenuItems<T>(
 			} else if (item === 'clearSort') {
 				// Only show clear sort if column is currently sorted
 				visible = (ctx) => ctx.sortDirection !== null
+			} else if (item === 'hideColumn') {
+				// The tree column hosts indent + chevron; hiding it would orphan the
+				// hierarchy. Suppress the menu item when it would target the tree column.
+				visible = (ctx) => !(ctx.isTreeMode && ctx.column?.isTree)
 			} else if (item === 'freezeColumn') {
 				// Only show freeze if not already frozen
 				visible = (ctx) => !ctx.isFrozen
@@ -425,23 +523,25 @@ export function normalizeHeaderMenuItems<T>(
 			let submenu: ((ctx: HeaderMenuContext<T>) => HeaderMenuItem<T>[]) | undefined
 			if (item === 'columnVisibility') {
 				submenu = (ctx) => {
-					// Check if all columns are visible
-					const allVisible = ctx.allColumns.every(col => !col.isHidden)
+					// Tree column is always visible in tree mode — exclude it from the
+					// togglable list so users can't hide it (would orphan the hierarchy).
+					const togglable = ctx.allColumns.filter(col => !(ctx.isTreeMode && col.isTree))
+					const allVisible = togglable.every(col => !col.isHidden)
 					const items: HeaderMenuItem<T>[] = [
-						// "Show all" option at the top - checked only if all columns are visible
+						// "Show all" option at the top - checked only if all togglable columns are visible
 						{
 							id: 'show-all-columns',
 							icon: allVisible ? '☑' : '☐',
 							label: ctx.labels.contextMenu.showAll,
 							onclick: () => {
-								ctx.allColumns.forEach(col => {
+								togglable.forEach(col => {
 									col.isHidden = false
 								})
 							}
 						}
 					]
-					// Add individual column toggles
-					ctx.allColumns.forEach(col => {
+					// Add individual column toggles (tree column already filtered out above)
+					togglable.forEach(col => {
 						items.push({
 							id: `toggle-col-${String(col.field)}`,
 							icon: col.isHidden ? '☐' : '☑',
@@ -594,9 +694,10 @@ export function executeHeaderMenuAction<T>(
 			ctx.grid.sort = ctx.grid.sort.filter(s => s.column !== field)
 			break
 		case 'hideColumn': {
-			// Hide the column by setting isHidden property (keeps it in array for Column Visibility)
+			// Hide the column by setting isHidden property (keeps it in array for Column Visibility).
+			// Refuse to hide the tree column when tree mode is active — chevrons would be orphaned.
 			const col = ctx.grid.columns.find(c => String(c.field) === field)
-			if (col) {
+			if (col && !(ctx.grid.isTreeMode && col.isTree)) {
 				col.isHidden = true
 				ctx.grid.columns = [...ctx.grid.columns]  // Trigger update
 			}

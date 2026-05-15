@@ -34,11 +34,12 @@ function executeToggleCheckbox(ctx: ExecutorContext, action: ToggleCheckboxActio
 	const column = ctx.grid.columns[colIndex]
 	if (!column) return
 
-	if (!ctx.grid.isCellEditable(column)) return
-
-	const field = String(column.field)
 	const item = ctx.grid.displayItems[rowIndex]
 	if (!item) return
+
+	if (!ctx.grid.isCellEditable(column, item)) return
+
+	const field = String(column.field)
 
 	const opts = column.editorOptions || {}
 	const trueValue = opts.trueValue ?? true

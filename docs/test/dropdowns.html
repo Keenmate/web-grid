@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — dropdowns fixture</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>dropdowns fixture</h1>
+	<p>Targeted by <code>e2e/dropdowns.spec.ts</code>. Reload resets all state.</p>
+
+	<web-grid id="grid" style="max-width: 820px; max-height: 320px;"></web-grid>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+
+		/*
+		 * Deterministic seed — 5 rows, 5 columns. Grid in navigate mode, editable.
+		 *
+		 *  col index:  0    1          2          3          4
+		 *  field:      id   country    priority   product    assignee
+		 *  editor:     -    select     select     combobox   autocomplete
+		 *  -------------------------------------------------------------------
+		 *  row 0   | 1 | US        | high     | laptop   | (empty)
+		 *  row 1   | 2 | DE        | medium   | phone    | (empty)
+		 *  row 2   | 3 | FR        | low      | tablet   | (empty)
+		 *  row 3   | 4 | JP        | high     | laptop   | (empty)
+		 *  row 4   | 5 | UK        | medium   | monitor  | (empty)
+		 *
+		 * Each editor exercises a different dropdown facet:
+		 *  - country  — select with custom member mapping (valueMember='code',
+		 *    displayMember='name', iconMember='flag', subtitleMember='region',
+		 *    disabledMember='disabled'). 'Australia' is a disabled option.
+		 *  - priority — select with a renderOptionCallback that emits custom option
+		 *    HTML (a coloured dot + label, each carrying data-index).
+		 *  - product  — combobox (text input + dropdown) with valueMember='id',
+		 *    displayMember='name'.
+		 *  - assignee — autocomplete with an async searchCallback (minSearchLength 1,
+		 *    100ms debounce, ~150ms simulated network). Options carry value === label
+		 *    (the full name) so a selection commits the displayed text.
+		 */
+		const seed = () => [
+			{ id: 1, country: 'US', priority: 'high', product: 'laptop', assignee: '' },
+			{ id: 2, country: 'DE', priority: 'medium', product: 'phone', assignee: '' },
+			{ id: 3, country: 'FR', priority: 'low', product: 'tablet', assignee: '' },
+			{ id: 4, country: 'JP', priority: 'high', product: 'laptop', assignee: '' },
+			{ id: 5, country: 'UK', priority: 'medium', product: 'monitor', assignee: '' }
+		]
+
+		const countryOptions = [
+			{ code: 'US', name: 'United States', flag: '🇺🇸', region: 'North America' },
+			{ code: 'CA', name: 'Canada', flag: '🇨🇦', region: 'North America' },
+			{ code: 'UK', name: 'United Kingdom', flag: '🇬🇧', region: 'Europe' },
+			{ code: 'DE', name: 'Germany', flag: '🇩🇪', region: 'Europe' },
+			{ code: 'FR', name: 'France', flag: '🇫🇷', region: 'Europe' },
+			{ code: 'JP', name: 'Japan', flag: '🇯🇵', region: 'Asia' },
+			{ code: 'AU', name: 'Australia', flag: '🇦🇺', region: 'Oceania', disabled: true }
+		]
+
+		const priorityOptions = [
+			{ value: 'critical', label: 'Critical', color: '#dc3545' },
+			{ value: 'high', label: 'High', color: '#fd7e14' },
+			{ value: 'medium', label: 'Medium', color: '#ffc107' },
+			{ value: 'low', label: 'Low', color: '#28a745' }
+		]
+
+		const productOptions = [
+			{ id: 'laptop', name: 'Laptop', category: 'Computers' },
+			{ id: 'desktop', name: 'Desktop', category: 'Computers' },
+			{ id: 'phone', name: 'Smartphone', category: 'Mobile' },
+			{ id: 'tablet', name: 'Tablet', category: 'Mobile' },
+			{ id: 'monitor', name: 'Monitor', category: 'Accessories' },
+			{ id: 'keyboard', name: 'Keyboard', category: 'Accessories' }
+		]
+
+		const users = [
+			{ value: 'Alice Johnson', label: 'Alice Johnson', email: 'alice@example.com' },
+			{ value: 'Bob Smith', label: 'Bob Smith', email: 'bob@example.com' },
+			{ value: 'Carol Williams', label: 'Carol Williams', email: 'carol@example.com' },
+			{ value: 'David Brown', label: 'David Brown', email: 'david@example.com' },
+			{ value: 'Eve Davis', label: 'Eve Davis', email: 'eve@example.com' }
+		]
+
+		const grid = document.getElementById('grid')
+		grid.items = seed()
+		grid.columns = [
+			{ field: 'id', title: 'ID', width: '50px', isEditable: false },
+			{
+				field: 'country',
+				title: 'Country',
+				width: '190px',
+				editor: 'select',
+				editorOptions: {
+					options: countryOptions,
+					valueMember: 'code',
+					displayMember: 'name',
+					iconMember: 'flag',
+					subtitleMember: 'region',
+					disabledMember: 'disabled',
+					searchMember: 'name'
+				}
+			},
+			{
+				field: 'priority',
+				title: 'Priority',
+				width: '160px',
+				editor: 'select',
+				editorOptions: {
+					options: priorityOptions,
+					renderOptionCallback: (opt, ctx) => {
+						const classes = ['wg__dropdown-option']
+						if (ctx.isHighlighted) classes.push('wg__dropdown-option--highlighted')
+						if (ctx.isSelected) classes.push('wg__dropdown-option--selected')
+						if (ctx.isDisabled) classes.push('wg__dropdown-option--disabled')
+						return `<div class="${classes.join(' ')}" data-index="${ctx.index}">
+							<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${opt.color};margin-right:6px;"></span>${opt.label}
+						</div>`
+					}
+				}
+			},
+			{
+				field: 'product',
+				title: 'Product',
+				width: '170px',
+				editor: 'combobox',
+				editorOptions: {
+					options: productOptions,
+					valueMember: 'id',
+					displayMember: 'name'
+				}
+			},
+			{
+				field: 'assignee',
+				title: 'Assignee',
+				width: '200px',
+				editor: 'autocomplete',
+				editorOptions: {
+					placeholder: 'Search users...',
+					minSearchLength: 1,
+					debounceMs: 100,
+					subtitleMember: 'email',
+					searchCallback: async (query) => {
+						await new Promise(r => setTimeout(r, 150))
+						return users.filter(u =>
+							u.label.toLowerCase().includes(query.toLowerCase()) ||
+							u.email.toLowerCase().includes(query.toLowerCase())
+						)
+					}
+				}
+			}
+		]
+		grid.isEditable = true
+		grid.editTrigger = 'navigate'
+	</script>
+</body>
+</html>

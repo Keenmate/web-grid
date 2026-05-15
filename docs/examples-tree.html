@@ -48,10 +48,11 @@
             <p>Each row carries a <code>path</code> like <code>"1.2.3"</code>. Levels and parent paths are derived automatically; provide <code>treeLevelMember</code> / <code>treeParentMember</code> if your DB already computes them.</p>
             <p><strong>Sorting in tree mode</strong> is sibling-aware: clicking a header sorts each parent's children among themselves (e.g., "sort each department's sub-teams by Annual Budget"). The hierarchy stays intact — parents always appear above their children.</p>
             <p>For <strong>custom sort logic</strong> (e.g., sort departments by total budget aggregated over all descendants), set <code>treeDataSorted: true</code>, listen to <code>ondatarequest</code>, sort the items yourself, and push them back via <code>grid.items = …</code>. The grid will trust your order completely and skip its internal sibling sort.</p>
+            <p><strong>Keyboard:</strong> click a cell, then arrows move focus, <strong>Ctrl/Cmd + ←</strong> collapses the focused parent (or walks up to the nearest expanded ancestor), <strong>Ctrl/Cmd + →</strong> expands. Right-click for tree context-menu items. (This grid is in <code>editTrigger: 'navigate'</code>.)</p>
 
             <div class="controls">
                 <label>
-                    <input type="checkbox" id="editable"> Editable (tree column)
+                    <input type="checkbox" id="editable"> Editable (non-tree columns)
                 </label>
                 <label>
                     <input type="checkbox" id="dblToggle" checked> Double-click toggles node
@@ -79,6 +80,73 @@
                 <strong>Expanded paths:</strong>
                 <span id="expanded">—</span>
             </div>
+
+            <p style="margin-top: 1rem; font-size: 0.9rem; color: #555;">
+                <strong>Right-click any row</strong> for the context menu — the tree-specific predefined items
+                (<em>Expand all</em>, <em>Collapse all</em>, <em>Expand entire tree</em>, <em>Collapse entire tree</em>)
+                appear automatically. <em>Expand all</em>/<em>Collapse all</em> only show on rows that have children.
+            </p>
+        </div>
+
+        <div class="card">
+            <h2>Keyboard Navigation + Heterogeneous Tree</h2>
+            <p>This grid uses <code>editTrigger: 'navigate'</code> — cells are focusable, arrow keys move the focus, and editing starts on Enter / F2 / typing. Click any cell to focus it, then try:</p>
+            <ul>
+                <li><strong>Ctrl/Cmd + ←</strong>: collapse the focused parent row, or walk up to the nearest expanded ancestor and collapse that (refocuses the ancestor).</li>
+                <li><strong>Ctrl/Cmd + →</strong>: expand the focused row when it has children and is collapsed.</li>
+                <li><strong>Tab / Shift-Tab</strong>: jumps to the next/previous <em>editable</em> cell. In this grid <strong>only leaf rows are editable</strong> — Tab skips Acme / Engineering / Platform Team and walks straight from leaf to leaf. The tree column itself is always read-only (since v1.2.0), so Tab skips it too.</li>
+                <li><strong>Right-click any row</strong>: tree context-menu items (<code>'expand-all'</code>, <code>'collapse-all'</code>, <code>'expand-tree'</code>, <code>'collapse-tree'</code>) plus a custom "Show row data" action. The first two only show on parent rows.</li>
+            </ul>
+
+            <web-grid id="navGrid" style="max-width: 100%; max-height: 500px; border: 1px solid #e2e8f0;"></web-grid>
+
+            <pre style="margin-top: 1rem; background: #f8f9fa; padding: 0.75rem; border-radius: 4px; font-size: 0.85rem; overflow-x: auto;"><code>// Heterogeneous tree: only leaf rows are editable
+const isLeafRow = row =&gt; !parentPaths.has(row.path)
+
+navGrid.editTrigger = 'navigate'
+navGrid.isEditable = true
+navGrid.columns = [
+    { field: 'name', title: 'Organization', isTree: true },     // tree column — always read-only
+    { field: 'headcount', title: 'Headcount', isEditable: isLeafRow, editor: 'number' },
+    { field: 'budget',    title: 'Annual Budget', isEditable: isLeafRow, editor: 'number' },
+    { field: 'location',  title: 'Location', isEditable: isLeafRow },
+    { field: 'status',    title: 'Status' }                     // never editable
+]
+
+navGrid.contextMenu = [
+    'expand-all', 'collapse-all',
+    { dividerBefore: true },
+    'expand-tree', 'collapse-tree',
+    { dividerBefore: true,
+      label: 'Show row data',
+      icon: 'ℹ',
+      onclick: ctx =&gt; alert(JSON.stringify(ctx.row, null, 2)) }
+]</code></pre>
+        </div>
+
+        <div class="card">
+            <h2>Row-Level Editability with <code>isRowEditable</code></h2>
+            <p>Same Tab-skips-read-only-rows behaviour as the previous card, but expressed differently. Instead of a per-column <code>isEditable: predicate</code> on every column, this grid uses <strong><code>isRowEditable</code></strong> at the grid level — one function decides whether the whole row is editable. Useful when the same condition applies across all columns.</p>
+            <p>Here the rule is non-tree-related: <strong>only rows with status "Active" are editable</strong>. <em>Channel</em> (Reorganizing) and <em>IT</em> (Frozen) are read-only even though they're leaves; parent rows like Acme / Engineering remain editable. Tab walks past Channel and IT and lands on the next Active row.</p>
+
+            <web-grid id="rowGateGrid" style="max-width: 100%; max-height: 500px; border: 1px solid #e2e8f0;"></web-grid>
+
+            <pre style="margin-top: 1rem; background: #f8f9fa; padding: 0.75rem; border-radius: 4px; font-size: 0.85rem; overflow-x: auto;"><code>// Grid-level row gate — applies to every column on every row
+rowGateGrid.editTrigger = 'navigate'
+rowGateGrid.isEditable = true
+rowGateGrid.isRowEditable = row =&gt; row.status === 'Active'
+
+rowGateGrid.columns = [
+    { field: 'name', title: 'Organization', isTree: true },     // tree column — always read-only
+    { field: 'headcount', title: 'Headcount', editor: 'number' },
+    { field: 'budget',    title: 'Annual Budget', editor: 'number' },
+    { field: 'location',  title: 'Location' },
+    { field: 'status',    title: 'Status' }
+]</code></pre>
+
+            <p style="margin-top: 1rem; font-size: 0.9rem; color: #555;">
+                <strong>When to use which:</strong> per-column <code>isEditable: predicate</code> when different columns need different rules; grid-level <code>isRowEditable</code> when the rule is uniform. The two compose — a row must pass <em>both</em> gates to be editable.
+            </p>
         </div>
 
         <div class="card">
@@ -94,7 +162,7 @@
             <div class="column-toggles" id="cvToggles"></div>
 
             <p style="font-size: 0.85rem; color: #718096; margin: 0 0 0.75rem;">
-                <span style="border-left: 3px solid #f4c430; padding-left: 0.5rem;">Yellow border = tree column</span>. You can also right-click any header for the context menu (<em>Hide Column</em> / <em>Column Visibility</em>).
+                <span style="border-left: 3px solid #f4c430; padding-left: 0.5rem;">Yellow border = tree column (locked — always visible in tree mode)</span>. You can also right-click any header for the context menu (<em>Hide Column</em> / <em>Column Visibility</em>).
             </p>
 
             <web-grid id="cvGrid" style="max-width: 100%; max-height: 420px; border: 1px solid #e2e8f0;"></web-grid>
@@ -102,10 +170,9 @@
             <div style="margin-top: 0.75rem; color: #666; font-size: 0.9rem;">
                 <strong>What to look for:</strong>
                 <ul>
-                    <li>Hiding non-tree columns: the tree column behaves normally, indent + chevron unchanged</li>
-                    <li>Hiding the tree column itself: chevrons disappear (no other column shows the indent — depth becomes invisible)</li>
-                    <li>Toggling expand/collapse still works via double-click on a remaining column? <em>It shouldn't</em> — <code>treeDoubleClickBehavior</code> only fires on the tree column</li>
-                    <li>Showing the tree column again: chevrons restore with the previous expanded state intact</li>
+                    <li>Hiding non-tree columns: the tree column behaves normally, indent + chevron unchanged.</li>
+                    <li><strong>The tree column cannot be hidden in tree mode</strong>: it's omitted from both the predefined <em>Column Visibility</em> submenu and the manual toggle list above. Right-clicking the tree column header also hides the <em>Hide column</em> action. The grid would have no way to render hierarchy depth without it.</li>
+                    <li>Toggling expand/collapse via double-click on a non-tree column? <em>It shouldn't work</em> — <code>treeDoubleClickBehavior</code> only fires on the tree column.</li>
                 </ul>
             </div>
         </div>
@@ -247,7 +314,7 @@ files.treeChevronCallback = ({ expanded, hasChildren }) =&gt; {
         ]
 
         const orgColumns = [
-            { field: 'name', title: 'Organization', width: '300px', isTree: true, isSortable: true, editor: 'text' },
+            { field: 'name', title: 'Organization', width: '300px', isTree: true, isSortable: true },
             { field: 'headcount', title: 'Headcount', width: '110px', horizontalAlign: 'right', isSortable: true,
                 formatCallback: v => v != null ? v.toLocaleString() : '' },
             { field: 'budget', title: 'Annual Budget', width: '160px', horizontalAlign: 'right', isSortable: true,
@@ -265,6 +332,7 @@ files.treeChevronCallback = ({ expanded, hasChildren }) =&gt; {
         grid.defaultExpandDepth = 2
         grid.treeDataSorted = true
         grid.treeDoubleClickBehavior = 'toggle'
+        grid.editTrigger = 'navigate'   // cells focusable; arrows nav; Ctrl+Arrow toggles tree
         grid.sortMode = 'single'
         grid.isFilterable = true
         grid.isHoverable = true
@@ -273,6 +341,17 @@ files.treeChevronCallback = ({ expanded, hasChildren }) =&gt; {
         grid.customStylesCallback = () => `
             .status-warn { color: #b54708; font-weight: 500; }
         `
+
+        // Tree context menu — predefined items expand/collapse the right-clicked subtree
+        // (per-row variants) or the entire tree (*-tree variants). Visibility predicates
+        // are baked in: 'expand-all'/'collapse-all' only show on rows with children.
+        grid.contextMenu = [
+            'expand-all',
+            'collapse-all',
+            { dividerBefore: true },
+            'expand-tree',
+            'collapse-tree'
+        ]
 
         const expandedEl = document.getElementById('expanded')
         const renderExpanded = () => {
@@ -305,6 +384,103 @@ files.treeChevronCallback = ({ expanded, hasChildren }) =&gt; {
             grid.collapseAll()
             renderExpanded()
         })
+
+        // -----------------------------------------------------------------
+        // Keyboard navigation + heterogeneous tree (only leaves editable)
+        // -----------------------------------------------------------------
+        // Pre-compute the set of paths that are parents of something. A row is a
+        // leaf iff its path is NOT in this set.
+        const navParentPaths = new Set()
+        for (const r of orgData) {
+            const idx = r.path.lastIndexOf('.')
+            if (idx >= 0) navParentPaths.add(r.path.slice(0, idx))
+        }
+        const isLeafRow = row => !navParentPaths.has(row.path)
+
+        const navGrid = document.getElementById('navGrid')
+        navGrid.items = orgData
+        navGrid.columns = [
+            { field: 'name', title: 'Organization', width: '300px', isTree: true, isSortable: true },
+            { field: 'headcount', title: 'Headcount', width: '120px', horizontalAlign: 'right',
+                isEditable: isLeafRow, editor: 'number', isSortable: true,
+                formatCallback: v => v != null ? v.toLocaleString() : '' },
+            { field: 'budget', title: 'Annual Budget', width: '160px', horizontalAlign: 'right',
+                isEditable: isLeafRow, editor: 'number', isSortable: true,
+                formatCallback: v => v != null ? `$${(v / 1_000_000).toFixed(1)}M` : '' },
+            { field: 'location', title: 'Location', width: '160px',
+                isEditable: isLeafRow, isSortable: true },
+            { field: 'status', title: 'Status', width: '140px',
+                isEditable: isLeafRow, isSortable: true,
+                cellClassCallback: v => v === 'Active' ? null : 'status-warn' }
+        ]
+        navGrid.treePathMember = 'path'
+        navGrid.defaultExpandDepth = 99       // start fully expanded so all rows are reachable
+        navGrid.treeDataSorted = true
+        navGrid.treeDoubleClickBehavior = 'toggle'
+        navGrid.editTrigger = 'navigate'      // enables cell focus + Ctrl+arrow keys
+        navGrid.isEditable = true             // grid-level editing on (per-row predicate decides)
+        navGrid.isHoverable = true
+        navGrid.isStriped = true
+
+        navGrid.customStylesCallback = () => `
+            .status-warn { color: #b54708; font-weight: 500; }
+        `
+
+        navGrid.contextMenu = [
+            'expand-all',
+            'collapse-all',
+            { dividerBefore: true },
+            'expand-tree',
+            'collapse-tree',
+            {
+                dividerBefore: true,
+                label: 'Show row data',
+                icon: 'ℹ',
+                onclick: ctx => alert(JSON.stringify(ctx.row, null, 2))
+            }
+        ]
+
+        // -----------------------------------------------------------------
+        // Row-level editability via grid.isRowEditable
+        // -----------------------------------------------------------------
+        // Grid-level row gate: only "Active" rows are editable. Channel
+        // (Reorganizing) and IT (Frozen) are read-only across every column.
+        // Cleaner than per-column isEditable when the rule is uniform.
+        const rowGateGrid = document.getElementById('rowGateGrid')
+        rowGateGrid.items = orgData
+        rowGateGrid.columns = [
+            { field: 'name', title: 'Organization', width: '300px', isTree: true, isSortable: true },
+            { field: 'headcount', title: 'Headcount', width: '120px', horizontalAlign: 'right',
+                editor: 'number', isSortable: true,
+                formatCallback: v => v != null ? v.toLocaleString() : '' },
+            { field: 'budget', title: 'Annual Budget', width: '160px', horizontalAlign: 'right',
+                editor: 'number', isSortable: true,
+                formatCallback: v => v != null ? `$${(v / 1_000_000).toFixed(1)}M` : '' },
+            { field: 'location', title: 'Location', width: '160px', isSortable: true },
+            { field: 'status', title: 'Status', width: '140px', isSortable: true,
+                cellClassCallback: v => v === 'Active' ? null : 'status-warn' }
+        ]
+        rowGateGrid.treePathMember = 'path'
+        rowGateGrid.defaultExpandDepth = 99
+        rowGateGrid.treeDataSorted = true
+        rowGateGrid.treeDoubleClickBehavior = 'toggle'
+        rowGateGrid.editTrigger = 'navigate'
+        rowGateGrid.isEditable = true
+        rowGateGrid.isRowEditable = row => row.status === 'Active'
+        rowGateGrid.isHoverable = true
+        rowGateGrid.isStriped = true
+
+        rowGateGrid.customStylesCallback = () => `
+            .status-warn { color: #b54708; font-weight: 500; }
+        `
+
+        rowGateGrid.contextMenu = [
+            'expand-all',
+            'collapse-all',
+            { dividerBefore: true },
+            'expand-tree',
+            'collapse-tree'
+        ]
 
         // -----------------------------------------------------------------
         // Custom sort by grouped aggregate (treeDataSorted=true + ondatarequest)
@@ -423,15 +599,28 @@ files.treeChevronCallback = ({ expanded, hasChildren }) =&gt; {
         const cvVisibleCountEl = document.getElementById('cvVisibleCount')
 
         function cvRenderToggles() {
-            cvTogglesEl.innerHTML = cvGrid.columns.map(col => `
-                <label class="column-toggle ${col.isHidden ? 'hidden' : ''} ${col.isTree ? 'is-tree' : ''}" data-field="${col.field}">
-                    <input type="checkbox" ${col.isHidden ? '' : 'checked'}>
-                    ${col.title}${col.isTree ? ' (tree)' : ''}
-                </label>
-            `).join('')
+            // Tree column is always visible in tree mode — render it as locked
+            // (no checkbox, just a label) instead of a togglable item.
+            cvTogglesEl.innerHTML = cvGrid.columns.map(col => {
+                if (col.isTree) {
+                    return `
+                        <label class="column-toggle is-tree" data-field="${col.field}" title="Tree column — always visible in tree mode" style="cursor: default; opacity: 0.85;">
+                            <span aria-hidden="true">🔒</span>
+                            ${col.title} (tree, locked)
+                        </label>
+                    `
+                }
+                return `
+                    <label class="column-toggle ${col.isHidden ? 'hidden' : ''}" data-field="${col.field}">
+                        <input type="checkbox" ${col.isHidden ? '' : 'checked'}>
+                        ${col.title}
+                    </label>
+                `
+            }).join('')
             cvTogglesEl.querySelectorAll('.column-toggle').forEach(el => {
                 const field = el.dataset.field
                 const checkbox = el.querySelector('input')
+                if (!checkbox) return  // tree column has no checkbox
                 checkbox.addEventListener('change', () => {
                     const col = cvGrid.columns.find(c => c.field === field)
                     col.isHidden = !checkbox.checked
@@ -456,8 +645,8 @@ files.treeChevronCallback = ({ expanded, hasChildren }) =&gt; {
             cvUpdateState()
         })
         document.getElementById('cvHideAll').addEventListener('click', () => {
-            // Keep at least one column visible so the grid isn't empty
-            cvGrid.columns.forEach((c, i) => c.isHidden = i > 0)
+            // Tree column stays visible (forced by grid in tree mode); hide the rest.
+            cvGrid.columns.forEach(c => { c.isHidden = !c.isTree })
             cvGrid.columns = [...cvGrid.columns]
             cvUpdateState()
         })

@@ -350,7 +350,8 @@ export async function executePaste<T>(
 			}
 
 			// Check editability based on paste mode
-			const isEditable = grid.isCellEditable(column)
+			const pasteRow = grid.displayItems[displayRowIndex]
+			const isEditable = grid.isCellEditable(column, pasteRow)
 
 			if (!isEditable) {
 				if (pasteMode === 'editable-only') {
@@ -452,10 +453,14 @@ export async function executePaste<T>(
 				// Use commitEdit which handles validation
 				await grid.commitEdit(displayRowIndex, field, processedValue)
 
-				// Check if cell is now invalid
-				const invalidCell = grid.invalidCells.find(
-					c => c.rowIndex === displayRowIndex && c.field === field
-				)
+				// Check if cell is now invalid (rowKey, not displayRowIndex — invalidCells
+				// are keyed by stable id post-rc15)
+				const pasteRowKey = grid.displayItems[displayRowIndex] !== undefined
+					? grid.getStableRowKey(grid.displayItems[displayRowIndex], displayRowIndex)
+					: null
+				const invalidCell = pasteRowKey !== null
+					? grid.invalidCells.find(c => c.rowKey === pasteRowKey && c.field === field)
+					: undefined
 
 				cellResults.push({
 					rowIndex: displayRowIndex,
