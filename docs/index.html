@@ -140,7 +140,7 @@
         <header class="header-card">
             <h1>Web Grid</h1>
             <p class="subtitle">Framework-agnostic data grid web component with Excel-like editing</p>
-            <span class="version-badge">v1.0.0-rc12</span>
+            <span class="version-badge" id="version-badge"></span>
         </header>
 
         <div id="cards"></div>
@@ -361,6 +361,12 @@
         }
 
         renderCards()
+    </script>
+
+    <script type="module">
+        // __VERSION__ is replaced at dev/build time by docs/vite.config.ts
+        // with the version from packages/web-grid/package.json.
+        document.getElementById('version-badge').textContent = 'v' + __VERSION__
     </script>
 </body>
 </html>

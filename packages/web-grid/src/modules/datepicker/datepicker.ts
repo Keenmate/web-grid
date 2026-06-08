@@ -296,6 +296,9 @@ export class DatePicker {
 	private input: HTMLInputElement | null = null
 	private cleanupAutoUpdate: (() => void) | null = null
 
+	/** The picker's outer container (mounted in document.body), or null when closed. */
+	getElement(): HTMLElement | null { return this.element }
+
 	private previousInputValue = ''
 	private boundHandleClickOutside: (e: MouseEvent) => void
 	private boundHandleKeyDown: (e: KeyboardEvent) => void
@@ -524,6 +527,7 @@ export class DatePicker {
 	 */
 	private attachListeners(): void {
 		if (!this.element) return
+
 
 		// Click handler for picker
 		this.element.addEventListener('click', (e) => this.handleClick(e))

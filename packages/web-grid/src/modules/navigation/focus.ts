@@ -496,6 +496,15 @@ export function handleTableFocusOut<T>(ctx: GridContext<T>, e: FocusEvent): void
 		return
 	}
 
+	// If focus is moving into one of our document.body-hosted popovers (date
+	// picker, context menu, header context menu), treat it as staying inside
+	// the component — otherwise the cleanup below would re-render the cell,
+	// detach the popover's anchor, and Floating UI's autoUpdate would silently
+	// close the popover.
+	if (relatedTarget && isInsideOwnedPopover(ctx, relatedTarget)) {
+		return
+	}
+
 	// Defer the check to allow focus to stabilize after cell.focus() calls
 	requestAnimationFrame(() => {
 		// Re-check transitioning flag (may have changed)
@@ -521,6 +530,13 @@ export function handleTableFocusOut<T>(ctx: GridContext<T>, e: FocusEvent): void
 			return
 		}
 
+		// Same check as the synchronous one above, but using the post-rAF
+		// activeElement — covers cases where the focus shift happens between
+		// the focusout event and the next frame.
+		if (isInsideOwnedPopover(ctx, document.activeElement as HTMLElement | null)) {
+			return
+		}
+
 		// Focus truly left the component - clear focus state
 		const oldFocus = ctx.grid.focusedCell
 		ctx.grid.clearFocusedCell()
@@ -528,4 +544,17 @@ export function handleTableFocusOut<T>(ctx: GridContext<T>, e: FocusEvent): void
 		// Only remove fill handle if this grid owns it (prevents one grid from removing another's)
 		removeFillHandle(host)
 	})
+}
+
+/**
+ * Returns true if `node` is inside any of this grid's document.body-hosted
+ * popovers (datepicker, cell context menu, header context menu).
+ */
+function isInsideOwnedPopover<T>(ctx: GridContext<T>, node: Node | null): boolean {
+	if (!node) return false
+	const dpEl = ctx.datepicker?.getElement() ?? null
+	if (dpEl && dpEl.contains(node)) return true
+	if (ctx.contextMenuElement && ctx.contextMenuElement.contains(node)) return true
+	if (ctx.headerContextMenuElement && ctx.headerContextMenuElement.contains(node)) return true
+	return false
 }

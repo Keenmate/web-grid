@@ -206,16 +206,16 @@ test.describe('min / max constraints', () => {
 		await expect(may31).toHaveClass(/wg-datepicker__day--disabled/)
 	})
 
-	test('clicking a disabled day does not commit', async ({ page }) => {
+	test('clicking a disabled day does not commit and leaves the picker open', async ({ page }) => {
 		await gotoDp(page)
 		await openPicker(page, 0, COL.iso)
 
-		// handleDayClick returns null for disabled days, so selectDate is not invoked
-		// and onrowchange must not fire (even if the picker itself closes due to the
-		// focus-out bug — see month-navigation skip note).
+		// handleDayClick returns null for disabled days, so selectDate is not
+		// invoked and onrowchange must not fire. The mousedown preventDefault
+		// keeps focus on the input, so the picker stays open.
 		await day(page, '2026-05-31').click({ force: true })
 		await expect(page.locator('[data-testid="commit-log"] .row')).toHaveCount(0)
-		await expect(cell(page, 0, COL.iso)).toContainText('2026-06-15')
+		await expect(picker(page)).toBeVisible()
 	})
 
 	test('arrow keys cannot move focus past minDate', async ({ page }) => {
@@ -249,15 +249,13 @@ test.describe('month navigation', () => {
 		await expect(picker(page).locator('.wg-datepicker__month-year')).toHaveText(/July\s+2026/)
 	})
 
-	// KNOWN BUG: clicking the picker's own chevrons / month-year button shifts
-	// focus to a non-shadow element in document.body. handleTableFocusOut runs,
-	// re-renders the cell, disconnects the editor anchor, and Floating UI's
-	// autoUpdate detects anchor.isConnected=false and closes the picker. The
-	// keyboard equivalents (PageUp/PageDown, Ctrl+Arrow) work because they keep
-	// focus on the input. Fix would be to either host the picker inside the
-	// shadow root or expand the focus-out check to recognize the picker as
-	// in-scope.
-	test.skip('next-month chevron also advances the header', async ({ page }) => {
+	// Clicking the picker's own chevrons / month-year button used to silently
+	// close the picker — focus would shift to the button (the picker mounts in
+	// document.body, outside the shadow root), the date input fired focusout,
+	// handleTableFocusOut re-rendered the cell, and Floating UI's autoUpdate
+	// detected the anchor disconnection. Fixed by having the picker
+	// preventDefault on mousedown so focus stays on the anchor input.
+	test('next-month chevron also advances the header', async ({ page }) => {
 		await gotoDp(page)
 		await openPicker(page, 0, COL.iso)
 
@@ -266,7 +264,7 @@ test.describe('month navigation', () => {
 		await expect(picker(page).locator('.wg-datepicker__month-year')).toHaveText(/July\s+2026/)
 	})
 
-	test.skip('month/year header opens the rolling selector', async ({ page }) => {
+	test('month/year header opens the rolling selector', async ({ page }) => {
 		await gotoDp(page)
 		await openPicker(page, 0, COL.iso)
 

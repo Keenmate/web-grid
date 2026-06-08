@@ -2680,7 +2680,19 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			// Initialize click event manager for outside-click detection
 			// Only subscribe once (attachEventListeners is called on every render)
 			if (!this.clickEventsSubscribed) {
-				this.clickEvents.init(container, this)
+				// Treat clicks inside our document.body-hosted popovers as
+				// inside the grid — otherwise outsideClick fires while the user
+				// is interacting with the picker/menu and tears down editing.
+				const isPathInOwnedScope = (path: EventTarget[]): boolean => {
+					const dpEl = this.datepicker?.getElement() ?? null
+					for (const node of path) {
+						if (dpEl && dpEl === node) return true
+						if (this.contextMenuElement && this.contextMenuElement === node) return true
+						if (this.headerContextMenuElement && this.headerContextMenuElement === node) return true
+					}
+					return false
+				}
+				this.clickEvents.init(container, this, isPathInOwnedScope)
 
 				// Clear selections, focus, and close editors when clicking outside the grid
 				this.clickEvents.subscribe('outsideClick', () => {

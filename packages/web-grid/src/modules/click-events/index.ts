@@ -40,8 +40,16 @@ export interface ClickEventManager {
 	 * Initialize click listeners
 	 * @param container - The grid container element (.wg)
 	 * @param hostElement - The custom element host (<web-grid>) for outside detection
+	 * @param isPathInOwnedScope - Optional predicate; when it returns true for a
+	 *   click's composed path, the click is treated as inside the grid (used for
+	 *   document.body-hosted popovers like the datepicker and context menus
+	 *   that need to extend the grid's "inside" scope beyond the host element).
 	 */
-	init(container: HTMLElement, hostElement: HTMLElement): void
+	init(
+		container: HTMLElement,
+		hostElement: HTMLElement,
+		isPathInOwnedScope?: (path: EventTarget[]) => boolean
+	): void
 
 	/**
 	 * Remove all listeners and subscriptions (called in disconnectedCallback)
@@ -65,6 +73,7 @@ export function createClickEventManager(): ClickEventManager {
 	let containerElement: HTMLElement | null = null
 	let hostElementRef: HTMLElement | null = null
 	let documentListenerAttached = false
+	let isPathInOwnedScopeFn: ((path: EventTarget[]) => boolean) | null = null
 	// Track if current click originated inside the grid (set on mousedown, checked on click)
 	// This handles cases where render() rebuilds DOM between mousedown and click
 	let insideGridClickInProgress = false
@@ -163,8 +172,13 @@ export function createClickEventManager(): ClickEventManager {
 		// composedPath() includes all elements through shadow DOM boundaries
 		const path = mouseEvent.composedPath ? mouseEvent.composedPath() : []
 		const clickedInGrid = path.includes(hostElementRef)
+		// Clicks on document.body-hosted popovers we own (datepicker, context
+		// menus) should also count as inside — otherwise the outside-click
+		// handler tears down editing state while the user is just operating the
+		// popover.
+		const clickedInOwnedScope = !clickedInGrid && isPathInOwnedScopeFn?.(path) === true
 
-		if (!clickedInGrid) {
+		if (!clickedInGrid && !clickedInOwnedScope) {
 			dispatch('outsideClick', {
 				target,
 				event: mouseEvent
@@ -183,9 +197,14 @@ export function createClickEventManager(): ClickEventManager {
 			}
 		},
 
-		init(container: HTMLElement, hostElement: HTMLElement) {
+		init(
+			container: HTMLElement,
+			hostElement: HTMLElement,
+			isPathInOwnedScope?: (path: EventTarget[]) => boolean
+		) {
 			containerElement = container
 			hostElementRef = hostElement
+			isPathInOwnedScopeFn = isPathInOwnedScope ?? null
 
 			// Listen for mousedown on HOST element (not container)
 			// This survives render() calls which replace the container
@@ -212,6 +231,7 @@ export function createClickEventManager(): ClickEventManager {
 
 			containerElement = null
 			hostElementRef = null
+			isPathInOwnedScopeFn = null
 			insideGridClickInProgress = false
 
 			// Clear all handlers
