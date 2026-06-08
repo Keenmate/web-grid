@@ -234,3 +234,99 @@ test.describe('events', () => {
 		await expect(cell(page, 1, COL.name)).toContainText('Bob Smith')
 	})
 })
+
+// =============================================================================
+// Web-component proxies (regression — onpaste / onbeforepaste / pasteMode /
+// shouldValidateOnPaste must route through the GridElement, not just the core)
+// =============================================================================
+
+test.describe('web-component paste proxies', () => {
+	test('el.pasteMode round-trips through to the core', async ({ page }) => {
+		await gotoPaste(page)
+
+		const result = await gridLocator(page).evaluate((el: any) => {
+			el.pasteMode = 'all-columns'
+			return { hostRead: el.pasteMode, coreRead: el.grid.pasteMode }
+		})
+
+		expect(result.hostRead).toBe('all-columns')
+		expect(result.coreRead).toBe('all-columns')
+	})
+
+	test('el.shouldValidateOnPaste round-trips through to the core', async ({ page }) => {
+		await gotoPaste(page)
+
+		const result = await gridLocator(page).evaluate((el: any) => {
+			el.shouldValidateOnPaste = false
+			return { hostRead: el.shouldValidateOnPaste, coreRead: el.grid.shouldValidateOnPaste }
+		})
+
+		expect(result.hostRead).toBe(false)
+		expect(result.coreRead).toBe(false)
+	})
+
+	test('assigning el.onpaste delivers a PasteDetail (not a native ClipboardEvent)', async ({ page }) => {
+		await gotoPaste(page)
+
+		// Wire a fresh consumer-style handler via the host proxy and trigger paste.
+		// If the proxy were missing, this assignment would register a native paste
+		// listener and the handler would receive a ClipboardEvent (no totalCells).
+		await gridLocator(page).evaluate((el: any) => {
+			(window as any).__pasteDetails = []
+			el.onpaste = (detail: any) => {
+				(window as any).__pasteDetails.push({
+					totalCells: detail.totalCells,
+					successfulCells: detail.successfulCells,
+					hadHeaders: detail.hadHeaders,
+					isClipboardEvent: detail instanceof Event
+				})
+			}
+		})
+
+		await focusCell(page, 0, COL.name)
+		await pasteText(page, 'X\ty@x\nZ\tz@x')
+
+		const details = await page.evaluate(() => (window as any).__pasteDetails)
+		expect(details.length).toBe(1)
+		expect(details[0].totalCells).toBe(4)
+		expect(details[0].successfulCells).toBe(4)
+		expect(details[0].isClipboardEvent).toBe(false)
+	})
+
+	test('assigning el.onbeforepaste reaches the core', async ({ page }) => {
+		await gotoPaste(page)
+
+		await gridLocator(page).evaluate((el: any) => {
+			(window as any).__beforeDetails = []
+			el.onbeforepaste = (detail: any) => {
+				(window as any).__beforeDetails.push({
+					parsedRows: detail.parsedRows.length,
+					hasHeaders: detail.hasHeaders
+				})
+			}
+		})
+
+		await focusCell(page, 0, COL.name)
+		await pasteText(page, 'A\tone@x\nB\ttwo@x')
+
+		const details = await page.evaluate(() => (window as any).__beforeDetails)
+		expect(details.length).toBe(1)
+		expect(details[0].parsedRows).toBe(2)
+	})
+
+	test('el.pasteMode change via the proxy affects paste behavior', async ({ page }) => {
+		await gotoPaste(page)
+
+		// Switch through the host proxy directly (no UI control).
+		await gridLocator(page).evaluate((el: any) => {
+			el.pasteMode = 'all-columns'
+		})
+
+		await focusCell(page, 0, COL.id)
+		await pasteText(page, '999\tOverwriteOne\n888\tOverwriteTwo')
+
+		// 'all-columns' lets the non-editable id column be overwritten.
+		await expect(cell(page, 0, COL.id)).toContainText('999')
+		await expect(cell(page, 1, COL.id)).toContainText('888')
+	})
+})

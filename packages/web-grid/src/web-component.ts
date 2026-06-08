@@ -44,7 +44,10 @@ import type {
 	FillDragDetail,
 	RangeShortcut,
 	RangeShortcutContext,
-	RowFocusDetail
+	RowFocusDetail,
+	PasteMode,
+	BeforePasteDetail,
+	PasteDetail
 } from './types.js'
 
 // Import CSS (Vite inlines this as a string)
@@ -330,6 +333,20 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		super()
 		this.shadow = this.attachShadow({ mode: 'open' })
 		this.grid = new WebGrid<T>()
+
+		// Install `onpaste` proxy at the instance level. Cannot be declared
+		// as a class accessor because HTMLElement already defines onpaste as
+		// a ClipboardEvent handler — see the comment on the onbeforepaste
+		// proxy for context.
+		Object.defineProperty(this, 'onpaste', {
+			configurable: true,
+			enumerable: true,
+			get: (): ((detail: PasteDetail<T>) => void) | undefined => this.grid.onpaste,
+			set: (value: ((detail: PasteDetail<T>) => void) | undefined): void => {
+				this.grid.onpaste = value
+			}
+		})
+
 		this.scrollEvents = createScrollEventManager()
 		this.clickEvents = createClickEventManager()
 		this.focusEvents = createFocusEventManager(
@@ -881,6 +898,26 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 	get hasMoreItems(): boolean { return this.grid.hasMoreItems }
 	set hasMoreItems(value: boolean) { this.grid.hasMoreItems = value }
+
+	// Paste
+	// `onbeforepaste`, `pasteMode`, `shouldValidateOnPaste` are straight
+	// proxies. `onpaste` is special: HTMLElement already defines it as a
+	// ClipboardEvent handler, and declaring an incompatible class accessor
+	// would break the structural-typing contract with HTMLElement (and the
+	// `customElements.define` call). Instead we install our proxy at
+	// construction time via Object.defineProperty (see installPasteProxy
+	// below). TypeScript will still report the native ClipboardEvent type
+	// when consumers read `el.onpaste`; in practice consumers should set
+	// `onpaste` for the PasteDetail callback or fall back to
+	// `el.grid.onpaste` for full type fidelity.
+	get onbeforepaste(): ((detail: BeforePasteDetail<T>) => void) | undefined { return this.grid.onbeforepaste }
+	set onbeforepaste(value: ((detail: BeforePasteDetail<T>) => void) | undefined) { this.grid.onbeforepaste = value }
+
+	get pasteMode(): PasteMode { return this.grid.pasteMode }
+	set pasteMode(value: PasteMode) { this.grid.pasteMode = value }
+
+	get shouldValidateOnPaste(): boolean { return this.grid.shouldValidateOnPaste }
+	set shouldValidateOnPaste(value: boolean) { this.grid.shouldValidateOnPaste = value }
 
 	// Computed properties
 	get displayItems(): T[] { return this.grid.displayItems }
