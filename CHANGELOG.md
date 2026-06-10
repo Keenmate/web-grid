@@ -5,13 +5,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-06-10
+
+### Changed
+
+- **CSS file structure refactored to the canonical web-component pattern** documented at `BlissFramework/guidelines/web-components/css-structure.md`:
+  - Underscore prefix dropped from every CSS filename (`_variables.css` → `variables.css`, etc.). The underscore was a SASS partial convention with no meaning in pure CSS. Consumers importing individual CSS files by path must update those imports.
+  - `main.css` now declares `@layer variables, component, overrides;` and every `@import` is wrapped in `layer(...)`. Consumer override contract: any unlayered consumer rule beats every rule in `@layer component` — `!important` no longer needed to override default styling. `:root` `--base-*` declarations still beat the variables layer via custom-property inheritance.
+  - `main.css` header rewritten to describe the layer contract and the BEM convention; the previous file-list comment (which had drifted) is gone.
+- **Mixed-bag files split**:
+  - `dialogs.css` now owns only the Go-to-row dialog. Tooltip rules moved to `floating.css`.
+  - `modifiers.css` deleted; its content (striped, hoverable, empty state, loading indicator) moved to `states.css`.
+- **`@keyframes` centralized in `animations.css`** — currently just `wg-pulse` (loading indicator on autocomplete/combobox editors). Was previously inline in `editors.css`.
+
+### Added
+
+- **Four canonical Tier-2 CSS files** to align with the cross-component pattern, sitting between `base` and feature files:
+  - `controls.css` (stub — web-grid's interactive controls are all feature-specific)
+  - `floating.css` (tooltip; future floating chrome lands here)
+  - `states.css` (striped/hoverable rows, empty state, loading indicator)
+  - `animations.css` (`@keyframes` declarations)
+- **Section banners on `editors.css`** for TEXT/NUMBER, DATE, CHECKBOX, CUSTOM, COMBOBOX/AUTOCOMPLETE editor types. Previously only the combobox section was banner-marked.
+
+### Notes
+
+- No behavioral changes, no API changes, no DOM-class renames. Strictly an internal-structure refactor.
+- Full e2e suite passes (275 passed, 3 skipped). Library bundle size essentially unchanged.
+
 ## [1.3.0] - 2026-06-10
 
 ### Changed
 
 - **`--base-*` taxonomy fallback chains**: `--wg-surface-floating` now chains `var(--base-dropdown-bg, var(--base-elevated-bg, …))` so floating UI (toolbar / context menu / dropdown panels) picks up theme-designer's elevated-bg when no dropdown-specific override is set. `--wg-tooltip-bg` now chains `var(--base-tooltip-bg, var(--base-inverse-bg, …))` for cross-component consistency. Existing `--base-dropdown-bg` / `--base-tooltip-bg` overrides keep working unchanged — these chains are second-tier fallbacks.
 - **`--wg-active-bg` now sources from `--base-active-bg`**: previously it shared `--base-hover-bg` with `--wg-hover-bg`, so theme overrides could not distinguish active from hover. The new `--base-active-bg` lets theme-designer drive both states independently while still falling back to a color-mix derived from text + main-bg.
-- **OS-aware dark mode via `light-dark()` in fallbacks**: hardcoded fallbacks for text / surface / border / input / hover / tooltip variables are now wrapped in `light-dark(<light>, <dark>)`. Consumers who set only `body { color-scheme: dark }` (no overrides, no framework class) now get a sensible dark palette automatically. The existing `_dark-mode.css` selectors (`data-theme="dark"`, `data-bs-theme="dark"`, `.dark`, `@media (prefers-color-scheme: dark)`) remain in place for framework-driven theme switches.
+- **OS-aware dark mode via `light-dark()` in fallbacks**: hardcoded fallbacks for text / surface / border / input / hover / tooltip variables are now wrapped in `light-dark(<light>, <dark>)`. Consumers who set only `body { color-scheme: dark }` (no overrides, no framework class) now get a sensible dark palette automatically. The existing `dark-mode.css` selectors (`data-theme="dark"`, `data-bs-theme="dark"`, `.dark`, `@media (prefers-color-scheme: dark)`) remain in place for framework-driven theme switches.
 - **Adaptive hover/active via `color-mix`**: `--wg-hover-bg` and `--wg-active-bg` fall back to `color-mix(in srgb, var(--wg-text-color-1) 8%/14%, <main-bg>)` instead of flat surface colors. The mix steps toward the text color, so highlights stay visible in both light and dark modes.
 
 ### Added
