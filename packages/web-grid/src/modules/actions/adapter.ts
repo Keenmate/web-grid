@@ -653,13 +653,17 @@ export class ActionPipelineAdapter<T = unknown> {
 			// Note: Don't stopPropagation() - it can interfere with dblclick detection
 			e.preventDefault()
 
-			// Cancel any active edit on a different cell before focusing
+			// Commit (or cancel) any active edit on a different cell before focusing.
+			// Excel-like commit-on-click-away is the default; shouldCommitOnClickAway=false
+			// preserves the legacy discard-on-click behaviour.
 			if (this.ctx.grid.editingCell) {
 				// Set transition flag to prevent focusout handler from clearing focus
-				// (cancelEdit re-renders the old cell, removing its editor → triggers focusout
-				// which would undo the focusCell we dispatch next)
+				// (commit/cancel re-renders the old cell, removing its editor → triggers
+				// focusout which would undo the focusCell we dispatch next)
 				this.ctx.isTransitioningCells = true
-				this.pipeline.dispatch({ type: 'cancelEdit' })
+				this.pipeline.dispatch({
+					type: this.ctx.grid.shouldCommitOnClickAway ? 'commitEdit' : 'cancelEdit'
+				})
 			}
 
 			// Clear row/column/cell selections when clicking on a cell

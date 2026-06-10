@@ -548,6 +548,7 @@ export type QuickGridProps<T> = {
 	isRowEditable?: boolean | ((row: T) => boolean)
 	editTrigger?: EditTrigger
 	editStartSelection?: EditStartSelection  // Default cursor position when entering edit via navigate mode (default: selectAll)
+	shouldCommitOnClickAway?: boolean  // Commit the editor value (Excel-like) when clicking another cell; false discards. Default: true
 	mode?: GridMode  // Grid mode - sets sensible defaults (read-only, excel, input-matrix)
 	dropdownToggleVisibility?: ToggleVisibility  // When to show dropdown toggle (always, on-focus)
 	shouldShowDropdownOnFocus?: boolean  // Auto-open dropdown when cell is focused

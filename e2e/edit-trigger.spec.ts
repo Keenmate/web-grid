@@ -128,3 +128,44 @@ test.describe("editTrigger='navigate' — #navigateGrid", () => {
 		await expect(editorIn(nameCell)).toBeVisible()
 	})
 })
+
+// =============================================================================
+// shouldCommitOnClickAway (Excel-like commit when clicking another cell)
+// =============================================================================
+
+test.describe('shouldCommitOnClickAway', () => {
+	test('default (true) — clicking another cell commits the in-progress value', async ({ page }) => {
+		// dblclickGrid: shouldCommitOnClickAway defaults to true
+		const nameCell = cell(page, 'dblclickGrid', 0, 1)  // Alice
+		await nameCell.dblclick()
+		const editor = editorIn(nameCell)
+		await expect(editor).toBeVisible()
+		await editor.selectText()
+		await editor.fill('Alice CHANGED')
+
+		// Click a different cell — should commit, not discard
+		await cell(page, 'dblclickGrid', 1, 1).click()
+
+		await expect(nameCell).toContainText('Alice CHANGED')
+		await expect(nameCell).toHaveClass(/wg__cell--dirty/)
+	})
+
+	test('false — clicking another cell discards the in-progress value', async ({ page }) => {
+		await page.evaluate(() => {
+			const g = document.getElementById('dblclickGrid') as unknown as { shouldCommitOnClickAway: boolean }
+			g.shouldCommitOnClickAway = false
+		})
+
+		const nameCell = cell(page, 'dblclickGrid', 2, 1)  // Carol
+		await nameCell.dblclick()
+		const editor = editorIn(nameCell)
+		await expect(editor).toBeVisible()
+		await editor.selectText()
+		await editor.fill('SHOULD NOT STICK')
+
+		await cell(page, 'dblclickGrid', 3, 1).click()
+
+		await expect(nameCell).toContainText('Carol')
+		await expect(nameCell).not.toHaveClass(/wg__cell--dirty/)
+	})
+})

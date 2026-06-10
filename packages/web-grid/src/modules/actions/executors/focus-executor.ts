@@ -62,6 +62,24 @@ function executeFocusCell(ctx: ExecutorContext, action: FocusCellAction): GridAc
 	// Update visual state (adds/removes focus classes)
 	updateFocusVisual(ctx, oldFocus, { rowIndex, colIndex })
 
+	// Row focus follows cell focus. The host's mousedown handler used to do
+	// this, but the pipeline marks cell selection as "pending" on every cell
+	// mousedown, which suppressed that update — so row focus only ever
+	// landed after a second click on an already-focused cell. Doing it here
+	// keeps onrowfocus tied to the focusCell action and fires regardless of
+	// keyboard/mouse input. shift+click extends a selection without
+	// dispatching focusCell, so row focus correctly stays put there.
+	const prevRowIndex = ctx.grid.focusedRowIndex
+	if (prevRowIndex !== rowIndex) {
+		ctx.grid.setFocusedRow(rowIndex)
+		if (prevRowIndex !== null) {
+			const prevRow = ctx.shadow.querySelector(`tr[data-row-index="${prevRowIndex}"]`)
+			prevRow?.classList.remove('wg__row--focused')
+		}
+		const newRow = ctx.shadow.querySelector(`tr[data-row-index="${rowIndex}"]`)
+		newRow?.classList.add('wg__row--focused')
+	}
+
 	// Find the cell element
 	const cell = ctx.shadow.querySelector(
 		`td[data-row="${rowIndex}"][data-col="${colIndex}"]`

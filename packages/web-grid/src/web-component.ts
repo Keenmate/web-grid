@@ -486,6 +486,9 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	get editStartSelection(): EditStartSelection { return this.grid.editStartSelection }
 	set editStartSelection(value: EditStartSelection) { this.grid.editStartSelection = value }
 
+	get shouldCommitOnClickAway(): boolean { return this.grid.shouldCommitOnClickAway }
+	set shouldCommitOnClickAway(value: boolean) { this.grid.shouldCommitOnClickAway = value }
+
 	get mode(): GridMode { return this.grid.mode }
 	set mode(value: GridMode) { this.grid.mode = value }
 
@@ -2101,13 +2104,13 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 						)
 
 					if (shouldSelectRange) {
-						// Cancel any active edit before starting cell selection
+						// Commit (or cancel) any active edit before starting cell selection
 						if (this.grid.editingCell) {
 							const oldEditingCell = this.grid.editingCell
 							const oldColIndex = this.grid.columns.findIndex(c => String(c.field) === oldEditingCell.field)
 							removeDropdown(this)
 							clearEditingVisual(this)
-							this.grid.cancelEdit()
+							this.commitOrCancelEditOnTransition()
 							// Re-render old cell to restore display mode
 							if (oldColIndex >= 0) {
 								renderCell(this, oldEditingCell.rowIndex, oldColIndex)
@@ -2159,13 +2162,13 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 						this.isTransitioningCells = true
 						if (this.grid.editingCell) {
-							// Save old cell info BEFORE cancelEdit clears it
+							// Save old cell info BEFORE commit/cancel clears it
 							const oldEditingCell = this.grid.editingCell
 							const oldColIndex = this.grid.columns.findIndex(c => String(c.field) === oldEditingCell.field)
 
 							removeDropdown(this)
 							clearEditingVisual(this)
-							this.grid.cancelEdit()
+							this.commitOrCancelEditOnTransition()
 
 							// Move focus to the new cell BEFORE re-rendering so the old cell
 							// renders without the focused class
@@ -2210,11 +2213,11 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 							const oldColIndex = editingColIndex
 							removeDropdown(this)
 							clearEditingVisual(this)
-							this.grid.cancelEdit()
+							this.commitOrCancelEditOnTransition()
 							// Move focus to the new cell BEFORE re-rendering so the old cell
 							// renders without the focused class
 							this.grid.setFocusedCell(rowIndex, colIndex)
-							// Re-render old cell AFTER cancelEdit so it renders in display mode
+							// Re-render old cell AFTER commit/cancel so it renders in display mode
 							if (oldColIndex >= 0) {
 								renderCell(this, oldRowIndex, oldColIndex)
 							}
@@ -2265,11 +2268,11 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 						if (oldEditingCell) {
 							removeDropdown(this)
 							clearEditingVisual(this)
-							this.grid.cancelEdit()
+							this.commitOrCancelEditOnTransition()
 							// Move focus to the new cell BEFORE re-rendering so the old cell
 							// renders without the focused class
 							this.grid.setFocusedCell(rowIndex, colIndex)
-							// Re-render old cell AFTER cancelEdit so it renders in display mode
+							// Re-render old cell AFTER commit/cancel so it renders in display mode
 							if (oldColIndex >= 0) {
 								renderCell(this, oldEditingCell.rowIndex, oldColIndex)
 							}
@@ -3612,6 +3615,66 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			const selectedHeaders = this.shadow.querySelectorAll('.wg__header--selected')
 			selectedHeaders.forEach(h => h.classList.remove('wg__header--selected'))
 		}
+	}
+
+	/**
+	 * Called from cell-transition click handlers in place of grid.cancelEdit().
+	 * Reads the in-progress editor value and commits it (Excel-like) when
+	 * shouldCommitOnClickAway is true; falls back to cancel when false or when
+	 * the editor DOM can't be read. Must be called BEFORE renderCell wipes
+	 * the editor element.
+	 */
+	private commitOrCancelEditOnTransition(): void {
+		const editingCell = this.grid.editingCell
+		if (!editingCell) return
+		if (!this.grid.shouldCommitOnClickAway) {
+			this.grid.cancelEdit()
+			return
+		}
+		const { rowIndex, field } = editingCell
+		const colIndex = this.grid.columns.findIndex(c => String(c.field) === field)
+		if (colIndex < 0) {
+			this.grid.cancelEdit()
+			return
+		}
+		const cell = this.shadow.querySelector(
+			`.wg__cell[data-row="${rowIndex}"][data-col="${colIndex}"]`
+		) as HTMLElement | null
+		let editor: HTMLElement | null = cell?.querySelector(
+			'.wg__combobox-input, .wg__autocomplete-input, .wg__date-input, .wg__select-trigger'
+		) as HTMLElement | null
+		if (!editor) editor = cell?.querySelector('.wg__editor') as HTMLElement | null
+		if (!editor) {
+			this.grid.cancelEdit()
+			return
+		}
+		let value: unknown
+		if (editor instanceof HTMLInputElement) {
+			if (editor.type === 'checkbox') {
+				const item = this.grid.displayItems[rowIndex]
+				value = this.grid.getCellRawValue(item, rowIndex, field)
+			} else if (editor.classList.contains('wg__date-input')) {
+				value = editor.dataset.dateValue || editor.value
+			} else if (editor.classList.contains('wg__editor--number')) {
+				const strValue = editor.value.trim()
+				if (strValue === '') {
+					value = null
+				} else {
+					const num = parseFloat(strValue)
+					value = isNaN(num) ? strValue : num
+				}
+			} else {
+				value = editor.value
+			}
+		} else if (editor instanceof HTMLSelectElement) {
+			value = editor.value
+		} else {
+			value = editor.dataset.value || ''
+		}
+		// Fire and forget — grid.commitEdit handles async validation and clears
+		// editingCell when complete. The surrounding caller already handles
+		// post-transition rendering and focus.
+		void this.grid.commitEdit(rowIndex, field, value)
 	}
 
 	/**

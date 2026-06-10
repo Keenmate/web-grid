@@ -142,6 +142,7 @@ export class WebGrid<T = unknown> {
 	protected _isRowEditable: boolean | ((row: T) => boolean) | undefined = undefined
 	protected _editTrigger: EditTrigger = "dblclick"
 	protected _editStartSelection: EditStartSelection = "mousePosition"
+	protected _shouldCommitOnClickAway: boolean = true
 	protected _mode: GridMode = "excel"
 	protected _dropdownToggleVisibility: ToggleVisibility = "always"
 	protected _shouldShowDropdownOnFocus: boolean = true
@@ -445,6 +446,11 @@ export class WebGrid<T = unknown> {
 	get editStartSelection(): EditStartSelection { return this._editStartSelection }
 	set editStartSelection(value: EditStartSelection) {
 		this._editStartSelection = value
+	}
+
+	get shouldCommitOnClickAway(): boolean { return this._shouldCommitOnClickAway }
+	set shouldCommitOnClickAway(value: boolean) {
+		this._shouldCommitOnClickAway = value
 	}
 
 	get mode(): GridMode { return this._mode }
