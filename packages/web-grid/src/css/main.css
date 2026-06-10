@@ -17,8 +17,22 @@
 
 @layer variables, component, overrides;
 
+/* === VARIABLES === */
 @import './variables.css'       layer(variables);
+
+/* === BASE === */
 @import './table.css'           layer(component);
+
+/* === CANONICAL CONCERNS (Tier 2) === */
+@import './controls.css'        layer(component);
+@import './floating.css'        layer(component);
+@import './states.css'          layer(component);
+@import './animations.css'      layer(component);
+
+/* === COMPONENT-SPECIFIC FEATURES (Tier 3) ===
+   Ordered by dependency: header before resize/reorder (positioning); cells
+   before navigation (navigate-mode rules need to beat read-only cell rules);
+   editors/dropdown after cells (edit-state styling overrides). */
 @import './header.css'          layer(component);
 @import './resize.css'          layer(component);
 @import './reorder.css'         layer(component);
@@ -35,8 +49,9 @@
 @import './pagination.css'      layer(component);
 @import './toolbar.css'         layer(component);
 @import './shortcuts.css'       layer(component);
-@import './modifiers.css'       layer(component);
 @import './dialogs.css'         layer(component);
 @import './virtual-scroll.css'  layer(component);
 @import './tree.css'            layer(component);
+
+/* === OVERRIDES === */
 @import './dark-mode.css'       layer(overrides);

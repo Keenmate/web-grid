@@ -1,0 +1,3 @@
+/* animations.css — web-grid has no @keyframes today.
+   Inline transition: rules live next to the property they animate
+   (tree chevron rotation in tree.css, tooltip fade in floating.css). */

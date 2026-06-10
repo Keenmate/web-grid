@@ -1,8 +1,14 @@
 /* ==============================================================================
-   MODIFIERS
+   STATES — Tier-2 canonical concern
    ==============================================================================
-   Table style modifiers: striped rows, hoverable rows, empty state
+   Cross-feature state and presentation modifiers: striped rows, row hover,
+   empty state, loading state. Feature-specific state modifiers (cell focused,
+   cell dirty, cell editing) live in their feature files.
 */
+
+/* ==============================================================================
+   ROW VARIANTS
+   ============================================================================== */
 
 /* Striped rows */
 .wg--striped tbody tr:nth-child(even) {

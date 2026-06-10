@@ -1,70 +1,11 @@
 /* ==============================================================================
-   TOOLTIP (Floating UI positioned)
-   ============================================================================== */
-.wg__tooltip {
-  position: absolute;
-  z-index: var(--wg-z-tooltip);
-  max-width: var(--wg-tooltip-max-width);
-  padding: var(--wg-tooltip-padding);
-  background: var(--wg-tooltip-bg);
-  color: var(--wg-tooltip-color);
-  font-size: var(--wg-font-size-sm);
-  line-height: 1.4;
-  border-radius: var(--wg-border-radius-sm);
-  box-shadow: var(--wg-tooltip-shadow);
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity var(--wg-transition-fast);
-}
-
-.wg__tooltip--visible {
-  opacity: 1;
-}
-
-.wg__tooltip-arrow {
-  position: absolute;
-  width: var(--wg-tooltip-arrow-size);
-  height: var(--wg-tooltip-arrow-size);
-  background: var(--wg-tooltip-bg);
-  transform: rotate(45deg);
-}
-
-/* Arrow positioning based on tooltip placement */
-.wg__tooltip[data-placement^="top"] .wg__tooltip-arrow {
-  bottom: calc(-0.5 * var(--wg-tooltip-arrow-size));
-}
-
-.wg__tooltip[data-placement^="bottom"] .wg__tooltip-arrow {
-  top: calc(-0.5 * var(--wg-tooltip-arrow-size));
-}
-
-.wg__tooltip[data-placement^="left"] .wg__tooltip-arrow {
-  right: calc(-0.5 * var(--wg-tooltip-arrow-size));
-}
-
-.wg__tooltip[data-placement^="right"] .wg__tooltip-arrow {
-  left: calc(-0.5 * var(--wg-tooltip-arrow-size));
-}
-
-/* Rich tooltip content */
-.wg__tooltip-title {
-  font-weight: 600;
-}
-
-.wg__tooltip-desc {
-  opacity: 0.85;
-  margin-top: 2px;
-}
-
-.wg__tooltip-shortcut {
-  margin-top: 4px;
-  opacity: 0.7;
-  font-size: 0.9em;
-}
-
-/* ==============================================================================
    GO TO ROW DIALOG (Ctrl+G)
-   ============================================================================== */
+   ==============================================================================
+   Modal dialog for jumping to a specific row by number. Triggered by Ctrl+G
+   keyboard shortcut. Tooltip styling moved to floating.css; this file owns
+   the go-to dialog only.
+*/
+
 .wg__goto-overlay {
   position: fixed;
   inset: 0;
