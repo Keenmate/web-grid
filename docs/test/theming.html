@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — Theming Scenarios</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+	<style>
+		/* Page chrome — minimal, e2e-only. */
+		body {
+			max-width: 1400px;
+			margin: 0 auto;
+			padding: 1.5rem;
+			background: #fafafa;
+		}
+		h1 { margin: 0 0 0.5rem; font-size: 1.25rem; }
+		p { color: #4a5568; margin: 0 0 1rem; font-size: 0.9rem; }
+
+		.scenario-grid {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+			gap: 1rem;
+		}
+
+		.scenario-card {
+			border: 1px solid #cbd5e1;
+			border-radius: 6px;
+			padding: 0.75rem;
+			background: #ffffff;
+		}
+
+		.scenario-card h2 {
+			margin: 0 0 0.25rem;
+			font-size: 0.95rem;
+			color: #1e293b;
+		}
+
+		.scenario-card p {
+			margin: 0 0 0.5rem;
+			font-size: 0.8rem;
+			color: #64748b;
+		}
+
+		.scenario-card .wrapper {
+			padding: 0.5rem;
+			border-radius: 4px;
+		}
+
+		.scenario-card web-grid {
+			display: block;
+			max-height: 220px;
+			border: 1px solid #e2e8f0;
+		}
+	</style>
+</head>
+<body>
+	<h1>Theming scenarios — dark-mode signals</h1>
+	<p>Each card mounts the same <code>&lt;web-grid&gt;</code> under one dark-mode signal. The
+	   e2e spec at <code>e2e/theming.spec.ts</code> asserts the rendered cell background
+	   reflects the expected mode (light vs dark) per signal.</p>
+
+	<div class="scenario-grid">
+		<!-- 1. No signal — should render LIGHT -->
+		<div class="scenario-card" data-scenario="baseline-light">
+			<h2>1. No signal (baseline light)</h2>
+			<p>No attribute, no ancestor class. Expected: <strong>LIGHT</strong>.</p>
+			<div class="wrapper">
+				<web-grid id="grid-baseline-light"></web-grid>
+			</div>
+		</div>
+
+		<!-- 2. Per-instance data-theme="dark" — should render DARK -->
+		<div class="scenario-card" data-scenario="per-instance-dark">
+			<h2>2. Per-instance <code>data-theme="dark"</code></h2>
+			<p>Attribute on <code>&lt;web-grid&gt;</code> directly. Expected: <strong>DARK</strong>.</p>
+			<div class="wrapper">
+				<web-grid id="grid-per-instance-dark" data-theme="dark"></web-grid>
+			</div>
+		</div>
+
+		<!-- 3. Per-instance data-theme="light" — should render LIGHT (esp. on a dark page) -->
+		<div class="scenario-card" data-scenario="per-instance-light">
+			<h2>3. Per-instance <code>data-theme="light"</code></h2>
+			<p>Attribute forces light even on a dark page. Expected: <strong>LIGHT</strong>.</p>
+			<div class="wrapper">
+				<web-grid id="grid-per-instance-light" data-theme="light"></web-grid>
+			</div>
+		</div>
+
+		<!-- 4. Ancestor [data-theme="dark"] — should render DARK -->
+		<div class="scenario-card" data-scenario="ancestor-data-theme-dark">
+			<h2>4. Ancestor <code>[data-theme="dark"]</code></h2>
+			<p>Generic framework convention. Expected: <strong>DARK</strong>.</p>
+			<div class="wrapper" data-theme="dark">
+				<web-grid id="grid-ancestor-data-theme-dark"></web-grid>
+			</div>
+		</div>
+
+		<!-- 5. Ancestor [data-bs-theme="dark"] — Bootstrap 5.3+ -->
+		<div class="scenario-card" data-scenario="ancestor-data-bs-theme-dark">
+			<h2>5. Ancestor <code>[data-bs-theme="dark"]</code></h2>
+			<p>Bootstrap 5.3+ convention. Expected: <strong>DARK</strong>.</p>
+			<div class="wrapper" data-bs-theme="dark">
+				<web-grid id="grid-ancestor-data-bs-theme-dark"></web-grid>
+			</div>
+		</div>
+
+		<!-- 6. Ancestor .dark (Tailwind) — should render DARK -->
+		<div class="scenario-card" data-scenario="ancestor-dark-class">
+			<h2>6. Ancestor <code>.dark</code> (Tailwind)</h2>
+			<p>Tailwind class-mode dark convention. Expected: <strong>DARK</strong>.</p>
+			<div class="wrapper dark">
+				<web-grid id="grid-ancestor-dark-class"></web-grid>
+			</div>
+		</div>
+
+		<!-- 7. Ancestor [data-theme="light"] — force light on a dark wrapper chain -->
+		<div class="scenario-card" data-scenario="ancestor-data-theme-light">
+			<h2>7. Ancestor <code>[data-theme="light"]</code></h2>
+			<p>Forces light. Expected: <strong>LIGHT</strong>.</p>
+			<div class="wrapper" data-theme="light">
+				<web-grid id="grid-ancestor-data-theme-light"></web-grid>
+			</div>
+		</div>
+	</div>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+
+		// Same shape in every card so visual + computed comparisons are like-for-like.
+		const items = [
+			{ id: 1, name: 'Alice',  role: 'Engineer', salary: 95000 },
+			{ id: 2, name: 'Bob',    role: 'Designer', salary: 62000 },
+			{ id: 3, name: 'Carol',  role: 'Manager',  salary: 78000 },
+			{ id: 4, name: 'David',  role: 'Engineer', salary: 88000 }
+		]
+		const columns = [
+			{ field: 'id',     title: 'ID',     width: '60px', isEditable: false },
+			{ field: 'name',   title: 'Name',   width: '120px' },
+			{ field: 'role',   title: 'Role',   width: '110px' },
+			{ field: 'salary', title: 'Salary', width: '90px', horizontalAlign: 'right' }
+		]
+
+		const ids = [
+			'grid-baseline-light',
+			'grid-per-instance-dark',
+			'grid-per-instance-light',
+			'grid-ancestor-data-theme-dark',
+			'grid-ancestor-data-bs-theme-dark',
+			'grid-ancestor-dark-class',
+			'grid-ancestor-data-theme-light'
+		]
+
+		for (const id of ids) {
+			const g = document.getElementById(id)
+			g.items = items
+			g.columns = columns
+			g.isStriped = true
+			g.isHoverable = true
+		}
+	</script>
+</body>
+</html>
