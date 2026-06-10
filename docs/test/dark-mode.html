@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — dark mode contrast fixture</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+	<style>
+		/* Force dark mode at the document level. light-dark() in _variables.css
+		   fallbacks resolves the dark branch off this. */
+		html, body {
+			color-scheme: dark;
+			background: #121212;
+			color: #f5f5f5;
+		}
+
+		h1 { color: #f5f5f5; }
+		h2 { color: #d4d4d4; }
+		p  { color: #a3a3a3; }
+
+		.fixture-section {
+			margin-bottom: 32px;
+			padding: 16px;
+			background: #1a1a1a;
+			border-radius: 8px;
+		}
+
+		web-grid {
+			display: block;
+			border: 1px solid #3d3d3d;
+		}
+
+		/* Fully themed grid: override ~10 --base-* vars to a custom dark palette.
+		   Accent kept dark enough (Tailwind blue-600) so white text on the
+		   accent — e.g. selected row numbers — clears WCAG AA contrast. */
+		#fullyThemed {
+			--base-text-color-1: #e5e7eb;
+			--base-text-color-2: #cbd5e1;
+			--base-text-color-3: #94a3b8;
+			--base-main-bg: #0f172a;
+			--base-elevated-bg: #1e293b;
+			--base-hover-bg: #334155;
+			--base-active-bg: #475569;
+			--base-border-color: #334155;
+			--base-accent-color: #2563eb;
+			--base-input-bg: #1e293b;
+		}
+
+		/* Minimal-override grid: just text + main-bg. */
+		#minimal {
+			--base-text-color-1: #e5e7eb;
+			--base-main-bg: #1a1a1a;
+		}
+
+		/* Zero-override grid relies entirely on the light-dark() fallbacks in
+		   _variables.css picking the dark branch (color-scheme: dark on body). */
+	</style>
+</head>
+<body>
+	<h1>dark mode contrast fixture</h1>
+	<p>Targeted by <code>e2e/dark-mode.spec.ts</code>. Three grids, escalating override levels — all must render readable text in dark mode.</p>
+
+	<div class="fixture-section">
+		<h2>1. Fully themed (~10 <code>--base-*</code> overrides)</h2>
+		<web-grid id="fullyThemed" style="max-width: 720px; max-height: 280px;"></web-grid>
+	</div>
+
+	<div class="fixture-section">
+		<h2>2. Minimal override (text + main-bg only)</h2>
+		<web-grid id="minimal" style="max-width: 720px; max-height: 280px;"></web-grid>
+	</div>
+
+	<div class="fixture-section">
+		<h2>3. Zero overrides (light-dark() fallbacks via <code>color-scheme: dark</code>)</h2>
+		<web-grid id="zero" style="max-width: 720px; max-height: 280px;"></web-grid>
+	</div>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+
+		const seed = () => [
+			{ id: 1, name: 'Alice',   role: 'Engineer',  salary: 95000, active: true },
+			{ id: 2, name: 'Bob',     role: 'Designer',  salary: 62000, active: true },
+			{ id: 3, name: 'Carol',   role: 'Manager',   salary: 78000, active: false },
+			{ id: 4, name: 'David',   role: 'Engineer',  salary: 88000, active: true },
+			{ id: 5, name: 'Eve',     role: 'Director',  salary: 105000, active: true }
+		]
+
+		const columns = [
+			{ field: 'id',     title: 'ID',     width: '60px',  isEditable: false },
+			{ field: 'name',   title: 'Name',   width: '140px' },
+			{ field: 'role',   title: 'Role',   width: '120px' },
+			{ field: 'salary', title: 'Salary', width: '100px', horizontalAlign: 'right' },
+			{ field: 'active', title: 'Active', width: '80px',  editor: 'checkbox' }
+		]
+
+		for (const id of ['fullyThemed', 'minimal', 'zero']) {
+			const grid = document.getElementById(id)
+			grid.items = seed()
+			grid.columns = columns
+			grid.isHoverable = true
+			grid.isStriped = true
+			grid.isRowNumbersVisible = true
+			grid.isEditable = true
+			grid.editTrigger = 'dblclick'
+		}
+	</script>
+</body>
+</html>

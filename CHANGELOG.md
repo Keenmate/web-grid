@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-06-10
+
+### Changed
+
+- **`--base-*` taxonomy fallback chains**: `--wg-surface-floating` now chains `var(--base-dropdown-bg, var(--base-elevated-bg, …))` so floating UI (toolbar / context menu / dropdown panels) picks up theme-designer's elevated-bg when no dropdown-specific override is set. `--wg-tooltip-bg` now chains `var(--base-tooltip-bg, var(--base-inverse-bg, …))` for cross-component consistency. Existing `--base-dropdown-bg` / `--base-tooltip-bg` overrides keep working unchanged — these chains are second-tier fallbacks.
+- **`--wg-active-bg` now sources from `--base-active-bg`**: previously it shared `--base-hover-bg` with `--wg-hover-bg`, so theme overrides could not distinguish active from hover. The new `--base-active-bg` lets theme-designer drive both states independently while still falling back to a color-mix derived from text + main-bg.
+- **OS-aware dark mode via `light-dark()` in fallbacks**: hardcoded fallbacks for text / surface / border / input / hover / tooltip variables are now wrapped in `light-dark(<light>, <dark>)`. Consumers who set only `body { color-scheme: dark }` (no overrides, no framework class) now get a sensible dark palette automatically. The existing `_dark-mode.css` selectors (`data-theme="dark"`, `data-bs-theme="dark"`, `.dark`, `@media (prefers-color-scheme: dark)`) remain in place for framework-driven theme switches.
+- **Adaptive hover/active via `color-mix`**: `--wg-hover-bg` and `--wg-active-bg` fall back to `color-mix(in srgb, var(--wg-text-color-1) 8%/14%, <main-bg>)` instead of flat surface colors. The mix steps toward the text color, so highlights stay visible in both light and dark modes.
+
+### Added
+
+- **`--base-active-bg` and `--base-inverse-bg`**: two new cross-component theming hooks listed in `component-variables.manifest.json`. `--base-active-bg` distinguishes the pressed/active state from hover; `--base-inverse-bg` provides the inverse-colored surface for tooltips (and any future inverse UI). Both are optional and additive.
+
+### Tests
+
+- **Dark-mode WCAG contrast suite**: `e2e/dark-mode.spec.ts` mounts three grids on a dark page (fully themed, minimal-override, zero-override) and computes the WCAG contrast ratio for header / body / hover / focused / selected-row-number / editing-cell states. 18 assertions, all required to clear 3:1 (WCAG AA for non-text UI). Fixture: `docs/test/dark-mode.html`. Catches theme regressions that wouldn't surface from visual smoke testing.
+
 ## [1.2.0-rc01] - 2026-05-17 [PUBLISHED]
 
 ### Added

@@ -49,36 +49,47 @@
   --wg-accent-color-light: var(--base-accent-color-light, color-mix(in srgb, var(--wg-accent-color) 15%, transparent));
 
   /* Text Color Levels (FluentUI-style hierarchy) */
-  --wg-text-color-1: var(--base-text-color-1, #242424);
-  --wg-text-color-2: var(--base-text-color-2, #424242);
-  --wg-text-color-3: var(--base-text-color-3, #707070);
+  /* light-dark() fallbacks activate when the consumer sets `color-scheme: dark`
+     (or `light dark`) on the page — typically via `body { color-scheme: dark }`.
+     The framework-class dark-mode blocks in _dark-mode.css remain the primary
+     mechanism for data-theme="dark" / data-bs-theme="dark" / .dark switches. */
+  --wg-text-color-1: var(--base-text-color-1, light-dark(#242424, #f5f5f5));
+  --wg-text-color-2: var(--base-text-color-2, light-dark(#424242, #d4d4d4));
+  --wg-text-color-3: var(--base-text-color-3, light-dark(#707070, #a3a3a3));
   --wg-text-on-accent: var(--base-text-color-on-accent, #ffffff);
 
   /* Background/Surface Colors */
-  --wg-surface-1: var(--base-main-bg, #ffffff);
-  --wg-surface-2: var(--base-elevated-bg, #f5f5f5);
-  --wg-surface-3: var(--base-hover-bg, #ebebeb);
-  --wg-surface-floating: var(--base-dropdown-bg, var(--base-main-bg, #ffffff));
+  --wg-surface-1: var(--base-main-bg, light-dark(#ffffff, #1a1a1a));
+  --wg-surface-2: var(--base-elevated-bg, light-dark(#f5f5f5, #2b2b2b));
+  --wg-surface-3: var(--base-hover-bg, light-dark(#ebebeb, #333333));
+  /* Floating surfaces (toolbar, context menu, dropdown panels):
+     primary lookup is --base-dropdown-bg; falls back through --base-elevated-bg
+     so theme-designer's elevated-bg also covers floating UI. */
+  --wg-surface-floating: var(--base-dropdown-bg, var(--base-elevated-bg, var(--base-main-bg, light-dark(#ffffff, #2b2b2b))));
 
   /* Border Colors */
-  --wg-border-color: var(--base-border-color, #e0e0e0);
-  --wg-border-color-hover: var(--base-border-color, #d1d1d1);
+  --wg-border-color: var(--base-border-color, light-dark(#e0e0e0, #3d3d3d));
+  --wg-border-color-hover: var(--base-border-color, light-dark(#d1d1d1, #5a5a5a));
 
   /* Input Colors */
-  --wg-input-bg: var(--base-input-bg, #ffffff);
+  --wg-input-bg: var(--base-input-bg, light-dark(#ffffff, #1f1f1f));
   --wg-input-color: var(--base-input-color, var(--wg-text-color-1));
-  --wg-input-border: var(--base-input-border, 1px solid #d1d1d1);
+  --wg-input-border: var(--base-input-border, 1px solid light-dark(#d1d1d1, #5a5a5a));
   --wg-input-border-hover: var(--base-input-border-hover, 1px solid #0078d4);
   --wg-input-border-focus: var(--base-input-border-focus, 1px solid #0078d4);
-  --wg-input-placeholder-color: var(--base-input-placeholder-color, #707070);
+  --wg-input-placeholder-color: var(--base-input-placeholder-color, light-dark(#707070, #a3a3a3));
 
   /* Danger/Error Colors */
-  --wg-danger-color: var(--base-danger-color, #d13438);
-  --wg-danger-bg-light: var(--base-danger-bg-light, #fde7e9);
+  --wg-danger-color: var(--base-danger-color, light-dark(#d13438, #f87c86));
+  --wg-danger-bg-light: var(--base-danger-bg-light, light-dark(#fde7e9, #442726));
 
-  /* Hover/Active States */
-  --wg-hover-bg: var(--base-hover-bg, #f0f0f0);
-  --wg-active-bg: var(--base-hover-bg, #e0e0e0);
+  /* Hover/Active States
+     Adaptive via color-mix so the highlight stays visible in both light and dark
+     modes (always steps toward the text color). The flat-color fallback in
+     --base-main-bg ensures the mix has a valid second operand even when the
+     consumer hasn't set any --base-* vars. */
+  --wg-hover-bg: var(--base-hover-bg, color-mix(in srgb, var(--wg-text-color-1) 8%, var(--base-main-bg, light-dark(#ffffff, #1a1a1a))));
+  --wg-active-bg: var(--base-active-bg, color-mix(in srgb, var(--wg-text-color-1) 14%, var(--base-main-bg, light-dark(#ffffff, #1a1a1a))));
 
   /* ==========================================================================
      TYPOGRAPHY
@@ -272,9 +283,12 @@
 
   /* ==========================================================================
      TOOLTIP
-     ========================================================================== */
-  --wg-tooltip-bg: var(--base-tooltip-bg, #333);
-  --wg-tooltip-color: var(--base-tooltip-color, #fff);
+     ==========================================================================
+     Tooltip is inverse-colored (light text on dark bg in light mode; flips in
+     dark mode). Primary lookup is --base-tooltip-bg; falls back through the
+     new --base-inverse-bg from the unified cross-component taxonomy. */
+  --wg-tooltip-bg: var(--base-tooltip-bg, var(--base-inverse-bg, light-dark(#333333, #f5f5f5)));
+  --wg-tooltip-color: var(--base-tooltip-color, light-dark(#ffffff, #1a1a1a));
   --wg-tooltip-max-width: 300px;
   --wg-tooltip-arrow-size: 8px;
 
