@@ -1,3 +1,14 @@
-/* animations.css — web-grid has no @keyframes today.
-   Inline transition: rules live next to the property they animate
-   (tree chevron rotation in tree.css, tooltip fade in floating.css). */
+/* ==============================================================================
+   ANIMATIONS — Tier-2 canonical concern
+   ==============================================================================
+   @keyframes declarations only. Inline transition: rules live next to the
+   property they animate (tree chevron rotation in tree.css, tooltip fade in
+   floating.css).
+*/
+
+/* Loading indicator pulse — used on autocomplete/combobox editors while
+   options are being fetched. */
+@keyframes wg-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}

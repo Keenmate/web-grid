@@ -26,6 +26,10 @@
   box-shadow: none;
 }
 
+/* ==============================================================================
+   TEXT / NUMBER EDITORS
+   ============================================================================== */
+
 /* Text Editor */
 .wg__editor--text {
   text-align: inherit;
@@ -52,7 +56,9 @@
   bottom: 0;
 }
 
-/* Date Editor */
+/* ==============================================================================
+   DATE EDITOR
+   ============================================================================== */
 .wg__editor--date {
   position: absolute;
   inset: 0;
@@ -94,7 +100,9 @@
   background: var(--wg-hover-bg);
 }
 
-/* Checkbox Editor (edit mode) */
+/* ==============================================================================
+   CHECKBOX EDITOR
+   ============================================================================== */
 .wg__editor--checkbox {
   position: absolute;
   top: 50%;
@@ -127,7 +135,9 @@
   opacity: 0.5;
 }
 
-/* Custom Editor */
+/* ==============================================================================
+   CUSTOM EDITOR
+   ============================================================================== */
 .wg__editor--custom {
   position: absolute;
   inset: 0;
@@ -220,9 +230,5 @@
   transform: translateY(-50%);
   font-size: var(--wg-font-size-sm);
   animation: wg-pulse 1s infinite;
-}
-
-@keyframes wg-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+  /* @keyframes wg-pulse defined in animations.css */
 }
