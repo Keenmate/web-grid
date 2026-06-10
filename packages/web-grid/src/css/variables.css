@@ -51,7 +51,7 @@
   /* Text Color Levels (FluentUI-style hierarchy) */
   /* light-dark() fallbacks activate when the consumer sets `color-scheme: dark`
      (or `light dark`) on the page — typically via `body { color-scheme: dark }`.
-     The framework-class dark-mode blocks in _dark-mode.css remain the primary
+     The framework-class dark-mode blocks in dark-mode.css remain the primary
      mechanism for data-theme="dark" / data-bs-theme="dark" / .dark switches. */
   --wg-text-color-1: var(--base-text-color-1, light-dark(#242424, #f5f5f5));
   --wg-text-color-2: var(--base-text-color-2, light-dark(#424242, #d4d4d4));

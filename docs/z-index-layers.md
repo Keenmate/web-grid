@@ -1,6 +1,6 @@
 # Z-Index Layer System
 
-All z-index values within the grid are defined as CSS custom properties in `_variables.css`. This makes the stacking order explicit, predictable, and overridable by consumers.
+All z-index values within the grid are defined as CSS custom properties in `variables.css`. This makes the stacking order explicit, predictable, and overridable by consumers.
 
 ## Layer Map
 

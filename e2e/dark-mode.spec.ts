@@ -7,7 +7,7 @@ import { test, expect, Page, Locator } from '@playwright/test'
  *   #fullyThemed — full --base-* palette override
  *   #minimal     — overrides only --base-text-color-1 + --base-main-bg
  *   #zero        — no overrides; relies entirely on the light-dark() fallbacks
- *                  in _variables.css resolving the dark branch off the page's
+ *                  in variables.css resolving the dark branch off the page's
  *                  body { color-scheme: dark }.
  *
  * For each grid, we sample the rendered text color and the composited

@@ -4,7 +4,7 @@
    Resize handles for column width adjustment
 */
 
-/* Note: .wg__header has position: sticky in _header.css, which also
+/* Note: .wg__header has position: sticky in header.css, which also
    creates a containing block for absolutely positioned children.
    Do NOT add position: relative here - it would break sticky headers! */
 

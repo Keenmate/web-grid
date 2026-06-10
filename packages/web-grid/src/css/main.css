@@ -1,52 +1,30 @@
 /* ==============================================================================
    WEB GRID COMPONENT - MAIN ENTRY POINT
    ==============================================================================
-   Framework-agnostic data grid web component
-
-   File structure:
-   - _variables.css    : All CSS custom properties at :host level (for theming)
-   - _table.css        : FOUC prevention, container, table, rows
-   - _header.css       : Header, sort indicators, filter row
-   - _resize.css       : Column resize handles
-   - _reorder.css      : Column reorder drag-and-drop
-   - _fill-handle.css  : Fill handle (Excel-like autofill)
-   - _selection.css    : Row selection via row numbers
-   - _cell-selection.css : Cell range selection (Excel-like)
-   - _freeze.css       : Freeze panes (sticky columns)
-   - _cells.css        : Cells, editable states, editing, validation
-   - _editors.css      : All editor types (text, number, date, combobox, etc)
-   - _dropdown.css     : Dropdown menus, select triggers
-   - _navigation.css   : Keyboard navigation, focus states
-   - _pagination.css   : Pagination controls, summary, footer
-   - _toolbar.css      : Row toolbar styles
-   - _shortcuts.css    : Keyboard shortcuts help icon and overlay
-   - _modifiers.css    : Striped rows, hover effects, empty state
-   - _dialogs.css      : Tooltips, go-to dialog
-   - _virtual-scroll.css : Virtual scroll support
-   - _dark-mode.css    : Dark mode overrides
+   Framework-agnostic data grid web component.
 */
 
 /* Import all partials in dependency order */
-@import '_variables.css';
-@import '_table.css';
-@import '_header.css';
-@import '_resize.css';
-@import '_reorder.css';
-@import '_fill-handle.css';
-@import '_selection.css';
-@import '_cell-selection.css';
-@import '_freeze.css';
-@import '_cells.css';
-@import '_row-locking.css';
-@import '_dirty-indicator.css';
-@import '_editors.css';
-@import '_dropdown.css';
-@import '_navigation.css';
-@import '_pagination.css';
-@import '_toolbar.css';
-@import '_shortcuts.css';
-@import '_modifiers.css';
-@import '_dialogs.css';
-@import '_virtual-scroll.css';
-@import '_tree.css';
-@import '_dark-mode.css';
+@import './variables.css';
+@import './table.css';
+@import './header.css';
+@import './resize.css';
+@import './reorder.css';
+@import './fill-handle.css';
+@import './selection.css';
+@import './cell-selection.css';
+@import './freeze.css';
+@import './cells.css';
+@import './row-locking.css';
+@import './dirty-indicator.css';
+@import './editors.css';
+@import './dropdown.css';
+@import './navigation.css';
+@import './pagination.css';
+@import './toolbar.css';
+@import './shortcuts.css';
+@import './modifiers.css';
+@import './dialogs.css';
+@import './virtual-scroll.css';
+@import './tree.css';
+@import './dark-mode.css';

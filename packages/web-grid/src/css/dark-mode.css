@@ -68,7 +68,7 @@
    ==============================================================================
    When the app forces light mode (e.g. via data-theme="light" on <html> or <body>),
    these selectors override the OS dark mode media query above by restoring the
-   --base-* fallback chain from _variables.css.
+   --base-* fallback chain from variables.css.
 */
 :host([data-theme="light"]),
 :host-context([data-theme="light"]),

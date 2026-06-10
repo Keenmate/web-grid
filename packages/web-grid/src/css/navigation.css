@@ -11,7 +11,7 @@
 /* Replace browser default focus outline with box-shadow on all cells.
    Outline ignores z-index stacking and bleeds over frozen columns.
    Box-shadow respects stacking contexts so frozen columns properly cover it.
-   Combines with the cell splitter shadow (from _cells.css) to keep the right-edge separator. */
+   Combines with the cell splitter shadow (from cells.css) to keep the right-edge separator. */
 .wg__cell:focus {
   outline: none;
   box-shadow:
@@ -48,7 +48,7 @@
 /* ==============================================================================
    ROW FOCUS (master/detail patterns)
    ==============================================================================
-   Must be in this file (after _cells.css) so source order beats the
+   Must be in this file (after cells.css) so source order beats the
    .wg--editable.wg--navigate-mode .wg__cell:not(.wg__cell--editable) readonly rule.
 */
 .wg__row--focused > .wg__cell {
@@ -59,7 +59,7 @@
   background: var(--wg-row-focus-row-number-bg);
 }
 
-/* Navigate mode: override read-only cell background (needs higher specificity than _cells.css rule) */
+/* Navigate mode: override read-only cell background (needs higher specificity than cells.css rule) */
 .wg--editable.wg--navigate-mode .wg__row--focused > .wg__cell {
   background: var(--wg-row-focus-bg);
 }
