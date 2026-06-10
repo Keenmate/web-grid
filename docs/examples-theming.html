@@ -204,6 +204,7 @@
 					<h3>4. Brand theme <span class="hint" style="font-weight: normal; font-size: 0.85em;">— sets <code>--base-*</code> on <code>:root</code></span></h3>
 					<div class="signal-options">
 						<label><input type="radio" name="brand" value="default" checked> Default <span class="hint">(web-grid blue)</span></label>
+						<label><input type="radio" name="brand" value="express"> Express <span class="hint">(full pure-admin theme)</span></label>
 						<label><input type="radio" name="brand" value="emerald"> Emerald <span class="hint">(rounded)</span></label>
 						<label><input type="radio" name="brand" value="rose"> Rose <span class="hint">(extra-rounded)</span></label>
 						<label><input type="radio" name="brand" value="amber"> Amber <span class="hint">(bold headers)</span></label>
@@ -249,6 +250,70 @@
 
 	<!-- Brand theme stylesheets — toggled by id. Only one is active at a time. -->
 	<style id="brand-default"></style>
+	<style id="brand-express">
+		/* Express theme — full --base-* palette from @keenmate/pure-admin-themes/express.
+		   Light-mode values from dist/express.css (compiled output of src/scss/express.scss).
+		   This is what a real pure-admin-theme looks like when applied to web-grid. */
+		:root.brand-express {
+			/* Accent (Express Red) */
+			--base-accent-color:        #D40511;
+			--base-accent-color-hover:  #F91320;
+			--base-accent-color-active: #FA2B37;
+			--base-accent-color-light:  rgba(212, 5, 17, 0.06);
+
+			/* Text */
+			--base-text-color-1:        #333333;
+			--base-text-color-2:        #8C8C8C;
+			--base-text-color-3:        #CCCCCC;
+			--base-text-color-on-accent: #ffffff;
+
+			/* Surfaces */
+			--base-main-bg:             #ffffff;
+			--base-elevated-bg:         #f5f5f5;
+			--base-hover-bg:            #e9ecef;
+			--base-active-bg:           #dadfe4;
+			--base-disabled-bg:         #e9ecef;
+			--base-dropdown-bg:         #ffffff;
+			--base-inverse-bg:          #2c3e50;
+			--base-border-color:        #E5E5E5;
+
+			/* Inputs */
+			--base-input-bg:               #ffffff;
+			--base-input-color:            #333333;
+			--base-input-border:           1px solid #E5E5E5;
+			--base-input-border-hover:     1px solid #8C8C8C;
+			--base-input-border-focus:     1px solid #D40511;
+			--base-input-placeholder-color: #CCCCCC;
+			--base-dropdown-box-shadow:    0 8px 16px rgba(0, 0, 0, 0.15);
+
+			/* Tooltip (web-grid uses --base-tooltip-color; pure-admin emits
+			   --base-tooltip-text-color, so set both for cross-component portability) */
+			--base-tooltip-bg:           #333333;
+			--base-tooltip-color:        #ffffff;
+			--base-tooltip-text-color:   #ffffff;
+
+			/* Semantic */
+			--base-danger-color:         #98040C;
+			--base-danger-bg-light:      rgba(180, 5, 14, 0.1);
+
+			/* Typography (Fira Sans Condensed — falls back gracefully if not loaded) */
+			--base-font-family:          "Fira Sans Condensed", "Arial Narrow", Arial, sans-serif;
+			--base-font-weight-normal:   400;
+			--base-font-weight-semibold: 600;
+			--base-line-height-normal:   1.5;
+
+			/* Sizing scale */
+			--base-font-size-2xs:        1;
+			--base-font-size-xs:         1.2;
+			--base-font-size-sm:         1.4;
+			--base-font-size-base:       1.6;
+
+			/* Borders */
+			--base-border-radius-sm:     0.4;
+			--base-border-radius-md:     0.6;
+			--base-border-radius-lg:     0.8;
+		}
+	</style>
 	<style id="brand-emerald">
 		:root.brand-emerald {
 			--base-accent-color:        #10b981;
@@ -392,7 +457,7 @@
 			input.addEventListener('change', () => {
 				state.brand = input.value
 				// Brand themes apply --base-* tokens via a class on :root.
-				html.classList.remove('brand-default', 'brand-emerald', 'brand-rose', 'brand-amber', 'brand-slate')
+				html.classList.remove('brand-default', 'brand-express', 'brand-emerald', 'brand-rose', 'brand-amber', 'brand-slate')
 				html.classList.add(`brand-${input.value}`)
 				render()
 			})

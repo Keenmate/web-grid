@@ -55,6 +55,33 @@ test.describe('theming playground', () => {
 		expect(gridCount).toBe(1)
 	})
 
+	test('Express brand applies the full pure-admin palette', async ({ page }) => {
+		await page.locator('input[name="brand"][value="express"]').check()
+
+		// Spot-check a handful of values from the Express palette landing on :root.
+		const expressVars = await page.evaluate(() => {
+			const s = getComputedStyle(document.documentElement)
+			return {
+				accent:      s.getPropertyValue('--base-accent-color').trim(),
+				mainBg:      s.getPropertyValue('--base-main-bg').trim(),
+				borderColor: s.getPropertyValue('--base-border-color').trim(),
+				fontFamily:  s.getPropertyValue('--base-font-family').trim(),
+				tooltipBg:   s.getPropertyValue('--base-tooltip-bg').trim()
+			}
+		})
+		expect(expressVars.accent).toBe('#D40511')           // Express red
+		expect(expressVars.mainBg).toBe('#ffffff')
+		expect(expressVars.borderColor).toBe('#E5E5E5')
+		expect(expressVars.fontFamily).toContain('Fira Sans Condensed')
+		expect(expressVars.tooltipBg).toBe('#333333')
+
+		// The grid's own --wg-accent-color should resolve through the chain to Express red.
+		const gridAccent = await page.locator('web-grid#demoGrid').evaluate(el => {
+			return getComputedStyle(el).getPropertyValue('--wg-accent-color').trim()
+		})
+		expect(gridAccent).toBe('#D40511')
+	})
+
 	test('brand theme changes accent color of the grid', async ({ page }) => {
 		// Default brand — measure header background color.
 		const beforeAccent = await page.evaluate(() => {
