@@ -58,14 +58,13 @@
   --wg-text-color-3: var(--base-text-color-3, light-dark(#707070, #a3a3a3));
   --wg-text-on-accent: var(--base-text-color-on-accent, #ffffff);
 
-  /* Background/Surface Colors */
-  --wg-surface-1: var(--base-main-bg, light-dark(#ffffff, #1a1a1a));
-  --wg-surface-2: var(--base-elevated-bg, light-dark(#f5f5f5, #2b2b2b));
-  --wg-surface-3: var(--base-hover-bg, light-dark(#ebebeb, #333333));
-  /* Floating surfaces (toolbar, context menu, dropdown panels):
+  /* Background Colors (semantic taxonomy matching pure-admin's --base-* names) */
+  --wg-main-bg: var(--base-main-bg, light-dark(#ffffff, #1a1a1a));
+  --wg-elevated-bg: var(--base-elevated-bg, light-dark(#f5f5f5, #2b2b2b));
+  /* Dropdown / floating surface (toolbar, context menu, dropdown panels):
      primary lookup is --base-dropdown-bg; falls back through --base-elevated-bg
      so theme-designer's elevated-bg also covers floating UI. */
-  --wg-surface-floating: var(--base-dropdown-bg, var(--base-elevated-bg, var(--base-main-bg, light-dark(#ffffff, #2b2b2b))));
+  --wg-dropdown-bg: var(--base-dropdown-bg, var(--base-elevated-bg, var(--base-main-bg, light-dark(#ffffff, #2b2b2b))));
 
   /* Border Colors */
   --wg-border-color: var(--base-border-color, light-dark(#e0e0e0, #3d3d3d));
@@ -124,7 +123,7 @@
   /* ==========================================================================
      TABLE COMPONENT
      ========================================================================== */
-  --wg-table-bg: var(--wg-surface-1);
+  --wg-table-bg: var(--wg-main-bg);
   --wg-table-border: 1px solid var(--wg-border-color);
   --wg-row-number-width: calc(4.0 * var(--wg-rem));
   --wg-actions-column-width: calc(3.2 * var(--wg-rem));
@@ -132,9 +131,9 @@
   /* ==========================================================================
      HEADER COMPONENT
      ========================================================================== */
-  --wg-header-bg: var(--wg-surface-2);
-  --wg-header-bg-hover: var(--wg-surface-3);
-  --wg-header-bg-sorted: var(--wg-surface-3);
+  --wg-header-bg: var(--wg-elevated-bg);
+  --wg-header-bg-hover: var(--wg-hover-bg);
+  --wg-header-bg-sorted: var(--wg-hover-bg);
   --wg-header-color: var(--wg-text-color-1);
   --wg-header-border: 2px solid var(--wg-border-color);
   --wg-header-separator: 1px solid var(--wg-border-color);  /* Vertical separator between headers */
@@ -154,20 +153,20 @@
   --wg-cell-splitter-color: var(--wg-border-color);
   --wg-cell-splitter-width: 1px;
   --wg-cell-bg-hover: var(--wg-hover-bg);
-  --wg-cell-bg-editing: var(--wg-surface-1);
-  --wg-cell-readonly-bg: var(--base-disabled-bg, var(--wg-surface-2));
+  --wg-cell-bg-editing: var(--wg-main-bg);
+  --wg-cell-readonly-bg: var(--base-disabled-bg, var(--wg-elevated-bg));
 
   /* ==========================================================================
      ROW COMPONENT
      ========================================================================== */
   --wg-row-border: 1px solid var(--wg-border-color);
-  --wg-row-bg-even: var(--wg-surface-2);
-  --wg-row-bg-hover: var(--wg-surface-3);
+  --wg-row-bg-even: var(--wg-elevated-bg);
+  --wg-row-bg-hover: var(--wg-hover-bg);
 
   /* ==========================================================================
      FILTER ROW
      ========================================================================== */
-  --wg-filter-bg: var(--wg-surface-1);
+  --wg-filter-bg: var(--wg-main-bg);
   --wg-filter-border: 1px solid var(--wg-border-color);
   --wg-filter-padding: var(--wg-spacing-xs) var(--wg-spacing-sm);
 
@@ -192,14 +191,14 @@
      ========================================================================== */
   --wg-pagination-padding: var(--wg-spacing-md);
   --wg-pagination-gap: calc(1.6 * var(--wg-rem));
-  --wg-pagination-bg: var(--wg-surface-1);
+  --wg-pagination-bg: var(--wg-main-bg);
   --wg-pagination-border: 1px solid var(--wg-border-color);
 
   /* Pagination Button */
   --wg-pagination-btn-padding: calc(0.6 * var(--wg-rem)) calc(1.6 * var(--wg-rem));
-  --wg-pagination-btn-bg: var(--wg-surface-1);
-  --wg-pagination-btn-bg-hover: var(--wg-surface-2);
-  --wg-pagination-btn-bg-active: var(--wg-surface-3);
+  --wg-pagination-btn-bg: var(--wg-main-bg);
+  --wg-pagination-btn-bg-hover: var(--wg-elevated-bg);
+  --wg-pagination-btn-bg-active: var(--wg-hover-bg);
   --wg-pagination-btn-border: 1px solid var(--wg-border-color);
   --wg-pagination-btn-border-hover: 1px solid var(--wg-border-color-hover);
   --wg-pagination-btn-border-radius: var(--wg-border-radius-sm);
@@ -231,7 +230,7 @@
   /* ==========================================================================
      EDITOR
      ========================================================================== */
-  --wg-editor-bg: var(--wg-surface-1);
+  --wg-editor-bg: var(--wg-main-bg);
   --wg-editor-outline: 2px solid var(--wg-accent-color);
   --wg-editor-outline-offset: -2px;
   --wg-editor-validating-opacity: 0.7;
@@ -253,7 +252,7 @@
   /* ==========================================================================
      ROW TOOLBAR
      ========================================================================== */
-  --wg-toolbar-bg: var(--wg-surface-floating);
+  --wg-toolbar-bg: var(--wg-dropdown-bg);
   --wg-toolbar-border: 1px solid var(--wg-border-color);
   --wg-toolbar-border-radius: var(--wg-border-radius-sm);
   --wg-toolbar-shadow: var(--base-dropdown-box-shadow, 0 2px 8px rgba(0, 0, 0, 0.15));
@@ -338,13 +337,13 @@
   /* ==========================================================================
      ROW LOCKING
      ========================================================================== */
-  --wg-row-locked-bg: var(--base-disabled-bg, var(--wg-surface-2));
+  --wg-row-locked-bg: var(--base-disabled-bg, var(--wg-elevated-bg));
   --wg-row-locked-opacity: 0.7;
 
   /* ==========================================================================
      FREEZE PANES (Sticky Columns)
      ========================================================================== */
-  --wg-frozen-column-bg: var(--wg-surface-1);
+  --wg-frozen-column-bg: var(--wg-main-bg);
   --wg-frozen-header-bg: color-mix(in srgb, var(--wg-accent-color) 8%, var(--wg-header-bg));
   --wg-frozen-column-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
   --wg-frozen-column-shadow-active: 6px 0 12px rgba(0, 0, 0, 0.25);  /* Enhanced shadow when scrolled */
@@ -365,7 +364,7 @@
      FILL HANDLE (Excel-like autofill)
      ========================================================================== */
   --wg-fill-handle-size: 8px;
-  --wg-fill-handle-bg: var(--wg-surface-1);
+  --wg-fill-handle-bg: var(--wg-main-bg);
   --wg-fill-handle-border-color: var(--wg-accent-color);
   --wg-fill-handle-border-width: 2px;
   --wg-fill-range-bg: color-mix(in srgb, var(--wg-accent-color) 15%, transparent);

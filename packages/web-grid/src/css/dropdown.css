@@ -125,7 +125,7 @@
    DROPDOWN MENU
    ============================================================================== */
 .wg__dropdown {
-  background: var(--wg-surface-floating);
+  background: var(--wg-dropdown-bg);
   border: 1px solid var(--wg-border-color);
   border-radius: var(--wg-border-radius-sm);
   box-shadow: var(--wg-toolbar-shadow);

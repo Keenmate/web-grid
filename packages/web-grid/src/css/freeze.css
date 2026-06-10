@@ -30,7 +30,7 @@
    ========================================================================== */
 
 .wg__cell--frozen {
-  background: var(--wg-frozen-column-bg, var(--wg-surface-1));
+  background: var(--wg-frozen-column-bg, var(--wg-main-bg));
 }
 
 /* Only the last frozen cell gets the separator border */
@@ -74,12 +74,12 @@
    non-frozen content show through when it scrolls behind sticky columns.
    Mix against the opaque frozen column base instead. */
 .wg__row--focused > .wg__cell--frozen {
-  background: color-mix(in srgb, var(--wg-accent-color) 10%, var(--wg-frozen-column-bg, var(--wg-surface-1))) !important;
+  background: color-mix(in srgb, var(--wg-accent-color) 10%, var(--wg-frozen-column-bg, var(--wg-main-bg))) !important;
 }
 
 /* Row selection on frozen cells */
 .wg__row--selected > .wg__cell--frozen {
-  background: color-mix(in srgb, var(--wg-accent-color) 15%, var(--wg-frozen-column-bg, var(--wg-surface-1))) !important;
+  background: color-mix(in srgb, var(--wg-accent-color) 15%, var(--wg-frozen-column-bg, var(--wg-main-bg))) !important;
 }
 
 /* Row number cells in selected rows - accent color (override above rule) */
@@ -90,12 +90,12 @@
 
 /* Column selection on frozen cells */
 .wg__cell--frozen.wg__cell--column-selected {
-  background: color-mix(in srgb, var(--wg-accent-color) 15%, var(--wg-frozen-column-bg, var(--wg-surface-1))) !important;
+  background: color-mix(in srgb, var(--wg-accent-color) 15%, var(--wg-frozen-column-bg, var(--wg-main-bg))) !important;
 }
 
 /* Cell range selection on frozen cells */
 .wg__cell--frozen.wg__cell--in-range {
-  background: color-mix(in srgb, var(--wg-accent-color) 10%, var(--wg-frozen-column-bg, var(--wg-surface-1))) !important;
+  background: color-mix(in srgb, var(--wg-accent-color) 10%, var(--wg-frozen-column-bg, var(--wg-main-bg))) !important;
 }
 
 /* ==========================================================================

@@ -74,7 +74,7 @@ color against the opaque frozen column base color instead of transparent:
 
   .wg__row--selected > .wg__cell--frozen {
     background: color-mix(in srgb, var(--wg-accent-color) 15%,
-      var(--wg-frozen-column-bg, var(--wg-surface-1))) !important;
+      var(--wg-frozen-column-bg, var(--wg-main-bg))) !important;
   }
 
 
@@ -105,7 +105,7 @@ The shadow only appears when the wg--scrolled-horizontal class is present
 on the container (set when scrollLeft > 0).
 
 Other frozen column CSS variables:
-  --wg-frozen-column-bg       Default: var(--wg-surface-1)
+  --wg-frozen-column-bg       Default: var(--wg-main-bg)
   --wg-frozen-header-bg       Default: color-mix(in srgb, accent 8%, header-bg)
   --wg-frozen-column-border   Default: 2px solid var(--wg-border-color)
   --wg-cell-splitter-color    Border color for frozen column separator

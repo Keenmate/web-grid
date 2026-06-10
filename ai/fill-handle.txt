@@ -113,7 +113,7 @@ prevents accidental fills from clicks). During the drag:
 
 CSS variables for the fill handle visual:
   --wg-fill-handle-size          Default: 8px
-  --wg-fill-handle-bg            Default: var(--wg-surface-1)
+  --wg-fill-handle-bg            Default: var(--wg-main-bg)
   --wg-fill-handle-border-color  Default: var(--wg-accent-color)
   --wg-fill-handle-border-width  Default: 2px
   --wg-fill-range-bg             Default: color-mix(accent 15%, transparent)

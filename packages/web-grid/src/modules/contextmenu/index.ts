@@ -115,28 +115,28 @@ const CONTEXT_MENU_STYLES = `
 	z-index: var(--wg-cm-z-index, 10000);
 
 	/* Colors */
-	--wg-cm-background: var(--base-layer-01, #fff);
-	--wg-cm-border-color: var(--base-stroke-default, #e0e0e0);
-	--wg-cm-text-color: var(--base-text-color-primary, #1a1a1a);
-	--wg-cm-text-secondary: var(--base-text-color-secondary, #666);
-	--wg-cm-text-danger: var(--base-error-color, #d32f2f);
-	--wg-cm-hover-bg: var(--base-layer-hover, #f5f5f5);
+	--wg-cm-background: var(--base-dropdown-bg, var(--base-main-bg, #fff));
+	--wg-cm-border-color: var(--base-border-color, #e0e0e0);
+	--wg-cm-text-color: var(--base-text-color-1, #1a1a1a);
+	--wg-cm-text-secondary: var(--base-text-color-2, #666);
+	--wg-cm-text-danger: var(--base-danger-color, #d32f2f);
+	--wg-cm-hover-bg: var(--base-hover-bg, #f5f5f5);
 	--wg-cm-disabled-opacity: 0.5;
 
 	/* Typography */
 	--wg-cm-font-family: var(--base-font-family, inherit);
-	--wg-cm-font-size: var(--base-font-size-sm, 13px);
+	--wg-cm-font-size: 13px;
 
 	/* Sizing */
 	--wg-cm-padding: 4px;
 	--wg-cm-item-padding: 8px 12px;
 	--wg-cm-min-width: 160px;
-	--wg-cm-border-radius: var(--base-border-radius-sm, 4px);
+	--wg-cm-border-radius: 4px;
 	--wg-cm-icon-size: 16px;
 	--wg-cm-icon-gap: 8px;
 
 	/* Shadow */
-	--wg-cm-shadow: var(--base-shadow-lg, 0 4px 16px rgba(0, 0, 0, 0.15));
+	--wg-cm-shadow: var(--base-dropdown-box-shadow, 0 4px 16px rgba(0, 0, 0, 0.15));
 }
 
 .wg-context-menu {

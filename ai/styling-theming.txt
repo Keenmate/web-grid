@@ -9,7 +9,7 @@ Each --wg-* variable falls back to a --base-* variable, then to a hardcoded defa
 
   :host {
     --wg-accent-color: var(--base-accent-color, #0078d4);
-    --wg-surface-1: var(--base-main-bg, #ffffff);
+    --wg-main-bg: var(--base-main-bg, #ffffff);
     --wg-font-size-base: calc(var(--base-font-size-sm, 1.4) * var(--wg-rem));
   }
 
@@ -23,7 +23,7 @@ Example -- theme all KeenMate components at once:
 
   :root {
     --base-accent-color: #10b981;
-    --base-layer-1: #ffffff;
+    --base-main-bg: #ffffff;
     --base-font-family: 'Inter', sans-serif;
   }
 
@@ -54,16 +54,17 @@ Colors:
                              Falls back to: --base-text-color-1, default: #242424
   --wg-text-color-2          Secondary text (row numbers, labels)
   --wg-text-color-3          Muted text (placeholders, empty states)
-  --wg-surface-1             Main background (table body, cells)
+  --wg-main-bg               Main background (table body, cells)
                              Falls back to: --base-main-bg, default: #ffffff
-  --wg-surface-2             Elevated background (headers, striped rows)
+  --wg-elevated-bg           Elevated background (headers, striped rows)
                              Falls back to: --base-elevated-bg, default: #f5f5f5
-  --wg-surface-3             Hover background (row hover, button hover)
+  --wg-hover-bg              Hover background (row hover, button hover)
+                             Falls back to: --base-hover-bg, default: color-mix derived
   --wg-border-color          All borders (table, cells, header separators)
                              Falls back to: --base-border-color, default: #e0e0e0
 
 Header:
-  --wg-header-bg             Header row background (defaults to --wg-surface-2)
+  --wg-header-bg             Header row background (defaults to --wg-elevated-bg)
   --wg-header-bg-hover       Sortable header on hover
   --wg-header-color          Header text color
   --wg-header-border         Bottom border below header (2px solid)
@@ -71,8 +72,8 @@ Header:
   --wg-header-font-weight    Header text weight (semibold)
 
 Rows:
-  --wg-row-bg-hover          Row hover when isHoverable=true (defaults to --wg-surface-3)
-  --wg-row-bg-even           Striped even rows when isStriped=true (defaults to --wg-surface-2)
+  --wg-row-bg-hover          Row hover when isHoverable=true (defaults to --wg-hover-bg)
+  --wg-row-bg-even           Striped even rows when isStriped=true (defaults to --wg-elevated-bg)
   --wg-row-border            Border between rows
 
 Typography:
@@ -104,15 +105,15 @@ Dark mode activates automatically. No configuration needed. Detection methods:
 
 All four methods apply the same dark palette overrides:
 
-  --wg-surface-1: #1f1f1f
-  --wg-surface-2: #2b2b2b
-  --wg-surface-3: #333333
+  --wg-main-bg: #1f1f1f
+  --wg-elevated-bg: #2b2b2b
+  --wg-hover-bg: #3a3a3a
   --wg-text-color-1: #e0e0e0
   --wg-text-color-2: #c0c0c0
   --wg-text-color-3: #a0a0a0
   --wg-border-color: #3d3d3d
   --wg-input-bg: #1f1f1f
-  --wg-hover-bg: #3a3a3a
+  --wg-active-bg: #4a4a4a
   --wg-danger-color: #f87c86
   --wg-danger-bg-light: #442726
   --wg-dirty-indicator-color: #ffa940

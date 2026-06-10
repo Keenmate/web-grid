@@ -148,7 +148,7 @@ Locked rows receive the following visual treatment:
   - Lock icon has cursor: help and full opacity (overrides row opacity)
 
 CSS variables:
-  --wg-row-locked-bg       Default: var(--base-disabled-bg, var(--wg-surface-2))
+  --wg-row-locked-bg       Default: var(--base-disabled-bg, var(--wg-elevated-bg))
   --wg-row-locked-opacity  Default: 0.7
 
 

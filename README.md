@@ -930,7 +930,7 @@ web-grid {
 /* Or set base variables for all KeenMate components */
 :root {
   --base-accent-color: #10b981;
-  --base-layer-1: #ffffff;
+  --base-main-bg: #ffffff;
 }
 ```
 
@@ -953,8 +953,10 @@ This means:
 |----------|-------------|
 | `--wg-accent-color` | Primary accent color |
 | `--wg-text-color-1` | Primary text color |
-| `--wg-surface-1` | Background color |
-| `--wg-surface-2` | Alternate row/header background |
+| `--wg-main-bg` | Background color (table body, cells) |
+| `--wg-elevated-bg` | Alternate row/header background |
+| `--wg-hover-bg` | Hover background (rows, buttons) |
+| `--wg-dropdown-bg` | Floating surfaces (toolbar, context menu, dropdowns) |
 | `--wg-border-color` | Border color |
 
 ### Component Variables Manifest

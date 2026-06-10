@@ -56,10 +56,9 @@
     { "name": "wg-text-color-3", "category": "text", "usage": "Placeholder text, disabled text, empty state message, date trigger" },
     { "name": "wg-text-on-accent", "category": "text", "usage": "Text on accent backgrounds (Go button, active pagination)" },
 
-    { "name": "wg-surface-1", "category": "surface", "usage": "Table body, cell backgrounds, filter input background" },
-    { "name": "wg-surface-2", "category": "surface", "usage": "Header row, striped even rows, read-only cells, shortcut key badges" },
-    { "name": "wg-surface-3", "category": "surface", "usage": "Row hover background, sorted header, pagination button hover" },
-    { "name": "wg-surface-floating", "category": "surface", "usage": "Floating toolbar background, context menu, dropdown panels" },
+    { "name": "wg-main-bg", "category": "surface", "usage": "Table body, cell backgrounds, filter input background" },
+    { "name": "wg-elevated-bg", "category": "surface", "usage": "Header row, striped even rows, read-only cells, shortcut key badges" },
+    { "name": "wg-dropdown-bg", "category": "surface", "usage": "Floating toolbar background, context menu, dropdown panels" },
 
     { "name": "wg-border-color", "category": "border", "usage": "Table border, cell borders, header bottom, toolbar dividers" },
     { "name": "wg-border-color-hover", "category": "border", "usage": "Pagination button border on hover" },

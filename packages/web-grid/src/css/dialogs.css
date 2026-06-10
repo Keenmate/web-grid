@@ -17,7 +17,7 @@
 }
 
 .wg__goto-dialog {
-  background: var(--wg-surface-1);
+  background: var(--wg-main-bg);
   border-radius: var(--wg-border-radius-md);
   padding: var(--wg-spacing-lg);
   box-shadow: var(--wg-dialog-shadow);
@@ -61,12 +61,12 @@
   font-family: inherit; /* Form elements don't inherit font by default */
   font-size: var(--wg-font-size-sm);
   cursor: pointer;
-  background: var(--wg-surface-1);
+  background: var(--wg-main-bg);
   color: var(--wg-text-color-1);
 }
 
 .wg__goto-btn:hover {
-  background: var(--wg-surface-2);
+  background: var(--wg-elevated-bg);
 }
 
 .wg__goto-btn--go {

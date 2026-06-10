@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-06-10
+
+### Changed
+
+- **Surface taxonomy renamed to match pure-admin's `--base-*` semantic names.** The internal `--wg-surface-1/2/3/floating` numbering originated when pure-admin emitted `--base-surface-1/2/3`; pure-admin renamed those to `--base-main-bg / --base-elevated-bg / --base-hover-bg / --base-dropdown-bg` and removed the legacy aliases, so web-grid's surface names drifted into a parallel taxonomy. Consumers overriding the old names need to migrate:
+  - `--wg-surface-1` → `--wg-main-bg`
+  - `--wg-surface-2` → `--wg-elevated-bg`
+  - `--wg-surface-3` → merged into existing `--wg-hover-bg` (both sourced from `--base-hover-bg` already; the two were redundant)
+  - `--wg-surface-floating` → `--wg-dropdown-bg`
+- **`--wg-pagination-btn-bg-active`** now defaults to `var(--wg-hover-bg)` (was `var(--wg-surface-3)`, which resolved to the same `--base-hover-bg`). Visual behaviour unchanged.
+
+### Fixed
+
+- **Context menu was referencing pure-admin variables that no longer exist** (`--base-layer-01`, `--base-stroke-default`, `--base-text-color-primary`, `--base-text-color-secondary`, `--base-error-color`, `--base-layer-hover`, `--base-shadow-lg`). Updated to the current canonical names (`--base-main-bg` via `--base-dropdown-bg`, `--base-border-color`, `--base-text-color-1`, `--base-text-color-2`, `--base-danger-color`, `--base-hover-bg`, `--base-dropdown-box-shadow`). Without this fix, every fallback was silently in use even when a pure-admin theme was loaded.
+- **Stale doc examples** in `README.md`, `CLAUDE.md`, and `ai/styling-theming.txt` mentioned the long-removed `--base-layer-*` / `--base-stroke-*` / `--base-error-*` names. Updated to current taxonomy.
+
 ## [1.4.0] - 2026-06-10
 
 ### Changed

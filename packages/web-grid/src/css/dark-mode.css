@@ -17,10 +17,9 @@
 */
 @media (prefers-color-scheme: dark) {
   :host {
-    --wg-surface-1: #1f1f1f;
-    --wg-surface-2: #2b2b2b;
-    --wg-surface-3: #333333;
-    --wg-surface-floating: #2b2b2b;
+    --wg-main-bg: #1f1f1f;
+    --wg-elevated-bg: #2b2b2b;
+    --wg-dropdown-bg: #2b2b2b;
     --wg-text-color-1: #e0e0e0;
     --wg-text-color-2: #c0c0c0;
     --wg-text-color-3: #a0a0a0;
@@ -44,10 +43,9 @@
 :host([data-bs-theme="dark"]),
 :host-context([data-bs-theme="dark"]),
 :host-context(.dark) {
-  --wg-surface-1: #1f1f1f;
-  --wg-surface-2: #2b2b2b;
-  --wg-surface-3: #333333;
-  --wg-surface-floating: #2b2b2b;
+  --wg-main-bg: #1f1f1f;
+  --wg-elevated-bg: #2b2b2b;
+  --wg-dropdown-bg: #2b2b2b;
   --wg-text-color-1: #e0e0e0;
   --wg-text-color-2: #c0c0c0;
   --wg-text-color-3: #a0a0a0;
@@ -75,10 +73,9 @@
 :host([data-bs-theme="light"]),
 :host-context([data-bs-theme="light"]),
 :host-context(.light) {
-  --wg-surface-1: var(--base-main-bg, #ffffff);
-  --wg-surface-2: var(--base-elevated-bg, #f5f5f5);
-  --wg-surface-3: var(--base-hover-bg, #ebebeb);
-  --wg-surface-floating: var(--base-dropdown-bg, var(--base-main-bg, #ffffff));
+  --wg-main-bg: var(--base-main-bg, #ffffff);
+  --wg-elevated-bg: var(--base-elevated-bg, #f5f5f5);
+  --wg-dropdown-bg: var(--base-dropdown-bg, var(--base-main-bg, #ffffff));
   --wg-text-color-1: var(--base-text-color-1, #242424);
   --wg-text-color-2: var(--base-text-color-2, #424242);
   --wg-text-color-3: var(--base-text-color-3, #707070);

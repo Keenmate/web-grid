@@ -113,7 +113,7 @@ The `--base-*` CSS variables enable **centralized theming** across all KeenMate 
 
 **Variables that support `--base-*` fallback:**
 - **Typography:** `--base-font-family`, `--base-font-size-*`, `--base-font-weight-*`, `--base-line-height-*`
-- **Colors:** `--base-accent-color`, `--base-text-color-*`, `--base-layer-*`, `--base-stroke-*`, `--base-error-*`
+- **Colors:** `--base-accent-color`, `--base-text-color-*`, `--base-main-bg`, `--base-elevated-bg`, `--base-hover-bg`, `--base-active-bg`, `--base-disabled-bg`, `--base-dropdown-bg`, `--base-inverse-bg`, `--base-border-color`, `--base-input-*`, `--base-danger-*`, `--base-tooltip-*`
 - **Other:** `--base-border-radius-*`
 
 **Benefits:**

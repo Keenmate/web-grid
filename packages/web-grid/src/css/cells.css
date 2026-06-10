@@ -73,7 +73,7 @@
    ============================================================================== */
 .wg__cell--editing {
   position: relative;
-  background: var(--wg-surface-1);
+  background: var(--wg-main-bg);
   outline: 2px solid var(--wg-accent-color);
   outline-offset: -2px;
   z-index: var(--wg-z-cell-highlight);  /* Paint above neighboring cells so outline isn't hidden */
