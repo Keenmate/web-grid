@@ -1,30 +1,42 @@
 /* ==============================================================================
-   WEB GRID COMPONENT - MAIN ENTRY POINT
+   @keenmate/web-grid — MAIN ENTRY POINT
    ==============================================================================
-   Framework-agnostic data grid web component.
+   Cascade layer order (later = higher priority):
+     variables  — :host { --wg-* } declarations
+     component  — base + feature rules
+     overrides  — dark mode, framework themes, per-instance overrides
+
+   Consumer override contract:
+   - Any unlayered consumer rule beats every rule below.
+   - Any :root --base-* declaration beats the variables layer.
+
+   BEM convention used throughout:
+     .wg__<element>             — element
+     .wg__<element>--<modifier> — state modifier
 */
 
-/* Import all partials in dependency order */
-@import './variables.css';
-@import './table.css';
-@import './header.css';
-@import './resize.css';
-@import './reorder.css';
-@import './fill-handle.css';
-@import './selection.css';
-@import './cell-selection.css';
-@import './freeze.css';
-@import './cells.css';
-@import './row-locking.css';
-@import './dirty-indicator.css';
-@import './editors.css';
-@import './dropdown.css';
-@import './navigation.css';
-@import './pagination.css';
-@import './toolbar.css';
-@import './shortcuts.css';
-@import './modifiers.css';
-@import './dialogs.css';
-@import './virtual-scroll.css';
-@import './tree.css';
-@import './dark-mode.css';
+@layer variables, component, overrides;
+
+@import './variables.css'       layer(variables);
+@import './table.css'           layer(component);
+@import './header.css'          layer(component);
+@import './resize.css'          layer(component);
+@import './reorder.css'         layer(component);
+@import './fill-handle.css'     layer(component);
+@import './selection.css'       layer(component);
+@import './cell-selection.css'  layer(component);
+@import './freeze.css'          layer(component);
+@import './cells.css'           layer(component);
+@import './row-locking.css'     layer(component);
+@import './dirty-indicator.css' layer(component);
+@import './editors.css'         layer(component);
+@import './dropdown.css'        layer(component);
+@import './navigation.css'      layer(component);
+@import './pagination.css'      layer(component);
+@import './toolbar.css'         layer(component);
+@import './shortcuts.css'       layer(component);
+@import './modifiers.css'       layer(component);
+@import './dialogs.css'         layer(component);
+@import './virtual-scroll.css'  layer(component);
+@import './tree.css'            layer(component);
+@import './dark-mode.css'       layer(overrides);
