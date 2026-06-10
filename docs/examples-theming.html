@@ -440,23 +440,34 @@
 			resolvedBadge.textContent = w.mode
 			resolvedBadge.className = `resolved-mode ${w.mode}`
 
-			// State panel — compact, machine-style summary
+			// State panel — compact, machine-style summary.
+			// Every interpolated value goes through escapeHtml because some
+			// of them contain literal `<web-grid>` etc. which the browser
+			// would otherwise parse as real custom elements.
 			const lines = [
 				`<span class="label">&lt;html style=&quot;color-scheme:&quot;&gt;</span>  ${fmt(state.colorScheme === 'none' ? null : state.colorScheme)}`,
 				`<span class="label">ancestor signal             </span>  ${fmt(ancestorLabel(state.ancestor))}`,
 				`<span class="label">&lt;web-grid data-theme&gt;        </span>  ${fmt(state.instance === 'inherit' ? null : state.instance)}`,
 				`<span class="label">:root brand class           </span>  ${fmt(`brand-${state.brand}`)}`,
-				`<span class="label">OS prefers-color-scheme     </span>  <span class="value-set">${osPrefersDark ? 'dark' : 'light'}</span>`,
+				`<span class="label">OS prefers-color-scheme     </span>  <span class="value-set">${escapeHtml(osPrefersDark ? 'dark' : 'light')}</span>`,
 				``,
-				`<span class="label">→ winning signal            </span>  <span class="value-set">${w.src}</span> · <span class="value-set">${w.sig}</span>`,
-				`<span class="label">→ resolved mode             </span>  <span class="value-set">${w.mode}</span>`
+				`<span class="label">→ winning signal            </span>  <span class="value-set">${escapeHtml(w.src)}</span> · <span class="value-set">${escapeHtml(w.sig)}</span>`,
+				`<span class="label">→ resolved mode             </span>  <span class="value-set">${escapeHtml(w.mode)}</span>`
 			]
 			statePanel.innerHTML = lines.join('\n')
 		}
 
 		function fmt(v) {
 			if (v == null || v === '') return '<span class="value-unset">(unset)</span>'
-			return `<span class="value-set">${v}</span>`
+			return `<span class="value-set">${escapeHtml(v)}</span>`
+		}
+
+		function escapeHtml(s) {
+			return String(s)
+				.replace(/&/g, '&amp;')
+				.replace(/</g, '&lt;')
+				.replace(/>/g, '&gt;')
+				.replace(/"/g, '&quot;')
 		}
 
 		function ancestorLabel(v) {

@@ -42,6 +42,19 @@ test.describe('theming playground', () => {
 		await expect(page.locator('#winningSignalText')).toContainText('color-scheme: dark')
 	})
 
+	test('state panel does not inject extra web-grid elements', async ({ page }) => {
+		// Regression: an earlier version of the page interpolated strings
+		// containing literal `<web-grid>` into innerHTML, which the browser
+		// then parsed as a real custom element. Result: a second, empty grid
+		// would appear in the state panel area.
+		await page.locator('input[name="instance"][value="dark"]').check()
+		await page.locator('input[name="instance"][value="light"]').check()
+		await page.locator('input[name="ancestor"][value="data-bs-theme-dark"]').check()
+
+		const gridCount = await page.locator('web-grid').count()
+		expect(gridCount).toBe(1)
+	})
+
 	test('brand theme changes accent color of the grid', async ({ page }) => {
 		// Default brand — measure header background color.
 		const beforeAccent = await page.evaluate(() => {
