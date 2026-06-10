@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>WebGrid — Theming Examples</title>
+	<link rel="stylesheet" href="examples-shared.css">
+	<style>
+		/* ============================================================================
+		   Dark Mode Playground — page-specific styles
+		   ============================================================================ */
+		.playground-grid {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+			gap: 1rem;
+			margin: 1.5rem 0;
+		}
+
+		.signal-card {
+			background: #f8fafc;
+			border: 1px solid #e2e8f0;
+			border-radius: 8px;
+			padding: 1rem;
+		}
+
+		.signal-card h3 {
+			font-size: 0.95rem;
+			margin-bottom: 0.75rem;
+			color: #2d3748;
+		}
+
+		.signal-card h3 code {
+			background: #edf2f7;
+			color: #4a5568;
+			padding: 0.1rem 0.3rem;
+			border-radius: 3px;
+			font-size: 0.85em;
+		}
+
+		.signal-options {
+			display: flex;
+			flex-direction: column;
+			gap: 0.5rem;
+		}
+
+		.signal-options label {
+			display: flex;
+			align-items: center;
+			gap: 0.5rem;
+			cursor: pointer;
+			font-size: 0.9rem;
+		}
+
+		.signal-options label code {
+			background: #edf2f7;
+			color: #4a5568;
+			padding: 0.1rem 0.3rem;
+			border-radius: 3px;
+			font-size: 0.85em;
+		}
+
+		.signal-options label .hint {
+			color: #94a3b8;
+			font-size: 0.85em;
+		}
+
+		.signal-options input[type="radio"] {
+			margin: 0;
+		}
+
+		/* Winning signal banner */
+		.winning-signal {
+			background: #eff6ff;
+			border-left: 4px solid #3b82f6;
+			padding: 0.875rem 1rem;
+			margin: 1.5rem 0;
+			border-radius: 6px;
+			font-size: 0.95rem;
+		}
+
+		.winning-signal strong {
+			color: #1e40af;
+		}
+
+		.winning-signal code {
+			background: #dbeafe;
+			color: #1e40af;
+			padding: 0.1rem 0.4rem;
+			border-radius: 3px;
+		}
+
+		.winning-signal .resolved-mode {
+			display: inline-block;
+			padding: 0.15rem 0.6rem;
+			border-radius: 999px;
+			font-weight: 600;
+			font-size: 0.85rem;
+			margin-left: 0.5rem;
+		}
+
+		.winning-signal .resolved-mode.dark {
+			background: #1f2937;
+			color: #f9fafb;
+		}
+
+		.winning-signal .resolved-mode.light {
+			background: #f9fafb;
+			color: #1f2937;
+			border: 1px solid #d1d5db;
+		}
+
+		/* State panel (compact summary of what's applied) */
+		.state-panel {
+			background: #1e293b;
+			color: #e2e8f0;
+			padding: 0.875rem 1rem;
+			border-radius: 6px;
+			font-family: 'Cascadia Mono', Menlo, ui-monospace, monospace;
+			font-size: 0.8rem;
+			line-height: 1.6;
+			margin-bottom: 1rem;
+			overflow-x: auto;
+			white-space: pre;
+		}
+
+		.state-panel .label {
+			color: #94a3b8;
+		}
+
+		.state-panel .value-set {
+			color: #fbbf24;
+		}
+
+		.state-panel .value-unset {
+			color: #64748b;
+			font-style: italic;
+		}
+
+		/* Demo grid wrapper — needs explicit display so ancestor classes have a target */
+		.demo-grid-wrapper {
+			display: block;
+			padding: 1rem;
+			background: #f1f5f9;
+			border-radius: 8px;
+			border: 1px dashed #cbd5e1;
+		}
+
+		.demo-grid-wrapper web-grid {
+			max-width: 100%;
+			max-height: 360px;
+		}
+	</style>
+</head>
+<body>
+	<div class="container">
+		<header>
+			<a href="index.html" class="back-link">← Back to Examples</a>
+			<h1>🎨 Theming Examples</h1>
+			<p class="subtitle">Dark mode signals + brand themes via <code style="color: #fff; background: rgba(255,255,255,0.18);">--base-*</code> tokens</p>
+		</header>
+
+		<div class="card">
+			<h2>Dark Mode Playground</h2>
+			<p>
+				Toggle each signal independently and watch the demo grid react. The "winning signal" line shows which input the CSS is actually responding to based on the precedence order documented in <code>color-scheme.md</code>. OS <code>prefers-color-scheme</code> can't be controlled from JavaScript — flip your OS or browser dev-tools setting to test that path.
+			</p>
+
+			<div class="playground-grid">
+				<!-- Signal 1: Page color-scheme on <html> -->
+				<div class="signal-card">
+					<h3>1. Page <code>color-scheme</code> (applied to <code>&lt;html&gt;</code>)</h3>
+					<div class="signal-options">
+						<label><input type="radio" name="colorScheme" value="none" checked> <span class="hint">none</span></label>
+						<label><input type="radio" name="colorScheme" value="light dark"> <code>light dark</code> <span class="hint">(OS-aware)</span></label>
+						<label><input type="radio" name="colorScheme" value="dark"> <code>dark</code> <span class="hint">(force)</span></label>
+						<label><input type="radio" name="colorScheme" value="light"> <code>light</code> <span class="hint">(force)</span></label>
+					</div>
+				</div>
+
+				<!-- Signal 2: Ancestor theme class/attribute -->
+				<div class="signal-card">
+					<h3>2. Ancestor theme class / attribute <span class="hint" style="font-weight: normal; font-size: 0.85em;">(wraps the demo grid)</span></h3>
+					<div class="signal-options">
+						<label><input type="radio" name="ancestor" value="none" checked> <span class="hint">none</span></label>
+						<label><input type="radio" name="ancestor" value="data-theme-dark"> <code>[data-theme="dark"]</code></label>
+						<label><input type="radio" name="ancestor" value="data-bs-theme-dark"> <code>[data-bs-theme="dark"]</code></label>
+						<label><input type="radio" name="ancestor" value="dark-class"> <code>.dark</code> <span class="hint">(Tailwind)</span></label>
+						<label><input type="radio" name="ancestor" value="data-theme-light"> <code>[data-theme="light"]</code> <span class="hint">(force light)</span></label>
+					</div>
+				</div>
+
+				<!-- Signal 3: Per-instance attribute -->
+				<div class="signal-card">
+					<h3>3. Per-instance attribute <span class="hint" style="font-weight: normal; font-size: 0.85em;">(highest precedence)</span></h3>
+					<div class="signal-options">
+						<label><input type="radio" name="instance" value="inherit" checked> <span class="hint">inherit</span></label>
+						<label><input type="radio" name="instance" value="dark"> <code>data-theme="dark"</code></label>
+						<label><input type="radio" name="instance" value="light"> <code>data-theme="light"</code></label>
+					</div>
+				</div>
+
+				<!-- Signal 4: Brand theme -->
+				<div class="signal-card">
+					<h3>4. Brand theme <span class="hint" style="font-weight: normal; font-size: 0.85em;">— sets <code>--base-*</code> on <code>:root</code></span></h3>
+					<div class="signal-options">
+						<label><input type="radio" name="brand" value="default" checked> Default <span class="hint">(web-grid blue)</span></label>
+						<label><input type="radio" name="brand" value="emerald"> Emerald <span class="hint">(rounded)</span></label>
+						<label><input type="radio" name="brand" value="rose"> Rose <span class="hint">(extra-rounded)</span></label>
+						<label><input type="radio" name="brand" value="amber"> Amber <span class="hint">(bold headers)</span></label>
+						<label><input type="radio" name="brand" value="slate"> Slate <span class="hint">(mono, sharp corners)</span></label>
+					</div>
+				</div>
+			</div>
+
+			<!-- Winning signal -->
+			<div class="winning-signal">
+				<strong>Winning signal:</strong> <span id="winningSignalText">—</span>
+				<span class="resolved-mode" id="resolvedMode">—</span>
+			</div>
+
+			<!-- State panel (compact, machine-readable) -->
+			<div class="state-panel" id="statePanel">computing…</div>
+
+			<!-- Demo grid -->
+			<div class="demo-grid-wrapper" id="demoGridWrapper">
+				<web-grid id="demoGrid"></web-grid>
+			</div>
+		</div>
+
+		<div class="card">
+			<h2>How the precedence works</h2>
+			<p>The grid resolves its rendered theme by walking signals in this order, highest priority first:</p>
+			<ol style="margin-left: 1.5rem; color: #4a5568; line-height: 1.8;">
+				<li><strong>Per-instance <code>data-theme</code></strong> on the <code>&lt;web-grid&gt;</code> element — always wins if set.</li>
+				<li><strong>Framework theme class/attribute</strong> on any ancestor (<code>data-theme</code>, <code>data-bs-theme</code>, <code>.dark</code>, <code>.light</code>) — caught by <code>:host-context()</code>.</li>
+				<li><strong>Page <code>color-scheme</code></strong> — when set to <code>dark</code> or <code>light</code>, the <code>light-dark()</code> fallbacks in <code>variables.css</code> resolve accordingly via inheritance.</li>
+				<li><strong>OS preference</strong> — only takes effect when the page declares <code>color-scheme: light dark</code> and no other signal above is set.</li>
+			</ol>
+			<div class="note">
+				<div class="note-title">📖 Reference</div>
+				<p style="margin-bottom: 0;">Full taxonomy and rules in the guideline: <code>guidelines/web-components/color-scheme.md</code>. The five signals and their interactions live there.</p>
+			</div>
+		</div>
+
+		<footer>
+			<p>web-grid — Theming playground · See <code>color-scheme.md</code> and <code>base-variables.md</code> for full rules.</p>
+		</footer>
+	</div>
+
+	<!-- Brand theme stylesheets — toggled by id. Only one is active at a time. -->
+	<style id="brand-default"></style>
+	<style id="brand-emerald">
+		:root.brand-emerald {
+			--base-accent-color:        #10b981;
+			--base-accent-color-hover:  #059669;
+			--base-accent-color-active: #047857;
+			--base-border-radius-sm: 0.8;
+			--base-border-radius-md: 1.2;
+			--base-border-radius-lg: 1.6;
+		}
+	</style>
+	<style id="brand-rose">
+		:root.brand-rose {
+			--base-accent-color:        #e11d48;
+			--base-accent-color-hover:  #be123c;
+			--base-accent-color-active: #9f1239;
+			--base-border-radius-sm: 1.2;
+			--base-border-radius-md: 1.6;
+			--base-border-radius-lg: 2.4;
+		}
+	</style>
+	<style id="brand-amber">
+		:root.brand-amber {
+			--base-accent-color:        #f59e0b;
+			--base-accent-color-hover:  #d97706;
+			--base-accent-color-active: #b45309;
+			--base-font-weight-semibold: 800;
+		}
+	</style>
+	<style id="brand-slate">
+		:root.brand-slate {
+			--base-accent-color:        #475569;
+			--base-accent-color-hover:  #334155;
+			--base-accent-color-active: #1e293b;
+			--base-font-family: ui-monospace, 'Cascadia Mono', Menlo, monospace;
+			--base-border-radius-sm: 0;
+			--base-border-radius-md: 0;
+			--base-border-radius-lg: 0;
+		}
+	</style>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+
+		// ============================================================================
+		// Demo grid setup
+		// ============================================================================
+		const grid = document.getElementById('demoGrid')
+		grid.items = [
+			{ id: 1, name: 'Alice',   role: 'Engineer',  salary: 95000,  active: true  },
+			{ id: 2, name: 'Bob',     role: 'Designer',  salary: 62000,  active: true  },
+			{ id: 3, name: 'Carol',   role: 'Manager',   salary: 78000,  active: false },
+			{ id: 4, name: 'David',   role: 'Engineer',  salary: 88000,  active: true  },
+			{ id: 5, name: 'Eve',     role: 'Director',  salary: 105000, active: true  },
+			{ id: 6, name: 'Frank',   role: 'Analyst',   salary: 71000,  active: false }
+		]
+		grid.columns = [
+			{ field: 'id',     title: 'ID',     width: '60px',  isEditable: false },
+			{ field: 'name',   title: 'Name',   width: '140px' },
+			{ field: 'role',   title: 'Role',   width: '120px' },
+			{ field: 'salary', title: 'Salary', width: '100px', horizontalAlign: 'right',
+			  formatCallback: v => v != null ? `$${v.toLocaleString()}` : '' },
+			{ field: 'active', title: 'Active', width: '80px',  editor: 'checkbox' }
+		]
+		grid.isHoverable = true
+		grid.isStriped = true
+		grid.isRowNumbersVisible = true
+		grid.isEditable = true
+		grid.editTrigger = 'dblclick'
+
+		// ============================================================================
+		// Wire up controls
+		// ============================================================================
+		const html = document.documentElement
+		const wrapper = document.getElementById('demoGridWrapper')
+		const winningText = document.getElementById('winningSignalText')
+		const resolvedBadge = document.getElementById('resolvedMode')
+		const statePanel = document.getElementById('statePanel')
+
+		// Track current state
+		const state = {
+			colorScheme: 'none',
+			ancestor: 'none',
+			instance: 'inherit',
+			brand: 'default'
+		}
+
+		// Detect OS preference once + listen for changes (so the "winning signal"
+		// label stays accurate when the OS theme flips)
+		const osDarkMQ = window.matchMedia('(prefers-color-scheme: dark)')
+		let osPrefersDark = osDarkMQ.matches
+		osDarkMQ.addEventListener('change', e => {
+			osPrefersDark = e.matches
+			render()
+		})
+
+		document.querySelectorAll('input[name="colorScheme"]').forEach(input => {
+			input.addEventListener('change', () => {
+				state.colorScheme = input.value
+				if (input.value === 'none') {
+					html.style.removeProperty('color-scheme')
+				} else {
+					html.style.colorScheme = input.value
+				}
+				render()
+			})
+		})
+
+		document.querySelectorAll('input[name="ancestor"]').forEach(input => {
+			input.addEventListener('change', () => {
+				state.ancestor = input.value
+				// Reset wrapper attrs/classes
+				wrapper.classList.remove('dark', 'demo-grid-wrapper')
+				wrapper.classList.add('demo-grid-wrapper')
+				wrapper.removeAttribute('data-theme')
+				wrapper.removeAttribute('data-bs-theme')
+
+				switch (input.value) {
+					case 'data-theme-dark':     wrapper.setAttribute('data-theme', 'dark'); break
+					case 'data-bs-theme-dark':  wrapper.setAttribute('data-bs-theme', 'dark'); break
+					case 'dark-class':          wrapper.classList.add('dark'); break
+					case 'data-theme-light':    wrapper.setAttribute('data-theme', 'light'); break
+					// 'none' — no attribute/class
+				}
+				render()
+			})
+		})
+
+		document.querySelectorAll('input[name="instance"]').forEach(input => {
+			input.addEventListener('change', () => {
+				state.instance = input.value
+				if (input.value === 'inherit') {
+					grid.removeAttribute('data-theme')
+				} else {
+					grid.setAttribute('data-theme', input.value)
+				}
+				render()
+			})
+		})
+
+		document.querySelectorAll('input[name="brand"]').forEach(input => {
+			input.addEventListener('change', () => {
+				state.brand = input.value
+				// Brand themes apply --base-* tokens via a class on :root.
+				html.classList.remove('brand-default', 'brand-emerald', 'brand-rose', 'brand-amber', 'brand-slate')
+				html.classList.add(`brand-${input.value}`)
+				render()
+			})
+		})
+
+		// Initial brand class so :root.brand-default exists even if the user never
+		// touches the radio (purely cosmetic — default is empty anyway).
+		html.classList.add('brand-default')
+
+		// ============================================================================
+		// Winning signal computation (matches the precedence in color-scheme.md)
+		// ============================================================================
+		function computeWinning() {
+			// 1. Per-instance (highest)
+			if (state.instance === 'dark')  return { src: 'per-instance', sig: 'data-theme="dark" on <web-grid>', mode: 'dark' }
+			if (state.instance === 'light') return { src: 'per-instance', sig: 'data-theme="light" on <web-grid>', mode: 'light' }
+
+			// 2. Ancestor class/attribute
+			switch (state.ancestor) {
+				case 'data-theme-dark':    return { src: 'ancestor', sig: '[data-theme="dark"]',    mode: 'dark'  }
+				case 'data-bs-theme-dark': return { src: 'ancestor', sig: '[data-bs-theme="dark"]', mode: 'dark'  }
+				case 'dark-class':         return { src: 'ancestor', sig: '.dark',                   mode: 'dark'  }
+				case 'data-theme-light':   return { src: 'ancestor', sig: '[data-theme="light"]',   mode: 'light' }
+			}
+
+			// 3. Page color-scheme
+			if (state.colorScheme === 'dark')       return { src: 'color-scheme', sig: 'color-scheme: dark',  mode: 'dark'  }
+			if (state.colorScheme === 'light')      return { src: 'color-scheme', sig: 'color-scheme: light', mode: 'light' }
+			if (state.colorScheme === 'light dark') {
+				return {
+					src: 'OS preference',
+					sig: `color-scheme: light dark + OS prefers-${osPrefersDark ? 'dark' : 'light'}`,
+					mode: osPrefersDark ? 'dark' : 'light'
+				}
+			}
+
+			// 4. No signal — default light. light-dark() in fallbacks resolves to
+			// the light branch because color-scheme isn't declared anywhere.
+			return { src: 'default', sig: 'none — light-dark() resolves to light branch', mode: 'light' }
+		}
+
+		function render() {
+			const w = computeWinning()
+			winningText.textContent = `${w.src} → ${w.sig}`
+			resolvedBadge.textContent = w.mode
+			resolvedBadge.className = `resolved-mode ${w.mode}`
+
+			// State panel — compact, machine-style summary
+			const lines = [
+				`<span class="label">&lt;html style=&quot;color-scheme:&quot;&gt;</span>  ${fmt(state.colorScheme === 'none' ? null : state.colorScheme)}`,
+				`<span class="label">ancestor signal             </span>  ${fmt(ancestorLabel(state.ancestor))}`,
+				`<span class="label">&lt;web-grid data-theme&gt;        </span>  ${fmt(state.instance === 'inherit' ? null : state.instance)}`,
+				`<span class="label">:root brand class           </span>  ${fmt(`brand-${state.brand}`)}`,
+				`<span class="label">OS prefers-color-scheme     </span>  <span class="value-set">${osPrefersDark ? 'dark' : 'light'}</span>`,
+				``,
+				`<span class="label">→ winning signal            </span>  <span class="value-set">${w.src}</span> · <span class="value-set">${w.sig}</span>`,
+				`<span class="label">→ resolved mode             </span>  <span class="value-set">${w.mode}</span>`
+			]
+			statePanel.innerHTML = lines.join('\n')
+		}
+
+		function fmt(v) {
+			if (v == null || v === '') return '<span class="value-unset">(unset)</span>'
+			return `<span class="value-set">${v}</span>`
+		}
+
+		function ancestorLabel(v) {
+			switch (v) {
+				case 'data-theme-dark':    return '[data-theme="dark"]'
+				case 'data-bs-theme-dark': return '[data-bs-theme="dark"]'
+				case 'dark-class':         return '.dark'
+				case 'data-theme-light':   return '[data-theme="light"]'
+				default: return null
+			}
+		}
+
+		// Initial render
+		render()
+	</script>
+</body>
+</html>
