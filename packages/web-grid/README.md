@@ -2,6 +2,17 @@
 
 A feature-rich, framework-agnostic data grid web component built with TypeScript. Sorting, filtering, pagination, inline editing (8 editor types), cell range selection, clipboard support, row toolbar, context menus, frozen columns, column reorder/resize, fill handle, virtual scroll, dark mode, and full CSS variable theming — all in a Shadow DOM encapsulated `<web-grid>` element.
 
+## What's New in v1.2.0-rc02
+
+- **Excel-like commit-on-click-away** — new `shouldCommitOnClickAway` property (defaults to `true`). Clicking a different cell while editing now commits the in-progress value through `beforeCommitCallback` / `validateCallback` instead of silently discarding it. Set to `false` to keep the legacy discard behavior. Companion fix: row focus (`.wg__row--focused`) now applies on the first cell click — previously it only landed on the second.
+- **CSS surface taxonomy aligned with pure-admin's `--base-*` names** — `--wg-surface-1/2/3` renamed to `--wg-main-bg` / `--wg-elevated-bg`, `--wg-surface-floating` → `--wg-dropdown-bg` (`--wg-surface-3` merged into `--wg-hover-bg`). Consumer overrides of the old names need to migrate; see the CHANGELOG mapping table.
+- **Dark mode reworked to respect consumer themes** — the dark-mode override blocks used to set `--wg-*` to hardcoded literals, silently overriding pure-admin / theme-designer values. They now just flip `color-scheme` and let `light-dark()` in `variables.css` do the work. The consumer's `--base-*` chain stays the source of truth.
+- **OS-aware dark mode via `light-dark()` fallbacks** — every hardcoded fallback in `variables.css` is wrapped in `light-dark(<light>, <dark>)`. A consumer who only sets `body { color-scheme: dark }` (no overrides, no framework class) now gets a sensible dark palette automatically.
+- **CSS architecture refactor: `@layer` cascade + canonical file set** — `main.css` now declares `@layer variables, component, overrides;` so consumer rules beat library defaults without `!important`. CSS filenames dropped the underscore prefix (pure-CSS doesn't use SASS-partial convention). New canonical Tier-2 files (`controls.css` / `floating.css` / `states.css` / `animations.css`) match the cross-component pattern.
+- **`--base-active-bg` + `--base-inverse-bg`** — two new cross-component theming hooks. `--base-active-bg` distinguishes pressed from hover; `--base-inverse-bg` covers tooltip and future inverse UI surfaces. Both are optional and additive.
+- **Context menu was leaking through stale `--base-*` names** — was referencing `--base-layer-01` / `--base-stroke-default` / `--base-error-color` (all long-removed in pure-admin). Now uses the canonical names; consumers loading a pure-admin theme finally get themed context menus instead of silent fallbacks.
+- **WCAG contrast e2e suite** — 18 assertions check header / body / hover / focused / selected-row / editing-cell contrast against the 3:1 threshold (WCAG AA for non-text UI). Catches theme regressions invisible to visual smoke tests.
+
 ## What's New in v1.2.0-rc01
 
 - **Tree mode polish**: The column marked `isTree: true` is now read-only by default (editing it conflicts with the toggle); Tab / Shift-Tab in heterogeneous trees skip rows where every cell is read-only, and the next editable cell auto-opens its editor after a Tab commit; `'expand-all'`, `'collapse-all'`, `'expand-tree'`, `'collapse-tree'` are now usable as predefined context-menu items via string shorthand or `{ type: ... }` object form. Tree chevron is a single rotating glyph (120 ms transition) on an inline-flex layout. CSS class `wg__tree-cell-content` renamed to `wg__tree-cell-body`.
@@ -9,14 +20,6 @@ A feature-rich, framework-agnostic data grid web component built with TypeScript
 - **Paste API is first-class on `<web-grid>`**: `onpaste`, `onbeforepaste`, `pasteMode`, and `shouldValidateOnPaste` are now reachable directly on the GridElement instead of requiring `el.grid.*`. `onpaste` shadows the native HTMLElement property and delivers a `PasteDetail`, not a raw `ClipboardEvent`. TypeScript consumers should cast on assignment or use `el.grid.onpaste = fn` for full type fidelity; JS consumers have no friction.
 - **Datepicker no longer closes when you click its own chrome**: previously, clicking the chevrons / month/year header / disabled days appeared as "outside the grid" to two internal listeners and silently tore the picker down. Now both listeners recognize our `document.body`-hosted popovers (datepicker + cell/header context menus) as part of the grid's logical scope. Same fix protects the cell and header context menus from the same class of bug.
 - **Datepicker `outputFormat` is honored from the action pipeline**: a column declaring `editorOptions.outputFormat: 'timestamp'` (or `'date'`) now actually emits a number (or `Date`) instead of an ISO string when commit goes through the modern pipeline executor (`editTrigger='always'` and keyboard-driven select).
-
-## What's New in v1.1.0
-
-- **Tree / hierarchy mode**: Render tree-structured data using ltree-style path strings (`"1.2.3"`, `"/a/b/c"`, `"C:\\Win\\Sys"` — separator auto-detected). Mark one column with `isTree: true` to add depth-based indentation and an expand/collapse chevron. Sort is sibling-aware, filter auto-expands ancestors of matches, pagination operates on visible rows. New props: `treePathMember`, `treeLevelMember`, `treeParentMember`, `treeSeparator`, `treeDataSorted`, `expandedPaths`, `defaultExpandDepth`. Methods: `toggleExpandedPath`, `expandAll`, `collapseAll`, `getRowTreeInfo`. Event: `onexpandedpathschange`.
-- **Custom chevron icons via `treeChevronCallback`**: Receives `{ expanded, hasChildren, row, level, path }`, returns HTML for the chevron's inner content. Result is cached per `(row, expanded, hasChildren)` so the callback fires at most a handful of times per row. Use it for file/folder icons, status indicators, anything per-row. Static fallbacks: `treeExpandedGlyph` / `treeCollapsedGlyph`.
-- **Double-click to expand/collapse**: New `treeDoubleClickBehavior: 'none' | 'toggle'`. When set to `'toggle'`, double-clicking anywhere in the tree column expands/collapses the node — works reliably even when the cell DOM is re-rendered between clicks (uses `MouseEvent.detail`, not the unreliable native `dblclick`).
-- **No more spurious `onrowchange` events**: Entering edit mode and exiting via arrow keys without typing no longer fires phantom "X → X" change events. `commitEdit` now only fires `onrowchange` when the value actually changed (or validation failed).
-- **Pathological filler-cell width fix**: Removed `min-width: max-content` from `.wg__table` — it was redundant with `table-layout: fixed` and triggered intrinsic-size computation that ballooned the filler to hundreds of thousands of pixels in some browsers (Firefox especially) when cells contained absolutely-positioned editors.
 
 ## Installation
 
@@ -930,7 +933,7 @@ web-grid {
 /* Or set base variables for all KeenMate components */
 :root {
   --base-accent-color: #10b981;
-  --base-layer-1: #ffffff;
+  --base-main-bg: #ffffff;
 }
 ```
 
@@ -953,8 +956,10 @@ This means:
 |----------|-------------|
 | `--wg-accent-color` | Primary accent color |
 | `--wg-text-color-1` | Primary text color |
-| `--wg-surface-1` | Background color |
-| `--wg-surface-2` | Alternate row/header background |
+| `--wg-main-bg` | Background color (table body, cells) |
+| `--wg-elevated-bg` | Alternate row/header background |
+| `--wg-hover-bg` | Hover background (rows, buttons) |
+| `--wg-dropdown-bg` | Floating surfaces (toolbar, context menu, dropdowns) |
 | `--wg-border-color` | Border color |
 
 ### Component Variables Manifest

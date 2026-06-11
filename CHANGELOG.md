@@ -5,10 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.5.1] - 2026-06-10
+## [1.2.0-rc02] - 2026-06-11 [PUBLISHED]
+
+### Added
+
+- **`shouldCommitOnClickAway` property** (defaults to `true`) — Excel-like commit-on-click-away. Clicking a different cell while editing now commits the in-progress value through the existing `beforeCommitCallback` / `validateCallback` pipeline instead of silently discarding it. Set to `false` to preserve the legacy discard behavior. Wired into both the pipeline mousedown path and the four legacy click-transition paths via a new `commitOrCancelEditOnTransition` helper that reads the editor value from the DOM for text/number/date/checkbox/select editors. Covered by two new tests in `e2e/edit-trigger.spec.ts`.
 
 ### Fixed
 
+- **Row focus on first cell click** — `.wg__row--focused` was never applied on the first cell click because the pipeline marked cell selection as pending on every mousedown, which suppressed the legacy row-focus update in the host mousedown handler. `setFocusedRow` + visual update moved into `executeFocusCell` so every `focusCell` action (mouse + keyboard) updates row focus, regardless of pending state. Shift+click still extends a range without dispatching `focusCell`, so range selection is unaffected.
 - **Dark-mode signal handling no longer overrides consumer `--base-*` themes.** The framework-class and per-instance dark-mode blocks in `dark-mode.css` previously set `--wg-main-bg`, `--wg-elevated-bg`, `--wg-text-color-*`, etc. to hardcoded literals (`#1f1f1f`, `#2b2b2b`, …). On a page with pure-admin's dark theme loaded, those overrides won at host-selector specificity and silently replaced the consumer's `--base-*` values for resolution inside the shadow root. Same bug web-multiselect had and fixed in v1.11. The dark-mode block now only sets `color-scheme: dark/light` based on signals; every `--wg-*` color already resolves through `light-dark(<light>, <dark>)` in `variables.css`, so flipping `color-scheme` picks the dark branch automatically while leaving the consumer's `--base-*` chain intact as the source of truth.
 - **Dirty indicator colors (`--wg-dirty-indicator-color`, `--wg-dirty-cell-bg`, `--wg-dirty-row-number-border-color`) now wrap their values in `light-dark()`** so they auto-flip when `color-scheme` resolves to dark, instead of relying on the dark-mode block to set them. Light value unchanged (`#ed8b00` orange); dark value brightened to `#ffa940` for contrast on dark surfaces (same as the prior dark-mode override).
 
