@@ -222,10 +222,10 @@
   /* ==========================================================================
      DIRTY INDICATOR (unsaved changes)
      ========================================================================== */
-  --wg-dirty-indicator-color: #ed8b00;
+  --wg-dirty-indicator-color: light-dark(#ed8b00, #ffa940);
   --wg-dirty-indicator-size: 6px;
-  --wg-dirty-cell-bg: rgba(237, 139, 0, 0.08);
-  --wg-dirty-row-number-border-color: #ed8b00;
+  --wg-dirty-cell-bg: light-dark(rgba(237, 139, 0, 0.08), rgba(255, 169, 64, 0.12));
+  --wg-dirty-row-number-border-color: light-dark(#ed8b00, #ffa940);
 
   /* ==========================================================================
      EDITOR

@@ -1,90 +1,67 @@
 /* ==============================================================================
-   DARK MODE / LIGHT MODE SUPPORT
+   DARK MODE — framework class + per-instance signal handling
    ==============================================================================
-   Dark mode is controlled by:
-   1. OS preference: @media (prefers-color-scheme: dark)
-   2. data-theme="dark" on host or ancestor (via :host-context)
-   3. data-bs-theme="dark" (Bootstrap 5.3+) on host or ancestor
-   4. .dark class on host or ancestor (Tailwind CSS convention)
+   Sets `color-scheme` on the host when the consumer signals dark/light via a
+   framework class (signal #4) or a per-instance attribute (signal #5). Every
+   `--wg-*` color in variables.css resolves through `light-dark(<light>, <dark>)`,
+   so flipping `color-scheme` on the host picks the correct branch without us
+   touching any `--base-*` value.
 
-   Light mode override (overrides OS dark preference):
-   1. data-theme="light" on host or ancestor (via :host-context)
-   2. data-bs-theme="light" (Bootstrap 5.3+) on host or ancestor
-   3. .light class on host or ancestor (Tailwind CSS convention)
+   Why we don't override `--base-*` or `--wg-*` here:
+   Setting e.g. `--wg-main-bg: #1f1f1f` on `:host` would shadow the consumer's
+   `:root { --base-main-bg: ... }` for resolution inside the shadow root, so
+   their themed value (e.g. pure-admin's dark theme) would be silently replaced
+   by our hardcoded default. Setting `color-scheme` instead leaves the
+   consumer's `--base-*` chain intact — they remain the source of truth, and
+   we only pick the dark branch of our own `light-dark()` fallbacks.
 
-   NOTE: Ancestor matching uses :host-context() because shadow DOM stylesheets
-   cannot see elements outside the shadow boundary with regular selectors.
-*/
-@media (prefers-color-scheme: dark) {
-  :host {
-    --wg-main-bg: #1f1f1f;
-    --wg-elevated-bg: #2b2b2b;
-    --wg-dropdown-bg: #2b2b2b;
-    --wg-text-color-1: #e0e0e0;
-    --wg-text-color-2: #c0c0c0;
-    --wg-text-color-3: #a0a0a0;
-    --wg-border-color: #3d3d3d;
-    --wg-border-color-hover: #5a5a5a;
-    --wg-input-bg: #1f1f1f;
-    --wg-input-border: 1px solid #5a5a5a;
-    --wg-hover-bg: #3a3a3a;
-    --wg-active-bg: #4a4a4a;
-    --wg-danger-bg-light: #442726;
-    --wg-danger-color: #f87c86;
-    --wg-dirty-indicator-color: #ffa940;
-    --wg-dirty-cell-bg: rgba(255, 169, 64, 0.12);
-    --wg-dirty-row-number-border-color: #ffa940;
-  }
-}
+   Why `color-scheme` on `:host` is fine *here* (but not in variables.css):
+   variables.css avoids it because an unconditional declaration would override
+   whatever the consumer's <html>/<body>/ancestor set. Here we declare it only
+   when the consumer's own signal matches, so we're amplifying their intent
+   rather than fighting it. Frameworks that already set `color-scheme`
+   alongside their class (Bootstrap 5.3+) get a redundant no-op; frameworks
+   that don't (Tailwind `.dark`, hand-rolled toggles) get filled in.
 
-/* Explicit dark mode via data-theme, data-bs-theme attribute, or .dark class */
-:host([data-theme="dark"]),
+   OS preference (signal #1) is intentionally not handled here. To opt into
+   "follow OS", the consumer sets `color-scheme: light dark` on <html> (or any
+   ancestor) — inheritance propagates into the shadow root and `light-dark()`
+   resolves automatically. Forcing an `@media (prefers-color-scheme: dark)`
+   block here would override consumers that explicitly want their app pinned
+   to one mode.
+
+   Signals handled:
+     #4 Framework theme class on an ancestor — `:host-context([data-theme="dark"])`,
+        `:host-context([data-bs-theme="dark"])`, `:host-context(.dark)`.
+     #5 Per-instance attribute on the host — `:host([data-theme="dark"])`,
+        `:host([data-theme="light"])`. Highest specificity, wins over any
+        framework class on an ancestor.
+
+   See BlissFramework/guidelines/web-components/color-scheme.md for the full pattern. */
+
+/* DARK — framework class on ancestor (signal #4) */
 :host-context([data-theme="dark"]),
-:host([data-bs-theme="dark"]),
 :host-context([data-bs-theme="dark"]),
 :host-context(.dark) {
-  --wg-main-bg: #1f1f1f;
-  --wg-elevated-bg: #2b2b2b;
-  --wg-dropdown-bg: #2b2b2b;
-  --wg-text-color-1: #e0e0e0;
-  --wg-text-color-2: #c0c0c0;
-  --wg-text-color-3: #a0a0a0;
-  --wg-border-color: #3d3d3d;
-  --wg-border-color-hover: #5a5a5a;
-  --wg-input-bg: #1f1f1f;
-  --wg-input-border: 1px solid #5a5a5a;
-  --wg-hover-bg: #3a3a3a;
-  --wg-active-bg: #4a4a4a;
-  --wg-danger-bg-light: #442726;
-  --wg-danger-color: #f87c86;
-  --wg-dirty-indicator-color: #ffa940;
-  --wg-dirty-row-number-border-color: #ffa940;
+  color-scheme: dark;
 }
 
-/* ==============================================================================
-   EXPLICIT LIGHT MODE OVERRIDE
-   ==============================================================================
-   When the app forces light mode (e.g. via data-theme="light" on <html> or <body>),
-   these selectors override the OS dark mode media query above by restoring the
-   --base-* fallback chain from variables.css.
-*/
-:host([data-theme="light"]),
+/* LIGHT — framework class on ancestor (signal #4, safety net for
+   "force one section back to light on a dark page"). */
 :host-context([data-theme="light"]),
-:host([data-bs-theme="light"]),
 :host-context([data-bs-theme="light"]),
 :host-context(.light) {
-  --wg-main-bg: var(--base-main-bg, #ffffff);
-  --wg-elevated-bg: var(--base-elevated-bg, #f5f5f5);
-  --wg-dropdown-bg: var(--base-dropdown-bg, var(--base-main-bg, #ffffff));
-  --wg-text-color-1: var(--base-text-color-1, #242424);
-  --wg-text-color-2: var(--base-text-color-2, #424242);
-  --wg-text-color-3: var(--base-text-color-3, #707070);
-  --wg-border-color: var(--base-border-color, #e0e0e0);
-  --wg-border-color-hover: var(--base-border-color, #d1d1d1);
-  --wg-input-bg: var(--base-input-bg, #ffffff);
-  --wg-input-border: var(--base-input-border, 1px solid #d1d1d1);
-  --wg-hover-bg: var(--base-hover-bg, #f0f0f0);
-  --wg-active-bg: var(--base-hover-bg, #e0e0e0);
-  --wg-danger-bg-light: var(--base-danger-bg-light, #fde7e9);
-  --wg-danger-color: var(--base-danger-color, #d13438);
+  color-scheme: light;
+}
+
+/* DARK — per-instance attribute on the host (signal #5). */
+:host([data-theme="dark"]),
+:host([data-bs-theme="dark"]) {
+  color-scheme: dark;
+}
+
+/* LIGHT — per-instance attribute on the host (signal #5). */
+:host([data-theme="light"]),
+:host([data-bs-theme="light"]) {
+  color-scheme: light;
 }

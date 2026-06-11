@@ -6,7 +6,14 @@
 	<title>Test — Theming Scenarios</title>
 	<link rel="stylesheet" href="test-fixtures.css">
 	<style>
-		/* Page chrome — minimal, e2e-only. */
+		/* Page chrome — minimal, e2e-only.
+		   `color-scheme: light dark` opts the page into OS-preference-following.
+		   With this set, `light-dark()` in web-grid's variables.css fallbacks
+		   resolves to the dark branch when the OS prefers dark — covers signal
+		   #1 (test 9 in theming.spec.ts) without web-grid forcing color-scheme. */
+		html {
+			color-scheme: light dark;
+		}
 		body {
 			max-width: 1400px;
 			margin: 0 auto;

@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.1] - 2026-06-10
+
+### Fixed
+
+- **Dark-mode signal handling no longer overrides consumer `--base-*` themes.** The framework-class and per-instance dark-mode blocks in `dark-mode.css` previously set `--wg-main-bg`, `--wg-elevated-bg`, `--wg-text-color-*`, etc. to hardcoded literals (`#1f1f1f`, `#2b2b2b`, …). On a page with pure-admin's dark theme loaded, those overrides won at host-selector specificity and silently replaced the consumer's `--base-*` values for resolution inside the shadow root. Same bug web-multiselect had and fixed in v1.11. The dark-mode block now only sets `color-scheme: dark/light` based on signals; every `--wg-*` color already resolves through `light-dark(<light>, <dark>)` in `variables.css`, so flipping `color-scheme` picks the dark branch automatically while leaving the consumer's `--base-*` chain intact as the source of truth.
+- **Dirty indicator colors (`--wg-dirty-indicator-color`, `--wg-dirty-cell-bg`, `--wg-dirty-row-number-border-color`) now wrap their values in `light-dark()`** so they auto-flip when `color-scheme` resolves to dark, instead of relying on the dark-mode block to set them. Light value unchanged (`#ed8b00` orange); dark value brightened to `#ffa940` for contrast on dark surfaces (same as the prior dark-mode override).
+
+### Changed
+
+- **OS preference (signal #1) now requires the consumer to opt in** by setting `color-scheme: light dark` on `<html>` (or any ancestor). This mirrors web-multiselect's approach — without opt-in, `light-dark()` defaults to the light branch even when the OS prefers dark. Previously a `@media (prefers-color-scheme: dark)` block in `dark-mode.css` force-set web-grid to dark on OS-preference matches; that block has been removed because it overrode consumers who deliberately pinned their app to one mode. Test fixtures (`docs/test/theming.html`) now set `color-scheme: light dark` on `<html>` to keep the OS-preference e2e test passing.
+
 ## [1.5.0] - 2026-06-10
 
 ### Changed
