@@ -109,6 +109,12 @@ export interface GridContext<T = unknown> {
 	// the editor element.
 	commitOrCancelEditOnTransition(): void
 
+	// Surgically toggle the `wg__row--focused` class between the previous
+	// focused row and the new one. Used by click / focus handlers when the
+	// state machine has already updated `grid.focusedRowIndex` and only the
+	// DOM needs catching up.
+	updateRowFocusVisual(prevRowIndex: number | null, newRowIndex: number | null): void
+
 	// Scroll event manager (pub/sub for scroll events)
 	readonly scrollEvents: ScrollEventManager
 

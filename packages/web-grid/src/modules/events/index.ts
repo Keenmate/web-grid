@@ -9,3 +9,4 @@ export {
 	attachPaginationListeners
 } from './pagination.js'
 export { handleTableMouseDown } from './table-mousedown.js'
+export { handleHeaderRowMouseDown } from './header-mousedown.js'

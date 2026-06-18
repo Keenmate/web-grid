@@ -164,7 +164,12 @@ import {
 	handleScrollCloseDropdown
 } from './modules/scroll/index.js'
 
-import { handleSortClick, attachPaginationListeners, handleTableMouseDown } from './modules/events/index.js'
+import {
+	handleSortClick,
+	attachPaginationListeners,
+	handleTableMouseDown,
+	handleHeaderRowMouseDown
+} from './modules/events/index.js'
 import { handleResizeStart } from './modules/resize/index.js'
 import { handleReorderStart, isReordering } from './modules/reorder/index.js'
 import { updateFillHandle, removeFillHandle } from './modules/fill-handle/index.js'
@@ -1360,134 +1365,9 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			}
 		})
 
-		// Column resize handle mousedown
-		table.addEventListener('mousedown', (e: Event) => {
-			const target = e.target as HTMLElement
-
-			// Resize handle takes priority
-			const resizeHandle = target.closest('.wg__resize-handle') as HTMLElement
-			if (resizeHandle) {
-				e.preventDefault()
-				e.stopPropagation()
-				// Clear selections when starting resize
-				this.clearAllSelections()
-				const field = resizeHandle.dataset.field
-				if (field) {
-					handleResizeStart(this, e as MouseEvent, field)
-				}
-				return
-			}
-
-			// Column reorder: start drag when clicking on a non-frozen header (if enabled)
-			// Skip reorder if Ctrl/Shift held - let click handler do column selection instead
-			if (this.grid.isColumnReorderAllowed) {
-				const mouseEvent = e as MouseEvent
-				if (!mouseEvent.ctrlKey && !mouseEvent.metaKey && !mouseEvent.shiftKey) {
-					const header = target.closest('.wg__header') as HTMLElement
-					if (header && !header.classList.contains('wg__header--frozen') && !header.classList.contains('wg__row-number-header')) {
-						// Clear selections when starting reorder
-						this.clearAllSelections()
-						const field = header.dataset.field
-						if (field) {
-							handleReorderStart(this, e as MouseEvent, field)
-						}
-					}
-				}
-			}
-
-			// Column selection drag: when reorder is disabled, OR when Shift is held (even with reorder enabled)
-			// Only on left-click (button 0), not right-click (button 2) which opens context menu
-			if ((!this.grid.isColumnReorderAllowed || (e as MouseEvent).shiftKey) && (e as MouseEvent).button === 0) {
-				const header = target.closest('.wg__header:not(.wg__row-number-header):not(.wg__inline-actions-header):not(.wg__actions-column):not(.wg__filler)') as HTMLElement
-				if (header && !target.closest('.wg__resize-handle') && !target.closest('.wg__sort-indicator')) {
-					const field = header.dataset.field
-					if (field) {
-						const colIndex = this.grid.visualColumns.findIndex(vc => String(vc.column.field) === field)
-						if (colIndex >= 0) {
-							handleHeaderMouseDown(this, colIndex, e as MouseEvent)
-						}
-					}
-				}
-			}
-
-			// Row selection: handle mousedown on row number cells
-			// Only on left-click (button 0), not right-click (button 2)
-			const rowNumberCell = target.closest('.wg__row-number[data-row-number]') as HTMLElement
-			if (rowNumberCell && (e as MouseEvent).button === 0) {
-				const rowIndex = parseInt(rowNumberCell.dataset.rowNumber || '-1', 10)
-				if (rowIndex >= 0) {
-					handleRowNumberMouseDown(this, rowIndex, e as MouseEvent)
-				}
-			}
-
-			// Select all: handle click on row number header (#)
-			// Only on left-click (button 0), not right-click (button 2)
-			const rowNumberHeader = target.closest('.wg__row-number-header') as HTMLElement
-			if (rowNumberHeader && (e as MouseEvent).button === 0) {
-				e.preventDefault()
-				this.grid.selectAll()
-				// Update the range border visual
-				if (this.grid.selectedCellRange) {
-					createRangeBorder(this)
-				}
-				this.render()
-				// Focus container so Ctrl+C works
-				requestAnimationFrame(() => {
-					const container = this.shadow.querySelector('.wg') as HTMLElement
-					container?.focus({ preventScroll: true })
-				})
-			}
-
-			// Set row focus when clicking on data cells (not row numbers or headers)
-			// Skip during cell range selection to avoid spurious onrowfocus events
-			const clickedCell = target.closest('.wg__cell:not(.wg__row-number):not(.wg__inline-actions-cell)') as HTMLElement
-			if (clickedCell && !target.closest('.wg__header') && !isCellSelectionPending() && !isCellSelecting()) {
-				const cellRowIndex = parseInt(clickedCell.dataset.row || '-1', 10)
-				if (cellRowIndex >= 0) {
-					const prevFocusedRow = this.grid.focusedRowIndex
-					this.grid.setFocusedRow(cellRowIndex)
-					this.updateRowFocusVisual(prevFocusedRow, cellRowIndex)
-				}
-			}
-
-			// Clear row/column selection when clicking on cells (not row numbers or headers)
-			// But NOT if cell selection is pending (would interfere with shift+drag)
-			if (target.closest('.wg__cell') && !target.closest('.wg__row-number, .wg__header') && !isCellSelectionPending()) {
-				let needsRender = false
-				if (this.grid.selectedRows.length > 0) {
-					this.grid.clearSelection()
-					needsRender = true
-				}
-				if (this.grid.selectedColumns.length > 0) {
-					this.grid.clearColumnSelection()
-					needsRender = true
-				}
-				if (needsRender) {
-					this.render()
-				}
-			}
-
-			// Clear all selections if clicking outside interactive elements (empty areas)
-			if (!target.closest('.wg__cell, .wg__row-number, .wg__header, .wg__toolbar, button, input, select, textarea')) {
-				let needsRender = false
-				if (this.grid.selectedCellRange) {
-					this.grid.clearCellSelection()
-					removeRangeBorder()
-					needsRender = true
-				}
-				if (this.grid.selectedRows.length > 0) {
-					this.grid.clearSelection()
-					needsRender = true
-				}
-				if (this.grid.selectedColumns.length > 0) {
-					this.grid.clearColumnSelection()
-					needsRender = true
-				}
-				if (needsRender) {
-					this.render()
-				}
-			}
-		})
+		// Mousedown — column resize / reorder / column-select / row-select / clear-on-empty
+		// Extracted to modules/events/header-mousedown.ts
+		table.addEventListener('mousedown', (e: Event) => handleHeaderRowMouseDown(this, e))
 
 		// Header click for column selection (sort indicator handled by clickEvents)
 		// Only active when column reorder is enabled (otherwise, mousedown handler does selection)
@@ -2371,7 +2251,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	 * Surgically update row focus visual (add/remove wg__row--focused class)
 	 * Avoids full re-render to preserve cell focus
 	 */
-	private updateRowFocusVisual(prevRowIndex: number | null, newRowIndex: number | null): void {
+	updateRowFocusVisual(prevRowIndex: number | null, newRowIndex: number | null): void {
 		if (prevRowIndex === newRowIndex) return
 
 		if (prevRowIndex !== null) {
