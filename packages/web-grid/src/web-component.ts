@@ -169,7 +169,9 @@ import {
 	attachPaginationListeners,
 	handleTableMouseDown,
 	handleHeaderRowMouseDown,
-	handleContainerKeyDown
+	handleContainerKeyDown,
+	handleContainerScroll,
+	handleWindowScroll
 } from './modules/events/index.js'
 import { handleResizeStart } from './modules/resize/index.js'
 import { handleReorderStart, isReordering } from './modules/reorder/index.js'
@@ -1493,54 +1495,10 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			// Initialize scroll event manager and subscribe to scroll events
 			this.scrollEvents.init(scrollContainer)
 
-			// Container scroll handler
-			this.scrollEvents.subscribe('container', () => {
-				// Toggle horizontal scroll indicator for frozen column shadow
-				const isScrolledHorizontally = scrollContainer.scrollLeft > 0
-				container.classList.toggle('wg--scrolled-horizontal', isScrolledHorizontally)
-
-				// Close dropdown on scroll
-				if (this.dropdown.isOpen && !this.isTransitioningCells && !this.dropdown.isOpening) {
-					handleScrollCloseDropdown(this)
-				}
-
-				// Virtual scroll: recalculate visible range
-				if (this.grid.shouldUseVirtualScroll()) {
-					handleVirtualScroll(this, scrollContainer)
-				}
-
-				// Infinite scroll: detect when near bottom
-				if (this.grid.isInfiniteScrollEnabled && this.grid.hasMoreItems && !this.virtualScroll.isLoadingMore) {
-					handleInfiniteScroll(this, scrollContainer)
-				}
-
-				// Update connector position when scrolling (clips at container boundary)
-				if (getActiveToolbarRowIndex() !== null) {
-					updateConnector(this, this.grid.displayItems)
-					this.renderConnector()
-				}
-
-				// Update fill handle position on scroll
-				updateFillHandle(this)
-
-				// Update cell range border on scroll
-				if (this.grid.selectedCellRange) {
-					updateRangeBorder(this)
-				}
-
-				// Update row/column selection borders on scroll
-				updateSelectionBorders(this)
-			})
-
-			// Window scroll handler - close overlays
-			this.scrollEvents.subscribe('window', () => {
-				if (this.dropdown.isOpen && !this.isTransitioningCells) {
-					handleScrollCloseDropdown(this)
-				}
-				if (getActiveToolbarRowIndex() !== null) {
-					closeToolbarAndReset(this)
-				}
-			})
+			// Container + window scroll subscriptions
+			// Extracted to modules/events/scroll-handlers.ts
+			this.scrollEvents.subscribe('container', () => handleContainerScroll(this, container, scrollContainer))
+			this.scrollEvents.subscribe('window', () => handleWindowScroll(this))
 
 			// Initialize click event manager for outside-click detection
 			// Only subscribe once (attachEventListeners is called on every render)
