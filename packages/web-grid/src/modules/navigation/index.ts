@@ -16,3 +16,5 @@ export {
 	handleTableFocusOut,
 	scrollToRowPosition
 } from './focus.js'
+
+export { handleCellKeyDown } from './cell-keydown.js'

@@ -82,6 +82,20 @@ export interface GridContext<T = unknown> {
 	// Custom editor support
 	openCustomEditor(rowIndex: number, colIndex: number): void
 
+	// Programmatic scroll-to-row used by keyboard navigation (Home/End/PageUp/PageDown
+	// with Ctrl). Wraps virtual-scroll range update + scrollTop change behind a flag
+	// so the scroll event listener doesn't double-render.
+	scrollToRowProgrammatically(targetRow: number): void
+
+	// Render the "Go to row" dialog. Triggered by Ctrl+G at the cell level —
+	// the dialog handles its own focus return back to the originating column.
+	showGoToRowDialog(colIndex: number): void
+
+	// Dispatch a CustomEvent on the grid element. Handlers use this to fire
+	// public events (rowdelete, etc.) from module code without holding a
+	// reference to the host element.
+	dispatchEvent(event: Event): boolean
+
 	// Scroll event manager (pub/sub for scroll events)
 	readonly scrollEvents: ScrollEventManager
 
