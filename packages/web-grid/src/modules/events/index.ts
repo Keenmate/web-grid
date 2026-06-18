@@ -3,4 +3,8 @@
 // =============================================================================
 
 export { handleSortClick } from './sort.js'
-export { handlePaginationClick, handlePageSizeChange } from './pagination.js'
+export {
+	handlePaginationClick,
+	handlePageSizeChange,
+	attachPaginationListeners
+} from './pagination.js'

@@ -886,3 +886,5 @@ export {
 	handleToolbarItemClick,
 	handleInlineActionClick
 } from './element-handlers.js'
+
+export { attachToolbarListeners } from './event-listeners.js'

@@ -83,9 +83,8 @@ import {
 } from './modules/dropdown/index.js'
 
 import {
-	showTooltip,
-	hideTooltip,
-	TooltipService
+	TooltipService,
+	attachTooltipListeners
 } from './modules/tooltip/index.js'
 
 import {
@@ -138,21 +137,13 @@ import {
 } from './modules/contextmenu/index.js'
 import {
 	closeToolbar,
-	isToolbarOpenForRow,
 	getActiveToolbarRowIndex,
-	isToolbarOwnedBy,
 	getConnectorState,
 	updateConnector,
-	updateToolbarPosition,
-	resolveToolbarOffset,
 	ToolbarService,
-	setupInlineShortcuts,
 	removeInlineShortcuts,
-	showToolbarForRow,
 	closeToolbarAndReset,
-	updateToolbarWithCellItems,
-	handleToolbarItemClick,
-	handleInlineActionClick,
+	attachToolbarListeners,
 	type ConnectorState
 } from './modules/toolbar/index.js'
 
@@ -171,7 +162,7 @@ import {
 	handleScrollCloseDropdown
 } from './modules/scroll/index.js'
 
-import { handleSortClick, handlePaginationClick, handlePageSizeChange } from './modules/events/index.js'
+import { handleSortClick, attachPaginationListeners } from './modules/events/index.js'
 import { handleResizeStart } from './modules/resize/index.js'
 import { handleReorderStart, isReordering } from './modules/reorder/index.js'
 import { updateFillHandle, removeFillHandle } from './modules/fill-handle/index.js'
@@ -256,9 +247,6 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 	// Flag to prevent blur from cancelling edit when switching between dropdown cells
 	isTransitioningCells = false
-
-	// Flag to track if toolbar outside click listener has been added
-	private toolbarOutsideClickAdded = false
 
 	// Flag to track if clickEvents subscriptions have been added (only subscribe once)
 	private clickEventsSubscribed = false
@@ -2780,282 +2768,15 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		}
 
 		// Tooltip events
-		table.addEventListener('mouseenter', (e: Event) => {
-			const target = e.target as HTMLElement
-			// Check for HTML tooltip first, then plain text
-			const htmlTooltipElement = target.closest('[data-tooltip-html]') as HTMLElement
-			if (htmlTooltipElement) {
-				const tooltipHtml = htmlTooltipElement.getAttribute('data-tooltip-html')!
-				showTooltip(this, htmlTooltipElement, tooltipHtml, this._tooltipShowDelay, true)
-				return
-			}
-			const tooltipElement = target.closest('[data-tooltip]') as HTMLElement
-			if (tooltipElement) {
-				const tooltipText = tooltipElement.getAttribute('data-tooltip')!
-				showTooltip(this, tooltipElement, tooltipText, this._tooltipShowDelay, false)
-			}
-		}, true)
+		attachTooltipListeners(this, table)
 
-		table.addEventListener('mouseleave', (e: Event) => {
-			const mouseEvent = e as MouseEvent
-			const target = mouseEvent.target as HTMLElement
-			const relatedTarget = mouseEvent.relatedTarget as HTMLElement | null
-			const tooltipEl = target.closest('[data-tooltip], [data-tooltip-html]') as HTMLElement
+		// Row toolbar events — trigger / inline / hover / mousemove / click / outside click
+		attachToolbarListeners(this, table)
 
-			if (tooltipEl && relatedTarget?.closest('[data-tooltip], [data-tooltip-html]') === tooltipEl) {
-				return
-			}
-
-			if (tooltipEl) {
-				hideTooltip(this, this._tooltipHideDelay)
-			}
-		}, true)
-
-		// =========================================================================
-		// Row Toolbar Events
-		// =========================================================================
-
-		// Toolbar trigger button click (button mode)
-		table.addEventListener('click', (e: Event) => {
-			const target = e.target as HTMLElement
-			const triggerBtn = target.closest('.wg__toolbar-trigger') as HTMLElement
-			if (triggerBtn && this.grid.toolbarTrigger === 'button') {
-				e.preventDefault()
-				e.stopPropagation()
-				const rowIndex = parseInt(triggerBtn.dataset.toolbarTrigger || '0', 10)
-				const rowElement = table.querySelector(`tr[data-row-index="${rowIndex}"]`) as HTMLElement
-				if (rowElement) {
-					// Toggle toolbar for this row
-					if (isToolbarOpenForRow(rowIndex)) {
-						closeToolbarAndReset(this)
-						// No render() needed - closeToolbar() surgically removes toolbar
-					} else {
-						showToolbarForRow(this, rowElement, rowIndex)
-					}
-				}
-			}
-		})
-
-		// Inline action button click (inline mode - toolbarPosition="inline")
-		table.addEventListener('click', (e: Event) => {
-			if (this.grid.toolbarPosition !== 'inline') return
-
-			const target = e.target as HTMLElement
-			const btn = target.closest('.wg__inline-action-btn') as HTMLButtonElement
-			if (btn && !btn.disabled) {
-				e.preventDefault()
-				e.stopPropagation()
-				const actionId = btn.dataset.actionId
-				const rowIndex = parseInt(btn.dataset.row || '0', 10)
-				handleInlineActionClick(this, actionId, rowIndex, e as MouseEvent, btn)
-			}
-		})
-
-		// Row hover - track hovered row and handle toolbar/inline shortcuts
-		table.addEventListener('mouseenter', (e: Event) => {
-			const mouseEvent = e as MouseEvent
-			const target = mouseEvent.target as HTMLElement
-			const row = target.closest('.wg__row') as HTMLElement
-			if (row) {
-				const rowIndex = parseInt(row.dataset.rowIndex || '0', 10)
-				this.grid.setHoveredRow(rowIndex)
-
-				// For inline mode, setup shortcuts
-				if (this.grid.toolbarPosition === 'inline') {
-					setupInlineShortcuts(this)
-				}
-
-				// For floating toolbar (hover trigger)
-				if (this.grid.toolbarTrigger === 'hover' && this.grid.toolbarPosition !== 'inline') {
-					// Cancel any pending hide timeout when entering a row
-					this.toolbar.clearHideTimeout()
-					if (!isToolbarOpenForRow(rowIndex)) {
-						showToolbarForRow(this, row, rowIndex, mouseEvent.clientX)
-					}
-				}
-			}
-		}, true)
-
-		// Row mouseleave - handle toolbar hide and inline shortcuts cleanup
-		table.addEventListener('mouseleave', (e: Event) => {
-			const mouseEvent = e as MouseEvent
-			const target = mouseEvent.target as HTMLElement
-			const row = target.closest('.wg__row') as HTMLElement
-
-			if (row) {
-				// For inline mode, clear hovered row and shortcuts after short delay
-				if (this.grid.toolbarPosition === 'inline') {
-					setTimeout(() => {
-						if (!table.matches(':hover')) {
-							this.grid.setHoveredRow(null)
-							removeInlineShortcuts(this)
-						}
-					}, 50)
-				}
-
-				// For floating toolbar (hover trigger)
-				if (this.grid.toolbarTrigger === 'hover' && this.grid.toolbarPosition !== 'inline') {
-					// Don't close during move actions (connector tracking)
-					if (this.toolbar.isMoveInProgress) return
-
-					// Start hide timeout (shared with toolbar mouseleave)
-					this.toolbar.clearHideTimeout()
-					this.toolbar.setHideTimeout(setTimeout(() => {
-						const toolbarContainer = this.shadow.querySelector('.wg__toolbar-container')
-						const isHoveringToolbar = toolbarContainer?.matches(':hover')
-						const isHoveringTable = table.matches(':hover')
-
-						if (!isHoveringToolbar && !isHoveringTable) {
-							this.grid.setHoveredRow(null)
-							closeToolbarAndReset(this)
-							// No render() needed - closeToolbar() already removes toolbar from DOM
-						}
-					}, 150))
-				}
-			}
-		}, true)
-
-		// Row mousemove - handle mouse-following toolbar and cell-aware toolbar
-		table.addEventListener('mousemove', (e: Event) => {
-			const mouseEvent = e as MouseEvent
-			const target = mouseEvent.target as HTMLElement
-			const row = target.closest('.wg__row') as HTMLElement
-
-			if (!row) return
-
-			const rowIndex = parseInt(row.dataset.rowIndex || '0', 10)
-			const toolbarRowIndex = getActiveToolbarRowIndex()
-
-			// Only process if toolbar is open for this row and in 'top' position
-			if (toolbarRowIndex !== rowIndex || this.grid.toolbarPosition !== 'top') return
-
-			// Handle mouse-following toolbar (skip if cellToolbar is active - it handles its own positioning,
-			// and skip if toolbarColumn is set - column pinning takes priority over cursor following)
-			if (this.grid.shouldToolbarFollowCursor && !this.grid.cellToolbar && this.grid.toolbarColumn === undefined) {
-				const cell = target.closest('.wg__cell:not(.wg__row-number):not(.wg__inline-actions-cell)') as HTMLElement
-				if (cell) {
-					const cellRect = cell.getBoundingClientRect()
-					const targetX = resolveToolbarOffset(cellRect, this.grid.cellToolbarOffset)
-					updateToolbarPosition(targetX, row, 'start')
-				} else {
-					updateToolbarPosition(mouseEvent.clientX, row)
-				}
-			}
-
-			// Handle cell-aware toolbar
-			if (this.grid.cellToolbar) {
-				const cell = target.closest('.wg__cell:not(.wg__row-number):not(.wg__inline-actions-cell)') as HTMLElement
-				if (cell) {
-					const field = cell.dataset.field || ''
-					// Find colIndex from visualColumns since cells don't have data-col-index
-					const colIndex = this.grid.visualColumns.findIndex(vc => String(vc.column.field) === field)
-
-					// Check if cell changed (compare by field since that's what we have)
-					const currentHovered = this.toolbar.hoveredCell
-					const cellChanged = !currentHovered ||
-						currentHovered.rowIndex !== rowIndex ||
-						currentHovered.field !== field
-
-					if (cellChanged) {
-						this.toolbar.setHoveredCell({ rowIndex, colIndex, field })
-
-						// Get cell-specific toolbar items
-						const dataRow = this.grid.displayItems[rowIndex]
-						if (dataRow) {
-							const cellItems = this.grid.cellToolbar(dataRow, rowIndex, field, colIndex)
-							// Use cell items if provided, otherwise use default rowToolbar
-							const itemsToUse = cellItems || this.grid.rowToolbar
-							const newItemsJson = JSON.stringify(itemsToUse)
-
-							// Check if items changed
-							if (newItemsJson !== this.toolbar.currentCellItemsJson) {
-								this.toolbar.setCurrentCellItemsJson(newItemsJson)
-								// Re-render toolbar with new items
-								updateToolbarWithCellItems(this, rowIndex, itemsToUse)
-							}
-
-							// Position toolbar at configured offset from cell left edge
-							const cellRect = cell.getBoundingClientRect()
-							const targetX = resolveToolbarOffset(cellRect, this.grid.cellToolbarOffset)
-							updateToolbarPosition(targetX, row, 'start')
-						}
-					}
-				}
-			}
-		})
-
-		// Row click (click mode)
-		table.addEventListener('click', (e: Event) => {
-			if (this.grid.toolbarTrigger !== 'click') return
-
-			const mouseEvent = e as MouseEvent
-			const target = mouseEvent.target as HTMLElement
-			const row = target.closest('.wg__row') as HTMLElement
-			if (row && !target.closest('.wg__cell--editing')) {
-				const rowIndex = parseInt(row.dataset.rowIndex || '0', 10)
-				// Toggle toolbar
-				if (isToolbarOpenForRow(rowIndex)) {
-					closeToolbarAndReset(this)
-					// No render() needed - closeToolbar() surgically removes toolbar
-				} else {
-					showToolbarForRow(this, row, rowIndex, mouseEvent.clientX)
-				}
-			}
-		})
-
-		// Close toolbar on outside click
-		if (!this.toolbarOutsideClickAdded) {
-			this.toolbarOutsideClickAdded = true
-			document.addEventListener('click', (e: MouseEvent) => {
-				// Only handle if this grid owns the active toolbar
-				if (!isToolbarOwnedBy(this.shadow)) {
-					return
-				}
-
-				const composedPath = e.composedPath()
-				const isInToolbar = composedPath.some(el => (el as HTMLElement).classList?.contains('wg__toolbar-container'))
-				const isInTrigger = composedPath.some(el => (el as HTMLElement).classList?.contains('wg__toolbar-trigger'))
-
-				if (isInToolbar || isInTrigger) {
-					return
-				}
-				// Don't close if clicking inside grid (hover/click mode handles that)
-				const isInGrid = composedPath.includes(this)
-				if (isInGrid && (this.grid.toolbarTrigger === 'hover' || this.grid.toolbarTrigger === 'click')) {
-					return
-				}
-				// Close toolbar if clicking outside
-				if (getActiveToolbarRowIndex() !== null) {
-					closeToolbarAndReset(this)
-					// No render() needed - closeToolbar() surgically removes toolbar
-				}
-			})
-		}
-
-		// =========================================================================
-		// Pagination Events (delegated on the .wg container so the listeners
-		// survive surgical renders — when isPageable toggles or pagination is
-		// re-rendered, the .wg__pagination element is replaced via innerHTML and
-		// loses any listeners attached directly to it.)
-		// =========================================================================
+		// Pagination events (delegated on .wg container — see attachPaginationListeners)
 		const wgContainer = this.shadow.querySelector('.wg') as HTMLElement | null
 		if (wgContainer) {
-			wgContainer.addEventListener('click', (e: Event) => {
-				const target = e.target as HTMLElement
-				if (target.closest('.wg__pagination-btn')) {
-					if (handlePaginationClick(this, e)) {
-						this.render()
-					}
-				}
-			})
-			wgContainer.addEventListener('change', (e: Event) => {
-				const target = e.target as HTMLElement
-				if (target.matches('.wg__pagination-select')) {
-					if (handlePageSizeChange(this, target as HTMLSelectElement)) {
-						this.render()
-					}
-				}
-			})
+			attachPaginationListeners(this, wgContainer)
 		}
 	}
 

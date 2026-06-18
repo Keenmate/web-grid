@@ -52,3 +52,30 @@ export function handlePageSizeChange<T>(ctx: GridContext<T>, select: HTMLSelectE
 	}
 	return false
 }
+
+/**
+ * Attach pagination click + page-size change listeners to the `.wg` container.
+ *
+ * Why the container (not `.wg__pagination`): when `isPageable` toggles or the
+ * pagination region re-renders, its DOM is replaced via innerHTML and any
+ * listener attached directly to the pagination element is lost. Delegating
+ * from the container survives surgical re-renders.
+ */
+export function attachPaginationListeners<T>(ctx: GridContext<T>, wgContainer: HTMLElement): void {
+	wgContainer.addEventListener('click', (e: Event) => {
+		const target = e.target as HTMLElement
+		if (target.closest('.wg__pagination-btn')) {
+			if (handlePaginationClick(ctx, e)) {
+				ctx.render()
+			}
+		}
+	})
+	wgContainer.addEventListener('change', (e: Event) => {
+		const target = e.target as HTMLElement
+		if (target.matches('.wg__pagination-select')) {
+			if (handlePageSizeChange(ctx, target as HTMLSelectElement)) {
+				ctx.render()
+			}
+		}
+	})
+}
