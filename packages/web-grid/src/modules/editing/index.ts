@@ -23,3 +23,6 @@ export {
 	renderComboboxEditor,
 	renderAutocompleteEditor
 } from './renderers.js'
+
+// Editor keydown handler
+export { handleEditorKeyDown } from './editor-keydown.js'
