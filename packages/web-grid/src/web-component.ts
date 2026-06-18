@@ -171,7 +171,9 @@ import {
 	handleHeaderRowMouseDown,
 	handleContainerKeyDown,
 	handleContainerScroll,
-	handleWindowScroll
+	handleWindowScroll,
+	handleOutsideClick,
+	handleSortClickSubscription
 } from './modules/events/index.js'
 import { handleResizeStart } from './modules/resize/index.js'
 import { handleReorderStart, isReordering } from './modules/reorder/index.js'
@@ -1517,82 +1519,10 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				}
 				this.clickEvents.init(container, this, isPathInOwnedScope)
 
-				// Clear selections, focus, and close editors when clicking outside the grid
-				this.clickEvents.subscribe('outsideClick', () => {
-					let needsRender = false
-
-					// Clear focused cell state FIRST (before renderCell rebuilds it with focused class)
-					if (this.grid.focusedCell) {
-						const { rowIndex, colIndex } = this.grid.focusedCell
-						const cell = this.shadow.querySelector(
-							`.wg__cell[data-row="${rowIndex}"][data-col="${colIndex}"]`
-						)
-						cell?.classList.remove('wg__cell--focused', 'wg__cell--always-edit-focused')
-						this.grid.clearFocusedCell()
-					}
-
-					// Clear row focus
-					if (this.grid.focusedRowIndex !== null) {
-						this.grid.clearRowFocus()
-						needsRender = true
-					}
-
-					// Close dropdown and cancel edit if editing
-					if (this.dropdown.isOpen || this.grid.editingCell) {
-						const oldEditingCell = this.grid.editingCell
-						const oldColIndex = oldEditingCell
-							? this.grid.columns.findIndex(c => String(c.field) === oldEditingCell.field)
-							: -1
-
-						removeDropdown(this)
-						clearEditingVisual(this)
-						this.grid.cancelEdit()
-
-						// Re-render old cell to restore display mode (now without focused class)
-						if (oldEditingCell && oldColIndex >= 0) {
-							renderCell(this, oldEditingCell.rowIndex, oldColIndex)
-						}
-					}
-
-					if (this.grid.selectedCellRange) {
-						this.grid.clearCellSelection()
-						removeRangeBorder()
-						needsRender = true
-					}
-					if (this.grid.selectedRows.length > 0) {
-						this.grid.clearSelection()
-						needsRender = true
-					}
-					if (this.grid.selectedColumns.length > 0) {
-						this.grid.clearColumnSelection()
-						needsRender = true
-					}
-					if (needsRender) {
-						this.render()
-					}
-				})
-
-				// Handle sort indicator clicks
-				this.clickEvents.subscribe('sortClick', (ctx) => {
-					// Skip if reordering was just performed (prevents sort on drop)
-					if (isReordering()) return
-					// Clear all selections when sorting
-					if (this.grid.selectedCellRange) {
-						this.grid.clearCellSelection()
-						removeRangeBorder()
-					}
-					if (this.grid.selectedRows.length > 0) {
-						this.grid.clearSelection()
-						removeRowSelectionBorders()
-					}
-					if (this.grid.selectedColumns.length > 0) {
-						this.grid.clearColumnSelection()
-						removeColumnSelectionBorders()
-					}
-					// Pass field directly - ctx.event.target is retargeted when crossing shadow DOM
-					handleSortClick(this, ctx.event, ctx.field)
-					this.render()
-				})
+				// Outside-click + sort-click subscriptions
+				// Extracted to modules/events/click-subscriptions.ts
+				this.clickEvents.subscribe('outsideClick', () => handleOutsideClick(this))
+				this.clickEvents.subscribe('sortClick', (subCtx) => handleSortClickSubscription(this, subCtx))
 
 				this.clickEventsSubscribed = true
 			}
