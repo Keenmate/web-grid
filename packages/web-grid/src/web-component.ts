@@ -168,7 +168,8 @@ import {
 	handleSortClick,
 	attachPaginationListeners,
 	handleTableMouseDown,
-	handleHeaderRowMouseDown
+	handleHeaderRowMouseDown,
+	handleContainerKeyDown
 } from './modules/events/index.js'
 import { handleResizeStart } from './modules/resize/index.js'
 import { handleReorderStart, isReordering } from './modules/reorder/index.js'
@@ -1485,78 +1486,9 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			// Make container focusable for keyboard events when rows are selected
 			container.setAttribute('tabindex', '-1')
 
-			// Range shortcuts - handle keyboard shortcuts for selected rows, columns, or cell ranges
-			container.addEventListener('keydown', (e: KeyboardEvent) => {
-				const selectedRowIndices = this.grid.selectedRows
-				const selectedColIndices = this.grid.selectedColumns
-				const hasCellRange = !!this.grid.selectedCellRange
-				if (selectedRowIndices.length === 0 && selectedColIndices.length === 0 && !hasCellRange) return
-
-				// Skip if focus is in an input
-				const target = e.target as HTMLElement
-				if (target.matches('input, textarea, select, [contenteditable="true"]')) {
-					return
-				}
-
-				// Handle Escape to clear selection (cell range > column > row priority)
-				if (e.key === 'Escape') {
-					e.preventDefault()
-					if (this.grid.selectedCellRange) {
-						this.grid.clearCellSelection()
-						removeRangeBorder()
-					} else if (selectedColIndices.length > 0) {
-						this.grid.clearColumnSelection()
-					} else {
-						this.grid.clearSelection()
-					}
-					return
-				}
-
-				// Handle Ctrl+C to copy selection (built-in, works without rangeShortcuts)
-				if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
-					e.preventDefault()
-					if (hasCellRange) {
-						this.grid.copyCellSelectionToClipboard()
-					} else if (selectedColIndices.length > 0) {
-						this.grid.copySelectedColumnsToClipboard()
-					} else if (selectedRowIndices.length > 0) {
-						this.grid.copySelectedRowsToClipboard()
-					}
-					return
-				}
-
-				// Check range shortcuts (works for both row and cell selection)
-				const rangeShortcuts = this.grid.rangeShortcuts
-				if (!rangeShortcuts?.length) return
-
-				for (const shortcut of rangeShortcuts) {
-					const combo = parseKeyCombo(shortcut.key)
-					if (matchesKeyCombo(e, combo)) {
-						// Build context based on selection type
-						const ctx: RangeShortcutContext<T> = hasCellRange ? {
-							// Cell range mode
-							rows: [],
-							rowIndices: [],
-							cellRange: this.grid.selectedCellRange!,
-							cells: this.grid.getSelectedCells()
-						} : {
-							// Row selection mode
-							rows: this.grid.getSelectedRowsData(),
-							rowIndices: selectedRowIndices
-						}
-
-						const isDisabled = typeof shortcut.disabled === 'function'
-							? shortcut.disabled(ctx)
-							: shortcut.disabled === true
-
-						if (!isDisabled) {
-							e.preventDefault()
-							shortcut.action(ctx)
-							return
-						}
-					}
-				}
-			})
+			// Range shortcuts + Escape + Ctrl+C for active selections
+			// Extracted to modules/events/container-keydown.ts
+			container.addEventListener('keydown', (e: KeyboardEvent) => handleContainerKeyDown(this, e))
 
 			// Initialize scroll event manager and subscribe to scroll events
 			this.scrollEvents.init(scrollContainer)
