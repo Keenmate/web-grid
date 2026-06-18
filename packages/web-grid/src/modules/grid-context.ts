@@ -96,6 +96,19 @@ export interface GridContext<T = unknown> {
 	// reference to the host element.
 	dispatchEvent(event: Event): boolean
 
+	// Surgically clear cell-range / row / column selections (state + classes +
+	// borders) WITHOUT triggering requestUpdate. Used in cell-transition paths
+	// where a subsequent renderCell handles its own DOM refresh, and a full
+	// render would invalidate captured node references.
+	clearAllSelections(): void
+
+	// Excel-like "commit on click-away" — reads the in-progress editor value
+	// (input.value / dataset.dateValue / numeric parse / dataset.value) and
+	// fires `grid.commitEdit`. Falls back to `cancelEdit` when shouldCommitOnClickAway
+	// is false or the editor DOM is unreadable. Must run BEFORE renderCell wipes
+	// the editor element.
+	commitOrCancelEditOnTransition(): void
+
 	// Scroll event manager (pub/sub for scroll events)
 	readonly scrollEvents: ScrollEventManager
 

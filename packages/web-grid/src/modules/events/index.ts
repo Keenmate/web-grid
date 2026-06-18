@@ -8,3 +8,4 @@ export {
 	handlePageSizeChange,
 	attachPaginationListeners
 } from './pagination.js'
+export { handleTableMouseDown } from './table-mousedown.js'

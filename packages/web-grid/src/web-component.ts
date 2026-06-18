@@ -164,7 +164,7 @@ import {
 	handleScrollCloseDropdown
 } from './modules/scroll/index.js'
 
-import { handleSortClick, attachPaginationListeners } from './modules/events/index.js'
+import { handleSortClick, attachPaginationListeners, handleTableMouseDown } from './modules/events/index.js'
 import { handleResizeStart } from './modules/resize/index.js'
 import { handleReorderStart, isReordering } from './modules/reorder/index.js'
 import { updateFillHandle, removeFillHandle } from './modules/fill-handle/index.js'
@@ -1335,269 +1335,9 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			}
 		})
 
-		// Mousedown - toggle dropdown, handle cell transitions
-		table.addEventListener('mousedown', (e: Event) => {
-			const target = e.target as HTMLElement
-			const mouseEvent = e as MouseEvent
-			uiLogger.debug('MOUSEDOWN fired | target:', target.tagName, target.className, '| connected:', target.isConnected, '| detail:', mouseEvent.detail, '| button:', mouseEvent.button)
-
-			// Tree chevron — let click handler do its work; suppress focus/selection side effects
-			if (target.closest('.wg__tree-chevron[data-tree-toggle]')) {
-				uiLogger.debug('chevron mousedown intercepted (suppress focus/selection)')
-				e.preventDefault()
-				e.stopPropagation()
-				return
-			}
-
-			// Tree column second-click handling — detect via MouseEvent.detail (the
-			// browser's own click counter). The native dblclick event is unreliable
-			// here because the cell's innerHTML gets re-rendered between clicks, so
-			// we route both "double-click toggles tree" and "double-click starts edit"
-			// through this single path.
-			if (mouseEvent.detail === 2 && mouseEvent.button === 0 && this.grid.isTreeMode) {
-				const cellEl = target.closest('.wg__cell') as HTMLElement
-				if (cellEl && !target.closest('.wg__tree-chevron')) {
-					const colIdx = parseInt(cellEl.dataset.col || '-1', 10)
-					const rowIdx = parseInt(cellEl.dataset.row || '-1', 10)
-					const col = colIdx >= 0 ? this.grid.columns[colIdx] : null
-					if (col?.isTree && rowIdx >= 0) {
-						// Tree toggle takes priority over edit when enabled
-						if (this.grid.treeDoubleClickBehavior === 'toggle') {
-							const item = this.grid.displayItems[rowIdx]
-							const info = item ? this.grid.getRowTreeInfo(item) : null
-							if (info?.hasChildren) {
-								uiLogger.debug('tree dblclick (mousedown.detail=2) toggle:', info.path)
-								e.preventDefault()
-								e.stopPropagation()
-								this.grid.toggleExpandedPath(info.path)
-								return
-							}
-						}
-						// Otherwise, if the column is editable with dblclick/navigate trigger, start edit
-						const trigger = col.editTrigger || this.grid.editTrigger
-						if ((trigger === 'dblclick' || trigger === 'navigate') && this.grid.canEditCell(rowIdx, String(col.field))) {
-							const cursorPos = getCursorPositionFromClick(mouseEvent, cellEl)
-							uiLogger.debug('tree dblclick (mousedown.detail=2) start edit:', String(col.field), '| trigger:', trigger)
-							e.preventDefault()
-							e.stopPropagation()
-							tryStartEdit(this, rowIdx, colIdx, { cursorPosition: cursorPos ?? undefined })
-							return
-						}
-					}
-				}
-			}
-
-			// Try pipeline first for 'always' mode cells (handles cell clicks and toggle clicks)
-			if (this.pipelineAdapter?.tryHandleMouseDown(mouseEvent)) {
-				return
-			}
-
-			// Cell range selection - handle before other interactions
-			// Skip if clicking on toggles (dropdown, date) - those have their own handlers
-			const cell = target.closest('.wg__cell') as HTMLElement
-			const isClickingToggle = target.closest('.wg__combobox-toggle, .wg__select-toggle, .wg__date-trigger')
-			if (cell && !cell.classList.contains('wg__cell--editing') && !target.closest('.wg__row-number') && !isClickingToggle) {
-				const rowIndex = parseInt(cell.dataset.row || '0', 10)
-				const colIndex = parseInt(cell.dataset.col || '0', 10)
-				const column = this.grid.visualColumns[colIndex]?.column
-				
-				if (column) {
-					const selectionMode = this.grid.cellSelectionMode
-					const isShiftClick = mouseEvent.shiftKey
-					const trigger = column.editTrigger || this.grid.editTrigger
-
-					// Check if we should handle cell range selection
-					const shouldSelectRange = 
-						selectionMode !== 'disabled' && (
-							(selectionMode === 'click' && !isShiftClick) ||
-							(selectionMode === 'shift' && isShiftClick)
-						)
-
-					if (shouldSelectRange) {
-						// Commit (or cancel) any active edit before starting cell selection
-						if (this.grid.editingCell) {
-							const oldEditingCell = this.grid.editingCell
-							const oldColIndex = this.grid.columns.findIndex(c => String(c.field) === oldEditingCell.field)
-							removeDropdown(this)
-							clearEditingVisual(this)
-							this.commitOrCancelEditOnTransition()
-							// Re-render old cell to restore display mode
-							if (oldColIndex >= 0) {
-								renderCell(this, oldEditingCell.rowIndex, oldColIndex)
-							}
-						}
-						// Clear row/column selection when starting cell selection
-						if (this.grid.selectedRows.length > 0) {
-							this.grid.clearSelection()
-						}
-						if (this.grid.selectedColumns.length > 0) {
-							this.grid.clearColumnSelection()
-						}
-						// Start cell selection
-						// Note: if editTrigger='click' + cellSelectionMode='click', selection takes priority
-						// For shift mode, Shift+Click always starts selection regardless of editTrigger
-						handleCellMouseDown(this, rowIndex, colIndex, mouseEvent)
-						return
-					} else {
-						// Not starting selection - clear any existing range
-						if (this.grid.selectedCellRange) {
-							this.grid.clearCellSelection()
-							removeRangeBorder()
-						}
-					}
-				}
-			}
-
-			// Date trigger button - handle in mousedown since SVG clicks don't bubble well
-			const dateTrigger = target.closest('.wg__date-trigger')
-			if (dateTrigger) {
-				e.preventDefault()
-				e.stopPropagation()
-
-				const displayContainer = target.closest('.wg__cell-date-display') as HTMLElement
-				const editorContainer = target.closest('.wg__editor--date') as HTMLElement
-
-				if (editorContainer) {
-					// Already editing - just open datepicker
-					const input = editorContainer.querySelector('.wg__date-input') as HTMLInputElement
-					if (input) openDatePicker(this,input, editorContainer)
-				} else if (displayContainer) {
-					// In read mode - start editing and open datepicker
-					const rowIndex = parseInt(displayContainer.dataset.row || '0', 10)
-					const field = displayContainer.dataset.field || ''
-					const colIndex = this.grid.columns.findIndex(c => String(c.field) === field)
-					if (colIndex >= 0) {
-						// Clear selections FIRST to avoid render during picker open
-						this.clearAllSelections()
-
-						this.isTransitioningCells = true
-						if (this.grid.editingCell) {
-							// Save old cell info BEFORE commit/cancel clears it
-							const oldEditingCell = this.grid.editingCell
-							const oldColIndex = this.grid.columns.findIndex(c => String(c.field) === oldEditingCell.field)
-
-							removeDropdown(this)
-							clearEditingVisual(this)
-							this.commitOrCancelEditOnTransition()
-
-							// Move focus to the new cell BEFORE re-rendering so the old cell
-							// renders without the focused class
-							this.grid.setFocusedCell(rowIndex, colIndex)
-
-							// Re-render old cell to remove editor HTML
-							if (oldColIndex >= 0) {
-								renderCell(this, oldEditingCell.rowIndex, oldColIndex)
-							}
-						}
-						tryStartEdit(this, rowIndex, colIndex)
-						requestAnimationFrame(() => {
-							this.isTransitioningCells = false
-							// Find the newly rendered date input and open picker
-							const cell = this.shadowRoot?.querySelector(
-								`.wg__cell[data-row="${rowIndex}"][data-field="${field}"]`
-							)
-							const input = cell?.querySelector('.wg__date-input') as HTMLInputElement
-							const anchor = cell?.querySelector('.wg__editor--date') as HTMLElement
-							if (input && anchor) openDatePicker(this,input, anchor)
-						})
-					}
-				}
-				return
-			}
-
-			// Handle click on any cell when dropdown is open
-			if (this.dropdown.isOpen || this.grid.editingCell) {
-				const cell = target.closest('.wg__cell') as HTMLElement
-				if (cell && !target.closest('.wg__editor--select, .wg__editor--combobox, .wg__editor--autocomplete, .wg__editor--date')) {
-					const rowIndex = parseInt(cell.dataset.row || '0', 10)
-					const colIndex = parseInt(cell.dataset.col || '0', 10)
-					const editingCell = this.grid.editingCell
-					const isClickingToggle = target.matches('.wg__combobox-toggle, .wg__select-toggle, .wg__date-trigger')
-					if (editingCell && !isClickingToggle) {
-						const editingColIndex = this.grid.columns.findIndex(c => String(c.field) === editingCell.field)
-						if (rowIndex !== editingCell.rowIndex || colIndex !== editingColIndex) {
-							e.preventDefault()
-							this.isTransitioningCells = true
-							// Save old editing cell info
-							const oldRowIndex = editingCell.rowIndex
-							const oldColIndex = editingColIndex
-							removeDropdown(this)
-							clearEditingVisual(this)
-							this.commitOrCancelEditOnTransition()
-							// Move focus to the new cell BEFORE re-rendering so the old cell
-							// renders without the focused class
-							this.grid.setFocusedCell(rowIndex, colIndex)
-							// Re-render old cell AFTER commit/cancel so it renders in display mode
-							if (oldColIndex >= 0) {
-								renderCell(this, oldRowIndex, oldColIndex)
-							}
-							const newColumn = this.grid.columns[colIndex]
-							const trigger = newColumn?.editTrigger || this.grid.editTrigger
-							// Capture click position for cursor placement
-							const mouseEvent = e as MouseEvent
-							const clickX = mouseEvent.clientX
-							requestAnimationFrame(() => {
-								this.isTransitioningCells = false
-								if (trigger === 'click' && newColumn && this.grid.isCellEditable(newColumn, this.grid.displayItems[rowIndex])) {
-									// For click trigger, immediately start editing the new cell
-									// Find the new cell and calculate cursor position
-									const newCell = this.shadow.querySelector(
-										`td[data-row="${rowIndex}"][data-col="${colIndex}"]`
-									) as HTMLElement
-									const cursorPos = newCell ? getCursorPositionFromClick({ clientX: clickX } as MouseEvent, newCell) : undefined
-									tryStartEdit(this, rowIndex, colIndex, { cursorPosition: cursorPos ?? undefined })
-								} else {
-									moveFocus(this, rowIndex, colIndex)
-								}
-							})
-							return
-						}
-					}
-				}
-			}
-
-			// Toggle click - handled by pipelineAdapter.tryHandleMouseDown() above
-			// (dispatches focusCell → startEdit → openDropdown via pipeline)
-
-			// Display mode dropdown click
-			if (target.matches('.wg__cell-dropdown-display')) {
-				e.preventDefault()
-				e.stopPropagation()
-				const displayContainer = target.closest('.wg__cell-dropdown-display') as HTMLElement
-				if (displayContainer) {
-					const rowIndex = parseInt(displayContainer.dataset.row || '0', 10)
-					const field = displayContainer.dataset.field || ''
-					const colIndex = this.grid.columns.findIndex(c => String(c.field) === field)
-					if (colIndex >= 0) {
-						this.isTransitioningCells = true
-						// Save old editing cell info before clearing
-						const oldEditingCell = this.grid.editingCell
-						const oldColIndex = oldEditingCell
-							? this.grid.columns.findIndex(c => String(c.field) === oldEditingCell.field)
-							: -1
-						if (oldEditingCell) {
-							removeDropdown(this)
-							clearEditingVisual(this)
-							this.commitOrCancelEditOnTransition()
-							// Move focus to the new cell BEFORE re-rendering so the old cell
-							// renders without the focused class
-							this.grid.setFocusedCell(rowIndex, colIndex)
-							// Re-render old cell AFTER commit/cancel so it renders in display mode
-							if (oldColIndex >= 0) {
-								renderCell(this, oldEditingCell.rowIndex, oldColIndex)
-							}
-						}
-						tryStartEdit(this, rowIndex, colIndex)
-						requestAnimationFrame(() => {
-							this.isTransitioningCells = false
-							if (!this.dropdown.isOpen) {
-								openDropdownForCurrentEditor(this)
-							}
-						})
-					}
-				}
-			}
-		})
+		// Mousedown - tree dblclick / cell range selection / date trigger / dropdown switch
+		// Extracted to modules/events/table-mousedown.ts
+		table.addEventListener('mousedown', (e: Event) => handleTableMouseDown(this, e))
 
 		// Click events - legacy select trigger toggle
 		// In 'always' mode, the pipeline handles dropdown open via shouldShowDropdownOnFocus
@@ -2538,7 +2278,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	/**
 	 * Clear all selections (cell range, row, column) and their visual borders
 	 */
-	private clearAllSelections(): void {
+	clearAllSelections(): void {
 		// Clear state and visuals surgically WITHOUT triggering requestUpdate/render.
 		// A full re-render would replace all DOM elements, making any references
 		// captured after this call (e.g., resize headerCell) point to detached nodes.
@@ -2574,7 +2314,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	 * the editor DOM can't be read. Must be called BEFORE renderCell wipes
 	 * the editor element.
 	 */
-	private commitOrCancelEditOnTransition(): void {
+	commitOrCancelEditOnTransition(): void {
 		const editingCell = this.grid.editingCell
 		if (!editingCell) return
 		if (!this.grid.shouldCommitOnClickAway) {
