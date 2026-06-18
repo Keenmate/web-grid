@@ -4,7 +4,7 @@
 // =============================================================================
 
 import type { FocusedCell } from '../../types.js'
-import type { GridContext } from '../types.js'
+import type { GridContext } from '../grid-context.js'
 import { renderCell } from '../rendering/index.js'
 import { removeDropdown } from '../dropdown/rendering.js'
 import { removeFillHandle } from '../fill-handle/index.js'
@@ -200,8 +200,8 @@ export function updateFocusVisual<T>(
 
 	// Re-render old cell (will remove --focused class)
 	// Skip re-render if this cell is currently being edited or in 'always' mode (don't disrupt editor)
-	// For 'always' mode: renderCell triggers renderer side effects (overwrites ctx.filterText,
-	// ctx.dropdownOptions) which leaks state to the next cell's dropdown open
+	// For 'always' mode: renderCell triggers renderer side effects (overwrites ctx.dropdown.filterText
+	// / ctx.dropdown.options) which leaks state to the next cell's dropdown open
 	// But still remove focus CSS class
 	if (oldFocus) {
 		const isOldCellEditing = editingCell &&
@@ -349,7 +349,7 @@ export function tryStartEdit<T>(
 	}
 
 	// Remove any open dropdown before transitioning to new cell
-	if (ctx.dropdownOpen) {
+	if (ctx.dropdown.isOpen) {
 		removeDropdown(ctx)
 	}
 
@@ -458,7 +458,7 @@ export function getCursorPositionFromClick(
  * (e.g. column selection, row selection) to ensure consistent cleanup.
  */
 export function cleanupEditState<T>(ctx: GridContext<T>): void {
-	if (ctx.dropdownOpen) {
+	if (ctx.dropdown.isOpen) {
 		removeDropdown(ctx)
 	}
 	if (ctx.grid.editingCell) {

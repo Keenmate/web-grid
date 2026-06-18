@@ -153,8 +153,8 @@
                 </div>
                 <div class="explainer-item" id="explainFull">
                     <h4>Full-height mode</h4>
-                    <div>Grid uses <code>height: 100%</code> against an unbounded parent — the percentage falls back to <code>auto</code>, so the grid sizes to its content and the outer layout expands to wrap it. The demo also sets <code>tableBorderOnly = true</code>, which turns the outer <code>.wg</code> into a non-scrolling container so wheel events pass through to the page instead of being captured by the grid.</div>
-                    <code id="codeFull">&lt;web-grid style="height: 100%"&gt;<br>grid.tableBorderOnly = true</code>
+                    <div>Grid uses <code>height: 100%</code> against an unbounded parent — the percentage falls back to <code>auto</code>, so the grid sizes to its content and the outer layout expands to wrap it. The demo also sets <code>isTableBorderOnly = true</code>, which turns the outer <code>.wg</code> into a non-scrolling container so wheel events pass through to the page instead of being captured by the grid.</div>
+                    <code id="codeFull">&lt;web-grid style="height: 100%"&gt;<br>grid.isTableBorderOnly = true</code>
                 </div>
             </div>
 
@@ -252,10 +252,10 @@
                 // No sized parent — percentage height against an indefinite parent
                 // resolves to auto, so the grid sizes to its content.
                 grid.style.height = '100%'
-                // tableBorderOnly moves the scroll container inward and leaves
+                // isTableBorderOnly moves the scroll container inward and leaves
                 // the outer `.wg` with overflow: visible — wheel events pass
                 // through to the page instead of being captured by the grid.
-                grid.tableBorderOnly = true
+                grid.isTableBorderOnly = true
             }
 
             mount.appendChild(grid)

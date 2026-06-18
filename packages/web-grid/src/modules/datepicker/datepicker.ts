@@ -4,7 +4,7 @@
 // =============================================================================
 
 import { computePosition, flip, shift, offset, autoUpdate } from '@floating-ui/dom'
-import type { DatePickerOptions, DatePickerState, LocaleStrings, FormatInfo } from './types.js'
+import type { DatePickerOptions, DatePickerState, LocaleStrings, FormatSpec } from './types.js'
 import { DEFAULT_LOCALE_STRINGS } from './types.js'
 import { parseFormat, formatDate, normalizeDate, toISODateString } from './formatting.js'
 
@@ -289,7 +289,7 @@ export class DatePicker {
 	private options: DatePickerOptions
 	private state: DatePickerState
 	private localeStrings: LocaleStrings
-	private formatInfo: FormatInfo
+	private formatInfo: FormatSpec
 
 	private element: HTMLElement | null = null
 	private anchor: HTMLElement | null = null

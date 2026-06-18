@@ -4,7 +4,7 @@
 // =============================================================================
 
 import type { EditorOptions } from '../../types.js'
-import type { GridContext } from '../types.js'
+import type { GridContext } from '../grid-context.js'
 import { getOptionValue, getOptionLabel, isOptionDisabled } from './options.js'
 import { renderDropdown, removeDropdown } from './rendering.js'
 import { renderCell } from '../rendering/index.js'
@@ -20,7 +20,7 @@ export function selectDropdownOption<T>(
 	moveAfterSelect: boolean = true,
 	commitEmptyRow: boolean = false
 ): void {
-	const option = ctx.dropdownOptions[index]
+	const option = ctx.dropdown.options[index]
 	if (!option) return
 
 	// Get cell info - prefer editingCell, fall back to focusedCell for 'always' mode
@@ -51,7 +51,7 @@ export function selectDropdownOption<T>(
 		opts.onselect(option, row)
 	}
 
-	ctx.justSelected = true
+	ctx.dropdown.setJustSelected(true)
 	ctx.isCommittingFromKeyboard = true
 	removeDropdown(ctx)
 	ctx.grid.commitEdit(rowIndex, field, value, commitEmptyRow)
@@ -66,7 +66,7 @@ export function selectDropdownOption<T>(
 
 	// Reset justSelected after focus moves
 	requestAnimationFrame(() => {
-		ctx.justSelected = false
+		ctx.dropdown.setJustSelected(false)
 	})
 }
 
@@ -79,7 +79,7 @@ export function updateDropdownHighlight<T>(ctx: GridContext<T>): void {
 
 	const options = dropdown.querySelectorAll('.wg__dropdown-option')
 	options.forEach((el, i) => {
-		el.classList.toggle('wg__dropdown-option--highlighted', i === ctx.highlightedIndex)
+		el.classList.toggle('wg__dropdown-option--highlighted', i === ctx.dropdown.highlightedIndex)
 	})
 }
 
@@ -111,11 +111,11 @@ export function updateLoadingIndicator<T>(ctx: GridContext<T>, show: boolean): v
  * Works with both editingCell (normal edit mode) and focusedCell ('always' edit mode)
  */
 export function openDropdownForCurrentEditor<T>(ctx: GridContext<T>): void {
-	if (ctx.justSelected) {
+	if (ctx.dropdown.justSelected) {
 		return
 	}
 
-	ctx.dropdownUserInteracted = false
+	ctx.dropdown.setUserInteracted(false)
 
 	// Get cell info - prefer editingCell, fall back to focusedCell for 'always' mode
 	const editingCell = ctx.grid.editingCell
@@ -150,19 +150,19 @@ export function openDropdownForCurrentEditor<T>(ctx: GridContext<T>): void {
 	if (editor === 'select') {
 		const allOptions = opts.options || []
 		// If there's a filter text (from typing to start editing), filter and highlight first match
-		if (ctx.filterText) {
-			const searchLower = ctx.filterText.toLowerCase()
-			ctx.dropdownOptions = allOptions.filter(opt => {
+		if (ctx.dropdown.filterText) {
+			const searchLower = ctx.dropdown.filterText.toLowerCase()
+			ctx.dropdown.setOptions(allOptions.filter(opt => {
 				const label = getOptionLabel(opt, opts)
 				return label.toLowerCase().includes(searchLower)
-			})
-			targetIndex = ctx.dropdownOptions.length > 0 ? 0 : -1
+			}))
+			targetIndex = ctx.dropdown.options.length > 0 ? 0 : -1
 		} else {
-			ctx.dropdownOptions = allOptions
+			ctx.dropdown.setOptions(allOptions)
 			// Calculate highlight index for current value
 			const item = ctx.grid.displayItems[rowIndex]
 			const currentValue = item ? (item as Record<string, unknown>)[field] : undefined
-			const currentIdx = ctx.dropdownOptions.findIndex(
+			const currentIdx = ctx.dropdown.options.findIndex(
 				opt => getOptionValue(opt, opts) === currentValue
 			)
 			targetIndex = currentIdx >= 0 ? currentIdx : 0
@@ -183,7 +183,7 @@ export function openDropdownForCurrentEditor<T>(ctx: GridContext<T>): void {
 
 		if (currentIdx >= 0) {
 			// Current value is in options - highlight it
-			ctx.dropdownOptions = baseOptions
+			ctx.dropdown.setOptions(baseOptions)
 			targetIndex = currentIdx
 		} else if (currentValue != null && currentValue !== '') {
 			// Current value not in options - prepend it as first option
@@ -198,11 +198,11 @@ export function openDropdownForCurrentEditor<T>(ctx: GridContext<T>): void {
 				[valueMember]: currentValue,
 				[displayMember]: displayText
 			}
-			ctx.dropdownOptions = [syntheticOption, ...baseOptions]
+			ctx.dropdown.setOptions([syntheticOption, ...baseOptions])
 			targetIndex = 0
 		} else {
 			// No current value - use options as-is
-			ctx.dropdownOptions = baseOptions
+			ctx.dropdown.setOptions(baseOptions)
 			targetIndex = baseOptions.length > 0 ? 0 : -1
 		}
 	}
@@ -211,17 +211,17 @@ export function openDropdownForCurrentEditor<T>(ctx: GridContext<T>): void {
 		 .wg__editor--combobox[data-row="${rowIndex}"][data-field="${field}"],
 		 .wg__editor--autocomplete[data-row="${rowIndex}"][data-field="${field}"]`
 	) as HTMLElement
-	if (wrapper && ctx.dropdownOptions.length > 0) {
+	if (wrapper && ctx.dropdown.options.length > 0) {
 		// Save filterText before renderDropdown (which calls removeDropdown that clears it)
-		const savedFilterText = ctx.filterText
+		const savedFilterText = ctx.dropdown.filterText
 		// Set flag to prevent scroll handler from closing dropdown during opening
-		ctx.isOpeningDropdown = true
-		const dropdown = renderDropdown(ctx, wrapper, ctx.dropdownOptions, opts)
+		ctx.dropdown.setIsOpening(true)
+		const dropdown = renderDropdown(ctx, wrapper, ctx.dropdown.options, opts)
 		attachDropdownListeners(ctx, dropdown)
 		// Restore filterText after renderDropdown
-		ctx.filterText = savedFilterText
+		ctx.dropdown.setFilterText(savedFilterText)
 		// Set highlightedIndex AFTER renderDropdown (which calls removeDropdown that resets it to -1)
-		ctx.highlightedIndex = targetIndex
+		ctx.dropdown.setHighlightedIndex(targetIndex)
 		updateDropdownHighlight(ctx)
 		// Refocus the editor after dropdown renders (select trigger or input)
 		// Use specific selectors to avoid finding stale elements
@@ -238,7 +238,7 @@ export function openDropdownForCurrentEditor<T>(ctx: GridContext<T>): void {
 		}
 		// Clear flag after next frame to allow scroll events again
 		requestAnimationFrame(() => {
-			ctx.isOpeningDropdown = false
+			ctx.dropdown.setIsOpening(false)
 		})
 	}
 }
@@ -247,7 +247,7 @@ export function openDropdownForCurrentEditor<T>(ctx: GridContext<T>): void {
  * Toggle dropdown open/close
  */
 export function toggleDropdown<T>(ctx: GridContext<T>): void {
-	if (ctx.dropdownOpen) {
+	if (ctx.dropdown.isOpen) {
 		removeDropdown(ctx)
 	} else {
 		openDropdownForCurrentEditor(ctx)
@@ -275,8 +275,8 @@ export function attachDropdownListeners<T>(
 	dropdown.addEventListener('mouseover', (e) => {
 		const option = (e.target as HTMLElement).closest('.wg__dropdown-option')
 		if (option && !option.hasAttribute('data-disabled')) {
-			ctx.highlightedIndex = parseInt(option.getAttribute('data-index') || '0', 10)
-			ctx.dropdownUserInteracted = true
+			ctx.dropdown.setHighlightedIndex(parseInt(option.getAttribute('data-index') || '0', 10))
+			ctx.dropdown.setUserInteracted(true)
 			updateDropdownHighlight(ctx)
 		}
 	})
@@ -290,25 +290,25 @@ export function updateSelectFilter<T>(
 	opts: EditorOptions
 ): void {
 	const allOptions = opts.options || []
-	const searchLower = ctx.filterText.toLowerCase()
+	const searchLower = ctx.dropdown.filterText.toLowerCase()
 	// Save filterText before renderDropdown (which calls removeDropdown that clears it)
-	const savedFilterText = ctx.filterText
+	const savedFilterText = ctx.dropdown.filterText
 
-	ctx.dropdownOptions = allOptions.filter(opt => {
+	ctx.dropdown.setOptions(allOptions.filter(opt => {
 		const label = getOptionLabel(opt, opts)
 		return label.toLowerCase().includes(searchLower)
-	})
-	ctx.highlightedIndex = ctx.dropdownOptions.length > 0 ? 0 : -1
+	}))
+	ctx.dropdown.setHighlightedIndex(ctx.dropdown.options.length > 0 ? 0 : -1)
 
 	// Open or update dropdown (show "No options" message when empty)
 	const wrapper = ctx.shadow.querySelector('.wg__editor--select') as HTMLElement
 	if (wrapper) {
-		const dropdown = renderDropdown(ctx, wrapper, ctx.dropdownOptions, opts)
+		const dropdown = renderDropdown(ctx, wrapper, ctx.dropdown.options, opts)
 		attachDropdownListeners(ctx, dropdown)
 		// Restore filterText after renderDropdown
-		ctx.filterText = savedFilterText
-		if (ctx.dropdownOptions.length > 0) {
-			ctx.highlightedIndex = 0
+		ctx.dropdown.setFilterText(savedFilterText)
+		if (ctx.dropdown.options.length > 0) {
+			ctx.dropdown.setHighlightedIndex(0)
 			updateDropdownHighlight(ctx)
 		}
 	}

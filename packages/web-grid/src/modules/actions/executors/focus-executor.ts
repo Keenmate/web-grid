@@ -40,21 +40,15 @@ function executeFocusCell(ctx: ExecutorContext, action: FocusCellAction): GridAc
 	const oldFocus = ctx.grid.focusedCell
 
 	// Clear stale filterText when focusing a different cell.
-	// renderComboboxEditor sets ctx.filterText to the input value as a side effect,
+	// renderComboboxEditor sets ctx.dropdown.filterText to the input value as a side effect,
 	// which would incorrectly filter a different cell's dropdown options.
 	const isNewCell = !oldFocus || oldFocus.rowIndex !== rowIndex || oldFocus.colIndex !== colIndex
 	if (isNewCell) {
-		ctx.filterText = ''
+		ctx.dropdown.setFilterText('')
 
 		// Cancel pending autocomplete search from previous cell
-		if (ctx.searchDebounceTimer) {
-			clearTimeout(ctx.searchDebounceTimer)
-			ctx.searchDebounceTimer = null
-		}
-		if (ctx.searchAbortController) {
-			ctx.searchAbortController.abort()
-			ctx.searchAbortController = null
-		}
+		ctx.autocomplete.clearDebounceTimer()
+		ctx.autocomplete.abort()
 	}
 
 	ctx.grid.setFocusedCell(rowIndex, colIndex)
@@ -124,7 +118,7 @@ function executeFocusCell(ctx: ExecutorContext, action: FocusCellAction): GridAc
 	const editorType = column.editor
 	const isDropdownEditor = editorType === 'select' || editorType === 'combobox' || editorType === 'autocomplete'
 	const isNavigateMode = effectiveTrigger === 'navigate'
-	if (isAlwaysEditMode && ctx.grid.shouldShowDropdownOnFocus && !ctx.justSelected) {
+	if (isAlwaysEditMode && ctx.grid.shouldShowDropdownOnFocus && !ctx.dropdown.justSelected) {
 		if (isDropdownEditor) {
 			return [{ type: 'openDropdown' }]
 		}

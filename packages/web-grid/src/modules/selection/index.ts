@@ -3,7 +3,7 @@
 // Multi-row selection via row number cells with drag support
 // =============================================================================
 
-import type { GridContext } from '../types.js'
+import type { GridContext } from '../grid-context.js'
 import { removeRangeBorder } from '../cell-selection/index.js'
 import { cleanupEditState } from '../navigation/index.js'
 

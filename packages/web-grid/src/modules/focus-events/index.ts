@@ -4,7 +4,10 @@
 // Centralizes focus-out/blur event handling to avoid duplicate listeners
 // and consolidate guard flag checking.
 
-export type FocusEventType = 'blur' | 'focusout'
+export type FocusEventKind = 'blur' | 'focusout'
+
+/** @deprecated use `FocusEventKind` */
+export type FocusEventType = FocusEventKind
 export type FocusHandler = (target: HTMLElement, relatedTarget: HTMLElement | null) => void
 
 export interface FocusSubscription {
@@ -18,7 +21,7 @@ export interface FocusEventManager {
 	 * @param handler - Callback with target and relatedTarget
 	 * @returns Subscription object with unsubscribe method
 	 */
-	subscribe(type: FocusEventType, handler: FocusHandler): FocusSubscription
+	subscribe(type: FocusEventKind, handler: FocusHandler): FocusSubscription
 
 	/**
 	 * Unified guard check - returns true if blur should be skipped
@@ -76,7 +79,7 @@ export function createFocusEventManager(
 	}
 
 	return {
-		subscribe(type: FocusEventType, handler: FocusHandler): FocusSubscription {
+		subscribe(type: FocusEventKind, handler: FocusHandler): FocusSubscription {
 			const handlers = type === 'blur' ? blurHandlers : focusoutHandlers
 			handlers.add(handler)
 

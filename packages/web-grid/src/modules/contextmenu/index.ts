@@ -7,14 +7,14 @@ import type {
 	ContextMenuItem,
 	ContextMenuConfig,
 	ContextMenuContext,
-	PredefinedContextMenuItemType,
+	PredefinedContextMenuItem,
 	HeaderMenuConfig,
 	HeaderMenuItem,
 	HeaderMenuContext,
-	PredefinedHeaderMenuItemType,
+	PredefinedHeaderMenuItem,
 	GridLabels
 } from '../../types.js'
-import type { GridContext } from '../types.js'
+import type { GridContext } from '../grid-context.js'
 
 /**
  * Normalize a ContextMenuConfig list (which may contain string shorthand and/or items
@@ -51,7 +51,7 @@ export function normalizeContextMenu<T>(
 }
 
 function buildPredefinedContextItem<T>(
-	type: PredefinedContextMenuItemType,
+	type: PredefinedContextMenuItem,
 	grid: GridContext<T>['grid']
 ): ContextMenuItem<T> {
 	switch (type) {
@@ -460,7 +460,7 @@ export function closeContextMenu(
 /**
  * Predefined header menu actions with icons and labels
  */
-const PREDEFINED_HEADER_ACTIONS: Record<PredefinedHeaderMenuItemType, {
+const PREDEFINED_HEADER_ACTIONS: Record<PredefinedHeaderMenuItem, {
 	icon: string
 	labelKey: keyof GridLabels['contextMenu']
 	danger?: boolean
@@ -931,3 +931,6 @@ export function openHeaderContextMenu<T>(
 
 	return container
 }
+
+// Element handlers (extracted from GridElement)
+export { handleContextMenu, handleHeaderContextMenu, handleFillerContextMenu } from './element-handlers.js'

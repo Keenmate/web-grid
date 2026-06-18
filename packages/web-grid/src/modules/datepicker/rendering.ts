@@ -3,7 +3,7 @@
 // Calendar grid, header, rolling selector rendering
 // =============================================================================
 
-import type { DatePickerOptions, DatePickerState, LocaleStrings, FormatInfo } from './types.js'
+import type { DatePickerOptions, DatePickerState, LocaleStrings, FormatSpec } from './types.js'
 import { DEFAULT_LOCALE_STRINGS } from './types.js'
 import { toISODateString, isSameDay, isToday, getDaysInMonth, getFirstDayOfMonth, normalizeDate } from './formatting.js'
 

@@ -4,7 +4,7 @@
 // =============================================================================
 
 import type { Column } from '../../types.js'
-import type { GridContext } from '../types.js'
+import type { GridContext } from '../grid-context.js'
 import { getOptionDisplayValue, getOptionValue } from '../dropdown/index.js'
 
 /**
@@ -251,12 +251,12 @@ export function renderSelectEditor<T>(
 	const initialQuery = ctx.grid.editingCell?.initialSearchQuery
 
 	// Initialize dropdown options for select
-	ctx.dropdownOptions = options
+	ctx.dropdown.setOptions(options)
 	// Store initial query for filtering when dropdown opens
-	ctx.filterText = initialQuery || ''
-	ctx.highlightedIndex = options.findIndex(opt => getOptionValue(opt, opts) === value)
-	if (ctx.highlightedIndex < 0 && options.length > 0) {
-		ctx.highlightedIndex = 0
+	ctx.dropdown.setFilterText(initialQuery || '')
+	ctx.dropdown.setHighlightedIndex(options.findIndex(opt => getOptionValue(opt, opts) === value))
+	if (ctx.dropdown.highlightedIndex < 0 && options.length > 0) {
+		ctx.dropdown.setHighlightedIndex(0)
 	}
 
 	return `
@@ -294,9 +294,9 @@ export function renderComboboxEditor<T>(
 	const inputValue = initialQuery !== undefined ? initialQuery : displayValue
 
 	// Initialize dropdown options
-	ctx.dropdownOptions = options
-	ctx.filterText = inputValue
-	ctx.highlightedIndex = options.length > 0 ? 0 : -1
+	ctx.dropdown.setOptions(options)
+	ctx.dropdown.setFilterText(inputValue)
+	ctx.dropdown.setHighlightedIndex(options.length > 0 ? 0 : -1)
 
 	return `
 		<div class="wg__editor wg__editor--combobox" data-row="${rowIndex}" data-field="${field}">
@@ -331,9 +331,9 @@ export function renderAutocompleteEditor<T>(
 	const inputValue = initialQuery !== undefined ? initialQuery : displayValue
 
 	// Initialize dropdown options
-	ctx.dropdownOptions = initialOptions
-	ctx.filterText = inputValue
-	ctx.highlightedIndex = initialOptions.length > 0 ? 0 : -1
+	ctx.dropdown.setOptions(initialOptions)
+	ctx.dropdown.setFilterText(inputValue)
+	ctx.dropdown.setHighlightedIndex(initialOptions.length > 0 ? 0 : -1)
 
 	return `
 		<div class="wg__editor wg__editor--autocomplete" data-row="${rowIndex}" data-field="${field}">

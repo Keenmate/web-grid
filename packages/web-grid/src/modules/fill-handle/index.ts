@@ -2,7 +2,7 @@
 // Fill Handle Module (Excel-like autofill)
 // =============================================================================
 
-import type { GridContext } from '../types.js'
+import type { GridContext } from '../grid-context.js'
 import type { FillDragDetail, Column, EditorOption } from '../../types.js'
 import { renderCell } from '../rendering/cell.js'
 
@@ -140,7 +140,7 @@ export function updateFillHandle<T>(ctx: GridContext<T>): void {
 
 	// Remove existing handle if no focused cell, in edit mode, or dropdown is open
 	// Only remove if this grid owns the handle (prevents one grid from removing another's)
-	if (!focusedCell || ctx.grid.editingCell || ctx.dropdownOpen) {
+	if (!focusedCell || ctx.grid.editingCell || ctx.dropdown.isOpen) {
 		removeFillHandle(hostElement)
 		return
 	}

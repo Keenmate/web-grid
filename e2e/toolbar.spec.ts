@@ -11,7 +11,7 @@ import { test, expect, Page, Locator } from '@playwright/test'
  *             Inline buttons use class `wg__inline-action-btn` + data-action-id
  *             (not the floating toolbar's wg__toolbar-btn + data-toolbar-item).
  *   #grid4  — cellToolbar callback returning per-column item sets; uses
- *             toolbarFollowsCursor=true so each cell hover refreshes items.
+ *             shouldToolbarFollowCursor=true so each cell hover refreshes items.
  *
  * Hover reveals the floating toolbar (default trigger). Each test in this
  * file gets a fresh browser context, so the default trigger ('hover') is
@@ -196,7 +196,7 @@ test.describe('inline toolbar column — #grid3', () => {
 })
 
 // =============================================================================
-// Cell-aware toolbar — #grid4 (toolbarFollowsCursor=true, hover trigger)
+// Cell-aware toolbar — #grid4 (shouldToolbarFollowCursor=true, hover trigger)
 // =============================================================================
 
 test.describe('cell-aware toolbar — #grid4', () => {

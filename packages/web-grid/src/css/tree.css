@@ -7,13 +7,6 @@
    set inline by JS.
 */
 
-:host {
-  --wg-tree-indent: 1.25rem;             /* per-level indent */
-  --wg-tree-chevron-size: 1rem;          /* chevron width/height (also used for leaf spacer) */
-  --wg-tree-chevron-color: var(--wg-text-color-2);
-  --wg-tree-chevron-gap: 4px;            /* gap between chevron and content */
-}
-
 .wg__tree-cell {
   display: inline-flex;
   align-items: center;

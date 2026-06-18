@@ -5,6 +5,55 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **Five UI-state clusters extracted from `GridElement` into dedicated Service classes.** The Element layer is supposed to be a thin I/O wrapper — tooltip / dropdown / dropdown-search / virtual-scroll / floating-toolbar state belongs in modules. Each service is independently unit-testable and has a single, self-documenting public surface. Module functions (and the GridContext interface) consume the service instances instead of bare flat fields:
+
+  | Service | Fields owned | Surface change |
+  |---|---|---|
+  | `VirtualScrollService` (`modules/scroll/`) | `start`, `end`, `isLoadingMore`, `isProgrammatic` | `this.virtualScroll.X` on GridElement |
+  | `ToolbarService` (`modules/toolbar/`) | hide-timeout, hover / move flags, hovered cell, cell-items JSON, document keydown handler | `this.toolbar.X` on GridElement (private) |
+  | `AutocompleteService` (`modules/dropdown/`) | debounce timer, abort controller, `isSearching` | `ctx.autocomplete.X` in modules; `this.autocomplete.X` on GridElement |
+  | `TooltipService` (`modules/tooltip/`) | element, arrow, anchor, show/hide timers | `ctx.tooltip.X` in modules; `this.tooltip.X` on GridElement |
+  | `DropdownService` (`modules/dropdown/`) | `isOpen`, `options`, `highlightedIndex`, `filterText`, `isUserFiltering`, `justSelected`, `isOpening`, `userInteracted`, `isClosingViaToggle` | `ctx.dropdown.X` in modules; `this.dropdown.X` on GridElement |
+
+  Dead field `toolbarMousemoveHandler` (declared but never assigned/used) dropped. `tooltipShowDelay` / `tooltipHideDelay` remain as accessors on GridContext — they're configuration, not runtime state. `isCommittingFromKeyboard` and `isTransitioningCells` remain on `GridElement` — they're editing-state-machine flags, distinct from dropdown state.
+
+- **Nine TypeScript types renamed to drop the forbidden `Type` / `Info` suffix.** Old names retained as `@deprecated` type aliases for one release; both names refer to the same shape. Drop the aliases in the next major. Migration is a flat find/replace.
+
+  | Old name | New name |
+  |---|---|
+  | `EditorType` | `Editor` |
+  | `PredefinedToolbarItemType` | `PredefinedToolbarItem` |
+  | `RowActionType` | `RowAction` |
+  | `PredefinedContextMenuItemType` | `PredefinedContextMenuItem` |
+  | `PredefinedHeaderMenuItemType` | `PredefinedHeaderMenuItem` |
+  | `RowLockInfo` | `RowLock` |
+  | `ClickEventType` | `ClickEventKind` (discriminator union; avoids DOM-`Event` family naming) |
+  | `FocusEventType` | `FocusEventKind` (avoids shadowing the global `FocusEvent` DOM interface) |
+  | `FormatInfo` | `FormatSpec` |
+
+  `getRowLockInfo()` / `lockInfoMember` keep their names — they're nouns describing actions / property accessors, not types. Only the type name changed.
+
+- **Three boolean Config fields renamed to the canonical `is*` / `should*` prefix.** Old names retained as `@deprecated` aliases for one release; both names refer to the same internal state, so consumers can migrate at their own pace. Drop the aliases in the next major.
+
+  | Old name | New name |
+  |---|---|
+  | `showPagination` | `isPaginationVisible` |
+  | `toolbarFollowsCursor` | `shouldToolbarFollowCursor` |
+  | `tableBorderOnly` | `isTableBorderOnly` |
+
+  Migration: a flat find/replace on the property names is sufficient — the types match, the semantics are identical. Two data-model booleans (`multiple` on combobox/autocomplete editor options; `nowrap` on column definitions) keep their bare names because they mirror HTML conventions (`<select multiple>`, `nowrap`); see `packages/web-grid/VALIDATION-NOTES.md` for the carve-out.
+
+- **`--base-tooltip-color` reads now chain through the canonical `--base-tooltip-text-color`.** The canonical `--base-*` taxonomy renamed `--base-tooltip-color` to `--base-tooltip-text-color` on 2026-06-11 (consistent with the `*-text-color` pattern used by `--base-text-color-1` / `-2` / `-on-accent`). `--wg-tooltip-color` now reads the new name first, falls back to the legacy name, then the hardcoded `light-dark()` literal — so consumers on either name keep working through this release. Drop the legacy read in the next major. Manifest updated to list both entries with a "legacy" note.
+
+- **`src/css/table.css` renamed to `src/css/base.css`** to match the canonical Tier-1 file name used by other Bliss components (web-multiselect, web-daterangepicker, svelte-treeview). The file's actual role is FOUC + root container baseline, not table chrome — the new name describes its content. Consumers who deep-import the file via `@keenmate/web-grid/src/css/table.css` must update the path; consumers using `main.css` are unaffected.
+- **`--wg-tree-*` variable declarations consolidated into `variables.css`.** The four `--wg-tree-indent` / `--wg-tree-chevron-*` declarations moved from a `:host` block in `tree.css` into the existing `:host` block in `variables.css` (new `/* === TREE === */` section). Honors the "one place for `--wg-*`" contract — consumers can now find every overrideable variable in a single file. No visual or runtime change.
+- **`--wg-selection-row-number-color` fallback chain canonicalized.** Was `var(--base-text-inverted, #fff)`; now `var(--base-text-color-on-accent, light-dark(#fff, #fff))`. `--base-text-inverted` was not part of the canonical `--base-*` taxonomy; `--base-text-color-on-accent` is the correct read and matches `--ms-text-color-on-accent` in web-multiselect. The `light-dark()` wrap makes the fallback script-conformant — the white-on-accent reading is identical in both branches because the accent stays the same color across schemes. `--base-text-inverted` removed from `component-variables.manifest.json` (the entry described a `--base-*` read that no longer exists).
+- **README migration to the canonical landing-page + `docs/` layout.** README slimmed from 1076 → 117 lines (under the 200-line soft target). Four new files at `packages/web-grid/docs/`: `usage.md` (full property / column / editor / event / method reference), `theming.md` (the four contracts — container / variables / color-scheme / cascade layers), `examples.md` (cookbook of recipes pointing at the 24 runnable `docs/examples-*.html` demos), `accessibility.md` (keyboard model, ARIA additions, focus management, contrast targets). Resolves the BlissFramework readme-structure validation triad and consolidates the theming contract that was scattered across the README into a single dedicated file.
+
 ## [1.2.0-rc02] - 2026-06-11 [PUBLISHED]
 
 ### Added

@@ -4,7 +4,7 @@
 // Provides visual borders around row and column selections.
 // Handles contiguous segments (separate borders for non-adjacent selections).
 
-import type { GridContext } from '../types.js'
+import type { GridContext } from '../grid-context.js'
 
 // Store references to border elements for cleanup
 let rowBorders: HTMLElement[] = []

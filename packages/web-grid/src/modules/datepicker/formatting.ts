@@ -3,14 +3,14 @@
 // Parse, format, and validate dates for the date picker
 // =============================================================================
 
-import type { FormatInfo } from './types.js'
+import type { FormatSpec } from './types.js'
 
 /**
  * Parse a format string like "YYYY-MM-DD" or "DD.MM.YYYY"
  * Returns structure with positions, separator, and max length
  */
-export function parseFormat(formatString: string): FormatInfo {
-	const parts: FormatInfo['parts'] = {}
+export function parseFormat(formatString: string): FormatSpec {
+	const parts: FormatSpec['parts'] = {}
 	let separator = ''
 
 	// Detect separator
@@ -42,7 +42,7 @@ export function parseFormat(formatString: string): FormatInfo {
 /**
  * Format a Date object to a string using the given format info
  */
-export function formatDate(date: Date | null, formatInfo: FormatInfo): string {
+export function formatDate(date: Date | null, formatInfo: FormatSpec): string {
 	if (!date || isNaN(date.getTime())) return ''
 
 	const year = date.getFullYear()
@@ -70,7 +70,7 @@ export function formatDate(date: Date | null, formatInfo: FormatInfo): string {
  * Parse a date string using the given format info
  * Returns null if parsing fails
  */
-export function parseDate(value: string, formatInfo: FormatInfo): Date | null {
+export function parseDate(value: string, formatInfo: FormatSpec): Date | null {
 	if (!value) return null
 
 	const { separator, parts } = formatInfo

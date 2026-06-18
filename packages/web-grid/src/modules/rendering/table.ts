@@ -3,7 +3,7 @@
 // Render header row, data rows, pagination
 // =============================================================================
 
-import type { GridContext } from '../types.js'
+import type { GridContext } from '../grid-context.js'
 import { renderCellEditor } from '../editing/index.js'
 import { renderCellDisplay } from './display.js'
 import { wrapTreeCell } from './tree-render.js'
@@ -45,7 +45,7 @@ export function getContainerClasses<T>(ctx: GridContext<T>): string {
 	if (ctx.grid.isNavigateMode) classes.push('wg--navigate-mode')
 	if (ctx.grid.isColumnReorderAllowed) classes.push('wg--reorderable')
 	if (ctx.grid.isScrollable) classes.push('wg--scrollable')
-	if (ctx.grid.tableBorderOnly) classes.push('wg--table-border-only')
+	if (ctx.grid.isTableBorderOnly) classes.push('wg--table-border-only')
 	return classes.join(' ')
 }
 
@@ -758,8 +758,8 @@ export function renderDataRowsVirtual<T>(ctx: GridContext<T>, params: VirtualScr
  * @param position Position string (e.g., "bottom-center", "top-right")
  */
 export function renderPagination<T>(ctx: GridContext<T>, position: string = 'bottom-center'): string {
-	// Don't render if not pageable or showPagination is false
-	const showPag = ctx.grid.showPagination
+	// Don't render if not pageable or isPaginationVisible is false
+	const showPag = ctx.grid.isPaginationVisible
 	if (!ctx.grid.isPageable || showPag === false) return ''
 	// 'auto' mode: hide when only 1 page
 	if (showPag === 'auto' && ctx.grid.totalPages <= 1) return ''

@@ -302,11 +302,11 @@ grid.rowToolbar = [
         <div class="card">
             <h2>Cell-Aware Toolbar</h2>
             <p>Use <code>cellToolbar</code> callback to show different toolbar options based on which cell the user is hovering over.
-               Combined with <code>toolbarFollowsCursor</code>, the toolbar follows your mouse and updates its buttons per column.</p>
+               Combined with <code>shouldToolbarFollowCursor</code>, the toolbar follows your mouse and updates its buttons per column.</p>
             <web-grid id="grid4" isStriped isHoverable style="max-width: 100%; max-height: 400px; border: 1px solid #e2e8f0;"></web-grid>
             <div class="code-block" style="margin-top: 1rem;">
                 <pre>grid.toolbarPosition = 'top'
-grid.toolbarFollowsCursor = true  // Toolbar follows mouse
+grid.shouldToolbarFollowCursor = true  // Toolbar follows mouse
 grid.cellToolbarOffset = 0.2     // Position at 20% from cell left edge (0-1)
 
 // Different actions per column
@@ -471,7 +471,7 @@ grid.rowToolbar = [
         grid.toolbarVerticalAlign = savedVerticalAlign
         grid.toolbarHorizontalAlign = savedHorizontalAlign
         grid.toolbarColumn = savedToolbarColumn || undefined
-        grid.toolbarFollowsCursor = savedFollowCursor
+        grid.shouldToolbarFollowCursor = savedFollowCursor
         grid.cellToolbarOffset = savedCellToolbarOffset
         if (savedBtnMinWidth) grid.toolbarBtnMinWidth = savedBtnMinWidth
 
@@ -629,8 +629,8 @@ grid.rowToolbar = [
         document.getElementById('followCursorCheck').addEventListener('change', (e) => {
             const value = e.target.checked
             localStorage.setItem(STORAGE_FOLLOW_CURSOR, value)
-            grid.toolbarFollowsCursor = value
-            grid2.toolbarFollowsCursor = value
+            grid.shouldToolbarFollowCursor = value
+            grid2.shouldToolbarFollowCursor = value
         })
 
         // Cell toolbar offset control
@@ -742,7 +742,7 @@ grid.rowToolbar = [
 
         grid4.isRowToolbarVisible = true
         grid4.toolbarPosition = 'top'
-        grid4.toolbarFollowsCursor = true  // Toolbar follows mouse horizontally
+        grid4.shouldToolbarFollowCursor = true  // Toolbar follows mouse horizontally
         grid4.cellToolbarOffset = savedCellToolbarOffset
         if (savedBtnMinWidth) grid4.toolbarBtnMinWidth = savedBtnMinWidth
 

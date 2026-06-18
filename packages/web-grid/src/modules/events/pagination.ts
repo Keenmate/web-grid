@@ -2,7 +2,7 @@
 // Pagination Event Handlers
 // =============================================================================
 
-import type { GridContext } from '../types.js'
+import type { GridContext } from '../grid-context.js'
 
 /**
  * Handle pagination button click (first, prev, next, last).

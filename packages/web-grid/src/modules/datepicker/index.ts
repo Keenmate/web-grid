@@ -7,7 +7,7 @@ export { DatePicker } from './datepicker.js'
 export type {
 	DatePickerOptions,
 	DatePickerState,
-	FormatInfo,
+	FormatSpec,
 	LocaleStrings
 } from './types.js'
 
@@ -23,3 +23,10 @@ export {
 	isToday,
 	isValidDate
 } from './formatting.js'
+
+export {
+	openDatePicker,
+	handleDatePickerSelect,
+	commitDateEditor,
+	parseDateInput
+} from './element-handlers.js'

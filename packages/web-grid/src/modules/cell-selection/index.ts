@@ -3,7 +3,7 @@
 // Excel-like cell range selection via click+drag or shift+click
 // =============================================================================
 
-import type { GridContext } from '../types.js'
+import type { GridContext } from '../grid-context.js'
 import type { CellRange, Column } from '../../types.js'
 import { updateFocusVisual, focusCellElement } from '../navigation/index.js'
 

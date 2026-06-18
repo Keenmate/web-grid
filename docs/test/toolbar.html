@@ -45,7 +45,7 @@
 	</div>
 
 	<div class="fixture">
-		<h2>#grid4 — cell-aware toolbar (toolbarFollowsCursor)</h2>
+		<h2>#grid4 — cell-aware toolbar (shouldToolbarFollowCursor)</h2>
 		<web-grid id="grid4" style="max-width: 100%; max-height: 280px;"></web-grid>
 	</div>
 
@@ -199,7 +199,7 @@
 			}
 		}
 
-		// #grid4 — cell-aware toolbar; toolbarFollowsCursor refreshes items per cell.
+		// #grid4 — cell-aware toolbar; shouldToolbarFollowCursor refreshes items per cell.
 		const grid4 = document.getElementById('grid4')
 		const rows4 = seed()
 		grid4.items = rows4
@@ -207,7 +207,7 @@
 		grid4.isHoverable = true
 		grid4.isRowToolbarVisible = true
 		grid4.toolbarPosition = 'top'
-		grid4.toolbarFollowsCursor = true
+		grid4.shouldToolbarFollowCursor = true
 		grid4.rowToolbar = ['add', 'delete', 'duplicate']
 		grid4.cellToolbar = (row, rowIndex, field) => {
 			switch (field) {

@@ -16,7 +16,7 @@
 	</div>
 
 	<div class="fixture">
-		<h2>#fullGrid — tableBorderOnly, sizes to its content</h2>
+		<h2>#fullGrid — isTableBorderOnly, sizes to its content</h2>
 		<web-grid id="fullGrid" style="max-width: 520px;"></web-grid>
 	</div>
 
@@ -32,8 +32,8 @@
 		 *    past the cap) so scrollHeight > clientHeight. Sticky headers stay
 		 *    pinned because `.wg` is the single scroll container.
 		 *
-		 *  #fullGrid — host has NO max-height and `tableBorderOnly = true`. With no
-		 *    cap the grid sizes to its content; tableBorderOnly also moves the
+		 *  #fullGrid — host has NO max-height and `isTableBorderOnly = true`. With no
+		 *    cap the grid sizes to its content; isTableBorderOnly also moves the
 		 *    scroll container inward to `.wg__table-container` and tags `.wg` with
 		 *    the `wg--table-border-only` class. Seeded with just 6 rows so
 		 *    everything fits with no internal scroll.
@@ -61,13 +61,13 @@
 		containerGrid.isStriped = true
 		containerGrid.isRowNumbersVisible = true
 
-		// #fullGrid — 6 rows, no cap, tableBorderOnly.
+		// #fullGrid — 6 rows, no cap, isTableBorderOnly.
 		const fullGrid = document.getElementById('fullGrid')
 		fullGrid.items = Array.from({ length: 6 }, (_, i) => rowAt(i))
 		fullGrid.columns = columns
 		fullGrid.isStriped = true
 		fullGrid.isRowNumbersVisible = true
-		fullGrid.tableBorderOnly = true
+		fullGrid.isTableBorderOnly = true
 	</script>
 </body>
 </html>

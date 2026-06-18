@@ -133,6 +133,7 @@
             text-decoration: underline;
         }
     </style>
+  <script type="module" crossorigin src="/assets/index-07gG2zmF.js"></script>
   <link rel="stylesheet" crossorigin href="/assets/index-Bx5SLsYR.css">
 </head>
 <body>
@@ -140,7 +141,7 @@
         <header class="header-card">
             <h1>Web Grid</h1>
             <p class="subtitle">Framework-agnostic data grid web component with Excel-like editing</p>
-            <span class="version-badge">v1.0.0-rc12</span>
+            <span class="version-badge" id="version-badge"></span>
         </header>
 
         <div id="cards"></div>
@@ -175,6 +176,13 @@
                 title: 'Custom Styling',
                 category: 'library',
                 description: 'Dynamic cell and row styling using callbacks and custom CSS injection into Shadow DOM.'
+            },
+            {
+                href: 'examples-theming.html',
+                icon: '🌗',
+                title: 'Theming Playground',
+                category: 'library',
+                description: 'Interactive playground for dark mode signals (page color-scheme, framework class, per-instance attribute, brand themes) with a live "winning signal" indicator.'
             },
             {
                 href: 'examples-row-locking.html',
@@ -362,5 +370,6 @@
 
         renderCards()
     </script>
+
 </body>
 </html>

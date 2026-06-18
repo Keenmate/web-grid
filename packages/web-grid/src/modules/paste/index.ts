@@ -2,7 +2,7 @@
 // Paste Module (Excel/TSV multi-cell paste)
 // =============================================================================
 
-import type { GridContext } from '../types.js'
+import type { GridContext } from '../grid-context.js'
 import type {
 	Column,
 	PasteColumnMapping,

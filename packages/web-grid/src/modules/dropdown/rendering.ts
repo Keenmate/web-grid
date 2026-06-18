@@ -5,7 +5,7 @@
 
 import { computePosition, flip, offset, size } from '@floating-ui/dom'
 import type { EditorOption, EditorOptions, OptionRenderContext } from '../../types.js'
-import type { GridContext } from '../types.js'
+import type { GridContext } from '../grid-context.js'
 import { getOptionLabel, getOptionValue, getOptionIcon, getOptionSubtitle, isOptionDisabled } from './options.js'
 import { removeFillHandle } from '../fill-handle/index.js'
 
@@ -37,7 +37,7 @@ export function renderDropdown<T>(
 
 	// Render options
 	if (options.length === 0) {
-		const message = ctx.isSearching
+		const message = ctx.autocomplete.isSearching
 			? (opts.searchingText || ctx.grid.labels.dropdownSearching)
 			: (opts.noOptionsText || ctx.grid.labels.dropdownNoOptions)
 		dropdown.innerHTML = `<div class="wg__dropdown-empty">${ctx.escapeHtml(message)}</div>`
@@ -53,7 +53,7 @@ export function renderDropdown<T>(
 		const dropdownAlign = column?.horizontalAlign || 'left'
 
 		dropdown.innerHTML = options.map((opt, i) => {
-			const isHighlighted = i === ctx.highlightedIndex
+			const isHighlighted = i === ctx.dropdown.highlightedIndex
 			const isSelected = getOptionValue(opt, opts) === currentValue
 			const disabled = isOptionDisabled(opt, opts)
 
@@ -88,7 +88,7 @@ export function renderDropdown<T>(
 
 	// Append to shadow DOM
 	ctx.shadow.appendChild(dropdown)
-	ctx.dropdownOpen = true
+	ctx.dropdown.setIsOpen(true)
 	removeFillHandle()  // Hide fill handle when dropdown opens
 
 	// Use Floating UI to position the dropdown
@@ -124,8 +124,8 @@ export function renderDropdown<T>(
 export function removeDropdown<T>(ctx: GridContext<T>): void {
 	const existing = ctx.shadow.querySelector('.wg__dropdown')
 	existing?.remove()
-	ctx.dropdownOpen = false
-	ctx.highlightedIndex = -1
-	ctx.filterText = ''  // Clear filter when dropdown closes
-	ctx.dropdownUserInteracted = false
+	ctx.dropdown.setIsOpen(false)
+	ctx.dropdown.setHighlightedIndex(-1)
+	ctx.dropdown.setFilterText('')  // Clear filter when dropdown closes
+	ctx.dropdown.setUserInteracted(false)
 }

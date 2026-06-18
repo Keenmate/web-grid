@@ -2,7 +2,7 @@
 // Sort Event Handler
 // =============================================================================
 
-import type { GridContext } from '../types.js'
+import type { GridContext } from '../grid-context.js'
 
 /**
  * Handle header click for sorting.

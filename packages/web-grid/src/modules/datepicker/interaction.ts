@@ -3,7 +3,7 @@
 // Click handlers, input masking, focus management
 // =============================================================================
 
-import type { DatePickerState, DatePickerOptions, FormatInfo } from './types.js'
+import type { DatePickerState, DatePickerOptions, FormatSpec } from './types.js'
 import { parseDate, normalizeDate } from './formatting.js'
 
 /**
@@ -92,7 +92,7 @@ export function handleYearClick(target: HTMLElement, state: DatePickerState): vo
  */
 export function applyInputMask(
 	value: string,
-	formatInfo: FormatInfo
+	formatInfo: FormatSpec
 ): string {
 	const { separator, parts, maxLength } = formatInfo
 
@@ -135,7 +135,7 @@ export function applyInputMask(
  */
 export function handleInputChange(
 	input: HTMLInputElement,
-	formatInfo: FormatInfo,
+	formatInfo: FormatSpec,
 	previousValue: string
 ): string {
 	const currentValue = input.value
@@ -181,7 +181,7 @@ export function handleInputChange(
  */
 export function handleInputKeyDown(
 	event: KeyboardEvent,
-	formatInfo: FormatInfo
+	formatInfo: FormatSpec
 ): boolean {
 	const { key, ctrlKey, metaKey } = event
 	const { separator } = formatInfo
@@ -246,7 +246,7 @@ export function handleInputKeyDown(
 export function handleInputPaste(
 	event: ClipboardEvent,
 	input: HTMLInputElement,
-	formatInfo: FormatInfo
+	formatInfo: FormatSpec
 ): void {
 	event.preventDefault()
 
@@ -278,7 +278,7 @@ export function handleInputPaste(
  */
 export function updateStateFromInput(
 	value: string,
-	formatInfo: FormatInfo,
+	formatInfo: FormatSpec,
 	state: DatePickerState,
 	options: DatePickerOptions
 ): boolean {

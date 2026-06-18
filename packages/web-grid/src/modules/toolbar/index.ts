@@ -4,12 +4,12 @@
 // =============================================================================
 
 import type {
-	PredefinedToolbarItemType,
+	PredefinedToolbarItem,
 	RowToolbarConfig,
 	NormalizedToolbarItem,
 	ToolbarClickDetail
 } from '../../types.js'
-import type { GridContext } from '../types.js'
+import type { GridContext } from '../grid-context.js'
 import { computePosition, flip, shift, type Placement } from '@floating-ui/dom'
 
 // =============================================================================
@@ -64,7 +64,7 @@ const TOOLBAR_ICONS = {
 	moveDown: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v10M4 9l4 4 4-4"/></svg>'
 } as const
 
-const PREDEFINED_ACTIONS: Record<PredefinedToolbarItemType, {
+const PREDEFINED_ACTIONS: Record<PredefinedToolbarItem, {
 	icon: string
 	title: string
 	danger?: boolean
@@ -456,7 +456,7 @@ export function openToolbar<T>(
 			// When followsCursor or cellToolbar is active with top placement,
 			// compute cell-based X position to avoid flash on row boundaries.
 			// Skip when toolbarColumn is set — floating-ui already computed correct X from the column anchor.
-			if ((ctx.grid.toolbarFollowsCursor || ctx.grid.cellToolbar) && finalPlacement.startsWith('top') && cursorX !== undefined && ctx.grid.toolbarColumn === undefined) {
+			if ((ctx.grid.shouldToolbarFollowCursor || ctx.grid.cellToolbar) && finalPlacement.startsWith('top') && cursorX !== undefined && ctx.grid.toolbarColumn === undefined) {
 				const cells = freshRow.querySelectorAll('.wg__cell:not(.wg__row-number):not(.wg__inline-actions-cell)')
 				for (const cell of cells) {
 					const cellRect = cell.getBoundingClientRect()
@@ -872,3 +872,5 @@ export function renderTriggerButton(rowIndex: number, isActive: boolean, title: 
 		title="${title}"
 	>⋮</button>`
 }
+
+export { ToolbarService, type ToolbarHoveredCell, type ToolbarShortcutHandler } from './toolbar-service.js'

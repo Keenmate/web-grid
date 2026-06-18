@@ -4,7 +4,7 @@ import { test, expect, Page } from '@playwright/test'
  * E2E coverage for height modes (docs/test/height-modes.html). Two grids:
  *   #containerGrid — host capped with `max-height: 200px`; the `.wg` scroll
  *                    container inherits the cap and scrolls internally (30 rows).
- *   #fullGrid      — host has no cap and `tableBorderOnly = true`; the grid sizes
+ *   #fullGrid      — host has no cap and `isTableBorderOnly = true`; the grid sizes
  *                    to its content, the scroll container moves to
  *                    `.wg__table-container`, and `.wg` gets the
  *                    `wg--table-border-only` class (6 rows, all fit).
@@ -83,10 +83,10 @@ test.describe('container mode — #containerGrid', () => {
 })
 
 // =============================================================================
-// #fullGrid — tableBorderOnly, sizes to content
+// #fullGrid — isTableBorderOnly, sizes to content
 // =============================================================================
 
-test.describe('full-height mode — #fullGrid (tableBorderOnly)', () => {
+test.describe('full-height mode — #fullGrid (isTableBorderOnly)', () => {
 	test('the .wg container gets the wg--table-border-only modifier class', async ({ page }) => {
 		await gotoHeightModes(page)
 
@@ -94,7 +94,7 @@ test.describe('full-height mode — #fullGrid (tableBorderOnly)', () => {
 			.toHaveClass(/wg--table-border-only/)
 	})
 
-	test('with tableBorderOnly the scroll container moves to .wg__table-container', async ({ page }) => {
+	test('with isTableBorderOnly the scroll container moves to .wg__table-container', async ({ page }) => {
 		await gotoHeightModes(page)
 		await expect(gridLocator(page, 'fullGrid').locator('.wg__table-container')).toHaveCount(1)
 	})

@@ -4,7 +4,7 @@
 // =============================================================================
 
 import type { Column } from '../../types.js'
-import type { GridContext } from '../types.js'
+import type { GridContext } from '../grid-context.js'
 import { getOptionDisplayValue } from '../dropdown/options.js'
 import { gridPerf } from '../../perf.js'
 

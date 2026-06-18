@@ -236,7 +236,7 @@
         <div class="card">
             <h2>Table Border Only (No Double Border)</h2>
             <p>When a grid with pagination is inside a card, you get a double border effect.
-               Use <code>tableBorderOnly</code> to place the border only around the table,
+               Use <code>isTableBorderOnly</code> to place the border only around the table,
                letting pagination float outside.</p>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1rem;">
@@ -248,11 +248,11 @@
                     </div>
                 </div>
 
-                <!-- With tableBorderOnly -->
+                <!-- With isTableBorderOnly -->
                 <div>
-                    <h3 style="margin-bottom: 0.5rem; font-size: 0.9rem; color: #666;">tableBorderOnly={true}</h3>
+                    <h3 style="margin-bottom: 0.5rem; font-size: 0.9rem; color: #666;">isTableBorderOnly={true}</h3>
                     <div style="border: 2px solid #3b82f6; border-radius: 8px; padding: 1rem; background: var(--wg-elevated-bg, #f9fafb);">
-                        <web-grid id="gridTableBorderOnly" tableBorderOnly style="max-height: 200px;"></web-grid>
+                        <web-grid id="gridTableBorderOnly" isTableBorderOnly style="max-height: 200px;"></web-grid>
                     </div>
                 </div>
             </div>
@@ -261,7 +261,7 @@
 &lt;web-grid ...&gt;&lt;/web-grid&gt;
 
 // Table border only - pagination floats outside the border
-&lt;web-grid tableBorderOnly ...&gt;&lt;/web-grid&gt;</code></pre>
+&lt;web-grid isTableBorderOnly ...&gt;&lt;/web-grid&gt;</code></pre>
         </div>
 
         <div class="card">
@@ -668,7 +668,7 @@
         gridDoubleBorder.paginationPosition = 'bottom-right'
         gridDoubleBorder.paginationLayout = 'previous|pageInfo|next'
 
-        // Grid with tableBorderOnly (no double border)
+        // Grid with isTableBorderOnly (no double border)
         const gridTableBorderOnly = document.getElementById('gridTableBorderOnly')
         gridTableBorderOnly.items = borderDemoData
         gridTableBorderOnly.columns = borderDemoColumns
@@ -676,7 +676,7 @@
         gridTableBorderOnly.pageSize = 3
         gridTableBorderOnly.paginationPosition = 'bottom-right'
         gridTableBorderOnly.paginationLayout = 'previous|pageInfo|next'
-        gridTableBorderOnly.tableBorderOnly = true
+        gridTableBorderOnly.isTableBorderOnly = true
     </script>
 </body>
 </html>

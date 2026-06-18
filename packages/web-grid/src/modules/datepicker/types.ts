@@ -50,7 +50,7 @@ export interface DatePickerState {
 /**
  * Parsed format information
  */
-export interface FormatInfo {
+export interface FormatSpec {
 	format: string
 	separator: string
 	parts: {
@@ -60,6 +60,9 @@ export interface FormatInfo {
 	}
 	maxLength: number
 }
+
+/** @deprecated use `FormatSpec` */
+export type FormatInfo = FormatSpec
 
 /**
  * Locale strings for UI

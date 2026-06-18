@@ -4,7 +4,7 @@
 // =============================================================================
 
 import { computePosition, flip, offset, arrow } from '@floating-ui/dom'
-import type { GridContext } from '../types.js'
+import type { GridContext } from '../grid-context.js'
 
 /**
  * Show tooltip for an element
@@ -19,25 +19,20 @@ export function showTooltip<T>(
 	const showDelay = delay ?? ctx.tooltipShowDelay
 
 	// Clear any pending hide
-	if (ctx.tooltipHideTimer) {
-		clearTimeout(ctx.tooltipHideTimer)
-		ctx.tooltipHideTimer = null
-	}
+	ctx.tooltip.clearHideTimer()
 
 	// If tooltip already showing for same anchor, just keep it
 	// (check anchor, not text - same text on different cells should reposition)
-	if (ctx.tooltipElement && ctx.tooltipAnchor === anchor) {
+	if (ctx.tooltip.element && ctx.tooltip.anchor === anchor) {
 		return
 	}
 
 	// Clear any pending show
-	if (ctx.tooltipShowTimer) {
-		clearTimeout(ctx.tooltipShowTimer)
-	}
+	ctx.tooltip.clearShowTimer()
 
-	ctx.tooltipShowTimer = setTimeout(() => {
+	ctx.tooltip.setShowTimer(setTimeout(() => {
 		createTooltip(ctx, anchor, text, isHtml)
-	}, showDelay)
+	}, showDelay))
 }
 
 /**
@@ -47,27 +42,23 @@ export function hideTooltip<T>(ctx: GridContext<T>, delay?: number): void {
 	const hideDelay = delay ?? ctx.tooltipHideDelay
 
 	// Clear any pending show
-	if (ctx.tooltipShowTimer) {
-		clearTimeout(ctx.tooltipShowTimer)
-		ctx.tooltipShowTimer = null
-	}
+	ctx.tooltip.clearShowTimer()
 
 	// If no tooltip, nothing to hide
-	if (!ctx.tooltipElement) return
+	if (!ctx.tooltip.element) return
 
 	// Delay hide slightly to allow moving to tooltip
-	ctx.tooltipHideTimer = setTimeout(() => {
-		if (ctx.tooltipElement) {
-			ctx.tooltipElement.classList.remove('wg__tooltip--visible')
+	ctx.tooltip.setHideTimer(setTimeout(() => {
+		const el = ctx.tooltip.element
+		if (el) {
+			el.classList.remove('wg__tooltip--visible')
 			// Remove after transition
 			setTimeout(() => {
-				ctx.tooltipElement?.remove()
-				ctx.tooltipElement = null
-				ctx.tooltipArrowElement = null
-				ctx.tooltipAnchor = null
+				ctx.tooltip.element?.remove()
+				ctx.tooltip.clearMounted()
 			}, 100)
 		}
-	}, hideDelay)
+	}, hideDelay))
 }
 
 /**
@@ -80,7 +71,7 @@ export function createTooltip<T>(
 	isHtml?: boolean
 ): void {
 	// Remove existing
-	ctx.tooltipElement?.remove()
+	ctx.tooltip.element?.remove()
 
 	// Create tooltip
 	const tooltip = document.createElement('div')
@@ -102,9 +93,9 @@ export function createTooltip<T>(
 	tooltip.appendChild(arrowEl)
 
 	ctx.shadow.appendChild(tooltip)
-	ctx.tooltipElement = tooltip
-	ctx.tooltipArrowElement = arrowEl
-	ctx.tooltipAnchor = anchor
+	ctx.tooltip.setElement(tooltip)
+	ctx.tooltip.setArrowElement(arrowEl)
+	ctx.tooltip.setAnchor(anchor)
 
 	// Position with Floating UI
 	computePosition(anchor, tooltip, {

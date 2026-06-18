@@ -11,7 +11,7 @@ export { WebGrid } from './grid.js'
 // All types
 export type {
 	// Editor types
-	EditorType,
+	Editor,
 	EditTrigger,
 	OptionsLoadTrigger,
 	DateOutputFormat,
@@ -32,7 +32,7 @@ export type {
 	RowFocusDetail,
 
 	// Toolbar types
-	PredefinedToolbarItemType,
+	PredefinedToolbarItem,
 	ToolbarPosition,
 	NewRowPosition,
 	ToolbarTooltip,
@@ -40,7 +40,7 @@ export type {
 	RowToolbarConfig,
 	NormalizedToolbarItem,
 	ToolbarClickDetail,
-	RowActionType,
+	RowAction,
 	RowActionClickDetail,
 
 	// Context menu types
@@ -59,7 +59,7 @@ export type {
 	GridLabels,
 
 	// Row locking types
-	RowLockInfo,
+	RowLock,
 	RowLockingOptions,
 	RowLockChangeDetail,
 	LockedRowEditBehavior,
@@ -105,7 +105,17 @@ export type {
 	SortDirection,
 	ToolbarRowGroup,
 	PopupPosition,
-	ConnectorArrowDir
+	ConnectorArrowDir,
+
+	// Deprecated aliases retained for one release — drop in next major.
+	/** @deprecated use `Editor` */
+	EditorType,
+	/** @deprecated use `PredefinedToolbarItem` */
+	PredefinedToolbarItemType,
+	/** @deprecated use `RowAction` */
+	RowActionType,
+	/** @deprecated use `RowLock` */
+	RowLockInfo
 } from './types.js'
 
 // Default export

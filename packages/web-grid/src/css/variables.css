@@ -287,7 +287,7 @@
      dark mode). Primary lookup is --base-tooltip-bg; falls back through the
      new --base-inverse-bg from the unified cross-component taxonomy. */
   --wg-tooltip-bg: var(--base-tooltip-bg, var(--base-inverse-bg, light-dark(#333333, #f5f5f5)));
-  --wg-tooltip-color: var(--base-tooltip-color, light-dark(#ffffff, #1a1a1a));
+  --wg-tooltip-color: var(--base-tooltip-text-color, var(--base-tooltip-color, light-dark(#ffffff, #1a1a1a)));
   --wg-tooltip-max-width: 300px;
   --wg-tooltip-arrow-size: 8px;
 
@@ -335,6 +335,14 @@
   --wg-z-tooltip: 10000;
 
   /* ==========================================================================
+     TREE
+     ========================================================================== */
+  --wg-tree-indent: 1.25rem;             /* per-level indent */
+  --wg-tree-chevron-size: 1rem;          /* chevron width/height (also used for leaf spacer) */
+  --wg-tree-chevron-color: var(--wg-text-color-2);
+  --wg-tree-chevron-gap: 4px;            /* gap between chevron and content */
+
+  /* ==========================================================================
      ROW LOCKING
      ========================================================================== */
   --wg-row-locked-bg: var(--base-disabled-bg, var(--wg-elevated-bg));
@@ -375,7 +383,7 @@
      ========================================================================== */
   --wg-selection-bg: color-mix(in srgb, var(--wg-accent-color) 15%, transparent);
   --wg-selection-row-number-bg: var(--wg-accent-color);
-  --wg-selection-row-number-color: var(--base-text-inverted, #fff);
+  --wg-selection-row-number-color: var(--base-text-color-on-accent, light-dark(#fff, #fff));
   --wg-selection-border-width: 2px;
   --wg-selection-border-color: var(--wg-accent-color);
 

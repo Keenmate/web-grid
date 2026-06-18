@@ -127,7 +127,7 @@ async function executeCommitEdit(
 	}
 
 	// Close dropdown if open
-	if (ctx.dropdownOpen) {
+	if (ctx.dropdown.isOpen) {
 		removeDropdown(ctx)
 	}
 
@@ -153,7 +153,7 @@ function executeCancelEdit(ctx: ExecutorContext): void {
 	const column = ctx.grid.columns[colIndex]
 
 	// Close dropdown if open
-	if (ctx.dropdownOpen) {
+	if (ctx.dropdown.isOpen) {
 		removeDropdown(ctx)
 	}
 
@@ -196,8 +196,8 @@ function executeEscapeEdit(ctx: ExecutorContext, action: EscapeEditAction): Grid
 		const editorType = column?.editor
 
 		// For select: check if there's filter text (type-to-filter)
-		if (editorType === 'select' && ctx.filterText) {
-			ctx.filterText = ''
+		if (editorType === 'select' && ctx.dropdown.filterText) {
+			ctx.dropdown.setFilterText('')
 			// Refresh dropdown by closing and reopening (shows all options)
 			removeDropdown(ctx)
 			ctx.dispatch({ type: 'openDropdown' })
@@ -222,7 +222,7 @@ function executeEscapeEdit(ctx: ExecutorContext, action: EscapeEditAction): Grid
 
 			// If input has been modified (different from original display), restore and refresh dropdown
 			if (input && currentValue !== originalDisplayValue) {
-				ctx.filterText = ''
+				ctx.dropdown.setFilterText('')
 				input.value = originalDisplayValue  // Restore original display value
 				input.focus()
 				input.select()  // Select all so user can easily retype
@@ -255,7 +255,7 @@ function executeEscapeEdit(ctx: ExecutorContext, action: EscapeEditAction): Grid
 		const column = ctx.grid.columns[colIndex]
 
 		// Close dropdown/datepicker if open
-		if (ctx.dropdownOpen) {
+		if (ctx.dropdown.isOpen) {
 			removeDropdown(ctx)
 		}
 		if (ctx.datepicker) {

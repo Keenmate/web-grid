@@ -31,7 +31,7 @@ export const dropdownExecutor: ActionExecutor = {
 				removeDropdown(ctx)
 				break
 			case 'toggleDropdown':
-				if (ctx.dropdownOpen) {
+				if (ctx.dropdown.isOpen) {
 					removeDropdown(ctx)
 				} else {
 					openDropdownForCurrentEditor(ctx)
@@ -52,55 +52,55 @@ const PAGE_JUMP_SIZE = 10
  * Execute dropdown navigate action (up/down/page-up/page-down through options)
  */
 function executeDropdownNavigate(ctx: ExecutorContext, action: DropdownNavigateAction): void {
-	if (!ctx.dropdownOpen) return
+	if (!ctx.dropdown.isOpen) return
 
 	const opts = ctx.getCurrentEditorOptions()
-	let newIndex = ctx.highlightedIndex
-	const optionsCount = ctx.dropdownOptions.length
+	let newIndex = ctx.dropdown.highlightedIndex
+	const optionsCount = ctx.dropdown.options.length
 
 	switch (action.direction) {
 		case 'up':
-			newIndex = ctx.highlightedIndex - 1
+			newIndex = ctx.dropdown.highlightedIndex - 1
 			// Find previous non-disabled option
-			while (newIndex >= 0 && isOptionDisabled(ctx.dropdownOptions[newIndex], opts)) {
+			while (newIndex >= 0 && isOptionDisabled(ctx.dropdown.options[newIndex], opts)) {
 				newIndex--
 			}
 			if (newIndex < 0) return // No valid option above
 			break
 
 		case 'down':
-			newIndex = ctx.highlightedIndex + 1
+			newIndex = ctx.dropdown.highlightedIndex + 1
 			// Find next non-disabled option
-			while (newIndex < optionsCount && isOptionDisabled(ctx.dropdownOptions[newIndex], opts)) {
+			while (newIndex < optionsCount && isOptionDisabled(ctx.dropdown.options[newIndex], opts)) {
 				newIndex++
 			}
 			if (newIndex >= optionsCount) return // No valid option below
 			break
 
 		case 'page-up':
-			newIndex = Math.max(0, ctx.highlightedIndex - PAGE_JUMP_SIZE)
+			newIndex = Math.max(0, ctx.dropdown.highlightedIndex - PAGE_JUMP_SIZE)
 			// Find nearest non-disabled option at or after target
-			while (newIndex < ctx.highlightedIndex && isOptionDisabled(ctx.dropdownOptions[newIndex], opts)) {
+			while (newIndex < ctx.dropdown.highlightedIndex && isOptionDisabled(ctx.dropdown.options[newIndex], opts)) {
 				newIndex++
 			}
 			// If all options up to current are disabled, stay put
-			if (newIndex >= ctx.highlightedIndex) return
+			if (newIndex >= ctx.dropdown.highlightedIndex) return
 			break
 
 		case 'page-down':
-			newIndex = Math.min(optionsCount - 1, ctx.highlightedIndex + PAGE_JUMP_SIZE)
+			newIndex = Math.min(optionsCount - 1, ctx.dropdown.highlightedIndex + PAGE_JUMP_SIZE)
 			// Find nearest non-disabled option at or before target
-			while (newIndex > ctx.highlightedIndex && isOptionDisabled(ctx.dropdownOptions[newIndex], opts)) {
+			while (newIndex > ctx.dropdown.highlightedIndex && isOptionDisabled(ctx.dropdown.options[newIndex], opts)) {
 				newIndex--
 			}
 			// If all options down to current are disabled, stay put
-			if (newIndex <= ctx.highlightedIndex) return
+			if (newIndex <= ctx.dropdown.highlightedIndex) return
 			break
 
 		case 'home':
 			newIndex = 0
 			// Find first non-disabled option
-			while (newIndex < optionsCount && isOptionDisabled(ctx.dropdownOptions[newIndex], opts)) {
+			while (newIndex < optionsCount && isOptionDisabled(ctx.dropdown.options[newIndex], opts)) {
 				newIndex++
 			}
 			if (newIndex >= optionsCount) return // All options disabled
@@ -109,15 +109,15 @@ function executeDropdownNavigate(ctx: ExecutorContext, action: DropdownNavigateA
 		case 'end':
 			newIndex = optionsCount - 1
 			// Find last non-disabled option
-			while (newIndex >= 0 && isOptionDisabled(ctx.dropdownOptions[newIndex], opts)) {
+			while (newIndex >= 0 && isOptionDisabled(ctx.dropdown.options[newIndex], opts)) {
 				newIndex--
 			}
 			if (newIndex < 0) return // All options disabled
 			break
 	}
 
-	ctx.highlightedIndex = newIndex
-	ctx.dropdownUserInteracted = true
+	ctx.dropdown.setHighlightedIndex(newIndex)
+	ctx.dropdown.setUserInteracted(true)
 	updateDropdownHighlight(ctx)
 	scrollHighlightedIntoView(ctx)
 }
@@ -127,7 +127,7 @@ function executeDropdownNavigate(ctx: ExecutorContext, action: DropdownNavigateA
  * Works with both editingCell (normal edit mode) and focusedCell ('always' edit mode)
  */
 function executeDropdownSelect(ctx: ExecutorContext, action: DropdownSelectAction): GridAction[] | void {
-	if (!ctx.dropdownOpen || ctx.highlightedIndex < 0) {
+	if (!ctx.dropdown.isOpen || ctx.dropdown.highlightedIndex < 0) {
 		// No dropdown or nothing highlighted - just close and maybe navigate
 		removeDropdown(ctx)
 		if (action.thenNavigate) {
@@ -140,7 +140,7 @@ function executeDropdownSelect(ctx: ExecutorContext, action: DropdownSelectActio
 		return
 	}
 
-	const option = ctx.dropdownOptions[ctx.highlightedIndex]
+	const option = ctx.dropdown.options[ctx.dropdown.highlightedIndex]
 	if (!option) return
 
 	// Get cell info - prefer editingCell, fall back to focusedCell for 'always' mode
@@ -170,7 +170,7 @@ function executeDropdownSelect(ctx: ExecutorContext, action: DropdownSelectActio
 		opts.onselect(option, row)
 	}
 
-	ctx.justSelected = true
+	ctx.dropdown.setJustSelected(true)
 	ctx.isCommittingFromKeyboard = true
 	removeDropdown(ctx)
 	ctx.grid.commitEdit(rowIndex, field, value, action.commitEmptyRow ?? false)
@@ -184,7 +184,7 @@ function executeDropdownSelect(ctx: ExecutorContext, action: DropdownSelectActio
 		// The flag was needed to prevent dropdown re-opening during commit on
 		// the current cell, but the commit is done and the cell is re-rendered.
 		// The NEXT cell's dropdown must be able to open normally.
-		ctx.justSelected = false
+		ctx.dropdown.setJustSelected(false)
 
 		// Return navigate action
 		const navigateAction: NavigateAction = {
@@ -205,6 +205,6 @@ function executeDropdownSelect(ctx: ExecutorContext, action: DropdownSelectActio
 
 	// Reset justSelected after focus moves
 	requestAnimationFrame(() => {
-		ctx.justSelected = false
+		ctx.dropdown.setJustSelected(false)
 	})
 }

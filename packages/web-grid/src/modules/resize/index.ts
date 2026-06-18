@@ -2,7 +2,7 @@
 // Column Resize Module
 // =============================================================================
 
-import type { GridContext } from '../types.js'
+import type { GridContext } from '../grid-context.js'
 
 /**
  * State for tracking an active resize operation

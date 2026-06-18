@@ -1,12 +1,16 @@
 // =============================================================================
-// Module Types - Interfaces for GridElement context
+// GridContext - the GridElement subset that module functions consume
 // =============================================================================
 
 import type { WebGrid } from '../grid.js'
-import type { Column, EditorOption, EditorOptions } from '../types.js'
+import type { Column, EditorOptions } from '../types.js'
 import type { ScrollEventManager } from './scroll-events/index.js'
 import type { FocusEventManager } from './focus-events/index.js'
 import type { DatePicker } from './datepicker/datepicker.js'
+import type { AutocompleteService } from './dropdown/autocomplete-service.js'
+import type { DropdownService } from './dropdown/dropdown-service.js'
+import type { TooltipService } from './tooltip/tooltip-service.js'
+import type { VirtualScrollService } from './scroll/virtual-scroll-service.js'
 
 /**
  * GridElement context interface for module functions
@@ -19,15 +23,11 @@ export interface GridContext<T = unknown> {
 	// Grid logic
 	readonly grid: WebGrid<T>
 
-	// Dropdown state
-	dropdownOpen: boolean
-	dropdownOptions: EditorOption[]
-	highlightedIndex: number
-	filterText: string
-	isUserFiltering: boolean
-	justSelected: boolean
-	isOpeningDropdown: boolean
-	dropdownUserInteracted: boolean
+	// Dropdown runtime state — owned by DropdownService (open flag, options, highlight,
+	// filter text, race-condition flags). The `isCommittingFromKeyboard` and
+	// `isTransitioningCells` flags below are editing-state machine flags, distinct
+	// from dropdown state, and remain on the Element for now.
+	readonly dropdown: DropdownService
 	isCommittingFromKeyboard: boolean
 	isTransitioningCells: boolean
 
@@ -38,19 +38,18 @@ export interface GridContext<T = unknown> {
 	// Datepicker state
 	datepicker: DatePicker | null
 
-	// Autocomplete async state
-	searchDebounceTimer: ReturnType<typeof setTimeout> | null
-	searchAbortController: AbortController | null
-	isSearching: boolean
+	// Autocomplete async state — owned by AutocompleteService.
+	readonly autocomplete: AutocompleteService
 
-	// Tooltip state
-	tooltipElement: HTMLElement | null
-	tooltipArrowElement: HTMLElement | null
-	tooltipAnchor: HTMLElement | null
-	tooltipShowTimer: ReturnType<typeof setTimeout> | null
-	tooltipHideTimer: ReturnType<typeof setTimeout> | null
+	// Tooltip runtime state — owned by TooltipService (element, arrow, anchor, show/hide timers).
+	readonly tooltip: TooltipService
+	// Tooltip configuration (grid-level), exposed as accessors.
 	readonly tooltipShowDelay: number
 	readonly tooltipHideDelay: number
+
+	// Virtual-scroll runtime state — owned by VirtualScrollService (visible range,
+	// loading-more flag, programmatic-scroll guard).
+	readonly virtualScroll: VirtualScrollService
 
 	// Utility methods
 	escapeHtml(text: string): string

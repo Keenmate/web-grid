@@ -4,13 +4,16 @@
 // Centralizes click event handling for inside/outside grid detection.
 // Single listener per scope (container, document), modules subscribe/unsubscribe.
 
-export type ClickEventType =
+export type ClickEventKind =
 	| 'outsideClick'      // Document click outside the grid
 	| 'cellClick'         // Click on data cell (not row number, not header)
 	| 'rowNumberClick'    // Click on row number cell
 	| 'headerClick'       // Click on column header
 	| 'sortClick'         // Click on sort indicator in column header
 	| 'emptyAreaClick'    // Click in grid but not on interactive element
+
+/** @deprecated use `ClickEventKind` */
+export type ClickEventType = ClickEventKind
 
 export interface ClickContext {
 	target: HTMLElement
@@ -34,7 +37,7 @@ export interface ClickEventManager {
 	 * @param handler - Callback function, return true to stop other handlers
 	 * @returns Subscription object with unsubscribe method
 	 */
-	subscribe(type: ClickEventType, handler: ClickHandler): ClickSubscription
+	subscribe(type: ClickEventKind, handler: ClickHandler): ClickSubscription
 
 	/**
 	 * Initialize click listeners
@@ -61,7 +64,7 @@ export interface ClickEventManager {
  * Create a click event manager for a single grid instance
  */
 export function createClickEventManager(): ClickEventManager {
-	const handlers: Record<ClickEventType, Set<ClickHandler>> = {
+	const handlers: Record<ClickEventKind, Set<ClickHandler>> = {
 		outsideClick: new Set(),
 		cellClick: new Set(),
 		rowNumberClick: new Set(),
@@ -79,7 +82,7 @@ export function createClickEventManager(): ClickEventManager {
 	let insideGridClickInProgress = false
 
 	// Dispatch to handlers, stop if any returns true
-	const dispatch = (type: ClickEventType, ctx: ClickContext): boolean => {
+	const dispatch = (type: ClickEventKind, ctx: ClickContext): boolean => {
 		for (const handler of handlers[type]) {
 			if (handler(ctx) === true) {
 				return true // Handler requested stop
@@ -187,7 +190,7 @@ export function createClickEventManager(): ClickEventManager {
 	}
 
 	return {
-		subscribe(type: ClickEventType, handler: ClickHandler): ClickSubscription {
+		subscribe(type: ClickEventKind, handler: ClickHandler): ClickSubscription {
 			handlers[type].add(handler)
 
 			return {

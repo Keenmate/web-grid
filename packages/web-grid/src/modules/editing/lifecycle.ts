@@ -3,7 +3,7 @@
 // Commit, blur handling, focus after commit/cancel
 // =============================================================================
 
-import type { GridContext } from '../types.js'
+import type { GridContext } from '../grid-context.js'
 import type { DateOutputFormat } from '../../types.js'
 import { moveFocus, tryStartEdit } from '../navigation/index.js'
 import { renderCell } from '../rendering/index.js'

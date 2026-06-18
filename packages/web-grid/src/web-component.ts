@@ -21,7 +21,6 @@ import type {
 	CustomEditorContext,
 	EditTrigger,
 	EditStartSelection,
-	EditorOption,
 	EditorOptions,
 	GridMode,
 	ToggleVisibility,
@@ -34,7 +33,7 @@ import type {
 	ValidationTooltipContext,
 	ToolbarPosition,
 	GridLabels,
-	RowLockInfo,
+	RowLock,
 	RowLockingOptions,
 	RowLockChangeDetail,
 	ColumnResizeDetail,
@@ -76,12 +75,17 @@ import {
 	updateSelectFilter,
 	handleComboboxInput,
 	handleAutocompleteInput,
-	isOptionDisabled
+	isOptionDisabled,
+	AutocompleteService,
+	DropdownService,
+	handleSelectBlur,
+	handleComboboxBlur
 } from './modules/dropdown/index.js'
 
 import {
 	showTooltip,
-	hideTooltip
+	hideTooltip,
+	TooltipService
 } from './modules/tooltip/index.js'
 
 import {
@@ -121,14 +125,16 @@ import {
 
 import type { VirtualScrollParams } from './modules/rendering/index.js'
 
-import { DatePicker, parseFormat, formatDate, normalizeDate, toISODateString } from './modules/datepicker/index.js'
 import {
-	openContextMenu,
+	DatePicker,
+	openDatePicker,
+	commitDateEditor
+} from './modules/datepicker/index.js'
+import {
 	closeContextMenu,
-	normalizeContextMenu,
-	openHeaderContextMenu,
-	normalizeHeaderMenuItems,
-	executeHeaderMenuAction
+	handleContextMenu,
+	handleHeaderContextMenu,
+	handleFillerContextMenu
 } from './modules/contextmenu/index.js'
 import {
 	normalizeToolbarItems,
@@ -145,6 +151,7 @@ import {
 	getActiveToolbar,
 	renderToolbarHTML,
 	resolveToolbarOffset,
+	ToolbarService,
 	type ConnectorState
 } from './modules/toolbar/index.js'
 
@@ -155,9 +162,12 @@ import {
 } from './modules/keyboard/index.js'
 
 import {
-	calculateVisibleRange,
 	calculateScrollToRow,
-	shouldTriggerInfiniteScroll
+	VirtualScrollService,
+	handleVirtualScroll,
+	renderVirtualRows,
+	handleInfiniteScroll,
+	handleScrollCloseDropdown
 } from './modules/scroll/index.js'
 
 import { handleSortClick, handlePaginationClick, handlePageSizeChange } from './modules/events/index.js'
@@ -206,7 +216,7 @@ import {
 	createActionPipelineAdapter
 } from './modules/actions/index.js'
 
-import type { GridContext } from './modules/types.js'
+import type { GridContext } from './modules/grid-context.js'
 
 /**
  * GridElement - Custom HTML Element for WebGrid
@@ -255,45 +265,23 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	// Flag to track if focusEvents subscriptions have been added (only subscribe once)
 	private focusEventsSubscribed = false
 
-	// Flag to prevent mouseleave from closing toolbar during move actions
-	private toolbarMoveInProgress = false
-
-	// Toolbar hover tracking (for delayed hide like QuickGrid)
-	private toolbarHideTimeout: ReturnType<typeof setTimeout> | null = null
-	private toolbarHovered = false
-	private toolbarShortcutHandler: ((e: KeyboardEvent) => void) | null = null
-
-	// Cell-aware toolbar tracking
-	private hoveredCell: { rowIndex: number; colIndex: number; field: string } | null = null
-	private currentCellToolbarItems: string | null = null  // JSON of current items for comparison
-	private toolbarMousemoveHandler: ((e: MouseEvent) => void) | null = null
+	// Floating-toolbar runtime state — owned by ToolbarService (hover hide-timeout, hover/move flags, hovered cell, cell-items JSON snapshot, document keydown handler).
+	private toolbar = new ToolbarService()
 
 	// Inline shortcuts handler (hovered row tracked in WebGrid.hoveredRowIndex)
 	private inlineShortcutHandler: ((e: KeyboardEvent) => void) | null = null
 
-	// Dropdown state for combobox/autocomplete
-	dropdownOpen = false
-	dropdownOptions: EditorOption[] = []
-	highlightedIndex = -1
-	filterText = ''
-	isUserFiltering = false
-	justSelected = false
-	isOpeningDropdown = false  // Flag to skip scroll events during dropdown opening
-	dropdownUserInteracted = false  // Flag: user navigated within dropdown (arrow keys/hover)
-	isClosingViaToggle = false  // Flag to prevent blur from canceling when closing via toggle
-	private isProgrammaticScroll = false  // Flag to skip handleVirtualScroll during keyboard nav
+	// Dropdown runtime state — owned by DropdownService (open flag, options, highlight,
+	// filter text, race-condition flags: isOpening / isClosingViaToggle / justSelected /
+	// userInteracted / isUserFiltering).
+	dropdown = new DropdownService()
 
 	// Autocomplete async state
-	searchDebounceTimer: ReturnType<typeof setTimeout> | null = null
-	searchAbortController: AbortController | null = null
-	isSearching = false
+	// Autocomplete async state — owned by AutocompleteService (debounce timer, abort controller, search-in-flight flag).
+	autocomplete = new AutocompleteService()
 
-	// Tooltip state
-	tooltipElement: HTMLElement | null = null
-	tooltipArrowElement: HTMLElement | null = null
-	tooltipAnchor: HTMLElement | null = null  // Track current anchor for repositioning
-	tooltipShowTimer: ReturnType<typeof setTimeout> | null = null
-	tooltipHideTimer: ReturnType<typeof setTimeout> | null = null
+	// Tooltip runtime state — owned by TooltipService (element, arrow, anchor, show/hide timers).
+	tooltip = new TooltipService()
 
 	// Tooltip configuration (grid-level)
 	private _tooltipShowDelay: number = 200
@@ -312,10 +300,8 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	contextMenuElement: HTMLElement | null = null
 	headerContextMenuElement: HTMLElement | null = null
 
-	// Virtual scroll state
-	private virtualScrollStart = 0
-	private virtualScrollEnd = 0
-	private isLoadingMoreItems = false
+	// Virtual scroll state — owned by VirtualScrollService (visible-range, load-more flag, programmatic-scroll guard).
+	virtualScroll = new VirtualScrollService()
 
 	// Scroll event manager (pub/sub for scroll events)
 	readonly scrollEvents: ScrollEventManager
@@ -353,10 +339,10 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			() => ({
 				isCommittingFromKeyboard: this.isCommittingFromKeyboard,
 				isTransitioningCells: this.isTransitioningCells,
-				isClosingViaToggle: this.isClosingViaToggle,
-				isOpeningDropdown: this.isOpeningDropdown
+				isClosingViaToggle: this.dropdown.isClosingViaToggle,
+				isOpeningDropdown: this.dropdown.isOpening
 			}),
-			() => { this.isClosingViaToggle = false }
+			() => { this.dropdown.setIsClosingViaToggle(false) }
 		)
 
 		// Inject styles immediately to prevent FOUC
@@ -437,7 +423,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	set items(value: T[]) {
 		this.grid.items = value
 		// Reset infinite scroll loading flag
-		this.isLoadingMoreItems = false
+		this.virtualScroll.setIsLoadingMore(false)
 	}
 
 	get columns(): Column<T>[] { return this.grid.columns }
@@ -550,8 +536,13 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	get toolbarColumn(): string | number | undefined { return this.grid.toolbarColumn }
 	set toolbarColumn(value: string | number | undefined) { this.grid.toolbarColumn = value }
 
-	get toolbarFollowsCursor(): boolean { return this.grid.toolbarFollowsCursor }
-	set toolbarFollowsCursor(value: boolean) { this.grid.toolbarFollowsCursor = value }
+	get shouldToolbarFollowCursor(): boolean { return this.grid.shouldToolbarFollowCursor }
+	set shouldToolbarFollowCursor(value: boolean) { this.grid.shouldToolbarFollowCursor = value }
+
+	/** @deprecated use `shouldToolbarFollowCursor` */
+	get toolbarFollowsCursor(): boolean { return this.grid.shouldToolbarFollowCursor }
+	/** @deprecated use `shouldToolbarFollowCursor` */
+	set toolbarFollowsCursor(value: boolean) { this.grid.shouldToolbarFollowCursor = value }
 
 	get cellToolbar(): ((row: T, rowIndex: number, field: string, colIndex: number) => RowToolbarConfig<T>[] | undefined) | undefined {
 		return this.grid.cellToolbar
@@ -768,8 +759,13 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	get totalItems(): number | null { return this.grid.totalItems }
 	set totalItems(value: number | null) { this.grid.totalItems = value }
 
-	get showPagination(): boolean | 'auto' { return this.grid.showPagination }
-	set showPagination(value: boolean | 'auto') { this.grid.showPagination = value }
+	get isPaginationVisible(): boolean | 'auto' { return this.grid.isPaginationVisible }
+	set isPaginationVisible(value: boolean | 'auto') { this.grid.isPaginationVisible = value }
+
+	/** @deprecated use `isPaginationVisible` */
+	get showPagination(): boolean | 'auto' { return this.grid.isPaginationVisible }
+	/** @deprecated use `isPaginationVisible` */
+	set showPagination(value: boolean | 'auto') { this.grid.isPaginationVisible = value }
 
 	get paginationPosition(): string { return this.grid.paginationPosition }
 	set paginationPosition(value: string) { this.grid.paginationPosition = value }
@@ -876,8 +872,13 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	get scrollMaxHeight(): string { return this.grid.scrollMaxHeight }
 	set scrollMaxHeight(value: string) { this.grid.scrollMaxHeight = value }
 
-	get tableBorderOnly(): boolean { return this.grid.tableBorderOnly }
-	set tableBorderOnly(value: boolean) { this.grid.tableBorderOnly = value }
+	get isTableBorderOnly(): boolean { return this.grid.isTableBorderOnly }
+	set isTableBorderOnly(value: boolean) { this.grid.isTableBorderOnly = value }
+
+	/** @deprecated use `isTableBorderOnly` */
+	get tableBorderOnly(): boolean { return this.grid.isTableBorderOnly }
+	/** @deprecated use `isTableBorderOnly` */
+	set tableBorderOnly(value: boolean) { this.grid.isTableBorderOnly = value }
 
 	// Virtual scroll
 	get isVirtualScrollEnabled(): boolean { return this.grid.isVirtualScrollEnabled }
@@ -944,10 +945,10 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 	// Row locking methods
 	isRowLocked(rowOrId: T | unknown): boolean { return this.grid.isRowLocked(rowOrId) }
-	getRowLockInfo(rowOrId: T | unknown): RowLockInfo | null { return this.grid.getRowLockInfo(rowOrId) }
-	lockRowById(id: unknown, lockerInfo?: Partial<RowLockInfo>): boolean { return this.grid.lockRowById(id, lockerInfo) }
+	getRowLockInfo(rowOrId: T | unknown): RowLock | null { return this.grid.getRowLockInfo(rowOrId) }
+	lockRowById(id: unknown, lockerInfo?: Partial<RowLock>): boolean { return this.grid.lockRowById(id, lockerInfo) }
 	unlockRowById(id: unknown): boolean { return this.grid.unlockRowById(id) }
-	getExternalLocks(): Map<unknown, RowLockInfo> { return this.grid.getExternalLocks() }
+	getExternalLocks(): Map<unknown, RowLock> { return this.grid.getExternalLocks() }
 	clearExternalLocks(): void { this.grid.clearExternalLocks() }
 
 	// Row update methods (for WebSocket/external updates)
@@ -1374,7 +1375,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				if (isDropdownColumn && this.grid.getEffectiveShouldOpenDropdownOnEnter(column)) {
 					tryStartEdit(this, rowIndex, colIndex)
 					requestAnimationFrame(() => {
-						if (!this.dropdownOpen) {
+						if (!this.dropdown.isOpen) {
 							openDropdownForCurrentEditor(this)
 						}
 					})
@@ -1399,7 +1400,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				tryStartEdit(this, rowIndex, colIndex)
 				if (f2IsDropdown) {
 					requestAnimationFrame(() => {
-						if (!this.dropdownOpen) {
+						if (!this.dropdown.isOpen) {
 							openDropdownForCurrentEditor(this)
 						}
 					})
@@ -1424,7 +1425,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				} else if (isDropdown) {
 					tryStartEdit(this, rowIndex, colIndex)
 					requestAnimationFrame(() => {
-						if (!this.dropdownOpen) {
+						if (!this.dropdown.isOpen) {
 							openDropdownForCurrentEditor(this)
 						}
 					})
@@ -1437,7 +1438,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 						)
 						const input = cell?.querySelector('.wg__date-input') as HTMLInputElement
 						const anchor = cell?.querySelector('.wg__editor--date') as HTMLElement
-						if (input && anchor) this.openDatePicker(input, anchor)
+						if (input && anchor) openDatePicker(this,input, anchor)
 					})
 				} else if (isCustom) {
 					// Custom editors - start edit and call callback
@@ -1528,7 +1529,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 		// For dropdown editors with CLOSED dropdown, navigation keys cancel edit and navigate
 		const navKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'PageUp', 'PageDown', 'Home', 'End']
-		if (isDropdownEditor && !this.dropdownOpen && navKeys.includes(e.key)) {
+		if (isDropdownEditor && !this.dropdown.isOpen && navKeys.includes(e.key)) {
 			e.preventDefault()
 			e.stopPropagation()
 
@@ -1584,17 +1585,17 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 		switch (e.key) {
 			case 'ArrowDown':
-				if (this.dropdownOpen) {
+				if (this.dropdown.isOpen) {
 					e.preventDefault()
 					e.stopPropagation()
 					const optsDown = this.getCurrentEditorOptions()
 					// Find next non-disabled option
-					let nextIndex = this.highlightedIndex + 1
-					while (nextIndex < this.dropdownOptions.length && isOptionDisabled(this.dropdownOptions[nextIndex], optsDown)) {
+					let nextIndex = this.dropdown.highlightedIndex + 1
+					while (nextIndex < this.dropdown.options.length && isOptionDisabled(this.dropdown.options[nextIndex], optsDown)) {
 						nextIndex++
 					}
-					if (nextIndex < this.dropdownOptions.length) {
-						this.highlightedIndex = nextIndex
+					if (nextIndex < this.dropdown.options.length) {
+						this.dropdown.setHighlightedIndex(nextIndex)
 						updateDropdownHighlight(this)
 						scrollHighlightedIntoView(this)
 					}
@@ -1602,17 +1603,17 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				break
 
 			case 'ArrowUp':
-				if (this.dropdownOpen) {
+				if (this.dropdown.isOpen) {
 					e.preventDefault()
 					e.stopPropagation()
 					const optsUp = this.getCurrentEditorOptions()
 					// Find previous non-disabled option
-					let prevIndex = this.highlightedIndex - 1
-					while (prevIndex >= 0 && isOptionDisabled(this.dropdownOptions[prevIndex], optsUp)) {
+					let prevIndex = this.dropdown.highlightedIndex - 1
+					while (prevIndex >= 0 && isOptionDisabled(this.dropdown.options[prevIndex], optsUp)) {
 						prevIndex--
 					}
 					if (prevIndex >= 0) {
-						this.highlightedIndex = prevIndex
+						this.dropdown.setHighlightedIndex(prevIndex)
 						updateDropdownHighlight(this)
 						scrollHighlightedIntoView(this)
 					}
@@ -1626,17 +1627,17 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				}
 				e.preventDefault()
 				e.stopPropagation()
-				if (this.dropdownOpen && this.highlightedIndex >= 0) {
+				if (this.dropdown.isOpen && this.dropdown.highlightedIndex >= 0) {
 					// Enter with dropdown selects option and commits empty row
-					selectDropdownOption(this, this.highlightedIndex, true, true)
-				} else if (isDropdownEditor && !this.dropdownOpen) {
+					selectDropdownOption(this, this.dropdown.highlightedIndex, true, true)
+				} else if (isDropdownEditor && !this.dropdown.isOpen) {
 					openDropdownForCurrentEditor(this)
 				} else {
 					this.isCommittingFromKeyboard = true
 					removeDropdown(this)
 					if (editorType === 'date' && editor instanceof HTMLInputElement) {
 						// Enter commits empty row (adds to items if it has data)
-						await this.commitDateEditor(editor, true)
+						await commitDateEditor(this,editor, true)
 					} else {
 						// Enter commits empty row (adds to items if it has data)
 						await commitCurrentEditor(this, editor, true)
@@ -1664,9 +1665,9 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				const shouldCommitEmptyRow = isOnEmptyRow && isLastEditableCell && !e.shiftKey
 
 				// For dropdowns with a highlighted option, select it before moving
-				if (this.dropdownOpen && this.highlightedIndex >= 0 && isDropdownEditor) {
+				if (this.dropdown.isOpen && this.dropdown.highlightedIndex >= 0 && isDropdownEditor) {
 					// Select the highlighted option - this commits the value (skip if disabled)
-					const option = this.dropdownOptions[this.highlightedIndex]
+					const option = this.dropdown.options[this.dropdown.highlightedIndex]
 					const opts = this.getCurrentEditorOptions()
 					if (option && !isOptionDisabled(option, opts)) {
 						const value = getOptionValue(option, opts)
@@ -1676,7 +1677,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				} else {
 					removeDropdown(this)
 					if (editorType === 'date' && editor instanceof HTMLInputElement) {
-						await this.commitDateEditor(editor, shouldCommitEmptyRow)
+						await commitDateEditor(this,editor, shouldCommitEmptyRow)
 					} else if (!isDropdownEditor) {
 						// Only commit for non-dropdown editors (text, number, etc.)
 						await commitCurrentEditor(this, editor, shouldCommitEmptyRow)
@@ -1706,11 +1707,11 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				e.stopPropagation()
 				// First Escape: close dropdown/datepicker but stay in edit mode
 				// Second Escape: cancel edit entirely
-				if (this.dropdownOpen) {
+				if (this.dropdown.isOpen) {
 					removeDropdown(this)
 					// For autocomplete/combobox, clear search text and refocus input
 					if (editorType === 'autocomplete' || editorType === 'combobox') {
-						this.filterText = ''
+						this.dropdown.setFilterText('')
 						if (editor instanceof HTMLInputElement) {
 							editor.value = ''
 							editor.focus()
@@ -1734,7 +1735,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			case 'F2':
 				e.preventDefault()
 				e.stopPropagation()
-				if (isDropdownEditor && !this.dropdownOpen) {
+				if (isDropdownEditor && !this.dropdown.isOpen) {
 					openDropdownForCurrentEditor(this)
 				}
 				break
@@ -1743,8 +1744,8 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				if (editorType === 'select') {
 					e.preventDefault()
 					e.stopPropagation()
-					if (this.filterText.length > 0) {
-						this.filterText = this.filterText.slice(0, -1)
+					if (this.dropdown.filterText.length > 0) {
+						this.dropdown.setFilterText(this.dropdown.filterText.slice(0, -1))
 						updateSelectFilter(this, column!.editorOptions || {})
 					}
 				}
@@ -1754,7 +1755,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				if (editorType === 'select' && e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
 					e.preventDefault()
 					e.stopPropagation()
-					this.filterText += e.key
+					this.dropdown.setFilterText(this.dropdown.filterText + e.key)
 					updateSelectFilter(this, column!.editorOptions || {})
 				}
 				break
@@ -1957,7 +1958,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 						const editor = column.editor
 						if (editor === 'select' || editor === 'combobox' || editor === 'autocomplete') {
 							requestAnimationFrame(() => {
-								if (!this.dropdownOpen) {
+								if (!this.dropdown.isOpen) {
 									openDropdownForCurrentEditor(this)
 								}
 							})
@@ -2011,7 +2012,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 						const editor = column.editor
 						if (editor === 'select' || editor === 'combobox' || editor === 'autocomplete') {
 							requestAnimationFrame(() => {
-								if (!this.dropdownOpen) {
+								if (!this.dropdown.isOpen) {
 									openDropdownForCurrentEditor(this)
 								}
 							})
@@ -2150,7 +2151,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				if (editorContainer) {
 					// Already editing - just open datepicker
 					const input = editorContainer.querySelector('.wg__date-input') as HTMLInputElement
-					if (input) this.openDatePicker(input, editorContainer)
+					if (input) openDatePicker(this,input, editorContainer)
 				} else if (displayContainer) {
 					// In read mode - start editing and open datepicker
 					const rowIndex = parseInt(displayContainer.dataset.row || '0', 10)
@@ -2188,7 +2189,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 							)
 							const input = cell?.querySelector('.wg__date-input') as HTMLInputElement
 							const anchor = cell?.querySelector('.wg__editor--date') as HTMLElement
-							if (input && anchor) this.openDatePicker(input, anchor)
+							if (input && anchor) openDatePicker(this,input, anchor)
 						})
 					}
 				}
@@ -2196,7 +2197,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			}
 
 			// Handle click on any cell when dropdown is open
-			if (this.dropdownOpen || this.grid.editingCell) {
+			if (this.dropdown.isOpen || this.grid.editingCell) {
 				const cell = target.closest('.wg__cell') as HTMLElement
 				if (cell && !target.closest('.wg__editor--select, .wg__editor--combobox, .wg__editor--autocomplete, .wg__editor--date')) {
 					const rowIndex = parseInt(cell.dataset.row || '0', 10)
@@ -2280,7 +2281,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 						tryStartEdit(this, rowIndex, colIndex)
 						requestAnimationFrame(() => {
 							this.isTransitioningCells = false
-							if (!this.dropdownOpen) {
+							if (!this.dropdown.isOpen) {
 								openDropdownForCurrentEditor(this)
 							}
 						})
@@ -2488,7 +2489,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 		// Context menu (right-click)
 		table.addEventListener('contextmenu', (e: Event) => {
-			this.handleContextMenu(e as MouseEvent)
+			handleContextMenu(this, e as MouseEvent)
 		})
 
 		// Change events (checkbox)
@@ -2530,16 +2531,16 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				// Date input blur - commit if datepicker is not open
 				else if (target.matches('.wg__date-input')) {
 					if (!this.datepicker) {
-						this.commitDateEditor(target as HTMLInputElement)
+						commitDateEditor(this,target as HTMLInputElement)
 					}
 				}
 				// Select trigger
 				else if (target.matches('.wg__select-trigger')) {
-					this.handleSelectBlur(relatedTarget)
+					handleSelectBlur(this, relatedTarget)
 				}
 				// Combobox/autocomplete
 				else if (target.matches('.wg__combobox-input, .wg__autocomplete-input')) {
-					this.handleComboboxBlur(target as HTMLInputElement)
+					handleComboboxBlur(this, target as HTMLInputElement)
 				}
 			})
 			this.focusEventsSubscribed = true
@@ -2547,8 +2548,8 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 		// Scroll events - close dropdown + virtual scroll + infinite scroll + connector update
 		const container = this.shadow.querySelector('.wg') as HTMLElement
-		// When tableBorderOnly is enabled, scroll container is .wg__table-container
-		const scrollContainer = this.grid.tableBorderOnly
+		// When isTableBorderOnly is enabled, scroll container is .wg__table-container
+		const scrollContainer = this.grid.isTableBorderOnly
 			? (this.shadow.querySelector('.wg__table-container') as HTMLElement) || container
 			: container
 		if (container) {
@@ -2638,18 +2639,18 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				container.classList.toggle('wg--scrolled-horizontal', isScrolledHorizontally)
 
 				// Close dropdown on scroll
-				if (this.dropdownOpen && !this.isTransitioningCells && !this.isOpeningDropdown) {
-					this.handleScrollCloseDropdown()
+				if (this.dropdown.isOpen && !this.isTransitioningCells && !this.dropdown.isOpening) {
+					handleScrollCloseDropdown(this)
 				}
 
 				// Virtual scroll: recalculate visible range
 				if (this.grid.shouldUseVirtualScroll()) {
-					this.handleVirtualScroll(scrollContainer)
+					handleVirtualScroll(this, scrollContainer)
 				}
 
 				// Infinite scroll: detect when near bottom
-				if (this.grid.isInfiniteScrollEnabled && this.grid.hasMoreItems && !this.isLoadingMoreItems) {
-					this.handleInfiniteScroll(scrollContainer)
+				if (this.grid.isInfiniteScrollEnabled && this.grid.hasMoreItems && !this.virtualScroll.isLoadingMore) {
+					handleInfiniteScroll(this, scrollContainer)
 				}
 
 				// Update connector position when scrolling (clips at container boundary)
@@ -2672,8 +2673,8 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 			// Window scroll handler - close overlays
 			this.scrollEvents.subscribe('window', () => {
-				if (this.dropdownOpen && !this.isTransitioningCells) {
-					this.handleScrollCloseDropdown()
+				if (this.dropdown.isOpen && !this.isTransitioningCells) {
+					handleScrollCloseDropdown(this)
 				}
 				if (getActiveToolbarRowIndex() !== null) {
 					this.closeToolbarAndReset()
@@ -2718,7 +2719,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 					}
 
 					// Close dropdown and cancel edit if editing
-					if (this.dropdownOpen || this.grid.editingCell) {
+					if (this.dropdown.isOpen || this.grid.editingCell) {
 						const oldEditingCell = this.grid.editingCell
 						const oldColIndex = oldEditingCell
 							? this.grid.columns.findIndex(c => String(c.field) === oldEditingCell.field)
@@ -2867,10 +2868,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				// For floating toolbar (hover trigger)
 				if (this.grid.toolbarTrigger === 'hover' && this.grid.toolbarPosition !== 'inline') {
 					// Cancel any pending hide timeout when entering a row
-					if (this.toolbarHideTimeout) {
-						clearTimeout(this.toolbarHideTimeout)
-						this.toolbarHideTimeout = null
-					}
+					this.toolbar.clearHideTimeout()
 					if (!isToolbarOpenForRow(rowIndex)) {
 						this.showToolbarForRow(row, rowIndex, mouseEvent.clientX)
 					}
@@ -2898,13 +2896,11 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				// For floating toolbar (hover trigger)
 				if (this.grid.toolbarTrigger === 'hover' && this.grid.toolbarPosition !== 'inline') {
 					// Don't close during move actions (connector tracking)
-					if (this.toolbarMoveInProgress) return
+					if (this.toolbar.isMoveInProgress) return
 
 					// Start hide timeout (shared with toolbar mouseleave)
-					if (this.toolbarHideTimeout) {
-						clearTimeout(this.toolbarHideTimeout)
-					}
-					this.toolbarHideTimeout = setTimeout(() => {
+					this.toolbar.clearHideTimeout()
+					this.toolbar.setHideTimeout(setTimeout(() => {
 						const toolbarContainer = this.shadow.querySelector('.wg__toolbar-container')
 						const isHoveringToolbar = toolbarContainer?.matches(':hover')
 						const isHoveringTable = table.matches(':hover')
@@ -2914,7 +2910,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 							this.closeToolbarAndReset()
 							// No render() needed - closeToolbar() already removes toolbar from DOM
 						}
-					}, 150)
+					}, 150))
 				}
 			}
 		}, true)
@@ -2935,7 +2931,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 			// Handle mouse-following toolbar (skip if cellToolbar is active - it handles its own positioning,
 			// and skip if toolbarColumn is set - column pinning takes priority over cursor following)
-			if (this.grid.toolbarFollowsCursor && !this.grid.cellToolbar && this.grid.toolbarColumn === undefined) {
+			if (this.grid.shouldToolbarFollowCursor && !this.grid.cellToolbar && this.grid.toolbarColumn === undefined) {
 				const cell = target.closest('.wg__cell:not(.wg__row-number):not(.wg__inline-actions-cell)') as HTMLElement
 				if (cell) {
 					const cellRect = cell.getBoundingClientRect()
@@ -2955,12 +2951,13 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 					const colIndex = this.grid.visualColumns.findIndex(vc => String(vc.column.field) === field)
 
 					// Check if cell changed (compare by field since that's what we have)
-					const cellChanged = !this.hoveredCell ||
-						this.hoveredCell.rowIndex !== rowIndex ||
-						this.hoveredCell.field !== field
+					const currentHovered = this.toolbar.hoveredCell
+					const cellChanged = !currentHovered ||
+						currentHovered.rowIndex !== rowIndex ||
+						currentHovered.field !== field
 
 					if (cellChanged) {
-						this.hoveredCell = { rowIndex, colIndex, field }
+						this.toolbar.setHoveredCell({ rowIndex, colIndex, field })
 
 						// Get cell-specific toolbar items
 						const dataRow = this.grid.displayItems[rowIndex]
@@ -2971,8 +2968,8 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 							const newItemsJson = JSON.stringify(itemsToUse)
 
 							// Check if items changed
-							if (newItemsJson !== this.currentCellToolbarItems) {
-								this.currentCellToolbarItems = newItemsJson
+							if (newItemsJson !== this.toolbar.currentCellItemsJson) {
+								this.toolbar.setCurrentCellItemsJson(newItemsJson)
 								// Re-render toolbar with new items
 								this.updateToolbarWithCellItems(rowIndex, itemsToUse)
 							}
@@ -3086,102 +3083,14 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		})
 
 		// Update range and render ONCE (before scroll)
-		if (startIndex !== this.virtualScrollStart || endIndex !== this.virtualScrollEnd) {
-			this.virtualScrollStart = startIndex
-			this.virtualScrollEnd = endIndex
-			this.renderVirtualRows(container)
+		if (this.virtualScroll.setRange(startIndex, endIndex)) {
+			renderVirtualRows(this, container)
 		}
 
 		// Now scroll - flag prevents handleVirtualScroll from re-rendering
-		this.isProgrammaticScroll = true
+		this.virtualScroll.beginProgrammaticScroll()
 		container.scrollTop = scrollTop
-		queueMicrotask(() => { this.isProgrammaticScroll = false })
-	}
-
-	/**
-	 * Handle virtual scroll - recalculate visible range and re-render if changed
-	 */
-	private handleVirtualScroll(container: HTMLElement): void {
-		// Skip during programmatic scroll (keyboard nav already handles row visibility)
-		if (this.isProgrammaticScroll) return
-
-		const { startIndex, endIndex } = calculateVisibleRange({
-			scrollTop: container.scrollTop,
-			viewportHeight: container.clientHeight,
-			rowHeight: this.grid.virtualScrollRowHeight,
-			buffer: this.grid.virtualScrollBuffer,
-			totalItems: this.grid.displayItems.length,
-			editingRowIndex: this.grid.editingCell?.rowIndex
-		})
-
-		// Only re-render if range changed
-		if (startIndex !== this.virtualScrollStart || endIndex !== this.virtualScrollEnd) {
-			this.virtualScrollStart = startIndex
-			this.virtualScrollEnd = endIndex
-			this.renderVirtualRows(container)
-		}
-	}
-
-	/**
-	 * Render only the tbody with virtual rows (fast update, no full re-render)
-	 * After re-render, re-focus the focusedCell to maintain keyboard navigation
-	 */
-	private renderVirtualRows(container: HTMLElement): void {
-		const tbody = container.querySelector('tbody')
-		if (!tbody) return
-
-		const items = this.grid.displayItems
-		const params: VirtualScrollParams = {
-			startIndex: this.virtualScrollStart,
-			endIndex: this.virtualScrollEnd,
-			rowHeight: this.grid.virtualScrollRowHeight,
-			totalItems: items.length
-		}
-
-		// Save focusedCell BEFORE innerHTML - the blur from destroyed cell will clear it
-		const focusedCell = this.grid.focusedCell
-
-		tbody.innerHTML = renderDataRowsVirtual(this, params)
-
-		// Re-focus the focusedCell after re-render (if it's in the rendered range)
-		// Use the saved value since blur event may have cleared it
-		if (focusedCell) {
-			// Restore focusedCell state (blur may have cleared it)
-			this.grid.setFocusedCell(focusedCell.rowIndex, focusedCell.colIndex)
-
-			const cell = tbody.querySelector(
-				`td[data-row="${focusedCell.rowIndex}"][data-col="${focusedCell.colIndex}"]`
-			) as HTMLElement | null
-			if (cell) {
-				cell.focus({ preventScroll: true })
-				updateFocusVisual(this, null, focusedCell)
-			}
-		}
-	}
-
-	/**
-	 * Handle infinite scroll - trigger load more when near bottom
-	 */
-	private handleInfiniteScroll(container: HTMLElement): void {
-		const shouldLoad = shouldTriggerInfiniteScroll(
-			container.scrollTop,
-			container.scrollHeight,
-			container.clientHeight,
-			this.grid.infiniteScrollThreshold
-		)
-
-		if (shouldLoad) {
-			this.isLoadingMoreItems = true
-
-			// Fire data request with loadMore trigger
-			this.grid.fireDataRequest('loadMore')
-
-			// The consumer is responsible for:
-			// 1. Fetching more data
-			// 2. Appending to items array
-			// 3. Setting hasMoreItems = false when done
-			// 4. After items update, isLoadingMoreItems will reset on next scroll
-		}
+		queueMicrotask(() => { this.virtualScroll.endProgrammaticScroll() })
 	}
 
 	// ==========================================================================
@@ -3239,9 +3148,9 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		const __renderStartT = performance.now()
 		uiLogger.debug('render:', this.grid.displayItems.length, 'rows,', this.grid.visualColumns.length, 'columns')
 		// Preserve scroll position before re-render
-		// When tableBorderOnly is enabled, scroll container is .wg__table-container
+		// When isTableBorderOnly is enabled, scroll container is .wg__table-container
 		const oldContainer = this.shadow.querySelector('.wg') as HTMLElement
-		const oldScrollContainer = this.grid.tableBorderOnly
+		const oldScrollContainer = this.grid.isTableBorderOnly
 			? (this.shadow.querySelector('.wg__table-container') as HTMLElement) || oldContainer
 			: oldContainer
 		const scrollTop = oldScrollContainer?.scrollTop || 0
@@ -3327,8 +3236,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			const endIndex = Math.min(items.length, startIndex + visibleCount)
 
 			// Store for later comparison
-			this.virtualScrollStart = startIndex
-			this.virtualScrollEnd = endIndex
+			this.virtualScroll.setRange(startIndex, endIndex)
 
 			const params: VirtualScrollParams = {
 				startIndex,
@@ -3357,7 +3265,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		const existingTopArea = oldContainer?.querySelector(':scope > .wg__top-area') as HTMLElement | null
 		const existingBottomArea = oldContainer?.querySelector(':scope > .wg__bottom-area') as HTMLElement | null
 		const currentlyHasTableContainer = !!oldContainer?.querySelector(':scope > .wg__table-container')
-		const wantsTableContainer = !!this.grid.tableBorderOnly
+		const wantsTableContainer = !!this.grid.isTableBorderOnly
 		const canSurgicalUpdate = !!oldContainer
 			&& !!existingTable
 			&& !!existingThead
@@ -3387,14 +3295,14 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 			// Virtual scroll may have changed visible window — clamp scrollTop if it's now out of range
 			if (useVirtualScroll) {
-				const sc = this.grid.tableBorderOnly
+				const sc = this.grid.isTableBorderOnly
 					? (container.querySelector('.wg__table-container') as HTMLElement) || container
 					: container
 				const maxScrollTop = Math.max(0, this.grid.displayItems.length * this.grid.virtualScrollRowHeight - sc.clientHeight)
 				if (sc.scrollTop > maxScrollTop) sc.scrollTop = maxScrollTop
 			}
 		} else {
-			// Full rebuild path: first render, or structure changed (tableBorderOnly toggled).
+			// Full rebuild path: first render, or structure changed (isTableBorderOnly toggled).
 			if (oldContainer) oldContainer.remove()
 
 			container = document.createElement('div')
@@ -3411,7 +3319,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 					<tbody>${dataRowsHtml}</tbody>
 				</table>
 			`
-			const tableWithContainer = this.grid.tableBorderOnly
+			const tableWithContainer = this.grid.isTableBorderOnly
 				? `<div class="wg__table-container">${tableCore}</div>`
 				: tableCore
 
@@ -3424,7 +3332,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			this.shadow.appendChild(container)
 
 			// Restore scroll position (only needed when container was replaced)
-			const scrollContainer = this.grid.tableBorderOnly
+			const scrollContainer = this.grid.isTableBorderOnly
 				? (container.querySelector('.wg__table-container') as HTMLElement) || container
 				: container
 
@@ -3695,154 +3603,6 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	}
 
 	/**
-	 * Open the date picker for a date input
-	 */
-	private openDatePicker(input: HTMLInputElement, anchor: HTMLElement): void {
-		// Close any existing datepicker silently (don't trigger onClose - we're opening a new one)
-		if (this.datepicker) {
-			this.datepicker.close(true)
-			this.datepicker = null
-		}
-
-		const dateFormat = input.dataset.dateFormat || 'YYYY-MM-DD'
-		const minDateStr = input.dataset.minDate
-		const maxDateStr = input.dataset.maxDate
-
-		// Parse current value
-		const currentValue = input.dataset.dateValue || ''
-
-		this.datepicker = new DatePicker({
-			dateFormat,
-			minDate: minDateStr || undefined,
-			maxDate: maxDateStr || undefined,
-			onSelect: (date, direction) => {
-				this.handleDatePickerSelect(input, date, direction)
-			},
-			onClose: () => {
-				// Capture editing cell info BEFORE canceling (cancelEdit clears it)
-				const editingCell = this.grid.editingCell
-				const colIndex = editingCell
-					? this.grid.columns.findIndex(c => String(c.field) === editingCell.field)
-					: -1
-				const rowIndex = editingCell?.rowIndex ?? -1
-
-				this.datepicker = null
-				// Cancel edit mode (Escape or click outside without selecting)
-				clearEditingVisual(this)
-				this.grid.cancelEdit()
-
-				// Re-render the cell to restore display mode content
-				if (rowIndex >= 0 && colIndex >= 0) {
-					restoreEditingCellToDisplayMode(this, rowIndex, colIndex)
-
-					// Focus the cell after cancelling edit (so user doesn't lose focus)
-					const cell = this.shadow.querySelector(
-						`.wg__cell[data-row="${rowIndex}"][data-col="${colIndex}"]`
-					) as HTMLElement
-					if (cell) {
-						cell.focus()
-					}
-				}
-			}
-		})
-
-		this.datepicker.open(anchor, currentValue || null)
-	}
-
-	/**
-	 * Handle date selection from the date picker
-	 */
-	private handleDatePickerSelect(input: HTMLInputElement, date: Date, direction?: 'down' | 'next'): void {
-		const dateFormat = input.dataset.dateFormat || 'YYYY-MM-DD'
-		const formatInfo = parseFormat(dateFormat)
-
-		// Update input value with formatted date
-		input.value = formatDate(date, formatInfo)
-		input.dataset.dateValue = toISODateString(date)
-
-		// Clear datepicker reference (picker closes silently via close(true), skipping onClose)
-		this.datepicker = null
-
-		// Commit the date (Enter commits empty row, Tab doesn't)
-		this.isCommittingFromKeyboard = true
-		const commitEmptyRow = direction === 'down' || direction === undefined
-		this.commitDateEditor(input, commitEmptyRow)
-
-		// Move focus after commit (direction from keyboard: Enter=down, Tab=next)
-		const rowIndex = parseInt(input.dataset.row || '0', 10)
-		const field = input.dataset.field || ''
-		this.moveFocusAfterCommit(rowIndex, field, direction || 'down')
-	}
-
-	/**
-	 * Commit the date editor value
-	 * @param commitEmptyRow - If true and editing empty row, add it to items (Enter key behavior)
-	 */
-	private async commitDateEditor(input: HTMLInputElement, commitEmptyRow: boolean = false): Promise<void> {
-		if (!this.grid.editingCell) return
-
-		const rowIndex = parseInt(input.dataset.row || '0', 10)
-		const field = input.dataset.field || ''
-		const outputFormat = input.dataset.outputFormat || 'iso'
-		const dateFormat = input.dataset.dateFormat || 'YYYY-MM-DD'
-		const formatInfo = parseFormat(dateFormat)
-
-		// Parse the input value using the format
-		const dateValue = input.value ? this.parseDateInput(input.value, formatInfo) : null
-
-		// Convert to output format
-		let value: unknown = null
-		if (dateValue) {
-			switch (outputFormat) {
-				case 'date':
-					value = dateValue
-					break
-				case 'timestamp':
-					value = dateValue.getTime()
-					break
-				case 'iso':
-				default:
-					value = toISODateString(dateValue)
-					break
-			}
-		}
-
-		await this.grid.commitEdit(rowIndex, field, value, commitEmptyRow)
-	}
-
-	/**
-	 * Parse date input string using format info
-	 */
-	private parseDateInput(value: string, formatInfo: { separator: string; parts: { year?: { index: number }; month?: { index: number }; day?: { index: number } } }): Date | null {
-		if (!value) return null
-
-		const segments = value.split(formatInfo.separator)
-		let year: number | null = null
-		let month: number | null = null
-		let day: number | null = null
-
-		segments.forEach((segment, index) => {
-			if (!segment) return
-			const numValue = parseInt(segment, 10)
-
-			if (formatInfo.parts.year?.index === index) {
-				year = numValue < 100 ? numValue + 2000 : numValue
-			} else if (formatInfo.parts.month?.index === index) {
-				month = numValue
-			} else if (formatInfo.parts.day?.index === index) {
-				day = numValue
-			}
-		})
-
-		if (year === null || month === null || day === null) return null
-
-		const date = new Date(year, month - 1, day)
-		if (date.getMonth() !== month - 1 || date.getDate() !== day) return null
-
-		return date
-	}
-
-	/**
 	 * Show "Go to Row" dialog (Ctrl+G)
 	 */
 	private showGoToRowDialog(colIndex: number): void {
@@ -3983,329 +3743,6 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		;(column.cellEditCallback as (ctx: CustomEditorContext<any>) => void)(context)
 	}
 
-	/**
-	 * Handle context menu (right-click) on cells or headers
-	 */
-	private handleContextMenu(e: MouseEvent): void {
-		const target = e.target as HTMLElement
-
-		// Check for header right-click first
-		const header = target.closest('.wg__header') as HTMLElement
-		if (header) {
-			this.handleHeaderContextMenu(e, header)
-			return
-		}
-
-		// Check for header filler cell right-click
-		const fillerHeader = target.closest('th.wg__filler') as HTMLElement
-		if (fillerHeader) {
-			this.handleFillerContextMenu(e)
-			return
-		}
-
-		// Handle cell context menu
-		const contextMenuConfig = this.grid.contextMenu
-		if (!contextMenuConfig || contextMenuConfig.length === 0) {
-			return // No context menu defined, use browser default
-		}
-		// Expand string shorthand and `type`-based items into fully-defined items
-		const contextMenuItems = normalizeContextMenu(contextMenuConfig, this.grid)
-
-		const cell = target.closest('.wg__cell') as HTMLElement
-		if (!cell) {
-			return // Right-click not on a cell
-		}
-
-		e.preventDefault()
-
-		// Close any existing context menu
-		if (this.contextMenuElement) {
-			closeContextMenu(this.contextMenuElement)
-			this.contextMenuElement = null
-		}
-
-		const rowIndex = parseInt(cell.dataset.row || '0', 10)
-		const colIndex = parseInt(cell.dataset.col || '0', 10)
-		const column = this.grid.columns[colIndex]
-		if (!column) return
-
-		const item = this.grid.displayItems[rowIndex]
-		if (!item) return
-
-		const field = String(column.field)
-		const cellValue = this.grid.getCellRawValue(item, rowIndex, field)
-
-		// Create context for callbacks
-		const menuContext = {
-			row: item,
-			rowIndex,
-			colIndex,
-			column,
-			cellValue
-		}
-
-		// Fire oncontextmenuopen event
-		if (this.grid.oncontextmenuopen) {
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			;(this.grid.oncontextmenuopen as (ctx: any) => void)(menuContext)
-		}
-
-		// Sync any shadowed own properties to grid (workaround for property shadowing)
-		const ownXOffset = Object.getOwnPropertyDescriptor(this, 'contextMenuXOffset')
-		const ownYOffset = Object.getOwnPropertyDescriptor(this, 'contextMenuYOffset')
-		if (ownXOffset && 'value' in ownXOffset) {
-			this.grid.contextMenuXOffset = ownXOffset.value
-			delete (this as any).contextMenuXOffset // Remove shadow
-		}
-		if (ownYOffset && 'value' in ownYOffset) {
-			this.grid.contextMenuYOffset = ownYOffset.value
-			delete (this as any).contextMenuYOffset // Remove shadow
-		}
-
-		// Open the context menu
-		this.contextMenuElement = openContextMenu(
-			this,
-			e.clientX,
-			e.clientY,
-			this.grid.contextMenuXOffset,
-			this.grid.contextMenuYOffset,
-			contextMenuItems,
-			menuContext,
-			(itemId: string) => {
-				// Find the clicked item and call its onclick
-				const clickedItem = contextMenuItems.find(item => item.id === itemId)
-				if (clickedItem?.onclick) {
-					// eslint-disable-next-line @typescript-eslint/no-explicit-any
-					;(clickedItem.onclick as (ctx: any) => void | Promise<void>)(menuContext)
-				}
-				// Close menu after click
-				if (this.contextMenuElement) {
-					closeContextMenu(this.contextMenuElement)
-					this.contextMenuElement = null
-				}
-			},
-			() => {
-				// onClose callback
-				this.contextMenuElement = null
-			}
-		)
-	}
-
-	/**
-	 * Handle context menu (right-click) on column headers
-	 */
-	private handleHeaderContextMenu(e: MouseEvent, header: HTMLElement): void {
-		const headerMenuItems = this.grid.headerContextMenu
-		if (!headerMenuItems || headerMenuItems.length === 0) {
-			return // No header context menu defined, use browser default
-		}
-
-		e.preventDefault()
-
-		// Close any existing context menu (cell or header)
-		if (this.contextMenuElement) {
-			closeContextMenu(this.contextMenuElement)
-			this.contextMenuElement = null
-		}
-		if (this.headerContextMenuElement) {
-			closeContextMenu(this.headerContextMenuElement)
-			this.headerContextMenuElement = null
-		}
-
-		// Get column info from header
-		const field = header.dataset.field
-		if (!field) return
-
-		const columnIndex = this.grid.columns.findIndex(c => String(c.field) === field)
-		if (columnIndex === -1) return
-
-		const column = this.grid.columns[columnIndex]
-		const frozenCount = this.grid.freezeColumns
-		const isFrozen = columnIndex < frozenCount
-
-		// Get sort direction for this column
-		const sortState = this.grid.sort.find(s => s.column === field)
-		const sortDirection = sortState?.direction ?? null
-
-		// Create context for callbacks
-		const menuContext: HeaderMenuContext<T> = {
-			column,
-			field,
-			columnIndex,
-			sortDirection,
-			isFrozen,
-			isTreeMode: this.grid.isTreeMode,
-			allColumns: this.grid.columns,  // Include all columns for visibility submenu
-			labels: this.grid.labels
-		}
-
-		// Fire onheadercontextmenuopen event
-		if (this.grid.onheadercontextmenuopen) {
-			this.grid.onheadercontextmenuopen(menuContext)
-		}
-
-		// Normalize menu items (convert string shortcuts to full items)
-		const normalizedItems = normalizeHeaderMenuItems(headerMenuItems, menuContext)
-		if (normalizedItems.length === 0) return
-
-		// Open the header context menu
-		this.headerContextMenuElement = openHeaderContextMenu(
-			this,
-			e.clientX,
-			e.clientY,
-			normalizedItems,
-			menuContext,
-			(itemId: string, keepOpen?: boolean, ctrlKey?: boolean) => {
-				// Check if it's a predefined action
-				const predefinedActions = ['sortAsc', 'sortDesc', 'clearSort', 'hideColumn', 'freezeColumn', 'unfreezeColumn']
-				if (predefinedActions.includes(itemId)) {
-					executeHeaderMenuAction(this, itemId, menuContext, ctrlKey)
-				}
-
-				// Handle "Show all" columns action
-				if (itemId === 'show-all-columns') {
-					this.grid.columns.forEach(col => {
-						col.isHidden = false
-					})
-					this.grid.columns = [...this.grid.columns]
-					return
-				}
-
-				// Handle column visibility toggles (submenu items)
-				if (itemId.startsWith('toggle-col-')) {
-					const field = itemId.replace('toggle-col-', '')
-					const col = this.grid.columns.find(c => String(c.field) === field)
-					if (col) {
-						col.isHidden = !col.isHidden
-						this.grid.columns = [...this.grid.columns]
-					}
-					return  // Don't search for onclick - handled here
-				}
-
-				// Also call custom onclick if defined (for top-level items)
-				const clickedItem = normalizedItems.find(item => item.id === itemId)
-				if (clickedItem?.onclick) {
-					// eslint-disable-next-line @typescript-eslint/no-explicit-any
-					;(clickedItem.onclick as (ctx: any) => void | Promise<void>)(menuContext)
-				}
-
-				// Close menu after click unless keepOpen is true
-				if (!keepOpen && this.headerContextMenuElement) {
-					closeContextMenu(this.headerContextMenuElement)
-					this.headerContextMenuElement = null
-				}
-			},
-			() => {
-				// onClose callback
-				this.headerContextMenuElement = null
-			}
-		)
-	}
-
-	/**
-	 * Handle context menu (right-click) on header filler cell
-	 * Shows limited options (only column-agnostic items like columnVisibility)
-	 */
-	private handleFillerContextMenu(e: MouseEvent): void {
-		const headerMenuItems = this.grid.headerContextMenu
-		if (!headerMenuItems || headerMenuItems.length === 0) {
-			return // No header context menu defined, use browser default
-		}
-
-		e.preventDefault()
-
-		// Close any existing context menu
-		if (this.contextMenuElement) {
-			closeContextMenu(this.contextMenuElement)
-			this.contextMenuElement = null
-		}
-		if (this.headerContextMenuElement) {
-			closeContextMenu(this.headerContextMenuElement)
-			this.headerContextMenuElement = null
-		}
-
-		// Filter to only column-agnostic items (columnVisibility and custom items without column-specific behavior)
-		const fillerMenuItems = headerMenuItems.filter(item => {
-			// Keep columnVisibility
-			if (item === 'columnVisibility') return true
-			// Keep custom items with static labels (not functions that might access column)
-			if (typeof item === 'object' && item.id) {
-				// Filter out items with dynamic label/icon that likely depend on column
-				if (typeof item.label === 'function') return false
-				if (typeof item.icon === 'function') return false
-				return true
-			}
-			// Filter out column-specific predefined actions
-			if (typeof item === 'string') return false
-			// Filter out divider-only markers
-			if (typeof item === 'object' && item.dividerBefore && !item.id && !item.label) return false
-			return false
-		})
-
-		if (fillerMenuItems.length === 0) return
-
-		// Create a minimal context for filler (no specific column)
-		const menuContext: HeaderMenuContext<T> = {
-			column: null as unknown as Column<T>,  // No column for filler
-			field: '',
-			columnIndex: -1,
-			sortDirection: null,
-			isFrozen: false,
-			isTreeMode: this.grid.isTreeMode,
-			allColumns: this.grid.columns,
-			labels: this.grid.labels
-		}
-
-		// Normalize menu items
-		const normalizedItems = normalizeHeaderMenuItems(fillerMenuItems, menuContext)
-		if (normalizedItems.length === 0) return
-
-		// Open the context menu
-		this.headerContextMenuElement = openHeaderContextMenu(
-			this,
-			e.clientX,
-			e.clientY,
-			normalizedItems,
-			menuContext,
-			(itemId: string, keepOpen?: boolean, _ctrlKey?: boolean) => {
-				// Handle "Show all" columns action
-				if (itemId === 'show-all-columns') {
-					this.grid.columns.forEach(col => {
-						col.isHidden = false
-					})
-					this.grid.columns = [...this.grid.columns]
-					return
-				}
-
-				// Handle column visibility toggles
-				if (itemId.startsWith('toggle-col-')) {
-					const field = itemId.replace('toggle-col-', '')
-					const col = this.grid.columns.find(c => String(c.field) === field)
-					if (col) {
-						col.isHidden = !col.isHidden
-						this.grid.columns = [...this.grid.columns]
-					}
-					return
-				}
-
-				// Call custom onclick if defined
-				const clickedItem = normalizedItems.find(item => item.id === itemId)
-				if (clickedItem?.onclick) {
-					// eslint-disable-next-line @typescript-eslint/no-explicit-any
-					;(clickedItem.onclick as (ctx: any) => void | Promise<void>)(menuContext)
-				}
-
-				// Close menu after click unless keepOpen is true
-				if (!keepOpen && this.headerContextMenuElement) {
-					closeContextMenu(this.headerContextMenuElement)
-					this.headerContextMenuElement = null
-				}
-			},
-			() => {
-				this.headerContextMenuElement = null
-			}
-		)
-	}
 
 	/**
 	 * Setup document-level keyboard shortcut listener for toolbar row
@@ -4313,14 +3750,18 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	 */
 	private setupToolbarShortcuts(): void {
 		// Remove any existing listener first
-		if (this.toolbarShortcutHandler) {
-			document.removeEventListener('keydown', this.toolbarShortcutHandler)
+		const existing = this.toolbar.shortcutHandler
+		if (existing) {
+			document.removeEventListener('keydown', existing)
 		}
 
 		const shortcuts = this.grid.rowShortcuts
-		if (!shortcuts?.length) return
+		if (!shortcuts?.length) {
+			this.toolbar.setShortcutHandler(null)
+			return
+		}
 
-		this.toolbarShortcutHandler = (e: KeyboardEvent) => {
+		const handler: (e: KeyboardEvent) => void = (e: KeyboardEvent) => {
 			// Skip if focus is in an input/editor
 			const target = e.target as HTMLElement
 			if (target.matches('input, textarea, select, [contenteditable="true"]')) {
@@ -4360,7 +3801,8 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			}
 		}
 
-		document.addEventListener('keydown', this.toolbarShortcutHandler)
+		this.toolbar.setShortcutHandler(handler)
+		document.addEventListener('keydown', handler)
 	}
 
 	/**
@@ -4480,10 +3922,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		}
 
 		// Clear any pending hide timeout when opening new toolbar
-		if (this.toolbarHideTimeout) {
-			clearTimeout(this.toolbarHideTimeout)
-			this.toolbarHideTimeout = null
-		}
+		this.toolbar.clearHideTimeout()
 
 		// Hide any toolbar tooltip left over from the previous toolbar
 		// (mouseleave won't fire when the toolbar DOM is removed)
@@ -4491,7 +3930,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 		// Reset cell toolbar state so next cell change will always update the HTML
 		// (openToolbar rebuilds with base rowToolbar items, not cell-specific items)
-		this.currentCellToolbarItems = null
+		this.toolbar.setCurrentCellItemsJson(null)
 
 		openToolbar(
 			this,
@@ -4519,20 +3958,17 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			const toolbarContainer = this.shadow.querySelector('.wg__toolbar-container')
 			if (toolbarContainer) {
 				toolbarContainer.addEventListener('mouseenter', () => {
-					this.toolbarHovered = true
-					if (this.toolbarHideTimeout) {
-						clearTimeout(this.toolbarHideTimeout)
-						this.toolbarHideTimeout = null
-					}
+					this.toolbar.setIsHovered(true)
+					this.toolbar.clearHideTimeout()
 				})
 
 				toolbarContainer.addEventListener('mouseleave', () => {
-					this.toolbarHovered = false
+					this.toolbar.setIsHovered(false)
 					// Don't close during move actions
-					if (this.toolbarMoveInProgress) return
+					if (this.toolbar.isMoveInProgress) return
 
 					// Start hide timeout when leaving the toolbar
-					this.toolbarHideTimeout = setTimeout(() => {
+					this.toolbar.setHideTimeout(setTimeout(() => {
 						// Check if mouse moved back to a row or toolbar
 						const table = this.shadow.querySelector('.wg__table')
 						const isHoveringTable = table?.matches(':hover')
@@ -4542,7 +3978,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 							this.closeToolbarAndReset()
 							// No render() needed - closeToolbar() surgically removes toolbar
 						}
-					}, 150)
+					}, 150))
 				})
 			}
 		}
@@ -4563,19 +3999,13 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	 * Close toolbar and reset move flag
 	 */
 	private closeToolbarAndReset(): void {
-		this.toolbarMoveInProgress = false
-		this.toolbarHovered = false
-		this.hoveredCell = null
-		this.currentCellToolbarItems = null
-		if (this.toolbarHideTimeout) {
-			clearTimeout(this.toolbarHideTimeout)
-			this.toolbarHideTimeout = null
+		// Remove document shortcut listener before clearing the handler reference
+		const shortcutHandler = this.toolbar.shortcutHandler
+		if (shortcutHandler) {
+			document.removeEventListener('keydown', shortcutHandler)
+			this.toolbar.setShortcutHandler(null)
 		}
-		// Remove document shortcut listener
-		if (this.toolbarShortcutHandler) {
-			document.removeEventListener('keydown', this.toolbarShortcutHandler)
-			this.toolbarShortcutHandler = null
-		}
+		this.toolbar.reset()
 		// Hide any toolbar tooltip (mouseleave won't fire when DOM is removed)
 		hideTooltip(this, 0)
 		closeToolbar()
@@ -4635,84 +4065,6 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	}
 
 	/**
-	 * Close dropdown on scroll - shared logic for container and window scroll
-	 */
-	private handleScrollCloseDropdown(): void {
-		// Save editing cell info BEFORE cancelEdit clears it
-		const oldEditingCell = this.grid.editingCell
-		const oldColIndex = oldEditingCell
-			? this.grid.columns.findIndex(c => String(c.field) === oldEditingCell.field)
-			: -1
-
-		removeDropdown(this)
-		clearEditingVisual(this)
-		this.grid.cancelEdit()
-
-		// Re-render old cell to remove editor HTML (toggle, etc.)
-		if (oldEditingCell && oldColIndex >= 0) {
-			renderCell(this, oldEditingCell.rowIndex, oldColIndex)
-		}
-	}
-
-	/**
-	 * Handle select trigger blur - cancel edit and restore display mode
-	 */
-	private handleSelectBlur(relatedTarget: HTMLElement | null): void {
-		// Skip if opening dropdown (prevents flicker during open)
-		if (this.isOpeningDropdown) return
-
-		// Skip if focus is moving to a dropdown option (let click handler handle it)
-		if (relatedTarget?.closest('.wg__dropdown')) return
-
-		// Capture cell info BEFORE cancelEdit clears it
-		const editingCell = this.grid.editingCell
-		const colIndex = editingCell
-			? this.grid.columns.findIndex(c => String(c.field) === editingCell.field)
-			: -1
-
-		removeDropdown(this)
-		clearEditingVisual(this)
-		this.grid.cancelEdit()
-
-		// Re-render cell to restore display mode HTML
-		if (editingCell && colIndex >= 0) {
-			renderCell(this, editingCell.rowIndex, colIndex)
-		}
-	}
-
-	/**
-	 * Handle combobox/autocomplete blur - commit matched option or raw text
-	 */
-	private handleComboboxBlur(input: HTMLInputElement): void {
-		removeDropdown(this)
-
-		if (this.grid.editingCell) {
-			// Capture cell info BEFORE commit clears it
-			const editingCell = this.grid.editingCell
-			const colIndex = this.grid.columns.findIndex(c => String(c.field) === editingCell.field)
-
-			const column = this.getCurrentEditingColumn()
-			if (column) {
-				const opts = column.editorOptions || {}
-				const allOptions = opts.options || opts.initialOptions || []
-				const matchedOpt = allOptions.find(opt =>
-					getOptionLabel(opt, opts).toLowerCase() === input.value.toLowerCase()
-				)
-				const value = matchedOpt ? getOptionValue(matchedOpt, opts) : input.value
-
-				// Clear visual and commit
-				clearEditingVisual(this)
-				this.grid.commitEdit(editingCell.rowIndex, editingCell.field, value)
-
-				// Re-render cell to restore display mode
-				if (colIndex >= 0) {
-					renderCell(this, editingCell.rowIndex, colIndex)
-				}
-			}
-		}
-	}
-
-	/**
 	 * Handle toolbar item click
 	 */
 	private handleToolbarItemClick(item: NormalizedToolbarItem<T>, _originalRowIndex: number, row: T, event: MouseEvent, triggerElement: HTMLElement): void {
@@ -4733,7 +4085,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 		// Prevent mouseleave from closing toolbar during move
 		if (isMoveAction) {
-			this.toolbarMoveInProgress = true
+			this.toolbar.setIsMoveInProgress(true)
 		}
 
 		// Call item's onclick if defined - use CURRENT index

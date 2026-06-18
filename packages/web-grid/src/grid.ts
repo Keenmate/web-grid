@@ -33,7 +33,7 @@ import type {
 	ValidationTooltipContext,
 	ToolbarPosition,
 	GridLabels,
-	RowLockInfo,
+	RowLock,
 	RowLockingOptions,
 	RowLockChangeDetail,
 	ColumnWidthState,
@@ -160,7 +160,7 @@ export class WebGrid<T = unknown> {
 	protected _toolbarTrigger: 'hover' | 'click' | 'button' = 'hover'
 	protected _toolbarPosition: ToolbarPosition = 'auto'
 	protected _toolbarColumn: string | number | undefined = undefined
-	protected _toolbarFollowsCursor: boolean = false
+	protected _shouldToolbarFollowCursor: boolean = false
 	protected _cellToolbar: ((row: T, rowIndex: number, field: string, colIndex: number) => RowToolbarConfig<T>[] | undefined) | undefined = undefined
 	protected _cellToolbarOffset: number | string = 0.2
 	protected _toolbarBtnMinWidth: string | undefined = undefined
@@ -180,7 +180,7 @@ export class WebGrid<T = unknown> {
 
 	// Row locking
 	protected _rowLocking: RowLockingOptions<T> | undefined = undefined
-	protected _externalLocks: Map<unknown, RowLockInfo> = new Map()
+	protected _externalLocks: Map<unknown, RowLock> = new Map()
 	protected _onrowlockchange: ((detail: RowLockChangeDetail<T>) => void) | undefined = undefined
 
 	// Column resize & persistence
@@ -230,7 +230,7 @@ export class WebGrid<T = unknown> {
 	// Pagination
 	protected _currentPage: number = 1
 	protected _totalItems: number | null = null  // null = use items.length (client-side)
-	protected _showPagination: boolean | 'auto' = true
+	protected _isPaginationVisible: boolean | 'auto' = true
 	protected _paginationPosition: string = 'bottom-center'
 	protected _paginationLabelsCallback?: PaginationLabelsCallback
 	protected _paginationLayout: string = 'pageSize|previous|pageInfo|next'
@@ -251,7 +251,7 @@ export class WebGrid<T = unknown> {
 	// Scroll behavior
 	protected _isScrollable: boolean = false
 	protected _scrollMaxHeight: string = '100vh'
-	protected _tableBorderOnly: boolean = false
+	protected _isTableBorderOnly: boolean = false
 
 	// Virtual scroll
 	protected _isVirtualScrollEnabled: boolean = false
@@ -653,11 +653,16 @@ export class WebGrid<T = unknown> {
 		this.checkToolbarConflicts()
 	}
 
-	get toolbarFollowsCursor(): boolean { return this._toolbarFollowsCursor }
-	set toolbarFollowsCursor(value: boolean) {
-		this._toolbarFollowsCursor = value
+	get shouldToolbarFollowCursor(): boolean { return this._shouldToolbarFollowCursor }
+	set shouldToolbarFollowCursor(value: boolean) {
+		this._shouldToolbarFollowCursor = value
 		this.checkToolbarConflicts()
 	}
+
+	/** @deprecated use `shouldToolbarFollowCursor` */
+	get toolbarFollowsCursor(): boolean { return this._shouldToolbarFollowCursor }
+	/** @deprecated use `shouldToolbarFollowCursor` */
+	set toolbarFollowsCursor(value: boolean) { this.shouldToolbarFollowCursor = value }
 
 	get cellToolbar(): ((row: T, rowIndex: number, field: string, colIndex: number) => RowToolbarConfig<T>[] | undefined) | undefined {
 		return this._cellToolbar
@@ -756,11 +761,16 @@ export class WebGrid<T = unknown> {
 		this.requestUpdate()
 	}
 
-	get showPagination(): boolean | 'auto' { return this._showPagination }
-	set showPagination(value: boolean | 'auto') {
-		this._showPagination = value
+	get isPaginationVisible(): boolean | 'auto' { return this._isPaginationVisible }
+	set isPaginationVisible(value: boolean | 'auto') {
+		this._isPaginationVisible = value
 		this.requestUpdate()
 	}
+
+	/** @deprecated use `isPaginationVisible` */
+	get showPagination(): boolean | 'auto' { return this._isPaginationVisible }
+	/** @deprecated use `isPaginationVisible` */
+	set showPagination(value: boolean | 'auto') { this.isPaginationVisible = value }
 
 	get paginationPosition(): string { return this._paginationPosition }
 	set paginationPosition(value: string) {
@@ -836,11 +846,16 @@ export class WebGrid<T = unknown> {
 		this.requestUpdate()
 	}
 
-	get tableBorderOnly(): boolean { return this._tableBorderOnly }
-	set tableBorderOnly(value: boolean) {
-		this._tableBorderOnly = value
+	get isTableBorderOnly(): boolean { return this._isTableBorderOnly }
+	set isTableBorderOnly(value: boolean) {
+		this._isTableBorderOnly = value
 		this.requestUpdate()
 	}
+
+	/** @deprecated use `isTableBorderOnly` */
+	get tableBorderOnly(): boolean { return this._isTableBorderOnly }
+	/** @deprecated use `isTableBorderOnly` */
+	set tableBorderOnly(value: boolean) { this.isTableBorderOnly = value }
 
 	// Virtual scroll
 	get isVirtualScrollEnabled(): boolean { return this._isVirtualScrollEnabled }
@@ -2392,11 +2407,11 @@ export class WebGrid<T = unknown> {
 			)
 		}
 
-		// toolbarFollowsCursor only matters for top position
-		if (this._toolbarFollowsCursor && !isTop) {
+		// shouldToolbarFollowCursor only matters for top position
+		if (this._shouldToolbarFollowCursor && !isTop) {
 			console.warn(
-				`%cWebGrid: toolbarFollowsCursor has no effect with toolbarPosition="${pos}".\n` +
-				'toolbarFollowsCursor only applies to toolbarPosition="top".',
+				`%cWebGrid: shouldToolbarFollowCursor has no effect with toolbarPosition="${pos}".\n` +
+				'shouldToolbarFollowCursor only applies to toolbarPosition="top".',
 				style
 			)
 		}
@@ -2411,9 +2426,9 @@ export class WebGrid<T = unknown> {
 		}
 
 		// toolbarColumn takes priority over followsCursor
-		if (this._toolbarFollowsCursor && this._toolbarColumn !== undefined) {
+		if (this._shouldToolbarFollowCursor && this._toolbarColumn !== undefined) {
 			console.warn(
-				'%cWebGrid: toolbarColumn and toolbarFollowsCursor are both set.\n' +
+				'%cWebGrid: toolbarColumn and shouldToolbarFollowCursor are both set.\n' +
 				'toolbarColumn takes priority — cursor following is disabled.',
 				style
 			)
@@ -3238,7 +3253,7 @@ export class WebGrid<T = unknown> {
 	/**
 	 * Get lock info for a row (combines all sources: external, callback, property)
 	 */
-	getRowLockInfo(rowOrId: T | unknown): RowLockInfo | null {
+	getRowLockInfo(rowOrId: T | unknown): RowLock | null {
 		let row: T | undefined
 		let id: unknown
 		let rowIndex: number = -1
@@ -3285,7 +3300,7 @@ export class WebGrid<T = unknown> {
 
 		// 3. Property-based sources
 		if (opts.lockInfoMember) {
-			const info = (row as Record<string, unknown>)[String(opts.lockInfoMember)] as RowLockInfo | undefined
+			const info = (row as Record<string, unknown>)[String(opts.lockInfoMember)] as RowLock | undefined
 			if (info?.isLocked) return info
 		}
 		if (opts.lockedMember) {
@@ -3307,8 +3322,8 @@ export class WebGrid<T = unknown> {
 	/**
 	 * Lock a row by ID (external lock for WebSocket scenarios)
 	 */
-	lockRowById(id: unknown, lockerInfo?: Partial<RowLockInfo>): boolean {
-		const lockInfo: RowLockInfo = {
+	lockRowById(id: unknown, lockerInfo?: Partial<RowLock>): boolean {
+		const lockInfo: RowLock = {
 			isLocked: true,
 			lockedBy: lockerInfo?.lockedBy,
 			lockedAt: lockerInfo?.lockedAt ?? new Date(),
@@ -3361,7 +3376,7 @@ export class WebGrid<T = unknown> {
 	/**
 	 * Get all external locks (for debugging/inspection)
 	 */
-	getExternalLocks(): Map<unknown, RowLockInfo> {
+	getExternalLocks(): Map<unknown, RowLock> {
 		return new Map(this._externalLocks)
 	}
 

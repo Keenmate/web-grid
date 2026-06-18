@@ -38,3 +38,10 @@ export {
 	handleAutocompleteInput,
 	performAutocompleteSearch
 } from './input-handlers.js'
+
+// Services
+export { AutocompleteService } from './autocomplete-service.js'
+export { DropdownService } from './dropdown-service.js'
+
+// Blur handlers
+export { handleSelectBlur, handleComboboxBlur } from './blur-handlers.js'

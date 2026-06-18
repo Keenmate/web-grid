@@ -3,7 +3,10 @@
 // =============================================================================
 
 // Editor type options
-export type EditorType = "text" | "number" | "checkbox" | "select" | "combobox" | "date" | "autocomplete" | "custom"
+export type Editor = "text" | "number" | "checkbox" | "select" | "combobox" | "date" | "autocomplete" | "custom"
+
+/** @deprecated use `Editor` */
+export type EditorType = Editor
 
 // How editing is triggered
 export type EditTrigger = "click" | "dblclick" | "button" | "always" | "navigate"
@@ -196,7 +199,7 @@ export type Column<T> = {
 	// boolean = static editability for the column; (row) => boolean = per-row editability
 	// (e.g. column is editable only on employee rows in a teams + employees tree)
 	isEditable?: boolean | ((row: T) => boolean)
-	editor?: EditorType
+	editor?: Editor
 	editTrigger?: EditTrigger  // Per-column override
 	dropdownToggleVisibility?: ToggleVisibility  // Per-column override for toggle visibility
 	shouldOpenDropdownOnEnter?: boolean  // Per-column override: Enter opens dropdown (true) or moves down (false)
@@ -272,7 +275,10 @@ export type CellSelectionChangeDetail = {
 // =============================================================================
 
 // Predefined toolbar item types
-export type PredefinedToolbarItemType = 'add' | 'delete' | 'duplicate' | 'moveUp' | 'moveDown'
+export type PredefinedToolbarItem = 'add' | 'delete' | 'duplicate' | 'moveUp' | 'moveDown'
+
+/** @deprecated use `PredefinedToolbarItem` */
+export type PredefinedToolbarItemType = PredefinedToolbarItem
 
 // Toolbar position options
 export type ToolbarPosition = 'auto' | 'left' | 'right' | 'top' | 'inline'
@@ -305,7 +311,7 @@ export type RowToolbarItem<T> = {
 	minWidth?: string  // Override min-width for this button (e.g. '40px')
 
 	// Behavior
-	type?: PredefinedToolbarItemType  // If predefined, use built-in handler
+	type?: PredefinedToolbarItem  // If predefined, use built-in handler
 	danger?: boolean                   // Red styling (like delete)
 	disabled?: boolean | ((row: T, rowIndex: number) => boolean)
 	hidden?: boolean | ((row: T, rowIndex: number) => boolean)  // Hide button for specific rows
@@ -319,7 +325,7 @@ export type RowToolbarItem<T> = {
 }
 
 // Shorthand: string = predefined type, or full RowToolbarItem
-export type RowToolbarConfig<T> = PredefinedToolbarItemType | RowToolbarItem<T>
+export type RowToolbarConfig<T> = PredefinedToolbarItem | RowToolbarItem<T>
 
 // Normalized toolbar item (after processing shorthand)
 export type NormalizedToolbarItem<T> = Required<Pick<RowToolbarItem<T>, 'id' | 'icon' | 'title' | 'row' | 'group'>> & Omit<RowToolbarItem<T>, 'id' | 'icon' | 'title' | 'row' | 'group'> & {
@@ -337,9 +343,12 @@ export type ToolbarClickDetail<T> = {
 }
 
 // Legacy type aliases for backwards compatibility
-export type RowActionType = PredefinedToolbarItemType
+export type RowAction = PredefinedToolbarItem
+
+/** @deprecated use `RowAction` */
+export type RowActionType = RowAction
 export type RowActionClickDetail<T> = {
-	action: RowActionType
+	action: RowAction
 	rowIndex: number
 	row: T
 }
@@ -364,7 +373,10 @@ export type ContextMenuContext<T> = {
 //     not the entire dataset). Auto-hidden on leaf rows.
 //   - 'expand-tree' / 'collapse-tree': operate on the entire dataset (the rarer power-user
 //     "reset everything" action). Auto-hidden when there's nothing to do.
-export type PredefinedContextMenuItemType = 'expand-all' | 'collapse-all' | 'expand-tree' | 'collapse-tree'
+export type PredefinedContextMenuItem = 'expand-all' | 'collapse-all' | 'expand-tree' | 'collapse-tree'
+
+/** @deprecated use `PredefinedContextMenuItem` */
+export type PredefinedContextMenuItemType = PredefinedContextMenuItem
 
 // Context menu item configuration. `label` becomes optional when `type` is supplied — the
 // predefined action provides a default label.
@@ -377,12 +389,12 @@ export type ContextMenuItem<T> = {
 	visible?: boolean | ((context: ContextMenuContext<T>) => boolean)
 	danger?: boolean
 	dividerBefore?: boolean
-	type?: PredefinedContextMenuItemType  // Use built-in handler/label/visibility
+	type?: PredefinedContextMenuItem  // Use built-in handler/label/visibility
 	onclick?: (context: ContextMenuContext<T>) => void | Promise<void>
 }
 
 // Context menu configuration shorthand: predefined string OR full item object.
-export type ContextMenuConfig<T> = PredefinedContextMenuItemType | ContextMenuItem<T>
+export type ContextMenuConfig<T> = PredefinedContextMenuItem | ContextMenuItem<T>
 
 // =============================================================================
 // Header Context Menu Types
@@ -401,7 +413,10 @@ export type HeaderMenuContext<T> = {
 }
 
 // Predefined header menu actions (string shorthand)
-export type PredefinedHeaderMenuItemType = 'sortAsc' | 'sortDesc' | 'clearSort' | 'hideColumn' | 'freezeColumn' | 'unfreezeColumn' | 'columnVisibility'
+export type PredefinedHeaderMenuItem = 'sortAsc' | 'sortDesc' | 'clearSort' | 'hideColumn' | 'freezeColumn' | 'unfreezeColumn' | 'columnVisibility'
+
+/** @deprecated use `PredefinedHeaderMenuItem` */
+export type PredefinedHeaderMenuItemType = PredefinedHeaderMenuItem
 
 // Header context menu item configuration
 export type HeaderMenuItem<T> = {
@@ -420,7 +435,7 @@ export type HeaderMenuItem<T> = {
 }
 
 // Header context menu configuration (predefined string or full item)
-export type HeaderMenuConfig<T> = PredefinedHeaderMenuItemType | HeaderMenuItem<T>
+export type HeaderMenuConfig<T> = PredefinedHeaderMenuItem | HeaderMenuItem<T>
 
 // =============================================================================
 // Row Keyboard Shortcuts Types
@@ -530,7 +545,9 @@ export type QuickGridProps<T> = {
 	// Pagination state
 	currentPage?: number  // Current page (1-based)
 	totalItems?: number   // Total items for server-side pagination
-	showPagination?: boolean | 'auto'  // true=always show, false=never, 'auto'=hide when ≤1 page
+	isPaginationVisible?: boolean | 'auto'  // true=always show, false=never, 'auto'=hide when ≤1 page
+	/** @deprecated use `isPaginationVisible` */
+	showPagination?: boolean | 'auto'
 	pageSizes?: number[]  // Available page sizes for selector (e.g., [10, 25, 50, 100])
 	paginationMode?: 'client' | 'server'  // 'client' = grid slices items, 'server' = items are already current page (default: 'client')
 	paginationPosition?: string  // Position(s): "bottom-center" (default), "top-right|bottom-right" for multiple
@@ -564,7 +581,9 @@ export type QuickGridProps<T> = {
 	toolbarTrigger?: 'hover' | 'click' | 'button'  // How to show toolbar
 	toolbarPosition?: ToolbarPosition  // Preferred position: auto (default), left, right, top, or inline
 	toolbarColumn?: string | number  // Column to position toolbar over (field name or index) for 'top' position
-	toolbarFollowsCursor?: boolean  // Toolbar follows mouse cursor horizontally (default: false)
+	shouldToolbarFollowCursor?: boolean  // Toolbar follows mouse cursor horizontally (default: false)
+	/** @deprecated use `shouldToolbarFollowCursor` */
+	toolbarFollowsCursor?: boolean
 	cellToolbar?: (row: T, rowIndex: number, field: string, colIndex: number) => RowToolbarConfig<T>[] | undefined  // Cell-specific toolbar items
 	cellToolbarOffset?: number | string  // Horizontal offset: number 0-1 as fraction of cell width, or CSS length string (e.g. '2rem'). Default: 0.2
 	toolbarBtnMinWidth?: string  // Min-width for toolbar buttons (CSS value, e.g. '32px'). Overrides --wg-toolbar-btn-min-width
@@ -585,7 +604,9 @@ export type QuickGridProps<T> = {
 	// Scroll behavior
 	isScrollable?: boolean               // Enable scroll container with max-height: 100vh (default: false)
 	scrollMaxHeight?: string             // Custom max-height when isScrollable is true (default: '100vh')
-	tableBorderOnly?: boolean            // Border only around table, not pagination/toolbar (default: false)
+	isTableBorderOnly?: boolean          // Border only around table, not pagination/toolbar (default: false)
+	/** @deprecated use `isTableBorderOnly` */
+	tableBorderOnly?: boolean
 	// Virtual scroll
 	isVirtualScrollEnabled?: boolean     // Enable virtual scroll (default: false)
 	virtualScrollThreshold?: number      // Auto-enable when items >= threshold (default: 100)
@@ -783,13 +804,16 @@ export type SummaryContentCallback<T> = (context: SummaryContext<T>) => string
 // =============================================================================
 
 // Lock information for a row
-export type RowLockInfo = {
+export type RowLock = {
 	isLocked: boolean
 	lockedBy?: string        // Who locked (user name/ID)
 	lockedAt?: Date | string // When locked
 	reason?: string          // Why locked
 	[key: string]: unknown   // Allow extra properties
 }
+
+/** @deprecated use `RowLock` */
+export type RowLockInfo = RowLock
 
 // Edit behavior for locked rows
 export type LockedRowEditBehavior =
@@ -801,18 +825,18 @@ export type LockedRowEditBehavior =
 export type RowLockingOptions<T> = {
 	// Property-based sources
 	lockedMember?: keyof T                    // Field with boolean
-	lockInfoMember?: keyof T                  // Field with RowLockInfo
+	lockInfoMember?: keyof T                  // Field with RowLock
 
 	// Callback-based sources
 	isLockedCallback?: (row: T, rowIndex: number) => boolean
-	getLockInfoCallback?: (row: T, rowIndex: number) => RowLockInfo | null
+	getLockInfoCallback?: (row: T, rowIndex: number) => RowLock | null
 
 	// Edit behavior
 	lockedEditBehavior?: LockedRowEditBehavior
-	canEditLockedCallback?: (row: T, lockInfo: RowLockInfo) => boolean
+	canEditLockedCallback?: (row: T, lockInfo: RowLock) => boolean
 
 	// Visual options
-	lockTooltipCallback?: (lockInfo: RowLockInfo, row: T) => string | null
+	lockTooltipCallback?: (lockInfo: RowLock, row: T) => string | null
 }
 
 // Event for lock changes
@@ -820,7 +844,7 @@ export type RowLockChangeDetail<T> = {
 	rowId: unknown
 	row: T | null
 	rowIndex: number
-	lockInfo: RowLockInfo | null
+	lockInfo: RowLock | null
 	source: 'property' | 'callback' | 'external'
 }
 

@@ -3,7 +3,7 @@
 // Centralized function to update a single cell's DOM without full re-render
 // =============================================================================
 
-import type { GridContext } from '../types.js'
+import type { GridContext } from '../grid-context.js'
 import { renderCellEditor } from '../editing/index.js'
 import { renderCellDisplay } from './display.js'
 import { wrapTreeCell } from './tree-render.js'

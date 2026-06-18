@@ -7,3 +7,5 @@ export {
 	hideTooltip,
 	createTooltip
 } from './tooltip.js'
+
+export { TooltipService } from './tooltip-service.js'

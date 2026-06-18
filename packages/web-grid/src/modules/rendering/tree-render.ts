@@ -4,7 +4,7 @@
 // =============================================================================
 
 import type { Column } from '../../types.js'
-import type { GridContext } from '../types.js'
+import type { GridContext } from '../grid-context.js'
 
 /**
  * Wrap cell content with tree indent + chevron when column is the tree column.

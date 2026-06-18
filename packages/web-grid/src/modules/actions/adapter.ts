@@ -4,7 +4,7 @@
 // Enables incremental migration by checking mode before using pipeline
 // =============================================================================
 
-import type { GridContext } from '../types.js'
+import type { GridContext } from '../grid-context.js'
 import { ActionPipeline, createActionPipeline, ActionExecutor } from './pipeline.js'
 import { focusExecutor } from './executors/focus-executor.js'
 import { navigateExecutor } from './executors/navigate-executor.js'
@@ -181,7 +181,7 @@ export class ActionPipelineAdapter<T = unknown> {
 		const editTrigger = this.getEditTrigger(cell.colIndex)
 		const isAlways = this.isAlwaysMode(cell.colIndex)
 		const isEditing = this.isEditingCell(cell.rowIndex, cell.colIndex)
-		const dropdownOpen = this.ctx.dropdownOpen
+		const dropdownOpen = this.ctx.dropdown.isOpen
 		const isDropdown = this.isDropdownEditor(cell.colIndex)
 		const isCheckbox = this.isCheckboxEditor(cell.colIndex)
 		const isDate = this.isDateEditor(cell.colIndex)
@@ -228,7 +228,7 @@ export class ActionPipelineAdapter<T = unknown> {
 			if (e.key === 'Tab' && editTrigger === 'navigate' && dropdownOpen) {
 				e.preventDefault()
 				e.stopPropagation()
-				if (this.ctx.dropdownUserInteracted) {
+				if (this.ctx.dropdown.userInteracted) {
 					// User navigated the dropdown — select highlighted option and move
 					this.pipeline.dispatch({
 						type: 'dropdownSelect',
@@ -555,7 +555,7 @@ export class ActionPipelineAdapter<T = unknown> {
 				this.pipeline.dispatch({ type: 'clearSelection' })
 			}
 
-			const dropdownOpen = this.ctx.dropdownOpen
+			const dropdownOpen = this.ctx.dropdown.isOpen
 			const isDropdown = this.isDropdownEditor(cell.colIndex)
 
 			const actions = mapMouseDownToActions(e, {
@@ -711,7 +711,7 @@ export class ActionPipelineAdapter<T = unknown> {
 		}
 
 		// Map the event to actions for other cases
-		const dropdownOpen = this.ctx.dropdownOpen
+		const dropdownOpen = this.ctx.dropdown.isOpen
 		const isDropdown = this.isDropdownEditor(cell.colIndex)
 
 		const actions = mapMouseDownToActions(e, {

@@ -3,7 +3,7 @@
 // Routes actions to executors and processes child actions
 // =============================================================================
 
-import type { GridContext } from '../types.js'
+import type { GridContext } from '../grid-context.js'
 import type { GridAction } from './types.js'
 
 /**

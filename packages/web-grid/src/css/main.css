@@ -21,7 +21,7 @@
 @import './variables.css'       layer(variables);
 
 /* === BASE === */
-@import './table.css'           layer(component);
+@import './base.css'            layer(component);
 
 /* === CANONICAL CONCERNS (Tier 2) === */
 @import './controls.css'        layer(component);
