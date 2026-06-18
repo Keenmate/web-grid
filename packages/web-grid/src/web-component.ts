@@ -173,7 +173,8 @@ import {
 	handleContainerScroll,
 	handleWindowScroll,
 	handleOutsideClick,
-	handleSortClickSubscription
+	handleSortClickSubscription,
+	handleTableKeyDown
 } from './modules/events/index.js'
 import { handleResizeStart } from './modules/resize/index.js'
 import { handleReorderStart, isReordering } from './modules/reorder/index.js'
@@ -1155,91 +1156,9 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			// Legacy code removed: openDropdownForCurrentEditor was called here for .wg__select-trigger, .wg__combobox-input, .wg__autocomplete-input
 		}, true)
 
-		// Keydown events
-		table.addEventListener('keydown', (e: Event) => {
-			const target = e.target as HTMLElement
-			const ke = e as KeyboardEvent
-
-			// Tree shortcuts (Ctrl/Cmd + ArrowLeft/Right) run BEFORE pipelineAdapter
-			// because the pipeline consumes plain arrow keys for cell-focus navigation
-			// (regardless of editTrigger), which would swallow the modified arrow too.
-			// Direct grid-method calls — same as chevron click and dblclick paths.
-			if (
-				this.grid.isTreeMode &&
-				this.grid.focusedCell &&
-				!this.grid.editingCell &&
-				(ke.ctrlKey || ke.metaKey) &&
-				(ke.key === 'ArrowLeft' || ke.key === 'ArrowRight')
-			) {
-				const { rowIndex, colIndex } = this.grid.focusedCell
-				const item = this.grid.displayItems[rowIndex]
-				const info = item ? this.grid.getRowTreeInfo(item) : null
-				if (info) {
-					e.preventDefault()
-					e.stopPropagation()
-					// Compute which path's row should hold focus AFTER the toggle. For
-					// same-row expand/collapse it's `info.path` (the row itself stays
-					// in displayItems at some index). For ancestor-walk collapse it's
-					// the ancestor (the focused row is about to be hidden).
-					let targetPath: string | null = null
-					if (ke.key === 'ArrowRight') {
-						if (info.hasChildren && !this.grid.isPathExpanded(info.path)) {
-							this.grid.toggleExpandedPath(info.path)
-							targetPath = info.path
-						}
-					} else {
-						if (info.hasChildren && this.grid.isPathExpanded(info.path)) {
-							this.grid.toggleExpandedPath(info.path)
-							targetPath = info.path
-						} else {
-							const ancestor = this.grid.findNearestExpandedAncestor(info.path)
-							if (ancestor !== null) {
-								this.grid.toggleExpandedPath(ancestor)
-								targetPath = ancestor
-							}
-						}
-					}
-					// Restore focus after the render. toggleExpandedPath queues a
-					// microtask render; ours queues after it, so displayItems is fresh
-					// and the new <td> exists when moveFocus tries to focus it.
-					if (targetPath !== null) {
-						const path = targetPath
-						queueMicrotask(() => {
-							const idx = this.grid.displayItems
-								.findIndex(it => this.grid.getRowTreeInfo(it)?.path === path)
-							if (idx >= 0) {
-								moveFocus(this, idx, colIndex)
-							}
-						})
-					}
-					return
-				}
-			}
-
-			// Try action pipeline first (handles 'always' editTrigger mode)
-			if (this.pipelineAdapter?.tryHandleKeyDown(e as KeyboardEvent)) {
-				return
-			}
-
-			// If datepicker is open, let navigation keys bubble to datepicker's document handler
-			if (this.datepicker) {
-				const key = (e as KeyboardEvent).key
-				const datepickerKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'PageUp', 'PageDown', 'Home', 'End', 'Enter', 'Escape', 'Tab']
-				if (datepickerKeys.includes(key)) {
-					return
-				}
-			}
-
-			if (target.matches('.wg__editor, .wg__combobox-input, .wg__autocomplete-input, .wg__date-input')) {
-				handleEditorKeyDown(this, e as KeyboardEvent, target)
-				return
-			}
-			if (target.matches('.wg__cell')) {
-				const rowIndex = parseInt(target.dataset.row || '0', 10)
-				const colIndex = parseInt(target.dataset.col || '0', 10)
-				handleCellKeyDown(this, e as KeyboardEvent, rowIndex, colIndex)
-			}
-		})
+		// Keydown — tree shortcuts + pipeline + datepicker passthrough + editor/cell dispatch
+		// Extracted to modules/events/table-keydown.ts
+		table.addEventListener('keydown', (e: Event) => handleTableKeyDown(this, e))
 
 		// Initialize focus event manager on table
 		this.focusEvents.init(table as HTMLElement)
