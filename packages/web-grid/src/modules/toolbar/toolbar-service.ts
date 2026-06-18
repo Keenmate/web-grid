@@ -22,6 +22,7 @@ export class ToolbarService {
 	private _hoveredCell: ToolbarHoveredCell | null = null
 	private _currentCellItemsJson: string | null = null
 	private _shortcutHandler: ToolbarShortcutHandler | null = null
+	private _inlineShortcutHandler: ToolbarShortcutHandler | null = null
 
 	/** Pending hide-timeout handle, or null if no hide is scheduled. */
 	get hideTimeout(): ReturnType<typeof setTimeout> | null { return this._hideTimeout }
@@ -55,9 +56,13 @@ export class ToolbarService {
 	get currentCellItemsJson(): string | null { return this._currentCellItemsJson }
 	setCurrentCellItemsJson(json: string | null): void { this._currentCellItemsJson = json }
 
-	/** The keydown handler registered on document while the toolbar is open. */
+	/** The keydown handler registered on document while the floating toolbar is open. */
 	get shortcutHandler(): ToolbarShortcutHandler | null { return this._shortcutHandler }
 	setShortcutHandler(handler: ToolbarShortcutHandler | null): void { this._shortcutHandler = handler }
+
+	/** The keydown handler registered on document for inline-mode shortcuts (hover-driven). */
+	get inlineShortcutHandler(): ToolbarShortcutHandler | null { return this._inlineShortcutHandler }
+	setInlineShortcutHandler(handler: ToolbarShortcutHandler | null): void { this._inlineShortcutHandler = handler }
 
 	/**
 	 * Reset hover / move-in-progress flags, clear the hovered-cell cache, drop the

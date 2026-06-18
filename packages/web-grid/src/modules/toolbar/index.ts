@@ -874,3 +874,15 @@ export function renderTriggerButton(rowIndex: number, isActive: boolean, title: 
 }
 
 export { ToolbarService, type ToolbarHoveredCell, type ToolbarShortcutHandler } from './toolbar-service.js'
+
+export {
+	setupToolbarShortcuts,
+	setupInlineShortcuts,
+	removeInlineShortcuts,
+	setupToolbarTooltips,
+	showToolbarForRow,
+	closeToolbarAndReset,
+	updateToolbarWithCellItems,
+	handleToolbarItemClick,
+	handleInlineActionClick
+} from './element-handlers.js'

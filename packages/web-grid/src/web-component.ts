@@ -137,21 +137,22 @@ import {
 	handleFillerContextMenu
 } from './modules/contextmenu/index.js'
 import {
-	normalizeToolbarItems,
-	openToolbar,
 	closeToolbar,
 	isToolbarOpenForRow,
 	getActiveToolbarRowIndex,
 	isToolbarOwnedBy,
 	getConnectorState,
 	updateConnector,
-	buildToolbarTooltipHtml,
 	updateToolbarPosition,
-	updateToolbarItems,
-	getActiveToolbar,
-	renderToolbarHTML,
 	resolveToolbarOffset,
 	ToolbarService,
+	setupInlineShortcuts,
+	removeInlineShortcuts,
+	showToolbarForRow,
+	closeToolbarAndReset,
+	updateToolbarWithCellItems,
+	handleToolbarItemClick,
+	handleInlineActionClick,
 	type ConnectorState
 } from './modules/toolbar/index.js'
 
@@ -265,11 +266,10 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	// Flag to track if focusEvents subscriptions have been added (only subscribe once)
 	private focusEventsSubscribed = false
 
-	// Floating-toolbar runtime state — owned by ToolbarService (hover hide-timeout, hover/move flags, hovered cell, cell-items JSON snapshot, document keydown handler).
-	private toolbar = new ToolbarService()
-
-	// Inline shortcuts handler (hovered row tracked in WebGrid.hoveredRowIndex)
-	private inlineShortcutHandler: ((e: KeyboardEvent) => void) | null = null
+	// Floating-toolbar runtime state — owned by ToolbarService (hover hide-timeout,
+	// hover/move flags, hovered cell, cell-items JSON snapshot, document keydown handlers
+	// for both floating and inline modes).
+	toolbar = new ToolbarService()
 
 	// Dropdown runtime state — owned by DropdownService (open flag, options, highlight,
 	// filter text, race-condition flags: isOpening / isClosingViaToggle / justSelected /
@@ -313,7 +313,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	readonly clickEvents: ClickEventManager
 
 	// Action pipeline adapter (for 'always' editTrigger mode)
-	private pipelineAdapter: ActionPipelineAdapter<T> | null = null
+	pipelineAdapter: ActionPipelineAdapter<T> | null = null
 
 	constructor() {
 		super()
@@ -410,7 +410,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		// Close any open toolbar
 		closeToolbar()
 		// Cleanup inline shortcuts
-		this.removeInlineShortcuts()
+		removeInlineShortcuts(this)
 		// Cleanup selection borders
 		removeAllSelectionBorders()
 	}
@@ -2677,7 +2677,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 					handleScrollCloseDropdown(this)
 				}
 				if (getActiveToolbarRowIndex() !== null) {
-					this.closeToolbarAndReset()
+					closeToolbarAndReset(this)
 				}
 			})
 
@@ -2827,10 +2827,10 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				if (rowElement) {
 					// Toggle toolbar for this row
 					if (isToolbarOpenForRow(rowIndex)) {
-						this.closeToolbarAndReset()
+						closeToolbarAndReset(this)
 						// No render() needed - closeToolbar() surgically removes toolbar
 					} else {
-						this.showToolbarForRow(rowElement, rowIndex)
+						showToolbarForRow(this, rowElement, rowIndex)
 					}
 				}
 			}
@@ -2847,7 +2847,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				e.stopPropagation()
 				const actionId = btn.dataset.actionId
 				const rowIndex = parseInt(btn.dataset.row || '0', 10)
-				this.handleInlineActionClick(actionId, rowIndex, e as MouseEvent, btn)
+				handleInlineActionClick(this, actionId, rowIndex, e as MouseEvent, btn)
 			}
 		})
 
@@ -2862,7 +2862,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 				// For inline mode, setup shortcuts
 				if (this.grid.toolbarPosition === 'inline') {
-					this.setupInlineShortcuts()
+					setupInlineShortcuts(this)
 				}
 
 				// For floating toolbar (hover trigger)
@@ -2870,7 +2870,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 					// Cancel any pending hide timeout when entering a row
 					this.toolbar.clearHideTimeout()
 					if (!isToolbarOpenForRow(rowIndex)) {
-						this.showToolbarForRow(row, rowIndex, mouseEvent.clientX)
+						showToolbarForRow(this, row, rowIndex, mouseEvent.clientX)
 					}
 				}
 			}
@@ -2888,7 +2888,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 					setTimeout(() => {
 						if (!table.matches(':hover')) {
 							this.grid.setHoveredRow(null)
-							this.removeInlineShortcuts()
+							removeInlineShortcuts(this)
 						}
 					}, 50)
 				}
@@ -2907,7 +2907,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 						if (!isHoveringToolbar && !isHoveringTable) {
 							this.grid.setHoveredRow(null)
-							this.closeToolbarAndReset()
+							closeToolbarAndReset(this)
 							// No render() needed - closeToolbar() already removes toolbar from DOM
 						}
 					}, 150))
@@ -2971,7 +2971,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 							if (newItemsJson !== this.toolbar.currentCellItemsJson) {
 								this.toolbar.setCurrentCellItemsJson(newItemsJson)
 								// Re-render toolbar with new items
-								this.updateToolbarWithCellItems(rowIndex, itemsToUse)
+								updateToolbarWithCellItems(this, rowIndex, itemsToUse)
 							}
 
 							// Position toolbar at configured offset from cell left edge
@@ -2995,10 +2995,10 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				const rowIndex = parseInt(row.dataset.rowIndex || '0', 10)
 				// Toggle toolbar
 				if (isToolbarOpenForRow(rowIndex)) {
-					this.closeToolbarAndReset()
+					closeToolbarAndReset(this)
 					// No render() needed - closeToolbar() surgically removes toolbar
 				} else {
-					this.showToolbarForRow(row, rowIndex, mouseEvent.clientX)
+					showToolbarForRow(this, row, rowIndex, mouseEvent.clientX)
 				}
 			}
 		})
@@ -3026,7 +3026,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				}
 				// Close toolbar if clicking outside
 				if (getActiveToolbarRowIndex() !== null) {
-					this.closeToolbarAndReset()
+					closeToolbarAndReset(this)
 					// No render() needed - closeToolbar() surgically removes toolbar
 				}
 			})
@@ -3140,7 +3140,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		`
 	}
 
-	private render(): void {
+	render(): void {
 		// Drop any stale data-pipeline cache. Normally requestUpdate() has already
 		// done this, but render() is also called directly in a few places.
 		this.grid.invalidateDisplayCache()
@@ -3454,7 +3454,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	/**
 	 * Render the SVG connector arrow for toolbar row tracking
 	 */
-	private renderConnector(): void {
+	renderConnector(): void {
 		// Remove any existing connector
 		const existingConnector = this.shadow.querySelector('.wg__connector')
 		if (existingConnector) {
@@ -3743,421 +3743,6 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		;(column.cellEditCallback as (ctx: CustomEditorContext<any>) => void)(context)
 	}
 
-
-	/**
-	 * Setup document-level keyboard shortcut listener for toolbar row
-	 * Allows shortcuts to work on hovered row without cell focus
-	 */
-	private setupToolbarShortcuts(): void {
-		// Remove any existing listener first
-		const existing = this.toolbar.shortcutHandler
-		if (existing) {
-			document.removeEventListener('keydown', existing)
-		}
-
-		const shortcuts = this.grid.rowShortcuts
-		if (!shortcuts?.length) {
-			this.toolbar.setShortcutHandler(null)
-			return
-		}
-
-		const handler: (e: KeyboardEvent) => void = (e: KeyboardEvent) => {
-			// Skip if focus is in an input/editor
-			const target = e.target as HTMLElement
-			if (target.matches('input, textarea, select, [contenteditable="true"]')) {
-				return
-			}
-
-			const toolbarRowIndex = getActiveToolbarRowIndex()
-			if (toolbarRowIndex === null || !isToolbarOwnedBy(this.shadow)) return
-
-			const row = this.grid.displayItems[toolbarRowIndex]
-			if (!row) return
-
-			const columns = this.grid.columns
-
-			for (const shortcut of shortcuts) {
-				const combo = parseKeyCombo(shortcut.key)
-				if (matchesKeyCombo(e, combo)) {
-					const ctx: ShortcutContext<T> = {
-						row,
-						rowIndex: toolbarRowIndex,
-						colIndex: 0,
-						column: columns[0],
-						cellValue: null
-					}
-
-					const isDisabled = typeof shortcut.disabled === 'function'
-						? shortcut.disabled(ctx)
-						: shortcut.disabled === true
-
-					if (!isDisabled) {
-						e.preventDefault()
-						e.stopPropagation()
-						shortcut.action(ctx)
-						return
-					}
-				}
-			}
-		}
-
-		this.toolbar.setShortcutHandler(handler)
-		document.addEventListener('keydown', handler)
-	}
-
-	/**
-	 * Setup keyboard shortcuts for inline toolbar mode
-	 * Uses hoveredRowIndex to determine which row to act on
-	 */
-	private setupInlineShortcuts(): void {
-		this.removeInlineShortcuts()
-
-		const shortcuts = this.grid.rowShortcuts
-		if (!shortcuts?.length || this.grid.hoveredRowIndex === null) return
-
-		this.inlineShortcutHandler = (e: KeyboardEvent) => {
-			// Skip if focus is in an input/editor
-			const target = e.target as HTMLElement
-			if (target.matches('input, textarea, select, [contenteditable="true"]')) {
-				return
-			}
-
-			const rowIndex = this.grid.hoveredRowIndex
-			if (rowIndex === null) return
-
-			const row = this.grid.displayItems[rowIndex]
-			if (!row) return
-
-			const columns = this.grid.columns
-
-			for (const shortcut of shortcuts) {
-				const combo = parseKeyCombo(shortcut.key)
-				if (matchesKeyCombo(e, combo)) {
-					const ctx: ShortcutContext<T> = {
-						row,
-						rowIndex,
-						colIndex: 0,
-						column: columns[0],
-						cellValue: null
-					}
-
-					const isDisabled = typeof shortcut.disabled === 'function'
-						? shortcut.disabled(ctx)
-						: shortcut.disabled === true
-
-					if (!isDisabled) {
-						e.preventDefault()
-						e.stopPropagation()
-						shortcut.action(ctx)
-						return
-					}
-				}
-			}
-		}
-
-		document.addEventListener('keydown', this.inlineShortcutHandler)
-	}
-
-	/**
-	 * Remove inline shortcuts listener
-	 */
-	private removeInlineShortcuts(): void {
-		if (this.inlineShortcutHandler) {
-			document.removeEventListener('keydown', this.inlineShortcutHandler)
-			this.inlineShortcutHandler = null
-		}
-	}
-
-	/**
-	 * Setup rich tooltips for toolbar buttons
-	 * Shows title, description, and keyboard shortcut on hover
-	 */
-	private setupToolbarTooltips(items: NormalizedToolbarItem<T>[], row: T, rowIndex: number): void {
-		const toolbarContainer = this.shadow.querySelector('.wg__toolbar-container')
-		if (!toolbarContainer) return
-
-		const buttons = toolbarContainer.querySelectorAll('.wg__toolbar-btn')
-		buttons.forEach(btn => {
-			const button = btn as HTMLElement
-			const itemId = button.dataset.toolbarItem
-			const item = items.find(i => i.id === itemId)
-			if (!item) return
-
-			// Find matching keyboard shortcut from rowShortcuts
-			const matchingShortcut = this.grid.rowShortcuts?.find(s => s.id === item.id)
-
-			button.addEventListener('mouseenter', () => {
-				// Use custom callback if provided, otherwise build standard tooltip
-				const html = item.tooltipCallback
-					? item.tooltipCallback(row, rowIndex)
-					: buildToolbarTooltipHtml(item, matchingShortcut?.key)
-
-				showTooltip(this, button, html, 0, true)
-			})
-
-			button.addEventListener('mouseleave', () => {
-				hideTooltip(this)
-			})
-		})
-	}
-
-	/**
-	 * Show toolbar for a specific row
-	 */
-	private showToolbarForRow(rowElement: HTMLElement, rowIndex: number, cursorX?: number): void {
-		// Skip floating toolbar in inline mode (buttons rendered directly in cells)
-		if (this.grid.toolbarPosition === 'inline') {
-			return
-		}
-
-		if (!this.grid.isRowToolbarVisible || !this.grid.rowToolbar.length) {
-			return
-		}
-
-		const items = normalizeToolbarItems(this.grid.rowToolbar)
-
-		const row = this.grid.displayItems[rowIndex]
-		if (!row) {
-			return
-		}
-
-		// Clear any pending hide timeout when opening new toolbar
-		this.toolbar.clearHideTimeout()
-
-		// Hide any toolbar tooltip left over from the previous toolbar
-		// (mouseleave won't fire when the toolbar DOM is removed)
-		hideTooltip(this, 0)
-
-		// Reset cell toolbar state so next cell change will always update the HTML
-		// (openToolbar rebuilds with base rowToolbar items, not cell-specific items)
-		this.toolbar.setCurrentCellItemsJson(null)
-
-		openToolbar(
-			this,
-			rowElement,
-			rowIndex,
-			items,
-			row,
-			(item: NormalizedToolbarItem<T>, event: MouseEvent, triggerElement: HTMLElement) => {
-				this.handleToolbarItemClick(item, rowIndex, row, event, triggerElement)
-			},
-			cursorX
-		)
-
-		// Add document-level shortcut listener for toolbar row
-		this.setupToolbarShortcuts()
-
-		// Clean up any existing connector (state was reset in openToolbar)
-		this.renderConnector()
-
-		// Add rich tooltip handlers to toolbar buttons
-		this.setupToolbarTooltips(items, row, rowIndex)
-
-		// Add hover tracking to toolbar container (hover mode only)
-		if (this.grid.toolbarTrigger === 'hover') {
-			const toolbarContainer = this.shadow.querySelector('.wg__toolbar-container')
-			if (toolbarContainer) {
-				toolbarContainer.addEventListener('mouseenter', () => {
-					this.toolbar.setIsHovered(true)
-					this.toolbar.clearHideTimeout()
-				})
-
-				toolbarContainer.addEventListener('mouseleave', () => {
-					this.toolbar.setIsHovered(false)
-					// Don't close during move actions
-					if (this.toolbar.isMoveInProgress) return
-
-					// Start hide timeout when leaving the toolbar
-					this.toolbar.setHideTimeout(setTimeout(() => {
-						// Check if mouse moved back to a row or toolbar
-						const table = this.shadow.querySelector('.wg__table')
-						const isHoveringTable = table?.matches(':hover')
-						const isHoveringToolbar = toolbarContainer.matches(':hover')
-
-						if (!isHoveringTable && !isHoveringToolbar) {
-							this.closeToolbarAndReset()
-							// No render() needed - closeToolbar() surgically removes toolbar
-						}
-					}, 150))
-				})
-			}
-		}
-
-		// Update trigger button active state without full re-render
-		// (re-render would destroy rowElement before Floating UI positions the toolbar)
-		const triggerBtn = this.shadow.querySelector(`[data-toolbar-trigger="${rowIndex}"]`) as HTMLElement
-		if (triggerBtn) {
-			// Remove active from all triggers
-			this.shadow.querySelectorAll('.wg__toolbar-trigger--active').forEach(el => {
-				el.classList.remove('wg__toolbar-trigger--active')
-			})
-			triggerBtn.classList.add('wg__toolbar-trigger--active')
-		}
-	}
-
-	/**
-	 * Close toolbar and reset move flag
-	 */
-	private closeToolbarAndReset(): void {
-		// Remove document shortcut listener before clearing the handler reference
-		const shortcutHandler = this.toolbar.shortcutHandler
-		if (shortcutHandler) {
-			document.removeEventListener('keydown', shortcutHandler)
-			this.toolbar.setShortcutHandler(null)
-		}
-		this.toolbar.reset()
-		// Hide any toolbar tooltip (mouseleave won't fire when DOM is removed)
-		hideTooltip(this, 0)
-		closeToolbar()
-	}
-
-	/**
-	 * Update toolbar with cell-specific items
-	 */
-	private updateToolbarWithCellItems(rowIndex: number, cellItems: RowToolbarConfig<T>[]): void {
-		const row = this.grid.displayItems[rowIndex]
-		if (!row) return
-
-		// Merge base toolbar items with cell-specific items
-		// Cell items override base items by ID, or append if new
-		const baseItems = normalizeToolbarItems(this.grid.rowToolbar)
-		const normalizedCellItems = normalizeToolbarItems(cellItems)
-
-		// Create a map of cell items by ID for fast lookup
-		const cellItemsMap = new Map(normalizedCellItems.map(item => [item.id, item]))
-
-		// Start with cell items, then add any base items not in cell items
-		const mergedItems = [...normalizedCellItems]
-		for (const baseItem of baseItems) {
-			if (!cellItemsMap.has(baseItem.id)) {
-				mergedItems.push(baseItem)
-			}
-		}
-
-		// Re-sort by row and group
-		mergedItems.sort((a, b) => {
-			if (a.row !== b.row) return a.row - b.row
-			return a.group - b.group
-		})
-
-		const reverseRows = this.grid.toolbarVerticalAlign !== 'top'
-
-		// Update the toolbar HTML in place
-		const activeToolbar = getActiveToolbar()
-		if (!activeToolbar) return
-
-		const html = renderToolbarHTML(mergedItems, row, rowIndex, reverseRows)
-		const temp = document.createElement('div')
-		temp.innerHTML = html
-		const newToolbarContent = temp.querySelector('.wg__toolbar')
-		if (newToolbarContent) {
-			// Keep position styles
-			const { left, top, position, visibility } = activeToolbar.toolbar.style
-			activeToolbar.toolbar.innerHTML = newToolbarContent.innerHTML
-			activeToolbar.toolbar.style.left = left
-			activeToolbar.toolbar.style.top = top
-			activeToolbar.toolbar.style.position = position
-			activeToolbar.toolbar.style.visibility = visibility
-
-			// Re-setup tooltips for new items
-			this.setupToolbarTooltips(mergedItems, row, rowIndex)
-		}
-	}
-
-	/**
-	 * Handle toolbar item click
-	 */
-	private handleToolbarItemClick(item: NormalizedToolbarItem<T>, _originalRowIndex: number, row: T, event: MouseEvent, triggerElement: HTMLElement): void {
-		// Clear any active selections through the pipeline
-		this.pipelineAdapter?.clearSelection()
-
-		// Find CURRENT index of the row item (it may have moved) - like QuickGrid
-		const currentIndex = this.grid.displayItems.findIndex(i => i === row)
-		if (currentIndex === -1) {
-			// Row was deleted, close toolbar
-			this.closeToolbarAndReset()
-			// No render() needed - items setter already triggered requestUpdate()
-			return
-		}
-
-		// Check if this is a move action (toolbar should stay open)
-		const isMoveAction = item.id === 'moveUp' || item.id === 'moveDown'
-
-		// Prevent mouseleave from closing toolbar during move
-		if (isMoveAction) {
-			this.toolbar.setIsMoveInProgress(true)
-		}
-
-		// Call item's onclick if defined - use CURRENT index
-		if (item.onclick) {
-			item.onclick({ row, rowIndex: currentIndex })
-		}
-
-		// Fire ontoolbarclick callback - use CURRENT index
-		if (this.grid.ontoolbarclick) {
-			this.grid.ontoolbarclick({
-				item,
-				rowIndex: currentIndex,
-				row,
-				event,
-				triggerElement
-			})
-		}
-
-		// For delete action, close toolbar (row is gone)
-		if (item.id === 'delete') {
-			this.closeToolbarAndReset()
-			// No render() needed - delete onclick should have modified items, triggering requestUpdate()
-			return
-		}
-
-		if (isMoveAction) {
-			// For move actions: keep toolbar open, re-render, update connector
-			this.render()
-			// Update connector to show where the row moved to
-			updateConnector(this, this.grid.displayItems)
-			this.renderConnector()
-		} else {
-			// For other actions (add, duplicate): keep toolbar open
-			this.render()
-		}
-	}
-
-	/**
-	 * Handle inline action button click (toolbarPosition="inline")
-	 */
-	private handleInlineActionClick(actionId: string | undefined, rowIndex: number, event: MouseEvent, triggerElement: HTMLElement): void {
-		if (!actionId) return
-
-		// Clear any active selections through the pipeline
-		this.pipelineAdapter?.clearSelection()
-
-		const items = normalizeToolbarItems(this.grid.rowToolbar)
-		const item = items.find(i => i.id === actionId)
-		const row = this.grid.displayItems[rowIndex]
-
-		if (!item || !row) return
-
-		// Call item's onclick if defined
-		if (item.onclick) {
-			item.onclick({ row, rowIndex })
-		}
-
-		// Fire ontoolbarclick callback
-		if (this.grid.ontoolbarclick) {
-			this.grid.ontoolbarclick({
-				item,
-				rowIndex,
-				row,
-				event,
-				triggerElement
-			})
-		}
-
-		// No explicit render() — if the consumer modifies items, requestUpdate() handles it.
-		// Calling render() synchronously here would detach the triggerElement from the DOM,
-		// breaking consumers that need to position UI relative to it (e.g., popconfirm).
-	}
 
 	/**
 	 * Handle paste event in navigate mode
