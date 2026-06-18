@@ -37,6 +37,28 @@ let selectionState: ColumnSelectionState = {
 let activeContext: GridContext | null = null
 
 /**
+ * Focus the .wg container so keyboard shortcuts (Escape, range shortcuts) work.
+ *
+ * Why both microtask and double-RAF: the microtask fires before any subsequent
+ * dispatched event (relied on by Playwright tests + fast keyboard input). The
+ * double-RAF is a safety net for the case where the browser overwrites focus
+ * during the click sequence — by the second RAF the click sequence has fully
+ * settled and the focus call is durable.
+ */
+function focusContainerForShortcuts<T>(ctx: GridContext<T>): void {
+	queueMicrotask(() => {
+		const container = ctx.shadow.querySelector('.wg') as HTMLElement | null
+		container?.focus({ preventScroll: true })
+	})
+	requestAnimationFrame(() => {
+		requestAnimationFrame(() => {
+			const container = ctx.shadow.querySelector('.wg') as HTMLElement | null
+			container?.focus({ preventScroll: true })
+		})
+	})
+}
+
+/**
  * Check if column selection drag is in progress
  */
 export function isColumnSelecting(): boolean {
@@ -70,13 +92,7 @@ export function handleHeaderMouseDown<T>(ctx: GridContext<T>, colIndex: number, 
 	if (event.ctrlKey || event.metaKey) {
 		// Ctrl+Click: Toggle selection
 		ctx.grid.selectColumn(colIndex, 'toggle')
-		// Use double RAF for reliable focus after all callbacks
-		requestAnimationFrame(() => {
-			requestAnimationFrame(() => {
-				const container = ctx.shadow.querySelector('.wg') as HTMLElement | null
-				container?.focus({ preventScroll: true })
-			})
-		})
+		focusContainerForShortcuts(ctx)
 		return
 	}
 
@@ -101,13 +117,7 @@ export function handleHeaderMouseDown<T>(ctx: GridContext<T>, colIndex: number, 
 	}
 
 	// Focus the container so keyboard shortcuts work
-	// Use double RAF to ensure focus happens after all other callbacks
-	requestAnimationFrame(() => {
-		requestAnimationFrame(() => {
-			const container = ctx.shadow.querySelector('.wg') as HTMLElement | null
-			container?.focus({ preventScroll: true })
-		})
-	})
+	focusContainerForShortcuts(ctx)
 
 	// Attach document-level listeners for drag
 	document.addEventListener('mousemove', handleDocumentMouseMove)
@@ -169,13 +179,7 @@ function handleDocumentMouseUp(): void {
 	container?.classList.remove('wg--selecting-columns')
 
 	// Focus the container so keyboard shortcuts work
-	// Use double RAF for reliable focus after all callbacks
-	requestAnimationFrame(() => {
-		requestAnimationFrame(() => {
-			const container = ctx.shadow.querySelector('.wg') as HTMLElement | null
-			container?.focus({ preventScroll: true })
-		})
-	})
+	focusContainerForShortcuts(ctx)
 
 	// Remove document listeners
 	document.removeEventListener('mousemove', handleDocumentMouseMove)
