@@ -219,3 +219,5 @@ export function removeAllSelectionBorders(): void {
 	removeRowSelectionBorders()
 	removeColumnSelectionBorders()
 }
+
+export { clearAllSelections } from './clear-all.js'

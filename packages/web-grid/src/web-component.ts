@@ -217,7 +217,8 @@ import {
 	updateSelectionBorders,
 	removeRowSelectionBorders,
 	removeColumnSelectionBorders,
-	removeAllSelectionBorders
+	removeAllSelectionBorders,
+	clearAllSelections as clearAllSelectionsModule
 } from './modules/selection-border/index.js'
 
 import {
@@ -1554,36 +1555,9 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		renderConnectorModule(this)
 	}
 
-	/**
-	 * Clear all selections (cell range, row, column) and their visual borders
-	 */
+	/** Surgical clear-all-selections (no render) — see modules/selection-border/clear-all.ts */
 	clearAllSelections(): void {
-		// Clear state and visuals surgically WITHOUT triggering requestUpdate/render.
-		// A full re-render would replace all DOM elements, making any references
-		// captured after this call (e.g., resize headerCell) point to detached nodes.
-		if (this.grid.selectedCellRange) {
-			this.grid.clearCellSelection_noRender()
-			removeRangeBorder()
-			// Remove in-range highlighting
-			const inRange = this.shadow.querySelectorAll('.wg__cell--in-range')
-			inRange.forEach(c => c.classList.remove('wg__cell--in-range'))
-		}
-		if (this.grid.selectedRows.length > 0) {
-			this.grid.clearSelection_noRender()
-			removeRowSelectionBorders()
-			// Remove row selection highlighting
-			const selectedRows = this.shadow.querySelectorAll('.wg__row--selected')
-			selectedRows.forEach(r => r.classList.remove('wg__row--selected'))
-		}
-		if (this.grid.selectedColumns.length > 0) {
-			this.grid.clearColumnSelection_noRender()
-			removeColumnSelectionBorders()
-			// Remove column selection highlighting
-			const selectedCells = this.shadow.querySelectorAll('.wg__cell--column-selected')
-			selectedCells.forEach(c => c.classList.remove('wg__cell--column-selected'))
-			const selectedHeaders = this.shadow.querySelectorAll('.wg__header--selected')
-			selectedHeaders.forEach(h => h.classList.remove('wg__header--selected'))
-		}
+		clearAllSelectionsModule(this)
 	}
 
 	/** Excel-like commit-on-click-away — see modules/editing/commit-on-transition.ts */
