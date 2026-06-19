@@ -174,7 +174,12 @@ import {
 	handleWindowScroll,
 	handleOutsideClick,
 	handleSortClickSubscription,
-	handleTableKeyDown
+	handleTableKeyDown,
+	handleTableFocus,
+	handleTableDblClick,
+	handleCellClickToEdit,
+	handleSelectTriggerClick,
+	handleHeaderColumnSelectClick
 } from './modules/events/index.js'
 import { handleResizeStart } from './modules/resize/index.js'
 import { handleReorderStart, isReordering } from './modules/reorder/index.js'
@@ -1087,74 +1092,19 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	// ==========================================================================
 
 	/** Tracks whether a mouse button is currently pressed on the table (mousedown→mouseup) */
-	private _isMouseDown = false
+	isMouseDown = false
 
 	private attachEventListeners(): void {
 		const table = this.shadow.querySelector('.wg__table')
 		if (!table) return
 
 		// Track mouse button state so focus handler can distinguish mouse vs keyboard focus
-		table.addEventListener('mousedown', () => { this._isMouseDown = true }, true)
-		document.addEventListener('mouseup', () => { this._isMouseDown = false }, true)
+		table.addEventListener('mousedown', () => { this.isMouseDown = true }, true)
+		document.addEventListener('mouseup', () => { this.isMouseDown = false }, true)
 
-		// Focus events
-		table.addEventListener('focus', (e: Event) => {
-			const target = e.target as HTMLElement
-			if (target.matches('.wg__cell')) {
-				const rowIndex = parseInt(target.dataset.row || '0', 10)
-				const colIndex = parseInt(target.dataset.col || '0', 10)
-				handleCellFocus(this, rowIndex, colIndex)
-				updateFillHandle(this)
-				// Only fire onrowfocus for keyboard-triggered focus (Tab, arrows).
-				// For mouse interactions, defer to click handler so onrowfocus fires on mouseup, not mousedown.
-				if (!this._isMouseDown && !isCellSelectionPending() && !isCellSelecting()) {
-					const prevFocusedRow = this.grid.focusedRowIndex
-					this.grid.setFocusedRow(rowIndex)
-					this.updateRowFocusVisual(prevFocusedRow, rowIndex)
-				}
-
-				// Auto-scroll if cell is behind frozen columns
-				ensureCellNotBehindFrozen(this, target, rowIndex)
-			}
-			// Handle focus on editor inputs in always-editing mode
-			// When Tab/Enter moves focus to an editor input, we need to update the grid's focus state
-			if (target.matches('.wg__editor, .wg__combobox-input, .wg__autocomplete-input, .wg__date-input, .wg__select-trigger')) {
-				const cell = target.closest('.wg__cell') as HTMLElement
-				if (cell) {
-					const rowIndex = parseInt(cell.dataset.row || '0', 10)
-					const colIndex = parseInt(cell.dataset.col || '0', 10)
-					const column = this.grid.columns[colIndex]
-					// Check if this cell uses 'always' editTrigger
-					const effectiveTrigger = column?.editTrigger ?? this.grid.editTrigger
-					if (effectiveTrigger === 'always') {
-						// Update focused cell state and visual
-						const oldFocus = this.grid.focusedCell
-						if (!oldFocus || oldFocus.rowIndex !== rowIndex || oldFocus.colIndex !== colIndex) {
-							this.grid.setFocusedCell(rowIndex, colIndex)
-							// Remove focus class from old cell (don't re-render - just update class)
-							if (oldFocus) {
-								const oldCell = this.shadow.querySelector(
-									`td[data-row="${oldFocus.rowIndex}"][data-col="${oldFocus.colIndex}"]`
-								) as HTMLElement
-								if (oldCell) {
-									oldCell.classList.remove('wg__cell--always-edit-focused')
-								}
-							}
-							// Add focus class to new cell (don't re-render - just update class)
-							cell.classList.add('wg__cell--always-edit-focused')
-							// Update row focus (only for keyboard — mouse defers to click handler)
-							if (!this._isMouseDown) {
-								const prevFocusedRow = this.grid.focusedRowIndex
-								this.grid.setFocusedRow(rowIndex)
-								this.updateRowFocusVisual(prevFocusedRow, rowIndex)
-							}
-						}
-					}
-				}
-			}
-			// Dropdown opening on focus - handled by pipeline (adapter dispatches openDropdown after startEdit)
-			// Legacy code removed: openDropdownForCurrentEditor was called here for .wg__select-trigger, .wg__combobox-input, .wg__autocomplete-input
-		}, true)
+		// Focus — capture-phase, drives handleCellFocus + always-edit-mode swap + onrowfocus (keyboard only)
+		// Extracted to modules/events/table-focus.ts
+		table.addEventListener('focus', (e: Event) => handleTableFocus(this, e), true)
 
 		// Keydown — tree shortcuts + pipeline + datepicker passthrough + editor/cell dispatch
 		// Extracted to modules/events/table-keydown.ts
@@ -1170,175 +1120,35 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			}
 		})
 
-		// Double-click to edit. Tree-column dblclick-to-toggle is handled in the
-		// mousedown listener (via MouseEvent.detail === 2) because surgical render
-		// rebuilds the cell's <td> when focus changes between clicks, which causes
-		// the browser to drop the native dblclick (its two click targets differ).
-		table.addEventListener('dblclick', (e: Event) => {
-			const target = e.target as HTMLElement
+		// Double-click — pipeline + dblclick / navigate editTrigger paths.
+		// Tree-column dblclick-to-toggle is handled in table-mousedown via
+		// MouseEvent.detail === 2 because surgical render rebuilds the cell's
+		// <td> between clicks and the browser drops the native dblclick when
+		// the two click targets differ.
+		// Extracted to modules/events/table-clicks.ts
+		table.addEventListener('dblclick', (e: Event) => handleTableDblClick(this, e))
 
-			// Try pipeline first
-			if (this.pipelineAdapter?.tryHandleDblClick(e as MouseEvent)) {
-				return
-			}
-
-			e.preventDefault()
-			const cell = target.closest('.wg__cell') as HTMLElement
-			if (cell) {
-				const rowIndex = parseInt(cell.dataset.row || '0', 10)
-				const colIndex = parseInt(cell.dataset.col || '0', 10)
-				const column = this.grid.columns[colIndex]
-				if (column) {
-					const trigger = column.editTrigger || this.grid.editTrigger
-					if (trigger === 'dblclick' || trigger === 'navigate') {
-						const cursorPos = getCursorPositionFromClick(e as MouseEvent, cell)
-						tryStartEdit(this, rowIndex, colIndex, { cursorPosition: cursorPos ?? undefined })
-						const editor = column.editor
-						if (editor === 'select' || editor === 'combobox' || editor === 'autocomplete') {
-							requestAnimationFrame(() => {
-								if (!this.dropdown.isOpen) {
-									openDropdownForCurrentEditor(this)
-								}
-							})
-						} else if (editor === 'custom') {
-							requestAnimationFrame(() => {
-								this.openCustomEditor(rowIndex, colIndex)
-							})
-						}
-					}
-				}
-			}
-		})
-
-		uiLogger.debug('attaching click handler on table')
-
-		// Single click to edit (for editTrigger = 'click')
-		table.addEventListener('click', (e: Event) => {
-			const target = e.target as HTMLElement
-			uiLogger.debug('CLICK fired | target:', target.tagName, target.className, '| connected:', target.isConnected)
-
-			// Tree chevron toggle — handle first so we don't fall through to edit/select logic
-			const chevron = target.closest('.wg__tree-chevron[data-tree-toggle]') as HTMLElement
-			if (chevron) {
-				e.preventDefault()
-				e.stopPropagation()
-				const path = chevron.getAttribute('data-tree-toggle')
-				uiLogger.debug('chevron click:', path, '| target:', target.tagName, target.className)
-				if (path !== null) {
-					this.grid.toggleExpandedPath(path)
-				}
-				return
-			}
-
-
-			// Try pipeline first
-			if (this.pipelineAdapter?.tryHandleClick(e as MouseEvent)) {
-				return
-			}
-
-			const cell = target.closest('.wg__cell') as HTMLElement
-			if (cell && !cell.classList.contains('wg__cell--editing')) {
-				const rowIndex = parseInt(cell.dataset.row || '0', 10)
-				const colIndex = parseInt(cell.dataset.col || '0', 10)
-				const column = this.grid.columns[colIndex]
-				if (column) {
-					const trigger = column.editTrigger || this.grid.editTrigger
-					if (trigger === 'click') {
-						e.preventDefault()
-						const cursorPos = getCursorPositionFromClick(e as MouseEvent, cell)
-						tryStartEdit(this, rowIndex, colIndex, { cursorPosition: cursorPos ?? undefined })
-						const editor = column.editor
-						if (editor === 'select' || editor === 'combobox' || editor === 'autocomplete') {
-							requestAnimationFrame(() => {
-								if (!this.dropdown.isOpen) {
-									openDropdownForCurrentEditor(this)
-								}
-							})
-						} else if (editor === 'custom') {
-							requestAnimationFrame(() => {
-								this.openCustomEditor(rowIndex, colIndex)
-							})
-						}
-					}
-				}
-			}
-		})
+		// Single click — tree chevron + pipeline + click editTrigger
+		// Extracted to modules/events/table-clicks.ts
+		table.addEventListener('click', (e: Event) => handleCellClickToEdit(this, e))
 
 		// Mousedown - tree dblclick / cell range selection / date trigger / dropdown switch
 		// Extracted to modules/events/table-mousedown.ts
 		table.addEventListener('mousedown', (e: Event) => handleTableMouseDown(this, e))
 
-		// Click events - legacy select trigger toggle
-		// In 'always' mode, the pipeline handles dropdown open via shouldShowDropdownOnFocus
-		// so this legacy handler must not fire (it would toggle-close the already-opened dropdown)
-		table.addEventListener('click', (e: Event) => {
-			const target = e.target as HTMLElement
-
-			if (target.matches('.wg__select-trigger, .wg__select-value')) {
-				// Skip if pipeline handles this cell (always mode)
-				const cell = target.closest('.wg__cell') as HTMLElement
-				if (cell) {
-					const colIndex = parseInt(cell.dataset.col || '', 10)
-					const column = this.grid.columns[colIndex]
-					const trigger = column?.editTrigger ?? this.grid.editTrigger
-					if (trigger === 'always') return
-				}
-				e.preventDefault()
-				e.stopPropagation()
-				toggleDropdown(this)
-			}
-		})
+		// Legacy click on .wg__select-trigger / .wg__select-value — toggles dropdown.
+		// Skipped in 'always' mode (pipeline owns dropdown open there).
+		// Extracted to modules/events/table-clicks.ts
+		table.addEventListener('click', (e: Event) => handleSelectTriggerClick(this, e))
 
 		// Mousedown — column resize / reorder / column-select / row-select / clear-on-empty
 		// Extracted to modules/events/header-mousedown.ts
 		table.addEventListener('mousedown', (e: Event) => handleHeaderRowMouseDown(this, e))
 
-		// Header click for column selection (sort indicator handled by clickEvents)
-		// Only active when column reorder is enabled (otherwise, mousedown handler does selection)
-		table.addEventListener('click', (e: Event) => {
-			const mouseEvent = e as MouseEvent
-			const target = mouseEvent.target as HTMLElement
-
-			// Skip if clicking on resize handle or sort indicator
-			if (target.closest('.wg__resize-handle')) return
-			if (target.closest('.wg__sort-indicator')) return
-			// Skip if reordering was just performed (prevents accidental selection on drop)
-			if (isReordering()) return
-			// Skip if column reorder is disabled (mousedown handler handles column selection)
-			if (!this.grid.isColumnReorderAllowed) return
-
-			// Click on header = column selection
-			const header = target.closest('.wg__header:not(.wg__row-number-header):not(.wg__inline-actions-header):not(.wg__actions-column):not(.wg__filler)') as HTMLElement
-			if (header) {
-				e.preventDefault()
-				const field = header.dataset.field
-				if (!field) return
-
-				// Find visual column index
-				const colIndex = this.grid.visualColumns.findIndex(vc => String(vc.column.field) === field)
-				if (colIndex === -1) return
-
-				// Remove any existing cell range border (column selection doesn't use border)
-				removeRangeBorder()
-
-				// Ctrl = toggle individual column, Shift = range, plain = replace
-				if (mouseEvent.ctrlKey || mouseEvent.metaKey) {
-					this.grid.selectColumn(colIndex, 'toggle')
-				} else if (mouseEvent.shiftKey) {
-					this.grid.selectColumn(colIndex, 'range')
-				} else {
-					this.grid.selectColumn(colIndex, 'replace')
-				}
-
-				this.render()
-
-				// Focus container for keyboard shortcuts
-				requestAnimationFrame(() => {
-					const container = this.shadow.querySelector('.wg') as HTMLElement
-					container?.focus({ preventScroll: true })
-				})
-			}
-		})
+		// Header click → column selection (replace/range/toggle). Only fires when
+		// isColumnReorderAllowed is on; otherwise mousedown handler does it.
+		// Extracted to modules/events/table-clicks.ts
+		table.addEventListener('click', (e: Event) => handleHeaderColumnSelectClick(this, e))
 
 		// Context menu (right-click)
 		table.addEventListener('contextmenu', (e: Event) => {

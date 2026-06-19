@@ -115,6 +115,12 @@ export interface GridContext<T = unknown> {
 	// DOM needs catching up.
 	updateRowFocusVisual(prevRowIndex: number | null, newRowIndex: number | null): void
 
+	// True between table-level mousedown and document-level mouseup. Focus
+	// handlers consult this to distinguish keyboard-triggered focus (fire
+	// onrowfocus immediately) from mouse-triggered focus (defer onrowfocus to
+	// the click handler so it fires on mouseup, not mousedown).
+	isMouseDown: boolean
+
 	// Scroll event manager (pub/sub for scroll events)
 	readonly scrollEvents: ScrollEventManager
 

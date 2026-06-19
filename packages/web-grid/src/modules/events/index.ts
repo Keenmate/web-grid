@@ -14,3 +14,10 @@ export { handleContainerKeyDown } from './container-keydown.js'
 export { handleContainerScroll, handleWindowScroll } from './scroll-handlers.js'
 export { handleOutsideClick, handleSortClickSubscription } from './click-subscriptions.js'
 export { handleTableKeyDown } from './table-keydown.js'
+export { handleTableFocus } from './table-focus.js'
+export {
+	handleTableDblClick,
+	handleCellClickToEdit,
+	handleSelectTriggerClick,
+	handleHeaderColumnSelectClick
+} from './table-clicks.js'
