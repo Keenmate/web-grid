@@ -179,7 +179,8 @@ import {
 	handleTableDblClick,
 	handleCellClickToEdit,
 	handleSelectTriggerClick,
-	handleHeaderColumnSelectClick
+	handleHeaderColumnSelectClick,
+	handleInternalBlur
 } from './modules/events/index.js'
 import { handleResizeStart } from './modules/resize/index.js'
 import { handleReorderStart, isReordering } from './modules/reorder/index.js'
@@ -1173,38 +1174,15 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			}
 		})
 
-		// Blur events - subscribe to blur events (capture phase handled internally)
-		// Only subscribe once (attachEventListeners is called on every render)
+		// Blur events — internal focus change dispatch. Capture phase + skip guard
+		// handled by focusEvents; outsideClick owns leaving-grid cleanup.
+		// Extracted to modules/events/blur-subscription.ts
 		if (!this.focusEventsSubscribed) {
 			this.focusEvents.subscribe('blur', (target, relatedTarget) => {
-				// Use unified guard check
 				if (this.focusEvents.shouldSkipBlur()) return
-
-				// If focus is leaving the grid entirely, let outsideClick handle ALL cleanup
-				// This prevents blur and outsideClick from racing/conflicting
 				const isLeavingGrid = !relatedTarget || !this.shadow.contains(relatedTarget)
 				if (isLeavingGrid) return
-
-				// Handle INTERNAL focus changes only (moving between cells/editors within grid)
-
-				// Text/number editors
-				if (target.matches('.wg__editor--text, .wg__editor--number')) {
-					handleEditorBlur(this, target as HTMLInputElement)
-				}
-				// Date input blur - commit if datepicker is not open
-				else if (target.matches('.wg__date-input')) {
-					if (!this.datepicker) {
-						commitDateEditor(this,target as HTMLInputElement)
-					}
-				}
-				// Select trigger
-				else if (target.matches('.wg__select-trigger')) {
-					handleSelectBlur(this, relatedTarget)
-				}
-				// Combobox/autocomplete
-				else if (target.matches('.wg__combobox-input, .wg__autocomplete-input')) {
-					handleComboboxBlur(this, target as HTMLInputElement)
-				}
+				handleInternalBlur(this, target, relatedTarget)
 			})
 			this.focusEventsSubscribed = true
 		}

@@ -21,3 +21,4 @@ export {
 	handleSelectTriggerClick,
 	handleHeaderColumnSelectClick
 } from './table-clicks.js'
+export { handleInternalBlur } from './blur-subscription.js'
