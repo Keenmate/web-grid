@@ -99,7 +99,8 @@ import {
 	getCursorPositionFromClick,
 	handleTableFocusOut,
 	scrollToRowPosition,
-	handleCellKeyDown
+	handleCellKeyDown,
+	restoreFocusAfterRender
 } from './modules/navigation/index.js'
 
 import {
@@ -1537,68 +1538,9 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			this.attachEventListeners()
 		}
 
-		// Auto-focus editor if in edit mode
-		if (this.grid.editingCell) {
-			const { rowIndex, field } = this.grid.editingCell
-			// Use specific selectors to avoid finding stale editor elements
-			let editor = this.shadow.querySelector(
-				`.wg__combobox-input[data-row="${rowIndex}"][data-field="${field}"],
-				 .wg__autocomplete-input[data-row="${rowIndex}"][data-field="${field}"],
-				 .wg__select-trigger[data-row="${rowIndex}"][data-field="${field}"],
-				 .wg__date-input[data-row="${rowIndex}"][data-field="${field}"]`
-			) as HTMLElement
-			if (!editor) {
-				editor = this.shadow.querySelector(
-					`.wg__editor[data-row="${rowIndex}"][data-field="${field}"]`
-				) as HTMLElement
-			}
-			if (editor) {
-				editor.focus()
-				if (editor instanceof HTMLInputElement && editor.type === 'text') {
-					const cursorPos = this.grid.editingCell.cursorPosition
-					const column = this.getCurrentEditingColumn()
-					const editStartSelection = column?.editorOptions?.editStartSelection || this.grid.editStartSelection
-
-					if (this.grid.editingCell.initialSearchQuery !== undefined) {
-						// Type-to-start: always cursor at end
-						const len = editor.value.length
-						editor.setSelectionRange(len, len)
-					} else {
-						// Apply editStartSelection setting
-						switch (editStartSelection) {
-							case 'mousePosition':
-								if (cursorPos !== undefined) {
-									const pos = Math.min(cursorPos, editor.value.length)
-									editor.setSelectionRange(pos, pos)
-								} else {
-									// No click position available (e.g., Enter/F2 in navigate mode) - cursor at end
-									editor.setSelectionRange(editor.value.length, editor.value.length)
-								}
-								break
-							case 'cursorAtStart':
-								editor.setSelectionRange(0, 0)
-								break
-							case 'cursorAtEnd':
-								editor.setSelectionRange(editor.value.length, editor.value.length)
-								break
-							case 'selectAll':
-							default:
-								editor.select()
-								break
-						}
-					}
-				}
-			}
-		} else if (focusedCell && !this.grid.editingCell) {
-			// Restore focus to the previously focused cell (if not editing)
-			const cell = container.querySelector(
-				`td[data-row="${focusedCell.rowIndex}"][data-col="${focusedCell.colIndex}"]`
-			) as HTMLElement
-			if (cell) {
-				// Use setTimeout to ensure DOM is ready
-				setTimeout(() => cell.focus(), 0)
-			}
-		}
+		// Post-render focus restore (editor focus + selection / focused-cell restore)
+		// Extracted to modules/navigation/post-render-focus.ts
+		restoreFocusAfterRender(this, container, focusedCell)
 
 		// Fix wheel scroll after DOM replacement - force browser to recalculate element under cursor
 		// Without this, user has to move mouse for scroll to work after re-render
