@@ -125,7 +125,8 @@ import {
 	renderDataRowsVirtual,
 	renderPagination,
 	renderSummary,
-	renderCell
+	renderCell,
+	renderShortcutsHelpIcon as renderShortcutsHelpIconModule
 } from './modules/rendering/index.js'
 
 import type { VirtualScrollParams } from './modules/rendering/index.js'
@@ -150,6 +151,7 @@ import {
 	removeInlineShortcuts,
 	closeToolbarAndReset,
 	attachToolbarListeners,
+	renderConnector as renderConnectorModule,
 	type ConnectorState
 } from './modules/toolbar/index.js'
 
@@ -1290,47 +1292,9 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	// Rendering
 	// ==========================================================================
 
-	/**
-	 * Render the shortcuts help icon and overlay
-	 */
+	/** Shortcuts help icon + overlay — see modules/rendering/shortcuts-help.ts */
 	private renderShortcutsHelpIcon(): string {
-		if (!this.grid.isShortcutsHelpVisible || !this.grid.rowShortcuts?.length) {
-			return ''
-		}
-
-		const position = this.grid.shortcutsHelpPosition
-		const positionClass = position === 'top-left' ? 'wg__shortcuts-help--left' : ''
-
-		// Build shortcuts list HTML
-		const shortcutsHtml = this.grid.rowShortcuts.map(shortcut => {
-			const formattedKey = formatKeyCombo(shortcut.key)
-			return `<div class="wg__shortcuts-help-item">
-				<span class="wg__shortcuts-help-key">${formattedKey}</span>
-				<span class="wg__shortcuts-help-label">${shortcut.label}</span>
-			</div>`
-		}).join('')
-
-		// Get custom content if callback is provided
-		const customContent = this.grid.shortcutsHelpContentCallback?.() || ''
-
-		return `
-			<div class="wg__shortcuts-help ${positionClass}">
-				<button class="wg__shortcuts-help-icon" type="button" title="${this.grid.labels.keyboardShortcuts}">
-					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						<circle cx="12" cy="12" r="10"></circle>
-						<path d="M12 16v-4"></path>
-						<path d="M12 8h.01"></path>
-					</svg>
-				</button>
-				<div class="wg__shortcuts-help-overlay">
-					${customContent ? `<div class="wg__shortcuts-help-custom">${customContent}</div>` : ''}
-					<div class="wg__shortcuts-help-title">${this.grid.labels.keyboardShortcuts}</div>
-					<div class="wg__shortcuts-help-list">
-						${shortcutsHtml}
-					</div>
-				</div>
-			</div>
-		`
+		return renderShortcutsHelpIconModule(this)
 	}
 
 	render(): void {
@@ -1585,46 +1549,9 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		perfLogger.debug('render() body:', (performance.now() - __renderStartT).toFixed(2), 'ms |', gridPerf.summary())
 	}
 
-	/**
-	 * Render the SVG connector arrow for toolbar row tracking
-	 */
+	/** SVG connector arrow for toolbar row tracking — see modules/toolbar/connector-renderer.ts */
 	renderConnector(): void {
-		// Remove any existing connector
-		const existingConnector = this.shadow.querySelector('.wg__connector')
-		if (existingConnector) {
-			existingConnector.remove()
-		}
-
-		const state = getConnectorState()
-		if (!state.path || !state.arrowPos) {
-			return
-		}
-
-		// Create SVG overlay
-		const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
-		svg.setAttribute('class', 'wg__connector')
-		svg.setAttribute('style', 'position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 999;')
-
-		// Create path
-		const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
-		path.setAttribute('d', state.path)
-		path.setAttribute('stroke', 'var(--wg-accent-color, #0078d4)')
-		path.setAttribute('stroke-width', '2')
-		path.setAttribute('fill', 'none')
-		svg.appendChild(path)
-
-		// Create arrow head
-		const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'polygon')
-		const points = state.arrowDir === 'down' ? '-4,0 4,0 0,8' :
-			state.arrowDir === 'up' ? '-4,0 4,0 0,-8' :
-			state.arrowDir === 'left' ? '0,-4 -8,0 0,4' :
-			'0,-4 8,0 0,4'
-		arrow.setAttribute('points', points)
-		arrow.setAttribute('fill', 'var(--wg-accent-color, #0078d4)')
-		arrow.setAttribute('transform', `translate(${state.arrowPos.x}, ${state.arrowPos.y})`)
-		svg.appendChild(arrow)
-
-		this.shadow.appendChild(svg)
+		renderConnectorModule(this)
 	}
 
 	/**

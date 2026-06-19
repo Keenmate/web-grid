@@ -22,3 +22,5 @@ export {
 } from './cell.js'
 
 export type { RenderCellOptions } from './cell.js'
+
+export { renderShortcutsHelpIcon } from './shortcuts-help.js'

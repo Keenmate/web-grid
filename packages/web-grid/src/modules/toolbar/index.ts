@@ -888,3 +888,5 @@ export {
 } from './element-handlers.js'
 
 export { attachToolbarListeners } from './event-listeners.js'
+
+export { renderConnector } from './connector-renderer.js'
