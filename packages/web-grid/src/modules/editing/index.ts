@@ -26,3 +26,9 @@ export {
 
 // Editor keydown handler
 export { handleEditorKeyDown } from './editor-keydown.js'
+
+// Custom editor lifecycle
+export { openCustomEditor } from './custom-editor.js'
+
+// Excel-like commit-on-click-away
+export { commitOrCancelEditOnTransition } from './commit-on-transition.js'

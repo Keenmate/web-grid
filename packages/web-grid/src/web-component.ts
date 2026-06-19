@@ -100,7 +100,8 @@ import {
 	handleTableFocusOut,
 	scrollToRowPosition,
 	handleCellKeyDown,
-	restoreFocusAfterRender
+	restoreFocusAfterRender,
+	showGoToRowDialog as showGoToRowDialogModule
 } from './modules/navigation/index.js'
 
 import {
@@ -112,7 +113,9 @@ import {
 	focusCellAfterCancel,
 	restoreCellToDisplayMode,
 	renderCellEditor,
-	handleEditorKeyDown
+	handleEditorKeyDown,
+	openCustomEditor as openCustomEditorModule,
+	commitOrCancelEditOnTransition as commitOrCancelEditOnTransitionModule
 } from './modules/editing/index.js'
 
 import {
@@ -1656,64 +1659,9 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		}
 	}
 
-	/**
-	 * Called from cell-transition click handlers in place of grid.cancelEdit().
-	 * Reads the in-progress editor value and commits it (Excel-like) when
-	 * shouldCommitOnClickAway is true; falls back to cancel when false or when
-	 * the editor DOM can't be read. Must be called BEFORE renderCell wipes
-	 * the editor element.
-	 */
+	/** Excel-like commit-on-click-away — see modules/editing/commit-on-transition.ts */
 	commitOrCancelEditOnTransition(): void {
-		const editingCell = this.grid.editingCell
-		if (!editingCell) return
-		if (!this.grid.shouldCommitOnClickAway) {
-			this.grid.cancelEdit()
-			return
-		}
-		const { rowIndex, field } = editingCell
-		const colIndex = this.grid.columns.findIndex(c => String(c.field) === field)
-		if (colIndex < 0) {
-			this.grid.cancelEdit()
-			return
-		}
-		const cell = this.shadow.querySelector(
-			`.wg__cell[data-row="${rowIndex}"][data-col="${colIndex}"]`
-		) as HTMLElement | null
-		let editor: HTMLElement | null = cell?.querySelector(
-			'.wg__combobox-input, .wg__autocomplete-input, .wg__date-input, .wg__select-trigger'
-		) as HTMLElement | null
-		if (!editor) editor = cell?.querySelector('.wg__editor') as HTMLElement | null
-		if (!editor) {
-			this.grid.cancelEdit()
-			return
-		}
-		let value: unknown
-		if (editor instanceof HTMLInputElement) {
-			if (editor.type === 'checkbox') {
-				const item = this.grid.displayItems[rowIndex]
-				value = this.grid.getCellRawValue(item, rowIndex, field)
-			} else if (editor.classList.contains('wg__date-input')) {
-				value = editor.dataset.dateValue || editor.value
-			} else if (editor.classList.contains('wg__editor--number')) {
-				const strValue = editor.value.trim()
-				if (strValue === '') {
-					value = null
-				} else {
-					const num = parseFloat(strValue)
-					value = isNaN(num) ? strValue : num
-				}
-			} else {
-				value = editor.value
-			}
-		} else if (editor instanceof HTMLSelectElement) {
-			value = editor.value
-		} else {
-			value = editor.dataset.value || ''
-		}
-		// Fire and forget — grid.commitEdit handles async validation and clears
-		// editingCell when complete. The surrounding caller already handles
-		// post-transition rendering and focus.
-		void this.grid.commitEdit(rowIndex, field, value)
+		commitOrCancelEditOnTransitionModule(this)
 	}
 
 	/**
@@ -1733,145 +1681,14 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		}
 	}
 
-	/**
-	 * Show "Go to Row" dialog (Ctrl+G)
-	 */
+	/** "Go to row" dialog (Ctrl+G) — see modules/navigation/go-to-row-dialog.ts */
 	showGoToRowDialog(colIndex: number): void {
-		const displayItems = this.grid.displayItems
-		if (displayItems.length === 0) return
-
-		// Create dialog overlay
-		const overlay = document.createElement('div')
-		overlay.className = 'wg__goto-overlay'
-		overlay.innerHTML = `
-			<div class="wg__goto-dialog">
-				<label class="wg__goto-label">Go to row (1-${displayItems.length}):</label>
-				<input type="number" class="wg__goto-input" min="1" max="${displayItems.length}" value="1" />
-				<div class="wg__goto-buttons">
-					<button type="button" class="wg__goto-btn wg__goto-btn--cancel">Cancel</button>
-					<button type="button" class="wg__goto-btn wg__goto-btn--go">Go</button>
-				</div>
-			</div>
-		`
-
-		const input = overlay.querySelector('.wg__goto-input') as HTMLInputElement
-		const goBtn = overlay.querySelector('.wg__goto-btn--go') as HTMLButtonElement
-		const cancelBtn = overlay.querySelector('.wg__goto-btn--cancel') as HTMLButtonElement
-
-		const closeDialog = () => {
-			overlay.remove()
-		}
-
-		const goToRow = () => {
-			const rowNum = parseInt(input.value, 10)
-			if (isNaN(rowNum) || rowNum < 1 || rowNum > displayItems.length) {
-				input.focus()
-				input.select()
-				return
-			}
-
-			closeDialog()
-
-			// Convert 1-based to 0-based index
-			const targetRow = rowNum - 1
-			const oldFocus = this.grid.focusedCell
-			this.grid.setFocusedCell(targetRow, colIndex)
-
-			if (this.grid.shouldUseVirtualScroll()) {
-				// Virtual scroll: scroll to position (programmatic flag prevents redundant handleVirtualScroll)
-				this.scrollToRowProgrammatically(targetRow)
-				// After scroll settles, focus the cell
-				requestAnimationFrame(() => {
-					requestAnimationFrame(() => {
-						const cell = this.shadow.querySelector(
-							`td[data-row="${targetRow}"][data-col="${colIndex}"]`
-						) as HTMLElement
-						cell?.focus()
-					})
-				})
-			} else {
-				// Non-virtual: scroll cell into view and focus it
-				const cell = this.shadow.querySelector(
-					`td[data-row="${targetRow}"][data-col="${colIndex}"]`
-				) as HTMLElement
-				if (cell) {
-					cell.scrollIntoView({ block: 'nearest', behavior: 'auto' })
-					cell.focus()
-					updateFocusVisual(this, oldFocus, { rowIndex: targetRow, colIndex })
-				}
-			}
-		}
-
-		// Event handlers
-		goBtn.addEventListener('click', goToRow)
-		cancelBtn.addEventListener('click', closeDialog)
-		overlay.addEventListener('click', (e) => {
-			if (e.target === overlay) closeDialog()
-		})
-		input.addEventListener('keydown', (e) => {
-			if (e.key === 'Enter') {
-				e.preventDefault()
-				goToRow()
-			} else if (e.key === 'Escape') {
-				e.preventDefault()
-				closeDialog()
-			}
-		})
-
-		this.shadow.appendChild(overlay)
-		input.focus()
-		input.select()
+		showGoToRowDialogModule(this, colIndex)
 	}
 
-	/**
-	 * Open custom editor by calling the cellEditCallback
-	 */
+	/** Custom editor lifecycle — see modules/editing/custom-editor.ts */
 	openCustomEditor(rowIndex: number, colIndex: number): void {
-		const column = this.grid.columns[colIndex]
-		if (!column || column.editor !== 'custom' || !column.cellEditCallback) {
-			return
-		}
-
-		const field = String(column.field)
-		const item = this.grid.displayItems[rowIndex]
-		if (!item) return
-
-		const currentValue = this.grid.getCellRawValue(item, rowIndex, field)
-
-		// Create context with commit/cancel functions
-		const context: CustomEditorContext<unknown> = {
-			value: currentValue,
-			row: item,
-			rowIndex,
-			field,
-			commit: async (newValue: unknown) => {
-				// Same order as the canonical edit-executor commit path:
-				//   1. clearEditingVisual BEFORE commitEdit (so editingCell is still
-				//      set and the wg__cell--editing class can be located and removed)
-				//   2. await commitEdit (it's async — may run beforeCommitCallback)
-				//   3. renderCell so the cell picks up the committed draft value
-				clearEditingVisual(this)
-				await this.grid.commitEdit(rowIndex, field, newValue)
-				renderCell(this, rowIndex, colIndex)
-				requestAnimationFrame(() => {
-					moveFocus(this, rowIndex, colIndex)
-				})
-			},
-			cancel: () => {
-				// Cancel edit mode without saving
-				clearEditingVisual(this)
-				this.grid.cancelEdit()
-				renderCell(this, rowIndex, colIndex)
-				// Return focus to the cell
-				requestAnimationFrame(() => {
-					moveFocus(this, rowIndex, colIndex)
-				})
-			}
-		}
-
-		// Call the callback (cast to any to satisfy generic constraint)
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		;(column.cellEditCallback as (ctx: CustomEditorContext<any>) => void)(context)
+		openCustomEditorModule(this, rowIndex, colIndex)
 	}
 
 
