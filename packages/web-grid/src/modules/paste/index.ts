@@ -510,3 +510,53 @@ export async function executePaste<T>(
 
 	return pasteDetail
 }
+
+/**
+ * Top-level paste event handler — wired on the GridElement itself so it
+ * fires for any paste while the grid has focus. Only does work in navigate
+ * mode with a focused cell and no in-progress edit; the editor's own
+ * default paste handles edit-mode pasting.
+ *
+ * Multi-cell detection: presence of tab or newline. Multi-cell goes through
+ * executePaste (TSV parse + header detection + per-cell validation + new-
+ * row creation). Single-cell takes the direct path: column.beforePasteCallback
+ * preprocesses, then grid.commitEdit. Both paths render after.
+ */
+export async function handlePasteEvent<T>(ctx: GridContext<T>, e: ClipboardEvent): Promise<void> {
+	// Only in navigate mode with focused cell, not while editing
+	if (!ctx.grid.isNavigateMode || ctx.grid.editingCell || !ctx.grid.focusedCell) return
+
+	const { rowIndex, colIndex } = ctx.grid.focusedCell
+	const text = e.clipboardData?.getData('text') || ''
+	if (!text) return
+
+	// Check if this is multi-cell paste (contains tabs or multiple lines)
+	const isMultiCell = text.includes('\t') || text.includes('\n')
+
+	if (isMultiCell) {
+		// Multi-cell paste - use paste module
+		e.preventDefault()
+		await executePaste(ctx, text, rowIndex, colIndex)
+		ctx.render()
+	} else {
+		// Single cell paste - original behavior
+		const column = ctx.grid.columns[colIndex]
+		const row = ctx.grid.displayItems[rowIndex]
+		if (!column || !row) return
+
+		// Check if cell is editable
+		if (!ctx.grid.isCellEditable(column, row)) return
+
+		e.preventDefault()
+
+		let processedText: unknown = text
+		if (column.beforePasteCallback) {
+			processedText = column.beforePasteCallback(text, row)
+		}
+
+		// Commit the pasted value
+		const field = String(column.field)
+		await ctx.grid.commitEdit(rowIndex, field, processedText)
+		ctx.render()
+	}
+}

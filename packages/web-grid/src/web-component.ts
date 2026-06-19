@@ -226,7 +226,7 @@ import {
 	isColumnSelectionPending
 } from './modules/column-selection/index.js'
 
-import { executePaste } from './modules/paste/index.js'
+import { executePaste, handlePasteEvent } from './modules/paste/index.js'
 
 import {
 	ActionPipelineAdapter,
@@ -1619,48 +1619,8 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	}
 
 
-	/**
-	 * Handle paste event in navigate mode
-	 * Supports single-cell paste and multi-cell TSV paste from Excel
-	 */
-	private handlePaste = async (e: ClipboardEvent): Promise<void> => {
-		// Only in navigate mode with focused cell, not while editing
-		if (!this.grid.isNavigateMode || this.grid.editingCell || !this.grid.focusedCell) return
-
-		const { rowIndex, colIndex } = this.grid.focusedCell
-		const text = e.clipboardData?.getData('text') || ''
-		if (!text) return
-
-		// Check if this is multi-cell paste (contains tabs or multiple lines)
-		const isMultiCell = text.includes('\t') || text.includes('\n')
-
-		if (isMultiCell) {
-			// Multi-cell paste - use paste module
-			e.preventDefault()
-			await executePaste(this, text, rowIndex, colIndex)
-			this.render()
-		} else {
-			// Single cell paste - original behavior
-			const column = this.grid.columns[colIndex]
-			const row = this.grid.displayItems[rowIndex]
-			if (!column || !row) return
-
-			// Check if cell is editable
-			if (!this.grid.isCellEditable(column, row)) return
-
-			e.preventDefault()
-
-			let processedText: unknown = text
-			if (column.beforePasteCallback) {
-				processedText = column.beforePasteCallback(text, row)
-			}
-
-			// Commit the pasted value
-			const field = String(column.field)
-			await this.grid.commitEdit(rowIndex, field, processedText)
-			this.render()
-		}
-	}
+	/** Paste event handler — see modules/paste/handlePasteEvent */
+	private handlePaste = (e: ClipboardEvent): Promise<void> => handlePasteEvent(this, e)
 }
 
 // Register the custom element
