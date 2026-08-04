@@ -236,10 +236,68 @@ import {
 
 import type { GridContext } from './modules/grid-context.js'
 
+// Core: reactive base class + the input-table converters. web-grid keeps its
+// rich config-object/property API (columns, items, callbacks stay properties);
+// core owns the SSR-safe base, the §12.3 instance registry, and — via the
+// `static inputs` table below — the declarative *attribute* layer for the
+// scalar/enum config flags. See ../../CLAUDE.md and core SPEC §6.
+import {
+	BlissElement,
+	registerComponent,
+	toBool,
+	toInt,
+	toFloat,
+	toText,
+	toEnum,
+	toCustom,
+	type InputDef,
+} from '@keenmate/web-components-core'
+
+// Enum member lists for the input table (hoisted `as const` so the CEM
+// extractor and toEnum both read the same literal source of truth).
+const PAGINATION_MODES = ['client', 'server'] as const
+const EDIT_TRIGGERS = ['click', 'dblclick', 'button', 'always', 'navigate'] as const
+const EDIT_START_SELECTIONS = ['mousePosition', 'selectAll', 'cursorAtStart', 'cursorAtEnd'] as const
+const GRID_MODES = ['read-only', 'excel', 'input-matrix'] as const
+const TOGGLE_VISIBILITIES = ['always', 'on-focus'] as const
+const TOOLBAR_VERTICAL_ALIGNS = ['top', 'center', 'bottom'] as const
+const TOOLBAR_HORIZONTAL_ALIGNS = ['start', 'center', 'end', 'cursor'] as const
+const TOOLBAR_TRIGGERS = ['hover', 'click', 'button'] as const
+const TOOLBAR_POSITIONS = ['auto', 'left', 'right', 'top', 'inline'] as const
+const SHORTCUTS_HELP_POSITIONS = ['top-right', 'top-left'] as const
+const SORT_MODES = ['none', 'single', 'multi'] as const
+const NEW_ROW_POSITIONS = ['top', 'bottom'] as const
+const TREE_DOUBLE_CLICK_BEHAVIORS = ['none', 'toggle'] as const
+const PASTE_MODES = ['skip-non-editable', 'all-columns', 'editable-only'] as const
+
+/**
+ * Boolean-or-`'auto'` tri-state (used by `is-pagination-visible`). Absent → the
+ * grid default; `auto` → `'auto'`; otherwise the usual true/false-ish parse.
+ */
+const toBoolOrAuto = (fallback: boolean): InputDef['converter'] =>
+	toCustom<boolean | 'auto'>((raw) => {
+		if (raw === null) return fallback
+		const v = raw.trim().toLowerCase()
+		if (v === 'auto') return 'auto'
+		return !(v === 'false' || v === '0' || v === 'no' || v === 'off')
+	})
+
+/**
+ * Number-or-CSS-length (used by `cell-toolbar-offset`, default `0.2`). A bare
+ * number stays a number (em multiplier); anything else is kept as a string.
+ */
+const toNumberOrLength = (fallback: number | string): InputDef['converter'] =>
+	toCustom<number | string>((raw) => {
+		if (raw === null || raw.trim() === '') return fallback
+		const n = Number(raw)
+		return Number.isNaN(n) ? raw : n
+	})
+
 /**
  * GridElement - Custom HTML Element for WebGrid
  *
- * Extends HTMLElement and composes WebGrid for business logic.
+ * Extends {@link BlissElement} (SSR-safe base + §12.3 registry) and composes
+ * WebGrid for business logic.
  *
  * Usage:
  * ```html
@@ -252,7 +310,96 @@ import type { GridContext } from './modules/grid-context.js'
  * grid.columns = [...];
  * ```
  */
-export class GridElement<T = unknown> extends HTMLElement implements GridContext<T> {
+export class GridElement<T = unknown> extends BlissElement implements GridContext<T> {
+	// ── Declarative attribute layer (core input table) ────────────────────────
+	// Every row here is a scalar/enum config flag exposed as a kebab HTML
+	// attribute AND a reactive property (core installs the property accessor,
+	// shadowing the typed get/set facade further down which stays for
+	// IntelliSense). `default` mirrors the WebGrid field initializer so a fresh
+	// element behaves identically. `on: 'update'` → each change is bridged into
+	// `this.grid` (see `update()`), whose setter re-renders. Structured config
+	// (columns/items/callbacks), self-mutated UI state (currentPage, sort,
+	// filters, focusedRowIndex, totalItems, expandedPaths, hasMoreItems) and the
+	// two persist flags (side-effect setters) deliberately stay property-only.
+	static inputs: readonly InputDef[] = [
+		// Filtering & pagination
+		{ configKey: 'isFilterable', attribute: 'is-filterable', converter: toBool('default-false'), default: false, on: 'update' },
+		{ configKey: 'isPageable', attribute: 'is-pageable', converter: toBool('default-false'), default: false, on: 'update' },
+		{ configKey: 'pageSize', attribute: 'page-size', converter: toInt({ min: 1, default: 10 }), default: 10, on: 'update' },
+		{ configKey: 'paginationMode', attribute: 'pagination-mode', converter: toEnum(PAGINATION_MODES, { default: 'client' }), default: 'client', on: 'update' },
+		{ configKey: 'isPaginationVisible', attribute: 'is-pagination-visible', converter: toBoolOrAuto(true), default: true, on: 'update', type: "boolean | 'auto'" },
+		{ configKey: 'paginationPosition', attribute: 'pagination-position', converter: toText({ default: 'bottom-center' }), default: 'bottom-center', on: 'update' },
+		{ configKey: 'paginationLayout', attribute: 'pagination-layout', converter: toText({ default: 'pageSize|previous|pageInfo|next' }), default: 'pageSize|previous|pageInfo|next', on: 'update' },
+		// Appearance
+		{ configKey: 'isStriped', attribute: 'is-striped', converter: toBool('default-true'), default: true, on: 'update' },
+		{ configKey: 'isHoverable', attribute: 'is-hoverable', converter: toBool('default-true'), default: true, on: 'update' },
+		{ configKey: 'isTableBorderOnly', attribute: 'is-table-border-only', converter: toBool('default-false'), default: false, on: 'update' },
+		{ configKey: 'isScrollable', attribute: 'is-scrollable', converter: toBool('default-false'), default: false, on: 'update' },
+		{ configKey: 'scrollMaxHeight', attribute: 'scroll-max-height', converter: toText({ default: '100vh' }), default: '100vh', on: 'update' },
+		// Editing
+		{ configKey: 'isEditable', attribute: 'is-editable', converter: toBool('default-false'), default: false, on: 'update' },
+		{ configKey: 'editTrigger', attribute: 'edit-trigger', converter: toEnum(EDIT_TRIGGERS, { default: 'dblclick' }), default: 'dblclick', on: 'update' },
+		{ configKey: 'editStartSelection', attribute: 'edit-start-selection', converter: toEnum(EDIT_START_SELECTIONS, { default: 'mousePosition' }), default: 'mousePosition', on: 'update' },
+		{ configKey: 'shouldCommitOnClickAway', attribute: 'should-commit-on-click-away', converter: toBool('default-true'), default: true, on: 'update' },
+		{ configKey: 'mode', attribute: 'mode', converter: toEnum(GRID_MODES, { default: 'excel' }), default: 'excel', on: 'update' },
+		// Dropdown editor
+		{ configKey: 'dropdownToggleVisibility', attribute: 'dropdown-toggle-visibility', converter: toEnum(TOGGLE_VISIBILITIES, { default: 'always' }), default: 'always', on: 'update' },
+		{ configKey: 'shouldShowDropdownOnFocus', attribute: 'should-show-dropdown-on-focus', converter: toBool('default-true'), default: true, on: 'update' },
+		{ configKey: 'shouldOpenDropdownOnEnter', attribute: 'should-open-dropdown-on-enter', converter: toBool('default-false'), default: false, on: 'update' },
+		{ configKey: 'isCheckboxAlwaysEditable', attribute: 'is-checkbox-always-editable', converter: toBool('default-false'), default: false, on: 'update' },
+		// Row numbers & indicators
+		{ configKey: 'isRowNumbersVisible', attribute: 'is-row-numbers-visible', converter: toBool('default-false'), default: false, on: 'update' },
+		{ configKey: 'isDirtyIndicatorVisible', attribute: 'is-dirty-indicator-visible', converter: toBool('default-true'), default: true, on: 'update' },
+		{ configKey: 'isStickyRowNumbers', attribute: 'is-sticky-row-numbers', converter: toBool('default-false'), default: false, on: 'update' },
+		{ configKey: 'freezeColumns', attribute: 'freeze-columns', converter: toInt({ min: 0, default: 0 }), default: 0, on: 'update' },
+		// Row toolbar
+		{ configKey: 'isRowToolbarVisible', attribute: 'is-row-toolbar-visible', converter: toBool('default-false'), default: false, on: 'update' },
+		{ configKey: 'toolbarVerticalAlign', attribute: 'toolbar-vertical-align', converter: toEnum(TOOLBAR_VERTICAL_ALIGNS, { default: 'bottom' }), default: 'bottom', on: 'update' },
+		{ configKey: 'toolbarHorizontalAlign', attribute: 'toolbar-horizontal-align', converter: toEnum(TOOLBAR_HORIZONTAL_ALIGNS, { default: 'center' }), default: 'center', on: 'update' },
+		{ configKey: 'toolbarTrigger', attribute: 'toolbar-trigger', converter: toEnum(TOOLBAR_TRIGGERS, { default: 'hover' }), default: 'hover', on: 'update' },
+		{ configKey: 'toolbarPosition', attribute: 'toolbar-position', converter: toEnum(TOOLBAR_POSITIONS, { default: 'auto' }), default: 'auto', on: 'update' },
+		{ configKey: 'shouldToolbarFollowCursor', attribute: 'should-toolbar-follow-cursor', converter: toBool('default-false'), default: false, on: 'update' },
+		{ configKey: 'cellToolbarOffset', attribute: 'cell-toolbar-offset', converter: toNumberOrLength(0.2), default: 0.2, on: 'update', type: 'number | string' },
+		{ configKey: 'inlineActionsTitle', attribute: 'inline-actions-title', converter: toText({ default: '', isEmptyAllowed: true }), default: '', on: 'update' },
+		// Context menu
+		{ configKey: 'contextMenuXOffset', attribute: 'context-menu-x-offset', converter: toInt({ default: 8 }), default: 8, on: 'update' },
+		{ configKey: 'contextMenuYOffset', attribute: 'context-menu-y-offset', converter: toInt({ default: 0 }), default: 0, on: 'update' },
+		// Shortcuts help
+		{ configKey: 'isShortcutsHelpVisible', attribute: 'is-shortcuts-help-visible', converter: toBool('default-false'), default: false, on: 'update' },
+		{ configKey: 'shortcutsHelpPosition', attribute: 'shortcuts-help-position', converter: toEnum(SHORTCUTS_HELP_POSITIONS, { default: 'top-right' }), default: 'top-right', on: 'update' },
+		// Columns
+		{ configKey: 'columnMinWidth', attribute: 'column-min-width', converter: toText({ isNullable: true }), default: undefined, on: 'update' },
+		{ configKey: 'isColumnReorderAllowed', attribute: 'is-column-reorder-allowed', converter: toBool('default-false'), default: false, on: 'update' },
+		{ configKey: 'sortMode', attribute: 'sort-mode', converter: toEnum(SORT_MODES, { default: 'none' }), default: 'none', on: 'update' },
+		// Summary
+		{ configKey: 'summaryPosition', attribute: 'summary-position', converter: toText({ isNullable: true }), default: undefined, on: 'update' },
+		{ configKey: 'isSummaryInline', attribute: 'is-summary-inline', converter: toBool('default-true'), default: true, on: 'update' },
+		// Virtual & infinite scroll
+		{ configKey: 'isVirtualScrollEnabled', attribute: 'is-virtual-scroll-enabled', converter: toBool('default-false'), default: false, on: 'update' },
+		{ configKey: 'virtualScrollThreshold', attribute: 'virtual-scroll-threshold', converter: toInt({ min: 0, default: 100 }), default: 100, on: 'update' },
+		{ configKey: 'virtualScrollRowHeight', attribute: 'virtual-scroll-row-height', converter: toInt({ min: 1, default: 38 }), default: 38, on: 'update' },
+		{ configKey: 'virtualScrollBuffer', attribute: 'virtual-scroll-buffer', converter: toInt({ min: 0, default: 10 }), default: 10, on: 'update' },
+		{ configKey: 'isInfiniteScrollEnabled', attribute: 'is-infinite-scroll-enabled', converter: toBool('default-false'), default: false, on: 'update' },
+		{ configKey: 'infiniteScrollThreshold', attribute: 'infinite-scroll-threshold', converter: toInt({ min: 0, default: 100 }), default: 100, on: 'update' },
+		// New empty row
+		{ configKey: 'isNewRowEnabled', attribute: 'is-new-row-enabled', converter: toBool('default-false'), default: false, on: 'update' },
+		{ configKey: 'newRowPosition', attribute: 'new-row-position', converter: toEnum(NEW_ROW_POSITIONS, { default: 'bottom' }), default: 'bottom', on: 'update' },
+		{ configKey: 'newRowIndicator', attribute: 'new-row-indicator', converter: toText({ default: '+' }), default: '+', on: 'update' },
+		// Tree
+		{ configKey: 'treeDataSorted', attribute: 'tree-data-sorted', converter: toBool('default-false'), default: false, on: 'update' },
+		{ configKey: 'treeDoubleClickBehavior', attribute: 'tree-double-click-behavior', converter: toEnum(TREE_DOUBLE_CLICK_BEHAVIORS, { default: 'none' }), default: 'none', on: 'update' },
+		{ configKey: 'treeExpandedGlyph', attribute: 'tree-expanded-glyph', converter: toText({ default: '▶' }), default: '▶', on: 'update' },
+		{ configKey: 'treeCollapsedGlyph', attribute: 'tree-collapsed-glyph', converter: toText({ default: '▶' }), default: '▶', on: 'update' },
+		// Paste / clipboard
+		{ configKey: 'shouldCopyWithHeaders', attribute: 'should-copy-with-headers', converter: toBool('default-false'), default: false, on: 'update' },
+		{ configKey: 'pasteMode', attribute: 'paste-mode', converter: toEnum(PASTE_MODES, { default: 'skip-non-editable' }), default: 'skip-non-editable', on: 'update' },
+		{ configKey: 'shouldValidateOnPaste', attribute: 'should-validate-on-paste', converter: toBool('default-true'), default: true, on: 'update' },
+		// Tooltip timing (element-local, not on grid — the bridge's `in this.grid`
+		// guard skips them; readers use the config-backed getter)
+		{ configKey: 'tooltipShowDelay', attribute: 'tooltip-show-delay', converter: toInt({ min: 0, default: 200 }), default: 200, on: 'update' },
+		{ configKey: 'tooltipHideDelay', attribute: 'tooltip-hide-delay', converter: toInt({ min: 0, default: 100 }), default: 100, on: 'update' },
+	]
+
 	// Core grid logic (composition)
 	readonly grid: WebGrid<T>
 
@@ -379,14 +526,72 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				removeDropdown(this)
 			}
 		}
+
+		// Restore SYNCHRONOUS property→grid propagation. Core installs an async
+		// (microtask-coalesced) accessor per input in super(); we override each
+		// grid-backed one on the instance with a straight proxy so that
+		// `el.pageSize = 25` (or a preset like `el.mode = 'excel'`, which
+		// cross-writes sibling props) reflects into `this.grid` immediately — the
+		// long-standing web-grid contract. The ATTRIBUTE path stays reactive via
+		// core (attributeChangedCallback → reinit()/update() → the grid). Inputs
+		// not backed by the grid (tooltip delays) keep core's config accessor.
+		const gridTarget = this.grid as unknown as Record<string, unknown>
+		for (const def of (this.constructor as typeof GridElement).inputs) {
+			const key = def.configKey
+			if (!(key in gridTarget)) continue
+			Object.defineProperty(this, key, {
+				configurable: true,
+				enumerable: true,
+				get: () => gridTarget[key],
+				set: (value: unknown) => { gridTarget[key] = value },
+			})
+		}
 	}
 
 	// ==========================================================================
-	// Web Component Lifecycle
+	// Web Component Lifecycle (core hooks — see BlissElement / core SPEC §6)
 	// ==========================================================================
+	//
+	// BlissElement owns connectedCallback/disconnectedCallback and drives these
+	// hooks. `reinit()` runs on first connect (and any on:'reinit' input change —
+	// we have none) and seeds the grid from the merged input config. `update()`
+	// bridges later attribute/property changes into the grid. `connect()`/
+	// `disconnect()` fire on EVERY connect/disconnect (a DOM move re-activates
+	// without rebuilding) — they hold the former connected/disconnectedCallback
+	// bodies, which are already written to be re-runnable.
 
-	connectedCallback(): void {
-		initLogger.debug('connectedCallback — grid attached to DOM')
+	/** Copy the given input-config keys into the composed WebGrid. Grid setters
+	 * call requestUpdate() → a coalesced render. The `in this.grid` guard skips
+	 * element-local inputs (tooltip delays) whose readers use the config getter. */
+	#applyConfig(cfg: Record<string, unknown>): void {
+		const target = this.grid as unknown as Record<string, unknown>
+		for (const key of Object.keys(cfg)) {
+			if (key in target) target[key] = cfg[key]
+		}
+	}
+
+	protected reinit(): void {
+		// First connect: bridge ONLY explicitly-set attributes into the grid.
+		// Property assignments already wrote the grid synchronously (see the
+		// constructor proxies), and defaults match the grid's own — so seeding
+		// the full config here would clobber preset-derived state (e.g. a
+		// `mode='excel'` bundle) with input defaults. Presence-gating avoids that.
+		const cfg = this.config
+		const target = this.grid as unknown as Record<string, unknown>
+		for (const def of (this.constructor as typeof GridElement).inputs) {
+			if (def.attribute && this.hasAttribute(def.attribute) && def.configKey in target) {
+				target[def.configKey] = cfg[def.configKey]
+			}
+		}
+	}
+
+	protected update(partial: Record<string, unknown>): void {
+		// Post-connect attribute change: apply just the changed inputs.
+		this.#applyConfig(partial)
+	}
+
+	protected connect(): void {
+		initLogger.debug('connect — grid activated')
 		// Load persisted column widths before initial render
 		if (this.grid.gridName && this.grid.shouldPersistColumnWidths) {
 			this.grid.loadPersistedWidths()
@@ -398,8 +603,8 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		this.addEventListener('paste', this.handlePaste as EventListener)
 	}
 
-	disconnectedCallback(): void {
-		initLogger.debug('disconnectedCallback — grid removed from DOM')
+	protected disconnect(): void {
+		initLogger.debug('disconnect — grid deactivated')
 		// Cleanup event managers
 		this.scrollEvents.destroy()
 		this.focusEvents.destroy()
@@ -536,10 +741,10 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 	// Deprecated aliases
 	get toolbarAlign(): 'top' | 'center' | 'bottom' { return this.grid.toolbarVerticalAlign }
-	set toolbarAlign(value: 'top' | 'center' | 'bottom') { this.grid.toolbarVerticalAlign = value }
+	set toolbarAlign(value: 'top' | 'center' | 'bottom') { this.toolbarVerticalAlign = value }
 
 	get toolbarTopPosition(): 'start' | 'center' | 'end' | 'cursor' { return this.grid.toolbarHorizontalAlign }
-	set toolbarTopPosition(value: 'start' | 'center' | 'end' | 'cursor') { this.grid.toolbarHorizontalAlign = value }
+	set toolbarTopPosition(value: 'start' | 'center' | 'end' | 'cursor') { this.toolbarHorizontalAlign = value }
 
 	get toolbarTrigger(): 'hover' | 'click' | 'button' { return this.grid.toolbarTrigger }
 	set toolbarTrigger(value: 'hover' | 'click' | 'button') { this.grid.toolbarTrigger = value }
@@ -556,7 +761,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	/** @deprecated use `shouldToolbarFollowCursor` */
 	get toolbarFollowsCursor(): boolean { return this.grid.shouldToolbarFollowCursor }
 	/** @deprecated use `shouldToolbarFollowCursor` */
-	set toolbarFollowsCursor(value: boolean) { this.grid.shouldToolbarFollowCursor = value }
+	set toolbarFollowsCursor(value: boolean) { this.shouldToolbarFollowCursor = value }
 
 	get cellToolbar(): ((row: T, rowIndex: number, field: string, colIndex: number) => RowToolbarConfig<T>[] | undefined) | undefined {
 		return this.grid.cellToolbar
@@ -779,7 +984,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	/** @deprecated use `isPaginationVisible` */
 	get showPagination(): boolean | 'auto' { return this.grid.isPaginationVisible }
 	/** @deprecated use `isPaginationVisible` */
-	set showPagination(value: boolean | 'auto') { this.grid.isPaginationVisible = value }
+	set showPagination(value: boolean | 'auto') { this.isPaginationVisible = value }
 
 	get paginationPosition(): string { return this.grid.paginationPosition }
 	set paginationPosition(value: string) { this.grid.paginationPosition = value }
@@ -892,7 +1097,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	/** @deprecated use `isTableBorderOnly` */
 	get tableBorderOnly(): boolean { return this.grid.isTableBorderOnly }
 	/** @deprecated use `isTableBorderOnly` */
-	set tableBorderOnly(value: boolean) { this.grid.isTableBorderOnly = value }
+	set tableBorderOnly(value: boolean) { this.isTableBorderOnly = value }
 
 	// Virtual scroll
 	get isVirtualScrollEnabled(): boolean { return this.grid.isVirtualScrollEnabled }

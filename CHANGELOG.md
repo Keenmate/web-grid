@@ -7,7 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`GridElement` now builds on `@keenmate/web-components-core` (`BlissElement`).** web-grid was the last of the five KeenMate components still re-implementing its own custom-element base. It now extends core's SSR-safe `BlissElement` (per-instance registry, lifecycle hooks) while keeping its full config-object/property API — columns, items, and every `on*`/`*Callback` stay properties, exactly as before.
+- **Declarative attribute layer — 60 scalar/enum config flags are now real HTML attributes.** Previously web-grid had *no* observed attributes: markup like `<web-grid is-striped is-hoverable>` was silently dead (the flags only worked as JS properties). A core `static inputs` table now maps each scalar/enum flag to a kebab-case attribute parsed through a typed converter, e.g.:
+
+  ```html
+  <web-grid is-striped="false" page-size="25" mode="excel"
+            edit-trigger="dblclick" is-pageable sort-mode="single"></web-grid>
+  ```
+
+  Covers appearance (`is-striped`, `is-hoverable`, `is-table-border-only`, `is-scrollable`, `scroll-max-height`), paging (`is-pageable`, `page-size`, `pagination-mode`, `is-pagination-visible`, `pagination-position`, `pagination-layout`), editing (`is-editable`, `edit-trigger`, `edit-start-selection`, `should-commit-on-click-away`), toolbar, tree, virtual/infinite scroll, paste, dropdown, and more. Absent attribute = the documented default. Structured config (columns/items/callbacks), self-mutated UI state (`currentPage`, `sort`, `filters`, `focusedRowIndex`, `totalItems`, `expandedPaths`, `hasMoreItems`) and the two column-persistence flags stay property-only by design.
+
 ### Changed
+
+- **Attribute values are validated by their converter.** A malformed or out-of-range attribute (e.g. `page-size="abc"`) falls back to the default with a `console.warn` instead of forwarding garbage to the grid. The synchronous property API is unchanged — `el.pageSize = 25`, presets like `el.mode = 'excel'`, and immediate reads of `el.grid.*` propagate synchronously, exactly as before; only the new *attribute* path is coalesced through core.
 
 - **Five UI-state clusters extracted from `GridElement` into dedicated Service classes.** The Element layer is supposed to be a thin I/O wrapper — tooltip / dropdown / dropdown-search / virtual-scroll / floating-toolbar state belongs in modules. Each service is independently unit-testable and has a single, self-documenting public surface. Module functions (and the GridContext interface) consume the service instances instead of bare flat fields:
 

@@ -72,14 +72,15 @@
 	},
 	"homepage": "https://github.com/KeenMate/web-grid#readme",
 	"devDependencies": {
-		"@vitest/ui": "^2.1.0",
-		"happy-dom": "^15.0.0",
+		"@vitest/ui": "^4.1.10",
+		"happy-dom": "^20.10.6",
 		"rimraf": "^5.0.5",
 		"typescript": "^5.3.3",
-		"vite": "^5.0.8",
-		"vitest": "^2.1.0"
+		"vite": "^8.1.4",
+		"vitest": "^4.1.10"
 	},
 	"dependencies": {
-		"@floating-ui/dom": "^1.7.4"
+		"@floating-ui/dom": "^1.7.4",
+		"@keenmate/web-components-core": "^1.0.0-rc02"
 	}
 }
