@@ -255,7 +255,7 @@
   --wg-toolbar-bg: var(--wg-dropdown-bg);
   --wg-toolbar-border: 1px solid var(--wg-border-color);
   --wg-toolbar-border-radius: var(--wg-border-radius-sm);
-  --wg-toolbar-shadow: var(--base-dropdown-box-shadow, 0 2px 8px rgba(0, 0, 0, 0.15));
+  --wg-toolbar-shadow: var(--base-dropdown-box-shadow, 0 2px 8px var(--base-shadow-color, rgba(0, 0, 0, 0.15)));
   --wg-toolbar-divider-color: var(--wg-border-color);
   --wg-toolbar-divider-height: calc(1.6 * var(--wg-rem));
   --wg-toolbar-row-height: calc(3.7 * var(--wg-rem));
@@ -278,7 +278,7 @@
      OVERLAY / DIALOG
      ========================================================================== */
   --wg-overlay-bg: rgba(0, 0, 0, 0.4);
-  --wg-dialog-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  --wg-dialog-shadow: 0 4px 20px var(--base-shadow-color, rgba(0, 0, 0, 0.15));
 
   /* ==========================================================================
      TOOLTIP
@@ -352,10 +352,10 @@
      ========================================================================== */
   --wg-frozen-column-bg: var(--wg-main-bg);
   --wg-frozen-header-bg: color-mix(in srgb, var(--wg-accent-color) 8%, var(--wg-header-bg));
-  --wg-frozen-column-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
-  --wg-frozen-column-shadow-active: 6px 0 12px rgba(0, 0, 0, 0.25);  /* Enhanced shadow when scrolled */
+  --wg-frozen-column-shadow: 2px 0 4px var(--base-shadow-color, rgba(0, 0, 0, 0.1));
+  --wg-frozen-column-shadow-active: 6px 0 12px var(--base-shadow-color, rgba(0, 0, 0, 0.25));  /* Enhanced shadow when scrolled */
   --wg-frozen-column-border: 2px solid var(--wg-border-color);
-  --wg-frozen-column-shadow-gradient: linear-gradient(to right, rgba(0, 0, 0, 0.15), transparent);
+  --wg-frozen-column-shadow-gradient: linear-gradient(to right, var(--base-shadow-color, rgba(0, 0, 0, 0.15)), transparent);
   --wg-frozen-column-shadow-width: 8px;
 
   /* ==========================================================================
@@ -425,5 +425,5 @@
      TOOLTIP EXTRAS (Component-Specific)
      ========================================================================== */
   --wg-tooltip-padding: calc(0.6 * var(--wg-rem)) calc(1.0 * var(--wg-rem));
-  --wg-tooltip-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  --wg-tooltip-shadow: 0 2px 8px var(--base-shadow-color, rgba(0, 0, 0, 0.2));
 }

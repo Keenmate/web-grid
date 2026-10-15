@@ -136,7 +136,7 @@ const CONTEXT_MENU_STYLES = `
 	--wg-cm-icon-gap: 8px;
 
 	/* Shadow */
-	--wg-cm-shadow: var(--base-dropdown-box-shadow, 0 4px 16px rgba(0, 0, 0, 0.15));
+	--wg-cm-shadow: var(--base-dropdown-box-shadow, 0 4px 16px var(--base-shadow-color, rgba(0, 0, 0, 0.15)));
 }
 
 .wg-context-menu {

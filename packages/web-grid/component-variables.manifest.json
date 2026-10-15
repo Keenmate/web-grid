@@ -25,6 +25,7 @@
     { "name": "base-input-border-focus", "required": false, "usage": "Filter input border when focused" },
     { "name": "base-input-placeholder-color", "required": false, "usage": "Placeholder text in filter inputs" },
     { "name": "base-dropdown-box-shadow", "required": false, "usage": "Shadow for floating toolbar, context menu" },
+    { "name": "base-shadow-color", "required": false, "usage": "Shadow colour for dialogs, tooltip, frozen-column edge (one tone with pure-admin)" },
     { "name": "base-danger-color", "required": false, "usage": "Validation error text, error indicator icon, danger button text" },
     { "name": "base-danger-bg-subtle", "required": false, "usage": "Invalid cell background, danger button hover" },
     { "name": "base-tooltip-bg", "required": false, "usage": "Tooltip and validation message background" },

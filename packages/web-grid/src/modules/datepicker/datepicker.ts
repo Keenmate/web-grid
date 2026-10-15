@@ -50,7 +50,7 @@ const DATEPICKER_STYLES = `
 	--wg-dp-gap-xs: 1px;
 
 	/* Shadow */
-	--wg-dp-shadow: var(--wg-shadow-lg, 0 4px 16px rgba(0, 0, 0, 0.15));
+	--wg-dp-shadow: var(--wg-shadow-lg, 0 4px 16px var(--base-shadow-color, rgba(0, 0, 0, 0.15)));
 }
 
 .wg-datepicker {
