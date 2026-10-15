@@ -39,14 +39,14 @@
      ==========================================================================
      Color variables follow this priority chain:
        1. External override: --wg-accent-color: #custom
-       2. Base theme value: var(--base-accent-color)
+       2. Base theme value: var(--base-primary-color)
        3. Hardcoded default fallback */
 
   /* Accent Colors */
-  --wg-accent-color: var(--base-accent-color, #0078d4);
-  --wg-accent-color-hover: var(--base-accent-color-hover, #106ebe);
-  --wg-accent-color-active: var(--base-accent-color-active, #005a9e);
-  --wg-accent-color-light: var(--base-accent-color-light, color-mix(in srgb, var(--wg-accent-color) 15%, transparent));
+  --wg-accent-color: var(--base-primary-color, #0078d4);
+  --wg-accent-color-hover: var(--base-primary-color-hover, #106ebe);
+  --wg-accent-color-active: var(--base-primary-color-active, #005a9e);
+  --wg-accent-color-light: var(--base-primary-bg-subtle, color-mix(in srgb, var(--wg-accent-color) 15%, transparent));
 
   /* Text Color Levels (FluentUI-style hierarchy) */
   /* light-dark() fallbacks activate when the consumer sets `color-scheme: dark`
@@ -56,7 +56,7 @@
   --wg-text-color-1: var(--base-text-color-1, light-dark(#242424, #f5f5f5));
   --wg-text-color-2: var(--base-text-color-2, light-dark(#424242, #d4d4d4));
   --wg-text-color-3: var(--base-text-color-3, light-dark(#707070, #a3a3a3));
-  --wg-text-on-accent: var(--base-text-color-on-accent, #ffffff);
+  --wg-text-on-accent: var(--base-on-primary-text-color, #ffffff);
 
   /* Background Colors (semantic taxonomy matching pure-admin's --base-* names) */
   --wg-main-bg: var(--base-main-bg, light-dark(#ffffff, #1a1a1a));
@@ -72,7 +72,7 @@
 
   /* Input Colors */
   --wg-input-bg: var(--base-input-bg, light-dark(#ffffff, #1f1f1f));
-  --wg-input-color: var(--base-input-color, var(--wg-text-color-1));
+  --wg-input-color: var(--base-input-text-color, var(--wg-text-color-1));
   --wg-input-border: var(--base-input-border, 1px solid light-dark(#d1d1d1, #5a5a5a));
   --wg-input-border-hover: var(--base-input-border-hover, 1px solid #0078d4);
   --wg-input-border-focus: var(--base-input-border-focus, 1px solid #0078d4);
@@ -80,7 +80,7 @@
 
   /* Danger/Error Colors */
   --wg-danger-color: var(--base-danger-color, light-dark(#d13438, #f87c86));
-  --wg-danger-bg-light: var(--base-danger-bg-light, light-dark(#fde7e9, #442726));
+  --wg-danger-bg-light: var(--base-danger-bg-subtle, light-dark(#fde7e9, #442726));
 
   /* Hover/Active States
      Adaptive via color-mix so the highlight stays visible in both light and dark
@@ -284,10 +284,9 @@
      TOOLTIP
      ==========================================================================
      Tooltip is inverse-colored (light text on dark bg in light mode; flips in
-     dark mode). Primary lookup is --base-tooltip-bg; falls back through the
-     new --base-inverse-bg from the unified cross-component taxonomy. */
-  --wg-tooltip-bg: var(--base-tooltip-bg, var(--base-inverse-bg, light-dark(#333333, #f5f5f5)));
-  --wg-tooltip-color: var(--base-tooltip-text-color, var(--base-tooltip-color, light-dark(#ffffff, #1a1a1a)));
+     dark mode). Themed via the shared --base-tooltip-bg. */
+  --wg-tooltip-bg: var(--base-tooltip-bg, light-dark(#333333, #f5f5f5));
+  --wg-tooltip-color: var(--base-tooltip-text-color, light-dark(#ffffff, #1a1a1a));
   --wg-tooltip-max-width: 300px;
   --wg-tooltip-arrow-size: 8px;
 
@@ -383,7 +382,7 @@
      ========================================================================== */
   --wg-selection-bg: color-mix(in srgb, var(--wg-accent-color) 15%, transparent);
   --wg-selection-row-number-bg: var(--wg-accent-color);
-  --wg-selection-row-number-color: var(--base-text-color-on-accent, light-dark(#fff, #fff));
+  --wg-selection-row-number-color: var(--base-on-primary-text-color, light-dark(#fff, #fff));
   --wg-selection-border-width: 2px;
   --wg-selection-border-color: var(--wg-accent-color);
 

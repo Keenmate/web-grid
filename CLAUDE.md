@@ -104,21 +104,21 @@ The `--base-*` CSS variables enable **centralized theming** across all KeenMate 
 **Pattern - fallback chain:**
 ```css
 :host {
-  /* If --base-accent-color is set on :root by theme-designer, use it */
+  /* If --base-primary-color is set on :root by theme-designer, use it */
   /* Otherwise, use hardcoded fallback */
-  --wg-accent-color: var(--base-accent-color, #0078d4);
+  --wg-accent-color: var(--base-primary-color, #0078d4);
   --wg-font-size-sm: calc(var(--base-font-size-sm, 1.2) * var(--wg-rem));
 }
 ```
 
 **Variables that support `--base-*` fallback:**
 - **Typography:** `--base-font-family`, `--base-font-size-*`, `--base-font-weight-*`, `--base-line-height-*`
-- **Colors:** `--base-accent-color`, `--base-text-color-*`, `--base-main-bg`, `--base-elevated-bg`, `--base-hover-bg`, `--base-active-bg`, `--base-disabled-bg`, `--base-dropdown-bg`, `--base-inverse-bg`, `--base-border-color`, `--base-input-*`, `--base-danger-*`, `--base-tooltip-*`
+- **Colors:** `--base-primary-color`, `--base-text-color-*`, `--base-main-bg`, `--base-elevated-bg`, `--base-hover-bg`, `--base-active-bg`, `--base-disabled-bg`, `--base-dropdown-bg`, `--base-border-color`, `--base-input-*`, `--base-danger-*`, `--base-tooltip-*`
 - **Other:** `--base-border-radius-*`
 
 **Benefits:**
 1. All KeenMate components (web-multiselect, web-daterangepicker, web-grid) share the same base theme
-2. Change `:root { --base-accent-color: red }` and all components update
+2. Change `:root { --base-primary-color: red }` and all components update
 3. Components work standalone with defaults, but integrate with theme-designer when present
 
 ### CSS Variable Naming: Component-Specific Variables

@@ -21,11 +21,11 @@ const DATEPICKER_STYLES = `
 	--wg-dp-text-secondary: var(--base-text-color-3, #666);
 	--wg-dp-text-muted: var(--base-text-color-4, #ccc);
 	--wg-dp-text-disabled: var(--base-text-color-4, #999);
-	--wg-dp-accent-color: var(--base-accent-color, #0078d4);
-	--wg-dp-accent-hover: var(--base-accent-color-hover, #006cbd);
+	--wg-dp-accent-color: var(--base-primary-color, #0078d4);
+	--wg-dp-accent-hover: var(--base-primary-color-hover, #006cbd);
 	--wg-dp-hover-bg: var(--base-hover-bg, #f5f5f5);
 	--wg-dp-hover-border: var(--base-border-color, #ccc);
-	--wg-dp-selected-text: var(--base-text-color-on-accent, #fff);
+	--wg-dp-selected-text: var(--base-on-primary-text-color, #fff);
 
 	/* Typography */
 	--wg-dp-font-family: var(--wg-font-family, var(--base-font-family, inherit));

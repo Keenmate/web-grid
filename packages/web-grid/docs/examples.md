@@ -382,7 +382,7 @@ grid.onrowchange = (detail: RowChangeDetail<Employee>) => {
 ```html
 <style>
   :root {
-    --base-accent-color: #10b981;
+    --base-primary-color: #10b981;
     --base-main-bg: #fff;
     --base-elevated-bg: #f9fafb;
     --base-border-color: #e5e7eb;

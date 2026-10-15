@@ -62,7 +62,7 @@ test.describe('theming playground', () => {
 		const expressVars = await page.evaluate(() => {
 			const s = getComputedStyle(document.documentElement)
 			return {
-				accent:      s.getPropertyValue('--base-accent-color').trim(),
+				accent:      s.getPropertyValue('--base-primary-color').trim(),
 				mainBg:      s.getPropertyValue('--base-main-bg').trim(),
 				borderColor: s.getPropertyValue('--base-border-color').trim(),
 				fontFamily:  s.getPropertyValue('--base-font-family').trim(),
@@ -85,14 +85,14 @@ test.describe('theming playground', () => {
 	test('brand theme changes accent color of the grid', async ({ page }) => {
 		// Default brand — measure header background color.
 		const beforeAccent = await page.evaluate(() => {
-			return getComputedStyle(document.documentElement).getPropertyValue('--base-accent-color').trim()
+			return getComputedStyle(document.documentElement).getPropertyValue('--base-primary-color').trim()
 		})
 		expect(beforeAccent).toBe('')  // not set by default
 
-		// Switch to Rose — should set --base-accent-color.
+		// Switch to Rose — should set --base-primary-color.
 		await page.locator('input[name="brand"][value="rose"]').check()
 		const afterAccent = await page.evaluate(() => {
-			return getComputedStyle(document.documentElement).getPropertyValue('--base-accent-color').trim()
+			return getComputedStyle(document.documentElement).getPropertyValue('--base-primary-color').trim()
 		})
 		expect(afterAccent).toBe('#e11d48')
 	})

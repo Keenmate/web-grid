@@ -932,7 +932,7 @@ web-grid {
 
 /* Or set base variables for all KeenMate components */
 :root {
-  --base-accent-color: #10b981;
+  --base-primary-color: #10b981;
   --base-main-bg: #ffffff;
 }
 ```
@@ -941,12 +941,12 @@ Each `--wg-*` variable falls back to a `--base-*` variable, then to a hardcoded 
 
 ```css
 :host {
-  --wg-accent-color: var(--base-accent-color, #0078d4);
+  --wg-accent-color: var(--base-primary-color, #0078d4);
 }
 ```
 
 This means:
-1. Setting `--base-accent-color` on `:root` themes all KeenMate components at once
+1. Setting `--base-primary-color` on `:root` themes all KeenMate components at once
 2. Setting `--wg-accent-color` on `web-grid` overrides just the grid
 3. Without either, the component uses its built-in defaults
 

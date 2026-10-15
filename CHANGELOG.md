@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Reads `--base-primary-*` (was `--base-accent-*`)**, following `@keenmate/base-css-variables`
+  2.0.0, which drops the `accent` names: `--base-primary-color[-hover|-active]`,
+  `--base-primary-bg-subtle[-hover]` (was `-color-light[-hover]`) and `--base-on-primary-text-color`
+  (was `--base-text-color-on-accent`). The component's own `--*-accent-*` tokens keep their names.
+  Docs, examples and manifest updated.
+- **Tooltip background no longer falls back through `--base-inverse-bg`** (removed in
+  `@keenmate/base-css-variables` 2.0.0): it reads `--base-tooltip-bg` directly, then the
+  component's own default. No visual change — `--base-tooltip-bg` is always defined by the contract.
+- **Reads the 2.0.0 type-stating names:** `--base-outline-width` / `--base-focused-outline` /
+  `--base-highlighted-outline` (were `-ring`), `--base-*-text-color` (was `-text`),
+  `--base-on-<role>-text-color` (was `--base-text-on-<role>`), `--base-input-text-color` (was
+  `--base-input-color`), `--base-input-icon-color` / `-icon-bg-hover` (were `--base-input-clear-*`),
+  `--base-tooltip-text-color` (the `--base-tooltip-color` duplicate is gone) — whichever of these
+  the component uses.
+- **Invalid-cell tint reads `--base-danger-bg-subtle`** (was `--base-danger-bg-light`), following
+  `@keenmate/base-css-variables` 2.0.0, which folds the two role tints into one. Docs and
+  manifest updated.
+
 ### Added
 
 - **`GridElement` now builds on `@keenmate/web-components-core` (`BlissElement`).** web-grid was the last of the five KeenMate components still re-implementing its own custom-element base. It now extends core's SSR-safe `BlissElement` (per-instance registry, lifecycle hooks) while keeping its full config-object/property API — columns, items, and every `on*`/`*Callback` stay properties, exactly as before.

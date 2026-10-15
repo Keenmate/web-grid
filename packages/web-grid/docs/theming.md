@@ -67,7 +67,7 @@ Every `--wg-*` color, font, or measurement resolves through a three-step chain:
   /* 1. External override on the host wins.
      2. Otherwise read --base-*. theme-designer / pure-admin / ... declare these on :root.
      3. Otherwise the hardcoded fallback applies. */
-  --wg-accent-color: var(--base-accent-color, #0078d4);
+  --wg-accent-color: var(--base-primary-color, #0078d4);
 }
 ```
 
@@ -78,7 +78,7 @@ Practical consequences:
 web-grid { --wg-accent-color: #10b981; }
 
 /* (2) Theme every KeenMate component on the page (Theme Designer pattern) */
-:root { --base-accent-color: #10b981; }
+:root { --base-primary-color: #10b981; }
 
 /* (3) No override → built-in default applies (`#0078d4` in this case) */
 ```
@@ -153,10 +153,10 @@ The full table lives in [the manifest](../component-variables.manifest.json).
 
 `@keenmate/web-grid` reads roughly 37 `--base-*` variables across these categories. Setting any of them on `:root` themes every KeenMate component on the page at once.
 
-- **Colors**: `--base-accent-color` (+ `-hover` / `-active` / `-light`), `--base-text-color-1` / `-2` / `-3` / `-on-accent`, `--base-main-bg`, `--base-elevated-bg`, `--base-hover-bg`, `--base-active-bg`, `--base-disabled-bg`, `--base-dropdown-bg`, `--base-inverse-bg`, `--base-border-color`.
+- **Colors**: `--base-primary-color` (+ `-hover` / `-active`), `--base-primary-bg-subtle`, `--base-text-color-1` … `-4`, `--base-on-primary-text-color`, `--base-main-bg`, `--base-elevated-bg`, `--base-hover-bg`, `--base-active-bg`, `--base-disabled-bg`, `--base-dropdown-bg`, `--base-tooltip-bg`, `--base-tooltip-text-color`, `--base-border-color`.
 - **Inputs**: `--base-input-bg` / `-color` / `-border` (+ `-hover` / `-focus`) / `-placeholder-color`.
-- **Danger**: `--base-danger-color`, `--base-danger-bg-light`.
-- **Tooltip**: `--base-tooltip-bg`, `--base-tooltip-color`.
+- **Danger**: `--base-danger-color`, `--base-danger-bg-subtle`.
+- **Tooltip**: `--base-tooltip-bg`, `--base-tooltip-text-color`.
 - **Typography**: `--base-font-family`, `--base-font-size-base` / `-sm` / `-xs` / `-2xs`, `--base-font-weight-normal` / `-semibold`, `--base-line-height-*`.
 - **Other**: `--base-border-radius-*`, `--base-dropdown-box-shadow`.
 
@@ -258,7 +258,7 @@ web-grid {
 Note that **`:root` `--base-*` declarations** still win via the standard custom-property inheritance, not via cascade layers — they're inherited values, not styling rules. So both override paths work:
 
 ```css
-:root      { --base-accent-color: #10b981; }   /* Theme every component */
+:root      { --base-primary-color: #10b981; }   /* Theme every component */
 web-grid   { --wg-accent-color: #10b981; }     /* Theme just this grid */
 ```
 
