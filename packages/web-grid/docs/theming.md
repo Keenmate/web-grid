@@ -44,17 +44,17 @@ Two host-level signals override the page's theme on a single grid instance:
 <web-grid data-theme="light"></web-grid>
 ```
 
-The same attribute on any ancestor scopes the override to a subtree:
+The same attribute on an ancestor scopes the override to a subtree, for grids that opt in with `theme-source="closest"`:
 
 ```html
 <div data-theme="dark">
-  <web-grid></web-grid>   <!-- ← dark -->
-  <web-grid></web-grid>   <!-- ← dark -->
+  <web-grid theme-source="closest"></web-grid>   <!-- ← dark -->
+  <web-grid theme-source="closest"></web-grid>   <!-- ← dark -->
 </div>
 <web-grid></web-grid>     <!-- ← respects page color-scheme -->
 ```
 
-Detection crosses the shadow DOM boundary via `:host-context()` — see [color-scheme contract](#color-scheme-contract) for the full signal list.
+Detection is done once per page by `@keenmate/web-components-core` and mirrored onto each grid as `data-context-theme` — no `:host-context()`, so it works in Firefox and Safari. It reads `<html>` then `<body>`; for a themed **section** like the wrapper above, add `theme-source="closest"` (nearest ancestor with a signal) or `theme-source="<selector>"` to the grids. See [color-scheme contract](#color-scheme-contract) for the full signal list.
 
 ## Variable contract
 
@@ -168,7 +168,7 @@ Dark / light mode is driven by **five signals**. Each one is honored at the righ
 |---|---|---|---|
 | 1 | OS preference | The user's system, exposed by `@media (prefers-color-scheme: dark)` | — (lowest priority; opt-in only) |
 | 2 | Page `color-scheme` | `html { color-scheme: light dark }` | OS preference |
-| 3 | Framework data-attribute | `<html data-bs-theme="dark">`, `<body data-theme="dark">` | Page color-scheme |
+| 3 | Framework data-attribute | `<html data-bs-theme="dark">`, `<body data-theme="dark">` (or a `theme-source` element) | Page color-scheme |
 | 4 | Framework class | `<html class="dark">`, `<body class="dark">` | Same as #3 (parallel, both honored) |
 | 5 | Per-instance attribute | `<web-grid data-theme="dark">` | Everything else (highest specificity) |
 

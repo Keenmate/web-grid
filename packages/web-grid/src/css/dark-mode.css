@@ -1,66 +1,41 @@
 /* ==============================================================================
-   DARK MODE — framework class + per-instance signal handling
+   DARK MODE — page signal + per-instance override (same as web-multiselect)
    ==============================================================================
-   Sets `color-scheme` on the host when the consumer signals dark/light via a
-   framework class (signal #4) or a per-instance attribute (signal #5). Every
-   `--wg-*` color in variables.css resolves through `light-dark(<light>, <dark>)`,
-   so flipping `color-scheme` on the host picks the correct branch without us
-   touching any `--base-*` value.
+   Every `--wg-*` color fallback in variables.css is a `light-dark(<light>, <dark>)`
+   pair, so this file only flips `color-scheme` on the host and the right branch
+   resolves. It never redeclares `--wg-*` / `--base-*` values — that would shadow
+   the page's own `--base-*` theme inside the shadow root.
 
-   Why we don't override `--base-*` or `--wg-*` here:
-   Setting e.g. `--wg-main-bg: #1f1f1f` on `:host` would shadow the consumer's
-   `:root { --base-main-bg: ... }` for resolution inside the shadow root, so
-   their themed value (e.g. pure-admin's dark theme) would be silently replaced
-   by our hardcoded default. Setting `color-scheme` instead leaves the
-   consumer's `--base-*` chain intact — they remain the source of truth, and
-   we only pick the dark branch of our own `light-dark()` fallbacks.
+   Signals, lowest → highest:
+     - No signal: the host inherits the page's `color-scheme` (no rule here).
+       There is deliberately NO `prefers-color-scheme` rule, so the component
+       always matches the page. A page that wants to follow the OS declares
+       `html { color-scheme: light dark }` once; every component follows it, live.
+     - Page / theme-source signal: `data-theme`, `data-bs-theme`, `.dark` /
+       `.light` on <html> then <body>, the element named by `theme-source`, or
+       `setThemeMode()`. Detected once per page by @keenmate/web-components-core
+       (re-detected when those attributes / classes change) and mirrored onto
+       the host as `data-context-theme`. Replaces `:host-context()`, which
+       Firefox doesn't support and Safari only partly.
+     - Per-instance attribute on the host: `<web-grid data-theme="dark|light">`.
+       Declared last, so it wins.
+   ============================================================================== */
 
-   Why `color-scheme` on `:host` is fine *here* (but not in variables.css):
-   variables.css avoids it because an unconditional declaration would override
-   whatever the consumer's <html>/<body>/ancestor set. Here we declare it only
-   when the consumer's own signal matches, so we're amplifying their intent
-   rather than fighting it. Frameworks that already set `color-scheme`
-   alongside their class (Bootstrap 5.3+) get a redundant no-op; frameworks
-   that don't (Tailwind `.dark`, hand-rolled toggles) get filled in.
-
-   OS preference (signal #1) is intentionally not handled here. To opt into
-   "follow OS", the consumer sets `color-scheme: light dark` on <html> (or any
-   ancestor) — inheritance propagates into the shadow root and `light-dark()`
-   resolves automatically. Forcing an `@media (prefers-color-scheme: dark)`
-   block here would override consumers that explicitly want their app pinned
-   to one mode.
-
-   Signals handled:
-     #4 Framework theme class on an ancestor — `:host-context([data-theme="dark"])`,
-        `:host-context([data-bs-theme="dark"])`, `:host-context(.dark)`.
-     #5 Per-instance attribute on the host — `:host([data-theme="dark"])`,
-        `:host([data-theme="light"])`. Highest specificity, wins over any
-        framework class on an ancestor.
-
-   See BlissFramework/guidelines/web-components/color-scheme.md for the full pattern. */
-
-/* DARK — framework class on ancestor (signal #4) */
-:host-context([data-theme="dark"]),
-:host-context([data-bs-theme="dark"]),
-:host-context(.dark) {
+/* Page / theme-source signal */
+:host([data-context-theme="dark"]) {
   color-scheme: dark;
 }
 
-/* LIGHT — framework class on ancestor (signal #4, safety net for
-   "force one section back to light on a dark page"). */
-:host-context([data-theme="light"]),
-:host-context([data-bs-theme="light"]),
-:host-context(.light) {
+:host([data-context-theme="light"]) {
   color-scheme: light;
 }
 
-/* DARK — per-instance attribute on the host (signal #5). */
+/* Per-instance attribute — declared last, wins */
 :host([data-theme="dark"]),
 :host([data-bs-theme="dark"]) {
   color-scheme: dark;
 }
 
-/* LIGHT — per-instance attribute on the host (signal #5). */
 :host([data-theme="light"]),
 :host([data-bs-theme="light"]) {
   color-scheme: light;

@@ -150,19 +150,19 @@ test.describe('Theming — dark-mode signals on <web-grid>', () => {
 		await expectLight(card, 'per-instance-light')
 	})
 
-	test('4. ancestor [data-theme="dark"] → cell renders DARK', async ({ page }) => {
+	test('4. ancestor [data-theme="dark"] + theme-source="closest" → cell renders DARK', async ({ page }) => {
 		await expectDark(scenarioCard(page, 'ancestor-data-theme-dark'), 'ancestor-data-theme-dark')
 	})
 
-	test('5. ancestor [data-bs-theme="dark"] → cell renders DARK', async ({ page }) => {
+	test('5. ancestor [data-bs-theme="dark"] + theme-source="closest" → cell renders DARK', async ({ page }) => {
 		await expectDark(scenarioCard(page, 'ancestor-data-bs-theme-dark'), 'ancestor-data-bs-theme-dark')
 	})
 
-	test('6. ancestor .dark (Tailwind) → cell renders DARK', async ({ page }) => {
+	test('6. ancestor .dark (Tailwind) + theme-source="closest" → cell renders DARK', async ({ page }) => {
 		await expectDark(scenarioCard(page, 'ancestor-dark-class'), 'ancestor-dark-class')
 	})
 
-	test('7. ancestor [data-theme="light"] → cell renders LIGHT', async ({ page }) => {
+	test('7. ancestor [data-theme="light"] + theme-source="closest" → cell renders LIGHT', async ({ page }) => {
 		await expectLight(scenarioCard(page, 'ancestor-data-theme-light'), 'ancestor-data-theme-light')
 	})
 

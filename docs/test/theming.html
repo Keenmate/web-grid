@@ -97,36 +97,36 @@
 		<!-- 4. Ancestor [data-theme="dark"] — should render DARK -->
 		<div class="scenario-card" data-scenario="ancestor-data-theme-dark">
 			<h2>4. Ancestor <code>[data-theme="dark"]</code></h2>
-			<p>Generic framework convention. Expected: <strong>DARK</strong>.</p>
+			<p>Generic framework convention. Grid opts in with <code>theme-source="closest"</code>. Expected: <strong>DARK</strong>.</p>
 			<div class="wrapper" data-theme="dark">
-				<web-grid id="grid-ancestor-data-theme-dark"></web-grid>
+				<web-grid id="grid-ancestor-data-theme-dark" theme-source="closest"></web-grid>
 			</div>
 		</div>
 
 		<!-- 5. Ancestor [data-bs-theme="dark"] — Bootstrap 5.3+ -->
 		<div class="scenario-card" data-scenario="ancestor-data-bs-theme-dark">
 			<h2>5. Ancestor <code>[data-bs-theme="dark"]</code></h2>
-			<p>Bootstrap 5.3+ convention. Expected: <strong>DARK</strong>.</p>
+			<p>Bootstrap 5.3+ convention. Grid opts in with <code>theme-source="closest"</code>. Expected: <strong>DARK</strong>.</p>
 			<div class="wrapper" data-bs-theme="dark">
-				<web-grid id="grid-ancestor-data-bs-theme-dark"></web-grid>
+				<web-grid id="grid-ancestor-data-bs-theme-dark" theme-source="closest"></web-grid>
 			</div>
 		</div>
 
 		<!-- 6. Ancestor .dark (Tailwind) — should render DARK -->
 		<div class="scenario-card" data-scenario="ancestor-dark-class">
 			<h2>6. Ancestor <code>.dark</code> (Tailwind)</h2>
-			<p>Tailwind class-mode dark convention. Expected: <strong>DARK</strong>.</p>
+			<p>Tailwind class-mode dark convention. Grid opts in with <code>theme-source="closest"</code>. Expected: <strong>DARK</strong>.</p>
 			<div class="wrapper dark">
-				<web-grid id="grid-ancestor-dark-class"></web-grid>
+				<web-grid id="grid-ancestor-dark-class" theme-source="closest"></web-grid>
 			</div>
 		</div>
 
 		<!-- 7. Ancestor [data-theme="light"] — force light on a dark wrapper chain -->
 		<div class="scenario-card" data-scenario="ancestor-data-theme-light">
 			<h2>7. Ancestor <code>[data-theme="light"]</code></h2>
-			<p>Forces light. Expected: <strong>LIGHT</strong>.</p>
+			<p>Forces light. Grid opts in with <code>theme-source="closest"</code>. Expected: <strong>LIGHT</strong>.</p>
 			<div class="wrapper" data-theme="light">
-				<web-grid id="grid-ancestor-data-theme-light"></web-grid>
+				<web-grid id="grid-ancestor-data-theme-light" theme-source="closest"></web-grid>
 			</div>
 		</div>
 	</div>

@@ -981,20 +981,12 @@ The manifest follows the [component-variables schema](https://raw.githubusercont
 
 ### Dark Mode
 
-Dark mode is triggered automatically by:
-- OS preference: `@media (prefers-color-scheme: dark)`
-- Attribute: `data-theme="dark"` on any ancestor or host element
-- Bootstrap: `data-bs-theme="dark"` on any ancestor or host element
-- Class: `.dark` on any ancestor (Tailwind CSS)
+Dark mode follows the page:
+- Page signal: `data-theme="dark"`, `data-bs-theme="dark"` or `.dark` (Tailwind) on `<html>` or `<body>` — detected once per page by `@keenmate/web-components-core` and mirrored onto the grid as `data-context-theme`, so it works in Firefox and Safari too. For a themed section, add `theme-source="closest"` (or a selector) to the grid.
+- Per instance: `data-theme="dark"` / `data-bs-theme="dark"` on the `<web-grid>` itself (wins).
+- OS preference: only through the page — declare `html { color-scheme: light dark }` and the grid follows the OS, live. There is no `prefers-color-scheme` rule in the component, so a grid never turns dark on a light page.
 
-To **force light mode** when the OS is in dark mode, set one of:
-- Attribute: `data-theme="light"` on any ancestor or host element
-- Bootstrap: `data-bs-theme="light"` on any ancestor or host element
-- Class: `.light` on any ancestor (Tailwind CSS)
-
-This is useful when your app manages its own theme (e.g. via a toggle) and needs to override the OS preference. The light mode selectors restore the `--base-*` fallback chain so theme-designer values are respected.
-
-Ancestor detection uses `:host-context()` to cross shadow DOM boundaries (Chrome 88+, Firefox 128+, Safari 15.4+).
+The `light` versions of the same signals force light mode, e.g. for an app toggle that overrides the OS.
 
 ### Dynamic Cell & Row Styling
 

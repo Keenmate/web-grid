@@ -90,7 +90,7 @@ Modern evergreen browsers — anything with native `customElements`, Shadow DOM,
 - Firefox 120+
 - Safari 17.5+
 
-No polyfills are shipped. Cross-shadow-DOM theme detection uses `:host-context()` (Chrome 88+, Firefox 128+, Safari 15.4+).
+No polyfills are shipped. Page dark/light detection comes from `@keenmate/web-components-core` (mirrored onto the host as `data-context-theme`), so it works in every engine — no `:host-context()`.
 
 ## Development
 

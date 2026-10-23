@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Dark / light follows the page in every browser (core theme context).** The page signal
+  (`data-theme`, `data-bs-theme`, `.dark` / `.light` on `<html>` / `<body>`) now comes from
+  `@keenmate/web-components-core`, mirrored onto the grid as `data-context-theme`, instead of
+  `:host-context()` — which Firefox doesn't support and Safari only partly, so dark pages
+  rendered a light grid there. A themed **wrapper** (`<div data-theme="dark">`) now needs
+  `theme-source="closest"` on the grid; per-instance `data-theme` is unchanged, and the OS is
+  still followed only through the page's `color-scheme`. Built on core 1.0.0-rc15 (was rc02).
 - **Shadows share one tone with pure-admin: `--base-shadow-color`.** Dialog, tooltip, frozen-column
   edge, toolbar / context-menu / datepicker fallbacks keep their sizes but take their colour from
   `--base-shadow-color` (falls back to the previous black when the base layer is absent).
