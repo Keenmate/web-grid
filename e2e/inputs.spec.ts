@@ -49,6 +49,13 @@ test.describe('mode preset (core getBatchValuesCallback)', () => {
 		expect(await read(page, el => [el.engine.editTrigger, el.engine.cellSelectionMode])).toEqual(['click', 'shift'])
 	})
 
+	test('markup: the same result with the attributes in reverse order', async ({ page }) => {
+		await mount(page, 'edit-trigger="click" mode="input-matrix"')
+		expect(await read(page, el => [el.editTrigger, el.isEditable, el.cellSelectionMode]))
+			.toEqual(['click', true, 'shift'])
+		expect(await read(page, el => [el.engine.editTrigger, el.engine.cellSelectionMode])).toEqual(['click', 'shift'])
+	})
+
 	test('property: the preset is readable synchronously, on the element and the engine', async ({ page }) => {
 		await mount(page, '')
 		expect(await read(page, el => {
