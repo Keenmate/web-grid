@@ -1,4 +1,4 @@
-import { test, expect, Page } from '@playwright/test'
+import { test, expect, Page, gridLocator, cell } from './fixtures'
 
 /**
  * E2E coverage for the date editor (docs/test/datepicker.html).
@@ -20,14 +20,6 @@ const PAGE = '/test/datepicker.html'
 const GRID = 'web-grid#grid'
 
 const COL = { id: 0, name: 1, iso: 2, eu: 3, ts: 4 } as const
-
-function gridLocator(page: Page) {
-	return page.locator(GRID)
-}
-
-function cell(page: Page, rowIndex: number, colIndex: number) {
-	return gridLocator(page).locator(`.wg__cell[data-row="${rowIndex}"][data-col="${colIndex}"]`)
-}
 
 /**
  * The picker mounts in document.body as <div class="wg-datepicker-container">

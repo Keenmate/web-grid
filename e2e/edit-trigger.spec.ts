@@ -1,4 +1,4 @@
-import { test, expect, Page, Locator } from '@playwright/test'
+import { test, expect, Page, Locator, gridLocator, cell } from './fixtures'
 
 /**
  * E2E coverage for editTrigger modes (docs/test/edit-trigger.html). The page
@@ -14,14 +14,6 @@ import { test, expect, Page, Locator } from '@playwright/test'
  */
 
 const PAGE = '/test/edit-trigger.html'
-
-function gridLocator(page: Page, id: string) {
-	return page.locator(`web-grid#${id}`)
-}
-
-function cell(page: Page, gridId: string, rowIndex: number, colIndex: number): Locator {
-	return gridLocator(page, gridId).locator(`.wg__cell[data-row="${rowIndex}"][data-col="${colIndex}"]`)
-}
 
 function editorIn(locator: Locator): Locator {
 	return locator.locator('input, textarea').first()

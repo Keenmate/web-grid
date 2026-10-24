@@ -1,4 +1,4 @@
-import { test, expect, Page, Locator } from '@playwright/test'
+import { test, expect, Page, Locator, gridLocator, header, clickMenuItem } from './fixtures'
 
 /**
  * E2E coverage for column visibility (docs/test/column-visibility.html).
@@ -16,14 +16,6 @@ import { test, expect, Page, Locator } from '@playwright/test'
  */
 
 const PAGE = '/test/column-visibility.html'
-
-function gridLocator(page: Page) {
-	return page.locator('web-grid#grid')
-}
-
-function header(page: Page, field: string): Locator {
-	return gridLocator(page).locator(`thead th.wg__header[data-field="${field}"]`)
-}
 
 async function visibleFields(page: Page): Promise<string[]> {
 	const txt = (await page.locator('[data-testid="visible-fields"]').textContent()) || ''
@@ -53,27 +45,6 @@ async function rightClickHeader(page: Page, field: string) {
 		bubbles: true, cancelable: true, button: 2, buttons: 2,
 		clientX: x, clientY: y, screenX: x, screenY: y
 	})
-}
-
-/**
- * Click a top-level item in the open header context menu by label.
- * The menu renders in document.body (Floating UI), not the shadow DOM.
- */
-async function clickMenuItem(page: Page, label: string) {
-	await page.evaluate((text) => {
-		const menu = document.querySelector('.wg-context-menu')
-		if (!menu) throw new Error('No context menu')
-		const items = Array.from(menu.querySelectorAll('.wg-context-menu__item')) as HTMLElement[]
-		// Pick the FIRST top-level match (submenu items live inside parent items
-		// — they'd also match by text, but we want the outer one).
-		const item = items.find(it => {
-			if (!it.textContent?.includes(text)) return false
-			// Skip items that are themselves *inside* a submenu element.
-			return !it.closest('.wg-context-menu--submenu')
-		})
-		if (!item) throw new Error(`Top-level menu item not found: ${text}`)
-		item.click()
-	}, label)
 }
 
 /**

@@ -1,4 +1,4 @@
-import { test, expect, Page, Locator } from '@playwright/test'
+import { test, expect, Page, Locator, gridLocator } from './fixtures'
 
 /**
  * Smoke tests for tree mode against the tree fixture (docs/test/tree.html).
@@ -21,10 +21,6 @@ const PAGE = '/test/tree.html'
 const GRID = 'web-grid#grid'
 
 // Helpers ---------------------------------------------------------------------
-
-function gridLocator(page: Page) {
-	return page.locator(GRID)
-}
 
 function cellAt(page: Page, rowIndex: number, colIndex: number): Locator {
 	return gridLocator(page).locator(`.wg__cell[data-row="${rowIndex}"][data-col="${colIndex}"]`)

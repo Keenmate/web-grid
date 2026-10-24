@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test'
+import { test, expect, type Page } from './fixtures'
 
 /**
  * Dark / light via @keenmate/web-components-core's theme context: core detects the
@@ -9,7 +9,7 @@ import { test, expect, type Page } from '@playwright/test'
  * no prefers-color-scheme rule (same as web-multiselect / web-treeview).
  */
 
-const PAGE = '/test/basic.html'
+const PAGE = '/test/theme-context.html'
 const HOSTS = ['web-grid']
 
 const scheme = (page: Page, sel: string) =>
@@ -71,4 +71,33 @@ test('switching the page back to light follows live', async ({ page }) => {
 		document.documentElement.classList.replace('dark', 'light')
 	})
 	await expect.poll(() => scheme(page, HOSTS[0])).toBe('light')
+})
+
+// Moved off docs/examples-theming.html (the old theming-playground.spec.ts) —
+// the component-level assertions that page used to smoke-test.
+
+test('page color-scheme: dark on <html> with no theme signal → grid inherits dark', async ({ page }) => {
+	await open(page)
+	await page.evaluate(() => { document.documentElement.style.colorScheme = 'dark' })
+	await expect.poll(() => scheme(page, HOSTS[0])).toBe('dark')
+	await expect(page.locator(HOSTS[0])).not.toHaveAttribute('data-context-theme', /./)
+})
+
+test('per-instance data-theme="dark" beats a light page signal and page color-scheme: light', async ({ page }) => {
+	await open(page)
+	await page.evaluate(() => {
+		document.documentElement.style.colorScheme = 'light'
+		document.documentElement.setAttribute('data-theme', 'light')
+	})
+	await page.locator(HOSTS[0]).evaluate((el) => el.setAttribute('data-theme', 'dark'))
+	await expect.poll(() => scheme(page, HOSTS[0])).toBe('dark')
+})
+
+test('--base-primary-color on :root flows into --wg-accent-color; unset → built-in default', async ({ page }) => {
+	await open(page)
+	const accent = () => page.locator(HOSTS[0]).evaluate(
+		(el) => getComputedStyle(el).getPropertyValue('--wg-accent-color').trim().toLowerCase())
+	expect(await accent()).toBe('#0078d4')
+	await page.evaluate(() => document.documentElement.style.setProperty('--base-primary-color', '#D40511'))
+	await expect.poll(accent).toBe('#d40511')
 })

@@ -1,4 +1,4 @@
-import { test, expect, Page } from '@playwright/test'
+import { test, expect, Page, gridLocator, cell } from './fixtures'
 
 /**
  * E2E coverage for custom styling (docs/test/custom-styling.html) — a 6-row grid
@@ -15,14 +15,6 @@ import { test, expect, Page } from '@playwright/test'
 
 const PAGE = '/test/custom-styling.html'
 const GRID = 'web-grid#grid'
-
-function gridLocator(page: Page) {
-	return page.locator(GRID)
-}
-
-function cell(page: Page, rowIndex: number, colIndex: number) {
-	return gridLocator(page).locator(`.wg__cell[data-row="${rowIndex}"][data-col="${colIndex}"]`)
-}
 
 function bodyRow(page: Page, rowIndex: number) {
 	return gridLocator(page).locator('tbody tr').nth(rowIndex)

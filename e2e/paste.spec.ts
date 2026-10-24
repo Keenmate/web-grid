@@ -1,4 +1,4 @@
-import { test, expect, Page } from '@playwright/test'
+import { test, expect, Page, gridLocator, cell } from './fixtures'
 
 /**
  * E2E coverage for clipboard paste (docs/test/paste.html).
@@ -23,14 +23,6 @@ const PAGE = '/test/paste.html'
 const GRID = 'web-grid#grid'
 
 const COL = { id: 0, name: 1, email: 2, age: 3, role: 4 } as const
-
-function gridLocator(page: Page) {
-	return page.locator(GRID)
-}
-
-function cell(page: Page, rowIndex: number, colIndex: number) {
-	return gridLocator(page).locator(`.wg__cell[data-row="${rowIndex}"][data-col="${colIndex}"]`)
-}
 
 function summary(page: Page) {
 	return page.locator('[data-testid="paste-summary"]')

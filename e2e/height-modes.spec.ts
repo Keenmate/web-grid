@@ -1,4 +1,4 @@
-import { test, expect, Page } from '@playwright/test'
+import { test, expect, Page, gridLocator } from './fixtures'
 
 /**
  * E2E coverage for height modes (docs/test/height-modes.html). Two grids:
@@ -14,10 +14,6 @@ import { test, expect, Page } from '@playwright/test'
  */
 
 const PAGE = '/test/height-modes.html'
-
-function gridLocator(page: Page, id: string) {
-	return page.locator(`web-grid#${id}`)
-}
 
 async function gotoHeightModes(page: Page) {
 	await page.goto(PAGE)

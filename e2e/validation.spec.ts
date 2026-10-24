@@ -1,4 +1,4 @@
-import { test, expect, Page } from '@playwright/test'
+import { test, expect, Page, gridLocator, cell } from './fixtures'
 
 /**
  * E2E coverage for cell validation (docs/test/validation.html) — a 5-row grid
@@ -19,14 +19,6 @@ const GRID = 'web-grid#grid'
 
 // Column indices: 0=id, 1=name, 2=email, 3=code, 4=score.
 const COL = { id: 0, name: 1, email: 2, code: 3, score: 4 } as const
-
-function gridLocator(page: Page) {
-	return page.locator(GRID)
-}
-
-function cell(page: Page, rowIndex: number, colIndex: number) {
-	return gridLocator(page).locator(`.wg__cell[data-row="${rowIndex}"][data-col="${colIndex}"]`)
-}
 
 const validationLog = (page: Page) => page.locator('[data-testid="validation-log"]')
 

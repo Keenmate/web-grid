@@ -1,4 +1,4 @@
-import { test, expect, Page } from '@playwright/test'
+import { test, expect, Page, gridLocator, header } from './fixtures'
 
 /**
  * E2E coverage for the frozen-columns fixture (docs/test/freeze-panes.html).
@@ -24,14 +24,6 @@ import { test, expect, Page } from '@playwright/test'
  */
 
 const PAGE = '/test/freeze-panes.html'
-
-function gridLocator(page: Page, id: string) {
-	return page.locator(`web-grid#${id}`)
-}
-
-function header(page: Page, gridId: string, field: string) {
-	return gridLocator(page, gridId).locator(`thead th.wg__header[data-field="${field}"]`)
-}
 
 function bodyCell(page: Page, gridId: string, rowIndex: number, field: string) {
 	return gridLocator(page, gridId).locator(`.wg__cell[data-row="${rowIndex}"][data-field="${field}"]`)

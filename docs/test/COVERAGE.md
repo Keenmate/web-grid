@@ -1,0 +1,144 @@
+# E2E Test Coverage Checklist
+
+Tracks which features of `web-grid` have end-to-end coverage in `e2e/`. Each row
+is one user-observable feature. Status legend:
+
+- `✗` — no coverage
+- `△` — partial coverage (some paths)
+- `✓` — covered
+
+When a row is `✓`/`△`, **Spec** points at the file under `e2e/` and **Fixture**
+at the dedicated page under `docs/test/` (specs hit fixture pages only, never the
+docs example pages). Known component bugs are tracked in `NOTES.md`; tests that
+pin one are `test.fail(true, 'NOTES.md #N')`.
+
+Run: `npx playwright test -c node_modules/.pw-12530.config.mjs --workers=2`
+(private port 12530; the default config uses the dev server on 12400).
+Every spec imports `test`/`expect` from `e2e/fixtures.ts`, which fails a test on
+any uncaught page error; shared helpers live in `e2e/helpers.ts`.
+
+---
+
+## 1. Rendering & layout
+
+| Feature | Status | Spec | Fixture |
+| --- | :-: | --- | --- |
+| Initial render (headers, rows, formatted values) | ✓ | `basic.spec.ts` | `basic.html` |
+| `isStriped`, `isSortable`, `isEditable`, `isPageable` toggles | ✓ | `basic.spec.ts` | `basic.html` |
+| Row numbers (`isRowNumbersVisible`) | ✓ | `basic.spec.ts` | `basic.html` |
+| `formatCallback` / cell class callbacks | ✓ | `basic.spec.ts`, `custom-styling.spec.ts` | `basic.html`, `custom-styling.html` |
+| `cellClass`, `getCellClassCallback`, `getRowClassCallback`, `renderCellCallback` | ✓ | `custom-styling.spec.ts` | `custom-styling.html` |
+| Container (max-height) vs full-height (`isTableBorderOnly`) | ✓ | `height-modes.spec.ts` | `height-modes.html` |
+| `isHoverable`, `scrollMaxHeight`, `isStickyRowNumbers` | △ | `freeze-panes.spec.ts` (sticky row numbers) | `freeze-panes.html` |
+| Freeze panes (`freezeColumns`, column `isFrozen`) | ✓ | `freeze-panes.spec.ts` | `freeze-panes.html` |
+| Column visibility (`isHidden`, hide-column / column-visibility menu) | ✓ | `column-visibility.spec.ts` | `column-visibility.html` |
+| Virtual scroll (1,000 rows) + infinite scroll | ✓ | `virtual-scroll.spec.ts` | `virtual-scroll.html` |
+
+## 2. Sorting, filtering, pagination
+
+| Feature | Status | Spec | Fixture |
+| --- | :-: | --- | --- |
+| Single sort, sort cycle, multi-sort | ✓ | `basic.spec.ts` | `basic.html` |
+| Local pagination (page size, next/prev) | ✓ | `basic.spec.ts` | `basic.html` |
+| Page-size selector updates the property | ✓ | `inputs.spec.ts` | `inputs.html` |
+| `isFilterable` / `filters` / `setFilter` narrows rows | ✗ | | |
+| `filter-change` event detail | ✗ | | |
+| Column `filterCallback` | ✗ | | |
+| Server `filterMode` → `data-request`, no local filtering | ✗ | | |
+| Server `paginationMode` → `data-request` {page,size} | ✗ | | |
+| `pageSizes`, `paginationLayout`, `paginationPosition` | ✗ | | |
+| `isPaginationVisible: 'auto'` hides on one page | ✗ | | |
+| `getPaginationLabelsCallback` | ✗ | | |
+
+## 3. Editing
+
+| Feature | Status | Spec | Fixture |
+| --- | :-: | --- | --- |
+| Text / select / checkbox / custom editors | ✓ | `editors.spec.ts` | `editors.html` |
+| Select / combobox / autocomplete in depth | ✓ | `dropdowns.spec.ts` | `dropdowns.html` |
+| Date editor (open, select, keyboard, min/max, months) | ✓ | `datepicker.spec.ts` | `datepicker.html` |
+| `editTrigger` click / dblclick / navigate, `shouldCommitOnClickAway` | ✓ | `edit-trigger.spec.ts` | `edit-trigger.html` |
+| `editTrigger` button / always per column, `editStartSelection` | ✗ | | |
+| Number editor parsing | ✗ | | |
+| `mode` preset (read-only / excel / input-matrix) | ✓ | `grid-modes.spec.ts`, `inputs.spec.ts` | `grid-modes.html`, `inputs.html` |
+| `validateCallback` (string / result / transform) | ✓ | `validation.spec.ts` | `validation.html` |
+| `invalidCells` + getters | ✗ | | |
+| Fill handle (drag, cancel, direction constraint) | ✓ | `fill-handle.spec.ts` | `fill-handle.html` |
+| Paste (single / multi-cell, modes, events, proxies) | ✓ | `paste.spec.ts` | `paste.html` |
+| Drafts: dirty marking, indicator, `isCellDirty/isRowDirty/getRowDraft` | ✗ | | |
+| `discardRowDraft` / `discardAllDrafts`, `row-change` detail | ✗ | | |
+| New row (`isNewRowEnabled`, position, indicator, create callbacks) | ✗ | | |
+
+## 4. Selection, copy, keyboard
+
+| Feature | Status | Spec | Fixture |
+| --- | :-: | --- | --- |
+| Row / column / cell-range selection, row focus | ✓ | `selection.spec.ts` | `selection.html` |
+| `cellSelectionMode` disabled / shift + selection API | ✗ | | |
+| Arrow navigation in navigate mode | ✓ | `basic.spec.ts` | `basic.html` |
+| Home/End/PageUp/PageDown/Ctrl+Home, Shift+Arrow, Delete, Ctrl+G | ✗ | | |
+| Number column ignores letters (GRID-1) | ✗ | | |
+| Ctrl+C cell / range TSV, `shouldCopyWithHeaders`, `getCopyValueCallback` | ✗ | | |
+| `copySelectedRowsToClipboard` | ✗ | | |
+| `rowShortcuts`, Ctrl+U move, disabled callback, help overlay | ✓ | `shortcuts.spec.ts` | `shortcuts.html` |
+
+## 5. Rows API & locking
+
+| Feature | Status | Spec | Fixture |
+| --- | :-: | --- | --- |
+| Row locking via `isRowLockedCallback` + dynamic row class | △ | `basic.spec.ts` | `basic.html` |
+| `lockRowById/unlockRowById/isRowLocked/getRowLockInfo`, `row-lock-change` | ✗ | | |
+| Lock blocks F2 / paste; `getLockInfoCallback`, `getCanEditLockedCallback` | ✗ | | |
+| `getRowIdCallback` / `idMember`, `updateRowById`, `replaceRowById`, `findRowById` | ✗ | | |
+| `focusCell`, `startEditing` | ✗ | | |
+
+## 6. Menus, toolbar, interaction model
+
+| Feature | Status | Spec | Fixture |
+| --- | :-: | --- | --- |
+| Cell context menu (labels, visible/disabled/danger/divider/shortcut, offsets) | ✓ | `contextmenu.spec.ts`, `editors.spec.ts` | `contextmenu.html`, `editors.html` |
+| Header context menu (predefined + custom) | ✓ | `contextmenu.spec.ts`, `resize-reorder.spec.ts` | `contextmenu.html`, `resize-reorder.html` |
+| Row toolbar (floating / multi-row / inline / cell-aware) | ✓ | `toolbar.spec.ts` | `toolbar.html` |
+| `toolbarTrigger` click/button, align, position, offset, column | ✗ | | |
+| Core action items, contexts, `on*` twins, controller | ✓ | `interaction-model.spec.ts` | `interaction-model.html` |
+| Interaction-model open gaps (move-row focus, built-in order, lock tooltip i18n, range shortcuts in help) | ✗ | | |
+
+## 7. Columns
+
+| Feature | Status | Spec | Fixture |
+| --- | :-: | --- | --- |
+| Resize, persistence, `isResizable` opt-out | ✓ | `resize-reorder.spec.ts` | `resize-reorder.html` |
+| Reorder, `isMovable` opt-out | ✓ | `resize-reorder.spec.ts` | `resize-reorder.html` |
+| `gridName` + `shouldPersistColumnOrder` + `setColumnOrder`, `isColumnReorderAllowed=false` | ✗ | | |
+
+## 8. Tree
+
+| Feature | Status | Spec | Fixture |
+| --- | :-: | --- | --- |
+| Tree mode expand/collapse, Ctrl+Arrow, Tab nav, `isRowEditable`, tree column locked | ✓ | `tree.spec.ts` | `tree.html` |
+| Predefined tree context-menu items | △ | `tree.spec.ts` (3 skipped) | `tree.html` |
+| Tree + virtual / infinite scroll | ✓ | `tree-scroll.spec.ts` | `tree-scroll.html` |
+| Chevron / glyph callbacks | ✗ | | |
+
+## 9. Events
+
+| Feature | Status | Spec | Fixture |
+| --- | :-: | --- | --- |
+| Row focus event | ✓ | `basic.spec.ts`, `selection.spec.ts` | `basic.html`, `selection.html` |
+| Paste events | ✓ | `paste.spec.ts` | `paste.html` |
+| `edit-start`, `edit-cancel`, `cell-selection-change`, `row-delete`, `expand-change` (+ `on*` twins) | ✗ | | |
+
+## 10. Theming, inputs, i18n, logging
+
+| Feature | Status | Spec | Fixture |
+| --- | :-: | --- | --- |
+| Dark-mode signals (per-instance, ancestor + theme-source, color-scheme, OS) | ✓ | `theming.spec.ts` | `theming.html` |
+| Core theme context (page signal → `data-context-theme`), `--base-*` chain | ✓ | `theme-context.spec.ts` | `theme-context.html` |
+| Contrast in dark mode (3 theme depths) | ✓ | `dark-mode.spec.ts` | `dark-mode.html` |
+| Inputs: mode preset batch, sync property reads, invalid values rejected | ✓ | `inputs.spec.ts` | `inputs.html` |
+| Table-driven attribute → property → removal loop over all inputs | ✗ | | |
+| `labels` across menus / pagination / go-to-row | ✗ | | |
+| Logging silent by default | ✗ | | |
+| Summary row (`renderSummaryCallback`, position, inline, metadata) | ✗ | | |
+| Tooltips (`getTooltipCallback`, validation tooltip, delays) | ✗ | | |
+| `shortcutsHelpPosition`, `renderShortcutsHelpCallback` | ✗ | | |

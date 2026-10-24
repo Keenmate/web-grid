@@ -1,4 +1,4 @@
-import { test, expect, Page, Locator } from '@playwright/test'
+import { test, expect, Page, Locator, gridLocator, header } from './fixtures'
 
 /**
  * E2E coverage for column resize + drag-to-reorder
@@ -21,14 +21,6 @@ import { test, expect, Page, Locator } from '@playwright/test'
  */
 
 const PAGE = '/test/resize-reorder.html'
-
-function gridLocator(page: Page, id: string) {
-	return page.locator(`web-grid#${id}`)
-}
-
-function header(page: Page, gridId: string, field: string): Locator {
-	return gridLocator(page, gridId).locator(`thead th.wg__header[data-field="${field}"]`)
-}
 
 function resizeHandle(page: Page, gridId: string, field: string): Locator {
 	return gridLocator(page, gridId).locator(`.wg__resize-handle[data-field="${field}"]`)

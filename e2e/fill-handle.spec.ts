@@ -1,4 +1,4 @@
-import { test, expect, Page, Locator } from '@playwright/test'
+import { test, expect, Page, Locator, gridLocator, cell } from './fixtures'
 
 /**
  * E2E coverage for the fill-handle (Excel-like autofill) fixture
@@ -18,14 +18,6 @@ import { test, expect, Page, Locator } from '@playwright/test'
  */
 
 const PAGE = '/test/fill-handle.html'
-
-function gridLocator(page: Page, id: string) {
-	return page.locator(`web-grid#${id}`)
-}
-
-function cell(page: Page, gridId: string, rowIndex: number, colIndex: number): Locator {
-	return gridLocator(page, gridId).locator(`.wg__cell[data-row="${rowIndex}"][data-col="${colIndex}"]`)
-}
 
 function fillHandle(page: Page, gridId: string): Locator {
 	return gridLocator(page, gridId).locator('.wg__fill-handle')

@@ -1,4 +1,4 @@
-import { test, expect, Page, Locator } from '@playwright/test'
+import { test, expect, Page, Locator, gridLocator, cell, header, clickMenuItem } from './fixtures'
 
 /**
  * E2E coverage for the context menu module (docs/test/contextmenu.html).
@@ -26,20 +26,6 @@ const PAGE = '/test/contextmenu.html'
 
 const COL = { id: 0, name: 1, category: 2, price: 3, stock: 4, active: 5 } as const
 
-function gridLocator(page: Page, id: string) {
-	return page.locator(`web-grid#${id}`)
-}
-
-function cell(page: Page, gridId: string, rowIndex: number, colIndex: number): Locator {
-	return gridLocator(page, gridId).locator(
-		`.wg__cell[data-row="${rowIndex}"][data-col="${colIndex}"]`
-	)
-}
-
-function header(page: Page, gridId: string, field: string): Locator {
-	return gridLocator(page, gridId).locator(`thead th.wg__header[data-field="${field}"]`)
-}
-
 /** Top-level menu only — `.wg-context-menu` also matches the submenu element. */
 function menuRoot(page: Page) {
 	return page.locator('.wg-context-menu:not(.wg-context-menu--submenu)')
@@ -57,19 +43,6 @@ async function dispatchContextMenu(page: Page, locator: Locator) {
 		clientX: x, clientY: y, screenX: x, screenY: y
 	})
 	return { x, y }
-}
-
-async function clickMenuItem(page: Page, label: string) {
-	await page.evaluate((text) => {
-		const menu = document.querySelector('.wg-context-menu:not(.wg-context-menu--submenu)')
-		if (!menu) throw new Error('No context menu')
-		const items = Array.from(menu.querySelectorAll('.wg-context-menu__item')) as HTMLElement[]
-		const item = items.find(it =>
-			it.textContent?.includes(text) && !it.closest('.wg-context-menu--submenu')
-		)
-		if (!item) throw new Error(`Menu item not found: ${text}`)
-		item.click()
-	}, label)
 }
 
 test.beforeEach(async ({ page }) => {

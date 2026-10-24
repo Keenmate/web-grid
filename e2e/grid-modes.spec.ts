@@ -1,4 +1,4 @@
-import { test, expect, Page } from '@playwright/test'
+import { test, expect, Page, gridLocator, cell } from './fixtures'
 
 /**
  * E2E coverage for the `mode` preset (docs/test/grid-modes.html). One grid +
@@ -16,14 +16,6 @@ import { test, expect, Page } from '@playwright/test'
 
 const PAGE = '/test/grid-modes.html'
 const GRID = 'web-grid#grid'
-
-function gridLocator(page: Page) {
-	return page.locator(GRID)
-}
-
-function cell(page: Page, rowIndex: number, colIndex: number) {
-	return gridLocator(page).locator(`.wg__cell[data-row="${rowIndex}"][data-col="${colIndex}"]`)
-}
 
 const resolved = (page: Page) => page.locator('[data-testid="resolved"]')
 const modeLabel = (page: Page) => page.locator('[data-testid="mode"]')

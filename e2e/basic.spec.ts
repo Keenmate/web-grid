@@ -1,4 +1,4 @@
-import { test, expect, Page } from '@playwright/test'
+import { test, expect, Page, gridLocator, cell } from './fixtures'
 
 /**
  * Basic-usage smoke tests against the dedicated fixture page
@@ -16,14 +16,6 @@ const GRID = 'web-grid#grid'
 
 // Column indices in the fixture: 0=id, 1=name, 2=email, 3=salary, 4=status.
 const COL = { id: 0, name: 1, email: 2, salary: 3, status: 4 } as const
-
-function gridLocator(page: Page) {
-	return page.locator(GRID)
-}
-
-function cell(page: Page, rowIndex: number, colIndex: number) {
-	return gridLocator(page).locator(`.wg__cell[data-row="${rowIndex}"][data-col="${colIndex}"]`)
-}
 
 function headerByText(page: Page, text: string) {
 	return gridLocator(page).locator('thead th').filter({ hasText: text }).first()

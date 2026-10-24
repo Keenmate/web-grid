@@ -1,4 +1,4 @@
-import { test, expect, Page } from '@playwright/test'
+import { test, expect, Page, gridLocator, cell } from './fixtures'
 
 /**
  * E2E coverage for dropdown editors (docs/test/dropdowns.html) — a 5-row grid
@@ -17,14 +17,6 @@ const PAGE = '/test/dropdowns.html'
 const GRID = 'web-grid#grid'
 
 const COL = { id: 0, country: 1, priority: 2, product: 3, assignee: 4 } as const
-
-function gridLocator(page: Page) {
-	return page.locator(GRID)
-}
-
-function cell(page: Page, rowIndex: number, colIndex: number) {
-	return gridLocator(page).locator(`.wg__cell[data-row="${rowIndex}"][data-col="${colIndex}"]`)
-}
 
 function dropdown(page: Page) {
 	return gridLocator(page).locator('.wg__dropdown')

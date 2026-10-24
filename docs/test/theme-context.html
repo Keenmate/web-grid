@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — theme context fixture</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>theme-context fixture</h1>
+	<p>Targeted by <code>e2e/theme-context.spec.ts</code>. One plain grid, no page theme signal — the spec sets
+	<code>data-theme</code> / <code>data-bs-theme</code> / <code>.dark</code> / <code>color-scheme</code> / <code>--base-*</code> itself.</p>
+
+	<web-grid id="grid" style="max-width: 500px;"></web-grid>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+
+		const grid = document.getElementById('grid')
+		grid.columns = [
+			{ field: 'id', title: 'ID', width: '60px' },
+			{ field: 'name', title: 'Name', width: '200px' }
+		]
+		grid.items = [
+			{ id: 1, name: 'Alice' },
+			{ id: 2, name: 'Bob' },
+			{ id: 3, name: 'Carol' }
+		]
+	</script>
+</body>
+</html>

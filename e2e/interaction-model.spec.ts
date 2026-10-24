@@ -1,4 +1,5 @@
-import { test, expect, type Page, type Locator } from '@playwright/test'
+import { test, expect, type Page, type Locator } from './fixtures'
+import { openToolbarOn as hoverToolbarTrigger } from './helpers'
 
 /**
  * The core interaction model (web-components-core `/actions`, SPEC §12.5 / §12.12):
@@ -26,13 +27,7 @@ const clearLog = (page: Page) => page.evaluate(() => { (window as any).__log = [
 const names = (page: Page) => grid(page).evaluate((el: any) => el.items.map((r: any) => r.name))
 
 async function openToolbarOn(page: Page, locator: Locator): Promise<void> {
-	await locator.evaluate((el: Element) => el.scrollIntoView({ block: 'center' }))
-	const box = await locator.boundingBox()
-	if (!box) throw new Error('no box')
-	const x = box.x + box.width / 2
-	const y = box.y + box.height / 2
-	await page.mouse.move(x, y)
-	await locator.dispatchEvent('mouseenter', { bubbles: false, cancelable: true, clientX: x, clientY: y })
+	await hoverToolbarTrigger(page, locator)
 	await expect(toolbar(page)).toBeVisible()
 }
 

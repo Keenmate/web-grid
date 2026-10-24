@@ -1,4 +1,4 @@
-import { test, expect, Page } from '@playwright/test'
+import { test, expect, Page } from './fixtures'
 
 /**
  * E2E coverage for tree-mode combined with virtual + infinite scroll

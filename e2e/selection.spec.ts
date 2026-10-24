@@ -1,4 +1,4 @@
-import { test, expect, Page } from '@playwright/test'
+import { test, expect, Page, gridLocator, cell, header } from './fixtures'
 
 /**
  * E2E coverage for selection (docs/test/selection.html) — an 8-row / 4-col grid
@@ -19,20 +19,8 @@ import { test, expect, Page } from '@playwright/test'
 const PAGE = '/test/selection.html'
 const GRID = 'web-grid#grid'
 
-function gridLocator(page: Page) {
-	return page.locator(GRID)
-}
-
-function cell(page: Page, rowIndex: number, colIndex: number) {
-	return gridLocator(page).locator(`.wg__cell[data-row="${rowIndex}"][data-col="${colIndex}"]`)
-}
-
 function rowNumber(page: Page, rowIndex: number) {
 	return gridLocator(page).locator(`.wg__row-number[data-row-number="${rowIndex}"]`)
-}
-
-function header(page: Page, field: string) {
-	return gridLocator(page).locator(`thead th.wg__header[data-field="${field}"]`)
 }
 
 const selectedRows = (page: Page) => page.locator('[data-testid="selected-rows"]')

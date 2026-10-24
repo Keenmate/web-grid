@@ -1,4 +1,4 @@
-import { test, expect, Page } from '@playwright/test'
+import { test, expect, Page, gridLocator } from './fixtures'
 
 /**
  * E2E coverage for virtual scrolling + infinite scrolling
@@ -15,10 +15,6 @@ import { test, expect, Page } from '@playwright/test'
  */
 
 const PAGE = '/test/virtual-scroll.html'
-
-function gridLocator(page: Page) {
-	return page.locator('web-grid#grid')
-}
 
 function infiniteGrid(page: Page) {
 	return page.locator('web-grid#infiniteGrid')

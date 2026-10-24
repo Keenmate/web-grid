@@ -131,7 +131,9 @@
 				text: 'Copy value',
 				icon: '📋',
 				onClick: (ctx) => {
-					navigator.clipboard.writeText(String(ctx.value || ''))
+					// Headless runs have no clipboard permission — swallow the rejection so
+					// it doesn't surface as an unhandled page error (e2e pageerror guard).
+					navigator.clipboard.writeText(String(ctx.value || '')).catch(() => {})
 					logEvent('Copy', `"${ctx.value}" copied to clipboard`)
 				}
 			},

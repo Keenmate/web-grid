@@ -1,4 +1,4 @@
-import { test, expect, Page, Locator } from '@playwright/test'
+import { test, expect, Page, Locator, gridLocator, cell, parseColor, relativeLuminance, composite, contrastRatio, type RGBA } from './fixtures'
 
 /**
  * E2E contrast suite for dark-mode rendering (docs/test/dark-mode.html).
@@ -28,80 +28,9 @@ const MIN_CONTRAST = 3.0
 // Color math — runs in the test runner (not in the browser)
 // =============================================================================
 
-interface RGBA {
-	r: number
-	g: number
-	b: number
-	a: number
-}
-
-function parseColor(s: string): RGBA {
-	// Handles:
-	//   rgb(r, g, b)              0-255 channels
-	//   rgba(r, g, b, a)          0-255 channels, alpha 0-1
-	//   rgb(r g b / a)            modern syntax, 0-255 channels
-	//   color(srgb r g b)         modern color() notation, 0-1 channels
-	//   color(srgb r g b / a)     modern color() notation with alpha
-	//   transparent               special keyword
-	if (s === 'transparent' || s === 'rgba(0, 0, 0, 0)') {
-		return { r: 0, g: 0, b: 0, a: 0 }
-	}
-	const colorFnMatch = s.match(/color\(\s*srgb\s+([^)]+)\)/i)
-	if (colorFnMatch) {
-		const parts = colorFnMatch[1].split(/[\s/]+/).filter(Boolean).map(Number)
-		const [r, g, b] = parts
-		const a = parts.length >= 4 ? parts[3] : 1
-		return { r: Math.round(r * 255), g: Math.round(g * 255), b: Math.round(b * 255), a }
-	}
-	const rgbMatch = s.match(/rgba?\(([^)]+)\)/i)
-	if (rgbMatch) {
-		const parts = rgbMatch[1].split(/[\s,/]+/).filter(Boolean).map(Number)
-		const [r, g, b] = parts
-		const a = parts.length >= 4 ? parts[3] : 1
-		return { r, g, b, a }
-	}
-	throw new Error(`Unparseable color: ${s}`)
-}
-
-function composite(fg: RGBA, bg: RGBA): RGBA {
-	// Standard alpha-over composite. bg is assumed opaque (a=1).
-	const a = fg.a
-	return {
-		r: Math.round(fg.r * a + bg.r * (1 - a)),
-		g: Math.round(fg.g * a + bg.g * (1 - a)),
-		b: Math.round(fg.b * a + bg.b * (1 - a)),
-		a: 1
-	}
-}
-
-function relativeLuminance({ r, g, b }: RGBA): number {
-	// sRGB → linear → relative luminance (WCAG 2.1 formula).
-	const toLin = (c: number) => {
-		const cs = c / 255
-		return cs <= 0.03928 ? cs / 12.92 : Math.pow((cs + 0.055) / 1.055, 2.4)
-	}
-	return 0.2126 * toLin(r) + 0.7152 * toLin(g) + 0.0722 * toLin(b)
-}
-
-function contrastRatio(a: RGBA, b: RGBA): number {
-	const la = relativeLuminance(a)
-	const lb = relativeLuminance(b)
-	const lighter = Math.max(la, lb)
-	const darker = Math.min(la, lb)
-	return (lighter + 0.05) / (darker + 0.05)
-}
-
 // =============================================================================
 // DOM helpers
 // =============================================================================
-
-function gridLocator(page: Page, id: GridId): Locator {
-	return page.locator(`web-grid#${id}`)
-}
-
-function cell(page: Page, gridId: GridId, rowIndex: number, colIndex: number): Locator {
-	return gridLocator(page, gridId).locator(`.wg__cell[data-row="${rowIndex}"][data-col="${colIndex}"]`)
-}
 
 /**
  * Read the cell's effective text color and the composited background color

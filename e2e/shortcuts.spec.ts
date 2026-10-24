@@ -1,4 +1,4 @@
-import { test, expect, Page } from '@playwright/test'
+import { test, expect, Page, gridLocator, cell } from './fixtures'
 
 /**
  * E2E coverage for rowShortcuts (docs/test/shortcuts.html) — a 6-row grid in
@@ -19,14 +19,6 @@ import { test, expect, Page } from '@playwright/test'
 
 const PAGE = '/test/shortcuts.html'
 const GRID = 'web-grid#grid'
-
-function gridLocator(page: Page) {
-	return page.locator(GRID)
-}
-
-function cell(page: Page, rowIndex: number, colIndex: number) {
-	return gridLocator(page).locator(`.wg__cell[data-row="${rowIndex}"][data-col="${colIndex}"]`)
-}
 
 function rows(page: Page) {
 	return gridLocator(page).locator('tbody tr')

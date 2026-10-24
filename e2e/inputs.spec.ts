@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test'
+import { test, expect, type Page } from './fixtures'
 
 /**
  * Inputs go through core's property path (no grid-side proxies):
@@ -11,10 +11,10 @@ import { test, expect, type Page } from '@playwright/test'
  *   - invalid property values are rejected (warned, previous value kept)
  *   - UI-driven input changes (page-size selector) update the element property
  *
- * Fixture: any page that loads the grid module — grids are created on the fly.
+ * Fixture: docs/test/inputs.html (module only) — grids are created on the fly.
  */
 
-const PAGE = '/test/interaction-model.html'
+const PAGE = '/test/inputs.html'
 
 const ITEMS = Array.from({ length: 100 }, (_, i) => ({ id: i + 1, name: `Row ${i + 1}` }))
 const COLUMNS = [{ field: 'id', title: 'ID' }, { field: 'name', title: 'Name' }]

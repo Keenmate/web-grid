@@ -1,4 +1,4 @@
-import { test, expect, Page, Locator } from '@playwright/test'
+import { test, expect, Page, Locator, parseColor, relativeLuminance, composite, type RGBA } from './fixtures'
 
 /**
  * E2E coverage for /test/theming.html — one card per dark-mode signal,
@@ -38,44 +38,6 @@ function firstCell(card: Locator): Locator {
 	// Pick a non-row-number, non-striped (row 0) body cell so the bg we read
 	// is the grid's surface colour, not the striped-row tint.
 	return card.locator('web-grid').locator('.wg__cell[data-row="0"][data-col="1"]')
-}
-
-interface RGBA { r: number; g: number; b: number; a: number }
-
-function parseColor(s: string): RGBA {
-	if (s === 'transparent' || s === 'rgba(0, 0, 0, 0)') return { r: 0, g: 0, b: 0, a: 0 }
-	// modern color(srgb r g b / a) — emitted by some color-mix() results
-	const cm = s.match(/color\(\s*srgb\s+([^)]+)\)/i)
-	if (cm) {
-		const parts = cm[1].split(/[\s/]+/).filter(Boolean).map(Number)
-		const [r, g, b] = parts
-		const a = parts.length >= 4 ? parts[3] : 1
-		return { r: Math.round(r * 255), g: Math.round(g * 255), b: Math.round(b * 255), a }
-	}
-	const rm = s.match(/rgba?\(([^)]+)\)/i)
-	if (!rm) throw new Error(`Unparseable color: ${s}`)
-	const parts = rm[1].split(/[\s,/]+/).filter(Boolean).map(Number)
-	const [r, g, b] = parts
-	const a = parts.length >= 4 ? parts[3] : 1
-	return { r, g, b, a }
-}
-
-function composite(fg: RGBA, bg: RGBA): RGBA {
-	const a = fg.a
-	return {
-		r: Math.round(fg.r * a + bg.r * (1 - a)),
-		g: Math.round(fg.g * a + bg.g * (1 - a)),
-		b: Math.round(fg.b * a + bg.b * (1 - a)),
-		a: 1
-	}
-}
-
-function relativeLuminance({ r, g, b }: RGBA): number {
-	const toLin = (c: number) => {
-		const cs = c / 255
-		return cs <= 0.03928 ? cs / 12.92 : Math.pow((cs + 0.055) / 1.055, 2.4)
-	}
-	return 0.2126 * toLin(r) + 0.7152 * toLin(g) + 0.0722 * toLin(b)
 }
 
 /**

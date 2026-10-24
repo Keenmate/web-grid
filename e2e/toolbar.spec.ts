@@ -1,4 +1,4 @@
-import { test, expect, Page, Locator } from '@playwright/test'
+import { test, expect, Page, Locator, gridLocator, openToolbarOn } from './fixtures'
 
 /**
  * E2E coverage for the row-toolbar fixture (docs/test/toolbar.html). The page
@@ -20,10 +20,6 @@ import { test, expect, Page, Locator } from '@playwright/test'
 
 const PAGE = '/test/toolbar.html'
 
-function gridLocator(page: Page, id: string) {
-	return page.locator(`web-grid#${id}`)
-}
-
 function row(page: Page, gridId: string, rowIndex: number): Locator {
 	return gridLocator(page, gridId).locator(`tr[data-row-index="${rowIndex}"]`)
 }
@@ -34,33 +30,6 @@ function cellOnRow(page: Page, gridId: string, rowIndex: number, field: string):
 
 function activeToolbar(page: Page, gridId: string): Locator {
 	return gridLocator(page, gridId).locator('.wg__toolbar-container .wg__toolbar')
-}
-
-/**
- * Open the floating toolbar by dispatching mouseenter on a target element with
- * explicit coordinates. Real hover (locator.hover) is flaky here because the
- * toolbar listener uses {capture: true} on the table and Playwright's auto-
- * scroll can leave the mouse in a state where mouseenter doesn't re-fire.
- * Same pattern as the right-click helper in tree.spec — bypass actionability,
- * dispatch with full init dict. See memory feedback_playwright_toolbar_hover.
- */
-async function openToolbarOn(locator: Locator, page: Page): Promise<void> {
-	await locator.evaluate((el: Element) => el.scrollIntoView({ block: 'center' }))
-	const box = await locator.boundingBox()
-	if (!box) throw new Error('Could not get bounding box for toolbar trigger')
-	const x = box.x + box.width / 2
-	const y = box.y + box.height / 2
-	await page.mouse.move(x, y)
-	await locator.dispatchEvent('mouseenter', {
-		bubbles: false, cancelable: true,
-		clientX: x, clientY: y, screenX: x, screenY: y,
-		buttons: 0
-	})
-	await locator.dispatchEvent('mousemove', {
-		bubbles: true, cancelable: true,
-		clientX: x, clientY: y, screenX: x, screenY: y,
-		buttons: 0
-	})
 }
 
 test.beforeEach(async ({ page }) => {
@@ -75,7 +44,7 @@ test.beforeEach(async ({ page }) => {
 
 test.describe('floating toolbar — #grid (hover trigger, default)', () => {
 	test('hovering a row opens the toolbar with five buttons and one divider', async ({ page }) => {
-		await openToolbarOn(row(page, 'grid', 0), page)
+		await openToolbarOn(page, row(page, 'grid', 0))
 
 		const toolbar = activeToolbar(page, 'grid')
 		await expect(toolbar).toBeVisible()
@@ -95,7 +64,7 @@ test.describe('floating toolbar — #grid (hover trigger, default)', () => {
 		const before = await gridLocator(page, 'grid').locator('tbody tr').count()
 		const firstTitle = await cellOnRow(page, 'grid', 0, 'title').textContent()
 
-		await openToolbarOn(row(page, 'grid', 0), page)
+		await openToolbarOn(page, row(page, 'grid', 0))
 		await activeToolbar(page, 'grid').locator('button[data-action="delete"]').click()
 
 		await expect(gridLocator(page, 'grid').locator('tbody tr')).toHaveCount(before - 1)
@@ -107,7 +76,7 @@ test.describe('floating toolbar — #grid (hover trigger, default)', () => {
 		const before = await gridLocator(page, 'grid').locator('tbody tr').count()
 		const originalTitle = (await cellOnRow(page, 'grid', 0, 'title').textContent())?.trim() ?? ''
 
-		await openToolbarOn(row(page, 'grid', 0), page)
+		await openToolbarOn(page, row(page, 'grid', 0))
 		await activeToolbar(page, 'grid').locator('button[data-action="duplicate"]').click()
 
 		await expect(gridLocator(page, 'grid').locator('tbody tr')).toHaveCount(before + 1)
@@ -117,7 +86,7 @@ test.describe('floating toolbar — #grid (hover trigger, default)', () => {
 	})
 
 	test('button titles are wired from the item text (native title attr)', async ({ page }) => {
-		await openToolbarOn(row(page, 'grid', 0), page)
+		await openToolbarOn(page, row(page, 'grid', 0))
 		const toolbar = activeToolbar(page, 'grid')
 
 		await expect(toolbar.locator('button[data-action="move-up"]')).toHaveAttribute('title', 'Move up')
@@ -131,7 +100,7 @@ test.describe('floating toolbar — #grid (hover trigger, default)', () => {
 
 test.describe('multi-row toolbar — #grid2', () => {
 	test('renders two .wg__toolbar-row blocks (one per row property)', async ({ page }) => {
-		await openToolbarOn(row(page, 'grid2', 0), page)
+		await openToolbarOn(page, row(page, 'grid2', 0))
 
 		const toolbar = activeToolbar(page, 'grid2')
 		await expect(toolbar).toBeVisible()
@@ -143,7 +112,7 @@ test.describe('multi-row toolbar — #grid2', () => {
 	})
 
 	test('delete button carries the danger modifier class', async ({ page }) => {
-		await openToolbarOn(row(page, 'grid2', 0), page)
+		await openToolbarOn(page, row(page, 'grid2', 0))
 		const deleteBtn = activeToolbar(page, 'grid2').locator('button[data-action="delete"]')
 		await expect(deleteBtn).toHaveClass(/wg__toolbar-btn--danger/)
 	})
@@ -203,7 +172,7 @@ test.describe('cell-aware toolbar — #grid4', () => {
 		// getCellToolbarItemsCallback items are merged with the base rowToolbar (cell
 		// items first, then any base items not overridden by id / action). For 'priority' that means
 		// the three set* items show up before the default add/delete/duplicate.
-		await openToolbarOn(cellOnRow(page, 'grid4', 0, 'priority'), page)
+		await openToolbarOn(page, cellOnRow(page, 'grid4', 0, 'priority'))
 
 		const toolbar = activeToolbar(page, 'grid4')
 		await expect(toolbar).toBeVisible()
@@ -215,7 +184,7 @@ test.describe('cell-aware toolbar — #grid4', () => {
 	})
 
 	test('hovering the status cell swaps in status-specific items', async ({ page }) => {
-		await openToolbarOn(cellOnRow(page, 'grid4', 0, 'status'), page)
+		await openToolbarOn(page, cellOnRow(page, 'grid4', 0, 'status'))
 
 		const toolbar = activeToolbar(page, 'grid4')
 		await expect(toolbar).toBeVisible()
@@ -228,7 +197,7 @@ test.describe('cell-aware toolbar — #grid4', () => {
 
 	test('non-overridden columns (title) fall back to the default toolbar', async ({ page }) => {
 		// getCellToolbarItemsCallback returns undefined for 'title' → default rowToolbar = ['add','delete','duplicate'].
-		await openToolbarOn(cellOnRow(page, 'grid4', 0, 'title'), page)
+		await openToolbarOn(page, cellOnRow(page, 'grid4', 0, 'title'))
 
 		const toolbar = activeToolbar(page, 'grid4')
 		await expect(toolbar).toBeVisible()

@@ -1,4 +1,4 @@
-import { test, expect, Page, Locator } from '@playwright/test'
+import { test, expect, Page, Locator, gridLocator, cell } from './fixtures'
 
 /**
  * E2E coverage for the editors fixture (docs/test/editors.html), which exercises:
@@ -17,14 +17,6 @@ import { test, expect, Page, Locator } from '@playwright/test'
 
 const PAGE = '/test/editors.html'
 const GRID = 'web-grid#grid'
-
-function gridLocator(page: Page) {
-	return page.locator(GRID)
-}
-
-function cell(page: Page, rowIndex: number, colIndex: number) {
-	return gridLocator(page).locator(`.wg__cell[data-row="${rowIndex}"][data-col="${colIndex}"]`)
-}
 
 function eventLog(page: Page) {
 	return page.locator('[data-testid="event-log"]')
