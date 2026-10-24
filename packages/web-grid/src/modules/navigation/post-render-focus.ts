@@ -18,7 +18,7 @@
 // `focusedCell` is the focused-cell snapshot taken BEFORE the render, so we
 // can restore focus even when grid.focusedCell has been cleared in between.
 
-import type { GridContext } from '../grid-context.js'
+import type { GridHost } from '../grid-context.js'
 import type { FocusedCell } from '../../types.js'
 
 /**
@@ -26,13 +26,13 @@ import type { FocusedCell } from '../../types.js'
  * the configured selection behavior) or to the previously focused cell.
  */
 export function restoreFocusAfterRender<T>(
-	ctx: GridContext<T>,
+	ctx: GridHost<T>,
 	container: HTMLElement,
 	focusedCell: FocusedCell | null
 ): void {
 	// Auto-focus editor if in edit mode
-	if (ctx.grid.editingCell) {
-		const { rowIndex, field } = ctx.grid.editingCell
+	if (ctx.engine.editingCell) {
+		const { rowIndex, field } = ctx.engine.editingCell
 		// Use specific selectors to avoid finding stale editor elements
 		let editor = ctx.shadow.querySelector(
 			`.wg__combobox-input[data-row="${rowIndex}"][data-field="${field}"],
@@ -48,11 +48,11 @@ export function restoreFocusAfterRender<T>(
 		if (editor) {
 			editor.focus()
 			if (editor instanceof HTMLInputElement && editor.type === 'text') {
-				const cursorPos = ctx.grid.editingCell.cursorPosition
+				const cursorPos = ctx.engine.editingCell.cursorPosition
 				const column = ctx.getCurrentEditingColumn()
-				const editStartSelection = column?.editorOptions?.editStartSelection || ctx.grid.editStartSelection
+				const editStartSelection = column?.editorOptions?.editStartSelection || ctx.engine.editStartSelection
 
-				if (ctx.grid.editingCell.initialSearchQuery !== undefined) {
+				if (ctx.engine.editingCell.initialSearchQuery !== undefined) {
 					// Type-to-start: always cursor at end
 					const len = editor.value.length
 					editor.setSelectionRange(len, len)
@@ -82,7 +82,7 @@ export function restoreFocusAfterRender<T>(
 				}
 			}
 		}
-	} else if (focusedCell && !ctx.grid.editingCell) {
+	} else if (focusedCell && !ctx.engine.editingCell) {
 		// Restore focus to the previously focused cell (if not editing)
 		const cell = container.querySelector(
 			`td[data-row="${focusedCell.rowIndex}"][data-col="${focusedCell.colIndex}"]`

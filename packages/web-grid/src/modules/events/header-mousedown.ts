@@ -14,13 +14,13 @@
 //  5. Select all — left-click on the row-number header (the `#` cell).
 //  6. Row focus — clicking any data cell sets the focused row + surgically
 //     paints `wg__row--focused`. Skipped during cell-selection drag so the
-//     drag doesn't fire spurious onrowfocus events.
+//     drag doesn't fire spurious row-focus events.
 //  7. Clear row / column selection — clicking a data cell while a row or
 //     column selection is active drops it (full render).
 //  8. Clear all selections — clicking empty padding (outside any interactive
 //     element) drops every selection.
 
-import type { GridContext } from '../grid-context.js'
+import type { GridHost } from '../grid-context.js'
 import { handleResizeStart } from '../resize/index.js'
 import { handleReorderStart } from '../reorder/index.js'
 import { handleHeaderMouseDown } from '../column-selection/index.js'
@@ -37,7 +37,7 @@ import {
  * row-select / clear-on-empty-click. The order of the checks is significant
  * (resize > reorder > column-select).
  */
-export function handleHeaderRowMouseDown<T>(ctx: GridContext<T>, e: Event): void {
+export function handleHeaderRowMouseDown<T>(ctx: GridHost<T>, e: Event): void {
 	const target = e.target as HTMLElement
 
 	// Resize handle takes priority
@@ -56,7 +56,7 @@ export function handleHeaderRowMouseDown<T>(ctx: GridContext<T>, e: Event): void
 
 	// Column reorder: start drag when clicking on a non-frozen header (if enabled)
 	// Skip reorder if Ctrl/Shift held - let click handler do column selection instead
-	if (ctx.grid.isColumnReorderAllowed) {
+	if (ctx.engine.isColumnReorderAllowed) {
 		const mouseEvent = e as MouseEvent
 		if (!mouseEvent.ctrlKey && !mouseEvent.metaKey && !mouseEvent.shiftKey) {
 			const header = target.closest('.wg__header') as HTMLElement
@@ -73,12 +73,12 @@ export function handleHeaderRowMouseDown<T>(ctx: GridContext<T>, e: Event): void
 
 	// Column selection drag: when reorder is disabled, OR when Shift is held (even with reorder enabled)
 	// Only on left-click (button 0), not right-click (button 2) which opens context menu
-	if ((!ctx.grid.isColumnReorderAllowed || (e as MouseEvent).shiftKey) && (e as MouseEvent).button === 0) {
+	if ((!ctx.engine.isColumnReorderAllowed || (e as MouseEvent).shiftKey) && (e as MouseEvent).button === 0) {
 		const header = target.closest('.wg__header:not(.wg__row-number-header):not(.wg__inline-actions-header):not(.wg__actions-column):not(.wg__filler)') as HTMLElement
 		if (header && !target.closest('.wg__resize-handle') && !target.closest('.wg__sort-indicator')) {
 			const field = header.dataset.field
 			if (field) {
-				const colIndex = ctx.grid.visualColumns.findIndex(vc => String(vc.column.field) === field)
+				const colIndex = ctx.engine.visualColumns.findIndex(vc => String(vc.column.field) === field)
 				if (colIndex >= 0) {
 					handleHeaderMouseDown(ctx, colIndex, e as MouseEvent)
 				}
@@ -101,9 +101,9 @@ export function handleHeaderRowMouseDown<T>(ctx: GridContext<T>, e: Event): void
 	const rowNumberHeader = target.closest('.wg__row-number-header') as HTMLElement
 	if (rowNumberHeader && (e as MouseEvent).button === 0) {
 		e.preventDefault()
-		ctx.grid.selectAll()
+		ctx.engine.selectAll()
 		// Update the range border visual
-		if (ctx.grid.selectedCellRange) {
+		if (ctx.engine.selectedCellRange) {
 			createRangeBorder(ctx)
 		}
 		ctx.render()
@@ -115,13 +115,13 @@ export function handleHeaderRowMouseDown<T>(ctx: GridContext<T>, e: Event): void
 	}
 
 	// Set row focus when clicking on data cells (not row numbers or headers)
-	// Skip during cell range selection to avoid spurious onrowfocus events
+	// Skip during cell range selection to avoid spurious row-focus events
 	const clickedCell = target.closest('.wg__cell:not(.wg__row-number):not(.wg__inline-actions-cell)') as HTMLElement
 	if (clickedCell && !target.closest('.wg__header') && !isCellSelectionPending() && !isCellSelecting()) {
 		const cellRowIndex = parseInt(clickedCell.dataset.row || '-1', 10)
 		if (cellRowIndex >= 0) {
-			const prevFocusedRow = ctx.grid.focusedRowIndex
-			ctx.grid.setFocusedRow(cellRowIndex)
+			const prevFocusedRow = ctx.engine.focusedRowIndex
+			ctx.engine.setFocusedRow(cellRowIndex)
 			ctx.updateRowFocusVisual(prevFocusedRow, cellRowIndex)
 		}
 	}
@@ -130,12 +130,12 @@ export function handleHeaderRowMouseDown<T>(ctx: GridContext<T>, e: Event): void
 	// But NOT if cell selection is pending (would interfere with shift+drag)
 	if (target.closest('.wg__cell') && !target.closest('.wg__row-number, .wg__header') && !isCellSelectionPending()) {
 		let needsRender = false
-		if (ctx.grid.selectedRows.length > 0) {
-			ctx.grid.clearSelection()
+		if (ctx.engine.selectedRows.length > 0) {
+			ctx.engine.clearSelection()
 			needsRender = true
 		}
-		if (ctx.grid.selectedColumns.length > 0) {
-			ctx.grid.clearColumnSelection()
+		if (ctx.engine.selectedColumns.length > 0) {
+			ctx.engine.clearColumnSelection()
 			needsRender = true
 		}
 		if (needsRender) {
@@ -146,17 +146,17 @@ export function handleHeaderRowMouseDown<T>(ctx: GridContext<T>, e: Event): void
 	// Clear all selections if clicking outside interactive elements (empty areas)
 	if (!target.closest('.wg__cell, .wg__row-number, .wg__header, .wg__toolbar, button, input, select, textarea')) {
 		let needsRender = false
-		if (ctx.grid.selectedCellRange) {
-			ctx.grid.clearCellSelection()
+		if (ctx.engine.selectedCellRange) {
+			ctx.engine.clearCellSelection()
 			removeRangeBorder()
 			needsRender = true
 		}
-		if (ctx.grid.selectedRows.length > 0) {
-			ctx.grid.clearSelection()
+		if (ctx.engine.selectedRows.length > 0) {
+			ctx.engine.clearSelection()
 			needsRender = true
 		}
-		if (ctx.grid.selectedColumns.length > 0) {
-			ctx.grid.clearColumnSelection()
+		if (ctx.engine.selectedColumns.length > 0) {
+			ctx.engine.clearColumnSelection()
 			needsRender = true
 		}
 		if (needsRender) {

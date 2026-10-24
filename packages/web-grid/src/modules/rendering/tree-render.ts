@@ -4,7 +4,7 @@
 // =============================================================================
 
 import type { Column } from '../../types.js'
-import type { GridContext } from '../grid-context.js'
+import type { GridHost } from '../grid-context.js'
 
 /**
  * Wrap cell content with tree indent + chevron when column is the tree column.
@@ -22,18 +22,18 @@ import type { GridContext } from '../grid-context.js'
  * render (cell.ts), so both paths keep the chevron after focus/edit transitions.
  */
 export function wrapTreeCell<T>(
-	ctx: GridContext<T>,
+	ctx: GridHost<T>,
 	column: Column<T>,
 	item: T,
 	innerHtml: string
 ): string {
-	if (!column.isTree || !ctx.grid.isTreeMode) return innerHtml
-	const info = ctx.grid.getRowTreeInfo(item)
+	if (!column.isTree || !ctx.engine.isTreeMode) return innerHtml
+	const info = ctx.engine.getRowTreeInfo(item)
 	if (!info) return innerHtml
-	const isExpanded = ctx.grid.isPathExpanded(info.path)
+	const isExpanded = ctx.engine.isPathExpanded(info.path)
 	const indentStyle = `padding-inline-start: calc(${info.level} * var(--wg-tree-indent))`
-	const chevronInner = ctx.grid.getTreeChevronHtml(item, isExpanded, info.hasChildren, info.level, info.path)
-	const shouldRotate = !ctx.grid.treeChevronCallback && ctx.grid.treeExpandedGlyph === ctx.grid.treeCollapsedGlyph
+	const chevronInner = ctx.engine.getTreeChevronHtml(item, isExpanded, info.hasChildren, info.level, info.path)
+	const shouldRotate = !ctx.engine.renderChevronCallback && ctx.engine.treeExpandedGlyph === ctx.engine.treeCollapsedGlyph
 	let chevron: string
 	if (info.hasChildren) {
 		const expandedClass = shouldRotate && isExpanded ? ' wg__tree-chevron--expanded' : ''

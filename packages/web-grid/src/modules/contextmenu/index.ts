@@ -1,112 +1,46 @@
 // =============================================================================
 // Context Menu Module
 // =============================================================================
+// One menu renderer for the cell, header and header-filler context menus.
+// Entries are core menu items (web-components-core `/actions`): resolved with
+// `resolveMenuEntries` (hidden items dropped, dividers trimmed), submenus from
+// `children` / `getChildrenCallback` (`getMenuChildren` — lazy; a loading row
+// shows while an async one resolves), activation through the surface's
+// `activate` (core `runAction` order). A leaf closes the menu unless it sets
+// `shouldCloseOnClick: false` — then its menu level re-renders in place (so a
+// toggle shows its new state).
 
 import { computePosition, flip, offset, shift } from '@floating-ui/dom'
-import type {
-	ContextMenuItem,
-	ContextMenuConfig,
-	ContextMenuContext,
-	PredefinedContextMenuItem,
-	HeaderMenuConfig,
-	HeaderMenuItem,
-	HeaderMenuContext,
-	PredefinedHeaderMenuItem,
-	GridLabels
-} from '../../types.js'
-import type { GridContext } from '../grid-context.js'
+import {
+	resolveMenuEntries,
+	getMenuChildren,
+	type MenuEntry,
+	type MenuItem,
+	type ResolvedActionItem
+} from '@keenmate/web-components-core/actions'
+import type { GridHost } from '../grid-context.js'
 
-/**
- * Normalize a ContextMenuConfig list (which may contain string shorthand and/or items
- * with `type` set) into a flat list of fully-defined ContextMenuItem objects.
- * Predefined types get default labels, icons, visibility predicates, and onclick handlers.
- *
- * The grid is needed at click time for `expand-all` etc. to call `expandSubtree(path)`,
- * so we close over it rather than passing it through later.
- */
-export function normalizeContextMenu<T>(
-	config: ContextMenuConfig<T>[],
-	grid: GridContext<T>['grid']
-): ContextMenuItem<T>[] {
-	return config.map(entry => {
-		if (typeof entry === 'string') {
-			return buildPredefinedContextItem(entry, grid)
-		}
-		if (entry.type) {
-			// Object form with `type` — built-in handler/visibility, but caller may override label/icon/etc.
-			const base = buildPredefinedContextItem(entry.type, grid)
-			return {
-				...base,
-				...entry,
-				// Caller-provided onclick wins; otherwise keep the predefined handler
-				onclick: entry.onclick ?? base.onclick,
-				// Label/icon: caller value (if provided) overrides default
-				label: entry.label ?? base.label,
-				icon: entry.icon ?? base.icon,
-				visible: entry.visible ?? base.visible
-			}
-		}
-		return entry as ContextMenuItem<T>
-	})
+type AnyEntry = MenuEntry<any, any> | string
+type EntriesSource = () => readonly AnyEntry[] | Promise<readonly AnyEntry[]>
+
+/** What a menu shows and how its items behave. */
+export type MenuSpec<Ctx> = {
+	entries: readonly (MenuEntry<Ctx, any> | string)[]
+	ctx: Ctx
+	/** Built-in defaults for an item (text / icon / visibility / disabled / danger). */
+	defaults?: (item: MenuItem<Ctx, any>) => Partial<ResolvedActionItem<any>> | undefined
+	/** Fill in built-in submenus (e.g. `column-visibility`) before resolving. */
+	prepare?: (item: MenuItem<Ctx, any>) => MenuItem<Ctx, any>
+	/** Run an activated leaf (beforeActionCallback → onClick → `action` event → built-in). */
+	activate: (item: MenuItem<Ctx, any>, triggerElement: HTMLElement, event: Event) => Promise<unknown> | void
 }
 
-function buildPredefinedContextItem<T>(
-	type: PredefinedContextMenuItem,
-	grid: GridContext<T>['grid']
-): ContextMenuItem<T> {
-	switch (type) {
-		case 'expand-all':
-			return {
-				id: 'expand-all',
-				type,
-				label: 'Expand all',
-				icon: '▾',
-				// File-explorer convention: per-row "expand all" means expand everything *under here*
-				visible: (ctx) => {
-					const info = grid.getRowTreeInfo(ctx.row)
-					return !!info?.hasChildren
-				},
-				onclick: (ctx) => {
-					const info = grid.getRowTreeInfo(ctx.row)
-					if (info) grid.expandSubtree(info.path)
-				}
-			}
-		case 'collapse-all':
-			return {
-				id: 'collapse-all',
-				type,
-				label: 'Collapse all',
-				icon: '▸',
-				visible: (ctx) => {
-					const info = grid.getRowTreeInfo(ctx.row)
-					return !!info?.hasChildren
-				},
-				onclick: (ctx) => {
-					const info = grid.getRowTreeInfo(ctx.row)
-					if (info) grid.collapseSubtree(info.path)
-				}
-			}
-		case 'expand-tree':
-			return {
-				id: 'expand-tree',
-				type,
-				label: 'Expand entire tree',
-				icon: '⤓',
-				// Hide when there's no tree, or every node is already expanded
-				visible: () => grid.isTreeMode,
-				onclick: () => grid.expandAll()
-			}
-		case 'collapse-tree':
-			return {
-				id: 'collapse-tree',
-				type,
-				label: 'Collapse entire tree',
-				icon: '⤒',
-				visible: () => grid.isTreeMode && grid.expandedPaths.size > 0,
-				onclick: () => grid.collapseAll()
-			}
-	}
-}
+type ItemRecord = { item: MenuItem<any, any>; isDisabled: boolean; hasChildren: boolean; shortcut?: string }
+
+// Rendered item element → its item (click / keyboard lookup)
+const itemOf = new WeakMap<HTMLElement, ItemRecord>()
+// Rendered menu level → its entries (re-read to refresh after a keep-open item)
+const levelOf = new WeakMap<HTMLElement, EntriesSource>()
 
 // Context menu styles (injected into document.head)
 const CONTEXT_MENU_STYLES = `
@@ -121,6 +55,7 @@ const CONTEXT_MENU_STYLES = `
 	--wg-cm-text-secondary: var(--base-text-color-2, #666);
 	--wg-cm-text-danger: var(--base-danger-color, #d32f2f);
 	--wg-cm-hover-bg: var(--base-hover-bg, #f5f5f5);
+	--wg-cm-active-color: var(--base-accent-color, var(--base-primary-color, #1a73e8));
 	--wg-cm-disabled-opacity: 0.5;
 
 	/* Typography */
@@ -179,6 +114,10 @@ const CONTEXT_MENU_STYLES = `
 	background: color-mix(in srgb, var(--wg-cm-text-danger) 10%, transparent);
 }
 
+.wg-context-menu__item--active {
+	color: var(--wg-cm-active-color);
+}
+
 .wg-context-menu__icon {
 	width: var(--wg-cm-icon-size);
 	height: var(--wg-cm-icon-size);
@@ -205,6 +144,20 @@ const CONTEXT_MENU_STYLES = `
 	margin: var(--wg-cm-padding) 0;
 }
 
+.wg-context-menu__divider-label {
+	padding: 2px 12px;
+	color: var(--wg-cm-text-secondary);
+	font-size: 0.85em;
+	text-transform: uppercase;
+	letter-spacing: 0.03em;
+}
+
+.wg-context-menu__loading {
+	padding: var(--wg-cm-item-padding);
+	color: var(--wg-cm-text-secondary);
+	font-style: italic;
+}
+
 /* Submenu support */
 .wg-context-menu__item--has-submenu {
 	position: relative;
@@ -223,12 +176,16 @@ const CONTEXT_MENU_STYLES = `
 	display: none;
 }
 
-/* Submenu item with checkbox-like toggle */
+/* Column-visibility toggles: the checkbox glyph dims when the column is hidden */
 .wg-context-menu__item--toggle .wg-context-menu__icon {
 	opacity: 0.4;
 }
 
-.wg-context-menu__item--toggle.wg-context-menu__item--checked .wg-context-menu__icon {
+.wg-context-menu__item--toggle.wg-context-menu__item--active {
+	color: inherit;
+}
+
+.wg-context-menu__item--toggle.wg-context-menu__item--active .wg-context-menu__icon {
 	opacity: 1;
 }
 `
@@ -245,473 +202,63 @@ function injectStyles(): void {
 	stylesInjected = true
 }
 
-/**
- * Render context menu HTML
- */
-function renderContextMenu<T>(
-	items: ContextMenuItem<T>[],
-	context: ContextMenuContext<T>
-): string {
-	const visibleItems = items.filter(item => {
-		if (item.visible === undefined) return true
-		return typeof item.visible === 'function' ? item.visible(context) : item.visible
+function escapeText(text: string): string {
+	return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
+/** Fill a menu level element with the resolved entries. */
+function fillLevel<Ctx>(level: HTMLElement, spec: MenuSpec<Ctx>, entries: readonly AnyEntry[]): void {
+	level.textContent = ''
+	// Expand the string shorthand first so `prepare` sees built-ins as items
+	const prepared = entries.map(raw => {
+		const e = typeof raw === 'string' ? { action: raw } : raw
+		return e && !('divider' in e) && spec.prepare ? spec.prepare(e as MenuItem<Ctx, any>) : e
 	})
-
-	if (visibleItems.length === 0) return ''
-
-	const itemsHtml = visibleItems.map((item, index) => {
-		const label = typeof item.label === 'function' ? item.label(context) : item.label
-		const icon = typeof item.icon === 'function' ? item.icon(context) : item.icon
-		const shortcut = item.shortcut
-		const isDisabled = typeof item.disabled === 'function' ? item.disabled(context) : item.disabled
-		const isDanger = item.danger === true
-
-		const classes = [
+	const resolved = resolveMenuEntries(prepared as readonly (MenuEntry<Ctx, any> | string)[], spec.ctx, spec.defaults)
+	for (const entry of resolved) {
+		if (entry.kind === 'divider') {
+			const divider = document.createElement('div')
+			divider.className = 'wg-context-menu__divider'
+			divider.setAttribute('role', 'separator')
+			level.appendChild(divider)
+			if (entry.text) {
+				const label = document.createElement('div')
+				label.className = 'wg-context-menu__divider-label'
+				label.textContent = entry.text
+				level.appendChild(label)
+			}
+			continue
+		}
+		const r = entry.resolved
+		const isToggle = r.action === 'toggle-column' || r.action === 'show-all-columns'
+		const el = document.createElement('div')
+		el.className = [
 			'wg-context-menu__item',
-			isDisabled ? 'wg-context-menu__item--disabled' : '',
-			isDanger ? 'wg-context-menu__item--danger' : ''
+			r.isDisabled ? 'wg-context-menu__item--disabled' : '',
+			r.isDanger ? 'wg-context-menu__item--danger' : '',
+			r.isActive ? 'wg-context-menu__item--active' : '',
+			entry.hasChildren ? 'wg-context-menu__item--has-submenu' : '',
+			isToggle ? 'wg-context-menu__item--toggle' : '',
+			r.cssClass
 		].filter(Boolean).join(' ')
-
-		const divider = item.dividerBefore && index > 0 ? '<div class="wg-context-menu__divider"></div>' : ''
-
-		const iconHtml = icon
-			? `<span class="wg-context-menu__icon">${icon}</span>`
-			: ''
-
-		const shortcutHtml = shortcut
-			? `<span class="wg-context-menu__shortcut">${shortcut}</span>`
-			: ''
-
-		return `${divider}<div class="${classes}" data-item-id="${item.id}" data-disabled="${isDisabled ? 'true' : 'false'}" data-shortcut="${shortcut || ''}">${iconHtml}<span class="wg-context-menu__label">${label}</span>${shortcutHtml}</div>`
-	}).join('')
-
-	return `<div class="wg-context-menu">${itemsHtml}</div>`
+		el.setAttribute('role', 'menuitem')
+		el.dataset.action = r.action
+		if (r.id !== undefined) el.dataset.id = r.id
+		if (r.isDisabled) el.setAttribute('aria-disabled', 'true')
+		if (r.isActive) el.setAttribute('aria-pressed', 'true')
+		if (r.tooltip) el.title = r.tooltip
+		el.innerHTML = `${r.icon ? `<span class="wg-context-menu__icon">${r.icon}</span>` : ''}<span class="wg-context-menu__label">${escapeText(r.text)}</span>${r.shortcut ? `<span class="wg-context-menu__shortcut">${escapeText(r.shortcut)}</span>` : ''}`
+		itemOf.set(el, { item: entry.item, isDisabled: r.isDisabled, hasChildren: entry.hasChildren, shortcut: r.shortcut })
+		if (entry.hasChildren && !r.isDisabled) attachSubmenu(el, entry.item, spec)
+		level.appendChild(el)
+	}
 }
 
-/**
- * Open context menu at position
- */
-export function openContextMenu<T>(
-	ctx: GridContext<T>,
-	x: number,
-	y: number,
-	xOffset: number,
-	yOffset: number,
-	items: ContextMenuItem<T>[],
-	menuContext: ContextMenuContext<T>,
-	onItemClick: (itemId: string) => void,
-	onClose: () => void
-): HTMLElement | null {
-	injectStyles()
-
-	const html = renderContextMenu(items, menuContext)
-	if (!html) return null
-
-	// Create container
-	const container = document.createElement('div')
-	container.className = 'wg-context-menu-container'
-	container.innerHTML = html
-	document.body.appendChild(container)
-
-	const menu = container.querySelector('.wg-context-menu') as HTMLElement
-
-	// Position using a virtual element at the click coordinates; offsets are applied
-	// via the offset middleware so they flip sign along with the placement near edges
-	const virtualEl = {
-		getBoundingClientRect: () => ({
-			width: 0,
-			height: 0,
-			x: x,
-			y: y,
-			top: y,
-			left: x,
-			right: x,
-			bottom: y
-		})
-	}
-
-	computePosition(virtualEl, menu, {
-		placement: 'bottom-start',
-		strategy: 'fixed',
-		middleware: [
-			offset({ mainAxis: yOffset, alignmentAxis: xOffset }),
-			flip({ fallbackPlacements: ['top-start', 'bottom-end', 'top-end'] }),
-			shift({ padding: 8 })
-		]
-	}).then(({ x: posX, y: posY }) => {
-		Object.assign(menu.style, {
-			left: `${posX}px`,
-			top: `${posY}px`
-		})
-	})
-
-	// Handle item clicks
-	container.addEventListener('click', (e) => {
-		const item = (e.target as HTMLElement).closest('.wg-context-menu__item') as HTMLElement
-		if (item && item.dataset.disabled !== 'true') {
-			const itemId = item.dataset.itemId || ''
-			onItemClick(itemId)
-		}
-	})
-
-	// Close on scroll from either the grid's internal scroll container or the page
-	// (scroll events aren't composed, so a window capture listener can't see shadow-DOM scrolls)
-	const windowScrollSub = ctx.scrollEvents.subscribe('window', () => {
-		cleanup()
-		onClose()
-	})
-	const containerScrollSub = ctx.scrollEvents.subscribe('container', () => {
-		cleanup()
-		onClose()
-	})
-
-	// Cleanup function to remove all listeners and close menu
-	const cleanup = () => {
-		windowScrollSub.unsubscribe()
-		containerScrollSub.unsubscribe()
-		document.removeEventListener('mousedown', handleOutsideClick)
-		document.removeEventListener('keydown', handleKeyDown)
-		container.remove()
-	}
-
-	// Handle close on outside click
-	const handleOutsideClick = (e: MouseEvent) => {
-		if (!container.contains(e.target as Node)) {
-			cleanup()
-			onClose()
-		}
-	}
-
-	// Handle close on Escape and shortcut keys
-	const handleKeyDown = (e: KeyboardEvent) => {
-		if (e.key === 'Escape') {
-			e.preventDefault()
-			cleanup()
-			onClose()
-			return
-		}
-
-		// Match shortcut keys
-		const key = e.key.toLowerCase()
-		const menuItems = container.querySelectorAll('.wg-context-menu__item') as NodeListOf<HTMLElement>
-
-		for (const menuItem of menuItems) {
-			const shortcut = menuItem.dataset.shortcut
-			const disabled = menuItem.dataset.disabled === 'true'
-
-			if (disabled) continue
-			if (!shortcut) continue
-
-			// Case-insensitive match for single letters, exact match for others
-			const shortcutLower = shortcut.toLowerCase()
-			if (shortcutLower === key || shortcut === e.key) {
-				e.preventDefault()
-				const itemId = menuItem.dataset.itemId || ''
-				onItemClick(itemId)
-				cleanup()
-				onClose()
-				return
-			}
-		}
-	}
-
-	// Attach listeners with delay to avoid catching the opening click
-	setTimeout(() => {
-		document.addEventListener('mousedown', handleOutsideClick)
-		document.addEventListener('keydown', handleKeyDown)
-	}, 0)
-
-	// Store cleanup function on container for later removal
-	;(container as any)._cleanup = cleanup
-
-	return container
-}
-
-/**
- * Close context menu and cleanup
- */
-export function closeContextMenu(
-	container: HTMLElement,
-	handleOutsideClick?: (e: MouseEvent) => void,
-	handleKeyDown?: (e: KeyboardEvent) => void
-): void {
-	// Check for stored cleanup function (new style)
-	const cleanup = (container as any)._cleanup
-	if (typeof cleanup === 'function') {
-		cleanup()
-		return
-	}
-
-	// Legacy cleanup (old style with separate handlers)
-	if (handleOutsideClick) {
-		document.removeEventListener('mousedown', handleOutsideClick)
-	}
-	if (handleKeyDown) {
-		document.removeEventListener('keydown', handleKeyDown)
-	}
-
-	container.remove()
-}
-
-// =============================================================================
-// Header Context Menu
-// =============================================================================
-
-/**
- * Predefined header menu actions with icons and labels
- */
-const PREDEFINED_HEADER_ACTIONS: Record<PredefinedHeaderMenuItem, {
-	icon: string
-	labelKey: keyof GridLabels['contextMenu']
-	danger?: boolean
-	hasSubmenu?: boolean
-}> = {
-	sortAsc: { icon: '↑', labelKey: 'sortAsc' },
-	sortDesc: { icon: '↓', labelKey: 'sortDesc' },
-	clearSort: { icon: '✕', labelKey: 'clearSort' },
-	hideColumn: { icon: '👁', labelKey: 'hideColumn' },
-	freezeColumn: { icon: '❄', labelKey: 'freezeColumn' },
-	unfreezeColumn: { icon: '☀', labelKey: 'unfreezeColumn' },
-	columnVisibility: { icon: '👁', labelKey: 'columnVisibility', hasSubmenu: true }
-}
-
-/**
- * Normalize header menu items (convert string shortcuts to full items)
- * Handles standalone divider markers like { dividerBefore: true } by applying
- * the divider to the next actual item.
- */
-export function normalizeHeaderMenuItems<T>(
-	config: HeaderMenuConfig<T>[],
-	context: HeaderMenuContext<T>
-): HeaderMenuItem<T>[] {
-	const result: HeaderMenuItem<T>[] = []
-	let pendingDivider = false
-
-	for (let index = 0; index < config.length; index++) {
-		const item = config[index]
-
-		if (typeof item === 'string') {
-			// Predefined action shorthand
-			const predefined = PREDEFINED_HEADER_ACTIONS[item]
-			if (!predefined) {
-				console.warn(`Unknown predefined header menu action: ${item}`)
-				continue
-			}
-
-			// Add automatic visibility rules for predefined items
-			let visible: boolean | ((ctx: HeaderMenuContext<T>) => boolean) = true
-
-			if (item === 'sortAsc' || item === 'sortDesc') {
-				// Hide sort options if column is not sortable
-				visible = (ctx) => ctx.column.isSortable !== false
-			} else if (item === 'clearSort') {
-				// Only show clear sort if column is currently sorted
-				visible = (ctx) => ctx.sortDirection !== null
-			} else if (item === 'hideColumn') {
-				// The tree column hosts indent + chevron; hiding it would orphan the
-				// hierarchy. Suppress the menu item when it would target the tree column.
-				visible = (ctx) => !(ctx.isTreeMode && ctx.column?.isTree)
-			} else if (item === 'freezeColumn') {
-				// Only show freeze if not already frozen
-				visible = (ctx) => !ctx.isFrozen
-			} else if (item === 'unfreezeColumn') {
-				// Only show unfreeze if currently frozen
-				visible = (ctx) => ctx.isFrozen
-			}
-
-			// Handle columnVisibility with dynamic submenu
-			let submenu: ((ctx: HeaderMenuContext<T>) => HeaderMenuItem<T>[]) | undefined
-			if (item === 'columnVisibility') {
-				submenu = (ctx) => {
-					// Tree column is always visible in tree mode — exclude it from the
-					// togglable list so users can't hide it (would orphan the hierarchy).
-					const togglable = ctx.allColumns.filter(col => !(ctx.isTreeMode && col.isTree))
-					const allVisible = togglable.every(col => !col.isHidden)
-					const items: HeaderMenuItem<T>[] = [
-						// "Show all" option at the top - checked only if all togglable columns are visible
-						{
-							id: 'show-all-columns',
-							icon: allVisible ? '☑' : '☐',
-							label: ctx.labels.contextMenu.showAll,
-							onclick: () => {
-								togglable.forEach(col => {
-									col.isHidden = false
-								})
-							}
-						}
-					]
-					// Add individual column toggles (tree column already filtered out above)
-					togglable.forEach(col => {
-						items.push({
-							id: `toggle-col-${String(col.field)}`,
-							icon: col.isHidden ? '☐' : '☑',
-							label: col.title || String(col.field),
-							onclick: () => {
-								col.isHidden = !col.isHidden
-							}
-						})
-					})
-					return items
-				}
-			}
-
-			result.push({
-				id: item,
-				icon: predefined.icon,
-				label: context.labels.contextMenu[predefined.labelKey],
-				danger: predefined.danger,
-				visible,
-				dividerBefore: pendingDivider,
-				submenu
-			} as HeaderMenuItem<T>)
-			pendingDivider = false
-		} else if (item.dividerBefore && !item.id && !item.label) {
-			// Standalone divider marker - apply to next item
-			pendingDivider = true
-		} else {
-			// Full item object - pass through
-			result.push({
-				id: item.id || `header-menu-item-${index}`,
-				...item,
-				dividerBefore: pendingDivider || item.dividerBefore
-			} as HeaderMenuItem<T>)
-			pendingDivider = false
-		}
-	}
-
-	return result
-}
-
-/**
- * Render a single header menu item (recursive for submenus)
- */
-function renderHeaderMenuItem<T>(
-	item: HeaderMenuItem<T>,
-	context: HeaderMenuContext<T>,
-	index: number,
-	isSubmenuItem: boolean = false
-): string {
-	const label = typeof item.label === 'function' ? item.label(context) : item.label
-	const icon = typeof item.icon === 'function' ? item.icon(context) : item.icon
-	const shortcut = item.shortcut
-	const isDisabled = typeof item.disabled === 'function' ? item.disabled(context) : item.disabled
-	const isDanger = item.danger === true
-
-	// Check for submenu
-	const hasSubmenu = item.children?.length || item.submenu
-	const submenuItems = item.children || (item.submenu ? item.submenu(context) : [])
-
-	// Render submenu if present
-	let submenuHtml = ''
-	if (hasSubmenu && submenuItems.length > 0) {
-		const submenuItemsHtml = submenuItems.map((child, i) =>
-			renderHeaderMenuItem(child, context, i, true)
-		).join('')
-		submenuHtml = `<div class="wg-context-menu wg-context-menu--submenu">${submenuItemsHtml}</div>`
-	}
-
-	// Determine if this is a toggle item (for column visibility)
-	const isToggle = isSubmenuItem && item.id?.startsWith('toggle-col-')
-	const isChecked = isToggle && icon === '☑'
-
-	const classes = [
-		'wg-context-menu__item',
-		isDisabled ? 'wg-context-menu__item--disabled' : '',
-		isDanger ? 'wg-context-menu__item--danger' : '',
-		hasSubmenu ? 'wg-context-menu__item--has-submenu' : '',
-		isToggle ? 'wg-context-menu__item--toggle' : '',
-		isChecked ? 'wg-context-menu__item--checked' : ''
-	].filter(Boolean).join(' ')
-
-	const divider = item.dividerBefore && index > 0 ? '<div class="wg-context-menu__divider"></div>' : ''
-
-	const iconHtml = icon
-		? `<span class="wg-context-menu__icon">${icon}</span>`
-		: ''
-
-	const shortcutHtml = shortcut
-		? `<span class="wg-context-menu__shortcut">${shortcut}</span>`
-		: ''
-
-	return `${divider}<div class="${classes}" data-item-id="${item.id}" data-disabled="${isDisabled ? 'true' : 'false'}" data-shortcut="${shortcut || ''}">${iconHtml}<span class="wg-context-menu__label">${label}</span>${shortcutHtml}${submenuHtml}</div>`
-}
-
-/**
- * Render header context menu HTML
- */
-function renderHeaderContextMenu<T>(
-	items: HeaderMenuItem<T>[],
-	context: HeaderMenuContext<T>
-): string {
-	const visibleItems = items.filter(item => {
-		if (item.visible === undefined) return true
-		return typeof item.visible === 'function' ? item.visible(context) : item.visible
-	})
-
-	if (visibleItems.length === 0) return ''
-
-	const itemsHtml = visibleItems.map((item, index) =>
-		renderHeaderMenuItem(item, context, index)
-	).join('')
-
-	return `<div class="wg-context-menu">${itemsHtml}</div>`
-}
-
-/**
- * Execute predefined header menu action
- */
-export function executeHeaderMenuAction<T>(
-	ctx: GridContext<T>,
-	actionId: string,
-	menuContext: HeaderMenuContext<T>,
-	ctrlKey: boolean = false
-): void {
-	const { field, columnIndex } = menuContext
-
-	switch (actionId) {
-		case 'sortAsc':
-		case 'sortDesc': {
-			const direction = actionId === 'sortAsc' ? 'asc' : 'desc'
-			const currentSort = [...ctx.grid.sort]
-
-			if (ctrlKey && ctx.grid.sortMode === 'multi') {
-				// Multi-sort: Ctrl+click adds/updates this column
-				const existingIndex = currentSort.findIndex(s => s.column === field)
-				if (existingIndex >= 0) {
-					currentSort[existingIndex] = { column: field, direction }
-				} else {
-					currentSort.push({ column: field, direction })
-				}
-				ctx.grid.sort = currentSort
-			} else {
-				// Single sort: replace
-				ctx.grid.sort = [{ column: field, direction }]
-			}
-			break
-		}
-		case 'clearSort':
-			// Remove sort for this column
-			ctx.grid.sort = ctx.grid.sort.filter(s => s.column !== field)
-			break
-		case 'hideColumn': {
-			// Hide the column by setting isHidden property (keeps it in array for Column Visibility).
-			// Refuse to hide the tree column when tree mode is active — chevrons would be orphaned.
-			const col = ctx.grid.columns.find(c => String(c.field) === field)
-			if (col && !(ctx.grid.isTreeMode && col.isTree)) {
-				col.isHidden = true
-				ctx.grid.columns = [...ctx.grid.columns]  // Trigger update
-			}
-			break
-		}
-		case 'freezeColumn':
-			// Freeze up to and including this column
-			ctx.grid.freezeColumns = columnIndex + 1
-			break
-		case 'unfreezeColumn':
-			// Unfreeze by reducing freeze count to before this column
-			ctx.grid.freezeColumns = Math.max(0, columnIndex)
-			break
-	}
+function createLevel(isSubmenu: boolean): HTMLElement {
+	const level = document.createElement('div')
+	level.className = isSubmenu ? 'wg-context-menu wg-context-menu--submenu' : 'wg-context-menu'
+	level.setAttribute('role', 'menu')
+	return level
 }
 
 function showSubmenu(parentItem: HTMLElement, submenu: HTMLElement): void {
@@ -729,149 +276,159 @@ function showSubmenu(parentItem: HTMLElement, submenu: HTMLElement): void {
 	})
 }
 
-function attachSubmenuHandlers(menu: HTMLElement): void {
-	const parentItems = menu.querySelectorAll('.wg-context-menu__item--has-submenu')
-	parentItems.forEach(node => {
-		const parentItem = node as HTMLElement
-		const submenu = parentItem.querySelector(':scope > .wg-context-menu--submenu') as HTMLElement | null
-		if (!submenu) return
+/** Lazy submenu: built on first hover (a loading row while an async getChildrenCallback resolves). */
+function attachSubmenu<Ctx>(parentItem: HTMLElement, item: MenuItem<Ctx, any>, spec: MenuSpec<Ctx>): void {
+	let submenu: HTMLElement | null = null
+	let hideTimer: number | null = null
 
-		let hideTimer: number | null = null
-
-		const cancelHide = () => {
-			if (hideTimer !== null) {
-				clearTimeout(hideTimer)
-				hideTimer = null
-			}
+	const cancelHide = () => {
+		if (hideTimer !== null) {
+			clearTimeout(hideTimer)
+			hideTimer = null
 		}
+	}
+	// Delay hide so the cursor has time to cross the gap from parent item to submenu
+	const scheduleHide = () => {
+		hideTimer = window.setTimeout(() => {
+			if (submenu) submenu.style.display = 'none'
+			hideTimer = null
+		}, 150)
+	}
 
-		// Delay hide so the cursor has time to cross the gap from parent item to submenu
-		const scheduleHide = () => {
-			hideTimer = window.setTimeout(() => {
-				submenu.style.display = 'none'
-				hideTimer = null
-			}, 150)
-		}
-
-		parentItem.addEventListener('mouseenter', () => {
-			cancelHide()
-			showSubmenu(parentItem, submenu)
+	const build = (): HTMLElement => {
+		const level = createLevel(true)
+		const source: EntriesSource = () => getMenuChildren(item, spec.ctx)
+		levelOf.set(level, source)
+		const loading = document.createElement('div')
+		loading.className = 'wg-context-menu__loading'
+		loading.textContent = '…'
+		level.appendChild(loading)
+		void Promise.resolve(source()).then(children => {
+			fillLevel(level, spec, children)
+			if (level.style.display === 'block') showSubmenu(parentItem, level)
 		})
-		parentItem.addEventListener('mouseleave', scheduleHide)
-		submenu.addEventListener('mouseenter', cancelHide)
-		submenu.addEventListener('mouseleave', scheduleHide)
+		level.addEventListener('mouseenter', cancelHide)
+		level.addEventListener('mouseleave', scheduleHide)
+		parentItem.appendChild(level)
+		return level
+	}
+
+	parentItem.addEventListener('mouseenter', () => {
+		cancelHide()
+		submenu ??= build()
+		showSubmenu(parentItem, submenu)
 	})
+	parentItem.addEventListener('mouseleave', scheduleHide)
+}
+
+/** Re-render a menu level in place (after a keep-open item ran). */
+async function refreshLevel<Ctx>(level: HTMLElement, spec: MenuSpec<Ctx>): Promise<void> {
+	const source = levelOf.get(level)
+	if (!source) return
+	fillLevel(level, spec, await source())
 }
 
 /**
- * Open header context menu at position
+ * Open a context menu at viewport coordinates. Returns the container (on
+ * document.body), or null when no item is visible. `onClose` runs when it
+ * closes on its own (outside click, Escape, scroll, a leaf activated).
  */
-export function openHeaderContextMenu<T>(
-	ctx: GridContext<T>,
+export function openContextMenu<T, Ctx>(
+	host: GridHost<T>,
 	x: number,
 	y: number,
-	items: HeaderMenuItem<T>[],
-	menuContext: HeaderMenuContext<T>,
-	onItemClick: (itemId: string, keepOpen?: boolean, ctrlKey?: boolean) => void,
+	xOffset: number,
+	yOffset: number,
+	spec: MenuSpec<Ctx>,
 	onClose: () => void
 ): HTMLElement | null {
 	injectStyles()
 
-	const html = renderHeaderContextMenu(items, menuContext)
-	if (!html) return null
+	const root = createLevel(false)
+	levelOf.set(root, () => spec.entries)
+	fillLevel(root, spec, spec.entries)
+	if (!root.querySelector('.wg-context-menu__item')) return null
 
-	// Create container
 	const container = document.createElement('div')
 	container.className = 'wg-context-menu-container'
-	container.innerHTML = html
+	container.appendChild(root)
 	document.body.appendChild(container)
 
-	let currentMenu = container.querySelector('.wg-context-menu') as HTMLElement
-	attachSubmenuHandlers(currentMenu)
-
-	// Position using a virtual element at the click coordinates
+	// Position using a virtual element at the click coordinates; offsets are applied
+	// via the offset middleware so they flip sign along with the placement near edges
 	const virtualEl = {
-		getBoundingClientRect: () => ({
-			width: 0,
-			height: 0,
-			x: x,
-			y: y,
-			top: y,
-			left: x,
-			right: x,
-			bottom: y
-		})
+		getBoundingClientRect: () => ({ width: 0, height: 0, x, y, top: y, left: x, right: x, bottom: y })
 	}
-
-	computePosition(virtualEl, currentMenu, {
+	computePosition(virtualEl, root, {
 		placement: 'bottom-start',
 		strategy: 'fixed',
 		middleware: [
+			offset({ mainAxis: yOffset, alignmentAxis: xOffset }),
 			flip({ fallbackPlacements: ['top-start', 'bottom-end', 'top-end'] }),
 			shift({ padding: 8 })
 		]
 	}).then(({ x: posX, y: posY }) => {
-		Object.assign(currentMenu.style, {
-			left: `${posX}px`,
-			top: `${posY}px`
-		})
+		Object.assign(root.style, { left: `${posX}px`, top: `${posY}px` })
 	})
 
-	// Handle item clicks
+	let isClosed = false
+	const close = () => {
+		if (isClosed) return
+		cleanup()
+		onClose()
+	}
+
+	/** Activate a leaf: close first (unless it keeps the menu open), then run it. */
+	const activate = (el: HTMLElement, event: Event) => {
+		const record = itemOf.get(el)
+		if (!record || record.isDisabled || record.hasChildren) return
+		const isKeptOpen = record.item.shouldCloseOnClick === false
+		if (!isKeptOpen) close()
+		const ran = spec.activate(record.item, el, event)
+		if (isKeptOpen) {
+			const level = el.closest('.wg-context-menu') as HTMLElement | null
+			void Promise.resolve(ran).then(() => {
+				if (level && !isClosed) void refreshLevel(level, spec)
+			})
+		}
+	}
+
 	container.addEventListener('click', (e) => {
-		const item = (e.target as HTMLElement).closest('.wg-context-menu__item') as HTMLElement
-		if (!item || item.dataset.disabled === 'true') return
-
-		const itemId = item.dataset.itemId || ''
-		const ctrlKey = e.ctrlKey
-
-		// Don't do anything if clicking a parent item with submenu
-		if (item.classList.contains('wg-context-menu__item--has-submenu')) {
-			return
-		}
-
-		// For toggle items (column visibility) and show-all, execute but keep menu open and refresh
-		if (itemId.startsWith('toggle-col-') || itemId === 'show-all-columns') {
-			onItemClick(itemId, true, ctrlKey)  // true = keep menu open
-			// Re-render the menu to show updated toggle state
-			const newHtml = renderHeaderContextMenu(items, menuContext)
-			const newMenuWrapper = document.createElement('div')
-			newMenuWrapper.innerHTML = newHtml
-			const newMenuEl = newMenuWrapper.querySelector('.wg-context-menu') as HTMLElement
-			if (newMenuEl && currentMenu.parentNode) {
-				// Copy position from old menu
-				newMenuEl.style.left = currentMenu.style.left
-				newMenuEl.style.top = currentMenu.style.top
-				currentMenu.parentNode.replaceChild(newMenuEl, currentMenu)
-				currentMenu = newMenuEl
-
-				attachSubmenuHandlers(newMenuEl)
-				const parentWithSubmenu = newMenuEl.querySelector('.wg-context-menu__item--has-submenu') as HTMLElement | null
-				const submenu = parentWithSubmenu?.querySelector(':scope > .wg-context-menu--submenu') as HTMLElement | null
-				if (parentWithSubmenu && submenu) {
-					showSubmenu(parentWithSubmenu, submenu)
-				}
-			}
-			return
-		}
-
-		// Normal item - execute and close
-		onItemClick(itemId, false, ctrlKey)
+		const el = (e.target as HTMLElement).closest('.wg-context-menu__item') as HTMLElement | null
+		if (el) activate(el, e)
 	})
 
 	// Close on scroll from either the grid's internal scroll container or the page
 	// (scroll events aren't composed, so a window capture listener can't see shadow-DOM scrolls)
-	const windowScrollSub = ctx.scrollEvents.subscribe('window', () => {
-		cleanup()
-		onClose()
-	})
-	const containerScrollSub = ctx.scrollEvents.subscribe('container', () => {
-		cleanup()
-		onClose()
-	})
+	const windowScrollSub = host.scrollEvents.subscribe('window', close)
+	const containerScrollSub = host.scrollEvents.subscribe('container', close)
 
-	// Cleanup function to remove all listeners and close menu
+	const handleOutsideClick = (e: MouseEvent) => {
+		if (!container.contains(e.target as Node)) close()
+	}
+
+	// Escape closes; an item's `shortcut` activates it while the menu is open
+	const handleKeyDown = (e: KeyboardEvent) => {
+		if (e.key === 'Escape') {
+			e.preventDefault()
+			close()
+			return
+		}
+		const key = e.key.toLowerCase()
+		for (const el of container.querySelectorAll('.wg-context-menu__item') as NodeListOf<HTMLElement>) {
+			const record = itemOf.get(el)
+			if (!record?.shortcut || record.isDisabled) continue
+			// Case-insensitive match for single letters, exact match for others
+			if (record.shortcut.toLowerCase() === key || record.shortcut === e.key) {
+				e.preventDefault()
+				activate(el, e)
+				return
+			}
+		}
+	}
+
 	const cleanup = () => {
+		isClosed = true
 		windowScrollSub.unsubscribe()
 		containerScrollSub.unsubscribe()
 		document.removeEventListener('mousedown', handleOutsideClick)
@@ -879,49 +436,9 @@ export function openHeaderContextMenu<T>(
 		container.remove()
 	}
 
-	// Handle close on outside click
-	const handleOutsideClick = (e: MouseEvent) => {
-		if (!container.contains(e.target as Node)) {
-			cleanup()
-			onClose()
-		}
-	}
-
-	// Handle close on Escape and shortcut keys
-	const handleKeyDown = (e: KeyboardEvent) => {
-		if (e.key === 'Escape') {
-			e.preventDefault()
-			cleanup()
-			onClose()
-			return
-		}
-
-		// Match shortcut keys
-		const key = e.key.toLowerCase()
-		const menuItems = container.querySelectorAll('.wg-context-menu__item') as NodeListOf<HTMLElement>
-
-		for (const menuItem of menuItems) {
-			const shortcut = menuItem.dataset.shortcut
-			const disabled = menuItem.dataset.disabled === 'true'
-
-			if (disabled) continue
-			if (!shortcut) continue
-
-			// Case-insensitive match for single letters, exact match for others
-			const shortcutLower = shortcut.toLowerCase()
-			if (shortcutLower === key || shortcut === e.key) {
-				e.preventDefault()
-				const itemId = menuItem.dataset.itemId || ''
-				onItemClick(itemId)
-				cleanup()
-				onClose()
-				return
-			}
-		}
-	}
-
 	// Attach listeners with delay to avoid catching the opening click
 	setTimeout(() => {
+		if (isClosed) return
 		document.addEventListener('mousedown', handleOutsideClick)
 		document.addEventListener('keydown', handleKeyDown)
 	}, 0)
@@ -930,6 +447,18 @@ export function openHeaderContextMenu<T>(
 	;(container as any)._cleanup = cleanup
 
 	return container
+}
+
+/**
+ * Close context menu and cleanup
+ */
+export function closeContextMenu(container: HTMLElement): void {
+	const cleanup = (container as any)._cleanup
+	if (typeof cleanup === 'function') {
+		cleanup()
+		return
+	}
+	container.remove()
 }
 
 // Element handlers (extracted from GridElement)

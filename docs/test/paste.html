@@ -24,7 +24,7 @@
 			</select>
 		</label>
 		<label><input type="checkbox" id="validate" checked> shouldValidateOnPaste</label>
-		<label><input type="checkbox" id="cancel-next"> cancel next paste (onbeforepaste)</label>
+		<label><input type="checkbox" id="cancel-next"> cancel next paste (beforePasteCallback)</label>
 	</div>
 
 	<web-grid id="grid" style="max-width: 720px; max-height: 320px;"></web-grid>
@@ -53,7 +53,7 @@
 		 * Notes the spec relies on:
 		 *  - id (col 0) is read-only (isEditable: false).
 		 *  - email (col 2) has beforePasteCallback that lowercases the value.
-		 *  - age (col 3) has beforeCommitCallback that rejects values < 0
+		 *  - age (col 3) has validateCallback that rejects values < 0
 		 *    (only enforced when shouldValidateOnPaste is true).
 		 *  - column titles ("Name", "Email", "Age", "Role") drive header detection
 		 *    when a TSV's first row contains them.
@@ -70,11 +70,11 @@
 			{ field: 'name',  title: 'Name',  width: '160px', editor: 'text' },
 			{
 				field: 'email', title: 'Email', width: '200px', editor: 'text',
-				beforePasteCallback: (value) => String(value).toLowerCase()
+				getPasteValueCallback: ({ text: value }) => String(value).toLowerCase()
 			},
 			{
 				field: 'age', title: 'Age', width: '70px', editor: 'number',
-				beforeCommitCallback: ({ value }) => {
+				validateCallback: ({ value }) => {
 					const n = Number(value)
 					if (Number.isFinite(n) && n < 0) return 'Age must be >= 0'
 					return true
@@ -100,17 +100,12 @@
 		const summaryEl = document.querySelector('[data-testid="paste-summary"]')
 		const beforeEl = document.querySelector('[data-testid="beforepaste-info"]')
 
-		// NOTE: onpaste / onbeforepaste are not (yet) proxied through the
-		// web-component, so we wire them on the underlying WebGrid core directly.
-		// Setting `grid.onpaste` on the HTMLElement would register a native
-		// ClipboardEvent listener instead.
-		grid.grid.onbeforepaste = (detail) => {
-			beforeEl.textContent = `rows=${detail.parsedRows.length} headers=${detail.hasHeaders} newRows=${detail.newRowsCount}`
-			if (document.getElementById('cancel-next').checked) {
-				detail.cancel = true
-			}
+		// beforePasteCallback: `false` cancels the paste; paste-complete reports the result.
+		grid.beforePasteCallback = (ctx) => {
+			beforeEl.textContent = `rows=${ctx.parsedRows.length} headers=${ctx.hasHeaders} newRows=${ctx.newRowsCount}`
+			if (document.getElementById('cancel-next').checked) return false
 		}
-		grid.grid.onpaste = (detail) => {
+		grid.onPasteComplete = (detail) => {
 			summaryEl.textContent =
 				`total=${detail.totalCells} ok=${detail.successfulCells} fail=${detail.failedCells} ` +
 				`skip=${detail.skippedCells} newRows=${detail.newRowsCreated} headers=${detail.hadHeaders}`
@@ -118,16 +113,14 @@
 		}
 
 		// Items also refresh after edits so single-cell paste assertions hold.
-		grid.onrowchange = () => refreshItems()
+		grid.onRowChange = () => refreshItems()
 
 		// Controls -----------------------------------------------------------
-		// pasteMode / shouldValidateOnPaste are also not proxied through the
-		// web-component, so set them on the underlying core directly.
 		document.getElementById('paste-mode').addEventListener('change', (e) => {
-			grid.grid.pasteMode = e.target.value
+			grid.pasteMode = e.target.value
 		})
 		document.getElementById('validate').addEventListener('change', (e) => {
-			grid.grid.shouldValidateOnPaste = e.target.checked
+			grid.shouldValidateOnPaste = e.target.checked
 		})
 	</script>
 </body>

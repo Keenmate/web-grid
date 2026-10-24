@@ -18,7 +18,7 @@
 //     editor (text / number / combobox / autocomplete / date).
 //  5. Cell dispatch — calls `handleCellKeyDown` for any focused cell.
 
-import type { GridContext } from '../grid-context.js'
+import type { GridHost } from '../grid-context.js'
 import { moveFocus, handleCellKeyDown } from '../navigation/index.js'
 import { handleEditorKeyDown } from '../editing/index.js'
 
@@ -27,7 +27,7 @@ import { handleEditorKeyDown } from '../editing/index.js'
  * keydown handlers, and intercepts tree shortcuts + action pipeline + the
  * datepicker passthrough first.
  */
-export function handleTableKeyDown<T>(ctx: GridContext<T>, e: Event): void {
+export function handleTableKeyDown<T>(ctx: GridHost<T>, e: Event): void {
 	const target = e.target as HTMLElement
 	const ke = e as KeyboardEvent
 
@@ -36,15 +36,15 @@ export function handleTableKeyDown<T>(ctx: GridContext<T>, e: Event): void {
 	// (regardless of editTrigger), which would swallow the modified arrow too.
 	// Direct grid-method calls — same as chevron click and dblclick paths.
 	if (
-		ctx.grid.isTreeMode &&
-		ctx.grid.focusedCell &&
-		!ctx.grid.editingCell &&
+		ctx.engine.isTreeMode &&
+		ctx.engine.focusedCell &&
+		!ctx.engine.editingCell &&
 		(ke.ctrlKey || ke.metaKey) &&
 		(ke.key === 'ArrowLeft' || ke.key === 'ArrowRight')
 	) {
-		const { rowIndex, colIndex } = ctx.grid.focusedCell
-		const item = ctx.grid.displayItems[rowIndex]
-		const info = item ? ctx.grid.getRowTreeInfo(item) : null
+		const { rowIndex, colIndex } = ctx.engine.focusedCell
+		const item = ctx.engine.displayItems[rowIndex]
+		const info = item ? ctx.engine.getRowTreeInfo(item) : null
 		if (info) {
 			e.preventDefault()
 			e.stopPropagation()
@@ -54,18 +54,18 @@ export function handleTableKeyDown<T>(ctx: GridContext<T>, e: Event): void {
 			// the ancestor (the focused row is about to be hidden).
 			let targetPath: string | null = null
 			if (ke.key === 'ArrowRight') {
-				if (info.hasChildren && !ctx.grid.isPathExpanded(info.path)) {
-					ctx.grid.toggleExpandedPath(info.path)
+				if (info.hasChildren && !ctx.engine.isPathExpanded(info.path)) {
+					ctx.engine.toggleExpandedPath(info.path)
 					targetPath = info.path
 				}
 			} else {
-				if (info.hasChildren && ctx.grid.isPathExpanded(info.path)) {
-					ctx.grid.toggleExpandedPath(info.path)
+				if (info.hasChildren && ctx.engine.isPathExpanded(info.path)) {
+					ctx.engine.toggleExpandedPath(info.path)
 					targetPath = info.path
 				} else {
-					const ancestor = ctx.grid.findNearestExpandedAncestor(info.path)
+					const ancestor = ctx.engine.findNearestExpandedAncestor(info.path)
 					if (ancestor !== null) {
-						ctx.grid.toggleExpandedPath(ancestor)
+						ctx.engine.toggleExpandedPath(ancestor)
 						targetPath = ancestor
 					}
 				}
@@ -76,8 +76,8 @@ export function handleTableKeyDown<T>(ctx: GridContext<T>, e: Event): void {
 			if (targetPath !== null) {
 				const path = targetPath
 				queueMicrotask(() => {
-					const idx = ctx.grid.displayItems
-						.findIndex(it => ctx.grid.getRowTreeInfo(it)?.path === path)
+					const idx = ctx.engine.displayItems
+						.findIndex(it => ctx.engine.getRowTreeInfo(it)?.path === path)
 					if (idx >= 0) {
 						moveFocus(ctx, idx, colIndex)
 					}

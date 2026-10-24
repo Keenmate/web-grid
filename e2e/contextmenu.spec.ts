@@ -5,12 +5,12 @@ import { test, expect, Page, Locator } from '@playwright/test'
  *
  * Three grids:
  *   #grid        — cell context menu with dynamic labels, conditional
- *                  visible / disabled / danger, dividerBefore, shortcut keys,
- *                  oncontextmenuopen callback.
+ *                  getIsVisibleCallback / getIsDisabledCallback / isDanger, a divider entry, shortcut keys,
+ *                  beforeContextMenuOpenCallback callback.
  *   #gridOffset  — contextMenuXOffset / contextMenuYOffset configuration.
  *   #gridHeader  — header context menu with predefined items
- *                  (sortAsc / sortDesc / clearSort), custom item with dynamic
- *                  label, onheadercontextmenuopen callback.
+ *                  (sort-asc / sort-desc / clear-sort), custom item with dynamic
+ *                  text, beforeHeaderMenuOpenCallback callback.
  *
  * Both menu types render into document.body (not the grid's shadow root) via
  * Floating UI, so all assertions use page-level locators with `.wg-context-menu`.
@@ -82,7 +82,7 @@ test.beforeEach(async ({ page }) => {
 // =============================================================================
 
 test.describe('cell context menu — #grid', () => {
-	test('right-click opens the menu and oncontextmenuopen logs the click target', async ({ page }) => {
+	test('right-click opens the menu and beforeContextMenuOpenCallback logs the click target', async ({ page }) => {
 		await dispatchContextMenu(page, cell(page, 'grid', 0, COL.name))
 
 		await expect(menuRoot(page)).toBeVisible()
@@ -150,13 +150,13 @@ test.describe('cell context menu — #grid', () => {
 			.not.toHaveClass(/wg-context-menu__item--disabled/)
 	})
 
-	test('dividerBefore on "Delete" renders a divider element above it', async ({ page }) => {
+	test('a divider entry before "Delete" renders a divider element above it', async ({ page }) => {
 		await dispatchContextMenu(page, cell(page, 'grid', 0, COL.name))
 		// The cell menu uses one divider — before the Delete item.
 		await expect(menuRoot(page).locator('.wg-context-menu__divider')).toHaveCount(1)
 	})
 
-	test('clicking an enabled item invokes its onclick handler', async ({ page }) => {
+	test('clicking an enabled item invokes its onClick handler', async ({ page }) => {
 		await dispatchContextMenu(page, cell(page, 'grid', 0, COL.name))
 		await clickMenuItem(page, 'View Details')
 
@@ -195,7 +195,7 @@ test.describe('cell context menu — #grid', () => {
 	test('shortcut key (Y) on the Price column triggers "Convert to EUR"', async ({ page }) => {
 		// "Convert to EUR" has shortcut: 'Y'. Open the menu on the Price cell
 		// to populate context, then press Y — the document keydown handler in
-		// the menu module matches the shortcut and fires the onclick.
+		// the menu module matches the shortcut and fires the onClick.
 		await dispatchContextMenu(page, cell(page, 'grid', 0, COL.price))
 		await expect(menuRoot(page)).toBeVisible()
 
@@ -299,7 +299,7 @@ test.describe('header context menu — #gridHeader', () => {
 		await expect(menuRoot(page)).toContainText('Export "Price"')
 	})
 
-	test('clicking the custom export item fires its onclick with the column field', async ({ page }) => {
+	test('clicking the custom export item fires its onClick with the column field', async ({ page }) => {
 		await dispatchContextMenu(page, header(page, 'gridHeader', 'category'))
 		await clickMenuItem(page, 'Export "Category"')
 
@@ -307,7 +307,7 @@ test.describe('header context menu — #gridHeader', () => {
 			.toContainText('Exported category')
 	})
 
-	test('onheadercontextmenuopen fires with the column field, index, and sort direction', async ({ page }) => {
+	test('beforeHeaderMenuOpenCallback fires with the column field, index, and sort direction', async ({ page }) => {
 		await dispatchContextMenu(page, header(page, 'gridHeader', 'stock'))
 
 		const log = page.locator('[data-testid="header-menu-log"]')
@@ -317,7 +317,7 @@ test.describe('header context menu — #gridHeader', () => {
 		await expect(log).toContainText('sort=none')
 	})
 
-	test('dividerBefore between predefined items and the custom export renders a divider', async ({ page }) => {
+	test('a divider entry between built-in items and the custom export renders a divider', async ({ page }) => {
 		await dispatchContextMenu(page, header(page, 'gridHeader', 'name'))
 		// With name unsorted: Sort Asc, Sort Desc (Clear Sort hidden), divider, Export.
 		await expect(menuRoot(page).locator('.wg-context-menu__divider')).toHaveCount(1)

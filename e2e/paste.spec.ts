@@ -5,8 +5,8 @@ import { test, expect, Page } from '@playwright/test'
  *
  * The fixture is a 4×5 grid in navigate mode. id (col 0) is non-editable, email
  * (col 2) lowercases pasted text via beforePasteCallback, age (col 3) rejects
- * negatives via beforeCommitCallback. Controls toggle pasteMode,
- * shouldValidateOnPaste, and an onbeforepaste cancel flag.
+ * negatives via validateCallback. Controls toggle pasteMode,
+ * shouldValidateOnPaste, and an beforePasteCallback cancel flag.
  *
  * Paste is triggered by dispatching a real paste event on the <web-grid> host.
  * page.keyboard Ctrl+V won't carry clipboardData, and the web-component
@@ -206,7 +206,7 @@ test.describe('paste modes', () => {
 // =============================================================================
 
 test.describe('events', () => {
-	test('onpaste fires with an accurate summary', async ({ page }) => {
+	test('paste-complete fires with an accurate summary', async ({ page }) => {
 		await gotoPaste(page)
 		await focusCell(page, 0, COL.name)
 
@@ -216,15 +216,15 @@ test.describe('events', () => {
 			.toContainText('total=6 ok=6 fail=0 skip=0 newRows=0 headers=false')
 	})
 
-	test('onbeforepaste cancel blocks the entire paste', async ({ page }) => {
+	test('beforePasteCallback cancel blocks the entire paste', async ({ page }) => {
 		await gotoPaste(page)
 		await page.locator('#cancel-next').check()
 		await focusCell(page, 0, COL.name)
 
 		await pasteText(page, 'Wont\tStick\nNo\tWay')
 
-		// onbeforepaste still fires (beforepaste-info gets populated). When cancel
-		// is set, executePaste returns early and never fires onpaste — so the
+		// beforePasteCallback still fires (beforepaste-info gets populated). When cancel
+		// is set, executePaste returns early and never fires paste-complete — so the
 		// summary stays at its initial "none" value.
 		await expect(beforePasteInfo(page)).toContainText('rows=2')
 		await expect(summary(page)).toHaveText('none')
@@ -236,7 +236,7 @@ test.describe('events', () => {
 })
 
 // =============================================================================
-// Web-component proxies (regression — onpaste / onbeforepaste / pasteMode /
+// Web-component proxies (regression — paste-complete / beforePasteCallback / pasteMode /
 // shouldValidateOnPaste must route through the GridElement, not just the core)
 // =============================================================================
 
@@ -246,7 +246,7 @@ test.describe('web-component paste proxies', () => {
 
 		const result = await gridLocator(page).evaluate((el: any) => {
 			el.pasteMode = 'all-columns'
-			return { hostRead: el.pasteMode, coreRead: el.grid.pasteMode }
+			return { hostRead: el.pasteMode, coreRead: el.engine.pasteMode }
 		})
 
 		expect(result.hostRead).toBe('all-columns')
@@ -258,27 +258,25 @@ test.describe('web-component paste proxies', () => {
 
 		const result = await gridLocator(page).evaluate((el: any) => {
 			el.shouldValidateOnPaste = false
-			return { hostRead: el.shouldValidateOnPaste, coreRead: el.grid.shouldValidateOnPaste }
+			return { hostRead: el.shouldValidateOnPaste, coreRead: el.engine.shouldValidateOnPaste }
 		})
 
 		expect(result.hostRead).toBe(false)
 		expect(result.coreRead).toBe(false)
 	})
 
-	test('assigning el.onpaste delivers a PasteDetail (not a native ClipboardEvent)', async ({ page }) => {
+	test('el.onPasteComplete (the paste-complete twin) receives the PasteDetail', async ({ page }) => {
 		await gotoPaste(page)
 
-		// Wire a fresh consumer-style handler via the host proxy and trigger paste.
-		// If the proxy were missing, this assignment would register a native paste
-		// listener and the handler would receive a ClipboardEvent (no totalCells).
 		await gridLocator(page).evaluate((el: any) => {
 			(window as any).__pasteDetails = []
-			el.onpaste = (detail: any) => {
+			el.onPasteComplete = (detail: any) => {
 				(window as any).__pasteDetails.push({
 					totalCells: detail.totalCells,
 					successfulCells: detail.successfulCells,
 					hadHeaders: detail.hadHeaders,
-					isClipboardEvent: detail instanceof Event
+					isClipboardEvent: detail instanceof Event,
+					hasController: typeof detail.controller?.getItems === 'function'
 				})
 			}
 		})
@@ -291,27 +289,49 @@ test.describe('web-component paste proxies', () => {
 		expect(details[0].totalCells).toBe(4)
 		expect(details[0].successfulCells).toBe(4)
 		expect(details[0].isClipboardEvent).toBe(false)
+		expect(details[0].hasController).toBe(true)
 	})
 
-	test('assigning el.onbeforepaste reaches the core', async ({ page }) => {
+	test('el.beforePasteCallback gets the parsed paste; returning false cancels it', async ({ page }) => {
 		await gotoPaste(page)
 
 		await gridLocator(page).evaluate((el: any) => {
 			(window as any).__beforeDetails = []
-			el.onbeforepaste = (detail: any) => {
+			el.beforePasteCallback = (ctx: any) => {
 				(window as any).__beforeDetails.push({
-					parsedRows: detail.parsedRows.length,
-					hasHeaders: detail.hasHeaders
+					parsedRows: ctx.parsedRows.length,
+					hasHeaders: ctx.hasHeaders
 				})
+				return false
 			}
 		})
 
+		const before = await cell(page, 0, COL.name).textContent()
 		await focusCell(page, 0, COL.name)
 		await pasteText(page, 'A\tone@x\nB\ttwo@x')
 
 		const details = await page.evaluate(() => (window as any).__beforeDetails)
 		expect(details.length).toBe(1)
 		expect(details[0].parsedRows).toBe(2)
+		await expect(cell(page, 0, COL.name)).toHaveText(before ?? '')
+	})
+
+	test('a pasted value that fails validateCallback fires validation-error (source: paste)', async ({ page }) => {
+		await gotoPaste(page)
+
+		await gridLocator(page).evaluate((el: any) => {
+			(window as any).__validationErrors = []
+			el.onValidationError = (d: any) => {
+				(window as any).__validationErrors.push({ field: d.field, error: d.error, source: d.source })
+			}
+		})
+
+		await focusCell(page, 0, COL.name)
+		await pasteText(page, 'X\ty@x\t-5')
+
+		const errors = await page.evaluate(() => (window as any).__validationErrors)
+		expect(errors).toHaveLength(1)
+		expect(errors[0]).toMatchObject({ field: 'age', source: 'paste' })
 	})
 
 	test('el.pasteMode change via the proxy affects paste behavior', async ({ page }) => {

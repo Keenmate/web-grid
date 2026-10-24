@@ -4,7 +4,7 @@
 // =============================================================================
 
 import type { EditorOptions } from '../../types.js'
-import type { GridContext } from '../grid-context.js'
+import type { GridHost } from '../grid-context.js'
 import { getOptionValue, getOptionLabel, isOptionDisabled } from './options.js'
 import { renderDropdown, removeDropdown } from './rendering.js'
 import { renderCell } from '../rendering/index.js'
@@ -15,7 +15,7 @@ import { renderCell } from '../rendering/index.js'
  * @param commitEmptyRow - If true and editing empty row, add it to items (Enter key behavior)
  */
 export function selectDropdownOption<T>(
-	ctx: GridContext<T>,
+	ctx: GridHost<T>,
 	index: number,
 	moveAfterSelect: boolean = true,
 	commitEmptyRow: boolean = false
@@ -24,12 +24,12 @@ export function selectDropdownOption<T>(
 	if (!option) return
 
 	// Get cell info - prefer editingCell, fall back to focusedCell for 'always' mode
-	const editingCell = ctx.grid.editingCell
-	const focusedCell = ctx.grid.focusedCell
+	const editingCell = ctx.engine.editingCell
+	const focusedCell = ctx.engine.focusedCell
 	const cellInfo = editingCell
-		? { rowIndex: editingCell.rowIndex, field: editingCell.field, colIndex: ctx.grid.columns.findIndex(c => String(c.field) === editingCell.field) }
+		? { rowIndex: editingCell.rowIndex, field: editingCell.field, colIndex: ctx.engine.columns.findIndex(c => String(c.field) === editingCell.field) }
 		: focusedCell
-			? { rowIndex: focusedCell.rowIndex, field: String(ctx.grid.columns[focusedCell.colIndex]?.field), colIndex: focusedCell.colIndex }
+			? { rowIndex: focusedCell.rowIndex, field: String(ctx.engine.columns[focusedCell.colIndex]?.field), colIndex: focusedCell.colIndex }
 			: null
 
 	if (!cellInfo) return
@@ -37,24 +37,24 @@ export function selectDropdownOption<T>(
 	const { rowIndex, field, colIndex } = cellInfo
 
 	// Get column for editorOptions
-	const column = ctx.grid.columns[colIndex]
+	const column = ctx.engine.columns[colIndex]
 	const opts = column?.editorOptions || {}
 
 	// Skip if option is disabled
 	if (isOptionDisabled(option, opts)) return
 
 	const value = getOptionValue(option, opts)
-	const row = ctx.grid.displayItems[rowIndex]
+	const row = ctx.engine.displayItems[rowIndex]
 
-	// Fire onselect event if provided
-	if (opts.onselect && row) {
-		opts.onselect(option, row)
+	// Notify editorOptions.onSelect
+	if (opts.onSelect && row && column) {
+		opts.onSelect({ ...ctx.engine.cellCtx(row, rowIndex, column, colIndex), option })
 	}
 
 	ctx.dropdown.setJustSelected(true)
 	ctx.isCommittingFromKeyboard = true
 	removeDropdown(ctx)
-	ctx.grid.commitEdit(rowIndex, field, value, commitEmptyRow)
+	ctx.engine.commitEdit(rowIndex, field, value, commitEmptyRow)
 
 	if (moveAfterSelect) {
 		// Move focus to next row in same column (like Enter does for other editors)
@@ -73,7 +73,7 @@ export function selectDropdownOption<T>(
 /**
  * Update dropdown highlight visually
  */
-export function updateDropdownHighlight<T>(ctx: GridContext<T>): void {
+export function updateDropdownHighlight<T>(ctx: GridHost<T>): void {
 	const dropdown = ctx.shadow.querySelector('.wg__dropdown')
 	if (!dropdown) return
 
@@ -86,7 +86,7 @@ export function updateDropdownHighlight<T>(ctx: GridContext<T>): void {
 /**
  * Scroll highlighted option into view
  */
-export function scrollHighlightedIntoView<T>(ctx: GridContext<T>): void {
+export function scrollHighlightedIntoView<T>(ctx: GridHost<T>): void {
 	const highlighted = ctx.shadow.querySelector('.wg__dropdown-option--highlighted')
 	highlighted?.scrollIntoView({ block: 'nearest' })
 }
@@ -94,7 +94,7 @@ export function scrollHighlightedIntoView<T>(ctx: GridContext<T>): void {
 /**
  * Update loading indicator visibility
  */
-export function updateLoadingIndicator<T>(ctx: GridContext<T>, show: boolean): void {
+export function updateLoadingIndicator<T>(ctx: GridHost<T>, show: boolean): void {
 	const indicator = ctx.shadow.querySelector('.wg__loading-indicator') as HTMLElement
 	if (indicator) {
 		indicator.style.display = show ? 'inline' : 'none'
@@ -110,7 +110,7 @@ export function updateLoadingIndicator<T>(ctx: GridContext<T>, show: boolean): v
  * Open dropdown for current editor
  * Works with both editingCell (normal edit mode) and focusedCell ('always' edit mode)
  */
-export function openDropdownForCurrentEditor<T>(ctx: GridContext<T>): void {
+export function openDropdownForCurrentEditor<T>(ctx: GridHost<T>): void {
 	if (ctx.dropdown.justSelected) {
 		return
 	}
@@ -118,12 +118,12 @@ export function openDropdownForCurrentEditor<T>(ctx: GridContext<T>): void {
 	ctx.dropdown.setUserInteracted(false)
 
 	// Get cell info - prefer editingCell, fall back to focusedCell for 'always' mode
-	const editingCell = ctx.grid.editingCell
-	const focusedCell = ctx.grid.focusedCell
+	const editingCell = ctx.engine.editingCell
+	const focusedCell = ctx.engine.focusedCell
 	const cellInfo = editingCell
 		? { rowIndex: editingCell.rowIndex, field: editingCell.field }
 		: focusedCell
-			? { rowIndex: focusedCell.rowIndex, field: String(ctx.grid.columns[focusedCell.colIndex]?.field) }
+			? { rowIndex: focusedCell.rowIndex, field: String(ctx.engine.columns[focusedCell.colIndex]?.field) }
 			: null
 
 	if (!cellInfo) {
@@ -135,7 +135,7 @@ export function openDropdownForCurrentEditor<T>(ctx: GridContext<T>): void {
 	// Get column - try editingCell method first, then fall back to field lookup
 	let column = ctx.getCurrentEditingColumn()
 	if (!column) {
-		column = ctx.grid.columns.find(c => String(c.field) === field) || null
+		column = ctx.engine.columns.find(c => String(c.field) === field) || null
 	}
 	if (!column) {
 		return
@@ -160,7 +160,7 @@ export function openDropdownForCurrentEditor<T>(ctx: GridContext<T>): void {
 		} else {
 			ctx.dropdown.setOptions(allOptions)
 			// Calculate highlight index for current value
-			const item = ctx.grid.displayItems[rowIndex]
+			const item = ctx.engine.displayItems[rowIndex]
 			const currentValue = item ? (item as Record<string, unknown>)[field] : undefined
 			const currentIdx = ctx.dropdown.options.findIndex(
 				opt => getOptionValue(opt, opts) === currentValue
@@ -173,7 +173,7 @@ export function openDropdownForCurrentEditor<T>(ctx: GridContext<T>): void {
 			: (opts.options || [])
 
 		// Get current cell value
-		const item = ctx.grid.displayItems[rowIndex]
+		const item = ctx.engine.displayItems[rowIndex]
 		const currentValue = item ? (item as Record<string, unknown>)[field] : undefined
 
 		// Check if current value exists in options
@@ -246,7 +246,7 @@ export function openDropdownForCurrentEditor<T>(ctx: GridContext<T>): void {
 /**
  * Toggle dropdown open/close
  */
-export function toggleDropdown<T>(ctx: GridContext<T>): void {
+export function toggleDropdown<T>(ctx: GridHost<T>): void {
 	if (ctx.dropdown.isOpen) {
 		removeDropdown(ctx)
 	} else {
@@ -258,7 +258,7 @@ export function toggleDropdown<T>(ctx: GridContext<T>): void {
  * Attach event listeners to dropdown element
  */
 export function attachDropdownListeners<T>(
-	ctx: GridContext<T>,
+	ctx: GridHost<T>,
 	dropdown: HTMLElement
 ): void {
 	// Click on option - don't move to next row, just save and stay
@@ -286,8 +286,8 @@ export function attachDropdownListeners<T>(
  * Update select dropdown filter based on current filterText
  */
 export function updateSelectFilter<T>(
-	ctx: GridContext<T>,
-	opts: EditorOptions
+	ctx: GridHost<T>,
+	opts: EditorOptions<any>
 ): void {
 	const allOptions = opts.options || []
 	const searchLower = ctx.dropdown.filterText.toLowerCase()

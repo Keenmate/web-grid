@@ -16,7 +16,7 @@
 // `ToolbarService.outsideClickAttached` so re-running attachEventListeners on
 // every render doesn't pile up duplicates.
 
-import type { GridContext } from '../grid-context.js'
+import type { GridHost } from '../grid-context.js'
 import {
 	getActiveToolbarRowIndex,
 	isToolbarOpenForRow,
@@ -39,12 +39,12 @@ import {
  * the table. Idempotent w.r.t. the document-level outside-click listener
  * thanks to the `outsideClickAttached` one-shot guard on the ToolbarService.
  */
-export function attachToolbarListeners<T>(ctx: GridContext<T>, table: Element): void {
+export function attachToolbarListeners<T>(ctx: GridHost<T>, table: Element): void {
 	// Toolbar trigger button click (button mode)
 	table.addEventListener('click', (e: Event) => {
 		const target = e.target as HTMLElement
 		const triggerBtn = target.closest('.wg__toolbar-trigger') as HTMLElement
-		if (triggerBtn && ctx.grid.toolbarTrigger === 'button') {
+		if (triggerBtn && ctx.engine.toolbarTrigger === 'button') {
 			e.preventDefault()
 			e.stopPropagation()
 			const rowIndex = parseInt(triggerBtn.dataset.toolbarTrigger || '0', 10)
@@ -63,16 +63,16 @@ export function attachToolbarListeners<T>(ctx: GridContext<T>, table: Element): 
 
 	// Inline action button click (inline mode - toolbarPosition="inline")
 	table.addEventListener('click', (e: Event) => {
-		if (ctx.grid.toolbarPosition !== 'inline') return
+		if (ctx.engine.toolbarPosition !== 'inline') return
 
 		const target = e.target as HTMLElement
 		const btn = target.closest('.wg__inline-action-btn') as HTMLButtonElement
 		if (btn && !btn.disabled) {
 			e.preventDefault()
 			e.stopPropagation()
-			const actionId = btn.dataset.actionId
+			const buttonIndex = Number(btn.dataset.wgIndex)
 			const rowIndex = parseInt(btn.dataset.row || '0', 10)
-			handleInlineActionClick(ctx, actionId, rowIndex, e as MouseEvent, btn)
+			handleInlineActionClick(ctx, buttonIndex, rowIndex, e as MouseEvent, btn)
 		}
 	})
 
@@ -83,15 +83,15 @@ export function attachToolbarListeners<T>(ctx: GridContext<T>, table: Element): 
 		const row = target.closest('.wg__row') as HTMLElement
 		if (row) {
 			const rowIndex = parseInt(row.dataset.rowIndex || '0', 10)
-			ctx.grid.setHoveredRow(rowIndex)
+			ctx.engine.setHoveredRow(rowIndex)
 
 			// For inline mode, setup shortcuts
-			if (ctx.grid.toolbarPosition === 'inline') {
+			if (ctx.engine.toolbarPosition === 'inline') {
 				setupInlineShortcuts(ctx)
 			}
 
 			// For floating toolbar (hover trigger)
-			if (ctx.grid.toolbarTrigger === 'hover' && ctx.grid.toolbarPosition !== 'inline') {
+			if (ctx.engine.toolbarTrigger === 'hover' && ctx.engine.toolbarPosition !== 'inline') {
 				// Cancel any pending hide timeout when entering a row
 				ctx.toolbar.clearHideTimeout()
 				if (!isToolbarOpenForRow(rowIndex)) {
@@ -109,17 +109,17 @@ export function attachToolbarListeners<T>(ctx: GridContext<T>, table: Element): 
 
 		if (row) {
 			// For inline mode, clear hovered row and shortcuts after short delay
-			if (ctx.grid.toolbarPosition === 'inline') {
+			if (ctx.engine.toolbarPosition === 'inline') {
 				setTimeout(() => {
 					if (!table.matches(':hover')) {
-						ctx.grid.setHoveredRow(null)
+						ctx.engine.setHoveredRow(null)
 						removeInlineShortcuts(ctx)
 					}
 				}, 50)
 			}
 
 			// For floating toolbar (hover trigger)
-			if (ctx.grid.toolbarTrigger === 'hover' && ctx.grid.toolbarPosition !== 'inline') {
+			if (ctx.engine.toolbarTrigger === 'hover' && ctx.engine.toolbarPosition !== 'inline') {
 				// Don't close during move actions (connector tracking)
 				if (ctx.toolbar.isMoveInProgress) return
 
@@ -131,7 +131,7 @@ export function attachToolbarListeners<T>(ctx: GridContext<T>, table: Element): 
 					const isHoveringTable = table.matches(':hover')
 
 					if (!isHoveringToolbar && !isHoveringTable) {
-						ctx.grid.setHoveredRow(null)
+						ctx.engine.setHoveredRow(null)
 						closeToolbarAndReset(ctx)
 						// No render() needed — closeToolbar() already removes toolbar from DOM
 					}
@@ -152,15 +152,15 @@ export function attachToolbarListeners<T>(ctx: GridContext<T>, table: Element): 
 		const toolbarRowIndex = getActiveToolbarRowIndex()
 
 		// Only process if toolbar is open for this row and in 'top' position
-		if (toolbarRowIndex !== rowIndex || ctx.grid.toolbarPosition !== 'top') return
+		if (toolbarRowIndex !== rowIndex || ctx.engine.toolbarPosition !== 'top') return
 
-		// Handle mouse-following toolbar (skip if cellToolbar is active — it handles its own positioning,
+		// Handle mouse-following toolbar (skip if a cell toolbar is active — it handles its own positioning,
 		// and skip if toolbarColumn is set — column pinning takes priority over cursor following)
-		if (ctx.grid.shouldToolbarFollowCursor && !ctx.grid.cellToolbar && ctx.grid.toolbarColumn === undefined) {
+		if (ctx.engine.shouldToolbarFollowCursor && !ctx.engine.getCellToolbarItemsCallback && ctx.engine.toolbarColumn === undefined) {
 			const cell = target.closest('.wg__cell:not(.wg__row-number):not(.wg__inline-actions-cell)') as HTMLElement
 			if (cell) {
 				const cellRect = cell.getBoundingClientRect()
-				const targetX = resolveToolbarOffset(cellRect, ctx.grid.cellToolbarOffset)
+				const targetX = resolveToolbarOffset(cellRect, ctx.engine.cellToolbarOffset)
 				updateToolbarPosition(targetX, row, 'start')
 			} else {
 				updateToolbarPosition(mouseEvent.clientX, row)
@@ -168,12 +168,13 @@ export function attachToolbarListeners<T>(ctx: GridContext<T>, table: Element): 
 		}
 
 		// Handle cell-aware toolbar
-		if (ctx.grid.cellToolbar) {
+		const getCellItems = ctx.engine.getCellToolbarItemsCallback
+		if (getCellItems) {
 			const cell = target.closest('.wg__cell:not(.wg__row-number):not(.wg__inline-actions-cell)') as HTMLElement
 			if (cell) {
 				const field = cell.dataset.field || ''
 				// Find colIndex from visualColumns since cells don't have data-col-index
-				const colIndex = ctx.grid.visualColumns.findIndex(vc => String(vc.column.field) === field)
+				const colIndex = ctx.engine.visualColumns.findIndex(vc => String(vc.column.field) === field)
 
 				// Check if cell changed (compare by field since that's what we have)
 				const currentHovered = ctx.toolbar.hoveredCell
@@ -184,24 +185,25 @@ export function attachToolbarListeners<T>(ctx: GridContext<T>, table: Element): 
 				if (cellChanged) {
 					ctx.toolbar.setHoveredCell({ rowIndex, colIndex, field })
 
-					// Get cell-specific toolbar items
-					const dataRow = ctx.grid.displayItems[rowIndex]
-					if (dataRow) {
-						const cellItems = ctx.grid.cellToolbar(dataRow, rowIndex, field, colIndex)
-						// Use cell items if provided, otherwise use default rowToolbar
-						const itemsToUse = cellItems || ctx.grid.rowToolbar
-						const newItemsJson = JSON.stringify(itemsToUse)
-
-						// Check if items changed
-						if (newItemsJson !== ctx.toolbar.currentCellItemsJson) {
-							ctx.toolbar.setCurrentCellItemsJson(newItemsJson)
-							// Re-render toolbar with new items
-							updateToolbarWithCellItems(ctx, rowIndex, itemsToUse)
+					// Get cell-specific toolbar items (merged over rowToolbar); re-resolved on every
+					// cell change, since item callbacks may depend on the cell
+					const dataRow = ctx.engine.displayItems[rowIndex]
+					const dataColIndex = ctx.engine.columns.findIndex(c => String(c.field) === field)
+					const column = ctx.engine.columns[dataColIndex]
+					if (dataRow && column) {
+						const cellFields = {
+							row: dataRow,
+							rowIndex,
+							column,
+							colIndex: dataColIndex,
+							field,
+							value: ctx.engine.getCellRawValue(dataRow, rowIndex, field)
 						}
+						updateToolbarWithCellItems(ctx, cellFields, getCellItems(ctx.engine.ctx(cellFields)) ?? [])
 
 						// Position toolbar at configured offset from cell left edge
 						const cellRect = cell.getBoundingClientRect()
-						const targetX = resolveToolbarOffset(cellRect, ctx.grid.cellToolbarOffset)
+						const targetX = resolveToolbarOffset(cellRect, ctx.engine.cellToolbarOffset)
 						updateToolbarPosition(targetX, row, 'start')
 					}
 				}
@@ -211,7 +213,7 @@ export function attachToolbarListeners<T>(ctx: GridContext<T>, table: Element): 
 
 	// Row click (click mode)
 	table.addEventListener('click', (e: Event) => {
-		if (ctx.grid.toolbarTrigger !== 'click') return
+		if (ctx.engine.toolbarTrigger !== 'click') return
 
 		const mouseEvent = e as MouseEvent
 		const target = mouseEvent.target as HTMLElement
@@ -249,7 +251,7 @@ export function attachToolbarListeners<T>(ctx: GridContext<T>, table: Element): 
 			// includes the shadow boundary, and the grid element itself is the host.
 			const host = (ctx.shadow as ShadowRoot).host
 			const isInGrid = composedPath.includes(host)
-			if (isInGrid && (ctx.grid.toolbarTrigger === 'hover' || ctx.grid.toolbarTrigger === 'click')) {
+			if (isInGrid && (ctx.engine.toolbarTrigger === 'hover' || ctx.engine.toolbarTrigger === 'click')) {
 				return
 			}
 			// Close toolbar if clicking outside

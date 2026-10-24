@@ -7,7 +7,7 @@
 // module so the listener-attach side of the lifecycle sits next to
 // showTooltip / hideTooltip in tooltip.ts.
 
-import type { GridContext } from '../grid-context.js'
+import type { GridHost } from '../grid-context.js'
 import { showTooltip, hideTooltip } from './tooltip.js'
 
 /**
@@ -20,7 +20,7 @@ import { showTooltip, hideTooltip } from './tooltip.js'
  * tooltip-bearing element with the same data — prevents flicker on adjacent
  * cells with identical tooltips.
  */
-export function attachTooltipListeners<T>(ctx: GridContext<T>, table: Element): void {
+export function attachTooltipListeners<T>(ctx: GridHost<T>, table: Element): void {
 	table.addEventListener('mouseenter', (e: Event) => {
 		const target = e.target as HTMLElement
 		// Check for HTML tooltip first, then plain text

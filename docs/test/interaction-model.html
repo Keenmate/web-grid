@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — interaction model (action items, events, contexts)</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>interaction model fixture</h1>
+	<p>
+		Targeted by <code>e2e/interaction-model.spec.ts</code>: core action items in the
+		row toolbar, cell / header context menus and shortcuts; the <code>action</code>
+		event + <code>beforeActionCallback</code>; the row built-ins; lazy submenus; the
+		menu-open hooks; <code>on*</code> twins; <code>el.controller</code>. Everything
+		is logged to <code>window.__log</code>.
+	</p>
+
+	<h2>#grid — toolbar + cell menu + header menu + shortcuts</h2>
+	<web-grid id="grid"></web-grid>
+
+	<h2>#tree — tree built-ins + expand-change</h2>
+	<web-grid id="tree"></web-grid>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+
+		window.__log = []
+		window.__details = []
+		window.__vetoBuiltIns = false
+		const log = (s) => window.__log.push(s)
+
+		const seed = () => [
+			{ id: 1, name: 'Alpha', qty: 10 },
+			{ id: 2, name: 'Beta', qty: 20 },
+			{ id: 3, name: 'Gamma', qty: 30 },
+			{ id: 4, name: 'Delta', qty: 40 }
+		]
+
+		const grid = document.getElementById('grid')
+		grid.idMember = 'id'
+		grid.items = seed()
+		grid.columns = [
+			{ field: 'id', title: 'ID', width: '60px' },
+			{ field: 'name', title: 'Name', width: '140px', isEditable: true },
+			{
+				field: 'qty',
+				title: 'Qty',
+				width: '80px',
+				getCellClassCallback: (ctx) => {
+					if (ctx.rowIndex === 0 && !window.__cellCtx) {
+						window.__cellCtx = {
+							keys: Object.keys(ctx),
+							hasController: typeof ctx.controller?.getItems === 'function',
+							elementIsHost: ctx.element === grid
+						}
+					}
+					return ctx.value >= 30 ? 'qty-high' : null
+				}
+			}
+		]
+		grid.isEditable = true
+		grid.editTrigger = 'navigate'
+		grid.sortMode = 'single'
+		grid.isRowToolbarVisible = true
+		grid.rowToolbar = [
+			'move-up',
+			'move-down',
+			{ divider: true },
+			'add',
+			'duplicate',
+			'delete',
+			{ id: 'flag', text: 'Flag', icon: '⚑', getIsActiveCallback: ({ row }) => row.qty >= 30, onClick: (d) => log('onClick:flag:' + d.row.name) },
+			{ id: 'hidden', text: 'Hidden', icon: '✗', getIsVisibleCallback: () => false }
+		]
+		grid.createEmptyRowCallback = () => ({ id: 100 + grid.items.length, name: 'New', qty: 0 })
+
+		grid.contextMenu = [
+			{ id: 'rename', text: 'Rename', icon: '✎', onClick: (d) => log('onClick:rename:' + d.row.name + ':' + d.field) },
+			{ id: 'keep', text: 'Keep open', shouldCloseOnClick: false, onClick: () => log('onClick:keep') },
+			{ divider: true, text: 'Rows' },
+			'duplicate',
+			'delete',
+			{
+				id: 'more',
+				text: 'More',
+				getChildrenCallback: async (ctx) => {
+					await new Promise(r => setTimeout(r, 50))
+					return [{ id: 'lazy', text: 'Lazy ' + ctx.row.name, onClick: () => log('onClick:lazy') }]
+				}
+			}
+		]
+		grid.headerContextMenu = [
+			'sort-asc',
+			'sort-desc',
+			'clear-sort',
+			{ divider: true },
+			// a custom item whose id is a built-in name must NOT run the built-in
+			{ id: 'sort-asc', text: 'Custom sort-asc id', onClick: () => log('onClick:custom-sort-asc') },
+			{ id: 'sub', text: 'Submenu', children: [{ id: 'child', text: 'Child item', onClick: () => log('onClick:child') }] }
+		]
+		grid.rowShortcuts = [
+			{ shortcut: 'Ctrl+D', action: 'duplicate' },
+			{ shortcut: 'Ctrl+E', id: 'export', text: 'Export', onClick: (d) => log('onClick:export:' + d.row.name) }
+		]
+
+		grid.beforeActionCallback = (d) => {
+			log('before:' + d.action + (d.id ? ':' + d.id : '') + ':' + d.source)
+			if (window.__vetoBuiltIns && d.action !== 'custom') return false
+		}
+		grid.onAction = (d) => log('onAction:' + d.action)
+		grid.addEventListener('action', (e) => {
+			log('event:' + e.detail.action)
+			window.__details.push({
+				json: JSON.parse(JSON.stringify(e.detail, (k, v) => (['item', 'sourceEvent', 'triggerElement', 'row', 'column'].includes(k) ? undefined : v))),
+				rowName: e.detail.row?.name,
+				hasController: typeof e.detail.controller?.getItems === 'function',
+				elementIsHost: e.detail.element === grid,
+				composed: e.composed
+			})
+		})
+
+		// menu-open hooks: `false` → no grid menu; an array → shown instead
+		window.__menuMode = 'normal'
+		grid.beforeContextMenuOpenCallback = (ctx) => {
+			log('menu-open:' + ctx.field + ':' + ctx.rowIndex)
+			if (window.__menuMode === 'cancel') return false
+			if (window.__menuMode === 'replace') return [{ id: 'only', text: 'Only item' }]
+		}
+		grid.beforeHeaderMenuOpenCallback = (ctx) => log('header-open:' + ctx.field + ':' + ctx.colIndex)
+
+		// twins + events
+		grid.onDataRequest = (d) => log('onDataRequest:' + d.trigger + ':' + d.sort.map(s => s.column + '-' + s.direction).join(','))
+		grid.onRowDelete = (d) => log('onRowDelete:' + d.row.name + ':' + (d instanceof Event))
+		grid.addEventListener('row-delete', (e) => log('row-delete:' + e.detail.row.name))
+		grid.onRowFocus = (d) => log('onRowFocus:' + d.rowIndex)
+
+		// #tree
+		const tree = document.getElementById('tree')
+		tree.items = [
+			{ path: '1', name: 'Root' },
+			{ path: '1.1', name: 'Child A' },
+			{ path: '1.1.1', name: 'Leaf' },
+			{ path: '1.2', name: 'Child B' }
+		]
+		tree.columns = [{ field: 'name', title: 'Name', isTree: true, width: '200px' }]
+		tree.treePathMember = 'path'
+		tree.contextMenu = ['expand-all', 'collapse-all', 'expand-tree', 'collapse-tree']
+		tree.onExpandChange = (d) => log('expand:' + d.path + ':' + d.isExpanded)
+	</script>
+</body>
+</html>

@@ -70,8 +70,8 @@
 				width: '110px',
 				horizontalAlign: 'right',
 				editor: 'number',
-				cellClassCallback: (val) => val >= 90000 ? 'salary-high' : null,
-				formatCallback: (val) => val != null ? `$${val.toLocaleString('en-US')}` : ''
+				getCellClassCallback: ({ value: val }) => val >= 90000 ? 'salary-high' : null,
+				getDisplayValueCallback: ({ value: val }) => val != null ? `$${val.toLocaleString('en-US')}` : ''
 			},
 			{ field: 'status', title: 'Status', width: '110px', editor: 'text' }
 		]
@@ -88,28 +88,28 @@
 
 		// Lock rows that are On Leave.
 		grid.rowLocking = {
-			isLockedCallback: (row) => row.status === 'On Leave'
+			getIsLockedCallback: ({ row }) => row.status === 'On Leave'
 		}
 
 		// Shadow DOM needs styles for dynamically-applied classes injected in.
-		grid.customStylesCallback = () => `
+		grid.getCustomStylesCallback = () => `
 			.salary-high { background-color: #d1fae5 !important; color: #065f46; }
 			.row-inactive { opacity: 0.6; background-color: #f3f4f6 !important; }
 		`
 
-		grid.rowClassCallback = (row) =>
+		grid.getRowClassCallback = ({ row }) =>
 			row.status === 'On Leave' ? 'row-inactive' : null
 
 		// State hooks --------------------------------------------------------
 		const sortStateEl = document.querySelector('[data-testid="sort-state"]')
-		grid.ondatarequest = ({ sort }) => {
+		grid.onDataRequest = ({ sort }) => {
 			sortStateEl.textContent = (!sort || sort.length === 0)
 				? 'none'
 				: sort.map(s => `${s.column}:${s.direction}`).join(', ')
 		}
 
 		const focusedRowEl = document.querySelector('[data-testid="focused-row"]')
-		grid.onrowfocus = ({ rowIndex, row }) => {
+		grid.onRowFocus = ({ rowIndex, row }) => {
 			focusedRowEl.textContent = `${rowIndex} — ${row.name}`
 		}
 

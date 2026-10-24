@@ -121,7 +121,7 @@ test.describe('selecting a day', () => {
 
 		await expect(picker(page)).toHaveCount(0)
 		await expect(cell(page, 0, COL.iso)).toContainText('2026-06-22')
-		// onrowchange should fire with a string value.
+		// row-change should fire with a string value.
 		await expect(commitLogRow(page, 0))
 			.toContainText('row=0 field=iso value="2026-06-22" type=string')
 	})
@@ -133,7 +133,7 @@ test.describe('selecting a day', () => {
 		await day(page, '2026-06-25').click()
 
 		await expect(picker(page)).toHaveCount(0)
-		// Formatted by the column's formatCallback (toISOString slice).
+		// Formatted by the column's getDisplayValueCallback (toISOString slice).
 		await expect(cell(page, 0, COL.ts)).toContainText('2026-06-25')
 		// Commit log shows numeric value with type=number.
 		await expect(commitLogRow(page, 0)).toContainText('field=ts')
@@ -170,7 +170,7 @@ test.describe('keyboard navigation', () => {
 		await expect(picker(page).locator('.wg-datepicker__day--focused'))
 			.toHaveAttribute('data-date', '2026-06-23')
 
-		// Picker is still open; commit log is empty (no onrowchange yet).
+		// Picker is still open; commit log is empty (no row-change yet).
 		await expect(picker(page)).toBeVisible()
 		await expect(page.locator('[data-testid="commit-log"] .row')).toHaveCount(0)
 	})
@@ -211,7 +211,7 @@ test.describe('min / max constraints', () => {
 		await openPicker(page, 0, COL.iso)
 
 		// handleDayClick returns null for disabled days, so selectDate is not
-		// invoked and onrowchange must not fire. The mousedown preventDefault
+		// invoked and row-change must not fire. The mousedown preventDefault
 		// keeps focus on the input, so the picker stays open.
 		await day(page, '2026-05-31').click({ force: true })
 		await expect(page.locator('[data-testid="commit-log"] .row')).toHaveCount(0)

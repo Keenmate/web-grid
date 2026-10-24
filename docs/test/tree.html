@@ -22,7 +22,7 @@
 	</div>
 
 	<div class="fixture">
-		<h2>#rowGateGrid — isRowEditable gate (only Active rows editable)</h2>
+		<h2>#rowGateGrid — getIsRowEditableCallback gate (only Active rows editable)</h2>
 		<web-grid id="rowGateGrid" style="max-width: 100%; max-height: 380px;"></web-grid>
 	</div>
 
@@ -70,11 +70,11 @@
 		 *                 editTrigger='navigate'. Acme (path '1') is row 0. The cell
 		 *                 context menu carries the predefined tree items.
 		 *  #navGrid     — defaultExpandDepth=99 (all visible). Only leaf rows are
-		 *                 editable (per-column isEditable predicate). Tab from row 9
+		 *                 editable (per-column getIsEditableCallback). Tab from row 9
 		 *                 (Data Science, leaf) skips row 10 (Sales, parent/read-only)
 		 *                 and lands on row 11 (Enterprise, leaf). Tree column (col 0)
 		 *                 is never a Tab target.
-		 *  #rowGateGrid — defaultExpandDepth=99. isRowEditable gates on status==='Active',
+		 *  #rowGateGrid — defaultExpandDepth=99. getIsRowEditableCallback gates on status==='Active',
 		 *                 so Channel (row 13, Reorganizing) and IT (row 22, Frozen) are
 		 *                 read-only. Tab from row 12 (SMB) skips row 13 → row 14.
 		 *  #cvGrid      — tree mode + headerContextMenu. The tree column header omits
@@ -145,7 +145,7 @@
 			const paths = [...grid.expandedPaths].sort()
 			expandedEl.textContent = paths.length === 0 ? '(none)' : paths.join(', ')
 		}
-		grid.onexpandedpathschange = renderExpanded
+		grid.onExpandChange = renderExpanded
 		renderExpanded()
 
 		// #navGrid — heterogeneous tree; only leaf rows editable, fully expanded.
@@ -153,10 +153,10 @@
 		navGrid.items = orgData
 		navGrid.columns = [
 			{ field: 'name', title: 'Organization', width: '280px', isTree: true, isSortable: true },
-			{ field: 'headcount', title: 'Headcount', width: '110px', horizontalAlign: 'right', isEditable: isLeafRow, editor: 'number', isSortable: true },
-			{ field: 'budget', title: 'Annual Budget', width: '150px', horizontalAlign: 'right', isEditable: isLeafRow, editor: 'number', isSortable: true },
-			{ field: 'location', title: 'Location', width: '150px', isEditable: isLeafRow, isSortable: true },
-			{ field: 'status', title: 'Status', width: '130px', isEditable: isLeafRow, isSortable: true }
+			{ field: 'headcount', title: 'Headcount', width: '110px', horizontalAlign: 'right', getIsEditableCallback: ({ row }) => isLeafRow(row), editor: 'number', isSortable: true },
+			{ field: 'budget', title: 'Annual Budget', width: '150px', horizontalAlign: 'right', getIsEditableCallback: ({ row }) => isLeafRow(row), editor: 'number', isSortable: true },
+			{ field: 'location', title: 'Location', width: '150px', getIsEditableCallback: ({ row }) => isLeafRow(row), isSortable: true },
+			{ field: 'status', title: 'Status', width: '130px', getIsEditableCallback: ({ row }) => isLeafRow(row), isSortable: true }
 		]
 		navGrid.treePathMember = 'path'
 		navGrid.defaultExpandDepth = 99
@@ -166,7 +166,7 @@
 		navGrid.isEditable = true
 		navGrid.contextMenu = treeContextMenu
 
-		// #rowGateGrid — grid-level isRowEditable gate (status === 'Active').
+		// #rowGateGrid — grid-level getIsRowEditableCallback gate (status === 'Active').
 		const rowGateGrid = document.getElementById('rowGateGrid')
 		rowGateGrid.items = orgData
 		rowGateGrid.columns = [
@@ -182,7 +182,7 @@
 		rowGateGrid.treeDoubleClickBehavior = 'toggle'
 		rowGateGrid.editTrigger = 'navigate'
 		rowGateGrid.isEditable = true
-		rowGateGrid.isRowEditable = (row) => row.status === 'Active'
+		rowGateGrid.getIsRowEditableCallback = ({ row }) => row.status === 'Active'
 		rowGateGrid.contextMenu = treeContextMenu
 
 		// #cvGrid — column visibility in tree mode; tree column is locked-visible.
@@ -201,12 +201,12 @@
 		cvGrid.treeDataSorted = true
 		cvGrid.treeDoubleClickBehavior = 'toggle'
 		cvGrid.headerContextMenu = [
-			'sortAsc',
-			'sortDesc',
-			'clearSort',
-			{ dividerBefore: true },
-			'hideColumn',
-			'columnVisibility'
+			'sort-asc',
+			'sort-desc',
+			'clear-sort',
+			{ divider: true },
+			'hide-column',
+			'column-visibility'
 		]
 	</script>
 </body>

@@ -14,7 +14,7 @@
 //   - parseDateInput         — parse the format-shaped input value back to a
 //                              Date (helper, no DOM access).
 
-import type { GridContext } from '../grid-context.js'
+import type { GridHost } from '../grid-context.js'
 import { clearEditingVisual, restoreEditingCellToDisplayMode } from '../navigation/focus.js'
 import { DatePicker } from './datepicker.js'
 import { parseFormat, formatDate, toISODateString } from './formatting.js'
@@ -26,7 +26,7 @@ import { parseFormat, formatDate, toISODateString } from './formatting.js'
  * commit + restore visual state respectively.
  */
 export function openDatePicker<T>(
-	ctx: GridContext<T>,
+	ctx: GridHost<T>,
 	input: HTMLInputElement,
 	anchor: HTMLElement
 ): void {
@@ -52,16 +52,16 @@ export function openDatePicker<T>(
 		},
 		onClose: () => {
 			// Capture editing cell info BEFORE canceling (cancelEdit clears it)
-			const editingCell = ctx.grid.editingCell
+			const editingCell = ctx.engine.editingCell
 			const colIndex = editingCell
-				? ctx.grid.columns.findIndex(c => String(c.field) === editingCell.field)
+				? ctx.engine.columns.findIndex(c => String(c.field) === editingCell.field)
 				: -1
 			const rowIndex = editingCell?.rowIndex ?? -1
 
 			ctx.datepicker = null
 			// Cancel edit mode (Escape or click outside without selecting)
 			clearEditingVisual(ctx)
-			ctx.grid.cancelEdit()
+			ctx.engine.cancelEdit()
 
 			// Re-render the cell to restore display mode content
 			if (rowIndex >= 0 && colIndex >= 0) {
@@ -86,7 +86,7 @@ export function openDatePicker<T>(
  * commit the edit (`commitEmptyRow` for Enter, not for Tab), then move focus.
  */
 export function handleDatePickerSelect<T>(
-	ctx: GridContext<T>,
+	ctx: GridHost<T>,
 	input: HTMLInputElement,
 	date: Date,
 	direction?: 'down' | 'next'
@@ -120,11 +120,11 @@ export function handleDatePickerSelect<T>(
  *                        (Enter-key behavior).
  */
 export async function commitDateEditor<T>(
-	ctx: GridContext<T>,
+	ctx: GridHost<T>,
 	input: HTMLInputElement,
 	commitEmptyRow: boolean = false
 ): Promise<void> {
-	if (!ctx.grid.editingCell) return
+	if (!ctx.engine.editingCell) return
 
 	const rowIndex = parseInt(input.dataset.row || '0', 10)
 	const field = input.dataset.field || ''
@@ -152,7 +152,7 @@ export async function commitDateEditor<T>(
 		}
 	}
 
-	await ctx.grid.commitEdit(rowIndex, field, value, commitEmptyRow)
+	await ctx.engine.commitEdit(rowIndex, field, value, commitEmptyRow)
 }
 
 /**

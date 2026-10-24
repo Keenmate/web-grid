@@ -17,7 +17,7 @@
 	</div>
 
 	<div class="fixture">
-		<h2>#grid2 — cancellation via fillDragCallback returning false</h2>
+		<h2>#grid2 — cancellation via beforeFillCallback returning false</h2>
 		<web-grid id="grid2" style="max-width: 720px; max-height: 280px;"></web-grid>
 		<div class="state-panel">fill log: <b data-testid="fill-log-2">none</b></div>
 	</div>
@@ -53,7 +53,7 @@
 		 *  - id is read-only; grid is in navigate mode so clicking a cell focuses it
 		 *    and the fill handle attaches at the cell's bottom-right corner.
 		 *  - #grid logs every fill into [data-testid="fill-log"].
-		 *  - #grid2's fillDragCallback returns false for the `status` column, writing
+		 *  - #grid2's beforeFillCallback returns false for the `status` column, writing
 		 *    "BLOCKED ..." to [data-testid="fill-log-2"]; any other column writes
 		 *    "ALLOWED ...".
 		 *  - status is a combobox so clicking the cell centre opens the dropdown —
@@ -96,7 +96,7 @@
 		grid.isEditable = true
 		grid.editTrigger = 'navigate'
 		const fillLog = document.querySelector('[data-testid="fill-log"]')
-		grid.fillDragCallback = (detail) => {
+		grid.beforeFillCallback = (detail) => {
 			fillLog.textContent =
 				`Fill operation: source "${detail.sourceCell.field}" = ${JSON.stringify(detail.sourceCell.value)}, ` +
 				`Direction: ${detail.direction}, Target cells: ${detail.targetCells.length} cells`
@@ -109,7 +109,7 @@
 		grid2.isEditable = true
 		grid2.editTrigger = 'navigate'
 		const fillLog2 = document.querySelector('[data-testid="fill-log-2"]')
-		grid2.fillDragCallback = (detail) => {
+		grid2.beforeFillCallback = (detail) => {
 			if (detail.sourceCell.field === 'status') {
 				fillLog2.textContent = `BLOCKED: cannot fill the status column`
 				return false

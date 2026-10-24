@@ -38,25 +38,25 @@ function executeSelectRow(ctx: ExecutorContext, action: SelectRowAction): void {
 	const { rowIndex, addToSelection, extendSelection } = action
 
 	// Clear other selection types
-	if (ctx.grid.selectedColumns.length > 0) {
-		ctx.grid.clearColumnSelection()
+	if (ctx.engine.selectedColumns.length > 0) {
+		ctx.engine.clearColumnSelection()
 	}
-	if (ctx.grid.selectedCellRange) {
-		ctx.grid.clearCellSelection()
+	if (ctx.engine.selectedCellRange) {
+		ctx.engine.clearCellSelection()
 		removeRangeBorder()
 		removeFillHandle()
 		updateCellRangeVisual(ctx)
 	}
 
-	if (extendSelection && ctx.grid.selectedRows.length > 0) {
+	if (extendSelection && ctx.engine.selectedRows.length > 0) {
 		// Extend selection from last selected row to this row
-		ctx.grid.selectRow(rowIndex, 'range')
+		ctx.engine.selectRow(rowIndex, 'range')
 	} else if (addToSelection) {
 		// Toggle this row in selection
-		ctx.grid.selectRow(rowIndex, 'toggle')
+		ctx.engine.selectRow(rowIndex, 'toggle')
 	} else {
 		// Single row selection (replace existing)
-		ctx.grid.selectRow(rowIndex, 'replace')
+		ctx.engine.selectRow(rowIndex, 'replace')
 	}
 
 	// Update visual
@@ -70,25 +70,25 @@ function executeSelectColumn(ctx: ExecutorContext, action: SelectColumnAction): 
 	const { colIndex, addToSelection, extendSelection } = action
 
 	// Clear other selection types
-	if (ctx.grid.selectedRows.length > 0) {
-		ctx.grid.clearSelection()
+	if (ctx.engine.selectedRows.length > 0) {
+		ctx.engine.clearSelection()
 	}
-	if (ctx.grid.selectedCellRange) {
-		ctx.grid.clearCellSelection()
+	if (ctx.engine.selectedCellRange) {
+		ctx.engine.clearCellSelection()
 		removeRangeBorder()
 		removeFillHandle()
 		updateCellRangeVisual(ctx)
 	}
 
-	if (extendSelection && ctx.grid.selectedColumns.length > 0) {
+	if (extendSelection && ctx.engine.selectedColumns.length > 0) {
 		// Extend selection from last selected column to this column
-		ctx.grid.selectColumn(colIndex, 'range')
+		ctx.engine.selectColumn(colIndex, 'range')
 	} else if (addToSelection) {
 		// Toggle this column in selection
-		ctx.grid.selectColumn(colIndex, 'toggle')
+		ctx.engine.selectColumn(colIndex, 'toggle')
 	} else {
 		// Single column selection (replace existing)
-		ctx.grid.selectColumn(colIndex, 'replace')
+		ctx.engine.selectColumn(colIndex, 'replace')
 	}
 
 	// Update visual
@@ -99,35 +99,35 @@ function executeSelectColumn(ctx: ExecutorContext, action: SelectColumnAction): 
  * Clear all selections
  */
 function executeClearSelection(ctx: ExecutorContext): void {
-	console.log('[clearSelection] rows:', ctx.grid.selectedRows.length,
-		'cols:', ctx.grid.selectedColumns.length,
-		'cellRange:', !!ctx.grid.selectedCellRange)
+	console.log('[clearSelection] rows:', ctx.engine.selectedRows.length,
+		'cols:', ctx.engine.selectedColumns.length,
+		'cellRange:', !!ctx.engine.selectedCellRange)
 	// Use _noRender variants to prevent requestUpdate() from triggering a full re-render
 	// which would replace DOM elements and lose focus (we handle visuals surgically below)
 
 	// Clear row selection
-	if (ctx.grid.selectedRows.length > 0) {
+	if (ctx.engine.selectedRows.length > 0) {
 		console.log('[clearSelection] clearing rows')
-		ctx.grid.clearSelection_noRender()
+		ctx.engine.clearSelection_noRender()
 		removeRowSelectionBorders()
 		updateRowSelectionVisual(ctx)
 	}
 
 	// Clear column selection
-	if (ctx.grid.selectedColumns.length > 0) {
+	if (ctx.engine.selectedColumns.length > 0) {
 		console.log('[clearSelection] clearing columns, removing visual classes')
-		ctx.grid.clearColumnSelection_noRender()
+		ctx.engine.clearColumnSelection_noRender()
 		removeColumnSelectionBorders()
 		updateColumnSelectionVisual(ctx)
-		console.log('[clearSelection] after clear, selectedColumns:', ctx.grid.selectedColumns.length)
+		console.log('[clearSelection] after clear, selectedColumns:', ctx.engine.selectedColumns.length)
 		// Verify DOM was updated
 		const remaining = ctx.shadow.querySelectorAll('.wg__header--selected')
 		console.log('[clearSelection] remaining header--selected elements:', remaining.length)
 	}
 
 	// Clear cell range selection
-	if (ctx.grid.selectedCellRange) {
-		ctx.grid.clearCellSelection_noRender()
+	if (ctx.engine.selectedCellRange) {
+		ctx.engine.clearCellSelection_noRender()
 		removeRangeBorder()
 		// Remove fill handle that was hidden by CSS while range border existed
 		// (without this, the old fill handle becomes visible at its stale position)
@@ -145,7 +145,7 @@ function updateRowSelectionVisual(ctx: ExecutorContext): void {
 	selectedRows.forEach(row => row.classList.remove('wg__row--selected'))
 
 	// Add class to selected rows
-	for (const rowIndex of ctx.grid.selectedRows) {
+	for (const rowIndex of ctx.engine.selectedRows) {
 		const row = ctx.shadow.querySelector(`tr[data-row="${rowIndex}"]`)
 		if (row) {
 			row.classList.add('wg__row--selected')
@@ -165,7 +165,7 @@ function updateColumnSelectionVisual(ctx: ExecutorContext): void {
 	selectedHeaders.forEach(header => header.classList.remove('wg__header--selected'))
 
 	// Add class to selected column cells and headers
-	for (const colIndex of ctx.grid.selectedColumns) {
+	for (const colIndex of ctx.engine.selectedColumns) {
 		const cells = ctx.shadow.querySelectorAll(`.wg__cell[data-col="${colIndex}"]`)
 		cells.forEach(cell => cell.classList.add('wg__cell--column-selected'))
 
@@ -185,7 +185,7 @@ function updateCellRangeVisual(ctx: ExecutorContext): void {
 	inRangeCells.forEach(cell => cell.classList.remove('wg__cell--in-range'))
 
 	// Add class to cells in range
-	const range = ctx.grid.selectedCellRange
+	const range = ctx.engine.selectedCellRange
 	if (!range) return
 
 	const { startRowIndex, endRowIndex, startColIndex, endColIndex } = range

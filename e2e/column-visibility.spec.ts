@@ -6,8 +6,8 @@ import { test, expect, Page, Locator } from '@playwright/test'
  * The fixture has one grid with six columns (id, name, email, department,
  * salary, phone). All initially visible. headerContextMenu includes the two
  * predefined items under test:
- *   - 'hideColumn'         hides the right-clicked column
- *   - 'columnVisibility'   submenu auto-built from grid.columns with a "Show
+ *   - 'hide-column'        hides the right-clicked column
+ *   - 'column-visibility'  submenu auto-built from grid.columns with a "Show
  *                          all" row plus one toggle per column
  *
  * Visible / hidden state is mirrored to two data-testid nodes by a
@@ -184,10 +184,10 @@ test.describe('column.isHidden via API', () => {
 })
 
 // =============================================================================
-// Predefined 'hideColumn' header context menu item
+// Built-in 'hide-column' header context menu item
 // =============================================================================
 
-test.describe("'hideColumn' header context menu item", () => {
+test.describe("'hide-column' header context menu item", () => {
 	test('appears in the menu and hides the right-clicked column when clicked', async ({ page }) => {
 		await rightClickHeader(page, 'salary')
 
@@ -217,10 +217,10 @@ test.describe("'hideColumn' header context menu item", () => {
 })
 
 // =============================================================================
-// Predefined 'columnVisibility' submenu
+// Built-in 'column-visibility' submenu
 // =============================================================================
 
-test.describe("'columnVisibility' submenu", () => {
+test.describe("'column-visibility' submenu", () => {
 	test('top-level submenu entry exists and is marked as having a submenu', async ({ page }) => {
 		await rightClickHeader(page, 'name')
 		const menu = page.locator('.wg-context-menu:not(.wg-context-menu--submenu)')
@@ -248,9 +248,9 @@ test.describe("'columnVisibility' submenu", () => {
 
 		// Seven rows: "Show all" + six column toggles.
 		await expect(submenu.locator('.wg-context-menu__item')).toHaveCount(7)
-		// Every per-column toggle should be in the "checked" state initially
+		// Every per-column toggle should be active (aria-pressed) initially
 		// (all columns visible). The icon character for checked is ☑.
-		const checkedToggles = submenu.locator('.wg-context-menu__item--toggle.wg-context-menu__item--checked')
+		const checkedToggles = submenu.locator('.wg-context-menu__item--toggle.wg-context-menu__item--active[data-action="toggle-column"][aria-pressed="true"]')
 		await expect(checkedToggles).toHaveCount(6)
 	})
 

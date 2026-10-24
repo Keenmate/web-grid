@@ -3,14 +3,11 @@
 // Floating toolbar with row actions
 // =============================================================================
 
-import type {
-	PredefinedToolbarItem,
-	RowToolbarConfig,
-	NormalizedToolbarItem,
-	ToolbarClickDetail
-} from '../../types.js'
-import type { GridContext } from '../grid-context.js'
+import type { GridHost } from '../grid-context.js'
+import type { GridAction, GridToolbarEntry, GridToolbarItem } from '../../interaction.js'
 import { computePosition, flip, shift, type Placement } from '@floating-ui/dom'
+import { isMenuDivider, resolveActionItem, type ResolvedActionItem } from '@keenmate/web-components-core/actions'
+import { normalizeEntry, rowActionDefaults } from '../items/index.js'
 
 // =============================================================================
 // Offset Helpers
@@ -52,222 +49,129 @@ let connectorState: ConnectorState = {
 }
 
 // =============================================================================
-// Predefined Action Definitions
+// Toolbar buttons (core action items)
 // =============================================================================
 
-// SVG icons for toolbar buttons (16x16 viewBox, stroke-based)
-const TOOLBAR_ICONS = {
-	add: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>',
-	delete: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3l10 10M13 3L3 13"/></svg>',
-	duplicate: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="8" height="8" rx="1"/><path d="M3 11V4a1 1 0 011-1h7"/></svg>',
-	moveUp: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V3M4 7l4-4 4 4"/></svg>',
-	moveDown: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v10M4 9l4 4 4-4"/></svg>'
-} as const
-
-const PREDEFINED_ACTIONS: Record<PredefinedToolbarItem, {
-	icon: string
-	title: string
-	danger?: boolean
-}> = {
-	add: { icon: TOOLBAR_ICONS.add, title: 'Add row' },
-	delete: { icon: TOOLBAR_ICONS.delete, title: 'Delete row', danger: true },
-	duplicate: { icon: TOOLBAR_ICONS.duplicate, title: 'Duplicate row' },
-	moveUp: { icon: TOOLBAR_ICONS.moveUp, title: 'Move up' },
-	moveDown: { icon: TOOLBAR_ICONS.moveDown, title: 'Move down' }
+/** One resolved toolbar button. */
+export type ToolbarButton<T> = {
+	item: GridToolbarItem<T>
+	resolved: ResolvedActionItem<GridAction>
+	/** Toolbar row, 1 = closest to the grid row. */
+	row: number
+	/** A divider entry precedes it in its toolbar row. */
+	isDividerBefore: boolean
 }
-
-// =============================================================================
-// Normalize Toolbar Items
-// =============================================================================
 
 /**
- * Convert toolbar config (strings or objects) to normalized items
+ * Resolve `rowToolbar`-style entries against a row / cell ctx: string shorthand
+ * expanded, built-in defaults applied, hidden items dropped. A divider marks the
+ * next visible item of the same toolbar row.
  */
-export function normalizeToolbarItems<T>(
-	config: RowToolbarConfig<T>[]
-): NormalizedToolbarItem<T>[] {
-	return config.map((item, index) => {
-		if (typeof item === 'string') {
-			// Predefined action shorthand
-			const predefined = PREDEFINED_ACTIONS[item]
-			if (!predefined) {
-				console.warn(`Unknown predefined toolbar action: ${item}`)
-				return null
-			}
-			return {
-				id: item,
-				icon: predefined.icon,
-				title: predefined.title,
-				row: 1,
-				group: 1,
-				type: item,
-				danger: predefined.danger
-			} as NormalizedToolbarItem<T>
+export function resolveToolbar<T>(
+	host: GridHost<T>,
+	entries: readonly GridToolbarEntry<T>[] | null | undefined,
+	ctx: { row?: T }
+): ToolbarButton<T>[] {
+	const out: ToolbarButton<T>[] = []
+	let pendingDivider = false
+	for (const raw of entries ?? []) {
+		const entry = normalizeEntry<GridToolbarItem<T> | { divider: true }>(raw as string | GridToolbarItem<T>)
+		if (isMenuDivider(entry)) {
+			pendingDivider = true
+			continue
 		}
-
-		// Full item object
-		return {
-			id: item.id || `toolbar-item-${index}`,
-			icon: item.icon,
-			title: item.title,
-			label: item.label,
-			row: item.row ?? 1,
-			group: item.group ?? 1,
-			type: item.type,
-			danger: item.danger,
-			disabled: item.disabled,
-			hidden: item.hidden,
-			onclick: item.onclick,
-			tooltip: item.tooltip,
-			tooltipCallback: item.tooltipCallback
-		} as NormalizedToolbarItem<T>
-	}).filter((item): item is NormalizedToolbarItem<T> => item !== null)
+		const item = entry as GridToolbarItem<T>
+		const resolved = resolveActionItem(item, ctx as never, rowActionDefaults(host, item.action, ctx))
+		if (!resolved.isVisible) continue
+		const row = item.row ?? 1
+		const prev = [...out].reverse().find(b => b.row === row)
+		out.push({ item, resolved, row, isDividerBefore: pendingDivider && !!prev })
+		pendingDivider = false
+	}
+	return out
 }
 
-// =============================================================================
-// Group Items by Row and Group
-// =============================================================================
-
-type GroupedItems<T> = {
-	rowNum: number
-	groups: { groupNum: number; items: NormalizedToolbarItem<T>[] }[]
-}[]
-
-function groupToolbarItems<T>(items: NormalizedToolbarItem<T>[]): GroupedItems<T> {
-	// Group by row number
-	const byRow = new Map<number, NormalizedToolbarItem<T>[]>()
-	for (const item of items) {
-		const row = item.row
-		if (!byRow.has(row)) byRow.set(row, [])
-		byRow.get(row)!.push(item)
-	}
-
-	// Sort rows ascending: row 1 first, row 2 second, etc.
-	// With CSS column-reverse, row 1 ends up at bottom (aligned with data row)
-	// and higher rows expand upward
-	const result: GroupedItems<T> = []
-	const sortedRows = [...byRow.keys()].sort((a, b) => a - b)
-
-	for (const rowNum of sortedRows) {
-		const rowItems = byRow.get(rowNum)!
-		const byGroup = new Map<number, NormalizedToolbarItem<T>[]>()
-
-		for (const item of rowItems) {
-			const group = item.group
-			if (!byGroup.has(group)) byGroup.set(group, [])
-			byGroup.get(group)!.push(item)
-		}
-
-		const sortedGroups = [...byGroup.keys()].sort((a, b) => a - b)
-		result.push({
-			rowNum,
-			groups: sortedGroups.map(groupNum => ({
-				groupNum,
-				items: byGroup.get(groupNum)!
-			}))
-		})
-	}
-
-	return result
+/** The key cell items override base items by: `id`, else the built-in `action`. */
+export function toolbarEntryKey<T>(entry: GridToolbarEntry<T>): string | null {
+	const e = normalizeEntry<GridToolbarItem<T> | { divider: true }>(entry as string | GridToolbarItem<T>)
+	if (isMenuDivider(e)) return null
+	const item = e as GridToolbarItem<T>
+	return item.id ?? item.action ?? null
 }
 
-// =============================================================================
-// Build Tooltip HTML
-// =============================================================================
+/** Max button count of any toolbar row (static — for sizing the inline actions column). */
+export function maxToolbarRowLength<T>(entries: readonly GridToolbarEntry<T>[] | null | undefined): number {
+	const perRow = new Map<number, number>()
+	for (const raw of entries ?? []) {
+		const e = normalizeEntry<GridToolbarItem<T> | { divider: true }>(raw as string | GridToolbarItem<T>)
+		if (isMenuDivider(e)) continue
+		const row = (e as GridToolbarItem<T>).row ?? 1
+		perRow.set(row, (perRow.get(row) ?? 0) + 1)
+	}
+	return Math.max(0, ...perRow.values())
+}
+
+function escapeAttr(text: string): string {
+	return text.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+
+/**
+ * One button. `data-action` (built-in name or `custom`) + `data-id` identify the item;
+ * `data-wg-index` points into the resolved list the click handler holds.
+ */
+export function renderToolbarButton<T>(button: ToolbarButton<T>, index: number, baseClass: string): string {
+	const r = button.resolved
+	const classes = [
+		baseClass,
+		r.isDanger ? `${baseClass}--danger` : '',
+		r.isActive ? `${baseClass}--active` : '',
+		r.isDisabled ? `${baseClass}--disabled` : '',
+		r.cssClass
+	].filter(Boolean).join(' ')
+	const text = escapeAttr(r.text)
+	const showText = !r.icon || button.item.isTextVisible === true
+	const labelHtml = showText && r.text ? `<span class="wg__toolbar-label">${text}</span>` : ''
+	const idAttr = r.id !== undefined ? ` data-id="${escapeAttr(r.id)}"` : ''
+	const pressed = r.isActive ? ' aria-pressed="true"' : ''
+	return `<button type="button" class="${classes}" data-action="${escapeAttr(r.action)}"${idAttr} data-wg-index="${index}" title="${text}" aria-label="${text}"${pressed}${r.isDisabled ? ' disabled' : ''}>${r.icon ?? ''}${labelHtml}</button>`
+}
 
 /**
  * Format a keyboard shortcut for display (e.g., "Ctrl+D" -> "Ctrl + D")
  */
 function formatShortcut(key: string): string {
-	// Add spaces around + for readability
 	return key.replace(/\+/g, ' + ')
 }
 
 /**
- * Build rich tooltip HTML for a toolbar item
- * @param item - The toolbar item
- * @param shortcutKey - Optional keyboard shortcut from rowShortcuts
+ * Rich tooltip for a toolbar button: the text as heading, `tooltip` as the
+ * description, and the shortcut (the item's, or a row shortcut's with the same id / action).
  */
-export function buildToolbarTooltipHtml<T>(
-	item: NormalizedToolbarItem<T>,
-	shortcutKey?: string
-): string {
-	const lines: string[] = []
-
-	// Title (always shown)
-	lines.push(`<span class="wg__tooltip-title">${item.title}</span>`)
-
-	// Description (if configured)
-	if (item.tooltip?.description) {
-		lines.push(`<div class="wg__tooltip-desc">${item.tooltip.description}</div>`)
-	}
-
-	// Keyboard shortcut (from tooltip config or rowShortcuts)
-	const shortcut = item.tooltip?.shortcut || shortcutKey
-	if (shortcut) {
-		lines.push(`<div class="wg__tooltip-shortcut">${formatShortcut(shortcut)}</div>`)
-	}
-
+export function buildToolbarTooltipHtml<T>(button: ToolbarButton<T>, shortcutKey?: string): string {
+	const r = button.resolved
+	const lines: string[] = [`<span class="wg__tooltip-title">${escapeAttr(r.text)}</span>`]
+	if (r.tooltip) lines.push(`<div class="wg__tooltip-desc">${r.tooltip}</div>`)
+	const shortcut = r.shortcut || shortcutKey
+	if (shortcut) lines.push(`<div class="wg__tooltip-shortcut">${formatShortcut(shortcut)}</div>`)
 	return lines.join('')
 }
 
-// =============================================================================
-// Render Toolbar HTML
-// =============================================================================
-
 /**
- * Render toolbar HTML for a specific row
+ * Render the floating toolbar for resolved buttons.
  * @param reverseRows - If true, reverse row order so Row 1 ends up at top visually
  *                      (CSS column-reverse makes last HTML row appear at top)
  */
-export function renderToolbarHTML<T>(
-	items: NormalizedToolbarItem<T>[],
-	row: T,
-	rowIndex: number,
-	reverseRows: boolean = false
-): string {
-	let grouped = groupToolbarItems(items)
-
-	// CSS uses column-reverse, so last row in HTML appears at top visually
-	// Reverse when we want Row 1 at top (for 'bottom' and 'center' alignments)
-	if (reverseRows) {
-		grouped = grouped.reverse()
-	}
-
-	const rowsHtml = grouped.map(({ groups }) => {
-		const groupsHtml = groups.map(({ items: groupItems }, groupIdx) => {
-			const divider = groupIdx > 0 ? '<div class="wg__toolbar-divider"></div>' : ''
-
-			const buttonsHtml = groupItems.map(item => {
-				const isDisabled = typeof item.disabled === 'function'
-					? item.disabled(row, rowIndex)
-					: item.disabled
-
-				const classes = [
-					'wg__toolbar-btn',
-					item.danger ? 'wg__toolbar-btn--danger' : ''
-				].filter(Boolean).join(' ')
-
-				const labelHtml = item.label
-					? `<span class="wg__toolbar-label">${item.label}</span>`
-					: ''
-
-				const styleAttr = item.minWidth ? ` style="min-width: ${item.minWidth}"` : ''
-
-				return `<button
-					class="${classes}"
-					data-toolbar-item="${item.id}"
-					title="${item.title}"
-					${isDisabled ? 'disabled' : ''}${styleAttr}
-				>${item.icon}${labelHtml}</button>`
-			}).join('')
-
-			return divider + buttonsHtml
+export function renderToolbarHTML<T>(buttons: ToolbarButton<T>[], reverseRows: boolean = false): string {
+	const rowNums = [...new Set(buttons.map(b => b.row))].sort((a, b) => a - b)
+	if (reverseRows) rowNums.reverse()
+	const rowsHtml = rowNums.map(rowNum => {
+		const html = buttons.map((b, i) => {
+			if (b.row !== rowNum) return ''
+			const divider = b.isDividerBefore ? '<div class="wg__toolbar-divider"></div>' : ''
+			return divider + renderToolbarButton(b, i, 'wg__toolbar-btn')
 		}).join('')
-
-		return `<div class="wg__toolbar-row">${groupsHtml}</div>`
+		return `<div class="wg__toolbar-row">${html}</div>`
 	}).join('')
-
 	return `<div class="wg__toolbar">${rowsHtml}</div>`
 }
 
@@ -280,6 +184,7 @@ let activeToolbar: {
 	toolbar: HTMLElement
 	rowIndex: number
 	rowItem: unknown  // Reference to the actual data item
+	buttons: ToolbarButton<any>[]  // The rendered buttons (swapped by a cell toolbar)
 	position: 'left' | 'right' | 'top'
 	hasRowMoved: boolean
 	cursorX?: number  // Store cursor X for connector in 'cursor' mode
@@ -290,12 +195,12 @@ let activeToolbar: {
  * Open toolbar for a specific row
  */
 export function openToolbar<T>(
-	ctx: GridContext<T>,
+	ctx: GridHost<T>,
 	rowElement: HTMLElement,
 	rowIndex: number,
-	items: NormalizedToolbarItem<T>[],
+	buttons: ToolbarButton<T>[],
 	row: T,
-	onItemClick: (item: NormalizedToolbarItem<T>, event: MouseEvent, triggerElement: HTMLElement) => void,
+	onItemClick: (button: ToolbarButton<T>, event: MouseEvent, triggerElement: HTMLElement) => void,
 	cursorX?: number  // For 'cursor' mode positioning
 ): void {
 	// Close any existing toolbar
@@ -304,21 +209,21 @@ export function openToolbar<T>(
 	// CSS uses column-reverse, so Row 1 in HTML ends up at BOTTOM visually
 	// For 'bottom' (toolbar top at row level), we need Row 1 at TOP → reverse
 	// For 'top' (toolbar bottom at row level), Row 1 at BOTTOM is correct → no reverse
-	const reverseRows = ctx.grid.toolbarVerticalAlign !== 'top'
-	const html = renderToolbarHTML(items, row, rowIndex, reverseRows)
+	const reverseRows = ctx.engine.toolbarVerticalAlign !== 'top'
+	const html = renderToolbarHTML(buttons, reverseRows)
 
 	// Create container - append to shadow root to stay in same DOM context as rowElement
 	const container = document.createElement('div')
 	container.className = 'wg__toolbar-container'
-	if (ctx.grid.toolbarBtnMinWidth) {
-		container.style.setProperty('--wg-toolbar-btn-min-width', ctx.grid.toolbarBtnMinWidth)
+	if (ctx.engine.toolbarBtnMinWidth) {
+		container.style.setProperty('--wg-toolbar-btn-min-width', ctx.engine.toolbarBtnMinWidth)
 	}
 	container.innerHTML = html
 	ctx.shadow.appendChild(container)
 
 	const toolbar = container.querySelector('.wg__toolbar') as HTMLElement
 	// Initialize position based on preferred position (will be updated by computePosition if it flips)
-	const preferredPos = ctx.grid.toolbarPosition
+	const preferredPos = ctx.engine.toolbarPosition
 	let toolbarPosition: 'left' | 'right' | 'top' =
 		preferredPos === 'top' ? 'top' :
 		preferredPos === 'right' ? 'right' : 'left'
@@ -337,9 +242,9 @@ export function openToolbar<T>(
 		}
 
 		// Determine placement based on toolbarPosition preference
-		const preferredPosition = ctx.grid.toolbarPosition
-		const verticalAlign = ctx.grid.toolbarVerticalAlign
-		const horizontalAlign = ctx.grid.toolbarHorizontalAlign
+		const preferredPosition = ctx.engine.toolbarPosition
+		const verticalAlign = ctx.engine.toolbarVerticalAlign
+		const horizontalAlign = ctx.engine.toolbarHorizontalAlign
 
 		// Build placement string for floating-ui
 		// For left/right: suffix determines vertical alignment
@@ -385,7 +290,7 @@ export function openToolbar<T>(
 		// Handle column-based or cursor-based positioning for top position
 		// Only apply these anchor modes when toolbarPosition is explicitly 'top'
 		let anchor: Element | { getBoundingClientRect: () => DOMRect } = freshRow
-		const toolbarColumn = ctx.grid.toolbarColumn
+		const toolbarColumn = ctx.engine.toolbarColumn
 
 		if (preferredPosition === 'top') {
 			// Priority 1: toolbarColumn - position over a specific column
@@ -453,15 +358,15 @@ export function openToolbar<T>(
 		}).then(({ x, y, placement: finalPlacement }) => {
 			let initialX = x
 
-			// When followsCursor or cellToolbar is active with top placement,
+			// When followsCursor or a cell toolbar is active with top placement,
 			// compute cell-based X position to avoid flash on row boundaries.
 			// Skip when toolbarColumn is set — floating-ui already computed correct X from the column anchor.
-			if ((ctx.grid.shouldToolbarFollowCursor || ctx.grid.cellToolbar) && finalPlacement.startsWith('top') && cursorX !== undefined && ctx.grid.toolbarColumn === undefined) {
+			if ((ctx.engine.shouldToolbarFollowCursor || ctx.engine.getCellToolbarItemsCallback) && finalPlacement.startsWith('top') && cursorX !== undefined && ctx.engine.toolbarColumn === undefined) {
 				const cells = freshRow.querySelectorAll('.wg__cell:not(.wg__row-number):not(.wg__inline-actions-cell)')
 				for (const cell of cells) {
 					const cellRect = cell.getBoundingClientRect()
 					if (cursorX >= cellRect.left && cursorX <= cellRect.right) {
-						initialX = resolveToolbarOffset(cellRect, ctx.grid.cellToolbarOffset)
+						initialX = resolveToolbarOffset(cellRect, ctx.engine.cellToolbarOffset)
 						break
 					}
 				}
@@ -486,15 +391,12 @@ export function openToolbar<T>(
 		})
 	})
 
-	// Handle button clicks
+	// Handle button clicks — reads the CURRENT buttons (a cell toolbar swaps them)
 	const handleClick = (e: MouseEvent) => {
 		const btn = (e.target as HTMLElement).closest('.wg__toolbar-btn') as HTMLButtonElement
-		if (btn && !btn.disabled) {
-			const itemId = btn.dataset.toolbarItem || ''
-			const item = items.find(i => i.id === itemId)
-			if (item) {
-				onItemClick(item, e, btn)
-			}
+		if (btn && !btn.disabled && activeToolbar) {
+			const button = activeToolbar.buttons[Number(btn.dataset.wgIndex)] as ToolbarButton<T> | undefined
+			if (button) onItemClick(button, e, btn)
 		}
 	}
 
@@ -506,6 +408,7 @@ export function openToolbar<T>(
 		toolbar,
 		rowIndex,
 		rowItem: row,
+		buttons,
 		position: toolbarPosition,
 		hasRowMoved: false,
 		cursorX,
@@ -574,6 +477,11 @@ export function getActiveToolbar(): { toolbar: HTMLElement; container: HTMLEleme
 	return { toolbar: activeToolbar.toolbar, container: activeToolbar.container }
 }
 
+/** Replace the active toolbar's buttons (a cell toolbar swapped its items in). */
+export function setActiveToolbarButtons<T>(buttons: ToolbarButton<T>[]): void {
+	if (activeToolbar) activeToolbar.buttons = buttons
+}
+
 /**
  * Update toolbar position (for mouse-following mode)
  * @param targetX - Target X position
@@ -610,80 +518,12 @@ export function updateToolbarPosition(targetX: number, rowElement: HTMLElement, 
 }
 
 /**
- * Update toolbar items without closing/reopening
- * @returns true if items changed and were updated
- */
-export function updateToolbarItems<T>(
-	items: NormalizedToolbarItem<T>[],
-	row: T,
-	rowIndex: number,
-	reverseRows: boolean,
-	onItemClick: (item: NormalizedToolbarItem<T>) => void
-): boolean {
-	if (!activeToolbar) return false
-
-	const container = activeToolbar.container
-	const oldToolbar = activeToolbar.toolbar
-
-	// Generate new HTML
-	const html = renderToolbarHTML(items, row, rowIndex, reverseRows)
-
-	// Create temporary element to parse new content
-	const temp = document.createElement('div')
-	temp.innerHTML = html
-	const newToolbar = temp.querySelector('.wg__toolbar') as HTMLElement
-
-	if (!newToolbar) return false
-
-	// Copy position styles from old toolbar
-	newToolbar.style.position = oldToolbar.style.position
-	newToolbar.style.left = oldToolbar.style.left
-	newToolbar.style.top = oldToolbar.style.top
-	newToolbar.style.visibility = oldToolbar.style.visibility
-
-	// Replace old toolbar with new one
-	oldToolbar.replaceWith(newToolbar)
-
-	// Update click handler
-	const handleClick = (e: MouseEvent) => {
-		const btn = (e.target as HTMLElement).closest('.wg__toolbar-btn') as HTMLButtonElement
-		if (btn && !btn.disabled) {
-			const itemId = btn.dataset.toolbarItem || ''
-			const item = items.find(i => i.id === itemId)
-			if (item) {
-				onItemClick(item)
-			}
-		}
-	}
-
-	// Remove old click listener and add new one
-	container.replaceWith(container.cloneNode(true) as HTMLElement)
-	const newContainer = activeToolbar.container.getRootNode() === document
-		? document.querySelector('.wg__toolbar-container') as HTMLElement
-		: (activeToolbar.container.getRootNode() as ShadowRoot).querySelector('.wg__toolbar-container') as HTMLElement
-
-	if (newContainer) {
-		newContainer.addEventListener('click', handleClick)
-
-		// Update activeToolbar reference
-		activeToolbar.toolbar = newContainer.querySelector('.wg__toolbar') as HTMLElement
-		activeToolbar.container = newContainer
-		activeToolbar.cleanup = () => {
-			newContainer.removeEventListener('click', handleClick)
-			newContainer.remove()
-		}
-	}
-
-	return true
-}
-
-/**
  * Update connector path after row has moved
  * Call this after a moveUp/moveDown action to draw the bracket-shaped connector
  * The connector is clipped at grid container boundaries
  */
 export function updateConnector<T>(
-	ctx: GridContext<T>,
+	ctx: GridHost<T>,
 	displayItems: T[]
 ): void {
 	if (!activeToolbar) {

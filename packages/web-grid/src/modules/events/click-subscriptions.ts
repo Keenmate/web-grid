@@ -14,7 +14,7 @@
 //    and forces a render. Suppressed during an active column reorder drag
 //    (drop-as-sort-trigger would be confusing).
 
-import type { GridContext } from '../grid-context.js'
+import type { GridHost } from '../grid-context.js'
 import type { ClickContext } from '../click-events/index.js'
 import { removeDropdown } from '../dropdown/index.js'
 import { clearEditingVisual } from '../navigation/index.js'
@@ -27,35 +27,35 @@ import { handleSortClick } from './sort.js'
 /**
  * outsideClick subscription body — tear-down on click outside the grid.
  */
-export function handleOutsideClick<T>(ctx: GridContext<T>): void {
+export function handleOutsideClick<T>(ctx: GridHost<T>): void {
 	let needsRender = false
 
 	// Clear focused cell state FIRST (before renderCell rebuilds it with focused class)
-	if (ctx.grid.focusedCell) {
-		const { rowIndex, colIndex } = ctx.grid.focusedCell
+	if (ctx.engine.focusedCell) {
+		const { rowIndex, colIndex } = ctx.engine.focusedCell
 		const cell = ctx.shadow.querySelector(
 			`.wg__cell[data-row="${rowIndex}"][data-col="${colIndex}"]`
 		)
 		cell?.classList.remove('wg__cell--focused', 'wg__cell--always-edit-focused')
-		ctx.grid.clearFocusedCell()
+		ctx.engine.clearFocusedCell()
 	}
 
 	// Clear row focus
-	if (ctx.grid.focusedRowIndex !== null) {
-		ctx.grid.clearRowFocus()
+	if (ctx.engine.focusedRowIndex !== null) {
+		ctx.engine.clearRowFocus()
 		needsRender = true
 	}
 
 	// Close dropdown and cancel edit if editing
-	if (ctx.dropdown.isOpen || ctx.grid.editingCell) {
-		const oldEditingCell = ctx.grid.editingCell
+	if (ctx.dropdown.isOpen || ctx.engine.editingCell) {
+		const oldEditingCell = ctx.engine.editingCell
 		const oldColIndex = oldEditingCell
-			? ctx.grid.columns.findIndex(c => String(c.field) === oldEditingCell.field)
+			? ctx.engine.columns.findIndex(c => String(c.field) === oldEditingCell.field)
 			: -1
 
 		removeDropdown(ctx)
 		clearEditingVisual(ctx)
-		ctx.grid.cancelEdit()
+		ctx.engine.cancelEdit()
 
 		// Re-render old cell to restore display mode (now without focused class)
 		if (oldEditingCell && oldColIndex >= 0) {
@@ -63,17 +63,17 @@ export function handleOutsideClick<T>(ctx: GridContext<T>): void {
 		}
 	}
 
-	if (ctx.grid.selectedCellRange) {
-		ctx.grid.clearCellSelection()
+	if (ctx.engine.selectedCellRange) {
+		ctx.engine.clearCellSelection()
 		removeRangeBorder()
 		needsRender = true
 	}
-	if (ctx.grid.selectedRows.length > 0) {
-		ctx.grid.clearSelection()
+	if (ctx.engine.selectedRows.length > 0) {
+		ctx.engine.clearSelection()
 		needsRender = true
 	}
-	if (ctx.grid.selectedColumns.length > 0) {
-		ctx.grid.clearColumnSelection()
+	if (ctx.engine.selectedColumns.length > 0) {
+		ctx.engine.clearColumnSelection()
 		needsRender = true
 	}
 	if (needsRender) {
@@ -87,22 +87,22 @@ export function handleOutsideClick<T>(ctx: GridContext<T>): void {
  * fire unexpectedly).
  */
 export function handleSortClickSubscription<T>(
-	ctx: GridContext<T>,
+	ctx: GridHost<T>,
 	subCtx: ClickContext
 ): void {
 	// Skip if reordering was just performed (prevents sort on drop)
 	if (isReordering()) return
 	// Clear all selections when sorting
-	if (ctx.grid.selectedCellRange) {
-		ctx.grid.clearCellSelection()
+	if (ctx.engine.selectedCellRange) {
+		ctx.engine.clearCellSelection()
 		removeRangeBorder()
 	}
-	if (ctx.grid.selectedRows.length > 0) {
-		ctx.grid.clearSelection()
+	if (ctx.engine.selectedRows.length > 0) {
+		ctx.engine.clearSelection()
 		removeRowSelectionBorders()
 	}
-	if (ctx.grid.selectedColumns.length > 0) {
-		ctx.grid.clearColumnSelection()
+	if (ctx.engine.selectedColumns.length > 0) {
+		ctx.engine.clearColumnSelection()
 		removeColumnSelectionBorders()
 	}
 	// Pass field directly - subCtx.event.target is retargeted when crossing shadow DOM.

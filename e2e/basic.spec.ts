@@ -276,13 +276,13 @@ test.describe('sort cycle', () => {
 })
 
 test.describe('cell formatting & class callbacks', () => {
-	test('formatCallback renders salary with $ and thousand separators', async ({ page }) => {
+	test('getDisplayValueCallback renders salary with $ and thousand separators', async ({ page }) => {
 		await gotoBasic(page)
 		// Alice (row 0) has salary 85000 — formatted as "$85,000".
 		await expect(cell(page, 0, COL.salary)).toContainText('$85,000')
 	})
 
-	test('cellClassCallback adds salary-high class for salaries ≥ 90000', async ({ page }) => {
+	test('getCellClassCallback adds salary-high class for salaries ≥ 90000', async ({ page }) => {
 		await gotoBasic(page)
 		// Carol (row 2, salary 92000) is highlighted; Alice (row 0, 85000) is not.
 		await expect(cell(page, 2, COL.salary)).toHaveClass(/(^|\s)salary-high(\s|$)/)
@@ -355,14 +355,14 @@ test.describe('feature toggles', () => {
 })
 
 test.describe('row focus event', () => {
-	test('keyboard navigation updates the focused-row hook via onrowfocus', async ({ page }) => {
+	test('keyboard navigation updates the focused-row hook via onRowFocus', async ({ page }) => {
 		await gotoBasic(page)
 
 		// Initially "none".
 		await expect(page.locator('[data-testid="focused-row"]')).toHaveText('none')
 
 		// Click to land focus, then arrow-down twice to row 2 (Carol). Arrow keys
-		// fire onrowfocus reliably; a plain click can race with the grid's pending
+		// fire onRowFocus reliably; a plain click can race with the grid's pending
 		// cell-selection state.
 		await cell(page, 0, COL.name).click()
 		await page.keyboard.press('ArrowDown')

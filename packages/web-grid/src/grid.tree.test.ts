@@ -4,7 +4,7 @@
 // =============================================================================
 
 import { describe, it, expect, beforeEach } from 'vitest'
-import { WebGrid } from './grid.js'
+import { GridEngine } from './grid.js'
 import type { Column } from './types.js'
 
 type OrgRow = { path: string; name: string }
@@ -20,8 +20,8 @@ const orgRows: OrgRow[] = [
 	{ path: '1.2',       name: 'Sales' }
 ]
 
-function makeOrgGrid(): WebGrid<OrgRow> {
-	const grid = new WebGrid<OrgRow>()
+function makeOrgGrid(): GridEngine<OrgRow> {
+	const grid = new GridEngine<OrgRow>()
 	grid.items = orgRows
 	grid.columns = [{ field: 'name', isTree: true } as Column<OrgRow>]
 	grid.treePathMember = 'path'
@@ -30,7 +30,7 @@ function makeOrgGrid(): WebGrid<OrgRow> {
 
 describe('isTreeMode', () => {
 	it('is true only when treePathMember is set AND items produce a tree index', () => {
-		const grid = new WebGrid<OrgRow>()
+		const grid = new GridEngine<OrgRow>()
 		expect(grid.isTreeMode).toBe(false)
 		grid.items = orgRows
 		grid.columns = [{ field: 'name', isTree: true } as Column<OrgRow>]
@@ -41,14 +41,14 @@ describe('isTreeMode', () => {
 })
 
 describe('getRowTreeInfo', () => {
-	let grid: WebGrid<OrgRow>
+	let grid: GridEngine<OrgRow>
 
 	beforeEach(() => {
 		grid = makeOrgGrid()
 	})
 
 	it('returns null in non-tree mode', () => {
-		const flat = new WebGrid<OrgRow>()
+		const flat = new GridEngine<OrgRow>()
 		flat.items = orgRows
 		expect(flat.getRowTreeInfo(orgRows[0])).toBeNull()
 	})
@@ -79,7 +79,7 @@ describe('getRowTreeInfo', () => {
 
 describe('separator auto-detection', () => {
 	it('detects "/" for filesystem-style paths', () => {
-		const grid = new WebGrid<FsRow>()
+		const grid = new GridEngine<FsRow>()
 		grid.items = [
 			{ path: '/src', kind: 'folder' },
 			{ path: '/src/components', kind: 'folder' },
@@ -93,7 +93,7 @@ describe('separator auto-detection', () => {
 	})
 
 	it('honors explicit treeSeparator when provided', () => {
-		const grid = new WebGrid<{ path: string }>()
+		const grid = new GridEngine<{ path: string }>()
 		grid.items = [
 			{ path: 'a' },
 			{ path: 'a|b' },
@@ -108,7 +108,7 @@ describe('separator auto-detection', () => {
 })
 
 describe('expandedPaths state', () => {
-	let grid: WebGrid<OrgRow>
+	let grid: GridEngine<OrgRow>
 
 	beforeEach(() => {
 		grid = makeOrgGrid()
@@ -128,18 +128,44 @@ describe('expandedPaths state', () => {
 		expect(grid.isPathExpanded('1.1')).toBe(false)
 	})
 
-	it('toggleExpandedPath fires onexpandedpathschange with the path and new state', () => {
-		const events: { path: string; expanded: boolean }[] = []
-		grid.onexpandedpathschange = ({ path, expanded }) => events.push({ path, expanded })
+	function captureExpandChanges(): { path: string | null; isExpanded: boolean }[] {
+		const events: { path: string | null; isExpanded: boolean }[] = []
+		grid.attachHost(document.createElement('div'), () => ({}) as never, (name, d) => {
+			if (name === 'expand-change') {
+				const { path, isExpanded } = d as { path: string | null; isExpanded: boolean }
+				events.push({ path, isExpanded })
+			}
+		})
+		return events
+	}
+
+	it('toggleExpandedPath fires expand-change with the path and new state', () => {
+		const events = captureExpandChanges()
 
 		grid.toggleExpandedPath('1.1')
 		grid.toggleExpandedPath('1.1.1')
 		grid.toggleExpandedPath('1.1')
 
 		expect(events).toEqual([
-			{ path: '1.1',   expanded: true },
-			{ path: '1.1.1', expanded: true },
-			{ path: '1.1',   expanded: false }
+			{ path: '1.1',   isExpanded: true },
+			{ path: '1.1.1', isExpanded: true },
+			{ path: '1.1',   isExpanded: false }
+		])
+	})
+
+	it('expand / collapse all and subtree also fire expand-change', () => {
+		const events = captureExpandChanges()
+
+		grid.expandSubtree('1.1')
+		grid.collapseSubtree('1.1')
+		grid.expandAll()
+		grid.collapseAll()
+
+		expect(events).toEqual([
+			{ path: '1.1', isExpanded: true },
+			{ path: '1.1', isExpanded: false },
+			{ path: null,  isExpanded: true },
+			{ path: null,  isExpanded: false }
 		])
 	})
 
@@ -158,7 +184,7 @@ describe('expandedPaths state', () => {
 })
 
 describe('findNearestExpandedAncestor', () => {
-	let grid: WebGrid<OrgRow>
+	let grid: GridEngine<OrgRow>
 
 	beforeEach(() => {
 		grid = makeOrgGrid()
@@ -189,7 +215,7 @@ describe('findNearestExpandedAncestor', () => {
 })
 
 describe('expandSubtree / collapseSubtree (per-row variants)', () => {
-	let grid: WebGrid<OrgRow>
+	let grid: GridEngine<OrgRow>
 
 	beforeEach(() => {
 		grid = makeOrgGrid()

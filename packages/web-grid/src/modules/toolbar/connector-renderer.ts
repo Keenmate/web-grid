@@ -10,7 +10,7 @@
 // overlay (pointer-events: none, z-index: 999). Previous connector elements
 // are removed before re-painting so repeated render calls don't pile up.
 
-import type { GridContext } from '../grid-context.js'
+import type { GridHost } from '../grid-context.js'
 import { getConnectorState } from './index.js'
 
 /**
@@ -18,7 +18,7 @@ import { getConnectorState } from './index.js'
  * when the upstream state doesn't have a path or arrow position — i.e.
  * the toolbar isn't anchored to a row.
  */
-export function renderConnector<T>(ctx: GridContext<T>): void {
+export function renderConnector<T>(ctx: GridHost<T>): void {
 	// Remove any existing connector
 	const existingConnector = ctx.shadow.querySelector('.wg__connector')
 	if (existingConnector) {

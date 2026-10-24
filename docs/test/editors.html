@@ -38,7 +38,7 @@
 		 *  - id is read-only; editing starts on F2/Space (navigate mode).
 		 *  - status options are ordered Active, Inactive, On Leave — ArrowDown twice
 		 *    from Active lands on On Leave.
-		 *  - notes uses editor:'custom' + cellEditCallback that opens window.prompt.
+		 *  - notes uses editor:'custom' + renderEditorCallback that opens window.prompt.
 		 *  - protected renders ✅/❌ via formatCallback; Eva (row 4) is protected.
 		 *  - the context menu's "Delete row" is disabled when row.protected is true,
 		 *    and the protect/unprotect label flips on row.protected.
@@ -96,7 +96,7 @@
 				title: 'Notes (custom)',
 				width: '150px',
 				editor: 'custom',
-				cellEditCallback: (context) => {
+				renderEditorCallback: (context) => {
 					logEvent('Custom Editor', `opened for ${context.field} (row ${context.rowIndex + 1})`)
 					const newValue = prompt('Edit notes:', context.value || '')
 					if (newValue !== null) {
@@ -114,7 +114,7 @@
 				width: '80px',
 				horizontalAlign: 'center',
 				editor: 'checkbox',
-				formatCallback: (val) => val ? '✅' : '❌'
+				getDisplayValueCallback: ({ value: val }) => val ? '✅' : '❌'
 			}
 		]
 
@@ -128,54 +128,54 @@
 		grid.contextMenu = [
 			{
 				id: 'copy',
-				label: 'Copy value',
+				text: 'Copy value',
 				icon: '📋',
-				onclick: (ctx) => {
-					navigator.clipboard.writeText(String(ctx.cellValue || ''))
-					logEvent('Copy', `"${ctx.cellValue}" copied to clipboard`)
+				onClick: (ctx) => {
+					navigator.clipboard.writeText(String(ctx.value || ''))
+					logEvent('Copy', `"${ctx.value}" copied to clipboard`)
 				}
 			},
 			{
 				id: 'edit',
-				label: (ctx) => `Edit ${ctx.column.field}`,
+				getTextCallback: (ctx) => `Edit ${ctx.column.field}`,
 				icon: '✏️',
-				onclick: (ctx) => {
-					logEvent('Edit', `requested for ${ctx.column.field} = "${ctx.cellValue}"`)
+				onClick: (ctx) => {
+					logEvent('Edit', `requested for ${ctx.column.field} = "${ctx.value}"`)
 				}
 			},
+			{ divider: true },
 			{
 				id: 'view-row',
-				label: 'View row details',
-				dividerBefore: true,
-				onclick: (ctx) => {
+				text: 'View row details',
+				onClick: (ctx) => {
 					logEvent('View', `row ${ctx.rowIndex + 1} details`)
 				}
 			},
 			{
 				id: 'toggle-protection',
-				label: (ctx) => ctx.row.protected ? 'Unprotect row' : 'Protect row',
-				icon: (ctx) => ctx.row.protected ? '🔓' : '🔒',
-				onclick: (ctx) => {
+				getTextCallback: (ctx) => ctx.row.protected ? 'Unprotect row' : 'Protect row',
+				getIconCallback: (ctx) => ctx.row.protected ? '🔓' : '🔒',
+				onClick: (ctx) => {
 					ctx.row.protected = !ctx.row.protected
 					grid.items = [...grid.items]
 					logEvent('Toggle', `row ${ctx.rowIndex + 1} protection: ${ctx.row.protected}`)
 				}
 			},
+			{ divider: true },
 			{
 				id: 'delete',
-				label: 'Delete row',
+				text: 'Delete row',
 				icon: '🗑️',
-				danger: true,
-				dividerBefore: true,
-				disabled: (ctx) => ctx.row.protected,
-				onclick: (ctx) => {
+				isDanger: true,
+				getIsDisabledCallback: (ctx) => ctx.row.protected,
+				onClick: (ctx) => {
 					grid.items = grid.items.filter(item => item.id !== ctx.row.id)
 					logEvent('Delete', `row ${ctx.rowIndex + 1} (${ctx.row.name}) deleted`)
 				}
 			}
 		]
 
-		grid.oncontextmenuopen = (ctx) => {
+		grid.beforeContextMenuOpenCallback = (ctx) => {
 			logEvent('Context Menu', `opened at row ${ctx.rowIndex + 1}, column "${ctx.column.field}"`)
 		}
 	</script>

@@ -3,7 +3,7 @@
 // Centralized function to update a single cell's DOM without full re-render
 // =============================================================================
 
-import type { GridContext } from '../grid-context.js'
+import type { GridHost } from '../grid-context.js'
 import { renderCellEditor } from '../editing/index.js'
 import { renderCellDisplay } from './display.js'
 import { wrapTreeCell } from './tree-render.js'
@@ -27,12 +27,12 @@ export type RenderCellOptions = {
  * - Editor focus and cursor positioning
  */
 export function renderCell<T>(
-	ctx: GridContext<T>,
+	ctx: GridHost<T>,
 	rowIndex: number,
 	colIndex: number,
 	options: RenderCellOptions = {}
 ): void {
-	const column = ctx.grid.columns[colIndex]
+	const column = ctx.engine.columns[colIndex]
 	if (!column) return
 
 	const cell = ctx.shadow.querySelector(
@@ -41,24 +41,24 @@ export function renderCell<T>(
 	if (!cell) return
 
 	const field = String(column.field)
-	const item = ctx.grid.displayItems[rowIndex]
+	const item = ctx.engine.displayItems[rowIndex]
 	if (!item) return
 
 	// Determine cell state
-	const shouldShowEditor = ctx.grid.shouldShowEditor(rowIndex, colIndex)
-	const isActivelyEditing = ctx.grid.isEditing(rowIndex, field)  // Only the ONE tracked cell
-	const isFocused = ctx.grid.isCellFocused(rowIndex, colIndex)
+	const shouldShowEditor = ctx.engine.shouldShowEditor(rowIndex, colIndex)
+	const isActivelyEditing = ctx.engine.isEditing(rowIndex, field)  // Only the ONE tracked cell
+	const isFocused = ctx.engine.isCellFocused(rowIndex, colIndex)
 	// Use canEditCell to check both column editability AND row locking
-	const isEditable = ctx.grid.canEditCell(rowIndex, field)
-	const isInvalid = ctx.grid.isCellInvalid(rowIndex, field)
+	const isEditable = ctx.engine.canEditCell(rowIndex, field)
+	const isInvalid = ctx.engine.isCellInvalid(rowIndex, field)
 
 	// Find visual index for frozen column checks
-	const visualIndex = ctx.grid.visualColumns.findIndex(vc => vc.originalIndex === colIndex)
-	const isFrozen = visualIndex >= 0 && ctx.grid.isColumnFrozen(visualIndex)
-	const isLastFrozen = isFrozen && visualIndex === ctx.grid.totalFrozenColumns - 1
+	const visualIndex = ctx.engine.visualColumns.findIndex(vc => vc.originalIndex === colIndex)
+	const isFrozen = visualIndex >= 0 && ctx.engine.isColumnFrozen(visualIndex)
+	const isLastFrozen = isFrozen && visualIndex === ctx.engine.totalFrozenColumns - 1
 
 	// Determine if this is 'always' editTrigger mode
-	const effectiveTrigger = column.editTrigger ?? ctx.grid.editTrigger
+	const effectiveTrigger = column.editTrigger ?? ctx.engine.editTrigger
 
 	// Build class list
 	const classes = ['wg__cell']
@@ -70,17 +70,16 @@ export function renderCell<T>(
 	if (column.maxLines) classes.push('wg__cell--line-clamp')
 	if (isActivelyEditing) classes.push('wg__cell--editing')
 	if (isInvalid) classes.push('wg__cell--invalid')
-	if (ctx.grid.isDirtyIndicatorVisible && ctx.grid.isCellDirty(rowIndex, field)) {
+	if (ctx.engine.isDirtyIndicatorVisible && ctx.engine.isCellDirty(rowIndex, field)) {
 		classes.push('wg__cell--dirty')
 	}
-	if (visualIndex >= 0 && ctx.grid.isCellInSelectedRange(rowIndex, visualIndex)) classes.push('wg__cell--in-range')
-	if (visualIndex >= 0 && ctx.grid.isColumnSelected(visualIndex)) classes.push('wg__cell--column-selected')
+	if (visualIndex >= 0 && ctx.engine.isCellInSelectedRange(rowIndex, visualIndex)) classes.push('wg__cell--in-range')
+	if (visualIndex >= 0 && ctx.engine.isColumnSelected(visualIndex)) classes.push('wg__cell--column-selected')
 	if (isFrozen) classes.push('wg__cell--frozen')
 	if (isLastFrozen) classes.push('wg__cell--frozen-last')
 	if (column.cellClass) classes.push(column.cellClass)
-	if (column.cellClassCallback) {
-		const rawValue = ctx.grid.getCellRawValue(item, rowIndex, field)
-		const dynamicClass = column.cellClassCallback(rawValue, item)
+	if (column.getCellClassCallback) {
+		const dynamicClass = column.getCellClassCallback(ctx.engine.cellCtx(item, rowIndex, column))
 		if (dynamicClass) classes.push(dynamicClass)
 	}
 
@@ -96,7 +95,7 @@ export function renderCell<T>(
 			focusEditorInCell(ctx, cell, column, options)
 		}
 	} else {
-		const value = ctx.grid.getCellValue(item, column, rowIndex)
+		const value = ctx.engine.getCellValue(item, column, rowIndex)
 		cell.innerHTML = wrapTreeCell(ctx, column, item, renderCellDisplay(ctx, rowIndex, colIndex, column, value, isFocused, isEditable))
 	}
 }
@@ -105,7 +104,7 @@ export function renderCell<T>(
  * Focus the editor input within a cell and set cursor position
  */
 function focusEditorInCell<T>(
-	ctx: GridContext<T>,
+	ctx: GridHost<T>,
 	cell: HTMLElement,
 	column: { field: string | number | symbol; editor?: string; editorOptions?: { editStartSelection?: string } },
 	options: RenderCellOptions
@@ -125,7 +124,7 @@ function focusEditorInCell<T>(
 		// Combobox/autocomplete default to selectAll (cursor positioning doesn't apply to filter inputs)
 		const isDropdownInput = editor.classList.contains('wg__combobox-input') || editor.classList.contains('wg__autocomplete-input')
 		const defaultSelection = isDropdownInput ? 'selectAll' : undefined
-		const editStartSelection = column.editorOptions?.editStartSelection || defaultSelection || ctx.grid.editStartSelection
+		const editStartSelection = column.editorOptions?.editStartSelection || defaultSelection || ctx.engine.editStartSelection
 
 		if (options.initialSearchQuery !== undefined) {
 			// Type-to-start: always cursor at end

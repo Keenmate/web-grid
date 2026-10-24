@@ -36,11 +36,11 @@ export const datepickerExecutor: ActionExecutor = {
  */
 function executeOpenDatePicker(ctx: ExecutorContext): void {
 	// Get current cell - use focusedCell for 'always' mode
-	const focusedCell = ctx.grid.focusedCell
+	const focusedCell = ctx.engine.focusedCell
 	if (!focusedCell) return
 
 	const { rowIndex, colIndex } = focusedCell
-	const column = ctx.grid.columns[colIndex]
+	const column = ctx.engine.columns[colIndex]
 	if (!column || column.editor !== 'date') return
 
 	// Find the date editor elements in the DOM
@@ -104,7 +104,7 @@ function handleDateSelect(
 
 	// Convert to the format the column expects. Default 'iso' matches the
 	// legacy commitDateEditor behavior.
-	const column = ctx.grid.columns[colIndex]
+	const column = ctx.engine.columns[colIndex]
 	const outputFormat = column?.editorOptions?.outputFormat ?? 'iso'
 	let value: unknown
 	switch (outputFormat) {
@@ -121,7 +121,7 @@ function handleDateSelect(
 	}
 
 	// Commit the date value (clears editingCell state)
-	ctx.grid.commitEdit(rowIndex, field, value)
+	ctx.engine.commitEdit(rowIndex, field, value)
 
 	// Re-render cell in display mode with the committed value
 	renderCell(ctx, rowIndex, colIndex)
@@ -149,17 +149,17 @@ function handleDatePickerClose(ctx: ExecutorContext, rowIndex: number, colIndex:
 	ctx.datepicker = null
 
 	// For 'always' mode, just re-render the cell to restore focus
-	const column = ctx.grid.columns[colIndex]
+	const column = ctx.engine.columns[colIndex]
 	if (!column) return
 
-	const effectiveTrigger = column.editTrigger ?? ctx.grid.editTrigger
+	const effectiveTrigger = column.editTrigger ?? ctx.engine.editTrigger
 	if (effectiveTrigger === 'always') {
 		// Just re-render to clean up any visual state
 		renderCell(ctx, rowIndex, colIndex)
 	} else {
 		// For other modes, cancel the edit
 		clearEditingVisual(ctx)
-		ctx.grid.cancelEdit()
+		ctx.engine.cancelEdit()
 		renderCell(ctx, rowIndex, colIndex)
 
 		// Focus the cell after cancelling edit (so user doesn't lose focus)

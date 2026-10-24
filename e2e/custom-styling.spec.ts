@@ -4,10 +4,10 @@ import { test, expect, Page } from '@playwright/test'
  * E2E coverage for custom styling (docs/test/custom-styling.html) — a 6-row grid
  * exercising:
  *   - static `cellClass` on a column (name)
- *   - `cellClassCallback` bucketing values into classes (salary)
- *   - `rowClassCallback` tagging whole rows (row-inactive on Inactive rows)
- *   - `templateCallback` rendering custom cell HTML (flag)
- *   - `customStylesCallback` injecting the CSS so those classes actually paint
+ *   - `getCellClassCallback` bucketing values into classes (salary)
+ *   - `getRowClassCallback` tagging whole rows (row-inactive on Inactive rows)
+ *   - `renderCellCallback` rendering custom cell HTML (flag)
+ *   - `getCustomStylesCallback` injecting the CSS so those classes actually paint
  *
  * Column indices: 0=id, 1=name, 2=salary, 3=status, 4=flag.
  * See custom-styling.html for the seed table.
@@ -47,7 +47,7 @@ test.describe('static cellClass on a column', () => {
 		await expect(cell(page, 0, 2)).not.toHaveClass(/(^|\s)name-cell(\s|$)/)
 	})
 
-	test('customStylesCallback makes the name-cell rule take effect', async ({ page }) => {
+	test('getCustomStylesCallback makes the name-cell rule take effect', async ({ page }) => {
 		await gotoCustomStyling(page)
 
 		// The injected rule sets font-weight: 700 on .name-cell.
@@ -57,10 +57,10 @@ test.describe('static cellClass on a column', () => {
 })
 
 // =============================================================================
-// cellClassCallback
+// getCellClassCallback
 // =============================================================================
 
-test.describe('cellClassCallback buckets values into classes', () => {
+test.describe('getCellClassCallback buckets values into classes', () => {
 	test('each salary cell gets the class for its value bucket', async ({ page }) => {
 		await gotoCustomStyling(page)
 
@@ -88,10 +88,10 @@ test.describe('cellClassCallback buckets values into classes', () => {
 })
 
 // =============================================================================
-// rowClassCallback
+// getRowClassCallback
 // =============================================================================
 
-test.describe('rowClassCallback tags whole rows', () => {
+test.describe('getRowClassCallback tags whole rows', () => {
 	test('Inactive rows get the row-inactive class, Active rows do not', async ({ page }) => {
 		await gotoCustomStyling(page)
 
@@ -111,10 +111,10 @@ test.describe('rowClassCallback tags whole rows', () => {
 })
 
 // =============================================================================
-// templateCallback
+// renderCellCallback
 // =============================================================================
 
-test.describe('templateCallback renders custom cell HTML', () => {
+test.describe('renderCellCallback renders custom cell HTML', () => {
 	test('the flag column renders the star span only for flag === "star"', async ({ page }) => {
 		await gotoCustomStyling(page)
 
@@ -127,7 +127,7 @@ test.describe('templateCallback renders custom cell HTML', () => {
 		await expect(cell(page, 1, 4).locator('.flag-star')).toHaveCount(0)
 	})
 
-	test('customStylesCallback colours the templateCallback markup', async ({ page }) => {
+	test('getCustomStylesCallback colours the renderCellCallback markup', async ({ page }) => {
 		await gotoCustomStyling(page)
 
 		const color = await cell(page, 0, 4).locator('.flag-star')

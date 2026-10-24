@@ -33,16 +33,16 @@
 		 *  row 4   | 5 | Eve      | eve@example.com    | e5   |  85
 		 *
 		 * Validation wiring (grid in navigate mode, isEditable):
-		 *  - name  — beforeCommitCallback returns a STRING error when empty.
-		 *  - email — beforeCommitCallback returns a ValidationResult object
+		 *  - name  — validateCallback returns a STRING error when empty.
+		 *  - email — validateCallback returns a ValidationResult object
 		 *            ({ valid:false, message }) when the value has no '@'.
-		 *  - code  — beforeCommitCallback returns { valid:true, transformedValue }
+		 *  - code  — validateCallback returns { valid:true, transformedValue }
 		 *            to uppercase the committed value (transform, not block).
-		 *  - score — legacy validateCallback returns an error string when > 100.
+		 *  - score — validateCallback returns an error string when > 100 (reads ctx.value).
 		 *
 		 * web-grid validation is LENIENT: an invalid commit is NOT blocked — the
 		 * (invalid) value still lands in the draft, the cell gets the
-		 * `wg__cell--invalid` class, and `onvalidationerror` fires. Specs assert on
+		 * `wg__cell--invalid` class, and `validation-error` fires. Specs assert on
 		 * that class + the [data-testid="validation-log"] hook.
 		 */
 		const seed = () => [
@@ -64,7 +64,7 @@
 				width: '150px',
 				editor: 'text',
 				// STRING return → invalid with that message.
-				beforeCommitCallback: ({ value }) =>
+				validateCallback: ({ value }) =>
 					(value == null || String(value).trim() === '') ? 'Name is required' : null
 			},
 			{
@@ -73,7 +73,7 @@
 				width: '200px',
 				editor: 'text',
 				// ValidationResult object form.
-				beforeCommitCallback: ({ value }) =>
+				validateCallback: ({ value }) =>
 					String(value).includes('@')
 						? { valid: true }
 						: { valid: false, message: 'Invalid email' }
@@ -84,7 +84,7 @@
 				width: '100px',
 				editor: 'text',
 				// Transform — valid, but rewrites the committed value to uppercase.
-				beforeCommitCallback: ({ value }) =>
+				validateCallback: ({ value }) =>
 					({ valid: true, transformedValue: String(value).toUpperCase() })
 			},
 			{
@@ -92,15 +92,15 @@
 				title: 'Score',
 				width: '90px',
 				editor: 'number',
-				// LEGACY validateCallback — returns an error string or null.
-				validateCallback: (value) => Number(value) > 100 ? 'Max 100' : null
+				// Error string or null.
+				validateCallback: ({ value }) => Number(value) > 100 ? 'Max 100' : null
 			}
 		]
 		grid.isEditable = true
 		grid.editTrigger = 'navigate'
 
 		const logEl = document.querySelector('[data-testid="validation-log"]')
-		grid.onvalidationerror = ({ field, error }) => {
+		grid.onValidationError = ({ field, error }) => {
 			logEl.textContent = `${field}: ${error}`
 		}
 	</script>

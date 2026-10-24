@@ -31,13 +31,13 @@ export const checkboxExecutor: ActionExecutor = {
  */
 function executeToggleCheckbox(ctx: ExecutorContext, action: ToggleCheckboxAction): void {
 	const { rowIndex, colIndex } = action.target
-	const column = ctx.grid.columns[colIndex]
+	const column = ctx.engine.columns[colIndex]
 	if (!column) return
 
-	const item = ctx.grid.displayItems[rowIndex]
+	const item = ctx.engine.displayItems[rowIndex]
 	if (!item) return
 
-	if (!ctx.grid.isCellEditable(column, item)) return
+	if (!ctx.engine.isCellEditable(column, item)) return
 
 	const field = String(column.field)
 
@@ -45,15 +45,15 @@ function executeToggleCheckbox(ctx: ExecutorContext, action: ToggleCheckboxActio
 	const trueValue = opts.trueValue ?? true
 	const falseValue = opts.falseValue ?? false
 	// Use getCellRawValue to get value from draft row if it exists
-	const currentValue = ctx.grid.getCellRawValue(item, rowIndex, field)
+	const currentValue = ctx.engine.getCellRawValue(item, rowIndex, field)
 	const newValue = currentValue === trueValue ? falseValue : trueValue
 
 	// Mark the cell as being edited so navigation keys (Tab, Enter) will commit
 	// This integrates checkbox toggle with the standard editing flow
-	ctx.grid.startEdit(rowIndex, field)
+	ctx.engine.startEdit(rowIndex, field)
 
 	// Update draft row with the new value
-	ctx.grid.updateDraftValue(rowIndex, field, newValue)
+	ctx.engine.updateDraftValue(rowIndex, field, newValue)
 
 	// Re-render the cell to show new checkbox state AND focus the checkbox
 	// Without focusEditor: true, the checkbox HTML is replaced but focus is lost,

@@ -13,7 +13,7 @@
 // Cancel paths: Cancel button, Escape, click on the overlay backdrop.
 // Validation: numeric, in-range, otherwise the input is refocused + selected.
 
-import type { GridContext } from '../grid-context.js'
+import type { GridHost } from '../grid-context.js'
 import { updateFocusVisual } from './focus.js'
 
 /**
@@ -21,8 +21,8 @@ import { updateFocusVisual } from './focus.js'
  * in when they invoked the dialog — focus returns to the same column on
  * the target row.
  */
-export function showGoToRowDialog<T>(ctx: GridContext<T>, colIndex: number): void {
-	const displayItems = ctx.grid.displayItems
+export function showGoToRowDialog<T>(ctx: GridHost<T>, colIndex: number): void {
+	const displayItems = ctx.engine.displayItems
 	if (displayItems.length === 0) return
 
 	// Create dialog overlay
@@ -59,10 +59,10 @@ export function showGoToRowDialog<T>(ctx: GridContext<T>, colIndex: number): voi
 
 		// Convert 1-based to 0-based index
 		const targetRow = rowNum - 1
-		const oldFocus = ctx.grid.focusedCell
-		ctx.grid.setFocusedCell(targetRow, colIndex)
+		const oldFocus = ctx.engine.focusedCell
+		ctx.engine.setFocusedCell(targetRow, colIndex)
 
-		if (ctx.grid.shouldUseVirtualScroll()) {
+		if (ctx.engine.shouldUseVirtualScroll()) {
 			// Virtual scroll: scroll to position (programmatic flag prevents redundant handleVirtualScroll)
 			ctx.scrollToRowProgrammatically(targetRow)
 			// After scroll settles, focus the cell

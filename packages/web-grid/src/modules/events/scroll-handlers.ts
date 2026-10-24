@@ -14,7 +14,7 @@
 // extraction doesn't depend on shadow re-querying (the listener captures the
 // original DOM nodes via closure in the caller and forwards them in).
 
-import type { GridContext } from '../grid-context.js'
+import type { GridHost } from '../grid-context.js'
 import { handleScrollCloseDropdown, handleVirtualScroll, handleInfiniteScroll } from '../scroll/index.js'
 import { getActiveToolbarRowIndex, updateConnector, closeToolbarAndReset } from '../toolbar/index.js'
 import { updateFillHandle } from '../fill-handle/index.js'
@@ -25,7 +25,7 @@ import { updateSelectionBorders } from '../selection-border/index.js'
  * Container scroll handler — runs on every scroll of the .wg / .wg__table-container.
  */
 export function handleContainerScroll<T>(
-	ctx: GridContext<T>,
+	ctx: GridHost<T>,
 	container: HTMLElement,
 	scrollContainer: HTMLElement
 ): void {
@@ -39,18 +39,18 @@ export function handleContainerScroll<T>(
 	}
 
 	// Virtual scroll: recalculate visible range
-	if (ctx.grid.shouldUseVirtualScroll()) {
+	if (ctx.engine.shouldUseVirtualScroll()) {
 		handleVirtualScroll(ctx, scrollContainer)
 	}
 
 	// Infinite scroll: detect when near bottom
-	if (ctx.grid.isInfiniteScrollEnabled && ctx.grid.hasMoreItems && !ctx.virtualScroll.isLoadingMore) {
+	if (ctx.engine.isInfiniteScrollEnabled && ctx.engine.hasMoreItems && !ctx.virtualScroll.isLoadingMore) {
 		handleInfiniteScroll(ctx, scrollContainer)
 	}
 
 	// Update connector position when scrolling (clips at container boundary)
 	if (getActiveToolbarRowIndex() !== null) {
-		updateConnector(ctx, ctx.grid.displayItems)
+		updateConnector(ctx, ctx.engine.displayItems)
 		ctx.renderConnector()
 	}
 
@@ -58,7 +58,7 @@ export function handleContainerScroll<T>(
 	updateFillHandle(ctx)
 
 	// Update cell range border on scroll
-	if (ctx.grid.selectedCellRange) {
+	if (ctx.engine.selectedCellRange) {
 		updateRangeBorder(ctx)
 	}
 
@@ -69,7 +69,7 @@ export function handleContainerScroll<T>(
 /**
  * Window scroll handler — close transient overlays so they don't drift.
  */
-export function handleWindowScroll<T>(ctx: GridContext<T>): void {
+export function handleWindowScroll<T>(ctx: GridHost<T>): void {
 	if (ctx.dropdown.isOpen && !ctx.isTransitioningCells) {
 		handleScrollCloseDropdown(ctx)
 	}

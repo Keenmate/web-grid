@@ -2,52 +2,48 @@
 // GridElement - Web Component Registration
 // =============================================================================
 
-import { WebGrid } from './grid.js'
+import { GridEngine } from './grid.js'
 import type {
 	Column,
 	CellValidationState,
-	RowToolbarConfig,
-	ContextMenuItem,
-	ContextMenuConfig,
-	RowShortcut,
-	ShortcutContext,
-	ParsedKeyCombo,
-	RowChangeDetail,
-	ToolbarClickDetail,
-	RowActionClickDetail,
-	ContextMenuContext,
-	HeaderMenuConfig,
-	HeaderMenuContext,
-	CustomEditorContext,
 	EditTrigger,
 	EditStartSelection,
 	EditorOptions,
 	GridMode,
 	ToggleVisibility,
-	NormalizedToolbarItem,
-	DataRequestDetail,
 	SortState,
 	SortMode,
 	PaginationLabelsCallback,
-	SummaryContentCallback,
-	ValidationTooltipContext,
+	SummaryCallback,
 	ToolbarPosition,
 	GridLabels,
 	RowLock,
 	RowLockingOptions,
-	RowLockChangeDetail,
-	ColumnResizeDetail,
 	ColumnWidthState,
-	ColumnReorderDetail,
 	ColumnOrderState,
-	FillDragDetail,
-	RangeShortcut,
-	RangeShortcutContext,
-	RowFocusDetail,
 	PasteMode,
-	BeforePasteDetail,
-	PasteDetail
+	CreateRowCallback,
+	ChevronCallback
 } from './types.js'
+import type {
+	GridController,
+	GridContext as GridCallbackContext,
+	RowContext,
+	RowDataContext,
+	CellContext,
+	ValidationTooltipContext,
+	HeaderMenuContext,
+	FillContext,
+	BeforePasteContext,
+	GridToolbarEntry,
+	GridMenuEntry,
+	GridHeaderMenuEntry,
+	GridShortcut,
+	GridRangeShortcut,
+	GridActionEventDetail,
+	GridEventMap
+} from './interaction.js'
+import { createGridController } from './controller.js'
 
 // Import CSS (Vite inlines this as a string)
 import styles from './css/main.css?inline'
@@ -234,7 +230,7 @@ import {
 	createActionPipelineAdapter
 } from './modules/actions/index.js'
 
-import type { GridContext } from './modules/grid-context.js'
+import type { GridHost } from './modules/grid-context.js'
 
 // Core: reactive base class + the input-table converters. web-grid keeps its
 // rich config-object/property API (columns, items, callbacks stay properties);
@@ -251,6 +247,7 @@ import {
 	toEnum,
 	toCustom,
 	type InputDef,
+	type EventDef,
 } from '@keenmate/web-components-core'
 
 // Enum member lists for the input table (hoisted `as const` so the CEM
@@ -269,6 +266,30 @@ const SORT_MODES = ['none', 'single', 'multi'] as const
 const NEW_ROW_POSITIONS = ['top', 'bottom'] as const
 const TREE_DOUBLE_CLICK_BEHAVIORS = ['none', 'toggle'] as const
 const PASTE_MODES = ['skip-non-editable', 'all-columns', 'editable-only'] as const
+const FILTER_MODES = ['client', 'server'] as const
+
+/**
+ * Event table (core SPEC §12.5): every happening is one DOM event (bubbles, not
+ * composed) + a camelCase `on*` twin property called with the same detail first.
+ * Every detail carries `controller` + `element` (non-enumerable).
+ */
+const EVENTS: readonly EventDef[] = [
+	{ name: 'row-change', description: 'A cell value was committed (editor, checkbox, paste, new row). `detail`: `{ row, draftRow, rowIndex, field, oldValue, newValue, isValid, validationError }`. Twin: `onRowChange(detail)`.' },
+	{ name: 'edit-start', description: 'A cell editor opened. `detail`: `{ row, rowIndex, field }`. Twin: `onEditStart(detail)`.' },
+	{ name: 'edit-cancel', description: 'A cell edit was cancelled. `detail`: `{ row, rowIndex, field }`. Twin: `onEditCancel(detail)`.' },
+	{ name: 'validation-error', description: '`validateCallback` rejected a value. `detail`: `{ row, rowIndex, field, error, source: "edit" | "paste" }`. Twin: `onValidationError(detail)`.' },
+	{ name: 'row-focus', description: 'A different row got focus. `detail`: `{ row, rowIndex, previousRowIndex }`. Twin: `onRowFocus(detail)`.' },
+	{ name: 'row-delete', description: 'Ctrl+Delete on a row — a request; the grid does not delete. `detail`: `{ row, rowIndex }`. Twin: `onRowDelete(detail)`.' },
+	{ name: 'cell-selection-change', description: 'The selected cell range changed. `detail`: `{ range, cellCount }`. Twin: `onCellSelectionChange(detail)`.' },
+	{ name: 'data-request', description: 'Sort / page / page size changed or more rows are needed (server-side data). `detail`: `{ sort, page, pageSize, trigger, mode, skip }`. Twin: `onDataRequest(detail)`.' },
+	{ name: 'filter-change', description: 'A column filter changed. `detail`: `{ filters }`. With `filter-mode="server"` the consumer filters. Twin: `onFilterChange(detail)`.' },
+	{ name: 'column-resize', description: 'A column was resized. `detail`: `{ field, oldWidth, newWidth, allWidths }`. Twin: `onColumnResize(detail)`.' },
+	{ name: 'column-reorder', description: 'A column was moved. `detail`: `{ field, fromIndex, toIndex, allOrder }`. Twin: `onColumnReorder(detail)`.' },
+	{ name: 'expand-change', description: 'Tree rows expanded / collapsed (toggle, subtree, expand / collapse all). `detail`: `{ path, isExpanded, expandedPaths }` (`path` null for all). Twin: `onExpandChange(detail)`.' },
+	{ name: 'row-lock-change', description: 'A row was locked / unlocked by id. `detail`: `{ rowId, row, rowIndex, lockInfo, source }`. Twin: `onRowLockChange(detail)`.' },
+	{ name: 'paste-complete', description: 'A multi-cell paste finished. `detail`: `{ totalCells, successfulCells, failedCells, skippedCells, newRowsCreated, cellResults, hadHeaders }`. Twin: `onPasteComplete(detail)`.' },
+	{ name: 'action', description: 'A toolbar / menu / shortcut item was activated. `detail`: `action` (built-in name or `custom`), `id`, `item`, `source` (`row-toolbar` | `cell-toolbar` | `context-menu` | `header-menu` | `keyboard`), `sourceEvent`, `triggerElement`, `dataset`, plus the surface fields (`row` / `rowIndex` / `column` / `field` / `value`, header-menu fields, or range `rows` / `rowIndices`). Fires after the item’s `onClick`, before the built-in. Twin: `onAction(detail)`.' },
+]
 
 /**
  * Boolean-or-`'auto'` tri-state (used by `is-pagination-visible`). Absent → the
@@ -294,10 +315,10 @@ const toNumberOrLength = (fallback: number | string): InputDef['converter'] =>
 	})
 
 /**
- * GridElement - Custom HTML Element for WebGrid
+ * GridElement - Custom HTML Element for GridEngine
  *
  * Extends {@link BlissElement} (SSR-safe base + §12.3 registry) and composes
- * WebGrid for business logic.
+ * GridEngine for business logic.
  *
  * Usage:
  * ```html
@@ -310,20 +331,21 @@ const toNumberOrLength = (fallback: number | string): InputDef['converter'] =>
  * grid.columns = [...];
  * ```
  */
-export class GridElement<T = unknown> extends BlissElement implements GridContext<T> {
+export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, GridController<T>> implements GridHost<T> {
 	// ── Declarative attribute layer (core input table) ────────────────────────
 	// Every row here is a scalar/enum config flag exposed as a kebab HTML
 	// attribute AND a reactive property (core installs the property accessor,
 	// shadowing the typed get/set facade further down which stays for
-	// IntelliSense). `default` mirrors the WebGrid field initializer so a fresh
+	// IntelliSense). `default` mirrors the GridEngine field initializer so a fresh
 	// element behaves identically. `on: 'update'` → each change is bridged into
-	// `this.grid` (see `update()`), whose setter re-renders. Structured config
+	// `this.engine` (see `update()`), whose setter re-renders. Structured config
 	// (columns/items/callbacks), self-mutated UI state (currentPage, sort,
 	// filters, focusedRowIndex, totalItems, expandedPaths, hasMoreItems) and the
 	// two persist flags (side-effect setters) deliberately stay property-only.
 	static inputs: readonly InputDef[] = [
 		// Filtering & pagination
 		{ configKey: 'isFilterable', attribute: 'is-filterable', converter: toBool('default-false'), default: false, on: 'update' },
+		{ configKey: 'filterMode', attribute: 'filter-mode', converter: toEnum(FILTER_MODES, { default: 'client' }), default: 'client', on: 'update' },
 		{ configKey: 'isPageable', attribute: 'is-pageable', converter: toBool('default-false'), default: false, on: 'update' },
 		{ configKey: 'pageSize', attribute: 'page-size', converter: toInt({ min: 1, default: 10 }), default: 10, on: 'update' },
 		{ configKey: 'paginationMode', attribute: 'pagination-mode', converter: toEnum(PAGINATION_MODES, { default: 'client' }), default: 'client', on: 'update' },
@@ -394,14 +416,38 @@ export class GridElement<T = unknown> extends BlissElement implements GridContex
 		{ configKey: 'shouldCopyWithHeaders', attribute: 'should-copy-with-headers', converter: toBool('default-false'), default: false, on: 'update' },
 		{ configKey: 'pasteMode', attribute: 'paste-mode', converter: toEnum(PASTE_MODES, { default: 'skip-non-editable' }), default: 'skip-non-editable', on: 'update' },
 		{ configKey: 'shouldValidateOnPaste', attribute: 'should-validate-on-paste', converter: toBool('default-true'), default: true, on: 'update' },
-		// Tooltip timing (element-local, not on grid — the bridge's `in this.grid`
+		// Tooltip timing (element-local, not on grid — the bridge's `in this.engine`
 		// guard skips them; readers use the config-backed getter)
 		{ configKey: 'tooltipShowDelay', attribute: 'tooltip-show-delay', converter: toInt({ min: 0, default: 200 }), default: 200, on: 'update' },
 		{ configKey: 'tooltipHideDelay', attribute: 'tooltip-hide-delay', converter: toInt({ min: 0, default: 100 }), default: 100, on: 'update' },
 	]
 
-	// Core grid logic (composition)
-	readonly grid: WebGrid<T>
+	static events = EVENTS
+
+	// Type-only: core installs the `on<Name>` twins at runtime (§12.5); each is
+	// called with the event detail (not the CustomEvent), right before the event.
+	declare onRowChange: ((detail: GridEventMap<T>['row-change']) => void) | null
+	declare onEditStart: ((detail: GridEventMap<T>['edit-start']) => void) | null
+	declare onEditCancel: ((detail: GridEventMap<T>['edit-cancel']) => void) | null
+	declare onValidationError: ((detail: GridEventMap<T>['validation-error']) => void) | null
+	declare onRowFocus: ((detail: GridEventMap<T>['row-focus']) => void) | null
+	declare onRowDelete: ((detail: GridEventMap<T>['row-delete']) => void) | null
+	declare onCellSelectionChange: ((detail: GridEventMap<T>['cell-selection-change']) => void) | null
+	declare onDataRequest: ((detail: GridEventMap<T>['data-request']) => void) | null
+	declare onFilterChange: ((detail: GridEventMap<T>['filter-change']) => void) | null
+	declare onColumnResize: ((detail: GridEventMap<T>['column-resize']) => void) | null
+	declare onColumnReorder: ((detail: GridEventMap<T>['column-reorder']) => void) | null
+	declare onExpandChange: ((detail: GridEventMap<T>['expand-change']) => void) | null
+	declare onRowLockChange: ((detail: GridEventMap<T>['row-lock-change']) => void) | null
+	declare onPasteComplete: ((detail: GridEventMap<T>['paste-complete']) => void) | null
+	declare onAction: ((detail: GridEventMap<T>['action']) => void) | null
+
+	/**
+	 * The internal state engine (composition) — module plumbing. Not public API:
+	 * use the element's properties / methods or `el.controller`.
+	 * @internal
+	 */
+	readonly engine: GridEngine<T>
 
 	// Shadow DOM root
 	readonly shadow: ShadowRoot
@@ -409,7 +455,7 @@ export class GridElement<T = unknown> extends BlissElement implements GridContex
 	// Style element (for initial CSS injection)
 	private styleElement: HTMLStyleElement
 
-	// Custom styles element (for user-provided CSS via customStylesCallback)
+	// Custom styles element (for user-provided CSS via getCustomStylesCallback)
 	private customStyleElement: HTMLStyleElement | null = null
 
 	// Update batching
@@ -454,10 +500,10 @@ export class GridElement<T = unknown> extends BlissElement implements GridContex
 	get tooltipHideDelay(): number { return this._tooltipHideDelay }
 	set tooltipHideDelay(value: number) { this._tooltipHideDelay = value }
 
-	// DatePicker instance (for date editor) - exposed via GridContext for pipeline access
+	// DatePicker instance (for date editor) - exposed via GridHost for pipeline access
 	datepicker: DatePicker | null = null
 
-	// Context menu element (rendered to document.body) - exposed via GridContext for pipeline access
+	// Context menu element (rendered to document.body) - exposed via GridHost for pipeline access
 	contextMenuElement: HTMLElement | null = null
 	headerContextMenuElement: HTMLElement | null = null
 
@@ -479,19 +525,11 @@ export class GridElement<T = unknown> extends BlissElement implements GridContex
 	constructor() {
 		super()
 		this.shadow = this.attachShadow({ mode: 'open' })
-		this.grid = new WebGrid<T>()
-
-		// Install `onpaste` proxy at the instance level. Cannot be declared
-		// as a class accessor because HTMLElement already defines onpaste as
-		// a ClipboardEvent handler — see the comment on the onbeforepaste
-		// proxy for context.
-		Object.defineProperty(this, 'onpaste', {
-			configurable: true,
-			enumerable: true,
-			get: (): ((detail: PasteDetail<T>) => void) | undefined => this.grid.onpaste,
-			set: (value: ((detail: PasteDetail<T>) => void) | undefined): void => {
-				this.grid.onpaste = value
-			}
+		this.engine = new GridEngine<T>()
+		// Every ctx / detail carries `controller` + `element`; the engine's
+		// notifications become events (emit → `on*` twin + DOM event).
+		this.engine.attachHost(this, () => this.controller, (name, detail) => {
+			this.emit(name, detail as never)
 		})
 
 		this.scrollEvents = createScrollEventManager()
@@ -512,15 +550,15 @@ export class GridElement<T = unknown> extends BlissElement implements GridContex
 		this.shadow.appendChild(this.styleElement)
 
 		// Override requestUpdate to invalidate the data-pipeline cache and trigger DOM render.
-		// Every state-changing setter on WebGrid funnels through requestUpdate(), so this is
+		// Every state-changing setter on GridEngine funnels through requestUpdate(), so this is
 		// the single canonical point to drop cached paginatedItems / displayItems.
-		;(this.grid as unknown as { requestUpdate: () => void }).requestUpdate = () => {
-			this.grid.invalidateDisplayCache()
+		;(this.engine as unknown as { requestUpdate: () => void }).requestUpdate = () => {
+			this.engine.invalidateDisplayCache()
 			this.requestUpdate()
 		}
 
 		// Handle interaction changes (cleanup dropdown when editing is cancelled externally)
-		;(this.grid as unknown as { _onInteractionChange: ((type: string, detail: { prev: unknown, current: unknown }) => void) | null })._onInteractionChange = (type, detail) => {
+		;(this.engine as unknown as { _onInteractionChange: ((type: string, detail: { prev: unknown, current: unknown }) => void) | null })._onInteractionChange = (type, detail) => {
 			if (type === 'editingCell' && detail.current === null) {
 				// Editing was cancelled - clean up dropdown if open
 				removeDropdown(this)
@@ -531,11 +569,11 @@ export class GridElement<T = unknown> extends BlissElement implements GridContex
 		// (microtask-coalesced) accessor per input in super(); we override each
 		// grid-backed one on the instance with a straight proxy so that
 		// `el.pageSize = 25` (or a preset like `el.mode = 'excel'`, which
-		// cross-writes sibling props) reflects into `this.grid` immediately — the
+		// cross-writes sibling props) reflects into `this.engine` immediately — the
 		// long-standing web-grid contract. The ATTRIBUTE path stays reactive via
 		// core (attributeChangedCallback → reinit()/update() → the grid). Inputs
 		// not backed by the grid (tooltip delays) keep core's config accessor.
-		const gridTarget = this.grid as unknown as Record<string, unknown>
+		const gridTarget = this.engine as unknown as Record<string, unknown>
 		for (const def of (this.constructor as typeof GridElement).inputs) {
 			const key = def.configKey
 			if (!(key in gridTarget)) continue
@@ -560,11 +598,11 @@ export class GridElement<T = unknown> extends BlissElement implements GridContex
 	// without rebuilding) — they hold the former connected/disconnectedCallback
 	// bodies, which are already written to be re-runnable.
 
-	/** Copy the given input-config keys into the composed WebGrid. Grid setters
-	 * call requestUpdate() → a coalesced render. The `in this.grid` guard skips
+	/** Copy the given input-config keys into the composed GridEngine. Grid setters
+	 * call requestUpdate() → a coalesced render. The `in this.engine` guard skips
 	 * element-local inputs (tooltip delays) whose readers use the config getter. */
 	#applyConfig(cfg: Record<string, unknown>): void {
-		const target = this.grid as unknown as Record<string, unknown>
+		const target = this.engine as unknown as Record<string, unknown>
 		for (const key of Object.keys(cfg)) {
 			if (key in target) target[key] = cfg[key]
 		}
@@ -577,7 +615,7 @@ export class GridElement<T = unknown> extends BlissElement implements GridContex
 		// the full config here would clobber preset-derived state (e.g. a
 		// `mode='excel'` bundle) with input defaults. Presence-gating avoids that.
 		const cfg = this.config
-		const target = this.grid as unknown as Record<string, unknown>
+		const target = this.engine as unknown as Record<string, unknown>
 		for (const def of (this.constructor as typeof GridElement).inputs) {
 			if (def.attribute && this.hasAttribute(def.attribute) && def.configKey in target) {
 				target[def.configKey] = cfg[def.configKey]
@@ -593,8 +631,8 @@ export class GridElement<T = unknown> extends BlissElement implements GridContex
 	protected connect(): void {
 		initLogger.debug('connect — grid activated')
 		// Load persisted column widths before initial render
-		if (this.grid.gridName && this.grid.shouldPersistColumnWidths) {
-			this.grid.loadPersistedWidths()
+		if (this.engine.gridName && this.engine.shouldPersistColumnWidths) {
+			this.engine.loadPersistedWidths()
 		}
 		// Initialize action pipeline adapter for 'always' editTrigger mode
 		this.pipelineAdapter = createActionPipelineAdapter(this)
@@ -635,424 +673,372 @@ export class GridElement<T = unknown> extends BlissElement implements GridContex
 	}
 
 	// ==========================================================================
-	// Public API - Proxy to WebGrid
+	// Public API - Proxy to GridEngine
 	// ==========================================================================
 
-	get items(): T[] { return this.grid.items }
+	get items(): T[] { return this.engine.items }
 	set items(value: T[]) {
-		this.grid.items = value
+		this.engine.items = value
 		// Reset infinite scroll loading flag
 		this.virtualScroll.setIsLoadingMore(false)
 	}
 
-	get columns(): Column<T>[] { return this.grid.columns }
-	set columns(value: Column<T>[]) { this.grid.columns = value }
+	get columns(): Column<T>[] { return this.engine.columns }
+	set columns(value: Column<T>[]) { this.engine.columns = value }
 
-	get isFilterable(): boolean { return this.grid.isFilterable }
-	set isFilterable(value: boolean) { this.grid.isFilterable = value }
+	get isFilterable(): boolean { return this.engine.isFilterable }
+	set isFilterable(value: boolean) { this.engine.isFilterable = value }
 
-	get onfilterchange(): ((filters: Record<string, string>) => void) | undefined { return this.grid.onfilterchange }
-	set onfilterchange(value: ((filters: Record<string, string>) => void) | undefined) { this.grid.onfilterchange = value }
+	/** 'server': the grid doesn't filter `items` — handle `filter-change` and replace `items`. */
+	get filterMode(): 'client' | 'server' { return this.engine.filterMode }
+	set filterMode(value: 'client' | 'server') { this.engine.filterMode = value }
 
-	get columnMinWidth(): string | undefined { return this.grid.columnMinWidth }
-	set columnMinWidth(value: string | undefined) { this.grid.columnMinWidth = value }
+	get columnMinWidth(): string | undefined { return this.engine.columnMinWidth }
+	set columnMinWidth(value: string | undefined) { this.engine.columnMinWidth = value }
 
-	get filters(): Record<string, string> { return this.grid.filters }
-	set filters(value: Record<string, string>) { this.grid.filters = value }
-	setFilter(field: string, value: string): void { this.grid.setFilter(field, value) }
+	get filters(): Record<string, string> { return this.engine.filters }
+	set filters(value: Record<string, string>) { this.engine.filters = value }
+	setFilter(field: string, value: string): void { this.engine.setFilter(field, value) }
 
-	get isPageable(): boolean { return this.grid.isPageable }
-	set isPageable(value: boolean) { this.grid.isPageable = value }
+	get isPageable(): boolean { return this.engine.isPageable }
+	set isPageable(value: boolean) { this.engine.isPageable = value }
 
-	get pageSize(): number { return this.grid.pageSize }
-	set pageSize(value: number) { this.grid.pageSize = value }
+	get pageSize(): number { return this.engine.pageSize }
+	set pageSize(value: number) { this.engine.pageSize = value }
 
-	get pageSizes(): number[] { return this.grid.pageSizes }
-	set pageSizes(value: number[]) { this.grid.pageSizes = value }
+	get pageSizes(): number[] { return this.engine.pageSizes }
+	set pageSizes(value: number[]) { this.engine.pageSizes = value }
 
-	get paginationMode(): 'client' | 'server' { return this.grid.paginationMode }
-	set paginationMode(value: 'client' | 'server') { this.grid.paginationMode = value }
+	get paginationMode(): 'client' | 'server' { return this.engine.paginationMode }
+	set paginationMode(value: 'client' | 'server') { this.engine.paginationMode = value }
 
-	get isStriped(): boolean { return this.grid.isStriped }
-	set isStriped(value: boolean) { this.grid.isStriped = value }
+	get isStriped(): boolean { return this.engine.isStriped }
+	set isStriped(value: boolean) { this.engine.isStriped = value }
 
-	get isHoverable(): boolean { return this.grid.isHoverable }
-	set isHoverable(value: boolean) { this.grid.isHoverable = value }
+	get isHoverable(): boolean { return this.engine.isHoverable }
+	set isHoverable(value: boolean) { this.engine.isHoverable = value }
 
-	get isEditable(): boolean { return this.grid.isEditable }
-	set isEditable(value: boolean) { this.grid.isEditable = value }
+	get isEditable(): boolean { return this.engine.isEditable }
+	set isEditable(value: boolean) { this.engine.isEditable = value }
 
-	get isRowEditable(): boolean | ((row: T) => boolean) | undefined { return this.grid.isRowEditable }
-	set isRowEditable(value: boolean | ((row: T) => boolean) | undefined) { this.grid.isRowEditable = value }
+	get isRowEditable(): boolean | undefined { return this.engine.isRowEditable }
+	set isRowEditable(value: boolean | undefined) { this.engine.isRowEditable = value }
 
-	get editTrigger(): EditTrigger { return this.grid.editTrigger }
-	set editTrigger(value: EditTrigger) { this.grid.editTrigger = value }
+	get getIsRowEditableCallback(): ((ctx: RowDataContext<T>) => boolean) | undefined { return this.engine.getIsRowEditableCallback }
+	set getIsRowEditableCallback(value: ((ctx: RowDataContext<T>) => boolean) | undefined) { this.engine.getIsRowEditableCallback = value }
 
-	get editStartSelection(): EditStartSelection { return this.grid.editStartSelection }
-	set editStartSelection(value: EditStartSelection) { this.grid.editStartSelection = value }
+	get editTrigger(): EditTrigger { return this.engine.editTrigger }
+	set editTrigger(value: EditTrigger) { this.engine.editTrigger = value }
 
-	get shouldCommitOnClickAway(): boolean { return this.grid.shouldCommitOnClickAway }
-	set shouldCommitOnClickAway(value: boolean) { this.grid.shouldCommitOnClickAway = value }
+	get editStartSelection(): EditStartSelection { return this.engine.editStartSelection }
+	set editStartSelection(value: EditStartSelection) { this.engine.editStartSelection = value }
 
-	get mode(): GridMode { return this.grid.mode }
-	set mode(value: GridMode) { this.grid.mode = value }
+	get shouldCommitOnClickAway(): boolean { return this.engine.shouldCommitOnClickAway }
+	set shouldCommitOnClickAway(value: boolean) { this.engine.shouldCommitOnClickAway = value }
 
-	get dropdownToggleVisibility(): ToggleVisibility { return this.grid.dropdownToggleVisibility }
-	set dropdownToggleVisibility(value: ToggleVisibility) { this.grid.dropdownToggleVisibility = value }
+	get mode(): GridMode { return this.engine.mode }
+	set mode(value: GridMode) { this.engine.mode = value }
 
-	get shouldShowDropdownOnFocus(): boolean { return this.grid.shouldShowDropdownOnFocus }
-	set shouldShowDropdownOnFocus(value: boolean) { this.grid.shouldShowDropdownOnFocus = value }
+	get dropdownToggleVisibility(): ToggleVisibility { return this.engine.dropdownToggleVisibility }
+	set dropdownToggleVisibility(value: ToggleVisibility) { this.engine.dropdownToggleVisibility = value }
 
-	get shouldOpenDropdownOnEnter(): boolean { return this.grid.shouldOpenDropdownOnEnter }
-	set shouldOpenDropdownOnEnter(value: boolean) { this.grid.shouldOpenDropdownOnEnter = value }
+	get shouldShowDropdownOnFocus(): boolean { return this.engine.shouldShowDropdownOnFocus }
+	set shouldShowDropdownOnFocus(value: boolean) { this.engine.shouldShowDropdownOnFocus = value }
 
-	get isCheckboxAlwaysEditable(): boolean { return this.grid.isCheckboxAlwaysEditable }
-	set isCheckboxAlwaysEditable(value: boolean) { this.grid.isCheckboxAlwaysEditable = value }
+	get shouldOpenDropdownOnEnter(): boolean { return this.engine.shouldOpenDropdownOnEnter }
+	set shouldOpenDropdownOnEnter(value: boolean) { this.engine.shouldOpenDropdownOnEnter = value }
 
-	get isRowNumbersVisible(): boolean { return this.grid.isRowNumbersVisible }
-	set isRowNumbersVisible(value: boolean) { this.grid.isRowNumbersVisible = value }
+	get isCheckboxAlwaysEditable(): boolean { return this.engine.isCheckboxAlwaysEditable }
+	set isCheckboxAlwaysEditable(value: boolean) { this.engine.isCheckboxAlwaysEditable = value }
 
-	get isDirtyIndicatorVisible(): boolean { return this.grid.isDirtyIndicatorVisible }
-	set isDirtyIndicatorVisible(value: boolean) { this.grid.isDirtyIndicatorVisible = value }
+	get isRowNumbersVisible(): boolean { return this.engine.isRowNumbersVisible }
+	set isRowNumbersVisible(value: boolean) { this.engine.isRowNumbersVisible = value }
 
-	isCellDirty(rowIndex: number, field: string): boolean { return this.grid.isCellDirty(rowIndex, field) }
-	isRowDirty(rowIndex: number): boolean { return this.grid.isRowDirty(rowIndex) }
+	get isDirtyIndicatorVisible(): boolean { return this.engine.isDirtyIndicatorVisible }
+	set isDirtyIndicatorVisible(value: boolean) { this.engine.isDirtyIndicatorVisible = value }
 
-	get isStickyRowNumbers(): boolean { return this.grid.isStickyRowNumbers }
-	set isStickyRowNumbers(value: boolean) { this.grid.isStickyRowNumbers = value }
+	isCellDirty(rowIndex: number, field: string): boolean { return this.engine.isCellDirty(rowIndex, field) }
+	isRowDirty(rowIndex: number): boolean { return this.engine.isRowDirty(rowIndex) }
 
-	get freezeColumns(): number { return this.grid.freezeColumns }
-	set freezeColumns(value: number) { this.grid.freezeColumns = value }
+	get isStickyRowNumbers(): boolean { return this.engine.isStickyRowNumbers }
+	set isStickyRowNumbers(value: boolean) { this.engine.isStickyRowNumbers = value }
 
-	get invalidCells(): CellValidationState[] { return this.grid.invalidCells }
-	set invalidCells(value: CellValidationState[]) { this.grid.invalidCells = value }
+	get freezeColumns(): number { return this.engine.freezeColumns }
+	set freezeColumns(value: number) { this.engine.freezeColumns = value }
 
-	get isRowToolbarVisible(): boolean { return this.grid.isRowToolbarVisible }
-	set isRowToolbarVisible(value: boolean) { this.grid.isRowToolbarVisible = value }
+	get invalidCells(): CellValidationState[] { return this.engine.invalidCells }
+	set invalidCells(value: CellValidationState[]) { this.engine.invalidCells = value }
 
-	get rowToolbar(): RowToolbarConfig<T>[] { return this.grid.rowToolbar }
-	set rowToolbar(value: RowToolbarConfig<T>[]) { this.grid.rowToolbar = value }
+	get isRowToolbarVisible(): boolean { return this.engine.isRowToolbarVisible }
+	set isRowToolbarVisible(value: boolean) { this.engine.isRowToolbarVisible = value }
 
-	get toolbarVerticalAlign(): 'top' | 'center' | 'bottom' { return this.grid.toolbarVerticalAlign }
-	set toolbarVerticalAlign(value: 'top' | 'center' | 'bottom') { this.grid.toolbarVerticalAlign = value }
+	get rowToolbar(): GridToolbarEntry<T>[] { return this.engine.rowToolbar }
+	set rowToolbar(value: GridToolbarEntry<T>[]) { this.engine.rowToolbar = value }
 
-	get toolbarHorizontalAlign(): 'start' | 'center' | 'end' | 'cursor' { return this.grid.toolbarHorizontalAlign }
-	set toolbarHorizontalAlign(value: 'start' | 'center' | 'end' | 'cursor') { this.grid.toolbarHorizontalAlign = value }
+	get toolbarVerticalAlign(): 'top' | 'center' | 'bottom' { return this.engine.toolbarVerticalAlign }
+	set toolbarVerticalAlign(value: 'top' | 'center' | 'bottom') { this.engine.toolbarVerticalAlign = value }
+
+	get toolbarHorizontalAlign(): 'start' | 'center' | 'end' | 'cursor' { return this.engine.toolbarHorizontalAlign }
+	set toolbarHorizontalAlign(value: 'start' | 'center' | 'end' | 'cursor') { this.engine.toolbarHorizontalAlign = value }
 
 	// Deprecated aliases
-	get toolbarAlign(): 'top' | 'center' | 'bottom' { return this.grid.toolbarVerticalAlign }
+	get toolbarAlign(): 'top' | 'center' | 'bottom' { return this.engine.toolbarVerticalAlign }
 	set toolbarAlign(value: 'top' | 'center' | 'bottom') { this.toolbarVerticalAlign = value }
 
-	get toolbarTopPosition(): 'start' | 'center' | 'end' | 'cursor' { return this.grid.toolbarHorizontalAlign }
+	get toolbarTopPosition(): 'start' | 'center' | 'end' | 'cursor' { return this.engine.toolbarHorizontalAlign }
 	set toolbarTopPosition(value: 'start' | 'center' | 'end' | 'cursor') { this.toolbarHorizontalAlign = value }
 
-	get toolbarTrigger(): 'hover' | 'click' | 'button' { return this.grid.toolbarTrigger }
-	set toolbarTrigger(value: 'hover' | 'click' | 'button') { this.grid.toolbarTrigger = value }
+	get toolbarTrigger(): 'hover' | 'click' | 'button' { return this.engine.toolbarTrigger }
+	set toolbarTrigger(value: 'hover' | 'click' | 'button') { this.engine.toolbarTrigger = value }
 
-	get toolbarPosition(): ToolbarPosition { return this.grid.toolbarPosition }
-	set toolbarPosition(value: ToolbarPosition) { this.grid.toolbarPosition = value }
+	get toolbarPosition(): ToolbarPosition { return this.engine.toolbarPosition }
+	set toolbarPosition(value: ToolbarPosition) { this.engine.toolbarPosition = value }
 
-	get toolbarColumn(): string | number | undefined { return this.grid.toolbarColumn }
-	set toolbarColumn(value: string | number | undefined) { this.grid.toolbarColumn = value }
+	get toolbarColumn(): string | number | undefined { return this.engine.toolbarColumn }
+	set toolbarColumn(value: string | number | undefined) { this.engine.toolbarColumn = value }
 
-	get shouldToolbarFollowCursor(): boolean { return this.grid.shouldToolbarFollowCursor }
-	set shouldToolbarFollowCursor(value: boolean) { this.grid.shouldToolbarFollowCursor = value }
+	get shouldToolbarFollowCursor(): boolean { return this.engine.shouldToolbarFollowCursor }
+	set shouldToolbarFollowCursor(value: boolean) { this.engine.shouldToolbarFollowCursor = value }
 
 	/** @deprecated use `shouldToolbarFollowCursor` */
-	get toolbarFollowsCursor(): boolean { return this.grid.shouldToolbarFollowCursor }
+	get toolbarFollowsCursor(): boolean { return this.engine.shouldToolbarFollowCursor }
 	/** @deprecated use `shouldToolbarFollowCursor` */
 	set toolbarFollowsCursor(value: boolean) { this.shouldToolbarFollowCursor = value }
 
-	get cellToolbar(): ((row: T, rowIndex: number, field: string, colIndex: number) => RowToolbarConfig<T>[] | undefined) | undefined {
-		return this.grid.cellToolbar
+	get getCellToolbarItemsCallback(): ((ctx: CellContext<T>) => GridToolbarEntry<T>[] | null | undefined) | undefined {
+		return this.engine.getCellToolbarItemsCallback
 	}
-	set cellToolbar(value: ((row: T, rowIndex: number, field: string, colIndex: number) => RowToolbarConfig<T>[] | undefined) | undefined) {
-		this.grid.cellToolbar = value
+	set getCellToolbarItemsCallback(value: ((ctx: CellContext<T>) => GridToolbarEntry<T>[] | null | undefined) | undefined) {
+		this.engine.getCellToolbarItemsCallback = value
 	}
 
-	get cellToolbarOffset(): number | string { return this.grid.cellToolbarOffset }
-	set cellToolbarOffset(value: number | string) { this.grid.cellToolbarOffset = value }
+	get cellToolbarOffset(): number | string { return this.engine.cellToolbarOffset }
+	set cellToolbarOffset(value: number | string) { this.engine.cellToolbarOffset = value }
 
-	get toolbarBtnMinWidth(): string | undefined { return this.grid.toolbarBtnMinWidth }
-	set toolbarBtnMinWidth(value: string | undefined) { this.grid.toolbarBtnMinWidth = value }
+	get toolbarBtnMinWidth(): string | undefined { return this.engine.toolbarBtnMinWidth }
+	set toolbarBtnMinWidth(value: string | undefined) { this.engine.toolbarBtnMinWidth = value }
 
-	get inlineActionsTitle(): string { return this.grid.inlineActionsTitle }
-	set inlineActionsTitle(value: string) { this.grid.inlineActionsTitle = value }
+	get inlineActionsTitle(): string { return this.engine.inlineActionsTitle }
+	set inlineActionsTitle(value: string) { this.engine.inlineActionsTitle = value }
 
-	get contextMenu(): ContextMenuConfig<T>[] | undefined { return this.grid.contextMenu }
-	set contextMenu(value: ContextMenuConfig<T>[] | undefined) { this.grid.contextMenu = value }
+	get contextMenu(): GridMenuEntry<T>[] | undefined { return this.engine.contextMenu }
+	set contextMenu(value: GridMenuEntry<T>[] | undefined) { this.engine.contextMenu = value }
 
-	get contextMenuXOffset(): number { return this.grid.contextMenuXOffset }
-	set contextMenuXOffset(value: number) { this.grid.contextMenuXOffset = value }
+	get contextMenuXOffset(): number { return this.engine.contextMenuXOffset }
+	set contextMenuXOffset(value: number) { this.engine.contextMenuXOffset = value }
 
-	get contextMenuYOffset(): number { return this.grid.contextMenuYOffset }
-	set contextMenuYOffset(value: number) { this.grid.contextMenuYOffset = value }
+	get contextMenuYOffset(): number { return this.engine.contextMenuYOffset }
+	set contextMenuYOffset(value: number) { this.engine.contextMenuYOffset = value }
 
 	// Header context menu
-	get headerContextMenu(): HeaderMenuConfig<T>[] | undefined { return this.grid.headerContextMenu }
-	set headerContextMenu(value: HeaderMenuConfig<T>[] | undefined) { this.grid.headerContextMenu = value }
+	get headerContextMenu(): GridHeaderMenuEntry<T>[] | undefined { return this.engine.headerContextMenu }
+	set headerContextMenu(value: GridHeaderMenuEntry<T>[] | undefined) { this.engine.headerContextMenu = value }
 
-	set onheadercontextmenuopen(value: ((context: HeaderMenuContext<T>) => void) | undefined) {
-		this.grid.onheadercontextmenuopen = value
-	}
+	/** Before the cell menu opens (sync): `false` → no grid menu; an entries array → shown instead. */
+	get beforeContextMenuOpenCallback(): ((ctx: CellContext<T>) => false | GridMenuEntry<T>[] | void) | undefined { return this.engine.beforeContextMenuOpenCallback }
+	set beforeContextMenuOpenCallback(value: ((ctx: CellContext<T>) => false | GridMenuEntry<T>[] | void) | undefined) { this.engine.beforeContextMenuOpenCallback = value }
+
+	/** Before the header menu opens (sync): `false` → no grid menu; an entries array → shown instead. */
+	get beforeHeaderMenuOpenCallback(): ((ctx: HeaderMenuContext<T>) => false | GridHeaderMenuEntry<T>[] | void) | undefined { return this.engine.beforeHeaderMenuOpenCallback }
+	set beforeHeaderMenuOpenCallback(value: ((ctx: HeaderMenuContext<T>) => false | GridHeaderMenuEntry<T>[] | void) | undefined) { this.engine.beforeHeaderMenuOpenCallback = value }
+
+	/** Before any toolbar / menu / shortcut item activates: `false` cancels (async OK). */
+	get beforeActionCallback(): ((detail: GridActionEventDetail<T>) => unknown) | undefined { return this.engine.beforeActionCallback }
+	set beforeActionCallback(value: ((detail: GridActionEventDetail<T>) => unknown) | undefined) { this.engine.beforeActionCallback = value }
 
 	// Row keyboard shortcuts
-	get rowShortcuts(): RowShortcut<T>[] | undefined { return this.grid.rowShortcuts }
-	set rowShortcuts(value: RowShortcut<T>[] | undefined) { this.grid.rowShortcuts = value }
+	get rowShortcuts(): GridShortcut<T>[] | undefined { return this.engine.rowShortcuts }
+	set rowShortcuts(value: GridShortcut<T>[] | undefined) { this.engine.rowShortcuts = value }
 
-	// Range shortcuts (for multi-row selection)
-	get rangeShortcuts(): RangeShortcut<T>[] { return this.grid.rangeShortcuts }
-	set rangeShortcuts(value: RangeShortcut<T>[]) { this.grid.rangeShortcuts = value }
+	// Range shortcuts (selected rows / cell range)
+	get rangeShortcuts(): GridRangeShortcut<T>[] { return this.engine.rangeShortcuts }
+	set rangeShortcuts(value: GridRangeShortcut<T>[]) { this.engine.rangeShortcuts = value }
 
 	// Row selection
-	get selectedRows(): number[] { return this.grid.selectedRows }
-	selectRow(rowIndex: number, mode: 'replace' | 'toggle' | 'range' = 'replace'): void { this.grid.selectRow(rowIndex, mode) }
-	selectRowRange(fromIndex: number, toIndex: number): void { this.grid.selectRowRange(fromIndex, toIndex) }
-	clearSelection(): void { this.grid.clearSelection() }
-	isRowSelected(rowIndex: number): boolean { return this.grid.isRowSelected(rowIndex) }
-	getSelectedRowsData(): T[] { return this.grid.getSelectedRowsData() }
-	copySelectedRowsToClipboard(): Promise<boolean> { return this.grid.copySelectedRowsToClipboard() }
+	get selectedRows(): number[] { return this.engine.selectedRows }
+	selectRow(rowIndex: number, mode: 'replace' | 'toggle' | 'range' = 'replace'): void { this.engine.selectRow(rowIndex, mode) }
+	selectRowRange(fromIndex: number, toIndex: number): void { this.engine.selectRowRange(fromIndex, toIndex) }
+	clearSelection(): void { this.engine.clearSelection() }
+	isRowSelected(rowIndex: number): boolean { return this.engine.isRowSelected(rowIndex) }
+	getSelectedRowsData(): T[] { return this.engine.getSelectedRowsData() }
+	copySelectedRowsToClipboard(): Promise<boolean> { return this.engine.copySelectedRowsToClipboard() }
 
 	// Cell range selection
-	get cellSelectionMode() { return this.grid.cellSelectionMode }
-	set cellSelectionMode(value) { this.grid.cellSelectionMode = value }
+	get cellSelectionMode() { return this.engine.cellSelectionMode }
+	set cellSelectionMode(value) { this.engine.cellSelectionMode = value }
 
-	get selectedCellRange() { return this.grid.selectedCellRange }
-	selectCellRange(range: any): void { this.grid.selectCellRange(range) }
-	clearCellSelection(): void { this.grid.clearCellSelection() }
-	getSelectedCells() { return this.grid.getSelectedCells() }
-	copyCellSelectionToClipboard(): Promise<boolean> { return this.grid.copyCellSelectionToClipboard() }
+	get selectedCellRange() { return this.engine.selectedCellRange }
+	selectCellRange(range: any): void { this.engine.selectCellRange(range) }
+	clearCellSelection(): void { this.engine.clearCellSelection() }
+	getSelectedCells() { return this.engine.getSelectedCells() }
+	copyCellSelectionToClipboard(): Promise<boolean> { return this.engine.copyCellSelectionToClipboard() }
 
-	get shouldCopyWithHeaders(): boolean { return this.grid.shouldCopyWithHeaders }
-	set shouldCopyWithHeaders(value: boolean) { this.grid.shouldCopyWithHeaders = value }
-
-	get oncellselectionchange() { return this.grid.oncellselectionchange }
-	set oncellselectionchange(value) { this.grid.oncellselectionchange = value }
+	get shouldCopyWithHeaders(): boolean { return this.engine.shouldCopyWithHeaders }
+	set shouldCopyWithHeaders(value: boolean) { this.engine.shouldCopyWithHeaders = value }
 
 	// New empty row (inline data entry) — EXPERIMENTAL: API may change
-	get isNewRowEnabled(): boolean { return this.grid.isNewRowEnabled }
-	set isNewRowEnabled(value: boolean) { this.grid.isNewRowEnabled = value }
+	get isNewRowEnabled(): boolean { return this.engine.isNewRowEnabled }
+	set isNewRowEnabled(value: boolean) { this.engine.isNewRowEnabled = value }
 
-	get newRowPosition() { return this.grid.newRowPosition }
-	set newRowPosition(value) { this.grid.newRowPosition = value }
+	get newRowPosition() { return this.engine.newRowPosition }
+	set newRowPosition(value) { this.engine.newRowPosition = value }
 
-	get newRowIndicator(): string { return this.grid.newRowIndicator }
-	set newRowIndicator(value: string) { this.grid.newRowIndicator = value }
+	get newRowIndicator(): string { return this.engine.newRowIndicator }
+	set newRowIndicator(value: string) { this.engine.newRowIndicator = value }
 
-	get createEmptyRowCallback() { return this.grid.createEmptyRowCallback }
-	set createEmptyRowCallback(value) { this.grid.createEmptyRowCallback = value }
+	get createEmptyRowCallback() { return this.engine.createEmptyRowCallback }
+	set createEmptyRowCallback(value) { this.engine.createEmptyRowCallback = value }
+
+	/** The copy the `duplicate` built-in inserts (default: shallow copy, `idMember` cleared). */
+	get createDuplicateRowCallback(): ((ctx: RowContext<T>) => T) | undefined { return this.engine.createDuplicateRowCallback }
+	set createDuplicateRowCallback(value: ((ctx: RowContext<T>) => T) | undefined) { this.engine.createDuplicateRowCallback = value }
 
 	// Tree / hierarchy
-	get idMember(): string | null { return this.grid.idMember }
-	set idMember(value: string | null) { this.grid.idMember = value }
+	get idMember(): string | null { return this.engine.idMember }
+	set idMember(value: string | null) { this.engine.idMember = value }
 
-	get treePathMember(): string | null { return this.grid.treePathMember }
-	set treePathMember(value: string | null) { this.grid.treePathMember = value }
+	get treePathMember(): string | null { return this.engine.treePathMember }
+	set treePathMember(value: string | null) { this.engine.treePathMember = value }
 
-	get treeLevelMember(): string | null { return this.grid.treeLevelMember }
-	set treeLevelMember(value: string | null) { this.grid.treeLevelMember = value }
+	get treeLevelMember(): string | null { return this.engine.treeLevelMember }
+	set treeLevelMember(value: string | null) { this.engine.treeLevelMember = value }
 
-	get treeParentMember(): string | null { return this.grid.treeParentMember }
-	set treeParentMember(value: string | null) { this.grid.treeParentMember = value }
+	get treeParentMember(): string | null { return this.engine.treeParentMember }
+	set treeParentMember(value: string | null) { this.engine.treeParentMember = value }
 
-	get treeSeparator(): string | null { return this.grid.treeSeparator }
-	set treeSeparator(value: string | null) { this.grid.treeSeparator = value }
+	get treeSeparator(): string | null { return this.engine.treeSeparator }
+	set treeSeparator(value: string | null) { this.engine.treeSeparator = value }
 
-	get treeDataSorted(): boolean { return this.grid.treeDataSorted }
-	set treeDataSorted(value: boolean) { this.grid.treeDataSorted = value }
+	get treeDataSorted(): boolean { return this.engine.treeDataSorted }
+	set treeDataSorted(value: boolean) { this.engine.treeDataSorted = value }
 
-	get expandedPaths(): Set<string> { return this.grid.expandedPaths }
-	set expandedPaths(value: Set<string> | null | undefined) { this.grid.expandedPaths = value as Set<string> }
+	get expandedPaths(): Set<string> { return this.engine.expandedPaths }
+	set expandedPaths(value: Set<string> | null | undefined) { this.engine.expandedPaths = value as Set<string> }
 
-	get defaultExpandDepth(): number | null { return this.grid.defaultExpandDepth }
-	set defaultExpandDepth(value: number | null) { this.grid.defaultExpandDepth = value }
+	get defaultExpandDepth(): number | null { return this.engine.defaultExpandDepth }
+	set defaultExpandDepth(value: number | null) { this.engine.defaultExpandDepth = value }
 
-	set onexpandedpathschange(value: ((detail: import('./types.js').TreeExpandedChangeDetail) => void) | undefined) {
-		this.grid.onexpandedpathschange = value
+	isPathExpanded(path: string): boolean { return this.engine.isPathExpanded(path) }
+	toggleExpandedPath(path: string): void { this.engine.toggleExpandedPath(path) }
+	expandAll(): void { this.engine.expandAll() }
+	collapseAll(): void { this.engine.collapseAll() }
+
+	get treeDoubleClickBehavior(): import('./types.js').TreeDoubleClickBehavior { return this.engine.treeDoubleClickBehavior }
+	set treeDoubleClickBehavior(value: import('./types.js').TreeDoubleClickBehavior) { this.engine.treeDoubleClickBehavior = value }
+
+	get treeExpandedGlyph(): string { return this.engine.treeExpandedGlyph }
+	set treeExpandedGlyph(value: string) { this.engine.treeExpandedGlyph = value }
+
+	get treeCollapsedGlyph(): string { return this.engine.treeCollapsedGlyph }
+	set treeCollapsedGlyph(value: string) { this.engine.treeCollapsedGlyph = value }
+
+	get renderChevronCallback(): ChevronCallback<T> | undefined { return this.engine.renderChevronCallback }
+	set renderChevronCallback(value: ChevronCallback<T> | undefined) { this.engine.renderChevronCallback = value }
+
+	get isShortcutsHelpVisible(): boolean { return this.engine.isShortcutsHelpVisible }
+	set isShortcutsHelpVisible(value: boolean) { this.engine.isShortcutsHelpVisible = value }
+
+	get shortcutsHelpPosition(): 'top-right' | 'top-left' { return this.engine.shortcutsHelpPosition }
+	set shortcutsHelpPosition(value: 'top-right' | 'top-left') { this.engine.shortcutsHelpPosition = value }
+
+	get renderShortcutsHelpCallback(): ((ctx: GridCallbackContext<T>) => string) | undefined { return this.engine.renderShortcutsHelpCallback }
+	set renderShortcutsHelpCallback(value: ((ctx: GridCallbackContext<T>) => string) | undefined) { this.engine.renderShortcutsHelpCallback = value }
+
+	get getValidationTooltipCallback(): ((ctx: ValidationTooltipContext<T>) => string | null) | undefined {
+		return this.engine.getValidationTooltipCallback
 	}
-	get onexpandedpathschange() { return this.grid.onexpandedpathschange }
-
-	isPathExpanded(path: string): boolean { return this.grid.isPathExpanded(path) }
-	toggleExpandedPath(path: string): void { this.grid.toggleExpandedPath(path) }
-	expandAll(): void { this.grid.expandAll() }
-	collapseAll(): void { this.grid.collapseAll() }
-
-	get treeDoubleClickBehavior(): import('./types.js').TreeDoubleClickBehavior { return this.grid.treeDoubleClickBehavior }
-	set treeDoubleClickBehavior(value: import('./types.js').TreeDoubleClickBehavior) { this.grid.treeDoubleClickBehavior = value }
-
-	get treeExpandedGlyph(): string { return this.grid.treeExpandedGlyph }
-	set treeExpandedGlyph(value: string) { this.grid.treeExpandedGlyph = value }
-
-	get treeCollapsedGlyph(): string { return this.grid.treeCollapsedGlyph }
-	set treeCollapsedGlyph(value: string) { this.grid.treeCollapsedGlyph = value }
-
-	get treeChevronCallback(): import('./types.js').TreeChevronCallback<T> | undefined {
-		return this.grid.treeChevronCallback
-	}
-	set treeChevronCallback(value: import('./types.js').TreeChevronCallback<T> | undefined) {
-		this.grid.treeChevronCallback = value
-	}
-
-	get isShortcutsHelpVisible(): boolean { return this.grid.isShortcutsHelpVisible }
-	set isShortcutsHelpVisible(value: boolean) { this.grid.isShortcutsHelpVisible = value }
-
-	get shortcutsHelpPosition(): 'top-right' | 'top-left' { return this.grid.shortcutsHelpPosition }
-	set shortcutsHelpPosition(value: 'top-right' | 'top-left') { this.grid.shortcutsHelpPosition = value }
-
-	get shortcutsHelpContentCallback(): (() => string) | undefined { return this.grid.shortcutsHelpContentCallback }
-	set shortcutsHelpContentCallback(value: (() => string) | undefined) { this.grid.shortcutsHelpContentCallback = value }
-
-	// Callback setters
-	set onrowchange(value: ((detail: RowChangeDetail<T>) => void) | undefined) {
-		this.grid.onrowchange = value
+	set getValidationTooltipCallback(value: ((ctx: ValidationTooltipContext<T>) => string | null) | undefined) {
+		this.engine.getValidationTooltipCallback = value
 	}
 
-	set onroweditstart(value: ((detail: { row: T, rowIndex: number, field: string }) => void) | undefined) {
-		this.grid.onroweditstart = value
-	}
-
-	set onroweditcancel(value: ((detail: { row: T, rowIndex: number, field: string }) => void) | undefined) {
-		this.grid.onroweditcancel = value
-	}
-
-	set onvalidationerror(value: ((detail: { row: T, rowIndex: number, field: string, error: string }) => void) | undefined) {
-		this.grid.onvalidationerror = value
-	}
-
-	get validationTooltipCallback(): ((context: ValidationTooltipContext<T>) => string | null) | undefined {
-		return this.grid.validationTooltipCallback
-	}
-	set validationTooltipCallback(value: ((context: ValidationTooltipContext<T>) => string | null) | undefined) {
-		this.grid.validationTooltipCallback = value
-	}
-
-	set ontoolbarclick(value: ((detail: ToolbarClickDetail<T>) => void) | undefined) {
-		this.grid.ontoolbarclick = value
-	}
-
-	set onrowaction(value: ((detail: RowActionClickDetail<T>) => void) | undefined) {
-		this.grid.onrowaction = value
-	}
-
-	get oncontextmenuopen(): ((context: ContextMenuContext<T>) => void) | undefined {
-		return this.grid.oncontextmenuopen
-	}
-	set oncontextmenuopen(value: ((context: ContextMenuContext<T>) => void) | undefined) {
-		this.grid.oncontextmenuopen = value
-	}
-
-	get ondatarequest(): ((detail: DataRequestDetail) => void) | undefined {
-		return this.grid.ondatarequest
-	}
-	set ondatarequest(value: ((detail: DataRequestDetail) => void) | undefined) {
-		this.grid.ondatarequest = value
-	}
-
-	get onrowdelete(): ((detail: { rowIndex: number; row: T }) => void) | undefined {
-		return this.grid.onrowdelete
-	}
-	set onrowdelete(value: ((detail: { rowIndex: number; row: T }) => void) | undefined) {
-		this.grid.onrowdelete = value
-	}
-
-	get onrowfocus(): ((detail: RowFocusDetail<T>) => void) | undefined {
-		return this.grid.onrowfocus
-	}
-	set onrowfocus(value: ((detail: RowFocusDetail<T>) => void) | undefined) {
-		this.grid.onrowfocus = value
-	}
-
-	get focusedRowIndex(): number | null { return this.grid.focusedRowIndex }
-	set focusedRowIndex(value: number | null) { this.grid.focusedRowIndex = value }
+	get focusedRowIndex(): number | null { return this.engine.focusedRowIndex }
+	set focusedRowIndex(value: number | null) { this.engine.focusedRowIndex = value }
 
 	// Sorting & Pagination
-	get sort(): SortState[] { return this.grid.sort }
-	set sort(value: SortState[]) { this.grid.sort = value }
+	get sort(): SortState[] { return this.engine.sort }
+	set sort(value: SortState[]) { this.engine.sort = value }
 
-	get sortMode(): SortMode { return this.grid.sortMode }
-	set sortMode(value: SortMode) { this.grid.sortMode = value }
+	get sortMode(): SortMode { return this.engine.sortMode }
+	set sortMode(value: SortMode) { this.engine.sortMode = value }
 
-	get currentPage(): number { return this.grid.currentPage }
-	set currentPage(value: number) { this.grid.currentPage = value }
+	get currentPage(): number { return this.engine.currentPage }
+	set currentPage(value: number) { this.engine.currentPage = value }
 
-	get totalItems(): number | null { return this.grid.totalItems }
-	set totalItems(value: number | null) { this.grid.totalItems = value }
+	get totalItems(): number | null { return this.engine.totalItems }
+	set totalItems(value: number | null) { this.engine.totalItems = value }
 
-	get isPaginationVisible(): boolean | 'auto' { return this.grid.isPaginationVisible }
-	set isPaginationVisible(value: boolean | 'auto') { this.grid.isPaginationVisible = value }
+	get isPaginationVisible(): boolean | 'auto' { return this.engine.isPaginationVisible }
+	set isPaginationVisible(value: boolean | 'auto') { this.engine.isPaginationVisible = value }
 
 	/** @deprecated use `isPaginationVisible` */
-	get showPagination(): boolean | 'auto' { return this.grid.isPaginationVisible }
+	get showPagination(): boolean | 'auto' { return this.engine.isPaginationVisible }
 	/** @deprecated use `isPaginationVisible` */
 	set showPagination(value: boolean | 'auto') { this.isPaginationVisible = value }
 
-	get paginationPosition(): string { return this.grid.paginationPosition }
-	set paginationPosition(value: string) { this.grid.paginationPosition = value }
+	get paginationPosition(): string { return this.engine.paginationPosition }
+	set paginationPosition(value: string) { this.engine.paginationPosition = value }
 
-	get paginationLabelsCallback(): PaginationLabelsCallback | undefined { return this.grid.paginationLabelsCallback }
-	set paginationLabelsCallback(value: PaginationLabelsCallback | undefined) { this.grid.paginationLabelsCallback = value }
+	get getPaginationLabelsCallback(): PaginationLabelsCallback<T> | undefined { return this.engine.getPaginationLabelsCallback }
+	set getPaginationLabelsCallback(value: PaginationLabelsCallback<T> | undefined) { this.engine.getPaginationLabelsCallback = value }
 
-	get paginationLayout(): string { return this.grid.paginationLayout }
-	set paginationLayout(value: string) { this.grid.paginationLayout = value }
+	get paginationLayout(): string { return this.engine.paginationLayout }
+	set paginationLayout(value: string) { this.engine.paginationLayout = value }
 
-	get summaryPosition(): string | undefined { return this.grid.summaryPosition }
-	set summaryPosition(value: string | undefined) { this.grid.summaryPosition = value }
+	get summaryPosition(): string | undefined { return this.engine.summaryPosition }
+	set summaryPosition(value: string | undefined) { this.engine.summaryPosition = value }
 
-	get summaryContentCallback(): SummaryContentCallback<T> | undefined { return this.grid.summaryContentCallback }
-	set summaryContentCallback(value: SummaryContentCallback<T> | undefined) { this.grid.summaryContentCallback = value }
+	get renderSummaryCallback(): SummaryCallback<T> | undefined { return this.engine.renderSummaryCallback }
+	set renderSummaryCallback(value: SummaryCallback<T> | undefined) { this.engine.renderSummaryCallback = value }
 
-	get customStylesCallback(): (() => string) | undefined { return this.grid.customStylesCallback }
-	set customStylesCallback(value: (() => string) | undefined) {
-		this.grid.customStylesCallback = value
+	get getCustomStylesCallback(): ((ctx: GridCallbackContext<T>) => string) | undefined { return this.engine.getCustomStylesCallback }
+	set getCustomStylesCallback(value: ((ctx: GridCallbackContext<T>) => string) | undefined) {
+		this.engine.getCustomStylesCallback = value
 		this.updateCustomStyles()
 	}
 
-	get rowClassCallback(): ((row: T, rowIndex: number) => string | null) | undefined { return this.grid.rowClassCallback }
-	set rowClassCallback(value: ((row: T, rowIndex: number) => string | null) | undefined) { this.grid.rowClassCallback = value }
+	get getRowClassCallback(): ((ctx: RowContext<T>) => string | null) | undefined { return this.engine.getRowClassCallback }
+	set getRowClassCallback(value: ((ctx: RowContext<T>) => string | null) | undefined) { this.engine.getRowClassCallback = value }
 
-	get labels(): GridLabels { return this.grid.labels }
-	set labels(value: Partial<GridLabels>) { this.grid.labels = value }
+	get labels(): GridLabels { return this.engine.labels }
+	set labels(value: Partial<GridLabels>) { this.engine.labels = value }
 
-	get summaryMetadata(): unknown { return this.grid.summaryMetadata }
-	set summaryMetadata(value: unknown) { this.grid.summaryMetadata = value }
+	get summaryMetadata(): unknown { return this.engine.summaryMetadata }
+	set summaryMetadata(value: unknown) { this.engine.summaryMetadata = value }
 
-	get isSummaryInline(): boolean { return this.grid.isSummaryInline }
-	set isSummaryInline(value: boolean) { this.grid.isSummaryInline = value }
+	get isSummaryInline(): boolean { return this.engine.isSummaryInline }
+	set isSummaryInline(value: boolean) { this.engine.isSummaryInline = value }
 
 	// Row identification
-	get idValueMember(): keyof T | undefined { return this.grid.idValueMember }
-	set idValueMember(value: keyof T | undefined) { this.grid.idValueMember = value }
+	get idValueMember(): keyof T | undefined { return this.engine.idValueMember }
+	set idValueMember(value: keyof T | undefined) { this.engine.idValueMember = value }
 
-	get idValueCallback(): ((row: T) => unknown) | undefined { return this.grid.idValueCallback }
-	set idValueCallback(value: ((row: T) => unknown) | undefined) { this.grid.idValueCallback = value }
+	get getRowIdCallback(): ((ctx: RowDataContext<T>) => unknown) | undefined { return this.engine.getRowIdCallback }
+	set getRowIdCallback(value: ((ctx: RowDataContext<T>) => unknown) | undefined) { this.engine.getRowIdCallback = value }
 
 	// Row locking
-	get rowLocking(): RowLockingOptions<T> | undefined { return this.grid.rowLocking }
-	set rowLocking(value: RowLockingOptions<T> | undefined) { this.grid.rowLocking = value }
-
-	get onrowlockchange(): ((detail: RowLockChangeDetail<T>) => void) | undefined { return this.grid.onrowlockchange }
-	set onrowlockchange(value: ((detail: RowLockChangeDetail<T>) => void) | undefined) { this.grid.onrowlockchange = value }
+	get rowLocking(): RowLockingOptions<T> | undefined { return this.engine.rowLocking }
+	set rowLocking(value: RowLockingOptions<T> | undefined) { this.engine.rowLocking = value }
 
 	// Column resize & persistence
-	get gridName(): string | null { return this.grid.gridName }
+	get gridName(): string | null { return this.engine.gridName }
 	set gridName(value: string | null) {
-		this.grid.gridName = value
+		this.engine.gridName = value
 		// Load persisted widths if both gridName and persistColumnWidths are set
 		this.tryLoadPersistedWidths()
 	}
 
-	get shouldPersistColumnWidths(): boolean { return this.grid.shouldPersistColumnWidths }
+	get shouldPersistColumnWidths(): boolean { return this.engine.shouldPersistColumnWidths }
 	set shouldPersistColumnWidths(value: boolean) {
-		this.grid.shouldPersistColumnWidths = value
+		this.engine.shouldPersistColumnWidths = value
 		this.tryLoadPersistedState()
 	}
 
-	get isColumnReorderAllowed(): boolean { return this.grid.isColumnReorderAllowed }
-	set isColumnReorderAllowed(value: boolean) { this.grid.isColumnReorderAllowed = value }
+	get isColumnReorderAllowed(): boolean { return this.engine.isColumnReorderAllowed }
+	set isColumnReorderAllowed(value: boolean) { this.engine.isColumnReorderAllowed = value }
 
-	get shouldPersistColumnOrder(): boolean { return this.grid.shouldPersistColumnOrder }
+	get shouldPersistColumnOrder(): boolean { return this.engine.shouldPersistColumnOrder }
 	set shouldPersistColumnOrder(value: boolean) {
-		this.grid.shouldPersistColumnOrder = value
+		this.engine.shouldPersistColumnOrder = value
 		this.tryLoadPersistedState()
 	}
 
@@ -1060,8 +1046,8 @@ export class GridElement<T = unknown> extends BlissElement implements GridContex
 	 * Try to load persisted state (widths/order) if conditions are met
 	 */
 	private tryLoadPersistedState(): void {
-		if (this.grid.gridName && (this.grid.shouldPersistColumnWidths || this.grid.shouldPersistColumnOrder)) {
-			this.grid.loadPersistedState()
+		if (this.engine.gridName && (this.engine.shouldPersistColumnWidths || this.engine.shouldPersistColumnOrder)) {
+			this.engine.loadPersistedState()
 			// Re-render if we're connected to DOM
 			if (this.isConnected) {
 				this.render()
@@ -1074,117 +1060,106 @@ export class GridElement<T = unknown> extends BlissElement implements GridContex
 		this.tryLoadPersistedState()
 	}
 
-	get oncolumnresize(): ((detail: ColumnResizeDetail) => void) | undefined { return this.grid.oncolumnresize }
-	set oncolumnresize(value: ((detail: ColumnResizeDetail) => void) | undefined) { this.grid.oncolumnresize = value }
-
-	get oncolumnreorder(): ((detail: ColumnReorderDetail) => void) | undefined { return this.grid.oncolumnreorder }
-	set oncolumnreorder(value: ((detail: ColumnReorderDetail) => void) | undefined) { this.grid.oncolumnreorder = value }
-
-	// Fill handle callback
-	get fillDragCallback(): ((detail: FillDragDetail) => boolean | void) | undefined { return this.grid.fillDragCallback }
-	set fillDragCallback(value: ((detail: FillDragDetail) => boolean | void) | undefined) { this.grid.fillDragCallback = value }
+	// Fill handle: `false` cancels the fill (async OK)
+	get beforeFillCallback(): ((ctx: FillContext<T>) => boolean | void | Promise<boolean | void>) | undefined { return this.engine.beforeFillCallback }
+	set beforeFillCallback(value: ((ctx: FillContext<T>) => boolean | void | Promise<boolean | void>) | undefined) { this.engine.beforeFillCallback = value }
 
 	// Scroll behavior
-	get isScrollable(): boolean { return this.grid.isScrollable }
-	set isScrollable(value: boolean) { this.grid.isScrollable = value }
+	get isScrollable(): boolean { return this.engine.isScrollable }
+	set isScrollable(value: boolean) { this.engine.isScrollable = value }
 
-	get scrollMaxHeight(): string { return this.grid.scrollMaxHeight }
-	set scrollMaxHeight(value: string) { this.grid.scrollMaxHeight = value }
+	get scrollMaxHeight(): string { return this.engine.scrollMaxHeight }
+	set scrollMaxHeight(value: string) { this.engine.scrollMaxHeight = value }
 
-	get isTableBorderOnly(): boolean { return this.grid.isTableBorderOnly }
-	set isTableBorderOnly(value: boolean) { this.grid.isTableBorderOnly = value }
+	get isTableBorderOnly(): boolean { return this.engine.isTableBorderOnly }
+	set isTableBorderOnly(value: boolean) { this.engine.isTableBorderOnly = value }
 
 	/** @deprecated use `isTableBorderOnly` */
-	get tableBorderOnly(): boolean { return this.grid.isTableBorderOnly }
+	get tableBorderOnly(): boolean { return this.engine.isTableBorderOnly }
 	/** @deprecated use `isTableBorderOnly` */
 	set tableBorderOnly(value: boolean) { this.isTableBorderOnly = value }
 
 	// Virtual scroll
-	get isVirtualScrollEnabled(): boolean { return this.grid.isVirtualScrollEnabled }
-	set isVirtualScrollEnabled(value: boolean) { this.grid.isVirtualScrollEnabled = value }
+	get isVirtualScrollEnabled(): boolean { return this.engine.isVirtualScrollEnabled }
+	set isVirtualScrollEnabled(value: boolean) { this.engine.isVirtualScrollEnabled = value }
 
-	get virtualScrollThreshold(): number { return this.grid.virtualScrollThreshold }
-	set virtualScrollThreshold(value: number) { this.grid.virtualScrollThreshold = value }
+	get virtualScrollThreshold(): number { return this.engine.virtualScrollThreshold }
+	set virtualScrollThreshold(value: number) { this.engine.virtualScrollThreshold = value }
 
-	get virtualScrollRowHeight(): number { return this.grid.virtualScrollRowHeight }
-	set virtualScrollRowHeight(value: number) { this.grid.virtualScrollRowHeight = value }
+	get virtualScrollRowHeight(): number { return this.engine.virtualScrollRowHeight }
+	set virtualScrollRowHeight(value: number) { this.engine.virtualScrollRowHeight = value }
 
-	get virtualScrollBuffer(): number { return this.grid.virtualScrollBuffer }
-	set virtualScrollBuffer(value: number) { this.grid.virtualScrollBuffer = value }
+	get virtualScrollBuffer(): number { return this.engine.virtualScrollBuffer }
+	set virtualScrollBuffer(value: number) { this.engine.virtualScrollBuffer = value }
 
 	// Infinite scroll
-	get isInfiniteScrollEnabled(): boolean { return this.grid.isInfiniteScrollEnabled }
-	set isInfiniteScrollEnabled(value: boolean) { this.grid.isInfiniteScrollEnabled = value }
+	get isInfiniteScrollEnabled(): boolean { return this.engine.isInfiniteScrollEnabled }
+	set isInfiniteScrollEnabled(value: boolean) { this.engine.isInfiniteScrollEnabled = value }
 
-	get infiniteScrollThreshold(): number { return this.grid.infiniteScrollThreshold }
-	set infiniteScrollThreshold(value: number) { this.grid.infiniteScrollThreshold = value }
+	get infiniteScrollThreshold(): number { return this.engine.infiniteScrollThreshold }
+	set infiniteScrollThreshold(value: number) { this.engine.infiniteScrollThreshold = value }
 
-	get hasMoreItems(): boolean { return this.grid.hasMoreItems }
-	set hasMoreItems(value: boolean) { this.grid.hasMoreItems = value }
+	get hasMoreItems(): boolean { return this.engine.hasMoreItems }
+	set hasMoreItems(value: boolean) { this.engine.hasMoreItems = value }
 
 	// Paste
-	// `onbeforepaste`, `pasteMode`, `shouldValidateOnPaste` are straight
-	// proxies. `onpaste` is special: HTMLElement already defines it as a
-	// ClipboardEvent handler, and declaring an incompatible class accessor
-	// would break the structural-typing contract with HTMLElement (and the
-	// `customElements.define` call). Instead we install our proxy at
-	// construction time via Object.defineProperty (see installPasteProxy
-	// below). TypeScript will still report the native ClipboardEvent type
-	// when consumers read `el.onpaste`; in practice consumers should set
-	// `onpaste` for the PasteDetail callback or fall back to
-	// `el.grid.onpaste` for full type fidelity.
-	get onbeforepaste(): ((detail: BeforePasteDetail<T>) => void) | undefined { return this.grid.onbeforepaste }
-	set onbeforepaste(value: ((detail: BeforePasteDetail<T>) => void) | undefined) { this.grid.onbeforepaste = value }
+	/** Before a multi-cell paste: `false` cancels; add "row-col" keys to `ctx.skipCells` to skip cells (async OK). */
+	get beforePasteCallback(): ((ctx: BeforePasteContext<T>) => boolean | void | Promise<boolean | void>) | undefined { return this.engine.beforePasteCallback }
+	set beforePasteCallback(value: ((ctx: BeforePasteContext<T>) => boolean | void | Promise<boolean | void>) | undefined) { this.engine.beforePasteCallback = value }
 
-	get pasteMode(): PasteMode { return this.grid.pasteMode }
-	set pasteMode(value: PasteMode) { this.grid.pasteMode = value }
+	/** New row for pasted data past the last row. */
+	get createRowCallback(): CreateRowCallback<T> | undefined { return this.engine.createRowCallback }
+	set createRowCallback(value: CreateRowCallback<T> | undefined) { this.engine.createRowCallback = value }
 
-	get shouldValidateOnPaste(): boolean { return this.grid.shouldValidateOnPaste }
-	set shouldValidateOnPaste(value: boolean) { this.grid.shouldValidateOnPaste = value }
+	get pasteMode(): PasteMode { return this.engine.pasteMode }
+	set pasteMode(value: PasteMode) { this.engine.pasteMode = value }
+
+	get shouldValidateOnPaste(): boolean { return this.engine.shouldValidateOnPaste }
+	set shouldValidateOnPaste(value: boolean) { this.engine.shouldValidateOnPaste = value }
 
 	// Computed properties
-	get displayItems(): T[] { return this.grid.displayItems }
-	get totalPages(): number { return this.grid.totalPages }
-	get isNavigateMode(): boolean { return this.grid.isNavigateMode }
+	get displayItems(): T[] { return this.engine.displayItems }
+	get totalPages(): number { return this.engine.totalPages }
+	get isNavigateMode(): boolean { return this.engine.isNavigateMode }
 
 	// Draft row methods
-	getRowDraft(rowIndex: number): T | undefined { return this.grid.getRowDraft(rowIndex) }
-	hasRowDraft(rowIndex: number): boolean { return this.grid.hasRowDraft(rowIndex) }
-	discardRowDraft(rowIndex: number): void { this.grid.discardRowDraft(rowIndex) }
-	getDraftRowIndices(): number[] { return this.grid.getDraftRowIndices() }
-	discardAllDrafts(): void { this.grid.discardAllDrafts() }
+	getRowDraft(rowIndex: number): T | undefined { return this.engine.getRowDraft(rowIndex) }
+	hasRowDraft(rowIndex: number): boolean { return this.engine.hasRowDraft(rowIndex) }
+	discardRowDraft(rowIndex: number): void { this.engine.discardRowDraft(rowIndex) }
+	getDraftRowIndices(): number[] { return this.engine.getDraftRowIndices() }
+	discardAllDrafts(): void { this.engine.discardAllDrafts() }
 
 	// Validation methods
-	isCellInvalid(rowIndex: number, field: string): boolean { return this.grid.isCellInvalid(rowIndex, field) }
-	getCellValidationError(rowIndex: number, field: string): string | null { return this.grid.getCellValidationError(rowIndex, field) }
+	isCellInvalid(rowIndex: number, field: string): boolean { return this.engine.isCellInvalid(rowIndex, field) }
+	getCellValidationError(rowIndex: number, field: string): string | null { return this.engine.getCellValidationError(rowIndex, field) }
 
 	// Row identification methods
-	getRowId(row: T): unknown | undefined { return this.grid.getRowId(row) }
-	findRowById(id: unknown): { row: T; index: number } | null { return this.grid.findRowById(id) }
+	getRowId(row: T): unknown | undefined { return this.engine.getRowId(row) }
+	findRowById(id: unknown): { row: T; index: number } | null { return this.engine.findRowById(id) }
 
 	// Row locking methods
-	isRowLocked(rowOrId: T | unknown): boolean { return this.grid.isRowLocked(rowOrId) }
-	getRowLockInfo(rowOrId: T | unknown): RowLock | null { return this.grid.getRowLockInfo(rowOrId) }
-	lockRowById(id: unknown, lockerInfo?: Partial<RowLock>): boolean { return this.grid.lockRowById(id, lockerInfo) }
-	unlockRowById(id: unknown): boolean { return this.grid.unlockRowById(id) }
-	getExternalLocks(): Map<unknown, RowLock> { return this.grid.getExternalLocks() }
-	clearExternalLocks(): void { this.grid.clearExternalLocks() }
+	isRowLocked(rowOrId: T | unknown): boolean { return this.engine.isRowLocked(rowOrId) }
+	getRowLockInfo(rowOrId: T | unknown): RowLock | null { return this.engine.getRowLockInfo(rowOrId) }
+	lockRowById(id: unknown, lockerInfo?: Partial<RowLock>): boolean { return this.engine.lockRowById(id, lockerInfo) }
+	unlockRowById(id: unknown): boolean { return this.engine.unlockRowById(id) }
+	getExternalLocks(): Map<unknown, RowLock> { return this.engine.getExternalLocks() }
+	clearExternalLocks(): void { this.engine.clearExternalLocks() }
 
 	// Row update methods (for WebSocket/external updates)
-	updateRowById(id: unknown, newData: Partial<T>): boolean { return this.grid.updateRowById(id, newData) }
-	replaceRowById(id: unknown, newRow: T): boolean { return this.grid.replaceRowById(id, newRow) }
+	updateRowById(id: unknown, newData: Partial<T>): boolean { return this.engine.updateRowById(id, newData) }
+	replaceRowById(id: unknown, newRow: T): boolean { return this.engine.replaceRowById(id, newRow) }
 
 	// Edit permission check
-	canEditCell(rowIndex: number, field: string): boolean { return this.grid.canEditCell(rowIndex, field) }
+	canEditCell(rowIndex: number, field: string): boolean { return this.engine.canEditCell(rowIndex, field) }
 
 	// Column width methods
-	setColumnWidth(field: string, width: string): void { this.grid.setColumnWidth(field, width) }
-	setColumnWidths(widths: ColumnWidthState[]): void { this.grid.setColumnWidths(widths) }
-	getColumnWidthsState(): ColumnWidthState[] { return this.grid.getColumnWidthsState() }
+	setColumnWidth(field: string, width: string): void { this.engine.setColumnWidth(field, width) }
+	setColumnWidths(widths: ColumnWidthState[]): void { this.engine.setColumnWidths(widths) }
+	getColumnWidthsState(): ColumnWidthState[] { return this.engine.getColumnWidthsState() }
 
 	// Column order methods
-	setColumnOrder(order: ColumnOrderState[]): void { this.grid.setColumnOrder(order) }
-	getColumnOrderState(): ColumnOrderState[] { return this.grid.getColumnOrderState() }
+	setColumnOrder(order: ColumnOrderState[]): void { this.engine.setColumnOrder(order) }
+	getColumnOrderState(): ColumnOrderState[] { return this.engine.getColumnOrderState() }
 
 	// Public methods for focus and editing
 	/**
@@ -1192,13 +1167,13 @@ export class GridElement<T = unknown> extends BlissElement implements GridContex
 	 * State is updated immediately so pending renders use the correct position.
 	 */
 	focusCell(rowIndex: number, colIndex: number): void {
-		const columns = this.grid.columns
-		const displayItems = this.grid.displayItems
+		const columns = this.engine.columns
+		const displayItems = this.engine.displayItems
 		if (rowIndex < 0 || rowIndex >= displayItems.length) return
 		if (colIndex < 0 || colIndex >= columns.length) return
 
 		// Update state immediately so any pending render uses the correct position
-		this.grid.setFocusedCell(rowIndex, colIndex)
+		this.engine.setFocusedCell(rowIndex, colIndex)
 
 		// Schedule DOM focus for after any pending render completes
 		requestAnimationFrame(() => {
@@ -1211,14 +1186,14 @@ export class GridElement<T = unknown> extends BlissElement implements GridContex
 	 * Uses surgical DOM update instead of full re-render.
 	 */
 	startEditing(rowIndex: number, colIndex: number): void {
-		const columns = this.grid.columns
+		const columns = this.engine.columns
 		if (colIndex < 0 || colIndex >= columns.length) return
 
 		const column = columns[colIndex]
 		const field = String(column.field)
 
 		// Update state (no longer triggers requestUpdate)
-		this.grid.startEdit(rowIndex, field)
+		this.engine.startEdit(rowIndex, field)
 
 		// Surgical DOM update
 		const cell = this.shadow.querySelector(
@@ -1232,7 +1207,7 @@ export class GridElement<T = unknown> extends BlissElement implements GridContex
 	}
 
 	// ==========================================================================
-	// GridContext Implementation - Required by module functions
+	// GridHost Implementation - Required by module functions
 	// ==========================================================================
 
 	escapeHtml(text: string): string {
@@ -1242,12 +1217,12 @@ export class GridElement<T = unknown> extends BlissElement implements GridContex
 	}
 
 	getCurrentEditingColumn(): Column<T> | null {
-		const editingCell = this.grid.editingCell
+		const editingCell = this.engine.editingCell
 		if (!editingCell) return null
-		return this.grid.columns.find(c => String(c.field) === editingCell.field) || null
+		return this.engine.columns.find(c => String(c.field) === editingCell.field) || null
 	}
 
-	getCurrentEditorOptions(): EditorOptions {
+	getCurrentEditorOptions(): EditorOptions<T> {
 		const column = this.getCurrentEditingColumn()
 		return column?.editorOptions || {}
 	}
@@ -1278,12 +1253,12 @@ export class GridElement<T = unknown> extends BlissElement implements GridContex
 	}
 
 	/**
-	 * Update custom styles in shadow DOM from customStylesCallback
+	 * Update custom styles in shadow DOM from getCustomStylesCallback
 	 */
 	private updateCustomStyles(): void {
-		const callback = this.grid.customStylesCallback
+		const callback = this.engine.getCustomStylesCallback
 		if (callback) {
-			const css = callback()
+			const css = callback(this.engine.ctx({}))
 			if (!this.customStyleElement) {
 				this.customStyleElement = document.createElement('style')
 				this.shadow.appendChild(this.customStyleElement)
@@ -1315,7 +1290,7 @@ export class GridElement<T = unknown> extends BlissElement implements GridContex
 		table.addEventListener('mousedown', () => { this.isMouseDown = true }, true)
 		document.addEventListener('mouseup', () => { this.isMouseDown = false }, true)
 
-		// Focus — capture-phase, drives handleCellFocus + always-edit-mode swap + onrowfocus (keyboard only)
+		// Focus — capture-phase, drives handleCellFocus + always-edit-mode swap + row-focus (keyboard only)
 		// Extracted to modules/events/table-focus.ts
 		table.addEventListener('focus', (e: Event) => handleTableFocus(this, e), true)
 
@@ -1402,7 +1377,7 @@ export class GridElement<T = unknown> extends BlissElement implements GridContex
 		// Scroll events - close dropdown + virtual scroll + infinite scroll + connector update
 		const container = this.shadow.querySelector('.wg') as HTMLElement
 		// When isTableBorderOnly is enabled, scroll container is .wg__table-container
-		const scrollContainer = this.grid.isTableBorderOnly
+		const scrollContainer = this.engine.isTableBorderOnly
 			? (this.shadow.querySelector('.wg__table-container') as HTMLElement) || container
 			: container
 		if (container) {
@@ -1475,9 +1450,9 @@ export class GridElement<T = unknown> extends BlissElement implements GridContex
 
 		const { scrollTop, startIndex, endIndex } = calculateScrollToRow({
 			targetRow,
-			rowHeight: this.grid.virtualScrollRowHeight,
-			buffer: this.grid.virtualScrollBuffer,
-			totalItems: this.grid.displayItems.length,
+			rowHeight: this.engine.virtualScrollRowHeight,
+			buffer: this.engine.virtualScrollBuffer,
+			totalItems: this.engine.displayItems.length,
 			viewportHeight: container.clientHeight,
 			scrollHeight: container.scrollHeight,
 			clientHeight: container.clientHeight
@@ -1506,28 +1481,28 @@ export class GridElement<T = unknown> extends BlissElement implements GridContex
 	render(): void {
 		// Drop any stale data-pipeline cache. Normally requestUpdate() has already
 		// done this, but render() is also called directly in a few places.
-		this.grid.invalidateDisplayCache()
+		this.engine.invalidateDisplayCache()
 		gridPerf.reset()
 		const __renderStartT = performance.now()
-		uiLogger.debug('render:', this.grid.displayItems.length, 'rows,', this.grid.visualColumns.length, 'columns')
+		uiLogger.debug('render:', this.engine.displayItems.length, 'rows,', this.engine.visualColumns.length, 'columns')
 		// Preserve scroll position before re-render
 		// When isTableBorderOnly is enabled, scroll container is .wg__table-container
 		const oldContainer = this.shadow.querySelector('.wg') as HTMLElement
-		const oldScrollContainer = this.grid.isTableBorderOnly
+		const oldScrollContainer = this.engine.isTableBorderOnly
 			? (this.shadow.querySelector('.wg__table-container') as HTMLElement) || oldContainer
 			: oldContainer
 		const scrollTop = oldScrollContainer?.scrollTop || 0
 		const scrollLeft = oldScrollContainer?.scrollLeft || 0
 
 		// Preserve focused cell position (for restoring after re-render)
-		const focusedCell = this.grid.focusedCell
+		const focusedCell = this.engine.focusedCell
 
 		// Parse pagination positions (e.g., "bottom-center" or "top-right|bottom-right")
-		const paginationPositions = this.grid.paginationPosition.split('|').map(p => p.trim())
+		const paginationPositions = this.engine.paginationPosition.split('|').map(p => p.trim())
 
 		// Parse summary positions (if set)
-		const summaryPositions = this.grid.summaryPosition
-			? this.grid.summaryPosition.split('|').map(p => p.trim())
+		const summaryPositions = this.engine.summaryPosition
+			? this.engine.summaryPosition.split('|').map(p => p.trim())
 			: []
 
 		// Helper to render content for a position area (top or bottom)
@@ -1546,7 +1521,7 @@ export class GridElement<T = unknown> extends BlissElement implements GridContex
 			if (!areaHasPagination && !areaHasSummary) return ''
 
 			// If both exist in this area and summaryInline is true, combine into single footer
-			if (areaHasSummary && areaHasPagination && this.grid.isSummaryInline) {
+			if (areaHasSummary && areaHasPagination && this.engine.isSummaryInline) {
 				const topClass = isTop ? ' wg__footer--top' : ''
 				return `<div class="wg__footer${topClass}">
 					${renderSummary(this, areaSummaryPositions[0])}
@@ -1580,15 +1555,15 @@ export class GridElement<T = unknown> extends BlissElement implements GridContex
 		const bottomContent = renderPositionArea(paginationPositions, false)
 
 		// Determine if we should use virtual scrolling
-		const useVirtualScroll = this.grid.shouldUseVirtualScroll()
+		const useVirtualScroll = this.engine.shouldUseVirtualScroll()
 
 		// Get data rows HTML (virtual or normal)
 		let dataRowsHtml: string
 		if (useVirtualScroll) {
 			// Calculate virtual scroll params
-			const items = this.grid.displayItems
-			const rowHeight = this.grid.virtualScrollRowHeight
-			const buffer = this.grid.virtualScrollBuffer
+			const items = this.engine.displayItems
+			const rowHeight = this.engine.virtualScrollRowHeight
+			const buffer = this.engine.virtualScrollBuffer
 
 			// Use stored scroll position for calculation (scrollTop from old container)
 			const viewportHeight = oldContainer?.clientHeight || 400  // Default height if not available
@@ -1628,7 +1603,7 @@ export class GridElement<T = unknown> extends BlissElement implements GridContex
 		const existingTopArea = oldContainer?.querySelector(':scope > .wg__top-area') as HTMLElement | null
 		const existingBottomArea = oldContainer?.querySelector(':scope > .wg__bottom-area') as HTMLElement | null
 		const currentlyHasTableContainer = !!oldContainer?.querySelector(':scope > .wg__table-container')
-		const wantsTableContainer = !!this.grid.isTableBorderOnly
+		const wantsTableContainer = !!this.engine.isTableBorderOnly
 		const canSurgicalUpdate = !!oldContainer
 			&& !!existingTable
 			&& !!existingThead
@@ -1645,8 +1620,8 @@ export class GridElement<T = unknown> extends BlissElement implements GridContex
 			container.className = getContainerClasses(this)
 			if (useVirtualScroll) container.classList.add('wg--virtual-scroll')
 
-			if (this.grid.isScrollable && this.grid.scrollMaxHeight !== '100vh') {
-				container.style.setProperty('--wg-scroll-max-height', this.grid.scrollMaxHeight)
+			if (this.engine.isScrollable && this.engine.scrollMaxHeight !== '100vh') {
+				container.style.setProperty('--wg-scroll-max-height', this.engine.scrollMaxHeight)
 			} else {
 				container.style.removeProperty('--wg-scroll-max-height')
 			}
@@ -1658,10 +1633,10 @@ export class GridElement<T = unknown> extends BlissElement implements GridContex
 
 			// Virtual scroll may have changed visible window — clamp scrollTop if it's now out of range
 			if (useVirtualScroll) {
-				const sc = this.grid.isTableBorderOnly
+				const sc = this.engine.isTableBorderOnly
 					? (container.querySelector('.wg__table-container') as HTMLElement) || container
 					: container
-				const maxScrollTop = Math.max(0, this.grid.displayItems.length * this.grid.virtualScrollRowHeight - sc.clientHeight)
+				const maxScrollTop = Math.max(0, this.engine.displayItems.length * this.engine.virtualScrollRowHeight - sc.clientHeight)
 				if (sc.scrollTop > maxScrollTop) sc.scrollTop = maxScrollTop
 			}
 		} else {
@@ -1672,8 +1647,8 @@ export class GridElement<T = unknown> extends BlissElement implements GridContex
 			container.className = getContainerClasses(this)
 			if (useVirtualScroll) container.classList.add('wg--virtual-scroll')
 
-			if (this.grid.isScrollable && this.grid.scrollMaxHeight !== '100vh') {
-				container.style.setProperty('--wg-scroll-max-height', this.grid.scrollMaxHeight)
+			if (this.engine.isScrollable && this.engine.scrollMaxHeight !== '100vh') {
+				container.style.setProperty('--wg-scroll-max-height', this.engine.scrollMaxHeight)
 			}
 
 			const tableCore = `
@@ -1682,7 +1657,7 @@ export class GridElement<T = unknown> extends BlissElement implements GridContex
 					<tbody>${dataRowsHtml}</tbody>
 				</table>
 			`
-			const tableWithContainer = this.grid.isTableBorderOnly
+			const tableWithContainer = this.engine.isTableBorderOnly
 				? `<div class="wg__table-container">${tableCore}</div>`
 				: tableCore
 
@@ -1695,12 +1670,12 @@ export class GridElement<T = unknown> extends BlissElement implements GridContex
 			this.shadow.appendChild(container)
 
 			// Restore scroll position (only needed when container was replaced)
-			const scrollContainer = this.grid.isTableBorderOnly
+			const scrollContainer = this.engine.isTableBorderOnly
 				? (container.querySelector('.wg__table-container') as HTMLElement) || container
 				: container
 
 			if (useVirtualScroll) {
-				const maxScrollTop = Math.max(0, this.grid.displayItems.length * this.grid.virtualScrollRowHeight - scrollContainer.clientHeight)
+				const maxScrollTop = Math.max(0, this.engine.displayItems.length * this.engine.virtualScrollRowHeight - scrollContainer.clientHeight)
 				scrollContainer.scrollTop = Math.min(scrollTop, maxScrollTop)
 			} else {
 				scrollContainer.scrollTop = scrollTop
@@ -1734,19 +1709,19 @@ export class GridElement<T = unknown> extends BlissElement implements GridContex
 		updateFillHandle(this)
 
 		// Update cell range border after render
-		if (this.grid.selectedCellRange) {
+		if (this.engine.selectedCellRange) {
 			updateRangeBorder(this)
 		}
 
 		// Update row selection borders after render
-		if (this.grid.selectedRows.length > 0) {
+		if (this.engine.selectedRows.length > 0) {
 			createRowSelectionBorders(this)
 		} else {
 			removeRowSelectionBorders()
 		}
 
 		// Update column selection borders after render
-		if (this.grid.selectedColumns.length > 0) {
+		if (this.engine.selectedColumns.length > 0) {
 			createColumnSelectionBorders(this)
 		} else {
 			removeColumnSelectionBorders()
@@ -1800,6 +1775,14 @@ export class GridElement<T = unknown> extends BlissElement implements GridContex
 
 	/** Paste event handler — see modules/paste/handlePasteEvent */
 	private handlePaste = (e: ClipboardEvent): Promise<void> => handlePasteEvent(this, e)
+
+	/**
+	 * The public facade (`el.controller`, and `controller` on every callback ctx and
+	 * event detail).
+	 */
+	protected override createController(): GridController<T> {
+		return createGridController<T>(this)
+	}
 }
 
 // Register the custom element

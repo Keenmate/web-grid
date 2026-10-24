@@ -3,7 +3,7 @@
 // Multi-row selection via row number cells with drag support
 // =============================================================================
 
-import type { GridContext } from '../grid-context.js'
+import type { GridHost } from '../grid-context.js'
 import { removeRangeBorder } from '../cell-selection/index.js'
 import { cleanupEditState } from '../navigation/index.js'
 
@@ -33,7 +33,7 @@ let selectionState: SelectionState = {
 }
 
 // Store the current context for document-level handlers
-let activeContext: GridContext | null = null
+let activeContext: GridHost | null = null
 
 /**
  * Focus the .wg container so keyboard shortcuts (Escape, range shortcuts) work.
@@ -44,7 +44,7 @@ let activeContext: GridContext | null = null
  * during the click sequence — by the second RAF the click sequence has fully
  * settled and the focus call is durable.
  */
-function focusContainerForShortcuts<T>(ctx: GridContext<T>): void {
+function focusContainerForShortcuts<T>(ctx: GridHost<T>): void {
 	queueMicrotask(() => {
 		const container = ctx.shadow.querySelector('.wg') as HTMLElement | null
 		container?.focus({ preventScroll: true })
@@ -74,7 +74,7 @@ export function isSelectionPending(): boolean {
 /**
  * Handle mousedown on a row number cell
  */
-export function handleRowNumberMouseDown<T>(ctx: GridContext<T>, rowIndex: number, event: MouseEvent): void {
+export function handleRowNumberMouseDown<T>(ctx: GridHost<T>, rowIndex: number, event: MouseEvent): void {
 	event.preventDefault()
 	event.stopPropagation()
 
@@ -82,32 +82,32 @@ export function handleRowNumberMouseDown<T>(ctx: GridContext<T>, rowIndex: numbe
 	cleanupEditState(ctx)
 
 	// Clear cell range selection when selecting rows
-	if (ctx.grid.selectedCellRange) {
-		ctx.grid.clearCellSelection()
+	if (ctx.engine.selectedCellRange) {
+		ctx.engine.clearCellSelection()
 		removeRangeBorder()
 	}
 
 	// Clear focused cell when selecting rows
-	if (ctx.grid.focusedCell) {
-		const { rowIndex: focusedRow, colIndex: focusedCol } = ctx.grid.focusedCell
+	if (ctx.engine.focusedCell) {
+		const { rowIndex: focusedRow, colIndex: focusedCol } = ctx.engine.focusedCell
 		const focusedCellEl = ctx.shadow.querySelector(
 			`.wg__cell[data-row="${focusedRow}"][data-col="${focusedCol}"]`
 		)
 		focusedCellEl?.classList.remove('wg__cell--focused')
-		ctx.grid.clearFocusedCell()
+		ctx.engine.clearFocusedCell()
 	}
 
 	// Determine selection mode based on modifier keys
 	if (event.ctrlKey || event.metaKey) {
 		// Ctrl+Click: Toggle selection
-		ctx.grid.selectRow(rowIndex, 'toggle')
+		ctx.engine.selectRow(rowIndex, 'toggle')
 		focusContainerForShortcuts(ctx)
 		return
 	}
 
 	if (event.shiftKey) {
 		// Shift+Click: Range selection from last selected
-		ctx.grid.selectRow(rowIndex, 'range')
+		ctx.engine.selectRow(rowIndex, 'range')
 		focusContainerForShortcuts(ctx)
 		return
 	}
@@ -122,10 +122,10 @@ export function handleRowNumberMouseDown<T>(ctx: GridContext<T>, rowIndex: numbe
 		currentRowIndex: rowIndex
 	}
 
-	activeContext = ctx as GridContext
+	activeContext = ctx as GridHost
 
 	// Select the row immediately (replace mode)
-	ctx.grid.selectRow(rowIndex, 'replace')
+	ctx.engine.selectRow(rowIndex, 'replace')
 
 	// Focus the container so keyboard shortcuts work
 	focusContainerForShortcuts(ctx)
@@ -161,14 +161,14 @@ function handleDocumentMouseMove(e: MouseEvent): void {
 	if (rowIndex !== null && rowIndex !== selectionState.currentRowIndex) {
 		selectionState.currentRowIndex = rowIndex
 		// Update selection range
-		activeContext.grid.selectRowRange(selectionState.startRowIndex, rowIndex)
+		activeContext.engine.selectRowRange(selectionState.startRowIndex, rowIndex)
 	}
 }
 
 /**
  * Start the actual drag operation (after threshold exceeded)
  */
-function startActualDrag<T>(ctx: GridContext<T>): void {
+function startActualDrag<T>(ctx: GridHost<T>): void {
 	selectionState.isPending = false
 	selectionState.isDragging = true
 
@@ -211,7 +211,7 @@ function handleDocumentMouseUp(): void {
 /**
  * Find which row is at a given Y coordinate
  */
-function findRowAtPoint<T>(ctx: GridContext<T>, y: number): number | null {
+function findRowAtPoint<T>(ctx: GridHost<T>, y: number): number | null {
 	const rows = ctx.shadow.querySelectorAll('.wg__row[data-row-index]')
 
 	for (const row of rows) {
@@ -245,7 +245,7 @@ function findRowAtPoint<T>(ctx: GridContext<T>, y: number): number | null {
 /**
  * Clear selection when clicking outside row numbers
  */
-export function handleContainerClick<T>(ctx: GridContext<T>, event: MouseEvent): void {
+export function handleContainerClick<T>(ctx: GridHost<T>, event: MouseEvent): void {
 	const target = event.target as HTMLElement
 
 	// Don't clear if clicking on row number
@@ -259,15 +259,15 @@ export function handleContainerClick<T>(ctx: GridContext<T>, event: MouseEvent):
 	}
 
 	// Clear selection
-	ctx.grid.clearSelection()
+	ctx.engine.clearSelection()
 }
 
 /**
  * Handle Escape key to clear selection
  */
-export function handleEscapeKey<T>(ctx: GridContext<T>): boolean {
-	if (ctx.grid.selectedRows.length > 0) {
-		ctx.grid.clearSelection()
+export function handleEscapeKey<T>(ctx: GridHost<T>): boolean {
+	if (ctx.engine.selectedRows.length > 0) {
+		ctx.engine.clearSelection()
 		return true // Handled
 	}
 	return false // Not handled

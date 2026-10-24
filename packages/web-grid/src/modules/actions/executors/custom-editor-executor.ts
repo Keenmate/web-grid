@@ -1,6 +1,6 @@
 // =============================================================================
 // Custom Editor Executor
-// Handles openCustomEditor action - calls cellEditCallback
+// Handles openCustomEditor action - calls renderEditorCallback
 // =============================================================================
 
 import type { ActionExecutor, ExecutorContext } from '../pipeline.js'

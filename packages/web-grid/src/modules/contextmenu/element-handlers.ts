@@ -1,28 +1,36 @@
 // =============================================================================
 // Context-menu element-handlers
 // =============================================================================
-// Extracted from GridElement. Wires the document-level `contextmenu` event to
-// the three menu surfaces the grid supports — cell, column-header, and
-// header-filler — and owns the open/close lifecycle for the menu element
-// tracked on `ctx.contextMenuElement` / `ctx.headerContextMenuElement`.
+// Extracted from GridElement. Wires the host's `contextmenu` event to the three
+// menu surfaces the grid supports — cell, column-header, and header-filler — and
+// owns the open/close lifecycle for the menu element tracked on
+// `ctx.contextMenuElement` / `ctx.headerContextMenuElement`.
 
-import type { GridContext } from '../grid-context.js'
-import type { Column, HeaderMenuContext } from '../../types.js'
+import { runBeforeCallbackSync } from '@keenmate/web-components-core'
+import type { MenuItem } from '@keenmate/web-components-core/actions'
+import type { GridHost } from '../grid-context.js'
+import type {
+	CellContext,
+	GridHeaderAction,
+	GridHeaderMenuEntry,
+	GridMenuEntry,
+	HeaderMenuContext
+} from '../../interaction.js'
+import { closeContextMenu, openContextMenu } from './index.js'
 import {
-	closeContextMenu,
-	openContextMenu,
-	openHeaderContextMenu,
-	normalizeContextMenu,
-	normalizeHeaderMenuItems,
-	executeHeaderMenuAction
-} from './index.js'
+	activateGridItem,
+	cellMenuDefaults,
+	headerMenuDefaults,
+	normalizeEntry,
+	withHeaderBuiltInChildren
+} from '../items/index.js'
 
 /**
  * Top-level right-click dispatcher: routes to header / filler / cell handlers
- * based on the click target. Called unconditionally on the host listener;
- * each sub-handler decides whether to preventDefault.
+ * based on the click target. Each sub-handler decides whether to preventDefault
+ * (no menu → the browser's shows).
  */
-export function handleContextMenu<T>(ctx: GridContext<T>, e: MouseEvent): void {
+export function handleContextMenu<T>(ctx: GridHost<T>, e: MouseEvent): void {
 	const target = e.target as HTMLElement
 
 	// Check for header right-click first
@@ -39,18 +47,37 @@ export function handleContextMenu<T>(ctx: GridContext<T>, e: MouseEvent): void {
 		return
 	}
 
-	// Handle cell context menu
-	const contextMenuConfig = ctx.grid.contextMenu
-	if (!contextMenuConfig || contextMenuConfig.length === 0) {
+	// Cell context menu
+	const engine = ctx.engine
+	if (!engine.contextMenu?.length && !engine.beforeContextMenuOpenCallback) {
 		return // No context menu defined, use browser default
 	}
-	// Expand string shorthand and `type`-based items into fully-defined items
-	const contextMenuItems = normalizeContextMenu(contextMenuConfig, ctx.grid)
 
 	const cell = target.closest('.wg__cell') as HTMLElement
-	if (!cell) {
-		return // Right-click not on a cell
+	if (!cell) return // Right-click not on a cell
+
+	const rowIndex = parseInt(cell.dataset.row || '0', 10)
+	const colIndex = parseInt(cell.dataset.col || '0', 10)
+	const column = engine.columns[colIndex]
+	if (!column) return
+	const row = engine.displayItems[rowIndex]
+	if (!row) return
+
+	const fields = {
+		row,
+		rowIndex,
+		column,
+		colIndex,
+		field: String(column.field),
+		value: engine.getCellRawValue(row, rowIndex, String(column.field))
 	}
+	const menuCtx: CellContext<T> = engine.ctx(fields)
+
+	// beforeContextMenuOpenCallback: false → no grid menu (the browser's shows); entries → shown instead
+	const gate = runBeforeCallbackSync<CellContext<T>, GridMenuEntry<T>[]>(engine.beforeContextMenuOpenCallback, menuCtx, 'beforeContextMenuOpenCallback')
+	if (gate.isCancelled) return
+	const entries = 'value' in gate && Array.isArray(gate.value) ? gate.value : engine.contextMenu ?? []
+	if (!entries.length) return
 
 	e.preventDefault()
 
@@ -58,294 +85,146 @@ export function handleContextMenu<T>(ctx: GridContext<T>, e: MouseEvent): void {
 	if (ctx.contextMenuElement) {
 		closeContextMenu(ctx.contextMenuElement)
 		ctx.contextMenuElement = null
-	}
-
-	const rowIndex = parseInt(cell.dataset.row || '0', 10)
-	const colIndex = parseInt(cell.dataset.col || '0', 10)
-	const column = ctx.grid.columns[colIndex]
-	if (!column) return
-
-	const item = ctx.grid.displayItems[rowIndex]
-	if (!item) return
-
-	const field = String(column.field)
-	const cellValue = ctx.grid.getCellRawValue(item, rowIndex, field)
-
-	// Create context for callbacks
-	const menuContext = {
-		row: item,
-		rowIndex,
-		colIndex,
-		column,
-		cellValue
-	}
-
-	// Fire oncontextmenuopen event
-	if (ctx.grid.oncontextmenuopen) {
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		;(ctx.grid.oncontextmenuopen as (ctx: any) => void)(menuContext)
 	}
 
 	// Sync any shadowed own properties to grid (workaround for property shadowing)
 	const ownXOffset = Object.getOwnPropertyDescriptor(ctx, 'contextMenuXOffset')
 	const ownYOffset = Object.getOwnPropertyDescriptor(ctx, 'contextMenuYOffset')
 	if (ownXOffset && 'value' in ownXOffset) {
-		ctx.grid.contextMenuXOffset = ownXOffset.value
+		engine.contextMenuXOffset = ownXOffset.value
 		delete (ctx as any).contextMenuXOffset // Remove shadow
 	}
 	if (ownYOffset && 'value' in ownYOffset) {
-		ctx.grid.contextMenuYOffset = ownYOffset.value
+		engine.contextMenuYOffset = ownYOffset.value
 		delete (ctx as any).contextMenuYOffset // Remove shadow
 	}
 
-	// Open the context menu
 	ctx.contextMenuElement = openContextMenu(
 		ctx,
 		e.clientX,
 		e.clientY,
-		ctx.grid.contextMenuXOffset,
-		ctx.grid.contextMenuYOffset,
-		contextMenuItems,
-		menuContext,
-		(itemId: string) => {
-			// Find the clicked item and call its onclick
-			const clickedItem = contextMenuItems.find(item => item.id === itemId)
-			if (clickedItem?.onclick) {
-				// eslint-disable-next-line @typescript-eslint/no-explicit-any
-				;(clickedItem.onclick as (ctx: any) => void | Promise<void>)(menuContext)
-			}
-			// Close menu after click
-			if (ctx.contextMenuElement) {
-				closeContextMenu(ctx.contextMenuElement)
-				ctx.contextMenuElement = null
-			}
+		engine.contextMenuXOffset,
+		engine.contextMenuYOffset,
+		{
+			entries,
+			ctx: menuCtx,
+			defaults: (item) => cellMenuDefaults(ctx, item.action, menuCtx),
+			activate: (item, triggerElement, event) => activateGridItem(ctx, {
+				item, fields, source: 'context-menu', sourceEvent: event, triggerElement
+			})
 		},
-		() => {
-			// onClose callback
-			ctx.contextMenuElement = null
-		}
+		() => { ctx.contextMenuElement = null }
+	)
+}
+
+/** Close both menus (a new one is opening). */
+function closeMenus<T>(ctx: GridHost<T>): void {
+	if (ctx.contextMenuElement) {
+		closeContextMenu(ctx.contextMenuElement)
+		ctx.contextMenuElement = null
+	}
+	if (ctx.headerContextMenuElement) {
+		closeContextMenu(ctx.headerContextMenuElement)
+		ctx.headerContextMenuElement = null
+	}
+}
+
+/** Open the header menu for `fields` (a column, or the filler with `column: null`). */
+function openHeaderMenu<T>(
+	ctx: GridHost<T>,
+	e: MouseEvent,
+	fields: Omit<HeaderMenuContext<T>, 'controller' | 'element'>,
+	baseEntries: readonly GridHeaderMenuEntry<T>[]
+): void {
+	const engine = ctx.engine
+	const menuCtx: HeaderMenuContext<T> = engine.ctx(fields)
+
+	// beforeHeaderMenuOpenCallback: false → no grid menu; entries → shown instead
+	const gate = runBeforeCallbackSync<HeaderMenuContext<T>, GridHeaderMenuEntry<T>[]>(engine.beforeHeaderMenuOpenCallback, menuCtx, 'beforeHeaderMenuOpenCallback')
+	if (gate.isCancelled) return
+	const entries = 'value' in gate && Array.isArray(gate.value) ? gate.value : baseEntries
+	if (!entries.length) return
+
+	e.preventDefault()
+	closeMenus(ctx)
+
+	ctx.headerContextMenuElement = openContextMenu(
+		ctx,
+		e.clientX,
+		e.clientY,
+		0,
+		0,
+		{
+			entries,
+			ctx: menuCtx,
+			defaults: (item) => headerMenuDefaults(item.action, menuCtx),
+			prepare: (item) => withHeaderBuiltInChildren(item as MenuItem<HeaderMenuContext<T>, GridHeaderAction>),
+			activate: (item, triggerElement, event) => activateGridItem(ctx, {
+				item, fields, source: 'header-menu', sourceEvent: event, triggerElement
+			})
+		},
+		() => { ctx.headerContextMenuElement = null }
 	)
 }
 
 /**
- * Right-click on a column header — opens the header context menu (sort,
- * freeze, hide, column visibility submenu). Fires `onheadercontextmenuopen`
- * before the menu renders so consumers can mutate the items list.
+ * Right-click on a column header — the header context menu (sort, freeze, hide,
+ * column visibility, custom items).
  */
 export function handleHeaderContextMenu<T>(
-	ctx: GridContext<T>,
+	ctx: GridHost<T>,
 	e: MouseEvent,
 	header: HTMLElement
 ): void {
-	const headerMenuItems = ctx.grid.headerContextMenu
-	if (!headerMenuItems || headerMenuItems.length === 0) {
+	const engine = ctx.engine
+	if (!engine.headerContextMenu?.length && !engine.beforeHeaderMenuOpenCallback) {
 		return // No header context menu defined, use browser default
 	}
 
-	e.preventDefault()
-
-	// Close any existing context menu (cell or header)
-	if (ctx.contextMenuElement) {
-		closeContextMenu(ctx.contextMenuElement)
-		ctx.contextMenuElement = null
-	}
-	if (ctx.headerContextMenuElement) {
-		closeContextMenu(ctx.headerContextMenuElement)
-		ctx.headerContextMenuElement = null
-	}
-
-	// Get column info from header
 	const field = header.dataset.field
 	if (!field) return
+	const colIndex = engine.columns.findIndex(c => String(c.field) === field)
+	if (colIndex === -1) return
 
-	const columnIndex = ctx.grid.columns.findIndex(c => String(c.field) === field)
-	if (columnIndex === -1) return
-
-	const column = ctx.grid.columns[columnIndex]
-	const frozenCount = ctx.grid.freezeColumns
-	const isFrozen = columnIndex < frozenCount
-
-	// Get sort direction for this column
-	const sortState = ctx.grid.sort.find(s => s.column === field)
-	const sortDirection = sortState?.direction ?? null
-
-	// Create context for callbacks
-	const menuContext: HeaderMenuContext<T> = {
-		column,
+	openHeaderMenu(ctx, e, {
+		column: engine.columns[colIndex],
 		field,
-		columnIndex,
-		sortDirection,
-		isFrozen,
-		isTreeMode: ctx.grid.isTreeMode,
-		allColumns: ctx.grid.columns,  // Include all columns for visibility submenu
-		labels: ctx.grid.labels
-	}
-
-	// Fire onheadercontextmenuopen event
-	if (ctx.grid.onheadercontextmenuopen) {
-		ctx.grid.onheadercontextmenuopen(menuContext)
-	}
-
-	// Normalize menu items (convert string shortcuts to full items)
-	const normalizedItems = normalizeHeaderMenuItems(headerMenuItems, menuContext)
-	if (normalizedItems.length === 0) return
-
-	// Open the header context menu
-	ctx.headerContextMenuElement = openHeaderContextMenu(
-		ctx,
-		e.clientX,
-		e.clientY,
-		normalizedItems,
-		menuContext,
-		(itemId: string, keepOpen?: boolean, ctrlKey?: boolean) => {
-			// Check if it's a predefined action
-			const predefinedActions = ['sortAsc', 'sortDesc', 'clearSort', 'hideColumn', 'freezeColumn', 'unfreezeColumn']
-			if (predefinedActions.includes(itemId)) {
-				executeHeaderMenuAction(ctx, itemId, menuContext, ctrlKey)
-			}
-
-			// Handle "Show all" columns action
-			if (itemId === 'show-all-columns') {
-				ctx.grid.columns.forEach(col => {
-					col.isHidden = false
-				})
-				ctx.grid.columns = [...ctx.grid.columns]
-				return
-			}
-
-			// Handle column visibility toggles (submenu items)
-			if (itemId.startsWith('toggle-col-')) {
-				const field = itemId.replace('toggle-col-', '')
-				const col = ctx.grid.columns.find(c => String(c.field) === field)
-				if (col) {
-					col.isHidden = !col.isHidden
-					ctx.grid.columns = [...ctx.grid.columns]
-				}
-				return  // Don't search for onclick - handled here
-			}
-
-			// Also call custom onclick if defined (for top-level items)
-			const clickedItem = normalizedItems.find(item => item.id === itemId)
-			if (clickedItem?.onclick) {
-				// eslint-disable-next-line @typescript-eslint/no-explicit-any
-				;(clickedItem.onclick as (ctx: any) => void | Promise<void>)(menuContext)
-			}
-
-			// Close menu after click unless keepOpen is true
-			if (!keepOpen && ctx.headerContextMenuElement) {
-				closeContextMenu(ctx.headerContextMenuElement)
-				ctx.headerContextMenuElement = null
-			}
-		},
-		() => {
-			// onClose callback
-			ctx.headerContextMenuElement = null
-		}
-	)
+		colIndex,
+		sortDirection: engine.sort.find(s => s.column === field)?.direction ?? null,
+		isFrozen: colIndex < engine.freezeColumns,
+		isTreeMode: engine.isTreeMode,
+		allColumns: engine.columns,  // All columns (hidden included) for the visibility submenu
+		labels: engine.labels
+	}, engine.headerContextMenu ?? [])
 }
 
 /**
- * Right-click on the header filler (empty area after the last column). Shows a
- * restricted menu containing only column-agnostic items — `columnVisibility`
- * and static custom items — since there's no specific column to act on.
+ * Right-click on the header filler (empty area after the last column): only the
+ * column-agnostic entries — `column-visibility`, and custom items without a
+ * dynamic text / icon (those likely read the column) — since there's no column.
  */
-export function handleFillerContextMenu<T>(ctx: GridContext<T>, e: MouseEvent): void {
-	const headerMenuItems = ctx.grid.headerContextMenu
-	if (!headerMenuItems || headerMenuItems.length === 0) {
+export function handleFillerContextMenu<T>(ctx: GridHost<T>, e: MouseEvent): void {
+	const engine = ctx.engine
+	if (!engine.headerContextMenu?.length && !engine.beforeHeaderMenuOpenCallback) {
 		return // No header context menu defined, use browser default
 	}
 
-	e.preventDefault()
-
-	// Close any existing context menu
-	if (ctx.contextMenuElement) {
-		closeContextMenu(ctx.contextMenuElement)
-		ctx.contextMenuElement = null
-	}
-	if (ctx.headerContextMenuElement) {
-		closeContextMenu(ctx.headerContextMenuElement)
-		ctx.headerContextMenuElement = null
-	}
-
-	// Filter to only column-agnostic items (columnVisibility and custom items without column-specific behavior)
-	const fillerMenuItems = headerMenuItems.filter(item => {
-		// Keep columnVisibility
-		if (item === 'columnVisibility') return true
-		// Keep custom items with static labels (not functions that might access column)
-		if (typeof item === 'object' && item.id) {
-			// Filter out items with dynamic label/icon that likely depend on column
-			if (typeof item.label === 'function') return false
-			if (typeof item.icon === 'function') return false
-			return true
-		}
-		// Filter out column-specific predefined actions
-		if (typeof item === 'string') return false
-		// Filter out divider-only markers
-		if (typeof item === 'object' && item.dividerBefore && !item.id && !item.label) return false
-		return false
+	const fillerEntries = (engine.headerContextMenu ?? []).filter(raw => {
+		const entry = normalizeEntry<Exclude<GridHeaderMenuEntry<T>, string>>(raw as Exclude<GridHeaderMenuEntry<T>, string>)
+		if ('divider' in entry) return true
+		if (entry.action === 'column-visibility') return true
+		if (entry.action && entry.action !== 'custom') return false
+		return !entry.getTextCallback && !entry.getIconCallback
 	})
 
-	if (fillerMenuItems.length === 0) return
-
-	// Create a minimal context for filler (no specific column)
-	const menuContext: HeaderMenuContext<T> = {
-		column: null as unknown as Column<T>,  // No column for filler
+	openHeaderMenu(ctx, e, {
+		column: null,
 		field: '',
-		columnIndex: -1,
+		colIndex: -1,
 		sortDirection: null,
 		isFrozen: false,
-		isTreeMode: ctx.grid.isTreeMode,
-		allColumns: ctx.grid.columns,
-		labels: ctx.grid.labels
-	}
-
-	// Normalize menu items
-	const normalizedItems = normalizeHeaderMenuItems(fillerMenuItems, menuContext)
-	if (normalizedItems.length === 0) return
-
-	// Open the context menu
-	ctx.headerContextMenuElement = openHeaderContextMenu(
-		ctx,
-		e.clientX,
-		e.clientY,
-		normalizedItems,
-		menuContext,
-		(itemId: string, keepOpen?: boolean, _ctrlKey?: boolean) => {
-			// Handle "Show all" columns action
-			if (itemId === 'show-all-columns') {
-				ctx.grid.columns.forEach(col => {
-					col.isHidden = false
-				})
-				ctx.grid.columns = [...ctx.grid.columns]
-				return
-			}
-
-			// Handle column visibility toggles
-			if (itemId.startsWith('toggle-col-')) {
-				const field = itemId.replace('toggle-col-', '')
-				const col = ctx.grid.columns.find(c => String(c.field) === field)
-				if (col) {
-					col.isHidden = !col.isHidden
-					ctx.grid.columns = [...ctx.grid.columns]
-				}
-				return
-			}
-
-			// Call custom onclick if defined
-			const clickedItem = normalizedItems.find(item => item.id === itemId)
-			if (clickedItem?.onclick) {
-				// eslint-disable-next-line @typescript-eslint/no-explicit-any
-				;(clickedItem.onclick as (ctx: any) => void | Promise<void>)(menuContext)
-			}
-
-			// Close menu after click unless keepOpen is true
-			if (!keepOpen && ctx.headerContextMenuElement) {
-				closeContextMenu(ctx.headerContextMenuElement)
-				ctx.headerContextMenuElement = null
-			}
-		},
-		() => {
-			ctx.headerContextMenuElement = null
-		}
-	)
+		isTreeMode: engine.isTreeMode,
+		allColumns: engine.columns,
+		labels: engine.labels
+	}, fillerEntries)
 }

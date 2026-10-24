@@ -10,7 +10,7 @@ import { test, expect, Page } from '@playwright/test'
  * height. Each rendered row carries `data-row-index` (the absolute item
  * index), so we can assert which rows are currently in the DOM.
  *
- * #infiniteGrid loads 200 items at a time up to 600 via ondatarequest
+ * #infiniteGrid loads 200 items at a time up to 600 via data-request
  * (trigger='loadMore', mode='append'); the state panel logs each request.
  */
 

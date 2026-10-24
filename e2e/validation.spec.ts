@@ -3,14 +3,14 @@ import { test, expect, Page } from '@playwright/test'
 /**
  * E2E coverage for cell validation (docs/test/validation.html) — a 5-row grid
  * in navigate mode with four validated columns:
- *   name  — beforeCommitCallback returns a STRING error when empty
- *   email — beforeCommitCallback returns a ValidationResult object when no '@'
- *   code  — beforeCommitCallback returns { valid, transformedValue } (uppercase)
- *   score — legacy validateCallback returns an error string when > 100
+ *   name  — validateCallback returns a STRING error when empty
+ *   email — validateCallback returns a ValidationResult object when no '@'
+ *   code  — validateCallback returns { valid, transformedValue } (uppercase)
+ *   score — validateCallback returns an error string when > 100
  *
  * web-grid validation is lenient: an invalid commit is NOT blocked — the value
  * still lands in the draft, the cell gets `wg__cell--invalid`, and
- * `onvalidationerror` fires (surfaced via [data-testid="validation-log"]).
+ * `validation-error` fires (surfaced via [data-testid="validation-log"]).
  * See validation.html for the seed table.
  */
 
@@ -51,11 +51,11 @@ async function editCell(page: Page, rowIndex: number, colIndex: number, value: s
 }
 
 // =============================================================================
-// beforeCommitCallback — string error form (name)
+// validateCallback — string error form (name)
 // =============================================================================
 
-test.describe('beforeCommitCallback returning a string (name column)', () => {
-	test('committing an empty name marks the cell invalid and fires onvalidationerror', async ({ page }) => {
+test.describe('validateCallback returning a string (name column)', () => {
+	test('committing an empty name marks the cell invalid and fires validation-error', async ({ page }) => {
 		await gotoValidation(page)
 
 		const nameCell = cell(page, 0, COL.name)
@@ -81,10 +81,10 @@ test.describe('beforeCommitCallback returning a string (name column)', () => {
 })
 
 // =============================================================================
-// beforeCommitCallback — ValidationResult object form (email)
+// validateCallback — ValidationResult object form (email)
 // =============================================================================
 
-test.describe('beforeCommitCallback returning a ValidationResult (email column)', () => {
+test.describe('validateCallback returning a ValidationResult (email column)', () => {
 	test('an email without "@" is marked invalid', async ({ page }) => {
 		await gotoValidation(page)
 
@@ -105,10 +105,10 @@ test.describe('beforeCommitCallback returning a ValidationResult (email column)'
 })
 
 // =============================================================================
-// beforeCommitCallback — transformedValue (code)
+// validateCallback — transformedValue (code)
 // =============================================================================
 
-test.describe('beforeCommitCallback transforming the value (code column)', () => {
+test.describe('validateCallback transforming the value (code column)', () => {
 	test('a lowercase code is uppercased on commit via transformedValue', async ({ page }) => {
 		await gotoValidation(page)
 
@@ -121,10 +121,10 @@ test.describe('beforeCommitCallback transforming the value (code column)', () =>
 })
 
 // =============================================================================
-// Legacy validateCallback (score)
+// validateCallback returning a string (score)
 // =============================================================================
 
-test.describe('legacy validateCallback (score column)', () => {
+test.describe('validateCallback string result (score column)', () => {
 	test('a score above 100 is marked invalid', async ({ page }) => {
 		await gotoValidation(page)
 

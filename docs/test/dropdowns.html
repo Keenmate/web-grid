@@ -108,7 +108,7 @@
 				editor: 'select',
 				editorOptions: {
 					options: priorityOptions,
-					renderOptionCallback: (opt, ctx) => {
+					renderOptionCallback: ({ option: opt, ...ctx }) => {
 						const classes = ['wg__dropdown-option']
 						if (ctx.isHighlighted) classes.push('wg__dropdown-option--highlighted')
 						if (ctx.isSelected) classes.push('wg__dropdown-option--selected')
@@ -140,7 +140,7 @@
 					minSearchLength: 1,
 					debounceMs: 100,
 					subtitleMember: 'email',
-					searchCallback: async (query) => {
+					searchCallback: async ({ term: query }) => {
 						await new Promise(r => setTimeout(r, 150))
 						return users.filter(u =>
 							u.label.toLowerCase().includes(query.toLowerCase()) ||

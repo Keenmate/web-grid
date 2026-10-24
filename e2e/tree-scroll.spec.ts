@@ -9,7 +9,7 @@ import { test, expect, Page } from '@playwright/test'
  * but only a window (~22 rows) is in the DOM.
  *
  * #isGrid: infinite scroll appends batches of 5 root subtrees each, capped at
- * MAX=20 roots. ondatarequest is awaited inside the handler so the batch
+ * MAX=20 roots. data-request is awaited inside the handler so the batch
  * appears only after the simulated fetch resolves.
  */
 

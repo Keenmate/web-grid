@@ -22,24 +22,24 @@
 // Fall-back paths (no editingCell / not committable / no editor DOM / column
 // gone) drop back to grid.cancelEdit, matching the prior inline semantics.
 
-import type { GridContext } from '../grid-context.js'
+import type { GridHost } from '../grid-context.js'
 
 /**
  * Read the in-progress editor's value and fire grid.commitEdit; fall back
  * to grid.cancelEdit when the editor can't be read or click-away commit is
  * disabled. Must run BEFORE renderCell wipes the editor element.
  */
-export function commitOrCancelEditOnTransition<T>(ctx: GridContext<T>): void {
-	const editingCell = ctx.grid.editingCell
+export function commitOrCancelEditOnTransition<T>(ctx: GridHost<T>): void {
+	const editingCell = ctx.engine.editingCell
 	if (!editingCell) return
-	if (!ctx.grid.shouldCommitOnClickAway) {
-		ctx.grid.cancelEdit()
+	if (!ctx.engine.shouldCommitOnClickAway) {
+		ctx.engine.cancelEdit()
 		return
 	}
 	const { rowIndex, field } = editingCell
-	const colIndex = ctx.grid.columns.findIndex(c => String(c.field) === field)
+	const colIndex = ctx.engine.columns.findIndex(c => String(c.field) === field)
 	if (colIndex < 0) {
-		ctx.grid.cancelEdit()
+		ctx.engine.cancelEdit()
 		return
 	}
 	const cell = ctx.shadow.querySelector(
@@ -50,14 +50,14 @@ export function commitOrCancelEditOnTransition<T>(ctx: GridContext<T>): void {
 	) as HTMLElement | null
 	if (!editor) editor = cell?.querySelector('.wg__editor') as HTMLElement | null
 	if (!editor) {
-		ctx.grid.cancelEdit()
+		ctx.engine.cancelEdit()
 		return
 	}
 	let value: unknown
 	if (editor instanceof HTMLInputElement) {
 		if (editor.type === 'checkbox') {
-			const item = ctx.grid.displayItems[rowIndex]
-			value = ctx.grid.getCellRawValue(item, rowIndex, field)
+			const item = ctx.engine.displayItems[rowIndex]
+			value = ctx.engine.getCellRawValue(item, rowIndex, field)
 		} else if (editor.classList.contains('wg__date-input')) {
 			value = editor.dataset.dateValue || editor.value
 		} else if (editor.classList.contains('wg__editor--number')) {
@@ -79,5 +79,5 @@ export function commitOrCancelEditOnTransition<T>(ctx: GridContext<T>): void {
 	// Fire and forget — grid.commitEdit handles async validation and clears
 	// editingCell when complete. The surrounding caller already handles
 	// post-transition rendering and focus.
-	void ctx.grid.commitEdit(rowIndex, field, value)
+	void ctx.engine.commitEdit(rowIndex, field, value)
 }

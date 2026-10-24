@@ -19,7 +19,7 @@
 //    is on (otherwise the mousedown handler does column selection). Plain /
 //    Shift / Ctrl pick replace / range / toggle.
 
-import type { GridContext } from '../grid-context.js'
+import type { GridHost } from '../grid-context.js'
 import { uiLogger } from '../../logger.js'
 import { openDropdownForCurrentEditor, toggleDropdown } from '../dropdown/index.js'
 import { tryStartEdit, getCursorPositionFromClick } from '../navigation/index.js'
@@ -31,7 +31,7 @@ import { isReordering } from '../reorder/index.js'
  * cells; remaining cells fall through to dblclick / navigate edit-trigger
  * paths with cursor positioning derived from the click point.
  */
-export function handleTableDblClick<T>(ctx: GridContext<T>, e: Event): void {
+export function handleTableDblClick<T>(ctx: GridHost<T>, e: Event): void {
 	const target = e.target as HTMLElement
 
 	// Try pipeline first
@@ -44,9 +44,9 @@ export function handleTableDblClick<T>(ctx: GridContext<T>, e: Event): void {
 	if (cell) {
 		const rowIndex = parseInt(cell.dataset.row || '0', 10)
 		const colIndex = parseInt(cell.dataset.col || '0', 10)
-		const column = ctx.grid.columns[colIndex]
+		const column = ctx.engine.columns[colIndex]
 		if (column) {
-			const trigger = column.editTrigger || ctx.grid.editTrigger
+			const trigger = column.editTrigger || ctx.engine.editTrigger
 			if (trigger === 'dblclick' || trigger === 'navigate') {
 				const cursorPos = getCursorPositionFromClick(e as MouseEvent, cell)
 				tryStartEdit(ctx, rowIndex, colIndex, { cursorPosition: cursorPos ?? undefined })
@@ -70,7 +70,7 @@ export function handleTableDblClick<T>(ctx: GridContext<T>, e: Event): void {
 /**
  * Single-click handler: tree chevron > pipeline > click editTrigger start.
  */
-export function handleCellClickToEdit<T>(ctx: GridContext<T>, e: Event): void {
+export function handleCellClickToEdit<T>(ctx: GridHost<T>, e: Event): void {
 	const target = e.target as HTMLElement
 	uiLogger.debug('CLICK fired | target:', target.tagName, target.className, '| connected:', target.isConnected)
 
@@ -82,7 +82,7 @@ export function handleCellClickToEdit<T>(ctx: GridContext<T>, e: Event): void {
 		const path = chevron.getAttribute('data-tree-toggle')
 		uiLogger.debug('chevron click:', path, '| target:', target.tagName, target.className)
 		if (path !== null) {
-			ctx.grid.toggleExpandedPath(path)
+			ctx.engine.toggleExpandedPath(path)
 		}
 		return
 	}
@@ -96,9 +96,9 @@ export function handleCellClickToEdit<T>(ctx: GridContext<T>, e: Event): void {
 	if (cell && !cell.classList.contains('wg__cell--editing')) {
 		const rowIndex = parseInt(cell.dataset.row || '0', 10)
 		const colIndex = parseInt(cell.dataset.col || '0', 10)
-		const column = ctx.grid.columns[colIndex]
+		const column = ctx.engine.columns[colIndex]
 		if (column) {
-			const trigger = column.editTrigger || ctx.grid.editTrigger
+			const trigger = column.editTrigger || ctx.engine.editTrigger
 			if (trigger === 'click') {
 				e.preventDefault()
 				const cursorPos = getCursorPositionFromClick(e as MouseEvent, cell)
@@ -125,7 +125,7 @@ export function handleCellClickToEdit<T>(ctx: GridContext<T>, e: Event): void {
  * select dropdown. Skipped in `always` editTrigger mode (pipeline opens the
  * dropdown there via shouldShowDropdownOnFocus; re-toggling would close it).
  */
-export function handleSelectTriggerClick<T>(ctx: GridContext<T>, e: Event): void {
+export function handleSelectTriggerClick<T>(ctx: GridHost<T>, e: Event): void {
 	const target = e.target as HTMLElement
 
 	if (target.matches('.wg__select-trigger, .wg__select-value')) {
@@ -133,8 +133,8 @@ export function handleSelectTriggerClick<T>(ctx: GridContext<T>, e: Event): void
 		const cell = target.closest('.wg__cell') as HTMLElement
 		if (cell) {
 			const colIndex = parseInt(cell.dataset.col || '', 10)
-			const column = ctx.grid.columns[colIndex]
-			const trigger = column?.editTrigger ?? ctx.grid.editTrigger
+			const column = ctx.engine.columns[colIndex]
+			const trigger = column?.editTrigger ?? ctx.engine.editTrigger
 			if (trigger === 'always') return
 		}
 		e.preventDefault()
@@ -149,7 +149,7 @@ export function handleSelectTriggerClick<T>(ctx: GridContext<T>, e: Event): void
  * handler owns column selection. Sort-indicator + resize-handle clicks are
  * filtered out earlier in the listener chain.
  */
-export function handleHeaderColumnSelectClick<T>(ctx: GridContext<T>, e: Event): void {
+export function handleHeaderColumnSelectClick<T>(ctx: GridHost<T>, e: Event): void {
 	const mouseEvent = e as MouseEvent
 	const target = mouseEvent.target as HTMLElement
 
@@ -159,7 +159,7 @@ export function handleHeaderColumnSelectClick<T>(ctx: GridContext<T>, e: Event):
 	// Skip if reordering was just performed (prevents accidental selection on drop)
 	if (isReordering()) return
 	// Skip if column reorder is disabled (mousedown handler handles column selection)
-	if (!ctx.grid.isColumnReorderAllowed) return
+	if (!ctx.engine.isColumnReorderAllowed) return
 
 	// Click on header = column selection
 	const header = target.closest('.wg__header:not(.wg__row-number-header):not(.wg__inline-actions-header):not(.wg__actions-column):not(.wg__filler)') as HTMLElement
@@ -169,7 +169,7 @@ export function handleHeaderColumnSelectClick<T>(ctx: GridContext<T>, e: Event):
 		if (!field) return
 
 		// Find visual column index
-		const colIndex = ctx.grid.visualColumns.findIndex(vc => String(vc.column.field) === field)
+		const colIndex = ctx.engine.visualColumns.findIndex(vc => String(vc.column.field) === field)
 		if (colIndex === -1) return
 
 		// Remove any existing cell range border (column selection doesn't use border)
@@ -177,11 +177,11 @@ export function handleHeaderColumnSelectClick<T>(ctx: GridContext<T>, e: Event):
 
 		// Ctrl = toggle individual column, Shift = range, plain = replace
 		if (mouseEvent.ctrlKey || mouseEvent.metaKey) {
-			ctx.grid.selectColumn(colIndex, 'toggle')
+			ctx.engine.selectColumn(colIndex, 'toggle')
 		} else if (mouseEvent.shiftKey) {
-			ctx.grid.selectColumn(colIndex, 'range')
+			ctx.engine.selectColumn(colIndex, 'range')
 		} else {
-			ctx.grid.selectColumn(colIndex, 'replace')
+			ctx.engine.selectColumn(colIndex, 'replace')
 		}
 
 		ctx.render()

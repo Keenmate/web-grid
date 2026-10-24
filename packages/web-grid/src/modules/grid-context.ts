@@ -1,8 +1,8 @@
 // =============================================================================
-// GridContext - the GridElement subset that module functions consume
+// GridHost - the GridElement subset that module functions consume
 // =============================================================================
 
-import type { WebGrid } from '../grid.js'
+import type { GridEngine } from '../grid.js'
 import type { Column, EditorOptions } from '../types.js'
 import type { ScrollEventManager } from './scroll-events/index.js'
 import type { FocusEventManager } from './focus-events/index.js'
@@ -18,12 +18,12 @@ import type { ActionPipelineAdapter } from './actions/adapter.js'
  * GridElement context interface for module functions
  * This is the subset of GridElement that modules need access to
  */
-export interface GridContext<T = unknown> {
+export interface GridHost<T = unknown> {
 	// Shadow DOM
 	readonly shadow: ShadowRoot
 
 	// Grid logic
-	readonly grid: WebGrid<T>
+	readonly engine: GridEngine<T>
 
 	// Dropdown runtime state — owned by DropdownService (open flag, options, highlight,
 	// filter text, race-condition flags). The `isCommittingFromKeyboard` and
@@ -74,7 +74,7 @@ export interface GridContext<T = unknown> {
 
 	// Helper methods that modules may need
 	getCurrentEditingColumn(): Column<T> | null
-	getCurrentEditorOptions(): EditorOptions
+	getCurrentEditorOptions(): EditorOptions<T>
 
 	// Focus/navigation methods
 	moveFocusAfterCommit(rowIndex: number, field: string, direction: 'down' | 'up' | 'next' | 'prev'): void
@@ -92,7 +92,7 @@ export interface GridContext<T = unknown> {
 	showGoToRowDialog(colIndex: number): void
 
 	// Dispatch a CustomEvent on the grid element. Handlers use this to fire
-	// public events (rowdelete, etc.) from module code without holding a
+	// public events (row-delete, etc.) from module code without holding a
 	// reference to the host element.
 	dispatchEvent(event: Event): boolean
 
@@ -117,7 +117,7 @@ export interface GridContext<T = unknown> {
 
 	// True between table-level mousedown and document-level mouseup. Focus
 	// handlers consult this to distinguish keyboard-triggered focus (fire
-	// onrowfocus immediately) from mouse-triggered focus (defer onrowfocus to
+	// row-focus immediately) from mouse-triggered focus (defer row-focus to
 	// the click handler so it fires on mouseup, not mousedown).
 	isMouseDown: boolean
 

@@ -4,7 +4,7 @@ import { test, expect, Page, Locator } from '@playwright/test'
  * E2E coverage for the editors fixture (docs/test/editors.html), which exercises:
  *  - text editor       (Name, col 1)
  *  - select editor     (Department, col 2; Status, col 3)
- *  - custom editor     (Notes, col 4 — opens a native prompt via cellEditCallback)
+ *  - custom editor     (Notes, col 4 — opens a native prompt via renderEditorCallback)
  *  - checkbox editor   (Protected, col 5)
  *  - contextMenu       (right-click → array-driven custom items with callbacks)
  *
@@ -165,7 +165,7 @@ test.describe('checkbox editor (Protected)', () => {
 
 		await protectedCell.click()
 		// Space puts the cell in checkbox-edit mode and toggles the draft. With
-		// formatCallback defined the cell renders the editor widget (no emoji)
+		// getDisplayValueCallback defined the cell renders the editor widget (no emoji)
 		// until commit, so we have to commit before asserting the new glyph.
 		await page.keyboard.press('Space')
 		await page.keyboard.press('Enter')
@@ -192,7 +192,7 @@ test.describe('checkbox editor (Protected)', () => {
 // =============================================================================
 
 test.describe('custom editor (Notes)', () => {
-	// Override window.prompt to return a known value so the cellEditCallback's
+	// Override window.prompt to return a known value so the renderEditorCallback's
 	// commit/cancel branch is deterministic. Playwright's page.on('dialog') flow
 	// for prompts is finicky — overriding the JS function is more reliable.
 	async function stubPrompt(page: Page, returnValue: string | null) {
@@ -295,7 +295,7 @@ test.describe('contextMenu — custom items', () => {
 		await expect(deleteItem).toHaveClass(/wg-context-menu__item--disabled/)
 	})
 
-	test('clicking "Copy value" fires onclick (event log captures the action)', async ({ page }) => {
+	test('clicking "Copy value" fires onClick (event log captures the action)', async ({ page }) => {
 		await gotoDemo(page)
 
 		// Bob Smith's name cell.
@@ -312,13 +312,13 @@ test.describe('contextMenu — custom items', () => {
 		await expect(eventLog(page)).toContainText('"Bob Smith" copied to clipboard')
 	})
 
-	test('oncontextmenuopen event fires with the right field name', async ({ page }) => {
+	test('beforeContextMenuOpenCallback event fires with the right field name', async ({ page }) => {
 		await gotoDemo(page)
 
 		await openContextMenuOn(cell(page, 0, 2), page)  // department cell
 		await expect(page.locator('.wg-context-menu')).toBeVisible()
 
-		// Fixture wires oncontextmenuopen to log:
+		// Fixture wires beforeContextMenuOpenCallback to log:
 		//   'opened at row N, column "<field>"'
 		await expect(eventLog(page)).toContainText('opened at row 1, column "department"')
 	})
@@ -335,7 +335,7 @@ test.describe('contextMenu — custom items', () => {
 		await gotoDemo(page)
 		await openContextMenuOn(cell(page, 0, 1), page)
 
-		// Two items declare dividerBefore: 'view-row' and 'delete' → expect two
+		// Divider entries precede 'view-row' and 'delete' → expect two
 		// .wg-context-menu__divider elements inside the open menu.
 		const dividers = page.locator('.wg-context-menu .wg-context-menu__divider')
 		await expect(dividers).toHaveCount(2)

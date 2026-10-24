@@ -5,55 +5,49 @@
 // Web component (auto-registers <web-grid>)
 export { GridElement } from './web-component.js'
 
-// Core logic class (for advanced usage)
-export { WebGrid } from './grid.js'
+// Core state engine (standalone / advanced usage — not the element's public API)
+export { GridEngine } from './grid.js'
+
+// Divider factory for toolbar / menu entry lists (web-components-core /actions)
+export { menuDivider } from '@keenmate/web-components-core/actions'
+
+// Interaction model: controller, contexts, action items, event details
+export type * from './interaction.js'
 
 // All types
 export type {
 	// Editor types
 	Editor,
 	EditTrigger,
-	OptionsLoadTrigger,
 	DateOutputFormat,
 	EditorOption,
 	EditorOptions,
-	CustomEditorContext,
 
 	// Validation types
 	CellValidationState,
 	ValidationResult,
-	BeforeCommitContext,
-	BeforeCommitResult,
+	ValidateResult,
 
 	// Column & rendering
 	Column,
-	CellRenderCallback,
 	RowChangeDetail,
 	RowFocusDetail,
 
 	// Toolbar types
-	PredefinedToolbarItem,
 	ToolbarPosition,
 	NewRowPosition,
-	ToolbarTooltip,
-	RowToolbarItem,
-	RowToolbarConfig,
-	NormalizedToolbarItem,
-	ToolbarClickDetail,
-	RowAction,
-	RowActionClickDetail,
-
-	// Context menu types
-	ContextMenuContext,
-	ContextMenuItem,
 
 	// Props
 	QuickGridProps,
 
 	// Sorting & Pagination types
 	SortState,
+	SortMode,
 	DataRequestDetail,
 	DataRequestTrigger,
+	PaginationLabels,
+	PaginationLabelsCallback,
+	SummaryCallback,
 
 	// Labels/i18n
 	GridLabels,
@@ -73,12 +67,7 @@ export type {
 	ColumnReorderDetail,
 
 	// Fill handle types
-	FillDragDetail,
 	FillDirection,
-
-	// Row selection types
-	RangeShortcut,
-	RangeShortcutContext,
 
 	// Cell range selection types
 	CellSelectionMode,
@@ -88,32 +77,25 @@ export type {
 	// Paste types
 	PasteMode,
 	PasteColumnMapping,
-	BeforePasteDetail,
 	PasteCellResult,
 	PasteDetail,
 	CreateRowCallback,
 
 	// Tree types
 	TreeExpandedChangeDetail,
-	TreeChevronContext,
-	TreeChevronCallback,
+	ChevronCallback,
 	TreeDoubleClickBehavior,
 
 	// Internal types (exposed for advanced usage)
 	EditingCell,
 	FocusedCell,
 	SortDirection,
-	ToolbarRowGroup,
 	PopupPosition,
 	ConnectorArrowDir,
 
 	// Deprecated aliases retained for one release — drop in next major.
 	/** @deprecated use `Editor` */
 	EditorType,
-	/** @deprecated use `PredefinedToolbarItem` */
-	PredefinedToolbarItemType,
-	/** @deprecated use `RowAction` */
-	RowActionType,
 	/** @deprecated use `RowLock` */
 	RowLockInfo
 } from './types.js'

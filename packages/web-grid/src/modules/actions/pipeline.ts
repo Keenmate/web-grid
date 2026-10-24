@@ -3,13 +3,13 @@
 // Routes actions to executors and processes child actions
 // =============================================================================
 
-import type { GridContext } from '../grid-context.js'
+import type { GridHost } from '../grid-context.js'
 import type { GridAction } from './types.js'
 
 /**
- * Context passed to executors, extends GridContext with dispatch capability
+ * Context passed to executors, extends GridHost with dispatch capability
  */
-export interface ExecutorContext<T = unknown> extends GridContext<T> {
+export interface ExecutorContext<T = unknown> extends GridHost<T> {
 	/**
 	 * Dispatch a child action to be processed after current action completes
 	 */
@@ -37,9 +37,9 @@ export interface ActionExecutor<T = unknown> {
  */
 export class ActionPipeline<T = unknown> {
 	private executors: Map<GridAction['type'], ActionExecutor<T>> = new Map()
-	private ctx: GridContext<T>
+	private ctx: GridHost<T>
 
-	constructor(ctx: GridContext<T>) {
+	constructor(ctx: GridHost<T>) {
 		this.ctx = ctx
 	}
 
@@ -100,6 +100,6 @@ export class ActionPipeline<T = unknown> {
 /**
  * Create a new action pipeline with the given context
  */
-export function createActionPipeline<T>(ctx: GridContext<T>): ActionPipeline<T> {
+export function createActionPipeline<T>(ctx: GridHost<T>): ActionPipeline<T> {
 	return new ActionPipeline(ctx)
 }

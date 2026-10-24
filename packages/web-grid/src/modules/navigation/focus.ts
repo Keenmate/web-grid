@@ -4,7 +4,7 @@
 // =============================================================================
 
 import type { FocusedCell } from '../../types.js'
-import type { GridContext } from '../grid-context.js'
+import type { GridHost } from '../grid-context.js'
 import { renderCell } from '../rendering/index.js'
 import { removeDropdown } from '../dropdown/rendering.js'
 import { removeFillHandle } from '../fill-handle/index.js'
@@ -43,17 +43,17 @@ function focusElementInCell(cell: HTMLElement, isAlwaysEditMode: boolean): void 
  * In virtual scroll mode, only scroll if cell is outside viewport (minimal scroll)
  */
 export function focusCellElement<T>(
-	ctx: GridContext<T>,
+	ctx: GridHost<T>,
 	rowIndex: number,
 	colIndex: number
 ): void {
 	// Check if this cell uses 'always' editTrigger
-	const column = ctx.grid.columns[colIndex]
-	const effectiveTrigger = column?.editTrigger ?? ctx.grid.editTrigger
+	const column = ctx.engine.columns[colIndex]
+	const effectiveTrigger = column?.editTrigger ?? ctx.engine.editTrigger
 	const isAlwaysEditMode = effectiveTrigger === 'always'
 
 	// In virtual scroll mode: only scroll if row is outside viewport
-	if (ctx.grid.shouldUseVirtualScroll()) {
+	if (ctx.engine.shouldUseVirtualScroll()) {
 		ensureRowVisibleMinimal(ctx, rowIndex)
 		// If row is already visible, focus immediately
 		const cell = ctx.shadow.querySelector(
@@ -102,7 +102,7 @@ export function focusCellElement<T>(
  * If cell is behind frozen columns, scroll horizontally to reveal it
  */
 export function ensureCellNotBehindFrozen<T>(
-	ctx: GridContext<T>,
+	ctx: GridHost<T>,
 	cell: HTMLElement,
 	rowIndex: number
 ): void {
@@ -125,11 +125,11 @@ export function ensureCellNotBehindFrozen<T>(
  * Ensure a row is visible with minimal scrolling (only if outside viewport)
  * Used for arrow key navigation - doesn't reposition, just ensures visibility
  */
-function ensureRowVisibleMinimal<T>(ctx: GridContext<T>, rowIndex: number): void {
+function ensureRowVisibleMinimal<T>(ctx: GridHost<T>, rowIndex: number): void {
 	const container = ctx.shadow.querySelector('.wg') as HTMLElement
 	if (!container) return
 
-	const rowHeight = ctx.grid.virtualScrollRowHeight
+	const rowHeight = ctx.engine.virtualScrollRowHeight
 	const scrollTop = container.scrollTop
 	const viewportHeight = container.clientHeight
 
@@ -157,11 +157,11 @@ function ensureRowVisibleMinimal<T>(ctx: GridContext<T>, rowIndex: number): void
  * Scroll to position a row as the second visible row (for PageUp/PageDown)
  * Exported so keyboard handlers can use it directly
  */
-export function scrollToRowPosition<T>(ctx: GridContext<T>, rowIndex: number): void {
+export function scrollToRowPosition<T>(ctx: GridHost<T>, rowIndex: number): void {
 	const container = ctx.shadow.querySelector('.wg') as HTMLElement
 	if (!container) return
 
-	const rowHeight = ctx.grid.virtualScrollRowHeight
+	const rowHeight = ctx.engine.virtualScrollRowHeight
 
 	// Position target row as second visible row (rowIndex - 1 at top)
 	// This gives one row of context above the target
@@ -181,7 +181,7 @@ const FOCUS_VISUAL_DEBOUNCE_MS = 100
  * Uses centralized renderCell() to ensure all states are correct
  */
 export function updateFocusVisual<T>(
-	ctx: GridContext<T>,
+	ctx: GridHost<T>,
 	oldFocus: FocusedCell | null,
 	newFocus: FocusedCell | null
 ): void {
@@ -196,7 +196,7 @@ export function updateFocusVisual<T>(
 	}
 	lastFocusVisualUpdate = now
 
-	const editingCell = ctx.grid.editingCell
+	const editingCell = ctx.engine.editingCell
 
 	// Re-render old cell (will remove --focused class)
 	// Skip re-render if this cell is currently being edited or in 'always' mode (don't disrupt editor)
@@ -206,9 +206,9 @@ export function updateFocusVisual<T>(
 	if (oldFocus) {
 		const isOldCellEditing = editingCell &&
 			editingCell.rowIndex === oldFocus.rowIndex &&
-			ctx.grid.columns.findIndex(c => String(c.field) === editingCell.field) === oldFocus.colIndex
-		const oldColumn = ctx.grid.columns[oldFocus.colIndex]
-		const oldTrigger = oldColumn?.editTrigger ?? ctx.grid.editTrigger
+			ctx.engine.columns.findIndex(c => String(c.field) === editingCell.field) === oldFocus.colIndex
+		const oldColumn = ctx.engine.columns[oldFocus.colIndex]
+		const oldTrigger = oldColumn?.editTrigger ?? ctx.engine.editTrigger
 		const isOldCellAlwaysMode = oldTrigger === 'always'
 
 		if (!isOldCellEditing && !isOldCellAlwaysMode) {
@@ -231,14 +231,14 @@ export function updateFocusVisual<T>(
 	// Also skip for 'click'/'dblclick' modes - re-rendering between mousedown and click
 	// would remove the original target element, preventing the click event from firing
 	if (newFocus) {
-		const column = ctx.grid.columns[newFocus.colIndex]
-		const effectiveTrigger = column?.editTrigger ?? ctx.grid.editTrigger
+		const column = ctx.engine.columns[newFocus.colIndex]
+		const effectiveTrigger = column?.editTrigger ?? ctx.engine.editTrigger
 		const isAlwaysMode = effectiveTrigger === 'always'
 		const isClickOrDblClickMode = effectiveTrigger === 'click' || effectiveTrigger === 'dblclick'
 
 		const isNewCellEditing = editingCell &&
 			editingCell.rowIndex === newFocus.rowIndex &&
-			ctx.grid.columns.findIndex(c => String(c.field) === editingCell.field) === newFocus.colIndex
+			ctx.engine.columns.findIndex(c => String(c.field) === editingCell.field) === newFocus.colIndex
 
 		if (!isNewCellEditing && !isAlwaysMode && !isClickOrDblClickMode) {
 			renderCell(ctx, newFocus.rowIndex, newFocus.colIndex)
@@ -265,10 +265,10 @@ export function updateFocusVisual<T>(
  * NOTE: This just removes the class - full cell restoration happens via renderCell()
  * after cancelEdit() clears the state.
  */
-export function clearEditingVisual<T>(ctx: GridContext<T>): void {
-	const editingCell = ctx.grid.editingCell
+export function clearEditingVisual<T>(ctx: GridHost<T>): void {
+	const editingCell = ctx.engine.editingCell
 	if (editingCell) {
-		const colIndex = ctx.grid.columns.findIndex(c => String(c.field) === editingCell.field)
+		const colIndex = ctx.engine.columns.findIndex(c => String(c.field) === editingCell.field)
 		const cell = ctx.shadow.querySelector(
 			`[data-row="${editingCell.rowIndex}"][data-col="${colIndex}"]`
 		) as HTMLElement
@@ -283,7 +283,7 @@ export function clearEditingVisual<T>(ctx: GridContext<T>): void {
  * Must be called AFTER cancelEdit() so the cell renders in display mode.
  */
 export function restoreEditingCellToDisplayMode<T>(
-	ctx: GridContext<T>,
+	ctx: GridHost<T>,
 	rowIndex: number,
 	colIndex: number
 ): void {
@@ -294,13 +294,13 @@ export function restoreEditingCellToDisplayMode<T>(
  * Handle cell focus event
  */
 export function handleCellFocus<T>(
-	ctx: GridContext<T>,
+	ctx: GridHost<T>,
 	rowIndex: number,
 	colIndex: number
 ): void {
-	if (!ctx.grid.isNavigateMode) return
+	if (!ctx.engine.isNavigateMode) return
 
-	const oldFocus = ctx.grid.focusedCell
+	const oldFocus = ctx.engine.focusedCell
 	const newFocus = { rowIndex, colIndex }
 
 	// Skip if already focused on this cell
@@ -308,7 +308,7 @@ export function handleCellFocus<T>(
 		return
 	}
 
-	ctx.grid.setFocusedCell(rowIndex, colIndex)  // Just updates state (no re-render)
+	ctx.engine.setFocusedCell(rowIndex, colIndex)  // Just updates state (no re-render)
 	updateFocusVisual(ctx, oldFocus, newFocus)     // Updates DOM directly
 }
 
@@ -316,14 +316,14 @@ export function handleCellFocus<T>(
  * Helper to move focus to a new cell with surgical DOM updates
  */
 export function moveFocus<T>(
-	ctx: GridContext<T>,
+	ctx: GridHost<T>,
 	newRowIndex: number,
 	newColIndex: number
 ): void {
-	const oldFocus = ctx.grid.focusedCell
+	const oldFocus = ctx.engine.focusedCell
 	const newFocus = { rowIndex: newRowIndex, colIndex: newColIndex }
 
-	ctx.grid.setFocusedCell(newRowIndex, newColIndex)
+	ctx.engine.setFocusedCell(newRowIndex, newColIndex)
 	updateFocusVisual(ctx, oldFocus, newFocus)
 	focusCellElement(ctx, newRowIndex, newColIndex)
 }
@@ -333,18 +333,18 @@ export function moveFocus<T>(
  * Uses centralized renderCell() for surgical DOM update
  */
 export function tryStartEdit<T>(
-	ctx: GridContext<T>,
+	ctx: GridHost<T>,
 	rowIndex: number,
 	colIndex: number,
 	options?: { initialSearchQuery?: string; cursorPosition?: number }
 ): void {
-	const column = ctx.grid.columns[colIndex]
+	const column = ctx.engine.columns[colIndex]
 	if (!column) return
 
 	const field = String(column.field)
 
 	// Check if cell can be edited (column editability + row locking)
-	if (!ctx.grid.canEditCell(rowIndex, field)) {
+	if (!ctx.engine.canEditCell(rowIndex, field)) {
 		return
 	}
 
@@ -356,23 +356,23 @@ export function tryStartEdit<T>(
 	// Clear old editing cell if editing a different cell
 	// Must check editingCell, not focusedCell, because focusedCell is already updated
 	// by the focusCell action that runs before startEdit
-	const oldEditing = ctx.grid.editingCell
+	const oldEditing = ctx.engine.editingCell
 	if (oldEditing) {
-		const oldColIndex = ctx.grid.columns.findIndex(c => String(c.field) === oldEditing.field)
+		const oldColIndex = ctx.engine.columns.findIndex(c => String(c.field) === oldEditing.field)
 		if (oldEditing.rowIndex !== rowIndex || oldColIndex !== colIndex) {
 			// Set transition flag to prevent blur handlers from clearing focus
 			ctx.isTransitioningCells = true
 			// Cancel old edit FIRST so renderCell shows display mode
 			// (editingCell must be null before re-rendering, otherwise the cell
 			// will still render with the editing visual)
-			ctx.grid.cancelEdit()
+			ctx.engine.cancelEdit()
 			// Now re-render - will show display mode since editingCell is null
 			renderCell(ctx, oldEditing.rowIndex, oldColIndex)
 		}
 	}
 
 	// Update state (no longer triggers requestUpdate)
-	ctx.grid.startEdit(rowIndex, field, options)
+	ctx.engine.startEdit(rowIndex, field, options)
 
 	// Re-render the cell in edit mode with focus
 	renderCell(ctx, rowIndex, colIndex, {
@@ -457,22 +457,22 @@ export function getCursorPositionFromClick(
  * Call this from any focus-changing path that bypasses the action pipeline
  * (e.g. column selection, row selection) to ensure consistent cleanup.
  */
-export function cleanupEditState<T>(ctx: GridContext<T>): void {
+export function cleanupEditState<T>(ctx: GridHost<T>): void {
 	if (ctx.dropdown.isOpen) {
 		removeDropdown(ctx)
 	}
-	if (ctx.grid.editingCell) {
-		const editingCell = ctx.grid.editingCell
-		const colIndex = ctx.grid.columns.findIndex(c => String(c.field) === editingCell.field)
+	if (ctx.engine.editingCell) {
+		const editingCell = ctx.engine.editingCell
+		const colIndex = ctx.engine.columns.findIndex(c => String(c.field) === editingCell.field)
 		clearEditingVisual(ctx)
-		ctx.grid.cancelEdit()
+		ctx.engine.cancelEdit()
 		if (colIndex >= 0) {
 			renderCell(ctx, editingCell.rowIndex, colIndex)
 		}
 	}
-	if (ctx.grid.focusedCell) {
-		const oldFocus = ctx.grid.focusedCell
-		ctx.grid.clearFocusedCell()
+	if (ctx.engine.focusedCell) {
+		const oldFocus = ctx.engine.focusedCell
+		ctx.engine.clearFocusedCell()
 		updateFocusVisual(ctx, oldFocus, null)
 		removeFillHandle(ctx.shadow.host as HTMLElement)
 	}
@@ -482,7 +482,7 @@ export function cleanupEditState<T>(ctx: GridContext<T>): void {
  * Handle focus leaving the table
  * Defers cleanup to allow focus transitions to complete
  */
-export function handleTableFocusOut<T>(ctx: GridContext<T>, e: FocusEvent): void {
+export function handleTableFocusOut<T>(ctx: GridHost<T>, e: FocusEvent): void {
 	// Skip if we're transitioning between cells (editor removal triggers blur)
 	if (ctx.isTransitioningCells) {
 		return
@@ -538,8 +538,8 @@ export function handleTableFocusOut<T>(ctx: GridContext<T>, e: FocusEvent): void
 		}
 
 		// Focus truly left the component - clear focus state
-		const oldFocus = ctx.grid.focusedCell
-		ctx.grid.clearFocusedCell()
+		const oldFocus = ctx.engine.focusedCell
+		ctx.engine.clearFocusedCell()
 		updateFocusVisual(ctx, oldFocus, null)
 		// Only remove fill handle if this grid owns it (prevents one grid from removing another's)
 		removeFillHandle(host)
@@ -550,7 +550,7 @@ export function handleTableFocusOut<T>(ctx: GridContext<T>, e: FocusEvent): void
  * Returns true if `node` is inside any of this grid's document.body-hosted
  * popovers (datepicker, cell context menu, header context menu).
  */
-function isInsideOwnedPopover<T>(ctx: GridContext<T>, node: Node | null): boolean {
+function isInsideOwnedPopover<T>(ctx: GridHost<T>, node: Node | null): boolean {
 	if (!node) return false
 	const dpEl = ctx.datepicker?.getElement() ?? null
 	if (dpEl && dpEl.contains(node)) return true

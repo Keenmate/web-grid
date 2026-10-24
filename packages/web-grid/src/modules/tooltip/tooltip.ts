@@ -4,13 +4,13 @@
 // =============================================================================
 
 import { computePosition, flip, offset, arrow } from '@floating-ui/dom'
-import type { GridContext } from '../grid-context.js'
+import type { GridHost } from '../grid-context.js'
 
 /**
  * Show tooltip for an element
  */
 export function showTooltip<T>(
-	ctx: GridContext<T>,
+	ctx: GridHost<T>,
 	anchor: HTMLElement,
 	text: string,
 	delay?: number,
@@ -38,7 +38,7 @@ export function showTooltip<T>(
 /**
  * Hide tooltip
  */
-export function hideTooltip<T>(ctx: GridContext<T>, delay?: number): void {
+export function hideTooltip<T>(ctx: GridHost<T>, delay?: number): void {
 	const hideDelay = delay ?? ctx.tooltipHideDelay
 
 	// Clear any pending show
@@ -65,7 +65,7 @@ export function hideTooltip<T>(ctx: GridContext<T>, delay?: number): void {
  * Create and position tooltip element
  */
 export function createTooltip<T>(
-	ctx: GridContext<T>,
+	ctx: GridHost<T>,
 	anchor: HTMLElement,
 	content: string,
 	isHtml?: boolean

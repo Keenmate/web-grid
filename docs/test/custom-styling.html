@@ -35,7 +35,7 @@
 		 *  - flag   — `templateCallback` renders a <span class="flag-star">★</span>
 		 *    for flag === 'star', empty otherwise.
 		 *  - `rowClassCallback` tags Inactive rows (Carol, Frank) with `row-inactive`.
-		 *  - `customStylesCallback` injects the CSS for all of the above into the
+		 *  - `getCustomStylesCallback` injects the CSS for all of the above into the
 		 *    shadow DOM (with explicit, unambiguous colours the spec asserts on).
 		 */
 		const seed = () => [
@@ -63,8 +63,8 @@
 				title: 'Salary',
 				width: '110px',
 				horizontalAlign: 'right',
-				formatCallback: (v) => v != null ? `$${v.toLocaleString()}` : '',
-				cellClassCallback: (value) => salaryClass(value)
+				getDisplayValueCallback: ({ value: v }) => v != null ? `$${v.toLocaleString()}` : '',
+				getCellClassCallback: ({ value }) => salaryClass(value)
 			},
 			{ field: 'status', title: 'Status', width: '110px' },
 			{
@@ -72,19 +72,19 @@
 				title: 'Flag',
 				width: '70px',
 				horizontalAlign: 'center',
-				templateCallback: (row) => row.flag === 'star'
+				renderCellCallback: ({ row }) => row.flag === 'star'
 					? '<span class="flag-star">★</span>'
 					: ''
 			}
 		]
 		grid.isStriped = false
 
-		grid.rowClassCallback = (row) => row.status === 'Inactive' ? 'row-inactive' : null
+		grid.getRowClassCallback = ({ row }) => row.status === 'Inactive' ? 'row-inactive' : null
 
 		// Shadow DOM can't be reached by page CSS — inject the rules for every
 		// dynamically-applied class here. Colours are explicit so the spec can
 		// assert on computed styles.
-		grid.customStylesCallback = () => `
+		grid.getCustomStylesCallback = () => `
 			.name-cell { font-weight: 700; }
 			.salary-low { background-color: rgb(254, 226, 226) !important; }
 			.salary-mid { background-color: rgb(254, 249, 195) !important; }

@@ -4,7 +4,7 @@
 // =============================================================================
 
 import type { Column } from '../../types.js'
-import type { GridContext } from '../grid-context.js'
+import type { GridHost } from '../grid-context.js'
 import { getOptionDisplayValue } from '../dropdown/options.js'
 import { gridPerf } from '../../perf.js'
 
@@ -13,7 +13,7 @@ import { gridPerf } from '../../perf.js'
  * For dropdown cells, renders toggle only if cell is editable - CSS controls visibility via hover/focus
  */
 export function renderCellDisplay<T>(
-	ctx: GridContext<T>,
+	ctx: GridHost<T>,
 	rowIndex: number,
 	colIndex: number,
 	column: Column<T>,
@@ -27,14 +27,14 @@ export function renderCellDisplay<T>(
 	const field = String(column.field)
 
 	if (isCheckbox) {
-		// If formatCallback is provided, use its output instead of default checkbox
-		if (column.formatCallback) {
+		// If getDisplayValueCallback is provided, use its output instead of default checkbox
+		if (column.getDisplayValueCallback) {
 			return `<span class="wg__cell-text">${ctx.escapeHtml(value)}</span>`
 		}
 		// Default: render checkbox
 		gridPerf.counters.cellDisplayItemsLookup++
-		const item = ctx.grid.displayItems[rowIndex]
-		const rawValue = item ? ctx.grid.getCellRawValue(item, rowIndex, field) : false
+		const item = ctx.engine.displayItems[rowIndex]
+		const rawValue = item ? ctx.engine.getCellRawValue(item, rowIndex, field) : false
 		const opts = column.editorOptions || {}
 		const trueValue = opts.trueValue !== undefined ? opts.trueValue : true
 		const isChecked = rawValue === trueValue
@@ -56,14 +56,14 @@ export function renderCellDisplay<T>(
 	if (isDropdown) {
 		// Get display value using proper fallback chain (getDisplayCallback -> displayMember -> label -> raw value)
 		gridPerf.counters.cellDisplayItemsLookup++
-		const item = ctx.grid.displayItems[rowIndex]
-		const rawValue = item ? ctx.grid.getCellRawValue(item, rowIndex, field) : undefined
+		const item = ctx.engine.displayItems[rowIndex]
+		const rawValue = item ? ctx.engine.getCellRawValue(item, rowIndex, field) : undefined
 		const opts = column.editorOptions || {}
 		const options = opts.initialOptions || opts.options || []
 		const displayValue = getOptionDisplayValue(rawValue, options, opts)
 
 		// Add modifier class for on-focus visibility (CSS handles hover/focus show)
-		const visibility = ctx.grid.getEffectiveToggleVisibility(column)
+		const visibility = ctx.engine.getEffectiveToggleVisibility(column)
 		const toggleClass = visibility === 'on-focus' ? 'wg__cell-dropdown-display--toggle-on-focus' : ''
 		// Only render toggle if cell is editable
 		const toggleHtml = isEditable ? '<span class="wg__select-toggle">▼</span>' : ''
@@ -77,7 +77,7 @@ export function renderCellDisplay<T>(
 
 	if (isDate) {
 		// Same pattern as dropdown - calendar button visible only if editable
-		const visibility = ctx.grid.getEffectiveToggleVisibility(column)
+		const visibility = ctx.engine.getEffectiveToggleVisibility(column)
 		const toggleClass = visibility === 'on-focus' ? 'wg__cell-date-display--toggle-on-focus' : ''
 		// Only render toggle if cell is editable
 		const toggleHtml = isEditable
@@ -96,8 +96,8 @@ export function renderCellDisplay<T>(
 	// Line clamp style if maxLines is set
 	const lineClampStyle = column.maxLines ? `style="-webkit-line-clamp: ${column.maxLines}"` : ''
 
-	// templateCallback returns raw HTML - don't escape it
-	if (column.templateCallback) {
+	// renderCellCallback returns raw HTML - don't escape it
+	if (column.renderCellCallback) {
 		return `<span class="wg__cell-text" ${lineClampStyle}>${value}</span>`
 	}
 

@@ -50,13 +50,13 @@
 		 *  - Row 5 (Lamp):       stock=0,   active=false  — restock visible, delete enabled
 		 *
 		 * The spec asserts on:
-		 *   - dynamic label ("Copy <Column Title>")
-		 *   - visible(): row 0's Price column shows "Convert to EUR", row 0's
+		 *   - getTextCallback ("Copy <Column Title>")
+		 *   - getIsVisibleCallback: row 0's Price column shows "Convert to EUR", row 0's
 		 *     Name column does not.
-		 *   - disabled(): "Delete" is disabled for active rows.
-		 *   - danger: "Delete" has the --danger class.
-		 *   - dividerBefore: the Export item draws a divider above it.
-		 *   - visible() for "Restock": only when stock < 20.
+		 *   - getIsDisabledCallback: "Delete" is disabled for active rows.
+		 *   - isDanger: "Delete" has the --danger class.
+		 *   - a divider entry draws a divider above "Delete".
+		 *   - getIsVisibleCallback for "Restock": only when stock < 20.
 		 *   - shortcut: keyboard shortcut firing the action (Y key).
 		 *
 		 * Cell context menu uses gridId='grid'. Click events fired by menu items
@@ -75,9 +75,9 @@
 			{ field: 'id',       title: 'ID',       width: '60px' },
 			{ field: 'name',     title: 'Product Name', width: '160px' },
 			{ field: 'category', title: 'Category', width: '120px' },
-			{ field: 'price',    title: 'Price',    width: '90px', formatCallback: (v) => `$${v.toFixed(2)}` },
+			{ field: 'price',    title: 'Price',    width: '90px', getDisplayValueCallback: ({ value }) => `$${value.toFixed(2)}` },
 			{ field: 'stock',    title: 'Stock',    width: '80px' },
-			{ field: 'active',   title: 'Active',   width: '80px', formatCallback: (v) => v ? '✓' : '✗' }
+			{ field: 'active',   title: 'Active',   width: '80px', getDisplayValueCallback: ({ value }) => value ? '✓' : '✗' }
 		]
 
 		const cellLog = document.querySelector('[data-testid="cell-menu-log"]')
@@ -95,61 +95,62 @@
 		grid.contextMenu = [
 			{
 				id: 'view',
-				label: 'View Details',
+				text: 'View Details',
 				icon: '👁',
-				onclick: (ctx) => {
+				onClick: (ctx) => {
 					cellLog.textContent = `View: ${ctx.row.name}`
 				}
 			},
 			{
-				// Dynamic label — depends on column title at click time.
+				// Dynamic text — depends on column title at click time.
 				id: 'copy-cell',
-				label: (ctx) => `Copy "${ctx.column.title}"`,
+				getTextCallback: (ctx) => `Copy "${ctx.column.title}"`,
 				icon: '📋',
 				shortcut: 'C',
-				onclick: (ctx) => {
-					cellLog.textContent = `Copied ${ctx.column.field}=${ctx.cellValue}`
+				onClick: (ctx) => {
+					cellLog.textContent = `Copied ${ctx.column.field}=${ctx.value}`
 				}
 			},
 			{
 				// Conditional visibility — only on the Price column.
 				id: 'convert-eur',
-				label: 'Convert to EUR',
+				text: 'Convert to EUR',
 				icon: '€',
 				shortcut: 'Y',
-				visible: (ctx) => ctx.column.field === 'price',
-				onclick: (ctx) => {
-					cellLog.textContent = `EUR(${ctx.row.name}): ${(ctx.cellValue * 0.92).toFixed(2)}`
+				getIsVisibleCallback: (ctx) => ctx.column.field === 'price',
+				onClick: (ctx) => {
+					cellLog.textContent = `EUR(${ctx.row.name}): ${(ctx.value * 0.92).toFixed(2)}`
 				}
 			},
 			{
 				// Conditional visibility — only for low-stock rows.
 				id: 'restock',
-				label: 'Restock (+10)',
+				text: 'Restock (+10)',
 				icon: '📦',
-				visible: (ctx) => ctx.row.stock < 20,
-				onclick: (ctx) => {
+				getIsVisibleCallback: (ctx) => ctx.row.stock < 20,
+				onClick: (ctx) => {
 					rows[ctx.rowIndex].stock += 10
 					grid.items = [...rows]
 					cellLog.textContent = `Restocked ${ctx.row.name} → ${rows[ctx.rowIndex].stock}`
 					stock1El.textContent = String(rows[0].stock)
 				}
 			},
+			{ divider: true },
 			{
-				// Danger + conditional disabled + dividerBefore.
+				// Danger + conditional disabled.
 				id: 'delete',
-				label: 'Delete',
+				text: 'Delete',
 				icon: '🗑',
-				danger: true,
-				dividerBefore: true,
-				disabled: (ctx) => ctx.row.active === true,
-				onclick: (ctx) => {
+				isDanger: true,
+				getIsDisabledCallback: (ctx) => ctx.row.active === true,
+				onClick: (ctx) => {
 					cellLog.textContent = `Deleted ${ctx.row.name}`
 				}
 			}
 		]
-		grid.oncontextmenuopen = (ctx) => {
-			cellOpenLog.textContent = `open: ${ctx.column.field} row=${ctx.rowIndex} value=${ctx.cellValue}`
+		// Runs before the menu opens — logging only (no return → the menu opens as configured).
+		grid.beforeContextMenuOpenCallback = (ctx) => {
+			cellOpenLog.textContent = `open: ${ctx.column.field} row=${ctx.rowIndex} value=${ctx.value}`
 		}
 
 		// =====================================================================
@@ -161,8 +162,8 @@
 		gridOffset.contextMenuXOffset = 40
 		gridOffset.contextMenuYOffset = 24
 		gridOffset.contextMenu = [
-			{ id: 'a', label: 'Action A', icon: '①' },
-			{ id: 'b', label: 'Action B', icon: '②' }
+			{ id: 'a', text: 'Action A', icon: '①' },
+			{ id: 'b', text: 'Action B', icon: '②' }
 		]
 		document.querySelector('[data-testid="offset-state"]').textContent =
 			`x=${gridOffset.contextMenuXOffset} y=${gridOffset.contextMenuYOffset}`
@@ -179,22 +180,22 @@
 		gridHeader.isRowNumbersVisible = true
 		gridHeader.sortMode = 'single'
 		gridHeader.headerContextMenu = [
-			'sortAsc',
-			'sortDesc',
-			'clearSort',
-			{ dividerBefore: true },
+			'sort-asc',
+			'sort-desc',
+			'clear-sort',
+			{ divider: true },
 			{
 				id: 'exportColumn',
-				label: (ctx) => `Export "${ctx.column.title}"`,
+				getTextCallback: (ctx) => `Export "${ctx.column.title}"`,
 				icon: '📊',
-				onclick: (ctx) => {
+				onClick: (ctx) => {
 					headerExportLog.textContent = `Exported ${ctx.field}`
 				}
 			}
 		]
-		gridHeader.onheadercontextmenuopen = (ctx) => {
+		gridHeader.beforeHeaderMenuOpenCallback = (ctx) => {
 			headerLog.textContent =
-				`open: ${ctx.field} index=${ctx.columnIndex} sort=${ctx.sortDirection || 'none'}`
+				`open: ${ctx.field} index=${ctx.colIndex} sort=${ctx.sortDirection || 'none'}`
 		}
 	</script>
 </body>

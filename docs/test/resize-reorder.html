@@ -53,7 +53,7 @@
 		 * Per-grid setup the spec relies on:
 		 *  #grid           — basic resize + multi-sort. `name` is 150px.
 		 *  #grid2          — resize + persistence: gridName='resize-test-grid2',
-		 *                    shouldPersistColumnWidths=true, oncolumnresize logs to
+		 *                    shouldPersistColumnWidths=true, onColumnResize logs to
 		 *                    [data-testid="resize-log"]. `name` is 150px so the spec
 		 *                    can assert "from 150px".
 		 *  #grid3          — `status` has isResizable:false → its handle gets
@@ -61,12 +61,12 @@
 		 *  #gridMovable    — id / name / status have isMovable:false → Tab/drag
 		 *                    reorder of those columns is blocked.
 		 *  #gridReorder    — drag-to-reorder, freezeColumns=2 (id, name frozen so they
-		 *                    cannot be dragged), oncolumnreorder logs to
+		 *                    cannot be dragged), onColumnReorder logs to
 		 *                    [data-testid="reorder-log"].
 		 *  #gridHeaderMenu — right-click header context menu with predefined items
 		 *                    (sortAsc/sortDesc/clearSort/freezeColumn/unfreezeColumn/
 		 *                    hideColumn) plus a custom "Show All Columns" item.
-		 *                    onheadercontextmenuopen logs to
+		 *                    beforeHeaderMenuOpenCallback logs to
 		 *                    [data-testid="header-menu-log"].
 		 */
 		const seed = () => Array.from({ length: 10 }, (_, i) => ({
@@ -111,7 +111,7 @@
 		grid2.isRowNumbersVisible = true
 		grid2.gridName = 'resize-test-grid2'
 		grid2.shouldPersistColumnWidths = true
-		grid2.oncolumnresize = (detail) => {
+		grid2.onColumnResize = (detail) => {
 			document.querySelector('[data-testid="resize-log"]').textContent =
 				`Last resize: ${detail.field} from ${detail.oldWidth} to ${detail.newWidth}`
 		}
@@ -158,7 +158,7 @@
 		gridReorder.isStickyRowNumbers = true
 		gridReorder.freezeColumns = 2
 		gridReorder.isColumnReorderAllowed = true
-		gridReorder.oncolumnreorder = (detail) => {
+		gridReorder.onColumnReorder = (detail) => {
 			document.querySelector('[data-testid="reorder-log"]').textContent =
 				`Last reorder: "${detail.field}" from index ${detail.fromIndex} to ${detail.toIndex}`
 		}
@@ -178,27 +178,27 @@
 		gridHeaderMenu.isRowNumbersVisible = true
 		gridHeaderMenu.sortMode = 'multi'
 		gridHeaderMenu.headerContextMenu = [
-			'sortAsc',
-			'sortDesc',
-			'clearSort',
-			{ dividerBefore: true },
-			'freezeColumn',
-			'unfreezeColumn',
-			{ dividerBefore: true },
-			'hideColumn',
+			'sort-asc',
+			'sort-desc',
+			'clear-sort',
+			{ divider: true },
+			'freeze-column',
+			'unfreeze-column',
+			{ divider: true },
+			'hide-column',
 			{
 				id: 'showAllColumns',
-				label: 'Show All Columns',
+				text: 'Show All Columns',
 				icon: '👁',
-				onclick: () => {
+				onClick: () => {
 					gridHeaderMenu.columns = headerMenuColumnDefs()
 					document.querySelector('[data-testid="header-menu-log"]').textContent = 'Restored all columns'
 				}
 			}
 		]
-		gridHeaderMenu.onheadercontextmenuopen = (ctx) => {
+		gridHeaderMenu.beforeHeaderMenuOpenCallback = (ctx) => {
 			document.querySelector('[data-testid="header-menu-log"]').textContent =
-				`Menu opened: ${ctx.field} (index ${ctx.columnIndex}, frozen ${ctx.isFrozen}, sort ${ctx.sortDirection || 'none'})`
+				`Menu opened: ${ctx.field} (index ${ctx.colIndex}, frozen ${ctx.isFrozen}, sort ${ctx.sortDirection || 'none'})`
 		}
 	</script>
 </body>

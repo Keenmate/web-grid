@@ -27,14 +27,14 @@ function executeTransition(ctx: ExecutorContext, action: TransitionCellAction): 
 	const childActions: GridAction[] = []
 
 	// Check if we're transitioning FROM an editing cell
-	const editingCell = ctx.grid.editingCell
+	const editingCell = ctx.engine.editingCell
 	const isFromEditing = editingCell &&
 		editingCell.rowIndex === from.rowIndex &&
-		ctx.grid.columns.findIndex(c => String(c.field) === editingCell.field) === from.colIndex
+		ctx.engine.columns.findIndex(c => String(c.field) === editingCell.field) === from.colIndex
 
 	// Check if the 'from' cell is in 'always' edit mode
-	const fromColumn = ctx.grid.columns[from.colIndex]
-	const effectiveTrigger = fromColumn?.editTrigger ?? ctx.grid.editTrigger
+	const fromColumn = ctx.engine.columns[from.colIndex]
+	const effectiveTrigger = fromColumn?.editTrigger ?? ctx.engine.editTrigger
 	const isAlwaysEditMode = effectiveTrigger === 'always'
 
 	// If moving to a different cell

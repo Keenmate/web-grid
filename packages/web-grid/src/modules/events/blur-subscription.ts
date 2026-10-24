@@ -17,7 +17,7 @@
 //  - target is .wg__combobox-input / .wg__autocomplete-input →
 //    handleComboboxBlur (commit-matched-option or raw-text fallback).
 
-import type { GridContext } from '../grid-context.js'
+import type { GridHost } from '../grid-context.js'
 import { handleSelectBlur, handleComboboxBlur } from '../dropdown/index.js'
 import { handleEditorBlur } from '../editing/index.js'
 import { commitDateEditor } from '../datepicker/index.js'
@@ -32,7 +32,7 @@ import { commitDateEditor } from '../datepicker/index.js'
  * specific helpers.
  */
 export function handleInternalBlur<T>(
-	ctx: GridContext<T>,
+	ctx: GridHost<T>,
 	target: HTMLElement,
 	relatedTarget: HTMLElement | null
 ): void {

@@ -16,9 +16,8 @@
 // is inside an input/textarea/contenteditable (so e.g. an editable cell's
 // editor still gets its own keys).
 
-import type { GridContext } from '../grid-context.js'
-import type { RangeShortcutContext } from '../../types.js'
-import { parseKeyCombo, matchesKeyCombo } from '../keyboard/index.js'
+import type { GridHost } from '../grid-context.js'
+import { handleRangeShortcut } from '../items/index.js'
 import { removeRangeBorder } from '../cell-selection/index.js'
 
 /**
@@ -26,10 +25,10 @@ import { removeRangeBorder } from '../cell-selection/index.js'
  * range shortcuts. Routes the shortcut context to either the row-selection
  * shape or the cell-range shape based on which selection is active.
  */
-export function handleContainerKeyDown<T>(ctx: GridContext<T>, e: KeyboardEvent): void {
-	const selectedRowIndices = ctx.grid.selectedRows
-	const selectedColIndices = ctx.grid.selectedColumns
-	const hasCellRange = !!ctx.grid.selectedCellRange
+export function handleContainerKeyDown<T>(ctx: GridHost<T>, e: KeyboardEvent): void {
+	const selectedRowIndices = ctx.engine.selectedRows
+	const selectedColIndices = ctx.engine.selectedColumns
+	const hasCellRange = !!ctx.engine.selectedCellRange
 	if (selectedRowIndices.length === 0 && selectedColIndices.length === 0 && !hasCellRange) return
 
 	// Skip if focus is in an input
@@ -41,13 +40,13 @@ export function handleContainerKeyDown<T>(ctx: GridContext<T>, e: KeyboardEvent)
 	// Handle Escape to clear selection (cell range > column > row priority)
 	if (e.key === 'Escape') {
 		e.preventDefault()
-		if (ctx.grid.selectedCellRange) {
-			ctx.grid.clearCellSelection()
+		if (ctx.engine.selectedCellRange) {
+			ctx.engine.clearCellSelection()
 			removeRangeBorder()
 		} else if (selectedColIndices.length > 0) {
-			ctx.grid.clearColumnSelection()
+			ctx.engine.clearColumnSelection()
 		} else {
-			ctx.grid.clearSelection()
+			ctx.engine.clearSelection()
 		}
 		return
 	}
@@ -56,44 +55,27 @@ export function handleContainerKeyDown<T>(ctx: GridContext<T>, e: KeyboardEvent)
 	if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
 		e.preventDefault()
 		if (hasCellRange) {
-			ctx.grid.copyCellSelectionToClipboard()
+			ctx.engine.copyCellSelectionToClipboard()
 		} else if (selectedColIndices.length > 0) {
-			ctx.grid.copySelectedColumnsToClipboard()
+			ctx.engine.copySelectedColumnsToClipboard()
 		} else if (selectedRowIndices.length > 0) {
-			ctx.grid.copySelectedRowsToClipboard()
+			ctx.engine.copySelectedRowsToClipboard()
 		}
 		return
 	}
 
-	// Check range shortcuts (works for both row and cell selection)
-	const rangeShortcuts = ctx.grid.rangeShortcuts
-	if (!rangeShortcuts?.length) return
-
-	for (const shortcut of rangeShortcuts) {
-		const combo = parseKeyCombo(shortcut.key)
-		if (matchesKeyCombo(e, combo)) {
-			// Build context based on selection type
-			const shortcutCtx: RangeShortcutContext<T> = hasCellRange ? {
-				// Cell range mode
-				rows: [],
-				rowIndices: [],
-				cellRange: ctx.grid.selectedCellRange!,
-				cells: ctx.grid.getSelectedCells()
-			} : {
-				// Row selection mode
-				rows: ctx.grid.getSelectedRowsData(),
-				rowIndices: selectedRowIndices
-			}
-
-			const isDisabled = typeof shortcut.disabled === 'function'
-				? shortcut.disabled(shortcutCtx)
-				: shortcut.disabled === true
-
-			if (!isDisabled) {
-				e.preventDefault()
-				shortcut.action(shortcutCtx)
-				return
-			}
-		}
-	}
+	// Range shortcuts (row or cell selection). Skipped when the focused cell's
+	// keydown already ran one (it bubbles here).
+	if (e.defaultPrevented) return
+	handleRangeShortcut(ctx, e, hasCellRange ? {
+		// Cell range mode
+		rows: [],
+		rowIndices: [],
+		cellRange: ctx.engine.selectedCellRange!,
+		cells: ctx.engine.getSelectedCells()
+	} : {
+		// Row selection mode
+		rows: ctx.engine.getSelectedRowsData(),
+		rowIndices: selectedRowIndices
+	})
 }

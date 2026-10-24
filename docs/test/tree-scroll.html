@@ -154,7 +154,7 @@
 		}
 		refreshIs()
 
-		isGrid.ondatarequest = async (detail) => {
+		isGrid.onDataRequest = async (detail) => {
 			const line = document.createElement('div')
 			line.className = 'row'
 			line.textContent = `trigger=${detail.trigger} mode=${detail.mode}`

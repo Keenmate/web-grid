@@ -2,14 +2,15 @@
 // Paste Module (Excel/TSV multi-cell paste)
 // =============================================================================
 
-import type { GridContext } from '../grid-context.js'
+import type { GridHost } from '../grid-context.js'
 import type {
 	Column,
 	PasteColumnMapping,
-	BeforePasteDetail,
 	PasteCellResult,
 	PasteDetail
 } from '../../types.js'
+import type { BeforePasteContext } from '../../interaction.js'
+import { runBeforeCallback } from '@keenmate/web-components-core'
 
 /**
  * Parse TSV/CSV clipboard text into 2D array
@@ -127,12 +128,12 @@ export function detectHeaders<T>(
  * Execute multi-cell paste operation
  */
 export async function executePaste<T>(
-	ctx: GridContext<T>,
+	ctx: GridHost<T>,
 	clipboardText: string,
 	targetRowIndex: number,
 	targetColIndex: number
 ): Promise<PasteDetail<T>> {
-	const grid = ctx.grid
+	const grid = ctx.engine
 	const parsedRows = parseTSV(clipboardText)
 
 	// Empty result for empty clipboard
@@ -183,8 +184,8 @@ export async function executePaste<T>(
 		newRowsCount = Math.max(0, lastDataRowIndex - existingRowCount + 1)
 	}
 
-	// Build BeforePasteDetail for the event
-	const beforeDetail: BeforePasteDetail<T> = {
+	// ctx for beforePasteCallback — `false` cancels, `skipCells` skips cells
+	const beforeDetail: BeforePasteContext<T> = grid.ctx({
 		rawText: clipboardText,
 		parsedRows,
 		hasHeaders,
@@ -192,15 +193,12 @@ export async function executePaste<T>(
 		targetRowIndex,
 		targetColIndex,
 		newRowsCount,
-		cancel: false,
-		skipCells: new Set()
-	}
+		skipCells: new Set<string>()
+	})
 
-	// Fire onbeforepaste event - allow consumer to cancel or modify
-	if (grid.onbeforepaste) {
-		grid.onbeforepaste(beforeDetail)
-
-		if (beforeDetail.cancel) {
+	{
+		const gate = await runBeforeCallback(grid.beforePasteCallback, beforeDetail, 'beforePasteCallback')
+		if (gate.isCancelled) {
 			return {
 				totalCells: dataRows.reduce((sum, row) => sum + row.length, 0),
 				successfulCells: 0,
@@ -257,7 +255,7 @@ export async function executePaste<T>(
 			// be assigned when rows are validated and saved.
 			let newRow: T
 			if (grid.createRowCallback) {
-				newRow = grid.createRowCallback(pastedData, existingRowCount + i)
+				newRow = grid.createRowCallback(grid.ctx({ data: pastedData, rowIndex: existingRowCount + i }))
 			} else {
 				newRow = pastedData as T
 			}
@@ -396,40 +394,40 @@ export async function executePaste<T>(
 				continue
 			}
 
-			// Process the value through column's beforePasteCallback if present
+			// Convert the pasted text through the column's getPasteValueCallback
 			let processedValue: unknown = value
-			if (column.beforePasteCallback && rowData) {
-				processedValue = column.beforePasteCallback(value, rowData)
+			if (column.getPasteValueCallback && rowData) {
+				processedValue = column.getPasteValueCallback(Object.assign(
+					grid.cellCtx(rowData, displayRowIndex, column),
+					{ text: value }
+				))
 			}
 
 			// Commit the value and run validation
 			if (isPastingIntoEmptyRow) {
 				// For empty row paste, data is already in items - just run validation
 				const item = grid.items[absoluteRowIndex]
-				if (item && grid.shouldValidateOnPaste && column.beforeCommitCallback) {
-					const context = {
-						value: processedValue,
-						oldValue: undefined,
+				if (item && grid.shouldValidateOnPaste && column.validateCallback) {
+					const context = grid.ctx({
 						row: item,
 						rowIndex: absoluteRowIndex,
-						field
-					}
-					const result = await Promise.resolve(column.beforeCommitCallback(context))
-					const isValid = result === true || result === undefined ||
-						(typeof result === 'object' && result !== null && (result as { valid?: boolean }).valid !== false)
-					const errorMsg = typeof result === 'object' && result !== null
-						? ((result as { error?: string }).error || (result as { message?: string }).message)
-						: (typeof result === 'string' ? result : undefined)
+						column,
+						colIndex: grid.columns.indexOf(column),
+						field,
+						value: processedValue,
+						oldValue: undefined,
+						source: 'paste' as const
+					})
+					// Same result contract as an editor commit (null / undefined / true = valid)
+					const result = await Promise.resolve(column.validateCallback(context))
+					const normalized = grid.normalizeValidationResult(result, processedValue)
+					const isValid = normalized.valid
+					const errorMsg = normalized.message
 
 					if (!isValid) {
 						// Use displayRowIndex for invalid cell tracking (render uses display indices)
 						grid.addInvalidCell(displayRowIndex, field, errorMsg || 'Invalid value')
-						grid.onvalidationerror?.({
-							row: item,
-							rowIndex: displayRowIndex,
-							field,
-							error: errorMsg || 'Invalid value'
-						})
+						grid.notify('validation-error', { row: item, rowIndex: displayRowIndex, field, error: errorMsg || 'Invalid value', source: 'paste' })
 					}
 
 					cellResults.push({
@@ -451,7 +449,7 @@ export async function executePaste<T>(
 				}
 			} else if (grid.shouldValidateOnPaste) {
 				// Use commitEdit which handles validation
-				await grid.commitEdit(displayRowIndex, field, processedValue)
+				await grid.commitEdit(displayRowIndex, field, processedValue, false, 'paste')
 
 				// Check if cell is now invalid (rowKey, not displayRowIndex — invalidCells
 				// are keyed by stable id post-rc15)
@@ -503,10 +501,7 @@ export async function executePaste<T>(
 		hadHeaders: hasHeaders
 	}
 
-	// Fire onpaste event
-	if (grid.onpaste) {
-		grid.onpaste(pasteDetail)
-	}
+	grid.notify('paste-complete', pasteDetail)
 
 	return pasteDetail
 }
@@ -519,14 +514,14 @@ export async function executePaste<T>(
  *
  * Multi-cell detection: presence of tab or newline. Multi-cell goes through
  * executePaste (TSV parse + header detection + per-cell validation + new-
- * row creation). Single-cell takes the direct path: column.beforePasteCallback
- * preprocesses, then grid.commitEdit. Both paths render after.
+ * row creation). Single-cell takes the direct path: column.getPasteValueCallback
+ * converts, then grid.commitEdit. Both paths render after.
  */
-export async function handlePasteEvent<T>(ctx: GridContext<T>, e: ClipboardEvent): Promise<void> {
+export async function handlePasteEvent<T>(ctx: GridHost<T>, e: ClipboardEvent): Promise<void> {
 	// Only in navigate mode with focused cell, not while editing
-	if (!ctx.grid.isNavigateMode || ctx.grid.editingCell || !ctx.grid.focusedCell) return
+	if (!ctx.engine.isNavigateMode || ctx.engine.editingCell || !ctx.engine.focusedCell) return
 
-	const { rowIndex, colIndex } = ctx.grid.focusedCell
+	const { rowIndex, colIndex } = ctx.engine.focusedCell
 	const text = e.clipboardData?.getData('text') || ''
 	if (!text) return
 
@@ -540,23 +535,23 @@ export async function handlePasteEvent<T>(ctx: GridContext<T>, e: ClipboardEvent
 		ctx.render()
 	} else {
 		// Single cell paste - original behavior
-		const column = ctx.grid.columns[colIndex]
-		const row = ctx.grid.displayItems[rowIndex]
+		const column = ctx.engine.columns[colIndex]
+		const row = ctx.engine.displayItems[rowIndex]
 		if (!column || !row) return
 
 		// Check if cell is editable
-		if (!ctx.grid.isCellEditable(column, row)) return
+		if (!ctx.engine.isCellEditable(column, row)) return
 
 		e.preventDefault()
 
 		let processedText: unknown = text
-		if (column.beforePasteCallback) {
-			processedText = column.beforePasteCallback(text, row)
+		if (column.getPasteValueCallback) {
+			processedText = column.getPasteValueCallback(Object.assign(ctx.engine.cellCtx(row, rowIndex, column, colIndex), { text }))
 		}
 
 		// Commit the pasted value
 		const field = String(column.field)
-		await ctx.grid.commitEdit(rowIndex, field, processedText)
+		await ctx.engine.commitEdit(rowIndex, field, processedText, false, 'paste')
 		ctx.render()
 	}
 }

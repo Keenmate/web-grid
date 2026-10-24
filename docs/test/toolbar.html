@@ -97,150 +97,119 @@
 
 		const nextId = (rows) => Math.max(...rows.map(r => r.id)) + 1
 
-		// Standard add/delete/duplicate/move handler shared by the floating toolbars.
-		function handleStandardClick(rows, grid, detail) {
-			const { item, rowIndex, row } = detail
-			switch (item.id) {
-				case 'add':
-					rows.splice(rowIndex + 1, 0, { id: nextId(rows), title: 'New Task', priority: 'Medium', status: 'Todo', assignee: '' })
-					grid.items = [...rows]
-					showToast('Added new task', 'success')
-					break
-				case 'delete': {
-					const deleted = rows.splice(rowIndex, 1)[0]
-					grid.items = [...rows]
-					showToast(`Deleted: ${deleted.title}`, 'error')
-					break
-				}
-				case 'duplicate':
-					rows.splice(rowIndex + 1, 0, { ...row, id: nextId(rows), title: `${row.title} (copy)` })
-					grid.items = [...rows]
-					showToast(`Duplicated: ${row.title}`, 'success')
-					break
-				case 'moveUp':
-					if (rowIndex > 0) {
-						[rows[rowIndex], rows[rowIndex - 1]] = [rows[rowIndex - 1], rows[rowIndex]]
-						grid.items = [...rows]
-					}
-					break
-				case 'moveDown':
-					if (rowIndex < rows.length - 1) {
-						[rows[rowIndex], rows[rowIndex + 1]] = [rows[rowIndex + 1], rows[rowIndex]]
-						grid.items = [...rows]
-					}
-					break
+		// The row built-ins (add / delete / duplicate / move-up / move-down) do the work;
+		// these factories shape the rows `add` / `duplicate` insert, and onAction toasts.
+		function wireStandard(grid) {
+			grid.createEmptyRowCallback = () => ({ id: nextId(grid.items), title: 'New Task', priority: 'Medium', status: 'Todo', assignee: '' })
+			grid.createDuplicateRowCallback = ({ row }) => ({ ...row, id: nextId(grid.items), title: `${row.title} (copy)` })
+			grid.onAction = (detail) => {
+				if (detail.action === 'add') showToast('Added new task', 'success')
+				else if (detail.action === 'delete') showToast(`Deleted: ${detail.row.title}`, 'error')
+				else if (detail.action === 'duplicate') showToast(`Duplicated: ${detail.row.title}`, 'success')
 			}
 		}
 
-		// #grid — floating toolbar, 5 items in 2 groups (moveUp/moveDown | add/duplicate/delete).
+		// #grid — floating toolbar, 5 items in 2 groups (move-up/move-down | add/duplicate/delete).
 		const grid = document.getElementById('grid')
-		const rows1 = seed()
-		grid.items = rows1
+		grid.items = seed()
 		grid.columns = columns
 		grid.isHoverable = true
 		grid.isRowToolbarVisible = true
 		grid.rowToolbar = [
-			{ id: 'moveUp', type: 'moveUp', icon: '↑', title: 'Move up', group: 1 },
-			{ id: 'moveDown', type: 'moveDown', icon: '↓', title: 'Move down', group: 1 },
-			{ id: 'add', type: 'add', icon: '+', title: 'Add', group: 2 },
-			{ id: 'duplicate', type: 'duplicate', icon: '⧉', title: 'Duplicate', group: 2 },
-			{ id: 'delete', type: 'delete', icon: '−', title: 'Delete', group: 2 }
+			{ action: 'move-up', icon: '↑', text: 'Move up' },
+			{ action: 'move-down', icon: '↓', text: 'Move down' },
+			{ divider: true },
+			{ action: 'add', icon: '+', text: 'Add' },
+			{ action: 'duplicate', icon: '⧉', text: 'Duplicate' },
+			{ action: 'delete', icon: '−', text: 'Delete' }
 		]
-		grid.ontoolbarclick = (detail) => handleStandardClick(rows1, grid, detail)
+		wireStandard(grid)
 
 		// #grid2 — multi-row toolbar (row 1: move + CRUD, row 2: export/preview/archive).
 		const grid2 = document.getElementById('grid2')
-		const rows2 = seed()
-		grid2.items = rows2
+		grid2.items = seed()
 		grid2.columns = columns
 		grid2.isHoverable = true
 		grid2.isRowToolbarVisible = true
 		grid2.rowToolbar = [
-			{ id: 'moveUp', type: 'moveUp', icon: '↑', title: 'Move up', row: 1, group: 1 },
-			{ id: 'moveDown', type: 'moveDown', icon: '↓', title: 'Move down', row: 1, group: 1 },
-			{ id: 'add', type: 'add', icon: '+', title: 'Add', row: 1, group: 2 },
-			{ id: 'duplicate', type: 'duplicate', icon: '⧉', title: 'Duplicate', row: 1, group: 2 },
-			{ id: 'delete', type: 'delete', icon: '−', title: 'Delete', danger: true, row: 1, group: 2 },
-			{ id: 'export', icon: '📤', title: 'Export row', row: 2, group: 1 },
-			{ id: 'preview', icon: '👁', title: 'Preview', label: 'View', row: 2, group: 1 },
-			{ id: 'archive', icon: '📦', title: 'Archive', row: 2, group: 2 }
+			{ action: 'move-up', icon: '↑', text: 'Move up', row: 1 },
+			{ action: 'move-down', icon: '↓', text: 'Move down', row: 1 },
+			{ divider: true },
+			{ action: 'add', icon: '+', text: 'Add', row: 1 },
+			{ action: 'duplicate', icon: '⧉', text: 'Duplicate', row: 1 },
+			{ action: 'delete', icon: '−', text: 'Delete', row: 1 },
+			{ id: 'export', icon: '📤', text: 'Export row', row: 2 },
+			{ id: 'preview', icon: '👁', text: 'View', isTextVisible: true, row: 2 },
+			{ divider: true },
+			{ id: 'archive', icon: '📦', text: 'Archive', row: 2 }
 		]
-		grid2.ontoolbarclick = (detail) => {
-			handleStandardClick(rows2, grid2, detail)
-			if (['export', 'preview', 'archive'].includes(detail.item.id)) {
-				showToast(`${detail.item.title}: ${detail.row.title}`)
-			}
+		wireStandard(grid2)
+		const standardAction2 = grid2.onAction
+		grid2.onAction = (detail) => {
+			standardAction2(detail)
+			if (detail.action === 'custom') showToast(`${detail.item.text}: ${detail.row.title}`)
 		}
 
 		// #grid3 — inline toolbar column with disabled / hidden callbacks.
 		const grid3 = document.getElementById('grid3')
-		const rows3 = seed()
-		grid3.items = rows3
+		grid3.items = seed()
 		grid3.columns = columns
 		grid3.isHoverable = true
 		grid3.isRowToolbarVisible = true
 		grid3.toolbarPosition = 'inline'
 		grid3.inlineActionsTitle = 'Actions'
 		grid3.rowToolbar = [
-			{ id: 'edit', icon: '✏️', title: 'Edit task', disabled: (row) => row.status === 'Done' },
-			{ id: 'delete', icon: '🗑️', title: 'Delete task', danger: true, hidden: (row) => row.priority === 'High' },
-			{ id: 'archive', icon: '📦', title: 'Archive task' }
+			{ id: 'edit', icon: '✏️', text: 'Edit task', getIsDisabledCallback: ({ row }) => row.status === 'Done' },
+			{ action: 'delete', icon: '🗑️', text: 'Delete task', getIsVisibleCallback: ({ row }) => row.priority !== 'High' },
+			{ id: 'archive', icon: '📦', text: 'Archive task' }
 		]
-		grid3.ontoolbarclick = (detail) => {
-			const { item, rowIndex, row } = detail
-			if (item.id === 'edit') {
-				showToast(`Editing: ${row.title}`)
-			} else if (item.id === 'delete') {
-				const deleted = rows3.splice(rowIndex, 1)[0]
-				grid3.items = [...rows3]
-				showToast(`Deleted: ${deleted.title}`, 'error')
-			} else if (item.id === 'archive') {
-				showToast(`Archived: ${row.title}`, 'success')
-			}
+		grid3.onAction = ({ action, id, row }) => {
+			if (id === 'edit') showToast(`Editing: ${row.title}`)
+			else if (action === 'delete') showToast(`Deleted: ${row.title}`, 'error')
+			else if (id === 'archive') showToast(`Archived: ${row.title}`, 'success')
 		}
 
 		// #grid4 — cell-aware toolbar; shouldToolbarFollowCursor refreshes items per cell.
 		const grid4 = document.getElementById('grid4')
-		const rows4 = seed()
-		grid4.items = rows4
+		grid4.items = seed()
 		grid4.columns = columns
 		grid4.isHoverable = true
 		grid4.isRowToolbarVisible = true
 		grid4.toolbarPosition = 'top'
 		grid4.shouldToolbarFollowCursor = true
 		grid4.rowToolbar = ['add', 'delete', 'duplicate']
-		grid4.cellToolbar = (row, rowIndex, field) => {
+		grid4.getCellToolbarItemsCallback = ({ field }) => {
 			switch (field) {
 				case 'priority':
 					return [
-						{ id: 'setHigh', icon: '🔴', title: 'Set High Priority' },
-						{ id: 'setMedium', icon: '🟡', title: 'Set Medium Priority' },
-						{ id: 'setLow', icon: '🟢', title: 'Set Low Priority' }
+						{ id: 'setHigh', icon: '🔴', text: 'Set High Priority' },
+						{ id: 'setMedium', icon: '🟡', text: 'Set Medium Priority' },
+						{ id: 'setLow', icon: '🟢', text: 'Set Low Priority' }
 					]
 				case 'status':
 					return [
-						{ id: 'setTodo', icon: '📋', title: 'Set Todo' },
-						{ id: 'setProgress', icon: '🔄', title: 'Set In Progress' },
-						{ id: 'setDone', icon: '✅', title: 'Set Done' }
+						{ id: 'setTodo', icon: '📋', text: 'Set Todo' },
+						{ id: 'setProgress', icon: '🔄', text: 'Set In Progress' },
+						{ id: 'setDone', icon: '✅', text: 'Set Done' }
 					]
 				default:
 					return undefined
 			}
 		}
-		grid4.ontoolbarclick = (detail) => {
-			const { item, rowIndex, row } = detail
+		wireStandard(grid4)
+		const standardAction4 = grid4.onAction
+		grid4.onAction = (detail) => {
+			const { id, row } = detail
 			const priorityMap = { setHigh: 'High', setMedium: 'Medium', setLow: 'Low' }
 			const statusMap = { setTodo: 'Todo', setProgress: 'In Progress', setDone: 'Done' }
-			if (priorityMap[item.id]) {
-				rows4[rowIndex].priority = priorityMap[item.id]
-				grid4.items = [...rows4]
+			if (priorityMap[id]) {
+				grid4.items = grid4.items.map(r => r === row ? { ...r, priority: priorityMap[id] } : r)
 				showToast(`Set "${row.title}" priority`, 'success')
-			} else if (statusMap[item.id]) {
-				rows4[rowIndex].status = statusMap[item.id]
-				grid4.items = [...rows4]
+			} else if (statusMap[id]) {
+				grid4.items = grid4.items.map(r => r === row ? { ...r, status: statusMap[id] } : r)
 				showToast(`Set "${row.title}" status`, 'success')
 			} else {
-				handleStandardClick(rows4, grid4, detail)
+				standardAction4(detail)
 			}
 		}
 	</script>

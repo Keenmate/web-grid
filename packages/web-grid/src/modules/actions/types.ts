@@ -276,7 +276,7 @@ export type ToggleDatePickerAction = {
 }
 
 /**
- * Open custom editor (calls cellEditCallback)
+ * Open custom editor (calls renderEditorCallback)
  */
 export type OpenCustomEditorAction = {
 	type: 'openCustomEditor'

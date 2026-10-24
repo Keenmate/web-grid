@@ -85,7 +85,7 @@
 				},
 				// Format in local time (the picker stores local Date.getTime()).
 				// Using toISOString() would shift the date by the local UTC offset.
-				formatCallback: (v) => {
+				getDisplayValueCallback: ({ value: v }) => {
 					if (!v) return ''
 					const d = new Date(v)
 					return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -110,7 +110,7 @@
 			line.textContent = `row=${rowIndex} field=${field} value=${display} type=${typeof value}`
 			logEl.insertBefore(line, logEl.firstChild)
 		}
-		grid.onrowchange = (detail) => {
+		grid.onRowChange = (detail) => {
 			logCommit(detail.rowIndex, detail.field, detail.newValue)
 		}
 	</script>

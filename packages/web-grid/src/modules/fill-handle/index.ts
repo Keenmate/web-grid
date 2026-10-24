@@ -2,8 +2,9 @@
 // Fill Handle Module (Excel-like autofill)
 // =============================================================================
 
-import type { GridContext } from '../grid-context.js'
-import type { FillDragDetail, Column, EditorOption } from '../../types.js'
+import type { GridHost } from '../grid-context.js'
+import type { Column, EditorOption } from '../../types.js'
+import { runBeforeCallback } from '@keenmate/web-components-core'
 import { renderCell } from '../rendering/cell.js'
 
 /** Minimum distance (px) mouse must move before drag starts */
@@ -74,7 +75,7 @@ function isValueCompatible<T>(sourceValue: unknown, targetColumn: Column<T>): bo
 		case 'custom':
 		default:
 			// Text, autocomplete, checkbox, and custom editors allow any value
-			// Programmer can validate via fillDragCallback
+			// Programmer can validate via beforeFillCallback
 			return true
 	}
 }
@@ -112,7 +113,7 @@ let fillState: FillState = {
 }
 
 // Store the current context for document-level handlers
-let activeContext: GridContext | null = null
+let activeContext: GridHost | null = null
 
 // Track which grid's host element owns the current fill handle
 let fillHandleOwner: HTMLElement | null = null
@@ -134,13 +135,13 @@ export function isFillPending(): boolean {
 /**
  * Create and position the fill handle on the focused cell
  */
-export function updateFillHandle<T>(ctx: GridContext<T>): void {
-	const focusedCell = ctx.grid.focusedCell
+export function updateFillHandle<T>(ctx: GridHost<T>): void {
+	const focusedCell = ctx.engine.focusedCell
 	const hostElement = ctx.shadow.host as HTMLElement
 
 	// Remove existing handle if no focused cell, in edit mode, or dropdown is open
 	// Only remove if this grid owns the handle (prevents one grid from removing another's)
-	if (!focusedCell || ctx.grid.editingCell || ctx.dropdown.isOpen) {
+	if (!focusedCell || ctx.engine.editingCell || ctx.dropdown.isOpen) {
 		removeFillHandle(hostElement)
 		return
 	}
@@ -148,9 +149,9 @@ export function updateFillHandle<T>(ctx: GridContext<T>): void {
 	const { rowIndex, colIndex } = focusedCell
 
 	// Don't show fill handle if the focused cell's column is not editable
-	const column = ctx.grid.visualColumns[colIndex]?.column
-	const focusedRow = ctx.grid.displayItems[rowIndex]
-	if (!column || !ctx.grid.isCellEditable(column, focusedRow)) {
+	const column = ctx.engine.visualColumns[colIndex]?.column
+	const focusedRow = ctx.engine.displayItems[rowIndex]
+	if (!column || !ctx.engine.isCellEditable(column, focusedRow)) {
 		removeFillHandle(hostElement)
 		return
 	}
@@ -176,7 +177,7 @@ export function updateFillHandle<T>(ctx: GridContext<T>): void {
 	const handleSize = 8
 
 	// Check if on last row - if so, show handle at top-right so user can drag upward
-	const isLastRow = rowIndex === ctx.grid.displayItems.length - 1
+	const isLastRow = rowIndex === ctx.engine.displayItems.length - 1
 	const x = cellRect.right - containerRect.left + scrollLeft - handleSize / 2
 	const y = isLastRow
 		? cellRect.top - containerRect.top + scrollTop - handleSize / 2  // Top-right
@@ -226,15 +227,15 @@ export function removeFillHandle(forHost?: HTMLElement): void {
 /**
  * Handle mousedown on fill handle
  */
-function handleFillStart<T>(ctx: GridContext<T>, e: MouseEvent): void {
+function handleFillStart<T>(ctx: GridHost<T>, e: MouseEvent): void {
 	e.preventDefault()
 	e.stopPropagation()
 
-	const focusedCell = ctx.grid.focusedCell
+	const focusedCell = ctx.engine.focusedCell
 	if (!focusedCell) return
 
 	const { rowIndex, colIndex } = focusedCell
-	const visualCols = ctx.grid.visualColumns
+	const visualCols = ctx.engine.visualColumns
 	const column = visualCols[colIndex]?.column
 	if (!column) return
 
@@ -252,7 +253,7 @@ function handleFillStart<T>(ctx: GridContext<T>, e: MouseEvent): void {
 		currentColIndex: colIndex
 	}
 
-	activeContext = ctx as GridContext
+	activeContext = ctx as GridHost
 
 	// Attach document-level listeners
 	document.addEventListener('mousemove', handleDocumentMouseMove)
@@ -293,7 +294,7 @@ function handleDocumentMouseMove(e: MouseEvent): void {
 /**
  * Start the actual drag operation (after threshold exceeded)
  */
-function startActualDrag<T>(ctx: GridContext<T>): void {
+function startActualDrag<T>(ctx: GridHost<T>): void {
 	fillState.isPending = false
 	fillState.isDragging = true
 
@@ -308,7 +309,7 @@ function startActualDrag<T>(ctx: GridContext<T>): void {
 /**
  * Create the range overlay element
  */
-function createRangeOverlay<T>(ctx: GridContext<T>): void {
+function createRangeOverlay<T>(ctx: GridHost<T>): void {
 	const container = ctx.shadow.querySelector('.wg') as HTMLElement
 	if (!container) return
 
@@ -323,7 +324,7 @@ function createRangeOverlay<T>(ctx: GridContext<T>): void {
 /**
  * Update the range overlay position and size
  */
-function updateRangeOverlay<T>(ctx: GridContext<T>): void {
+function updateRangeOverlay<T>(ctx: GridHost<T>): void {
 	if (!fillState.rangeElement) return
 
 	const container = ctx.shadow.querySelector('.wg') as HTMLElement
@@ -403,7 +404,7 @@ function handleDocumentKeyDown(e: KeyboardEvent): void {
 /**
  * Find which cell is at a given point
  */
-function findCellAtPoint<T>(ctx: GridContext<T>, x: number, y: number): { rowIndex: number; colIndex: number } | null {
+function findCellAtPoint<T>(ctx: GridHost<T>, x: number, y: number): { rowIndex: number; colIndex: number } | null {
 	const container = ctx.shadow.querySelector('.wg') as HTMLElement
 	if (!container) return null
 
@@ -448,16 +449,16 @@ function getDirection(
 /**
  * Apply the fill operation
  */
-async function applyFill<T>(ctx: GridContext<T>): Promise<void> {
+async function applyFill<T>(ctx: GridHost<T>): Promise<void> {
 	const { startRowIndex, startColIndex, currentRowIndex, currentColIndex, startField } = fillState
 
 	// Get the source cell value
-	const visualCols = ctx.grid.visualColumns
+	const visualCols = ctx.engine.visualColumns
 	const sourceColumn = visualCols[startColIndex]?.column
 	if (!sourceColumn) return
 
 	// Use draft row if it exists (contains edited values), otherwise use display item
-	const sourceRow = ctx.grid.getRowDraft(startRowIndex) ?? ctx.grid.displayItems[startRowIndex]
+	const sourceRow = ctx.engine.getRowDraft(startRowIndex) ?? ctx.engine.displayItems[startRowIndex]
 	if (!sourceRow) return
 
 	const sourceValue = (sourceRow as Record<string, unknown>)[startField]
@@ -466,7 +467,7 @@ async function applyFill<T>(ctx: GridContext<T>): Promise<void> {
 	const direction = getDirection(startRowIndex, startColIndex, currentRowIndex, currentColIndex)
 
 	// Get effective fill direction (column-level override or grid-level)
-	const fillDirection = sourceColumn.fillDirection ?? ctx.grid.fillDirection
+	const fillDirection = sourceColumn.fillDirection ?? ctx.engine.fillDirection
 
 	// Calculate target cells (excluding source cell)
 	const targetCells: Array<{ rowIndex: number; colIndex: number; field: string }> = []
@@ -489,7 +490,7 @@ async function applyFill<T>(ctx: GridContext<T>): Promise<void> {
 			const field = String(column.field)
 
 			// Check if cell is editable (column editability + row locking)
-			if (!ctx.grid.canEditCell(row, field)) continue
+			if (!ctx.engine.canEditCell(row, field)) continue
 
 			// Check if source value is compatible with target column's editor type
 			if (!isValueCompatible(sourceValue, column)) continue
@@ -501,8 +502,8 @@ async function applyFill<T>(ctx: GridContext<T>): Promise<void> {
 	// If no target cells, nothing to do
 	if (targetCells.length === 0) return
 
-	// Prepare detail for callback
-	const detail: FillDragDetail = {
+	// ctx for beforeFillCallback
+	const detail = ctx.engine.ctx({
 		sourceCell: {
 			rowIndex: startRowIndex,
 			colIndex: startColIndex,
@@ -511,17 +512,15 @@ async function applyFill<T>(ctx: GridContext<T>): Promise<void> {
 		},
 		targetCells,
 		direction
-	}
+	})
 
-	// Call fillDragCallback - if it returns false, cancel
-	if (ctx.grid.fillDragCallback) {
-		const result = ctx.grid.fillDragCallback(detail)
-		if (result === false) return
-	}
+	// beforeFillCallback: `false` cancels (async OK)
+	const gate = await runBeforeCallback(ctx.engine.beforeFillCallback, detail, 'beforeFillCallback')
+	if (gate.isCancelled) return
 
 	// Apply the fill to each target cell
 	for (const target of targetCells) {
-		await ctx.grid.commitEdit(target.rowIndex, target.field, sourceValue)
+		await ctx.engine.commitEdit(target.rowIndex, target.field, sourceValue)
 		// Re-render the cell to show the new value
 		renderCell(ctx, target.rowIndex, target.colIndex)
 	}
@@ -530,7 +529,7 @@ async function applyFill<T>(ctx: GridContext<T>): Promise<void> {
 /**
  * Cleanup after fill operation
  */
-function cleanup<T>(ctx: GridContext<T>): void {
+function cleanup<T>(ctx: GridHost<T>): void {
 	// Remove range overlay
 	if (fillState.rangeElement) {
 		fillState.rangeElement.remove()

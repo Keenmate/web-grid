@@ -14,11 +14,10 @@
 // The range-shortcut + row-shortcut blocks at the top run *before* the switch
 // so user-defined shortcuts can preempt built-in keys; both honour `disabled`
 // callbacks. Ctrl+C copies the cell-range to the clipboard if a range is
-// selected, otherwise the single cell value through `beforeCopyCallback`.
+// selected, otherwise the single cell value through `getCopyValueCallback`.
 
-import type { GridContext } from '../grid-context.js'
-import type { RangeShortcutContext, ShortcutContext } from '../../types.js'
-import { parseKeyCombo, matchesKeyCombo } from '../keyboard/index.js'
+import type { GridHost } from '../grid-context.js'
+import { handleRowShortcut, handleRangeShortcut } from '../items/index.js'
 import { moveFocus, updateFocusVisual, clearEditingVisual, tryStartEdit } from './focus.js'
 import { toggleCheckboxAndMove } from '../editing/index.js'
 import { openDropdownForCurrentEditor } from '../dropdown/index.js'
@@ -31,30 +30,30 @@ import { openDatePicker } from '../datepicker/index.js'
  * through `handleEditorKeyDown` on the editor input instead.
  */
 export function handleCellKeyDown<T>(
-	ctx: GridContext<T>,
+	ctx: GridHost<T>,
 	e: KeyboardEvent,
 	rowIndex: number,
 	colIndex: number
 ): void {
-	if (!ctx.grid.isNavigateMode) {
+	if (!ctx.engine.isNavigateMode) {
 		return
 	}
 
-	const columns = ctx.grid.columns
-	const displayItems = ctx.grid.displayItems
+	const columns = ctx.engine.columns
+	const displayItems = ctx.engine.displayItems
 
 	// For Tab navigation, we still use editable columns only — recomputed per row
 	// so heterogeneous trees (some rows entirely read-only) traverse correctly.
 	const currentRowForTab = displayItems[rowIndex]
-	const editableCols = ctx.grid.getEditableColumns(currentRowForTab)
+	const editableCols = ctx.engine.getEditableColumns(currentRowForTab)
 	const currentEditableIndex = editableCols.findIndex(ec => ec.index === colIndex)
 
 	// Ctrl+C - Copy to clipboard
 	if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
 		// If cell range is selected, copy the entire range
-		if (ctx.grid.selectedCellRange) {
+		if (ctx.engine.selectedCellRange) {
 			e.preventDefault()
-			ctx.grid.copyCellSelectionToClipboard()
+			ctx.engine.copyCellSelectionToClipboard()
 			return
 		}
 
@@ -62,9 +61,9 @@ export function handleCellKeyDown<T>(
 		const column = columns[colIndex]
 		const row = displayItems[rowIndex]
 		if (column && row) {
-			let value: unknown = ctx.grid.getCellRawValue(row, rowIndex, String(column.field))
-			if (column.beforeCopyCallback) {
-				value = column.beforeCopyCallback(value, row)
+			let value: unknown = ctx.engine.getCellRawValue(row, rowIndex, String(column.field))
+			if (column.getCopyValueCallback) {
+				value = column.getCopyValueCallback(ctx.engine.cellCtx(row, rowIndex, column, colIndex))
 			}
 			const textValue = value != null ? String(value) : ''
 			navigator.clipboard.writeText(textValue)
@@ -72,65 +71,28 @@ export function handleCellKeyDown<T>(
 		return // Let browser also handle for visual feedback
 	}
 
-	// Check range shortcuts (when rows are selected)
-	const selectedRowIndices = ctx.grid.selectedRows
-	if (selectedRowIndices.length > 0) {
-		const rangeShortcuts = ctx.grid.rangeShortcuts
-		if (rangeShortcuts && rangeShortcuts.length > 0) {
-			for (const shortcut of rangeShortcuts) {
-				const combo = parseKeyCombo(shortcut.key)
-				if (matchesKeyCombo(e, combo)) {
-					// Build range context
-					const shortcutCtx: RangeShortcutContext<T> = {
-						rows: ctx.grid.getSelectedRowsData(),
-						rowIndices: selectedRowIndices
-					}
-
-					// Check if disabled
-					const isDisabled = typeof shortcut.disabled === 'function'
-						? shortcut.disabled(shortcutCtx)
-						: shortcut.disabled === true
-
-					if (!isDisabled) {
-						e.preventDefault()
-						shortcut.action(shortcutCtx)
-						return
-					}
-				}
-			}
-		}
+	// Range shortcuts (when rows are selected)
+	const selectedRowIndices = ctx.engine.selectedRows
+	if (selectedRowIndices.length > 0 && handleRangeShortcut(ctx, e, {
+		rows: ctx.engine.getSelectedRowsData(),
+		rowIndices: selectedRowIndices
+	})) {
+		return
 	}
 
-	// Check row shortcuts (user-defined keyboard shortcuts)
-	const shortcuts = ctx.grid.rowShortcuts
-	if (shortcuts && shortcuts.length > 0) {
+	// Row shortcuts on the focused cell
+	{
 		const column = columns[colIndex]
 		const row = displayItems[rowIndex]
-		if (column && row) {
-			for (const shortcut of shortcuts) {
-				const combo = parseKeyCombo(shortcut.key)
-				if (matchesKeyCombo(e, combo)) {
-					// Build shortcut context
-					const shortcutCtx: ShortcutContext<T> = {
-						row,
-						rowIndex,
-						colIndex,
-						column,
-						cellValue: ctx.grid.getCellRawValue(row, rowIndex, String(column.field))
-					}
-
-					// Check if disabled
-					const isDisabled = typeof shortcut.disabled === 'function'
-						? shortcut.disabled(shortcutCtx)
-						: shortcut.disabled === true
-
-					if (!isDisabled) {
-						e.preventDefault()
-						shortcut.action(shortcutCtx)
-						return
-					}
-				}
-			}
+		if (column && row && handleRowShortcut(ctx, e, {
+			row,
+			rowIndex,
+			column,
+			colIndex,
+			field: String(column.field),
+			value: ctx.engine.getCellRawValue(row, rowIndex, String(column.field))
+		})) {
+			return
 		}
 	}
 
@@ -192,10 +154,10 @@ export function handleCellKeyDown<T>(
 				}
 			}
 
-			const next = ctx.grid.findNextEditableCell(rowIndex, fromEditableIdx, direction)
+			const next = ctx.engine.findNextEditableCell(rowIndex, fromEditableIdx, direction)
 			if (next) {
 				moveFocus(ctx, next.rowIndex, next.colIndex)
-			} else if (direction === 'forward' && ctx.grid.isEmptyRowIndex(rowIndex) && editableCols.length > 0) {
+			} else if (direction === 'forward' && ctx.engine.isEmptyRowIndex(rowIndex) && editableCols.length > 0) {
 				// On last cell of empty row - wrap to first editable cell
 				moveFocus(ctx, rowIndex, editableCols[0].index)
 			}
@@ -205,9 +167,9 @@ export function handleCellKeyDown<T>(
 		case 'Home':
 			e.preventDefault()
 			if (e.ctrlKey) {
-				if (ctx.grid.shouldUseVirtualScroll()) {
-					const oldFocus = ctx.grid.focusedCell
-					ctx.grid.setFocusedCell(0, 0)
+				if (ctx.engine.shouldUseVirtualScroll()) {
+					const oldFocus = ctx.engine.focusedCell
+					ctx.engine.setFocusedCell(0, 0)
 					ctx.scrollToRowProgrammatically(0)
 					const cell = ctx.shadow.querySelector(`td[data-row="0"][data-col="0"]`) as HTMLElement
 					if (cell) {
@@ -227,9 +189,9 @@ export function handleCellKeyDown<T>(
 			if (e.ctrlKey) {
 				const lastRow = displayItems.length - 1
 				const lastCol = columns.length - 1
-				if (ctx.grid.shouldUseVirtualScroll()) {
-					const oldFocus = ctx.grid.focusedCell
-					ctx.grid.setFocusedCell(lastRow, lastCol)
+				if (ctx.engine.shouldUseVirtualScroll()) {
+					const oldFocus = ctx.engine.focusedCell
+					ctx.engine.setFocusedCell(lastRow, lastCol)
 					ctx.scrollToRowProgrammatically(lastRow)
 					const cell = ctx.shadow.querySelector(`td[data-row="${lastRow}"][data-col="${lastCol}"]`) as HTMLElement
 					if (cell) {
@@ -247,9 +209,9 @@ export function handleCellKeyDown<T>(
 		case 'PageUp':
 			e.preventDefault()
 			if (e.ctrlKey) {
-				if (ctx.grid.shouldUseVirtualScroll()) {
-					const oldFocus = ctx.grid.focusedCell
-					ctx.grid.setFocusedCell(0, colIndex)
+				if (ctx.engine.shouldUseVirtualScroll()) {
+					const oldFocus = ctx.engine.focusedCell
+					ctx.engine.setFocusedCell(0, colIndex)
 					ctx.scrollToRowProgrammatically(0)
 					const cell = ctx.shadow.querySelector(`td[data-row="0"][data-col="${colIndex}"]`) as HTMLElement
 					if (cell) {
@@ -261,9 +223,9 @@ export function handleCellKeyDown<T>(
 				}
 			} else {
 				const newRowUp = Math.max(0, rowIndex - 10)
-				if (ctx.grid.shouldUseVirtualScroll()) {
-					const oldFocus = ctx.grid.focusedCell
-					ctx.grid.setFocusedCell(newRowUp, colIndex)
+				if (ctx.engine.shouldUseVirtualScroll()) {
+					const oldFocus = ctx.engine.focusedCell
+					ctx.engine.setFocusedCell(newRowUp, colIndex)
 					ctx.scrollToRowProgrammatically(newRowUp)
 					const cell = ctx.shadow.querySelector(`td[data-row="${newRowUp}"][data-col="${colIndex}"]`) as HTMLElement
 					if (cell) {
@@ -280,9 +242,9 @@ export function handleCellKeyDown<T>(
 			e.preventDefault()
 			if (e.ctrlKey) {
 				const lastRow = displayItems.length - 1
-				if (ctx.grid.shouldUseVirtualScroll()) {
-					const oldFocus = ctx.grid.focusedCell
-					ctx.grid.setFocusedCell(lastRow, colIndex)
+				if (ctx.engine.shouldUseVirtualScroll()) {
+					const oldFocus = ctx.engine.focusedCell
+					ctx.engine.setFocusedCell(lastRow, colIndex)
 					ctx.scrollToRowProgrammatically(lastRow)
 					const cell = ctx.shadow.querySelector(`td[data-row="${lastRow}"][data-col="${colIndex}"]`) as HTMLElement
 					if (cell) {
@@ -294,9 +256,9 @@ export function handleCellKeyDown<T>(
 				}
 			} else {
 				const newRowDown = Math.min(displayItems.length - 1, rowIndex + 10)
-				if (ctx.grid.shouldUseVirtualScroll()) {
-					const oldFocus = ctx.grid.focusedCell
-					ctx.grid.setFocusedCell(newRowDown, colIndex)
+				if (ctx.engine.shouldUseVirtualScroll()) {
+					const oldFocus = ctx.engine.focusedCell
+					ctx.engine.setFocusedCell(newRowDown, colIndex)
 					ctx.scrollToRowProgrammatically(newRowDown)
 					// Focus the cell after scroll (renderVirtualRows may not run if range unchanged)
 					const cell = ctx.shadow.querySelector(`td[data-row="${newRowDown}"][data-col="${colIndex}"]`) as HTMLElement
@@ -322,22 +284,22 @@ export function handleCellKeyDown<T>(
 			e.preventDefault()
 			const column = columns[colIndex]
 			const isDropdownColumn = column?.editor === 'select' || column?.editor === 'combobox' || column?.editor === 'autocomplete'
-			const isEmptyRowEnter = ctx.grid.isEmptyRowIndex(rowIndex)
+			const isEmptyRowEnter = ctx.engine.isEmptyRowIndex(rowIndex)
 
-			if (isDropdownColumn && ctx.grid.getEffectiveShouldOpenDropdownOnEnter(column)) {
+			if (isDropdownColumn && ctx.engine.getEffectiveShouldOpenDropdownOnEnter(column)) {
 				tryStartEdit(ctx, rowIndex, colIndex)
 				requestAnimationFrame(() => {
 					if (!ctx.dropdown.isOpen) {
 						openDropdownForCurrentEditor(ctx)
 					}
 				})
-			} else if (isEmptyRowEnter && column && ctx.grid.isCellEditable(column)) {
+			} else if (isEmptyRowEnter && column && ctx.engine.isCellEditable(column)) {
 				// On empty row, Enter starts editing the cell (like F2)
 				tryStartEdit(ctx, rowIndex, colIndex)
 			} else {
 				if (rowIndex < displayItems.length - 1) {
-					const targetCol = ctx.grid.tabTraversalStartColIndex ?? colIndex
-					ctx.grid.tabTraversalStartColIndex = null
+					const targetCol = ctx.engine.tabTraversalStartColIndex ?? colIndex
+					ctx.engine.tabTraversalStartColIndex = null
 					moveFocus(ctx, rowIndex + 1, targetCol)
 				}
 			}
@@ -372,7 +334,7 @@ export function handleCellKeyDown<T>(
 			const isDate = col?.editor === 'date'
 			const isCustom = col?.editor === 'custom'
 
-			if (isCheckbox && col && ctx.grid.isCellEditable(col, displayItems[rowIndex])) {
+			if (isCheckbox && col && ctx.engine.isCellEditable(col, displayItems[rowIndex])) {
 				toggleCheckboxAndMove(ctx, rowIndex, colIndex)
 			} else if (isDropdown) {
 				tryStartEdit(ctx, rowIndex, colIndex)
@@ -404,15 +366,15 @@ export function handleCellKeyDown<T>(
 
 		case 'Escape':
 			e.preventDefault()
-			if (ctx.grid.editingCell) {
+			if (ctx.engine.editingCell) {
 				clearEditingVisual(ctx)
-				ctx.grid.cancelEdit()
-			} else if (ctx.grid.selectedRows.length > 0) {
+				ctx.engine.cancelEdit()
+			} else if (ctx.engine.selectedRows.length > 0) {
 				// Clear row selection first
-				ctx.grid.clearSelection()
+				ctx.engine.clearSelection()
 			} else {
-				const oldFocus = ctx.grid.focusedCell
-				ctx.grid.clearFocusedCell()
+				const oldFocus = ctx.engine.focusedCell
+				ctx.engine.clearFocusedCell()
 				updateFocusVisual(ctx, oldFocus, null)
 				;(e.target as HTMLElement)?.blur()
 			}
@@ -423,18 +385,12 @@ export function handleCellKeyDown<T>(
 			const column = columns[colIndex]
 			const row = displayItems[rowIndex]
 			if (e.ctrlKey) {
-				// Ctrl+Delete: Request row deletion
-				if (row) {
-					const detail = { rowIndex, row }
-					if (ctx.grid.onrowdelete) {
-						ctx.grid.onrowdelete(detail)
-					}
-					ctx.dispatchEvent(new CustomEvent('rowdelete', { detail }))
-				}
+				// Ctrl+Delete: request row deletion (`row-delete`; the grid doesn't delete)
+				if (row) ctx.engine.notify('row-delete', { rowIndex, row })
 			} else {
 				// Delete: Clear cell content
-				if (column && ctx.grid.isCellEditable(column, row)) {
-					ctx.grid.commitEdit(rowIndex, String(column.field), null)
+				if (column && ctx.engine.isCellEditable(column, row)) {
+					ctx.engine.commitEdit(rowIndex, String(column.field), null)
 					ctx.render()
 					// Restore focus to the same cell
 					requestAnimationFrame(() => {

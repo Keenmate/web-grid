@@ -22,17 +22,17 @@ export const navigateExecutor: ActionExecutor = {
  * Execute navigate action - calculate target and produce transition action
  */
 function executeNavigate(ctx: ExecutorContext, action: NavigateAction): GridAction[] | void {
-	const from = action.from ?? ctx.grid.focusedCell
+	const from = action.from ?? ctx.engine.focusedCell
 	if (!from) return
 
 	const target = calculateTarget(ctx, from, action)
 
 	// Check if we're currently editing this cell
-	const fromColumn = ctx.grid.columns[from.colIndex]
+	const fromColumn = ctx.engine.columns[from.colIndex]
 	const fromField = fromColumn ? String(fromColumn.field) : ''
-	const isEditing = ctx.grid.editingCell &&
-		ctx.grid.editingCell.rowIndex === from.rowIndex &&
-		ctx.grid.editingCell.field === fromField
+	const isEditing = ctx.engine.editingCell &&
+		ctx.engine.editingCell.rowIndex === from.rowIndex &&
+		ctx.engine.editingCell.field === fromField
 
 	// If no target (e.g., Enter on last row, Tab on last cell), still commit if editing
 	if (!target) {
@@ -73,19 +73,19 @@ function calculateTarget(
 ): CellCoordinates | null {
 	const { direction, ctrlKey } = action
 	const { rowIndex, colIndex } = from
-	const columns = ctx.grid.columns
-	const displayItems = ctx.grid.displayItems
+	const columns = ctx.engine.columns
+	const displayItems = ctx.engine.displayItems
 	const maxRow = displayItems.length - 1
 	const maxCol = columns.length - 1
 
 	// For Tab navigation, use editable columns only — recomputed per row so heterogeneous
 	// trees (some rows entirely read-only) traverse correctly.
 	const currentRowForTab = displayItems[rowIndex]
-	const editableCols = ctx.grid.getEditableColumns(currentRowForTab)
+	const editableCols = ctx.engine.getEditableColumns(currentRowForTab)
 
 	// Clear tab traversal tracking on non-tab/non-enter navigation (arrow keys, etc.)
 	if (direction !== 'tab' && direction !== 'tab-back' && direction !== 'enter') {
-		ctx.grid.tabTraversalStartColIndex = null
+		ctx.engine.tabTraversalStartColIndex = null
 	}
 
 	switch (direction) {
@@ -117,7 +117,7 @@ function calculateTarget(
 			// Read-only grid: traverse all columns, wrapping to next row
 			if (editableCols.length === 0) {
 				// If next row(s) have editable columns, walk to them
-				const next = ctx.grid.findNextEditableCell(rowIndex, -1, 'forward')
+				const next = ctx.engine.findNextEditableCell(rowIndex, -1, 'forward')
 				if (next) return next
 				if (colIndex < maxCol) {
 					return { rowIndex, colIndex: colIndex + 1 }
@@ -128,8 +128,8 @@ function calculateTarget(
 			}
 
 			// Track tab traversal start for Excel-like Enter behavior
-			if (ctx.grid.tabTraversalStartColIndex === null) {
-				ctx.grid.tabTraversalStartColIndex = colIndex
+			if (ctx.engine.tabTraversalStartColIndex === null) {
+				ctx.engine.tabTraversalStartColIndex = colIndex
 			}
 			// Find current position in editable columns
 			const currentEditableIndex = editableCols.findIndex(ec => ec.index === colIndex)
@@ -139,15 +139,15 @@ function calculateTarget(
 				const next = editableCols.find(ec => ec.index > colIndex)
 				if (next) return { rowIndex, colIndex: next.index }
 				// None to the right — walk forward to next row with editable columns
-				const walked = ctx.grid.findNextEditableCell(rowIndex, editableCols.length - 1, 'forward')
+				const walked = ctx.engine.findNextEditableCell(rowIndex, editableCols.length - 1, 'forward')
 				if (walked) return walked
 				break
 			}
 
 			// Walk forward, skipping rows with zero editable columns
-			const next = ctx.grid.findNextEditableCell(rowIndex, currentEditableIndex, 'forward')
+			const next = ctx.engine.findNextEditableCell(rowIndex, currentEditableIndex, 'forward')
 			if (next) return next
-			if (ctx.grid.isEmptyRowIndex(rowIndex)) {
+			if (ctx.engine.isEmptyRowIndex(rowIndex)) {
 				// On empty row's last cell - wrap to first editable cell of same row
 				return { rowIndex, colIndex: editableCols[0].index }
 			}
@@ -157,7 +157,7 @@ function calculateTarget(
 		case 'tab-back': {
 			// Read-only grid: traverse all columns backwards, wrapping to previous row
 			if (editableCols.length === 0) {
-				const prev = ctx.grid.findNextEditableCell(rowIndex, 0, 'backward')
+				const prev = ctx.engine.findNextEditableCell(rowIndex, 0, 'backward')
 				if (prev) return prev
 				if (colIndex > 0) {
 					return { rowIndex, colIndex: colIndex - 1 }
@@ -168,8 +168,8 @@ function calculateTarget(
 			}
 
 			// Track tab traversal start for Excel-like Enter behavior
-			if (ctx.grid.tabTraversalStartColIndex === null) {
-				ctx.grid.tabTraversalStartColIndex = colIndex
+			if (ctx.engine.tabTraversalStartColIndex === null) {
+				ctx.engine.tabTraversalStartColIndex = colIndex
 			}
 			// Find current position in editable columns
 			const currentEditableIndex = editableCols.findIndex(ec => ec.index === colIndex)
@@ -179,21 +179,21 @@ function calculateTarget(
 				const prev = [...editableCols].reverse().find(ec => ec.index < colIndex)
 				if (prev) return { rowIndex, colIndex: prev.index }
 				// None to the left — walk backward to previous row with editable columns
-				const walked = ctx.grid.findNextEditableCell(rowIndex, 0, 'backward')
+				const walked = ctx.engine.findNextEditableCell(rowIndex, 0, 'backward')
 				if (walked) return walked
 				break
 			}
 
 			// Walk backward, skipping rows with zero editable columns
-			const prev = ctx.grid.findNextEditableCell(rowIndex, currentEditableIndex, 'backward')
+			const prev = ctx.engine.findNextEditableCell(rowIndex, currentEditableIndex, 'backward')
 			if (prev) return prev
 			break
 		}
 
 		case 'enter': {
 			// Excel-like: Enter after Tab returns to the column where Tab started
-			const targetCol = ctx.grid.tabTraversalStartColIndex ?? colIndex
-			ctx.grid.tabTraversalStartColIndex = null
+			const targetCol = ctx.engine.tabTraversalStartColIndex ?? colIndex
+			ctx.engine.tabTraversalStartColIndex = null
 			if (rowIndex < maxRow) {
 				return { rowIndex: rowIndex + 1, colIndex: targetCol }
 			}

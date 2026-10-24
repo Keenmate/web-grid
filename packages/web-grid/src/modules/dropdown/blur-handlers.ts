@@ -9,7 +9,7 @@
 //     the typed text matches an option's label, commit the option's value;
 //     otherwise commit the raw text (free-form support).
 
-import type { GridContext } from '../grid-context.js'
+import type { GridHost } from '../grid-context.js'
 import { clearEditingVisual } from '../navigation/focus.js'
 import { renderCell } from '../rendering/cell.js'
 import { getOptionLabel, getOptionValue } from './options.js'
@@ -22,7 +22,7 @@ import { removeDropdown } from './rendering.js'
  * commit).
  */
 export function handleSelectBlur<T>(
-	ctx: GridContext<T>,
+	ctx: GridHost<T>,
 	relatedTarget: HTMLElement | null
 ): void {
 	// Skip if opening dropdown (prevents flicker during open)
@@ -32,14 +32,14 @@ export function handleSelectBlur<T>(
 	if (relatedTarget?.closest('.wg__dropdown')) return
 
 	// Capture cell info BEFORE cancelEdit clears it
-	const editingCell = ctx.grid.editingCell
+	const editingCell = ctx.engine.editingCell
 	const colIndex = editingCell
-		? ctx.grid.columns.findIndex(c => String(c.field) === editingCell.field)
+		? ctx.engine.columns.findIndex(c => String(c.field) === editingCell.field)
 		: -1
 
 	removeDropdown(ctx)
 	clearEditingVisual(ctx)
-	ctx.grid.cancelEdit()
+	ctx.engine.cancelEdit()
 
 	// Re-render cell to restore display mode HTML
 	if (editingCell && colIndex >= 0) {
@@ -53,16 +53,16 @@ export function handleSelectBlur<T>(
  * value (free-form text support).
  */
 export function handleComboboxBlur<T>(
-	ctx: GridContext<T>,
+	ctx: GridHost<T>,
 	input: HTMLInputElement
 ): void {
 	removeDropdown(ctx)
 
-	if (!ctx.grid.editingCell) return
+	if (!ctx.engine.editingCell) return
 
 	// Capture cell info BEFORE commit clears it
-	const editingCell = ctx.grid.editingCell
-	const colIndex = ctx.grid.columns.findIndex(c => String(c.field) === editingCell.field)
+	const editingCell = ctx.engine.editingCell
+	const colIndex = ctx.engine.columns.findIndex(c => String(c.field) === editingCell.field)
 
 	const column = ctx.getCurrentEditingColumn()
 	if (!column) return
@@ -76,7 +76,7 @@ export function handleComboboxBlur<T>(
 
 	// Clear visual and commit
 	clearEditingVisual(ctx)
-	ctx.grid.commitEdit(editingCell.rowIndex, editingCell.field, value)
+	ctx.engine.commitEdit(editingCell.rowIndex, editingCell.field, value)
 
 	// Re-render cell to restore display mode
 	if (colIndex >= 0) {

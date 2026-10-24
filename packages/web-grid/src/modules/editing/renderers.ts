@@ -4,21 +4,21 @@
 // =============================================================================
 
 import type { Column } from '../../types.js'
-import type { GridContext } from '../grid-context.js'
+import type { GridHost } from '../grid-context.js'
 import { getOptionDisplayValue, getOptionValue } from '../dropdown/index.js'
 
 /**
  * Render the appropriate editor for a cell
  */
 export function renderCellEditor<T>(
-	ctx: GridContext<T>,
+	ctx: GridHost<T>,
 	rowIndex: number,
 	colIndex: number,
 	column: Column<T>
 ): string {
 	const field = String(column.field)
-	const item = ctx.grid.displayItems[rowIndex]
-	const currentValue = ctx.grid.getCellRawValue(item, rowIndex, field)
+	const item = ctx.engine.displayItems[rowIndex]
+	const currentValue = ctx.engine.getCellRawValue(item, rowIndex, field)
 	const editor = column.editor || 'text'
 
 	switch (editor) {
@@ -54,14 +54,14 @@ function getVerticalAlignClass<T>(column: Column<T>): string {
  * Render text input editor
  */
 export function renderTextEditor<T>(
-	ctx: GridContext<T>,
+	ctx: GridHost<T>,
 	rowIndex: number,
 	field: string,
 	value: unknown,
 	column: Column<T>
 ): string {
 	const opts = column.editorOptions || {}
-	const initialQuery = ctx.grid.editingCell?.initialSearchQuery
+	const initialQuery = ctx.engine.editingCell?.initialSearchQuery
 	// If user typed a character to start editing, use that as initial value
 	const strValue = initialQuery !== undefined ? initialQuery : (value != null ? String(value) : '')
 	const vAlignClass = getVerticalAlignClass(column)
@@ -84,14 +84,14 @@ export function renderTextEditor<T>(
  * Render number input editor
  */
 export function renderNumberEditor<T>(
-	ctx: GridContext<T>,
+	ctx: GridHost<T>,
 	rowIndex: number,
 	field: string,
 	value: unknown,
 	column: Column<T>
 ): string {
 	const opts = column.editorOptions || {}
-	const initialQuery = ctx.grid.editingCell?.initialSearchQuery
+	const initialQuery = ctx.engine.editingCell?.initialSearchQuery
 	// If user typed a digit to start editing, use that as initial value
 	const numValue = initialQuery !== undefined ? initialQuery : (value != null ? String(value) : '')
 	const vAlignClass = getVerticalAlignClass(column)
@@ -112,14 +112,14 @@ export function renderNumberEditor<T>(
  * Render date input editor with custom datepicker
  */
 export function renderDateEditor<T>(
-	ctx: GridContext<T>,
+	ctx: GridHost<T>,
 	rowIndex: number,
 	field: string,
 	value: unknown,
 	column: Column<T>
 ): string {
 	const opts = column.editorOptions || {}
-	const initialQuery = ctx.grid.editingCell?.initialSearchQuery
+	const initialQuery = ctx.engine.editingCell?.initialSearchQuery
 
 	// Convert value to display format
 	const dateValue = toDateInputValue(value)
@@ -210,7 +210,7 @@ function toDateInputValue(value: unknown): string {
  * Render checkbox editor
  */
 export function renderCheckboxEditor<T>(
-	ctx: GridContext<T>,
+	ctx: GridHost<T>,
 	rowIndex: number,
 	field: string,
 	value: unknown,
@@ -239,7 +239,7 @@ export function renderCheckboxEditor<T>(
  * Render select dropdown editor (custom trigger like v3, not native select)
  */
 export function renderSelectEditor<T>(
-	ctx: GridContext<T>,
+	ctx: GridHost<T>,
 	rowIndex: number,
 	field: string,
 	value: unknown,
@@ -248,7 +248,7 @@ export function renderSelectEditor<T>(
 	const opts = column.editorOptions || {}
 	const options = opts.options || []
 	const displayValue = getOptionDisplayValue(value, options, opts)
-	const initialQuery = ctx.grid.editingCell?.initialSearchQuery
+	const initialQuery = ctx.engine.editingCell?.initialSearchQuery
 
 	// Initialize dropdown options for select
 	ctx.dropdown.setOptions(options)
@@ -279,7 +279,7 @@ export function renderSelectEditor<T>(
  * Render combobox editor (filterable dropdown)
  */
 export function renderComboboxEditor<T>(
-	ctx: GridContext<T>,
+	ctx: GridHost<T>,
 	rowIndex: number,
 	field: string,
 	value: unknown,
@@ -288,7 +288,7 @@ export function renderComboboxEditor<T>(
 	const opts = column.editorOptions || {}
 	const options = opts.options || []
 	const displayValue = getOptionDisplayValue(value, options, opts)
-	const initialQuery = ctx.grid.editingCell?.initialSearchQuery
+	const initialQuery = ctx.engine.editingCell?.initialSearchQuery
 
 	// If user typed a character to start editing, use that as initial value
 	const inputValue = initialQuery !== undefined ? initialQuery : displayValue
@@ -316,7 +316,7 @@ export function renderComboboxEditor<T>(
  * Render autocomplete editor (async search dropdown)
  */
 export function renderAutocompleteEditor<T>(
-	ctx: GridContext<T>,
+	ctx: GridHost<T>,
 	rowIndex: number,
 	field: string,
 	value: unknown,
@@ -325,7 +325,7 @@ export function renderAutocompleteEditor<T>(
 	const opts = column.editorOptions || {}
 	const initialOptions = opts.initialOptions || opts.options || []
 	const displayValue = getOptionDisplayValue(value, initialOptions, opts)
-	const initialQuery = ctx.grid.editingCell?.initialSearchQuery
+	const initialQuery = ctx.engine.editingCell?.initialSearchQuery
 
 	// If user typed a character to start editing, use that as initial value
 	const inputValue = initialQuery !== undefined ? initialQuery : displayValue
@@ -353,18 +353,19 @@ export function renderAutocompleteEditor<T>(
 
 /**
  * Render custom editor placeholder
- * The actual editing UI is provided by cellEditCallback
+ * The actual editing UI is provided by renderEditorCallback
  */
 export function renderCustomEditor<T>(
-	ctx: GridContext<T>,
+	ctx: GridHost<T>,
 	rowIndex: number,
 	field: string,
 	value: unknown,
 	column: Column<T>
 ): string {
 	// Format the display value
-	const displayValue = column.formatCallback
-		? column.formatCallback(value, ctx.grid.displayItems[rowIndex])
+	const row = ctx.engine.displayItems[rowIndex]
+	const displayValue = column.getDisplayValueCallback && row !== undefined
+		? column.getDisplayValueCallback(Object.assign(ctx.engine.cellCtx(row, rowIndex, column), { value }))
 		: (value != null ? String(value) : '')
 
 	return `

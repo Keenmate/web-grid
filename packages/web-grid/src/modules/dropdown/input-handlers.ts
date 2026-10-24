@@ -4,7 +4,7 @@
 // =============================================================================
 
 import type { Column } from '../../types.js'
-import type { GridContext } from '../grid-context.js'
+import type { GridHost } from '../grid-context.js'
 import { getOptionLabel } from './options.js'
 import { renderDropdown } from './rendering.js'
 import { updateDropdownHighlight, updateLoadingIndicator, attachDropdownListeners } from './interaction.js'
@@ -12,7 +12,7 @@ import { updateDropdownHighlight, updateLoadingIndicator, attachDropdownListener
 /**
  * Handle combobox input (filtering)
  */
-export function handleComboboxInput<T>(ctx: GridContext<T>, e: Event): void {
+export function handleComboboxInput<T>(ctx: GridHost<T>, e: Event): void {
 	const input = e.target as HTMLInputElement
 	ctx.dropdown.setFilterText(input.value)
 	ctx.dropdown.setIsUserFiltering(true)
@@ -22,7 +22,7 @@ export function handleComboboxInput<T>(ctx: GridContext<T>, e: Event): void {
 	if (!column) {
 		const field = input.dataset.field
 		if (field) {
-			column = ctx.grid.columns.find(c => String(c.field) === field) || null
+			column = ctx.engine.columns.find(c => String(c.field) === field) || null
 		}
 	}
 	if (!column) return
@@ -57,7 +57,7 @@ export function handleComboboxInput<T>(ctx: GridContext<T>, e: Event): void {
 /**
  * Handle autocomplete input (async search)
  */
-export function handleAutocompleteInput<T>(ctx: GridContext<T>, e: Event): void {
+export function handleAutocompleteInput<T>(ctx: GridHost<T>, e: Event): void {
 	const input = e.target as HTMLInputElement
 	// Capture in a local — renderDropdown() below calls removeDropdown() which
 	// resets ctx.dropdown.filterText to ''. Without this, a single `input` event
@@ -72,7 +72,7 @@ export function handleAutocompleteInput<T>(ctx: GridContext<T>, e: Event): void 
 	if (!column) {
 		const field = input.dataset.field
 		if (field) {
-			column = ctx.grid.columns.find(c => String(c.field) === field) || null
+			column = ctx.engine.columns.find(c => String(c.field) === field) || null
 		}
 	}
 	if (!column) return
@@ -119,7 +119,7 @@ export function handleAutocompleteInput<T>(ctx: GridContext<T>, e: Event): void 
  * If no searchCallback is provided, falls back to local filtering of initialOptions
  */
 export async function performAutocompleteSearch<T>(
-	ctx: GridContext<T>,
+	ctx: GridHost<T>,
 	query: string,
 	column: Column<T>
 ): Promise<void> {
@@ -135,7 +135,7 @@ export async function performAutocompleteSearch<T>(
 		}))
 		ctx.dropdown.setHighlightedIndex(ctx.dropdown.options.length > 0 ? 0 : -1)
 
-		const editingCell = ctx.grid.editingCell
+		const editingCell = ctx.engine.editingCell
 		if (editingCell) {
 			const { rowIndex, field } = editingCell
 			const wrapper = ctx.shadow.querySelector(
@@ -162,11 +162,16 @@ export async function performAutocompleteSearch<T>(
 	updateLoadingIndicator(ctx, true)
 
 	try {
-		const editingCell = ctx.grid.editingCell
+		const editingCell = ctx.engine.editingCell
 		if (!editingCell) return
 
-		const item = ctx.grid.displayItems[editingCell.rowIndex]
-		const results = await opts.searchCallback(query, item, signal)
+		const item = ctx.engine.displayItems[editingCell.rowIndex]
+		const column = ctx.engine.columns.find(c => String(c.field) === editingCell.field)
+		if (!column) return
+		const results = await opts.searchCallback(Object.assign(
+			ctx.engine.cellCtx(item, editingCell.rowIndex, column),
+			{ term: query, signal }
+		))
 
 		if (!signal.aborted) {
 			// Clear searching state BEFORE rendering so dropdown shows correct message
@@ -198,7 +203,7 @@ export async function performAutocompleteSearch<T>(
 		updateLoadingIndicator(ctx, false)
 
 		ctx.dropdown.setOptions([])
-		const editingCell = ctx.grid.editingCell
+		const editingCell = ctx.engine.editingCell
 		if (editingCell) {
 			const { rowIndex, field } = editingCell
 			const wrapper = ctx.shadow.querySelector(

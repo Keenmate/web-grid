@@ -43,22 +43,22 @@ function executeResetState(ctx: ExecutorContext, action: ResetStateAction): Grid
 	}
 
 	// 2. Cancel active edit (cancelEdit already handles closing dropdown + clearing editing visual)
-	if (edit && ctx.grid.editingCell) {
+	if (edit && ctx.engine.editingCell) {
 		actions.push({ type: 'cancelEdit' })
 	}
 
 	// 3. Clear selections
 	if (selections) {
-		const hasSelections = ctx.grid.selectedRows.length > 0 ||
-			ctx.grid.selectedColumns.length > 0 ||
-			ctx.grid.selectedCellRange
+		const hasSelections = ctx.engine.selectedRows.length > 0 ||
+			ctx.engine.selectedColumns.length > 0 ||
+			ctx.engine.selectedCellRange
 		if (hasSelections) {
 			actions.push({ type: 'clearSelection' })
 		}
 	}
 
 	// 4. Clear focus (opt-in)
-	if (focus && ctx.grid.focusedCell) {
+	if (focus && ctx.engine.focusedCell) {
 		actions.push({ type: 'blurCell' })
 	}
 

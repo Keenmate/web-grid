@@ -8,7 +8,7 @@
 </head>
 <body>
 	<h1>column-visibility fixture</h1>
-	<p>Targeted by <code>e2e/column-visibility.spec.ts</code>. Exercises <code>column.isHidden</code> via API + the predefined <code>hideColumn</code> / <code>columnVisibility</code> header context menu items.</p>
+	<p>Targeted by <code>e2e/column-visibility.spec.ts</code>. Exercises <code>column.isHidden</code> via API + the built-in <code>hide-column</code> / <code>column-visibility</code> header context menu items.</p>
 
 	<div class="fixture">
 		<h2>#grid — toggle visibility via API + header context menu</h2>
@@ -38,7 +38,7 @@
 		 *   - email being column index 2 (so hiding it reorders thead)
 		 *   - column.field strings are exactly: id, name, email, department,
 		 *     salary, phone — used to read/write isHidden by field
-		 *   - 'hideColumn' + 'columnVisibility' wired into headerContextMenu
+		 *   - 'hide-column' + 'column-visibility' wired into headerContextMenu
 		 *
 		 * Reassigning grid.columns is what triggers the re-render (the grid
 		 * tracks the setter, not the array contents).
@@ -65,12 +65,12 @@
 		grid.columns = columnDefs()
 		grid.isRowNumbersVisible = true
 		grid.headerContextMenu = [
-			'sortAsc',
-			'sortDesc',
-			'clearSort',
-			{ dividerBefore: true },
-			'hideColumn',
-			'columnVisibility'
+			'sort-asc',
+			'sort-desc',
+			'clear-sort',
+			{ divider: true },
+			'hide-column',
+			'column-visibility'
 		]
 
 		// Surface visible / hidden field lists so the spec doesn't need to read
@@ -87,7 +87,7 @@
 		}
 		refreshState()
 
-		// The header context menu's 'hideColumn' / 'columnVisibility' both
+		// The header context menu's 'hide-column' / 'column-visibility' both
 		// reassign grid.columns, which re-renders thead. Observe and refresh.
 		const shadow = grid.shadowRoot
 		if (shadow) {

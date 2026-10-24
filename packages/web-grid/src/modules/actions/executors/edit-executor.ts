@@ -54,7 +54,7 @@ async function executeCommitEdit(
 	commitEmptyRow?: boolean,
 	target?: { rowIndex: number; colIndex: number }
 ): Promise<void> {
-	const editingCell = ctx.grid.editingCell
+	const editingCell = ctx.engine.editingCell
 
 	// Use target coordinates if provided (for 'always' edit mode), otherwise use editingCell
 	let rowIndex: number
@@ -65,14 +65,14 @@ async function executeCommitEdit(
 		// 'always' edit mode - coordinates provided directly
 		rowIndex = target.rowIndex
 		colIndex = target.colIndex
-		const column = ctx.grid.columns[colIndex]
+		const column = ctx.engine.columns[colIndex]
 		if (!column) return
 		field = String(column.field)
 	} else if (editingCell) {
 		// Normal edit mode - use tracked editingCell
 		rowIndex = editingCell.rowIndex
 		field = editingCell.field
-		colIndex = ctx.grid.columns.findIndex(c => String(c.field) === field)
+		colIndex = ctx.engine.columns.findIndex(c => String(c.field) === field)
 		if (colIndex < 0) return
 	} else {
 		// No target and no editingCell - nothing to commit
@@ -97,13 +97,13 @@ async function executeCommitEdit(
 
 	// Get the value based on editor type
 	let value: unknown
-	const column = ctx.grid.columns[colIndex]
+	const column = ctx.engine.columns[colIndex]
 	if (editor instanceof HTMLInputElement) {
 		if (editor.type === 'checkbox') {
 			// For checkbox, read from draft row to preserve custom trueValue/falseValue
 			// The draft row is already updated by toggleCheckbox action
-			const item = ctx.grid.displayItems[rowIndex]
-			value = ctx.grid.getCellRawValue(item, rowIndex, field)
+			const item = ctx.engine.displayItems[rowIndex]
+			value = ctx.engine.getCellRawValue(item, rowIndex, field)
 		} else if (editor.classList.contains('wg__date-input')) {
 			// Date editor - use the stored date value
 			value = editor.dataset.dateValue || editor.value
@@ -135,9 +135,9 @@ async function executeCommitEdit(
 	clearEditingVisual(ctx)
 
 	// Commit the edit and await it (may be async with validation callbacks)
-	await ctx.grid.commitEdit(rowIndex, field, value, commitEmptyRow)
+	await ctx.engine.commitEdit(rowIndex, field, value, commitEmptyRow)
 
-	// Re-render the cell (now has correct value with formatCallback applied)
+	// Re-render the cell (now has correct value with getDisplayValueCallback applied)
 	renderCell(ctx, rowIndex, colIndex)
 }
 
@@ -145,12 +145,12 @@ async function executeCommitEdit(
  * Cancel editing and discard changes
  */
 function executeCancelEdit(ctx: ExecutorContext): void {
-	const editingCell = ctx.grid.editingCell
+	const editingCell = ctx.engine.editingCell
 	if (!editingCell) return
 
 	const { rowIndex, field } = editingCell
-	const colIndex = ctx.grid.columns.findIndex(c => String(c.field) === field)
-	const column = ctx.grid.columns[colIndex]
+	const colIndex = ctx.engine.columns.findIndex(c => String(c.field) === field)
+	const column = ctx.engine.columns[colIndex]
 
 	// Close dropdown if open
 	if (ctx.dropdown.isOpen) {
@@ -163,11 +163,11 @@ function executeCancelEdit(ctx: ExecutorContext): void {
 	// For checkbox editor, discard the cell draft since toggle updates it during edit
 	// This restores the original value when user presses Escape
 	if (column?.editor === 'checkbox') {
-		ctx.grid.discardCellDraft(rowIndex, field)
+		ctx.engine.discardCellDraft(rowIndex, field)
 	}
 
 	// Cancel the edit
-	ctx.grid.cancelEdit()
+	ctx.engine.cancelEdit()
 
 	// Re-render the cell if we have valid coordinates
 	if (colIndex >= 0) {
@@ -181,8 +181,8 @@ function executeCancelEdit(ctx: ExecutorContext): void {
  * Phase 'edit': Cancel edit entirely and return to display mode
  */
 function executeEscapeEdit(ctx: ExecutorContext, action: EscapeEditAction): GridAction[] | void {
-	const editingCell = ctx.grid.editingCell
-	const focusedCell = ctx.grid.focusedCell
+	const editingCell = ctx.engine.editingCell
+	const focusedCell = ctx.engine.focusedCell
 
 	if (action.phase === 'dropdown') {
 		// Get cell info and editor type
@@ -190,9 +190,9 @@ function executeEscapeEdit(ctx: ExecutorContext, action: EscapeEditAction): Grid
 		if (!cellInfo) return
 
 		const colIndex = editingCell
-			? ctx.grid.columns.findIndex(c => String(c.field) === editingCell.field)
+			? ctx.engine.columns.findIndex(c => String(c.field) === editingCell.field)
 			: focusedCell?.colIndex ?? -1
-		const column = ctx.grid.columns[colIndex]
+		const column = ctx.engine.columns[colIndex]
 		const editorType = column?.editor
 
 		// For select: check if there's filter text (type-to-filter)
@@ -212,7 +212,7 @@ function executeEscapeEdit(ctx: ExecutorContext, action: EscapeEditAction): Grid
 			const input = cell?.querySelector('.wg__combobox-input, .wg__autocomplete-input') as HTMLInputElement
 
 			// Get original display value (using displayMember lookup)
-			const row = ctx.grid.displayItems[cellInfo.rowIndex]
+			const row = ctx.engine.displayItems[cellInfo.rowIndex]
 			const field = column?.field
 			const rawValue = row && field ? (row as Record<string, unknown>)[field as string] : undefined
 			const opts = column?.editorOptions || {}
@@ -239,9 +239,9 @@ function executeEscapeEdit(ctx: ExecutorContext, action: EscapeEditAction): Grid
 			clearEditingVisual(ctx)
 			// For checkbox editor, discard the cell draft
 			if (editorType === 'checkbox') {
-				ctx.grid.discardCellDraft(cellInfo.rowIndex, editingCell.field)
+				ctx.engine.discardCellDraft(cellInfo.rowIndex, editingCell.field)
 			}
-			ctx.grid.cancelEdit()
+			ctx.engine.cancelEdit()
 			renderCell(ctx, cellInfo.rowIndex, colIndex)
 			focusCellElement(ctx, cellInfo.rowIndex, colIndex)
 		}
@@ -251,8 +251,8 @@ function executeEscapeEdit(ctx: ExecutorContext, action: EscapeEditAction): Grid
 	// Phase 2: Cancel edit entirely
 	if (editingCell) {
 		const { rowIndex, field } = editingCell
-		const colIndex = ctx.grid.columns.findIndex(c => String(c.field) === field)
-		const column = ctx.grid.columns[colIndex]
+		const colIndex = ctx.engine.columns.findIndex(c => String(c.field) === field)
+		const column = ctx.engine.columns[colIndex]
 
 		// Close dropdown/datepicker if open
 		if (ctx.dropdown.isOpen) {
@@ -269,11 +269,11 @@ function executeEscapeEdit(ctx: ExecutorContext, action: EscapeEditAction): Grid
 		// For checkbox editor, discard the cell draft since toggle updates it during edit
 		// This restores the original value when user presses Escape
 		if (column?.editor === 'checkbox') {
-			ctx.grid.discardCellDraft(rowIndex, field)
+			ctx.engine.discardCellDraft(rowIndex, field)
 		}
 
 		// Cancel the edit
-		ctx.grid.cancelEdit()
+		ctx.engine.cancelEdit()
 
 		// Re-render the cell and focus it
 		if (colIndex >= 0) {
@@ -283,7 +283,7 @@ function executeEscapeEdit(ctx: ExecutorContext, action: EscapeEditAction): Grid
 	} else if (focusedCell) {
 		// No active edit, just clear focus
 		const { rowIndex, colIndex } = focusedCell
-		ctx.grid.clearFocusedCell()
+		ctx.engine.clearFocusedCell()
 		renderCell(ctx, rowIndex, colIndex)
 	}
 }
@@ -293,22 +293,22 @@ function executeEscapeEdit(ctx: ExecutorContext, action: EscapeEditAction): Grid
  */
 function executeDeleteCell(ctx: ExecutorContext, action: DeleteCellAction): void {
 	// Get target cell - use action target or focused cell
-	const target = action.target || ctx.grid.focusedCell
+	const target = action.target || ctx.engine.focusedCell
 	if (!target) return
 
 	const { rowIndex, colIndex } = target
-	const column = ctx.grid.columns[colIndex]
+	const column = ctx.engine.columns[colIndex]
 	if (!column) return
 
-	const row = ctx.grid.displayItems[rowIndex]
+	const row = ctx.engine.displayItems[rowIndex]
 
 	// Check if cell is editable
-	if (!ctx.grid.isCellEditable(column, row)) return
+	if (!ctx.engine.isCellEditable(column, row)) return
 
 	const field = String(column.field)
 
 	// Clear the cell value
-	ctx.grid.commitEdit(rowIndex, field, null)
+	ctx.engine.commitEdit(rowIndex, field, null)
 
 	// Re-render the cell
 	renderCell(ctx, rowIndex, colIndex)

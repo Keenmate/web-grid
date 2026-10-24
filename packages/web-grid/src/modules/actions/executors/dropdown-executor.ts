@@ -144,12 +144,12 @@ function executeDropdownSelect(ctx: ExecutorContext, action: DropdownSelectActio
 	if (!option) return
 
 	// Get cell info - prefer editingCell, fall back to focusedCell for 'always' mode
-	const editingCell = ctx.grid.editingCell
-	const focusedCell = ctx.grid.focusedCell
+	const editingCell = ctx.engine.editingCell
+	const focusedCell = ctx.engine.focusedCell
 	const cellInfo = editingCell
-		? { rowIndex: editingCell.rowIndex, field: editingCell.field, colIndex: ctx.grid.columns.findIndex(c => String(c.field) === editingCell.field) }
+		? { rowIndex: editingCell.rowIndex, field: editingCell.field, colIndex: ctx.engine.columns.findIndex(c => String(c.field) === editingCell.field) }
 		: focusedCell
-			? { rowIndex: focusedCell.rowIndex, field: String(ctx.grid.columns[focusedCell.colIndex]?.field), colIndex: focusedCell.colIndex }
+			? { rowIndex: focusedCell.rowIndex, field: String(ctx.engine.columns[focusedCell.colIndex]?.field), colIndex: focusedCell.colIndex }
 			: null
 
 	if (!cellInfo) return
@@ -157,23 +157,23 @@ function executeDropdownSelect(ctx: ExecutorContext, action: DropdownSelectActio
 	const { rowIndex, field, colIndex } = cellInfo
 
 	// Get column for editorOptions
-	const column = ctx.grid.columns[colIndex]
+	const column = ctx.engine.columns[colIndex]
 	const opts = column?.editorOptions || {}
 
 	if (isOptionDisabled(option, opts)) return
 
 	const value = getOptionValue(option, opts)
-	const row = ctx.grid.displayItems[rowIndex]
+	const row = ctx.engine.displayItems[rowIndex]
 
-	// Fire onselect event if provided
-	if (opts.onselect && row) {
-		opts.onselect(option, row)
+	// Notify editorOptions.onSelect
+	if (opts.onSelect && row && column) {
+		opts.onSelect({ ...ctx.engine.cellCtx(row, rowIndex, column, colIndex), option })
 	}
 
 	ctx.dropdown.setJustSelected(true)
 	ctx.isCommittingFromKeyboard = true
 	removeDropdown(ctx)
-	ctx.grid.commitEdit(rowIndex, field, value, action.commitEmptyRow ?? false)
+	ctx.engine.commitEdit(rowIndex, field, value, action.commitEmptyRow ?? false)
 
 	// If thenNavigate is specified (Tab key), navigate after select
 	if (action.thenNavigate) {

@@ -6,16 +6,16 @@
 //  1. Focus landed on a `.wg__cell` — drive handleCellFocus (the navigation
 //     module's focus-into-cell entry point), refresh the fill-handle, and
 //     (only for KEYBOARD-triggered focus) set + paint focused row. Mouse-
-//     triggered focus skips the row-focus call so onrowfocus fires from the
+//     triggered focus skips the row-focus call so row-focus fires from the
 //     click handler on mouseup, not on mousedown.
 //  2. Focus landed on an editor input in 'always' editTrigger mode — surgically
 //     swap `wg__cell--always-edit-focused` between old and new cells without
 //     re-rendering, and update row focus on the same keyboard-only rule.
 //
 // Skipped during cell-selection drag (isCellSelectionPending / isCellSelecting)
-// to avoid spurious onrowfocus while the user is dragging out a range.
+// to avoid spurious row-focus while the user is dragging out a range.
 
-import type { GridContext } from '../grid-context.js'
+import type { GridHost } from '../grid-context.js'
 import { handleCellFocus, ensureCellNotBehindFrozen } from '../navigation/index.js'
 import { updateFillHandle } from '../fill-handle/index.js'
 import { isCellSelectionPending, isCellSelecting } from '../cell-selection/index.js'
@@ -24,18 +24,18 @@ import { isCellSelectionPending, isCellSelecting } from '../cell-selection/index
  * Capture-phase focus handler. Capture phase is required so the handler
  * fires for .wg__cell and editor input alike (focus doesn't bubble).
  */
-export function handleTableFocus<T>(ctx: GridContext<T>, e: Event): void {
+export function handleTableFocus<T>(ctx: GridHost<T>, e: Event): void {
 	const target = e.target as HTMLElement
 	if (target.matches('.wg__cell')) {
 		const rowIndex = parseInt(target.dataset.row || '0', 10)
 		const colIndex = parseInt(target.dataset.col || '0', 10)
 		handleCellFocus(ctx, rowIndex, colIndex)
 		updateFillHandle(ctx)
-		// Only fire onrowfocus for keyboard-triggered focus (Tab, arrows).
-		// For mouse interactions, defer to click handler so onrowfocus fires on mouseup, not mousedown.
+		// Only fire row-focus for keyboard-triggered focus (Tab, arrows).
+		// For mouse interactions, defer to click handler so row-focus fires on mouseup, not mousedown.
 		if (!ctx.isMouseDown && !isCellSelectionPending() && !isCellSelecting()) {
-			const prevFocusedRow = ctx.grid.focusedRowIndex
-			ctx.grid.setFocusedRow(rowIndex)
+			const prevFocusedRow = ctx.engine.focusedRowIndex
+			ctx.engine.setFocusedRow(rowIndex)
 			ctx.updateRowFocusVisual(prevFocusedRow, rowIndex)
 		}
 
@@ -49,14 +49,14 @@ export function handleTableFocus<T>(ctx: GridContext<T>, e: Event): void {
 		if (cell) {
 			const rowIndex = parseInt(cell.dataset.row || '0', 10)
 			const colIndex = parseInt(cell.dataset.col || '0', 10)
-			const column = ctx.grid.columns[colIndex]
+			const column = ctx.engine.columns[colIndex]
 			// Check if this cell uses 'always' editTrigger
-			const effectiveTrigger = column?.editTrigger ?? ctx.grid.editTrigger
+			const effectiveTrigger = column?.editTrigger ?? ctx.engine.editTrigger
 			if (effectiveTrigger === 'always') {
 				// Update focused cell state and visual
-				const oldFocus = ctx.grid.focusedCell
+				const oldFocus = ctx.engine.focusedCell
 				if (!oldFocus || oldFocus.rowIndex !== rowIndex || oldFocus.colIndex !== colIndex) {
-					ctx.grid.setFocusedCell(rowIndex, colIndex)
+					ctx.engine.setFocusedCell(rowIndex, colIndex)
 					// Remove focus class from old cell (don't re-render - just update class)
 					if (oldFocus) {
 						const oldCell = ctx.shadow.querySelector(
@@ -70,8 +70,8 @@ export function handleTableFocus<T>(ctx: GridContext<T>, e: Event): void {
 					cell.classList.add('wg__cell--always-edit-focused')
 					// Update row focus (only for keyboard — mouse defers to click handler)
 					if (!ctx.isMouseDown) {
-						const prevFocusedRow = ctx.grid.focusedRowIndex
-						ctx.grid.setFocusedRow(rowIndex)
+						const prevFocusedRow = ctx.engine.focusedRowIndex
+						ctx.engine.setFocusedRow(rowIndex)
 						ctx.updateRowFocusVisual(prevFocusedRow, rowIndex)
 					}
 				}

@@ -74,20 +74,20 @@
 
 		grid.rowShortcuts = [
 			{
-				key: 'Ctrl+K',
+				shortcut: 'Ctrl+K',
 				id: 'delete',
-				label: 'Delete row',
-				action: (ctx) => {
+				text: 'Delete row',
+				onClick: (ctx) => {
 					items = items.filter((_, i) => i !== ctx.rowIndex)
 					grid.items = items
 					log('delete', ctx)
 				}
 			},
 			{
-				key: 'Ctrl+D',
+				shortcut: 'Ctrl+D',
 				id: 'duplicate',
-				label: 'Duplicate row',
-				action: (ctx) => {
+				text: 'Duplicate row',
+				onClick: (ctx) => {
 					const copy = { ...ctx.row, id: nextId++ }
 					items = [...items.slice(0, ctx.rowIndex + 1), copy, ...items.slice(ctx.rowIndex + 1)]
 					grid.items = items
@@ -95,11 +95,11 @@
 				}
 			},
 			{
-				key: 'Ctrl+U',
+				shortcut: 'Ctrl+U',
 				id: 'moveUp',
-				label: 'Move row up',
-				disabled: (ctx) => ctx.rowIndex === 0,
-				action: (ctx) => {
+				text: 'Move row up',
+				getIsDisabledCallback: (ctx) => ctx.rowIndex === 0,
+				onClick: (ctx) => {
 					if (ctx.rowIndex === 0) return
 					const tmp = items[ctx.rowIndex]
 					items[ctx.rowIndex] = items[ctx.rowIndex - 1]
@@ -110,10 +110,10 @@
 				}
 			},
 			{
-				key: 'Ctrl+E',
+				shortcut: 'Ctrl+E',
 				id: 'export',
-				label: 'Export row',
-				action: (ctx) => log('export', ctx)
+				text: 'Export row',
+				onClick: (ctx) => log('export', ctx)
 			}
 		]
 

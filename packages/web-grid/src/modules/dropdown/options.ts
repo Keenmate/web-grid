@@ -4,11 +4,27 @@
 // =============================================================================
 
 import type { EditorOption, EditorOptions } from '../../types.js'
+import type { OptionContext } from '../../interaction.js'
+
+// editorOptions object → the owning grid's ctx factory (bound by the engine when
+// columns are set), so option callbacks get `controller` / `element` too.
+const optionHosts = new WeakMap<object, (fields: object) => object>()
+
+/** Bind an `editorOptions` object to its grid's ctx factory. */
+export function bindOptionContext(opts: EditorOptions<any>, ctx: (fields: object) => object): void {
+	optionHosts.set(opts, ctx)
+}
+
+/** The ctx for an option callback (+ extra fields). */
+export function optionCtx<F extends object>(opts: EditorOptions<any>, fields: F): F & OptionContext {
+	const make = optionHosts.get(opts)
+	return (make ? make(fields) : fields) as F & OptionContext
+}
 
 /**
  * Get display value for a selected value from options list
  * Fallback chain:
- * 1. Find option by value, then use getDisplayCallback if provided
+ * 1. Find option by value, then use getDisplayValueCallback if provided
  * 2. Find option by value, then use displayMember
  * 3. Find option by value, then use 'label' property
  * 4. If no option found, return raw value as string
@@ -16,7 +32,7 @@ import type { EditorOption, EditorOptions } from '../../types.js'
 export function getOptionDisplayValue(
 	value: unknown,
 	options: EditorOption[],
-	opts: EditorOptions
+	opts: EditorOptions<any>
 ): string {
 	const valueMember = opts.valueMember || 'value'
 	const opt = options.find(o => (o as Record<string, unknown>)[valueMember] === value)
@@ -31,8 +47,8 @@ export function getOptionDisplayValue(
 /**
  * Get display label from option object
  */
-export function getOptionLabel(opt: EditorOption, opts: EditorOptions): string {
-	if (opts.getDisplayCallback) return opts.getDisplayCallback(opt)
+export function getOptionLabel(opt: EditorOption, opts: EditorOptions<any>): string {
+	if (opts.getDisplayValueCallback) return opts.getDisplayValueCallback(optionCtx(opts, { option: opt }))
 	const displayMember = opts.displayMember || 'label'
 	return String((opt as Record<string, unknown>)[displayMember] ?? opt.label ?? '')
 }
@@ -40,8 +56,8 @@ export function getOptionLabel(opt: EditorOption, opts: EditorOptions): string {
 /**
  * Get value from option object
  */
-export function getOptionValue(opt: EditorOption, opts: EditorOptions): unknown {
-	if (opts.getValueCallback) return opts.getValueCallback(opt)
+export function getOptionValue(opt: EditorOption, opts: EditorOptions<any>): unknown {
+	if (opts.getValueCallback) return opts.getValueCallback(optionCtx(opts, { option: opt }))
 	const valueMember = opts.valueMember || 'value'
 	return (opt as Record<string, unknown>)[valueMember] ?? opt.value
 }
@@ -49,8 +65,8 @@ export function getOptionValue(opt: EditorOption, opts: EditorOptions): unknown 
 /**
  * Get searchable text from option object (falls back to display)
  */
-export function getOptionSearchText(opt: EditorOption, opts: EditorOptions): string {
-	if (opts.getSearchCallback) return opts.getSearchCallback(opt)
+export function getOptionSearchText(opt: EditorOption, opts: EditorOptions<any>): string {
+	if (opts.getSearchValueCallback) return opts.getSearchValueCallback(optionCtx(opts, { option: opt }))
 	if (opts.searchMember) return String((opt as Record<string, unknown>)[opts.searchMember] ?? '')
 	return getOptionLabel(opt, opts)
 }
@@ -58,8 +74,8 @@ export function getOptionSearchText(opt: EditorOption, opts: EditorOptions): str
 /**
  * Get icon from option object
  */
-export function getOptionIcon(opt: EditorOption, opts: EditorOptions): string | null {
-	if (opts.getIconCallback) return opts.getIconCallback(opt)
+export function getOptionIcon(opt: EditorOption, opts: EditorOptions<any>): string | null {
+	if (opts.getIconCallback) return opts.getIconCallback(optionCtx(opts, { option: opt }))
 	if (opts.iconMember) return (opt as Record<string, unknown>)[opts.iconMember] as string || null
 	return null
 }
@@ -67,8 +83,8 @@ export function getOptionIcon(opt: EditorOption, opts: EditorOptions): string | 
 /**
  * Get subtitle from option object
  */
-export function getOptionSubtitle(opt: EditorOption, opts: EditorOptions): string | null {
-	if (opts.getSubtitleCallback) return opts.getSubtitleCallback(opt)
+export function getOptionSubtitle(opt: EditorOption, opts: EditorOptions<any>): string | null {
+	if (opts.getSubtitleCallback) return opts.getSubtitleCallback(optionCtx(opts, { option: opt }))
 	if (opts.subtitleMember) return (opt as Record<string, unknown>)[opts.subtitleMember] as string || null
 	return null
 }
@@ -76,8 +92,8 @@ export function getOptionSubtitle(opt: EditorOption, opts: EditorOptions): strin
 /**
  * Check if option is disabled
  */
-export function isOptionDisabled(opt: EditorOption, opts: EditorOptions): boolean {
-	if (opts.getDisabledCallback) return opts.getDisabledCallback(opt)
+export function isOptionDisabled(opt: EditorOption, opts: EditorOptions<any>): boolean {
+	if (opts.getIsDisabledCallback) return opts.getIsDisabledCallback(optionCtx(opts, { option: opt }))
 	if (opts.disabledMember) return Boolean((opt as Record<string, unknown>)[opts.disabledMember])
 	return false
 }
@@ -85,8 +101,8 @@ export function isOptionDisabled(opt: EditorOption, opts: EditorOptions): boolea
 /**
  * Get group from option object
  */
-export function getOptionGroup(opt: EditorOption, opts: EditorOptions): string | null {
-	if (opts.getGroupCallback) return opts.getGroupCallback(opt)
+export function getOptionGroup(opt: EditorOption, opts: EditorOptions<any>): string | null {
+	if (opts.getGroupCallback) return opts.getGroupCallback(optionCtx(opts, { option: opt }))
 	if (opts.groupMember) return (opt as Record<string, unknown>)[opts.groupMember] as string || null
 	return null
 }

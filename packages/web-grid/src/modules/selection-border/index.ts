@@ -4,7 +4,7 @@
 // Provides visual borders around row and column selections.
 // Handles contiguous segments (separate borders for non-adjacent selections).
 
-import type { GridContext } from '../grid-context.js'
+import type { GridHost } from '../grid-context.js'
 
 // Store references to border elements for cleanup
 let rowBorders: HTMLElement[] = []
@@ -66,18 +66,18 @@ function createBorderElement(
  * Create borders around selected rows.
  * Creates one border per contiguous segment.
  */
-export function createRowSelectionBorders<T>(ctx: GridContext<T>): void {
+export function createRowSelectionBorders<T>(ctx: GridHost<T>): void {
 	// Remove existing borders first
 	removeRowSelectionBorders()
 
-	const selectedRows = ctx.grid.selectedRows
+	const selectedRows = ctx.engine.selectedRows
 	if (selectedRows.length === 0) return
 
 	const container = ctx.shadow.querySelector('.wg') as HTMLElement
 	if (!container) return
 
 	const segments = findContiguousSegments(selectedRows)
-	const visualColumns = ctx.grid.visualColumns
+	const visualColumns = ctx.engine.visualColumns
 
 	if (visualColumns.length === 0) return
 
@@ -116,19 +116,19 @@ export function createRowSelectionBorders<T>(ctx: GridContext<T>): void {
  * Create borders around selected columns.
  * Creates one border per contiguous segment.
  */
-export function createColumnSelectionBorders<T>(ctx: GridContext<T>): void {
+export function createColumnSelectionBorders<T>(ctx: GridHost<T>): void {
 	// Remove existing borders first
 	removeColumnSelectionBorders()
 
-	const selectedColumns = ctx.grid.selectedColumns
+	const selectedColumns = ctx.engine.selectedColumns
 	if (selectedColumns.length === 0) return
 
 	const container = ctx.shadow.querySelector('.wg') as HTMLElement
 	if (!container) return
 
 	const segments = findContiguousSegments(selectedColumns)
-	const displayItems = ctx.grid.displayItems
-	const visualColumns = ctx.grid.visualColumns
+	const displayItems = ctx.engine.displayItems
+	const visualColumns = ctx.engine.visualColumns
 
 	if (displayItems.length === 0 || visualColumns.length === 0) return
 
@@ -182,7 +182,7 @@ export function createColumnSelectionBorders<T>(ctx: GridContext<T>): void {
 /**
  * Update all selection borders (call on scroll)
  */
-export function updateSelectionBorders<T>(ctx: GridContext<T>): void {
+export function updateSelectionBorders<T>(ctx: GridHost<T>): void {
 	// Only update if there are existing borders
 	if (rowBorders.length > 0) {
 		createRowSelectionBorders(ctx)

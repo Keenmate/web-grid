@@ -7,6 +7,115 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Proposed target: **2.0.0-rc01** (package.json still says 1.2.0-rc02) — a major: the callback, event and item API below is breaking, so
+`^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
+
+### Changed — BREAKING (interaction model, web-components-core rc15)
+
+Callbacks, events and every clickable item (row toolbar, cell / header context menu,
+shortcuts) follow the shared KeenMate interaction model (web-components-core `/actions`).
+No aliases — rename on upgrade.
+
+**Every callback takes ONE `ctx` argument.** Every ctx and every event detail carries
+`controller` (the public `GridController`, also `el.controller`) and `element` (the host) —
+both non-enumerable, so `JSON.stringify` / logs see only the data.
+
+| Old | New |
+|---|---|
+| `el.grid` (the internal `WebGrid`) | `el.controller` — the public facade (rows, drafts, validation, locking, selection, tree, columns, focus, menus). The engine is `GridEngine` (exported for standalone use; `el.engine` is internal) |
+| `rowClassCallback(row, rowIndex)` | `getRowClassCallback({ row, rowIndex })` |
+| `customStylesCallback()` | `getCustomStylesCallback(ctx)` |
+| `paginationLabelsCallback(ctx)` / `summaryContentCallback(ctx)` / `shortcutsHelpContentCallback()` | `getPaginationLabelsCallback(ctx)` / `renderSummaryCallback(ctx)` / `renderShortcutsHelpCallback(ctx)` |
+| `validationTooltipCallback(ctx)` (grid + column) | `getValidationTooltipCallback(ctx)` — ctx is the cell + `error` |
+| `treeChevronCallback({ expanded, … })` | `renderChevronCallback({ row, isExpanded, hasChildren, level, path })` |
+| `isRowEditable: boolean \| (row) => boolean` | `isRowEditable: boolean` + `getIsRowEditableCallback({ row })` |
+| `idValueCallback(row)` | `getRowIdCallback({ row })` |
+| `createEmptyRowCallback()` / `createRowCallback(pastedData, rowIndex)` | `createEmptyRowCallback(ctx)` / `createRowCallback({ data, rowIndex })` |
+| `rowLocking.isLockedCallback(row, i)` / `getLockInfoCallback(row, i)` / `canEditLockedCallback(row, lock)` | `getIsLockedCallback({ row, rowIndex })` / `getLockInfoCallback({ row, rowIndex })` / `getCanEditLockedCallback({ row, rowIndex, lockInfo })`; `lockTooltipCallback` (never called) removed |
+| `fillDragCallback(detail)` → `false` | `beforeFillCallback(ctx)` → `false` cancels (async OK) |
+| `onbeforepaste(detail)` + `detail.cancel = true` | `beforePasteCallback(ctx)` → `false` cancels (async OK); `ctx.skipCells` unchanged |
+| `onfilterchange(filters)` set → server-side filtering | `filterMode: 'server'` (attribute `filter-mode`) + the `filter-change` event `{ filters }` |
+
+**Columns**
+
+| Old | New |
+|---|---|
+| `formatCallback(value, row)` | `getDisplayValueCallback(ctx)` — ctx = `{ row, rowIndex, column, colIndex, field, value }` |
+| `templateCallback(row)` | `renderCellCallback(ctx)` (HTML) |
+| `cellClassCallback(value, row)` / `tooltipCallback(value, row)` | `getCellClassCallback(ctx)` / `getTooltipCallback(ctx)` |
+| `filter(filterValue, row)` | `filterCallback({ filterValue, row, column, field })` |
+| `isEditable: boolean \| (row) => boolean` | `isEditable: boolean` + `getIsEditableCallback({ row })` |
+| `beforeCommitCallback(ctx)` | `validateCallback(ctx)` — same result contract (`ValidationResult` / boolean / string / null); ctx gains `column`, `colIndex`, `source: 'edit' \| 'paste'`. The old deprecated `validateCallback(value, row)` is gone |
+| `cellEditCallback(ctx)` | `renderEditorCallback(ctx)` — the cell ctx + `commit` / `cancel` |
+| `beforeCopyCallback(value, row)` / `beforePasteCallback(value, row)` | `getCopyValueCallback(ctx)` / `getPasteValueCallback({ …cell, text })` (per-cell conversions, not vetoes) |
+| `renderCallback`, `CellRenderCallback` (never called) | removed |
+| `editorOptions.getDisplayCallback` / `getSearchCallback` / `getDisabledCallback` `(option)` | `getDisplayValueCallback` / `getSearchValueCallback` / `getIsDisabledCallback({ option })`; the other option callbacks take `({ option })` too |
+| `editorOptions.renderOptionCallback(option, ctx)` | `renderOptionCallback({ option, index, isHighlighted, isSelected, isDisabled })` |
+| `editorOptions.searchCallback(query, row, signal)` | `searchCallback({ term, row, rowIndex, column, field, signal })` |
+| `editorOptions.onselect(option, row)` | `editorOptions.onSelect({ option, row, rowIndex, column, field, … })` |
+| `editorOptions.loadOptions` / `optionsLoadTrigger` (never used) | removed |
+
+**Items — row toolbar, context menus, shortcuts are core action items**
+
+| Old | New |
+|---|---|
+| toolbar `{ id, icon, title, label, type, danger, disabled, hidden, tooltip: { description, shortcut }, tooltipCallback, onclick({ row, rowIndex }) }` | `{ action?, id?, icon, text, tooltip, shortcut, isDanger, isDisabled, isVisible, isActive, cssClass, get*Callback(ctx), onClick(detail), row, isTextVisible }` — `text` is the accessible name + tooltip heading (shown only without an icon or with `isTextVisible`), `tooltip` the description |
+| toolbar `group: n` / menu `dividerBefore: true` | a divider entry `{ divider: true, text? }` (or `menuDivider(text)`, exported) |
+| `minWidth` on a toolbar item (was dropped anyway) | `cssClass` / `--wg-toolbar-btn-min-width` |
+| built-ins `'add' \| 'delete' \| 'duplicate' \| 'moveUp' \| 'moveDown'` were icon presets — the consumer did the work in `ontoolbarclick` | `'add' \| 'delete' \| 'duplicate' \| 'move-up' \| 'move-down'` **do the work** (after the `action` event): add inserts `createEmptyRowCallback(ctx)`'s row (else a blank row) after the row; delete removes it; duplicate inserts `createDuplicateRowCallback({ row })`'s copy (else a shallow copy with `idMember` cleared); move swaps with the displayed neighbour. Veto with `beforeActionCallback` → `false`. **Remove your own add / delete / move code from the old `ontoolbarclick` or the row changes twice.** Built-in texts: `labels.actions` |
+| `cellToolbar(row, rowIndex, field, colIndex)` | `getCellToolbarItemsCallback(cellCtx)` — merged over `rowToolbar` by `id` / `action` |
+| menu `{ id, label \| (ctx) => …, icon \| fn, visible \| fn, disabled \| fn, danger, type, onclick(ctx) }` | `{ action?, id?, text, getTextCallback, icon, getIconCallback, isVisible, getIsVisibleCallback, isDisabled, getIsDisabledCallback, isDanger, isActive, shortcut, onClick(detail), children, getChildrenCallback, shouldCloseOnClick }` |
+| header `submenu(ctx)` / `children` (child `onclick` never ran) | `children` / `getChildrenCallback(ctx)` (sync or async — a loading row shows meanwhile); every child activates |
+| header built-ins `'sortAsc' \| 'sortDesc' \| 'clearSort' \| 'hideColumn' \| 'freezeColumn' \| 'unfreezeColumn' \| 'columnVisibility'` | kebab: `'sort-asc' \| 'sort-desc' \| 'clear-sort' \| 'hide-column' \| 'freeze-column' \| 'unfreeze-column' \| 'column-visibility'` (toggles report `action: 'toggle-column'` with `id` = field, and `'show-all-columns'`) |
+| cell built-ins `'expand-all' \| …` (`type: …` on an object) | same names, by `action`; the row built-ins work in the cell menu too |
+| a custom item whose `id` was a built-in name ran the built-in | built-ins only by `action`; `id` identifies custom items |
+| `HeaderMenuContext.columnIndex` | `colIndex` (`column` is `null` on the filler) |
+| `ContextMenuContext.cellValue` | `value` (`CellContext`: `row`, `rowIndex`, `column`, `colIndex`, `field`, `value`) |
+| `oncontextmenuopen(ctx)` / `onheadercontextmenuopen(ctx)` | `beforeContextMenuOpenCallback(ctx)` / `beforeHeaderMenuOpenCallback(ctx)` — sync; `false` → no grid menu (the browser's shows), an entries array → shown instead |
+| `rowShortcuts: [{ key, id, label, action(ctx), disabled }]` | `[{ shortcut, id?, action?, text, onClick(detail), isDisabled, getIsDisabledCallback }]` — action items bound to a key; `action` may name a row built-in |
+| `rangeShortcuts` (same shape) | same item shape, ctx `{ rows, rowIndices, cellRange?, cells? }` |
+| — | `beforeActionCallback(detail)` → `false` cancels any item activation (async OK) |
+| `data-toolbar-item` / `data-action-id` / `data-item-id` on buttons | `data-action` (built-in name or `custom`) + `data-id` |
+
+**Events** — real DOM events (bubble, not composed) + a camelCase `on*` twin called with the
+same detail first. Replaces the lowercase `on*` properties (which collided with native
+handlers: `onpaste`, `onbeforepaste`, `onselect`).
+
+| Old | New |
+|---|---|
+| `onrowchange` | `row-change` / `onRowChange` |
+| `onroweditstart` / `onroweditcancel` | `edit-start` / `onEditStart`, `edit-cancel` / `onEditCancel` |
+| `onvalidationerror` (never fired from paste) | `validation-error` / `onValidationError` — also from paste; detail gains `source` |
+| `ontoolbarclick(detail)` | `action` / `onAction` — every toolbar, inline, cell-toolbar, menu and shortcut item (`source`: `row-toolbar` / `cell-toolbar` / `context-menu` / `header-menu` / `keyboard`); `event` → `sourceEvent` |
+| `onrowaction` (never fired) | removed |
+| `ondatarequest` | `data-request` / `onDataRequest` — now also after a header-menu sort |
+| `onrowdelete` + the non-bubbling `rowdelete` DOM event | `row-delete` / `onRowDelete` (a request; the grid doesn't delete). Ctrl+Delete now reaches it in navigate mode (the action pipeline used to swallow it as "clear cell") |
+| `onrowfocus` | `row-focus` / `onRowFocus` |
+| `oncellselectionchange` | `cell-selection-change` / `onCellSelectionChange` |
+| `onfilterchange(filters)` | `filter-change` / `onFilterChange({ filters })` |
+| `oncolumnresize` / `oncolumnreorder` | `column-resize` / `onColumnResize`, `column-reorder` / `onColumnReorder` |
+| `onexpandedpathschange({ path, expanded })` (toggle only) | `expand-change` / `onExpandChange({ path, isExpanded, expandedPaths })` — also for expand / collapse all (`path: null`) and subtree |
+| `onrowlockchange` | `row-lock-change` / `onRowLockChange` |
+| `onpaste` (shadowed `HTMLElement.onpaste`) | `paste-complete` / `onPasteComplete` |
+
+### Added
+
+- `el.controller` (`GridController`) incl. `insertRow`, `removeRows`, `duplicateRow`,
+  `moveRow`, `expandSubtree` / `collapseSubtree`, `selectColumn*`, `closeContextMenu`,
+  `closeToolbar`; `createDuplicateRowCallback`; `labels.actions` (built-in texts);
+  `filterMode` / `filter-mode`; `menuDivider` re-exported; exported types for every ctx,
+  item and event detail (`GridContext`, `RowContext`, `CellContext`, `HeaderMenuContext`,
+  `GridToolbarItem`, `GridMenuEntry`, `GridShortcut`, `GridActionEventDetail`, `GridEventMap`, …).
+- Menus: labelled dividers, `isActive` (`aria-pressed`, `--active`), lazy submenus, item `tooltip`.
+
+### Fixed
+
+- The floating toolbar ignored hidden items; a cell toolbar's swapped-in items were looked up in the
+  base list on click (custom cell items did nothing).
+- A row shortcut fired twice when a cell had focus and the hover toolbar was open on the same row.
+- Paste validation treated `null` as invalid (an editor commit treats it as valid) — both now
+  share one result contract.
+
 ### Changed
 
 - **Dark / light follows the page in every browser (core theme context).** The page signal

@@ -4,7 +4,7 @@ import { test, expect, Page, Locator } from '@playwright/test'
  * E2E coverage for the fill-handle (Excel-like autofill) fixture
  * (docs/test/fill-handle.html). The page hosts four grids:
  *   #grid           — basic fill, logs every operation to [data-testid="fill-log"].
- *   #grid2          — same columns, but fillDragCallback returns false for the
+ *   #grid2          — same columns, but beforeFillCallback returns false for the
  *                     'status' column, cancelling the fill (logs to fill-log-2).
  *   #gridVertical   — narrow grid for vertical drag, row 0 value=100.
  *   #gridHorizontal — a row of cells across columns for horizontal drag.
@@ -116,11 +116,11 @@ test.describe('basic fill — #grid', () => {
 		await expect(cell(page, 'grid', 3, 1)).toContainText('Alice')
 	})
 
-	test('fillDragCallback receives source/target/direction (logged into fill-log)', async ({ page }) => {
+	test('beforeFillCallback receives source/target/direction (logged into fill-log)', async ({ page }) => {
 		await focusCell(page, 'grid', 0, 1)
 		await dragFillTo(page, 'grid', 2, 1)
 
-		// The fixture's fillDragCallback writes a summary string into fill-log.
+		// The fixture's beforeFillCallback writes a summary string into fill-log.
 		const log = page.locator('[data-testid="fill-log"]')
 		await expect(log).toContainText('Fill operation:')
 		await expect(log).toContainText('"name"')
@@ -137,11 +137,11 @@ test.describe('basic fill — #grid', () => {
 })
 
 // =============================================================================
-// #grid2 — cancellation via fillDragCallback returning false
+// #grid2 — cancellation via beforeFillCallback returning false
 // =============================================================================
 
 test.describe('cancellation — #grid2', () => {
-	test('returning false from fillDragCallback blocks the fill on status column', async ({ page }) => {
+	test('returning false from beforeFillCallback blocks the fill on status column', async ({ page }) => {
 		// Status column is colIndex 5 (id=0, name=1, salary=2, startDate=3, dept=4, status=5).
 		// Clicking the status cell directly opens the combobox dropdown (the
 		// dropdown-display element fills the cell), so we focus programmatically.

@@ -5,7 +5,7 @@
 // "tree column is always read-only when tree mode is active" hard veto.
 
 import { describe, it, expect, beforeEach } from 'vitest'
-import { WebGrid } from './grid.js'
+import { GridEngine } from './grid.js'
 import type { Column } from './types.js'
 
 type Row = { id: number; path: string; name: string; status: string }
@@ -17,8 +17,8 @@ const sampleRows: Row[] = [
 	{ id: 4, path: '1.1.2', name: 'Apps',        status: 'Reorganizing' }
 ]
 
-function makeGrid(opts?: { tree?: boolean }): WebGrid<Row> {
-	const grid = new WebGrid<Row>()
+function makeGrid(opts?: { tree?: boolean }): GridEngine<Row> {
+	const grid = new GridEngine<Row>()
 	grid.idMember = 'id'  // silences the missing-identity warning when isEditable is true
 	grid.items = sampleRows
 	grid.columns = [
@@ -30,7 +30,7 @@ function makeGrid(opts?: { tree?: boolean }): WebGrid<Row> {
 }
 
 describe('isCellEditable — gate ordering', () => {
-	let grid: WebGrid<Row>
+	let grid: GridEngine<Row>
 
 	beforeEach(() => {
 		grid = makeGrid()
@@ -55,22 +55,22 @@ describe('isCellEditable — gate ordering', () => {
 		expect(grid.isCellEditable(grid.columns[0], sampleRows[0])).toBe(true)
 	})
 
-	it('column.isEditable function is called per row', () => {
+	it('column.getIsEditableCallback is called per row', () => {
 		grid.isEditable = false
 		grid.columns = [
 			{
 				field: 'status',
-				isEditable: (row: Row) => row.status === 'Active'
+				getIsEditableCallback: ({ row }: { row: Row }) => row.status === 'Active'
 			} as Column<Row>
 		]
 		expect(grid.isCellEditable(grid.columns[0], sampleRows[0])).toBe(true)   // Active
 		expect(grid.isCellEditable(grid.columns[0], sampleRows[3])).toBe(false)  // Reorganizing
 	})
 
-	it('isRowEditable function vetoes regardless of column rule', () => {
+	it('getIsRowEditableCallback vetoes regardless of column rule', () => {
 		grid.isEditable = true
 		grid.columns = [{ field: 'name', isEditable: true } as Column<Row>, ...grid.columns.slice(1)]
-		grid.isRowEditable = (row: Row) => row.status === 'Active'
+		grid.getIsRowEditableCallback = ({ row }) => row.status === 'Active'
 		expect(grid.isCellEditable(grid.columns[0], sampleRows[0])).toBe(true)   // Active
 		expect(grid.isCellEditable(grid.columns[0], sampleRows[3])).toBe(false)  // Reorganizing
 	})
@@ -86,10 +86,10 @@ describe('isCellEditable — gate ordering', () => {
 		grid.columns = [
 			{
 				field: 'name',
-				isEditable: (row: Row) => row.id !== 1   // skip Acme
+				getIsEditableCallback: ({ row }: { row: Row }) => row.id !== 1   // skip Acme
 			} as Column<Row>
 		]
-		grid.isRowEditable = (row: Row) => row.status === 'Active'
+		grid.getIsRowEditableCallback = ({ row }) => row.status === 'Active'
 
 		// Row 1 (Acme): Active passes row gate, but column predicate says no → false
 		expect(grid.isCellEditable(grid.columns[0], sampleRows[0])).toBe(false)
@@ -175,7 +175,7 @@ describe('getEditableColumns', () => {
 		grid.columns = [
 			{
 				field: 'status',
-				isEditable: (row: Row) => row.status === 'Active'
+				getIsEditableCallback: ({ row }: { row: Row }) => row.status === 'Active'
 			} as Column<Row>
 		]
 		expect(grid.getEditableColumns(sampleRows[0]).length).toBe(1)  // Active row

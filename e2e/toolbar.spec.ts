@@ -3,14 +3,14 @@ import { test, expect, Page, Locator } from '@playwright/test'
 /**
  * E2E coverage for the row-toolbar fixture (docs/test/toolbar.html). The page
  * hosts four grids, each exercising a different toolbar configuration:
- *   #grid   — floating toolbar, hover trigger (default), 5 items in 2 groups
- *             (moveUp/moveDown | add/duplicate/delete).
- *   #grid2  — multi-row toolbar (row: 1 and row: 2 with groups inside each).
+ *   #grid   — floating toolbar, hover trigger (default), 5 row built-ins in 2
+ *             groups split by a divider entry (move-up/move-down | add/duplicate/delete).
+ *   #grid2  — multi-row toolbar (row: 1 and row: 2, dividers inside each).
  *   #grid3  — toolbarPosition='inline' renders buttons as a fixed column with
- *             disabled(row.status==='Done') and hidden(row.priority==='High').
- *             Inline buttons use class `wg__inline-action-btn` + data-action-id
- *             (not the floating toolbar's wg__toolbar-btn + data-toolbar-item).
- *   #grid4  — cellToolbar callback returning per-column item sets; uses
+ *             getIsDisabledCallback(status==='Done') and getIsVisibleCallback(priority!=='High').
+ *             Inline buttons use class `wg__inline-action-btn`; every button carries
+ *             `data-action` (built-in name or `custom`) + `data-id` for custom items.
+ *   #grid4  — getCellToolbarItemsCallback returning per-column item sets; uses
  *             shouldToolbarFollowCursor=true so each cell hover refreshes items.
  *
  * Hover reveals the floating toolbar (default trigger). Each test in this
@@ -81,14 +81,14 @@ test.describe('floating toolbar — #grid (hover trigger, default)', () => {
 		await expect(toolbar).toBeVisible()
 
 		await expect(toolbar.locator('.wg__toolbar-btn')).toHaveCount(5)
-		// One divider between the moveUp/moveDown group and the add/duplicate/delete group.
+		// One divider between the move-up/move-down group and the add/duplicate/delete group.
 		await expect(toolbar.locator('.wg__toolbar-divider')).toHaveCount(1)
 
-		// Buttons are emitted in declaration order and each carries data-toolbar-item=<id>.
-		const ids = await toolbar.locator('.wg__toolbar-btn').evaluateAll(
-			els => els.map(el => (el as HTMLElement).dataset.toolbarItem)
+		// Buttons are emitted in declaration order and each carries data-action=<built-in>.
+		const actions = await toolbar.locator('.wg__toolbar-btn').evaluateAll(
+			els => els.map(el => (el as HTMLElement).dataset.action)
 		)
-		expect(ids).toEqual(['moveUp', 'moveDown', 'add', 'duplicate', 'delete'])
+		expect(actions).toEqual(['move-up', 'move-down', 'add', 'duplicate', 'delete'])
 	})
 
 	test('clicking "delete" in the toolbar removes the row', async ({ page }) => {
@@ -96,7 +96,7 @@ test.describe('floating toolbar — #grid (hover trigger, default)', () => {
 		const firstTitle = await cellOnRow(page, 'grid', 0, 'title').textContent()
 
 		await openToolbarOn(row(page, 'grid', 0), page)
-		await activeToolbar(page, 'grid').locator('button[data-toolbar-item="delete"]').click()
+		await activeToolbar(page, 'grid').locator('button[data-action="delete"]').click()
 
 		await expect(gridLocator(page, 'grid').locator('tbody tr')).toHaveCount(before - 1)
 		// The original first row's title is gone from row 0 — the next row took its place.
@@ -108,20 +108,20 @@ test.describe('floating toolbar — #grid (hover trigger, default)', () => {
 		const originalTitle = (await cellOnRow(page, 'grid', 0, 'title').textContent())?.trim() ?? ''
 
 		await openToolbarOn(row(page, 'grid', 0), page)
-		await activeToolbar(page, 'grid').locator('button[data-toolbar-item="duplicate"]').click()
+		await activeToolbar(page, 'grid').locator('button[data-action="duplicate"]').click()
 
 		await expect(gridLocator(page, 'grid').locator('tbody tr')).toHaveCount(before + 1)
-		// Handler renames the duplicate to "<original> (copy)" and places it at rowIndex+1.
+		// createDuplicateRowCallback renames the copy to "<original> (copy)"; the built-in places it at rowIndex+1.
 		await expect(cellOnRow(page, 'grid', 1, 'title')).toContainText(originalTitle)
 		await expect(cellOnRow(page, 'grid', 1, 'title')).toContainText('(copy)')
 	})
 
-	test('button titles are wired from rowToolbar config (native title attr)', async ({ page }) => {
+	test('button titles are wired from the item text (native title attr)', async ({ page }) => {
 		await openToolbarOn(row(page, 'grid', 0), page)
 		const toolbar = activeToolbar(page, 'grid')
 
-		await expect(toolbar.locator('button[data-toolbar-item="moveUp"]')).toHaveAttribute('title', 'Move up')
-		await expect(toolbar.locator('button[data-toolbar-item="delete"]')).toHaveAttribute('title', 'Delete')
+		await expect(toolbar.locator('button[data-action="move-up"]')).toHaveAttribute('title', 'Move up')
+		await expect(toolbar.locator('button[data-action="delete"]')).toHaveAttribute('title', 'Delete')
 	})
 })
 
@@ -144,7 +144,7 @@ test.describe('multi-row toolbar — #grid2', () => {
 
 	test('delete button carries the danger modifier class', async ({ page }) => {
 		await openToolbarOn(row(page, 'grid2', 0), page)
-		const deleteBtn = activeToolbar(page, 'grid2').locator('button[data-toolbar-item="delete"]')
+		const deleteBtn = activeToolbar(page, 'grid2').locator('button[data-action="delete"]')
 		await expect(deleteBtn).toHaveClass(/wg__toolbar-btn--danger/)
 	})
 })
@@ -166,25 +166,24 @@ test.describe('inline toolbar column — #grid3', () => {
 		await expect(inlineCells).toHaveCount(rowCount)
 	})
 
-	test('disabled callback (status===Done) disables the edit button', async ({ page }) => {
-		// Row 2 in the seed is { status: 'Done' } — disabled(row) returns true,
-		// so the 'edit' button has [disabled]. Inline buttons use
-		// wg__inline-action-btn + data-action-id (different from floating toolbar).
+	test('getIsDisabledCallback (status===Done) disables the edit button', async ({ page }) => {
+		// Row 2 in the seed is { status: 'Done' } — the callback returns true,
+		// so the 'edit' button has [disabled].
 		const editBtn = gridLocator(page, 'grid3')
-			.locator('tr[data-row-index="2"] .wg__inline-actions-cell button[data-action-id="edit"]')
+			.locator('tr[data-row-index="2"] .wg__inline-actions-cell button[data-id="edit"]')
 		await expect(editBtn).toBeDisabled()
 	})
 
-	test('hidden callback (priority===High) removes the delete button entirely', async ({ page }) => {
+	test('getIsVisibleCallback (priority===High) removes the delete button entirely', async ({ page }) => {
 		// Row 0 has priority 'High' — delete is filtered out before render.
 		const deleteBtn = gridLocator(page, 'grid3')
-			.locator('tr[data-row-index="0"] .wg__inline-actions-cell button[data-action-id="delete"]')
+			.locator('tr[data-row-index="0"] .wg__inline-actions-cell button[data-action="delete"]')
 		await expect(deleteBtn).toHaveCount(0)
 	})
 
-	test('clicking the inline "archive" button fires ontoolbarclick (toast appears)', async ({ page }) => {
+	test('clicking the inline "archive" button fires onAction (toast appears)', async ({ page }) => {
 		const archive = gridLocator(page, 'grid3')
-			.locator('tr[data-row-index="0"] .wg__inline-actions-cell button[data-action-id="archive"]')
+			.locator('tr[data-row-index="0"] .wg__inline-actions-cell button[data-id="archive"]')
 		await archive.scrollIntoViewIfNeeded()
 		await archive.click()
 
@@ -201,8 +200,8 @@ test.describe('inline toolbar column — #grid3', () => {
 
 test.describe('cell-aware toolbar — #grid4', () => {
 	test('hovering the priority cell prepends the priority-specific items', async ({ page }) => {
-		// cellToolbar items are merged with the base rowToolbar (cell items first,
-		// then any base items not overridden by id). For 'priority' that means
+		// getCellToolbarItemsCallback items are merged with the base rowToolbar (cell
+		// items first, then any base items not overridden by id / action). For 'priority' that means
 		// the three set* items show up before the default add/delete/duplicate.
 		await openToolbarOn(cellOnRow(page, 'grid4', 0, 'priority'), page)
 
@@ -210,7 +209,7 @@ test.describe('cell-aware toolbar — #grid4', () => {
 		await expect(toolbar).toBeVisible()
 
 		const ids = await toolbar.locator('.wg__toolbar-btn').evaluateAll(
-			els => els.map(el => (el as HTMLElement).dataset.toolbarItem)
+			els => els.map(el => (el as HTMLElement).dataset.id ?? (el as HTMLElement).dataset.action)
 		)
 		expect(ids).toEqual(['setHigh', 'setMedium', 'setLow', 'add', 'delete', 'duplicate'])
 	})
@@ -222,20 +221,20 @@ test.describe('cell-aware toolbar — #grid4', () => {
 		await expect(toolbar).toBeVisible()
 
 		const ids = await toolbar.locator('.wg__toolbar-btn').evaluateAll(
-			els => els.map(el => (el as HTMLElement).dataset.toolbarItem)
+			els => els.map(el => (el as HTMLElement).dataset.id ?? (el as HTMLElement).dataset.action)
 		)
 		expect(ids).toEqual(['setTodo', 'setProgress', 'setDone', 'add', 'delete', 'duplicate'])
 	})
 
 	test('non-overridden columns (title) fall back to the default toolbar', async ({ page }) => {
-		// cellToolbar returns undefined for 'title' → default rowToolbar = ['add','delete','duplicate'].
+		// getCellToolbarItemsCallback returns undefined for 'title' → default rowToolbar = ['add','delete','duplicate'].
 		await openToolbarOn(cellOnRow(page, 'grid4', 0, 'title'), page)
 
 		const toolbar = activeToolbar(page, 'grid4')
 		await expect(toolbar).toBeVisible()
 
 		const ids = await toolbar.locator('.wg__toolbar-btn').evaluateAll(
-			els => els.map(el => (el as HTMLElement).dataset.toolbarItem)
+			els => els.map(el => (el as HTMLElement).dataset.id ?? (el as HTMLElement).dataset.action)
 		)
 		expect(ids).toEqual(['add', 'delete', 'duplicate'])
 	})

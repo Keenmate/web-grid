@@ -83,13 +83,13 @@
 			selectedRowsEl.textContent = rows.length === 0 ? 'none' : rows.join(', ')
 		}, 100)
 
-		grid.oncellselectionchange = (detail) => {
+		grid.onCellSelectionChange = (detail) => {
 			selectedCellsEl.textContent = detail.range
 				? String(grid.getSelectedCells().length)
 				: '0'
 		}
 
-		grid.onrowfocus = ({ rowIndex, row }) => {
+		grid.onRowFocus = ({ rowIndex, row }) => {
 			focusedRowEl.textContent = `${rowIndex} — ${row.name}`
 		}
 	</script>

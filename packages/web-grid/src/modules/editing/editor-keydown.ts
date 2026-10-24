@@ -16,7 +16,7 @@
 // Backspace + printable keys on the (read-only) select editor feed
 // updateSelectFilter so the user can type-to-search without an actual input.
 
-import type { GridContext } from '../grid-context.js'
+import type { GridHost } from '../grid-context.js'
 import {
 	updateDropdownHighlight,
 	scrollHighlightedIntoView,
@@ -42,13 +42,13 @@ import {
  * commitDateEditor).
  */
 export async function handleEditorKeyDown<T>(
-	ctx: GridContext<T>,
+	ctx: GridHost<T>,
 	e: KeyboardEvent,
 	editor: HTMLElement
 ): Promise<void> {
 	const rowIndex = parseInt(editor.dataset.row || '0', 10)
 	const field = editor.dataset.field || ''
-	const column = ctx.grid.columns.find(c => c.field === field)
+	const column = ctx.engine.columns.find(c => c.field === field)
 	const editorType = column?.editor || 'text'
 	const isDropdownEditor = editorType === 'select' || editorType === 'combobox' || editorType === 'autocomplete'
 
@@ -58,12 +58,12 @@ export async function handleEditorKeyDown<T>(
 		e.preventDefault()
 		e.stopPropagation()
 
-		const colIndex = ctx.grid.columns.findIndex(c => c.field === field)
-		const editableCols = ctx.grid.columns
+		const colIndex = ctx.engine.columns.findIndex(c => c.field === field)
+		const editableCols = ctx.engine.columns
 			.map((c, i) => ({ index: i, column: c }))
 			.filter(ec => ec.column.isEditable !== false)
 		const currentEditableIdx = editableCols.findIndex(ec => ec.index === colIndex)
-		const displayItems = ctx.grid.displayItems
+		const displayItems = ctx.engine.displayItems
 
 		let destRow = rowIndex
 		let destCol = colIndex
@@ -93,14 +93,14 @@ export async function handleEditorKeyDown<T>(
 				canNavigate = true
 				break
 			case 'End':
-				if (e.ctrlKey) { destRow = displayItems.length - 1; destCol = ctx.grid.columns.length - 1 } else { destCol = ctx.grid.columns.length - 1 }
+				if (e.ctrlKey) { destRow = displayItems.length - 1; destCol = ctx.engine.columns.length - 1 } else { destCol = ctx.engine.columns.length - 1 }
 				canNavigate = true
 				break
 		}
 
 		if (canNavigate) {
 			clearEditingVisual(ctx)
-			ctx.grid.cancelEdit()
+			ctx.engine.cancelEdit()
 			queueMicrotask(() => {
 				moveFocus(ctx, destRow, destCol)
 			})
@@ -181,11 +181,11 @@ export async function handleEditorKeyDown<T>(
 			ctx.isCommittingFromKeyboard = true
 
 			// Check if we're on the empty row's last editable cell (Tab should commit)
-			const tabRow = ctx.grid.displayItems[rowIndex]
-			const tabEditableCols = ctx.grid.getEditableColumns(tabRow)
-			const tabColIndex = ctx.grid.columns.findIndex(c => String(c.field) === field)
+			const tabRow = ctx.engine.displayItems[rowIndex]
+			const tabEditableCols = ctx.engine.getEditableColumns(tabRow)
+			const tabColIndex = ctx.engine.columns.findIndex(c => String(c.field) === field)
 			const tabCurrentEditableIndex = tabEditableCols.findIndex(ec => ec.index === tabColIndex)
-			const isOnEmptyRow = ctx.grid.isEmptyRowIndex(rowIndex)
+			const isOnEmptyRow = ctx.engine.isEmptyRowIndex(rowIndex)
 			const isLastEditableCell = tabCurrentEditableIndex === tabEditableCols.length - 1
 			const shouldCommitEmptyRow = isOnEmptyRow && isLastEditableCell && !e.shiftKey
 
@@ -196,7 +196,7 @@ export async function handleEditorKeyDown<T>(
 				const opts = ctx.getCurrentEditorOptions()
 				if (option && !isOptionDisabled(option, opts)) {
 					const value = getOptionValue(option, opts)
-					await ctx.grid.commitEdit(rowIndex, field, value, shouldCommitEmptyRow)
+					await ctx.engine.commitEdit(rowIndex, field, value, shouldCommitEmptyRow)
 				}
 				removeDropdown(ctx)
 			} else {
@@ -218,7 +218,7 @@ export async function handleEditorKeyDown<T>(
 				const firstEditableColIndex = tabEditableCols.length > 0 ? tabEditableCols[0].index : 0
 				// Use queueMicrotask to allow the grid to re-render with the new empty row
 				queueMicrotask(() => {
-					const newEmptyRowIndex = ctx.grid.newRowPosition === 'top' ? 0 : ctx.grid.displayItems.length - 1
+					const newEmptyRowIndex = ctx.engine.newRowPosition === 'top' ? 0 : ctx.engine.displayItems.length - 1
 					moveFocus(ctx, newEmptyRowIndex, firstEditableColIndex)
 					ctx.isCommittingFromKeyboard = false
 				})
@@ -253,7 +253,7 @@ export async function handleEditorKeyDown<T>(
 			// Second Escape (or no dropdown/datepicker): cancel edit
 			ctx.isCommittingFromKeyboard = true
 			clearEditingVisual(ctx)
-			ctx.grid.cancelEdit()
+			ctx.engine.cancelEdit()
 			focusCellAfterCancel(ctx, rowIndex, field)
 			break
 

@@ -4,9 +4,9 @@
 // =============================================================================
 
 import { computePosition, flip, offset, size } from '@floating-ui/dom'
-import type { EditorOption, EditorOptions, OptionRenderContext } from '../../types.js'
-import type { GridContext } from '../grid-context.js'
-import { getOptionLabel, getOptionValue, getOptionIcon, getOptionSubtitle, isOptionDisabled } from './options.js'
+import type { EditorOption, EditorOptions } from '../../types.js'
+import type { GridHost } from '../grid-context.js'
+import { getOptionLabel, getOptionValue, getOptionIcon, getOptionSubtitle, isOptionDisabled, optionCtx } from './options.js'
 import { removeFillHandle } from '../fill-handle/index.js'
 
 /**
@@ -14,10 +14,10 @@ import { removeFillHandle } from '../fill-handle/index.js'
  * Returns the dropdown element so caller can attach listeners
  */
 export function renderDropdown<T>(
-	ctx: GridContext<T>,
+	ctx: GridHost<T>,
 	anchor: HTMLElement,
 	options: EditorOption[],
-	opts: EditorOptions
+	opts: EditorOptions<any>
 ): HTMLElement {
 	// Remove existing dropdown
 	removeDropdown(ctx)
@@ -38,14 +38,14 @@ export function renderDropdown<T>(
 	// Render options
 	if (options.length === 0) {
 		const message = ctx.autocomplete.isSearching
-			? (opts.searchingText || ctx.grid.labels.dropdownSearching)
-			: (opts.noOptionsText || ctx.grid.labels.dropdownNoOptions)
+			? (opts.searchingText || ctx.engine.labels.dropdownSearching)
+			: (opts.noOptionsText || ctx.engine.labels.dropdownNoOptions)
 		dropdown.innerHTML = `<div class="wg__dropdown-empty">${ctx.escapeHtml(message)}</div>`
 	} else {
 		// Get current value for isSelected check
-		const editingCell = ctx.grid.editingCell
+		const editingCell = ctx.engine.editingCell
 		const currentValue = editingCell
-			? (ctx.grid.displayItems[editingCell.rowIndex] as Record<string, unknown>)?.[editingCell.field]
+			? (ctx.engine.displayItems[editingCell.rowIndex] as Record<string, unknown>)?.[editingCell.field]
 			: undefined
 
 		// Get column alignment for dropdown options
@@ -59,8 +59,7 @@ export function renderDropdown<T>(
 
 			// Custom render callback
 			if (opts.renderOptionCallback) {
-				const context: OptionRenderContext = { index: i, isHighlighted, isSelected, isDisabled: disabled }
-				return opts.renderOptionCallback(opt, context)
+				return opts.renderOptionCallback(optionCtx(opts, { option: opt, index: i, isHighlighted, isSelected, isDisabled: disabled }))
 			}
 
 			// Default rendering with icon/subtitle support
@@ -121,7 +120,7 @@ export function renderDropdown<T>(
 /**
  * Remove dropdown from DOM
  */
-export function removeDropdown<T>(ctx: GridContext<T>): void {
+export function removeDropdown<T>(ctx: GridHost<T>): void {
 	const existing = ctx.shadow.querySelector('.wg__dropdown')
 	existing?.remove()
 	ctx.dropdown.setIsOpen(false)

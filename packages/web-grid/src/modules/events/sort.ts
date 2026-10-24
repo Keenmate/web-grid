@@ -2,14 +2,14 @@
 // Sort Event Handler
 // =============================================================================
 
-import type { GridContext } from '../grid-context.js'
+import type { GridHost } from '../grid-context.js'
 
 /**
  * Handle header click for sorting.
  * Supports single and multi-column sorting (Ctrl+Click for multi).
  * @param field - The field to sort (passed directly to avoid shadow DOM target retargeting issues)
  */
-export function handleSortClick<T>(ctx: GridContext<T>, e: MouseEvent, field?: string): void {
+export function handleSortClick<T>(ctx: GridHost<T>, e: MouseEvent, field?: string): void {
 	// If field not provided, try to extract from event target (legacy support)
 	if (!field) {
 		const target = e.target as HTMLElement
@@ -19,11 +19,11 @@ export function handleSortClick<T>(ctx: GridContext<T>, e: MouseEvent, field?: s
 		if (!field) return
 	}
 
-	const currentSort = [...ctx.grid.sort]
+	const currentSort = [...ctx.engine.sort]
 	const existingIndex = currentSort.findIndex(s => s.column === field)
 	const isCtrlClick = e.ctrlKey || e.metaKey
 
-	if (isCtrlClick && ctx.grid.sortMode === 'multi') {
+	if (isCtrlClick && ctx.engine.sortMode === 'multi') {
 		// Multi-column sort: Ctrl+Click adds/toggles/removes column
 		if (existingIndex >= 0) {
 			const existing = currentSort[existingIndex]
@@ -57,13 +57,13 @@ export function handleSortClick<T>(ctx: GridContext<T>, e: MouseEvent, field?: s
 	}
 
 	// Update sort state
-	ctx.grid.sort = currentSort
+	ctx.engine.sort = currentSort
 
 	// Reset to page 1 on sort change
-	if (ctx.grid.isPageable) {
-		ctx.grid.currentPage = 1
+	if (ctx.engine.isPageable) {
+		ctx.engine.currentPage = 1
 	}
 
 	// Fire data request event if handler exists
-	ctx.grid.fireDataRequest('sort')
+	ctx.engine.fireDataRequest('sort')
 }

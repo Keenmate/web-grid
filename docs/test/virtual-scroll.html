@@ -49,7 +49,7 @@
 		 *  - rows are exposed via data-row attribute; first rendered row index
 		 *    advances as you scrollTop.
 		 *  - #infiniteGrid loads 200 items at a time up to 600 max via
-		 *    ondatarequest mode='append' trigger='loadMore'.
+		 *    onDataRequest mode='append' trigger='loadMore'.
 		 */
 		const ROLES = ['Engineer', 'Designer', 'Manager']
 		function generate(count, startId = 1) {
@@ -129,7 +129,7 @@
 		}
 		updateInfiniteStats()
 
-		infiniteGrid.ondatarequest = (detail) => {
+		infiniteGrid.onDataRequest = (detail) => {
 			const line = document.createElement('div')
 			line.className = 'row'
 			line.textContent = `trigger=${detail.trigger} mode=${detail.mode} skip=${detail.skip}`

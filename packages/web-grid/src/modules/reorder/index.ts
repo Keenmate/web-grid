@@ -2,7 +2,7 @@
 // Column Reorder Module
 // =============================================================================
 
-import type { GridContext } from '../grid-context.js'
+import type { GridHost } from '../grid-context.js'
 
 /** Minimum distance (px) mouse must move before drag starts */
 const DRAG_THRESHOLD = 5
@@ -38,7 +38,7 @@ let reorderState: ReorderState = {
 }
 
 // Store the current context for document-level handlers
-let activeContext: GridContext | null = null
+let activeContext: GridHost | null = null
 
 // Flag to track if a drag was just completed (to block click-to-sort)
 let dragJustCompleted = false
@@ -73,7 +73,7 @@ export function isReorderPending(): boolean {
 /**
  * Start a column reorder operation (pending state until threshold exceeded)
  */
-export function handleReorderStart<T>(ctx: GridContext<T>, e: MouseEvent, field: string): void {
+export function handleReorderStart<T>(ctx: GridHost<T>, e: MouseEvent, field: string): void {
 	const target = e.target as HTMLElement
 	const headerCell = target.closest('.wg__header') as HTMLElement
 	if (!headerCell) return
@@ -82,8 +82,8 @@ export function handleReorderStart<T>(ctx: GridContext<T>, e: MouseEvent, field:
 	if (target.classList.contains('wg__resize-handle')) return
 
 	// Check if column is frozen (frozen columns are not reorderable)
-	const visualCols = ctx.grid.visualColumns
-	const frozenCount = ctx.grid.totalFrozenColumns
+	const visualCols = ctx.engine.visualColumns
+	const frozenCount = ctx.engine.totalFrozenColumns
 	const visualIndex = visualCols.findIndex(vc => String(vc.column.field) === field)
 	if (visualIndex < frozenCount) return  // This is a frozen column
 
@@ -108,7 +108,7 @@ export function handleReorderStart<T>(ctx: GridContext<T>, e: MouseEvent, field:
 		currentDropIndex: nonFrozenIndex
 	}
 
-	activeContext = ctx as GridContext
+	activeContext = ctx as GridHost
 
 	// Attach document-level listeners to track mouse movement
 	document.addEventListener('mousemove', handleDocumentMouseMove)
@@ -121,7 +121,7 @@ export function handleReorderStart<T>(ctx: GridContext<T>, e: MouseEvent, field:
 /**
  * Create ghost element that follows cursor
  */
-function createGhost<T>(ctx: GridContext<T>, headerCell: HTMLElement, e: MouseEvent): void {
+function createGhost<T>(ctx: GridHost<T>, headerCell: HTMLElement, e: MouseEvent): void {
 	const ghost = document.createElement('div')
 	ghost.className = 'wg__reorder-ghost'
 	ghost.textContent = headerCell.querySelector('.wg__header-title')?.textContent || ''
@@ -138,7 +138,7 @@ function createGhost<T>(ctx: GridContext<T>, headerCell: HTMLElement, e: MouseEv
 /**
  * Create drop indicator line
  */
-function createDropIndicator<T>(ctx: GridContext<T>): void {
+function createDropIndicator<T>(ctx: GridHost<T>): void {
 	const indicator = document.createElement('div')
 	indicator.className = 'wg__drop-indicator'
 	ctx.shadow.querySelector('.wg')?.appendChild(indicator)
@@ -148,7 +148,7 @@ function createDropIndicator<T>(ctx: GridContext<T>): void {
 /**
  * Actually start the drag operation (called after threshold exceeded)
  */
-function startActualDrag<T>(ctx: GridContext<T>, e: MouseEvent): void {
+function startActualDrag<T>(ctx: GridHost<T>, e: MouseEvent): void {
 	reorderState.isPending = false
 	reorderState.isReordering = true
 
@@ -212,9 +212,9 @@ function handleDocumentMouseMove(e: MouseEvent): void {
  * Find the minimum valid drop index (respects isMovable: false columns)
  * Dropping before a non-movable column would shift it, so we must drop after all non-movable columns.
  */
-function getMinDropIndex<T>(ctx: GridContext<T>): number {
-	const visualCols = ctx.grid.visualColumns
-	const frozenCount = ctx.grid.totalFrozenColumns
+function getMinDropIndex<T>(ctx: GridHost<T>): number {
+	const visualCols = ctx.engine.visualColumns
+	const frozenCount = ctx.engine.totalFrozenColumns
 	const nonFrozenCols = visualCols.slice(frozenCount)
 
 	// Find the highest index of any non-movable column
@@ -231,9 +231,9 @@ function getMinDropIndex<T>(ctx: GridContext<T>): number {
  * Find the drop index based on cursor X position
  * Returns index relative to non-frozen columns (0 = first position after frozen columns)
  */
-function findDropIndex<T>(ctx: GridContext<T>, mouseX: number): number {
-	const visualCols = ctx.grid.visualColumns
-	const frozenCount = ctx.grid.totalFrozenColumns
+function findDropIndex<T>(ctx: GridHost<T>, mouseX: number): number {
+	const visualCols = ctx.engine.visualColumns
+	const frozenCount = ctx.engine.totalFrozenColumns
 	const nonFrozenCols = visualCols.slice(frozenCount)
 
 	if (nonFrozenCols.length === 0) return 0
@@ -274,12 +274,12 @@ function findDropIndex<T>(ctx: GridContext<T>, mouseX: number): number {
 /**
  * Update drop indicator position
  */
-function updateDropIndicator<T>(ctx: GridContext<T>, dropIndex: number): void {
+function updateDropIndicator<T>(ctx: GridHost<T>, dropIndex: number): void {
 	const indicator = reorderState.dropIndicator
 	if (!indicator) return
 
-	const visualCols = ctx.grid.visualColumns
-	const frozenCount = ctx.grid.totalFrozenColumns
+	const visualCols = ctx.engine.visualColumns
+	const frozenCount = ctx.engine.totalFrozenColumns
 	const nonFrozenCols = visualCols.slice(frozenCount)
 	const container = ctx.shadow.querySelector('.wg') as HTMLElement
 	const containerRect = container?.getBoundingClientRect()
@@ -344,21 +344,18 @@ function handleDocumentMouseUp(e: MouseEvent): void {
 	if (fromIndex !== toIndex && toIndex !== fromIndex + 1) {
 		// Adjust toIndex if moving right (since we remove from original position first)
 		const adjustedToIndex = toIndex > fromIndex ? toIndex - 1 : toIndex
-		ctx.grid.moveColumn(field, adjustedToIndex)
+		ctx.engine.moveColumn(field, adjustedToIndex)
 
-		// Fire callback
-		if (ctx.grid.oncolumnreorder) {
-			ctx.grid.oncolumnreorder({
-				field,
-				fromIndex,
-				toIndex: adjustedToIndex,
-				allOrder: ctx.grid.getColumnOrderState()
-			})
-		}
+		ctx.engine.notify('column-reorder', {
+			field,
+			fromIndex,
+			toIndex: adjustedToIndex,
+			allOrder: ctx.engine.getColumnOrderState()
+		})
 
 		// Persist to localStorage if enabled
-		if (ctx.grid.shouldPersistColumnOrder && ctx.grid.gridName) {
-			ctx.grid.savePersistedState()
+		if (ctx.engine.shouldPersistColumnOrder && ctx.engine.gridName) {
+			ctx.engine.savePersistedState()
 		}
 	}
 
@@ -377,7 +374,7 @@ function handleDocumentMouseUp(e: MouseEvent): void {
 /**
  * Clean up reorder state and DOM elements
  */
-function cleanup<T>(ctx: GridContext<T>): void {
+function cleanup<T>(ctx: GridHost<T>): void {
 	// Remove ghost
 	if (reorderState.ghost) {
 		reorderState.ghost.remove()

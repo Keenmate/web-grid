@@ -4,7 +4,7 @@
 // Only active when column reorder is disabled
 // =============================================================================
 
-import type { GridContext } from '../grid-context.js'
+import type { GridHost } from '../grid-context.js'
 import { removeRangeBorder } from '../cell-selection/index.js'
 import { cleanupEditState } from '../navigation/index.js'
 
@@ -34,7 +34,7 @@ let selectionState: ColumnSelectionState = {
 }
 
 // Store the current context for document-level handlers
-let activeContext: GridContext | null = null
+let activeContext: GridHost | null = null
 
 /**
  * Focus the .wg container so keyboard shortcuts (Escape, range shortcuts) work.
@@ -45,7 +45,7 @@ let activeContext: GridContext | null = null
  * during the click sequence — by the second RAF the click sequence has fully
  * settled and the focus call is durable.
  */
-function focusContainerForShortcuts<T>(ctx: GridContext<T>): void {
+function focusContainerForShortcuts<T>(ctx: GridHost<T>): void {
 	queueMicrotask(() => {
 		const container = ctx.shadow.querySelector('.wg') as HTMLElement | null
 		container?.focus({ preventScroll: true })
@@ -75,7 +75,7 @@ export function isColumnSelectionPending(): boolean {
 /**
  * Handle mousedown on a column header (when reorder is disabled)
  */
-export function handleHeaderMouseDown<T>(ctx: GridContext<T>, colIndex: number, event: MouseEvent): void {
+export function handleHeaderMouseDown<T>(ctx: GridHost<T>, colIndex: number, event: MouseEvent): void {
 	event.preventDefault()
 	event.stopPropagation()
 
@@ -83,15 +83,15 @@ export function handleHeaderMouseDown<T>(ctx: GridContext<T>, colIndex: number, 
 	cleanupEditState(ctx)
 
 	// Clear cell range selection when selecting columns
-	if (ctx.grid.selectedCellRange) {
-		ctx.grid.clearCellSelection()
+	if (ctx.engine.selectedCellRange) {
+		ctx.engine.clearCellSelection()
 		removeRangeBorder()
 	}
 
 	// Determine selection mode based on modifier keys
 	if (event.ctrlKey || event.metaKey) {
 		// Ctrl+Click: Toggle selection
-		ctx.grid.selectColumn(colIndex, 'toggle')
+		ctx.engine.selectColumn(colIndex, 'toggle')
 		focusContainerForShortcuts(ctx)
 		return
 	}
@@ -106,14 +106,14 @@ export function handleHeaderMouseDown<T>(ctx: GridContext<T>, colIndex: number, 
 		currentColIndex: colIndex
 	}
 
-	activeContext = ctx as GridContext
+	activeContext = ctx as GridHost
 
 	if (event.shiftKey) {
 		// Shift+Click: Range selection from last selected, but also allow drag to extend
-		ctx.grid.selectColumn(colIndex, 'range')
+		ctx.engine.selectColumn(colIndex, 'range')
 	} else {
 		// Plain click: Select single column (replace mode)
-		ctx.grid.selectColumn(colIndex, 'replace')
+		ctx.engine.selectColumn(colIndex, 'replace')
 	}
 
 	// Focus the container so keyboard shortcuts work
@@ -150,14 +150,14 @@ function handleDocumentMouseMove(e: MouseEvent): void {
 	if (colIndex !== null && colIndex !== selectionState.currentColIndex) {
 		selectionState.currentColIndex = colIndex
 		// Update selection range
-		activeContext.grid.selectColumnRange(selectionState.startColIndex, colIndex)
+		activeContext.engine.selectColumnRange(selectionState.startColIndex, colIndex)
 	}
 }
 
 /**
  * Start the actual drag operation (after threshold exceeded)
  */
-function startActualDrag<T>(ctx: GridContext<T>): void {
+function startActualDrag<T>(ctx: GridHost<T>): void {
 	selectionState.isPending = false
 	selectionState.isDragging = true
 
@@ -201,13 +201,13 @@ function handleDocumentMouseUp(): void {
  * Find which column is at a given X coordinate
  * Uses header cells for accurate position detection
  */
-function findColumnAtPoint<T>(ctx: GridContext<T>, x: number): number | null {
+function findColumnAtPoint<T>(ctx: GridHost<T>, x: number): number | null {
 	// Get all data column headers (exclude row number header, inline actions, actions column, filler)
 	const headers = ctx.shadow.querySelectorAll(
 		'.wg__header:not(.wg__row-number-header):not(.wg__inline-actions-header):not(.wg__actions-column):not(.wg__filler)'
 	)
 
-	const visualColumns = ctx.grid.visualColumns
+	const visualColumns = ctx.engine.visualColumns
 
 	for (const header of headers) {
 		const rect = (header as HTMLElement).getBoundingClientRect()

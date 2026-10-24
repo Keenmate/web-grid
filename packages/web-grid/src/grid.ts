@@ -1,20 +1,10 @@
 // =============================================================================
-// WebGrid - Core Grid Logic Class
+// GridEngine - Core Grid Logic Class
 // =============================================================================
 
 import type {
 	Column,
 	CellValidationState,
-	RowToolbarConfig,
-	ContextMenuItem,
-	ContextMenuConfig,
-	RowShortcut,
-	RowChangeDetail,
-	ToolbarClickDetail,
-	RowActionClickDetail,
-	ContextMenuContext,
-	HeaderMenuConfig,
-	HeaderMenuContext,
 	EditTrigger,
 	EditStartSelection,
 	EditingCell,
@@ -24,40 +14,46 @@ import type {
 	SortState,
 	DataRequestDetail,
 	DataRequestTrigger,
-	BeforeCommitContext,
-	BeforeCommitResult,
+	ValidateResult,
 	GridMode,
 	ToggleVisibility,
 	PaginationLabelsCallback,
-	SummaryContentCallback,
-	ValidationTooltipContext,
+	SummaryCallback,
 	ToolbarPosition,
 	GridLabels,
 	RowLock,
 	RowLockingOptions,
-	RowLockChangeDetail,
 	ColumnWidthState,
-	ColumnResizeDetail,
 	ColumnOrderState,
-	ColumnReorderDetail,
-	FillDragDetail,
 	FillDirection,
 	GridPersistenceState,
-	RangeShortcut,
-	RangeShortcutContext,
 	CellSelectionMode,
 	CellRange,
-	CellSelectionChangeDetail,
-	RowFocusDetail,
 	PasteMode,
-	BeforePasteDetail,
-	PasteDetail,
 	CreateRowCallback,
 	NewRowPosition,
-	TreeExpandedChangeDetail,
-	TreeChevronCallback,
+	ChevronCallback,
 	TreeDoubleClickBehavior
 } from './types.js'
+import type {
+	GridController,
+	GridContext,
+	RowContext,
+	RowDataContext,
+	CellContext,
+	ValidateContext,
+	ValidationTooltipContext,
+	FillContext,
+	BeforePasteContext,
+	GridToolbarEntry,
+	GridMenuEntry,
+	GridHeaderMenuEntry,
+	GridShortcut,
+	GridRangeShortcut,
+	GridActionEventDetail,
+	GridEventMap,
+	GridEventName
+} from './interaction.js'
 
 // Internal tree index — built from items when treePathMember is set
 type TreeNode = {
@@ -75,6 +71,7 @@ type TreeIndex = {
 
 // Date formatting utilities for auto-formatting date columns
 import { parseFormat, formatDate } from './modules/datepicker/index.js'
+import { bindOptionContext } from './modules/dropdown/options.js'
 
 // Logging
 import { initLogger, dataLogger, interactionLogger, perfLogger } from './logger.js'
@@ -104,7 +101,20 @@ const DEFAULT_LABELS: GridLabels = {
 	dropdownNoOptions: 'No options',
 	dropdownSearching: 'Searching...',
 
-	// Context menu
+	// Built-in row / tree actions
+	actions: {
+		add: 'Add row',
+		delete: 'Delete row',
+		duplicate: 'Duplicate row',
+		moveUp: 'Move up',
+		moveDown: 'Move down',
+		expandAll: 'Expand all',
+		collapseAll: 'Collapse all',
+		expandTree: 'Expand entire tree',
+		collapseTree: 'Collapse entire tree'
+	},
+
+	// Header context menu
 	contextMenu: {
 		sortAsc: 'Sort Ascending',
 		sortDesc: 'Sort Descending',
@@ -118,12 +128,12 @@ const DEFAULT_LABELS: GridLabels = {
 }
 
 /**
- * WebGrid - Core logic class for the data grid
+ * GridEngine - Core logic class for the data grid
  *
  * This class contains all the state management and business logic.
  * GridElement extends this to add DOM rendering and web component lifecycle.
  */
-export class WebGrid<T = unknown> {
+export class GridEngine<T = unknown> {
 	// ==========================================================================
 	// Configuration Props
 	// ==========================================================================
@@ -139,7 +149,8 @@ export class WebGrid<T = unknown> {
 	protected _isStriped: boolean = true
 	protected _isHoverable: boolean = true
 	protected _isEditable: boolean = false
-	protected _isRowEditable: boolean | ((row: T) => boolean) | undefined = undefined
+	protected _isRowEditable: boolean | undefined = undefined
+	protected _getIsRowEditableCallback: ((ctx: RowDataContext<T>) => boolean) | undefined = undefined
 	protected _editTrigger: EditTrigger = "dblclick"
 	protected _editStartSelection: EditStartSelection = "mousePosition"
 	protected _shouldCommitOnClickAway: boolean = true
@@ -154,66 +165,56 @@ export class WebGrid<T = unknown> {
 	protected _invalidCells: CellValidationState[] = []
 	protected _isDirtyIndicatorVisible: boolean = true
 	protected _isRowToolbarVisible: boolean = false
-	protected _rowToolbar: RowToolbarConfig<T>[] = ['add', 'delete', 'duplicate']
+	protected _rowToolbar: GridToolbarEntry<T>[] = ['add', 'delete', 'duplicate']
 	protected _toolbarVerticalAlign: 'top' | 'center' | 'bottom' = 'bottom'
 	protected _toolbarHorizontalAlign: 'start' | 'center' | 'end' | 'cursor' = 'center'
 	protected _toolbarTrigger: 'hover' | 'click' | 'button' = 'hover'
 	protected _toolbarPosition: ToolbarPosition = 'auto'
 	protected _toolbarColumn: string | number | undefined = undefined
 	protected _shouldToolbarFollowCursor: boolean = false
-	protected _cellToolbar: ((row: T, rowIndex: number, field: string, colIndex: number) => RowToolbarConfig<T>[] | undefined) | undefined = undefined
+	protected _getCellToolbarItemsCallback: ((ctx: CellContext<T>) => GridToolbarEntry<T>[] | null | undefined) | undefined = undefined
 	protected _cellToolbarOffset: number | string = 0.2
 	protected _toolbarBtnMinWidth: string | undefined = undefined
 	protected _inlineActionsTitle: string = ''
-	protected _contextMenu: ContextMenuConfig<T>[] | undefined = undefined
+	protected _contextMenu: GridMenuEntry<T>[] | undefined = undefined
 	protected _contextMenuXOffset: number = 8
 	protected _contextMenuYOffset: number = 0
-	protected _headerContextMenu: HeaderMenuConfig<T>[] | undefined = undefined
-	protected _rowShortcuts: RowShortcut<T>[] | undefined = undefined
+	protected _headerContextMenu: GridHeaderMenuEntry<T>[] | undefined = undefined
+	protected _rowShortcuts: GridShortcut<T>[] | undefined = undefined
 	protected _isShortcutsHelpVisible: boolean = false
 	protected _shortcutsHelpPosition: 'top-right' | 'top-left' = 'top-right'
-	protected _shortcutsHelpContentCallback: (() => string) | undefined = undefined
+	protected _renderShortcutsHelpCallback: ((ctx: GridContext<T>) => string) | undefined = undefined
 
 	// Row identification
 	protected _idValueMember: keyof T | undefined = undefined
-	protected _idValueCallback: ((row: T) => unknown) | undefined = undefined
+	protected _getRowIdCallback: ((ctx: RowDataContext<T>) => unknown) | undefined = undefined
 
 	// Row locking
 	protected _rowLocking: RowLockingOptions<T> | undefined = undefined
 	protected _externalLocks: Map<unknown, RowLock> = new Map()
-	protected _onrowlockchange: ((detail: RowLockChangeDetail<T>) => void) | undefined = undefined
 
 	// Column resize & persistence
 	protected _gridName: string | null = null
 	protected _shouldPersistColumnWidths: boolean = false
 	protected _columnWidths: Map<string, string> = new Map()  // Runtime width overrides
-	protected _oncolumnresize: ((detail: ColumnResizeDetail) => void) | undefined = undefined
 
 	// Column reorder & persistence
 	protected _isColumnReorderAllowed: boolean = false
 	protected _shouldPersistColumnOrder: boolean = false
 	protected _columnOrder: Map<string, number> = new Map()  // Runtime order overrides
-	protected _oncolumnreorder: ((detail: ColumnReorderDetail) => void) | undefined = undefined
 
 	// Fill handle
 	protected _fillDirection: FillDirection = 'vertical'
-	protected _fillDragCallback: ((detail: FillDragDetail) => boolean | void) | undefined = undefined
+	protected _beforeFillCallback: ((ctx: FillContext<T>) => boolean | void | Promise<boolean | void>) | undefined = undefined
 
 	// ==========================================================================
 	// Callbacks
 	// ==========================================================================
 
-	protected _onrowchange: ((detail: RowChangeDetail<T>) => void) | undefined
-	protected _onroweditstart: ((detail: { row: T, rowIndex: number, field: string }) => void) | undefined
-	protected _onroweditcancel: ((detail: { row: T, rowIndex: number, field: string }) => void) | undefined
-	protected _onvalidationerror: ((detail: { row: T, rowIndex: number, field: string, error: string }) => void) | undefined
-	protected _validationTooltipCallback: ((context: ValidationTooltipContext<T>) => string | null) | undefined
-	protected _ontoolbarclick: ((detail: ToolbarClickDetail<T>) => void) | undefined
-	protected _onrowaction: ((detail: RowActionClickDetail<T>) => void) | undefined
-	protected _oncontextmenuopen: ((context: ContextMenuContext<T>) => void) | undefined
-	protected _onheadercontextmenuopen: ((context: HeaderMenuContext<T>) => void) | undefined
-	protected _ondatarequest: ((detail: DataRequestDetail) => void) | undefined
-	protected _onrowdelete: ((detail: { rowIndex: number; row: T }) => void) | undefined
+	protected _getValidationTooltipCallback: ((ctx: ValidationTooltipContext<T>) => string | null) | undefined
+	protected _beforeContextMenuOpenCallback: ((ctx: CellContext<T>) => false | GridMenuEntry<T>[] | void) | undefined
+	protected _beforeHeaderMenuOpenCallback: ((ctx: import('./interaction.js').HeaderMenuContext<T>) => false | GridHeaderMenuEntry<T>[] | void) | undefined
+	protected _beforeActionCallback: ((detail: GridActionEventDetail<T>) => unknown) | undefined
 
 	// ==========================================================================
 	// Internal State
@@ -224,7 +225,7 @@ export class WebGrid<T = unknown> {
 
 	// Filtering
 	protected _filters: Record<string, string> = {}
-	protected _onfilterchange: ((filters: Record<string, string>) => void) | undefined = undefined
+	protected _filterMode: 'client' | 'server' = 'client'
 	protected _columnMinWidth: string | undefined = undefined
 
 	// Pagination
@@ -232,18 +233,18 @@ export class WebGrid<T = unknown> {
 	protected _totalItems: number | null = null  // null = use items.length (client-side)
 	protected _isPaginationVisible: boolean | 'auto' = true
 	protected _paginationPosition: string = 'bottom-center'
-	protected _paginationLabelsCallback?: PaginationLabelsCallback
+	protected _getPaginationLabelsCallback?: PaginationLabelsCallback<T>
 	protected _paginationLayout: string = 'pageSize|previous|pageInfo|next'
 
 	// Summary
 	protected _summaryPosition?: string
-	protected _summaryContentCallback?: SummaryContentCallback<T>
+	protected _renderSummaryCallback?: SummaryCallback<T>
 	protected _summaryMetadata: unknown = undefined
 	protected _isSummaryInline: boolean = true
 
 	// Custom styles
-	protected _customStylesCallback?: () => string
-	protected _rowClassCallback?: (row: T, rowIndex: number) => string | null
+	protected _getCustomStylesCallback?: (ctx: GridContext<T>) => string
+	protected _getRowClassCallback?: (ctx: RowContext<T>) => string | null
 
 	// Labels/i18n
 	protected _labels: GridLabels = { ...DEFAULT_LABELS }
@@ -280,20 +281,18 @@ export class WebGrid<T = unknown> {
 	// Interaction state (centralized tracking for hover, focus, edit)
 	protected _hoveredRowIndex: number | null = null
 	protected _focusedRowIndex: number | null = null
-	protected _onrowfocus: ((detail: RowFocusDetail<T>) => void) | undefined
 	protected _onInteractionChange: ((type: 'hoveredRow' | 'focusedCell' | 'editingCell' | 'focusedRow', detail: { prev: any, current: any }) => void) | null = null
 
 	// Row selection state
 	protected _selectedRows: Set<number> = new Set()
 	protected _lastSelectedRowIndex: number | null = null  // For Shift+Click range selection
-	protected _rangeShortcuts: RangeShortcut<T>[] = []
+	protected _rangeShortcuts: GridRangeShortcut<T>[] = []
 
 	// Cell range selection state
 	protected _cellSelectionMode: CellSelectionMode = 'click'
 	protected _selectedCellRange: CellRange | null = null
 	protected _lastClickedCell: { rowIndex: number, colIndex: number } | null = null
 	protected _shouldCopyWithHeaders: boolean = false
-	protected _oncellselectionchange: ((detail: CellSelectionChangeDetail) => void) | null = null
 
 	// Column selection state (like row selection, supports non-contiguous)
 	protected _selectedColumns: Set<number> = new Set()
@@ -303,14 +302,14 @@ export class WebGrid<T = unknown> {
 	protected _pasteMode: PasteMode = 'skip-non-editable'
 	protected _shouldValidateOnPaste: boolean = true
 	protected _createRowCallback: CreateRowCallback<T> | undefined = undefined
-	protected _onbeforepaste: ((detail: BeforePasteDetail<T>) => void) | undefined = undefined
-	protected _onpaste: ((detail: PasteDetail<T>) => void) | undefined = undefined
+	protected _beforePasteCallback: ((ctx: BeforePasteContext<T>) => boolean | void | Promise<boolean | void>) | undefined = undefined
 
 	// New empty row (inline data entry) — EXPERIMENTAL: API may change
 	protected _isNewRowEnabled: boolean = false
 	protected _newRowPosition: NewRowPosition = 'bottom'
 	protected _newRowIndicator: string = '+'
-	protected _createEmptyRowCallback: (() => T | Promise<T>) | undefined = undefined
+	protected _createEmptyRowCallback: ((ctx: GridContext<T>) => T | Promise<T>) | undefined = undefined
+	protected _createDuplicateRowCallback: ((ctx: RowContext<T>) => T) | undefined = undefined
 	protected _emptyRowDraft: T | null = null  // Tracks edits to empty row before commit
 
 	// Tree / hierarchy state
@@ -325,12 +324,11 @@ export class WebGrid<T = unknown> {
 	protected _expandedPathsExternal: Set<string> | null = null  // Set provided by user (we mutate it directly)
 	protected _defaultExpandDepth: number | null = null
 	protected _treeIndex: TreeIndex | null = null            // Built from items; null when tree mode off
-	protected _onexpandedpathschange: ((detail: TreeExpandedChangeDetail) => void) | undefined
 	protected _treeDoubleClickBehavior: TreeDoubleClickBehavior = 'none'
 	// Chevron customization
 	protected _treeExpandedGlyph: string = '▶'
 	protected _treeCollapsedGlyph: string = '▶'
-	protected _treeChevronCallback: TreeChevronCallback<T> | undefined = undefined
+	protected _renderChevronCallback: ChevronCallback<T> | undefined = undefined
 	// WeakMap<row, Map<state-key, html>>; cleared when callback or items change
 	protected _treeChevronCache: WeakMap<object, Map<string, string>> = new WeakMap()
 
@@ -343,6 +341,50 @@ export class WebGrid<T = unknown> {
 	protected _displayItemsCache: T[] | null = null
 
 	// ==========================================================================
+	// Component context + notifications
+	// ==========================================================================
+
+	// Prototype of every ctx / detail the engine builds: `controller` and `element`
+	// as getters, so they are inherited (non-enumerable — JSON / logs see only the
+	// data) and an object costs one allocation on the per-cell hot paths.
+	protected _ctxProto: object = {}
+	protected _notifier: (<K extends GridEventName>(name: K, detail: object) => void) | null = null
+
+	/**
+	 * Wire the component context: every ctx / event detail gets `controller` +
+	 * `element`, and notifications go to `notify` (the element's `emit`). A
+	 * standalone engine runs without it (no events, ctx without the context).
+	 */
+	attachHost(element: HTMLElement, getController: () => GridController<T>, notify: <K extends GridEventName>(name: K, detail: object) => void): void {
+		this._ctxProto = Object.create(null, {
+			controller: { get: getController, enumerable: false },
+			element: { value: element, enumerable: false }
+		})
+		this._notifier = notify
+	}
+
+	/** A callback ctx: `fields` + the component context. */
+	ctx<F extends object>(fields: F): F & GridContext<T> {
+		return Object.assign(Object.create(this._ctxProto), fields)
+	}
+
+	/** ctx for a displayed row. */
+	rowCtx(row: T, rowIndex: number): RowContext<T> {
+		return this.ctx({ row, rowIndex })
+	}
+
+	/** ctx for a cell (`value` is the raw, draft-aware value). */
+	cellCtx(row: T, rowIndex: number, column: Column<T>, colIndex: number = this._columns.indexOf(column)): CellContext<T> {
+		const field = String(column.field)
+		return this.ctx({ row, rowIndex, column, colIndex, field, value: this.getCellRawValue(row, rowIndex, field) })
+	}
+
+	/** Report a happening: the element emits it (DOM event + `on*` twin). */
+	notify<K extends GridEventName>(name: K, detail: Omit<GridEventMap<T>[K], 'controller' | 'element'>): void {
+		this._notifier?.(name, detail as object)
+	}
+
+	// ==========================================================================
 	// Public API - Getters/Setters
 	// ==========================================================================
 
@@ -350,6 +392,7 @@ export class WebGrid<T = unknown> {
 	set items(value: T[]) {
 		dataLogger.debug('items set:', value.length, 'rows')
 		this._items = value
+		this.invalidateDisplayCache()
 		this._treeChevronCache = new WeakMap()  // rows replaced → drop cached glyphs
 		this.rebuildTreeState()
 		this.requestUpdate()
@@ -359,6 +402,10 @@ export class WebGrid<T = unknown> {
 	set columns(value: Column<T>[]) {
 		initLogger.debug('columns set:', value.length, 'columns', value.map(c => String(c.field)))
 		this._columns = value
+		// Option callbacks (editorOptions.get*Callback, …) get this grid's ctx
+		for (const col of value) {
+			if (col.editorOptions) bindOptionContext(col.editorOptions, (fields) => this.ctx(fields))
+		}
 		this.requestUpdate()
 	}
 
@@ -374,9 +421,11 @@ export class WebGrid<T = unknown> {
 		this.requestUpdate()
 	}
 
-	get onfilterchange(): ((filters: Record<string, string>) => void) | undefined { return this._onfilterchange }
-	set onfilterchange(value: ((filters: Record<string, string>) => void) | undefined) {
-		this._onfilterchange = value
+	/** 'server': the grid doesn't filter `items` — it fires `filter-change` and the consumer replaces `items`. */
+	get filterMode(): 'client' | 'server' { return this._filterMode }
+	set filterMode(value: 'client' | 'server') {
+		this._filterMode = value === 'server' ? 'server' : 'client'
+		this.requestUpdate()
 	}
 
 	get columnMinWidth(): string | undefined { return this._columnMinWidth }
@@ -429,9 +478,15 @@ export class WebGrid<T = unknown> {
 		this.requestUpdate()
 	}
 
-	get isRowEditable(): boolean | ((row: T) => boolean) | undefined { return this._isRowEditable }
-	set isRowEditable(value: boolean | ((row: T) => boolean) | undefined) {
+	get isRowEditable(): boolean | undefined { return this._isRowEditable }
+	set isRowEditable(value: boolean | undefined) {
 		this._isRowEditable = value
+		this.requestUpdate()
+	}
+
+	get getIsRowEditableCallback(): ((ctx: RowDataContext<T>) => boolean) | undefined { return this._getIsRowEditableCallback }
+	set getIsRowEditableCallback(value: ((ctx: RowDataContext<T>) => boolean) | undefined) {
+		this._getIsRowEditableCallback = value
 		this.requestUpdate()
 	}
 
@@ -607,8 +662,8 @@ export class WebGrid<T = unknown> {
 		this.requestUpdate()
 	}
 
-	get rowToolbar(): RowToolbarConfig<T>[] { return this._rowToolbar }
-	set rowToolbar(value: RowToolbarConfig<T>[]) {
+	get rowToolbar(): GridToolbarEntry<T>[] { return this._rowToolbar }
+	set rowToolbar(value: GridToolbarEntry<T>[]) {
 		this._rowToolbar = value
 		this.requestUpdate()
 	}
@@ -664,11 +719,11 @@ export class WebGrid<T = unknown> {
 	/** @deprecated use `shouldToolbarFollowCursor` */
 	set toolbarFollowsCursor(value: boolean) { this.shouldToolbarFollowCursor = value }
 
-	get cellToolbar(): ((row: T, rowIndex: number, field: string, colIndex: number) => RowToolbarConfig<T>[] | undefined) | undefined {
-		return this._cellToolbar
+	get getCellToolbarItemsCallback(): ((ctx: CellContext<T>) => GridToolbarEntry<T>[] | null | undefined) | undefined {
+		return this._getCellToolbarItemsCallback
 	}
-	set cellToolbar(value: ((row: T, rowIndex: number, field: string, colIndex: number) => RowToolbarConfig<T>[] | undefined) | undefined) {
-		this._cellToolbar = value
+	set getCellToolbarItemsCallback(value: ((ctx: CellContext<T>) => GridToolbarEntry<T>[] | null | undefined) | undefined) {
+		this._getCellToolbarItemsCallback = value
 		this.checkToolbarConflicts()
 	}
 
@@ -692,8 +747,8 @@ export class WebGrid<T = unknown> {
 		this.requestUpdate()
 	}
 
-	get contextMenu(): ContextMenuConfig<T>[] | undefined { return this._contextMenu }
-	set contextMenu(value: ContextMenuConfig<T>[] | undefined) {
+	get contextMenu(): GridMenuEntry<T>[] | undefined { return this._contextMenu }
+	set contextMenu(value: GridMenuEntry<T>[] | undefined) {
 		this._contextMenu = value
 		this.requestUpdate()
 	}
@@ -709,14 +764,14 @@ export class WebGrid<T = unknown> {
 	}
 
 	// Header context menu
-	get headerContextMenu(): HeaderMenuConfig<T>[] | undefined { return this._headerContextMenu }
-	set headerContextMenu(value: HeaderMenuConfig<T>[] | undefined) {
+	get headerContextMenu(): GridHeaderMenuEntry<T>[] | undefined { return this._headerContextMenu }
+	set headerContextMenu(value: GridHeaderMenuEntry<T>[] | undefined) {
 		this._headerContextMenu = value
 	}
 
 	// Row keyboard shortcuts
-	get rowShortcuts(): RowShortcut<T>[] | undefined { return this._rowShortcuts }
-	set rowShortcuts(value: RowShortcut<T>[] | undefined) {
+	get rowShortcuts(): GridShortcut<T>[] | undefined { return this._rowShortcuts }
+	set rowShortcuts(value: GridShortcut<T>[] | undefined) {
 		this._rowShortcuts = value
 		this.requestUpdate()
 	}
@@ -733,9 +788,9 @@ export class WebGrid<T = unknown> {
 		this.requestUpdate()
 	}
 
-	get shortcutsHelpContentCallback(): (() => string) | undefined { return this._shortcutsHelpContentCallback }
-	set shortcutsHelpContentCallback(value: (() => string) | undefined) {
-		this._shortcutsHelpContentCallback = value
+	get renderShortcutsHelpCallback(): ((ctx: GridContext<T>) => string) | undefined { return this._renderShortcutsHelpCallback }
+	set renderShortcutsHelpCallback(value: ((ctx: GridContext<T>) => string) | undefined) {
+		this._renderShortcutsHelpCallback = value
 		this.requestUpdate()
 	}
 
@@ -778,9 +833,9 @@ export class WebGrid<T = unknown> {
 		this.requestUpdate()
 	}
 
-	get paginationLabelsCallback(): PaginationLabelsCallback | undefined { return this._paginationLabelsCallback }
-	set paginationLabelsCallback(value: PaginationLabelsCallback | undefined) {
-		this._paginationLabelsCallback = value
+	get getPaginationLabelsCallback(): PaginationLabelsCallback<T> | undefined { return this._getPaginationLabelsCallback }
+	set getPaginationLabelsCallback(value: PaginationLabelsCallback<T> | undefined) {
+		this._getPaginationLabelsCallback = value
 		this.requestUpdate()
 	}
 
@@ -796,9 +851,9 @@ export class WebGrid<T = unknown> {
 		this.requestUpdate()
 	}
 
-	get summaryContentCallback(): SummaryContentCallback<T> | undefined { return this._summaryContentCallback }
-	set summaryContentCallback(value: SummaryContentCallback<T> | undefined) {
-		this._summaryContentCallback = value
+	get renderSummaryCallback(): SummaryCallback<T> | undefined { return this._renderSummaryCallback }
+	set renderSummaryCallback(value: SummaryCallback<T> | undefined) {
+		this._renderSummaryCallback = value
 		this.requestUpdate()
 	}
 
@@ -814,15 +869,15 @@ export class WebGrid<T = unknown> {
 		this.requestUpdate()
 	}
 
-	get customStylesCallback(): (() => string) | undefined { return this._customStylesCallback }
-	set customStylesCallback(value: (() => string) | undefined) {
-		this._customStylesCallback = value
+	get getCustomStylesCallback(): ((ctx: GridContext<T>) => string) | undefined { return this._getCustomStylesCallback }
+	set getCustomStylesCallback(value: ((ctx: GridContext<T>) => string) | undefined) {
+		this._getCustomStylesCallback = value
 		// Note: requestUpdate not needed - styles are handled by web-component
 	}
 
-	get rowClassCallback(): ((row: T, rowIndex: number) => string | null) | undefined { return this._rowClassCallback }
-	set rowClassCallback(value: ((row: T, rowIndex: number) => string | null) | undefined) {
-		this._rowClassCallback = value
+	get getRowClassCallback(): ((ctx: RowContext<T>) => string | null) | undefined { return this._getRowClassCallback }
+	set getRowClassCallback(value: ((ctx: RowContext<T>) => string | null) | undefined) {
+		this._getRowClassCallback = value
 		this.requestUpdate()
 	}
 
@@ -908,67 +963,32 @@ export class WebGrid<T = unknown> {
 		return this.displayItems.length >= this._virtualScrollThreshold
 	}
 
-	// Callback setters
-	set onrowchange(value: ((detail: RowChangeDetail<T>) => void) | undefined) {
-		this._onrowchange = value
+	get getValidationTooltipCallback(): ((ctx: ValidationTooltipContext<T>) => string | null) | undefined {
+		return this._getValidationTooltipCallback
+	}
+	set getValidationTooltipCallback(value: ((ctx: ValidationTooltipContext<T>) => string | null) | undefined) {
+		this._getValidationTooltipCallback = value
 	}
 
-	set onroweditstart(value: ((detail: { row: T, rowIndex: number, field: string }) => void) | undefined) {
-		this._onroweditstart = value
+	get beforeContextMenuOpenCallback(): ((ctx: CellContext<T>) => false | GridMenuEntry<T>[] | void) | undefined {
+		return this._beforeContextMenuOpenCallback
+	}
+	set beforeContextMenuOpenCallback(value: ((ctx: CellContext<T>) => false | GridMenuEntry<T>[] | void) | undefined) {
+		this._beforeContextMenuOpenCallback = value
 	}
 
-	set onroweditcancel(value: ((detail: { row: T, rowIndex: number, field: string }) => void) | undefined) {
-		this._onroweditcancel = value
+	get beforeHeaderMenuOpenCallback(): ((ctx: import('./interaction.js').HeaderMenuContext<T>) => false | GridHeaderMenuEntry<T>[] | void) | undefined {
+		return this._beforeHeaderMenuOpenCallback
+	}
+	set beforeHeaderMenuOpenCallback(value: ((ctx: import('./interaction.js').HeaderMenuContext<T>) => false | GridHeaderMenuEntry<T>[] | void) | undefined) {
+		this._beforeHeaderMenuOpenCallback = value
 	}
 
-	set onvalidationerror(value: ((detail: { row: T, rowIndex: number, field: string, error: string }) => void) | undefined) {
-		this._onvalidationerror = value
+	get beforeActionCallback(): ((detail: GridActionEventDetail<T>) => unknown) | undefined {
+		return this._beforeActionCallback
 	}
-
-	get validationTooltipCallback(): ((context: ValidationTooltipContext<T>) => string | null) | undefined {
-		return this._validationTooltipCallback
-	}
-	set validationTooltipCallback(value: ((context: ValidationTooltipContext<T>) => string | null) | undefined) {
-		this._validationTooltipCallback = value
-	}
-
-	get ontoolbarclick(): ((detail: ToolbarClickDetail<T>) => void) | undefined {
-		return this._ontoolbarclick
-	}
-	set ontoolbarclick(value: ((detail: ToolbarClickDetail<T>) => void) | undefined) {
-		this._ontoolbarclick = value
-	}
-
-	set onrowaction(value: ((detail: RowActionClickDetail<T>) => void) | undefined) {
-		this._onrowaction = value
-	}
-
-	get oncontextmenuopen(): ((context: ContextMenuContext<T>) => void) | undefined {
-		return this._oncontextmenuopen
-	}
-	set oncontextmenuopen(value: ((context: ContextMenuContext<T>) => void) | undefined) {
-		this._oncontextmenuopen = value
-	}
-
-	get onheadercontextmenuopen(): ((context: HeaderMenuContext<T>) => void) | undefined {
-		return this._onheadercontextmenuopen
-	}
-	set onheadercontextmenuopen(value: ((context: HeaderMenuContext<T>) => void) | undefined) {
-		this._onheadercontextmenuopen = value
-	}
-
-	get ondatarequest(): ((detail: DataRequestDetail) => void) | undefined {
-		return this._ondatarequest
-	}
-	set ondatarequest(value: ((detail: DataRequestDetail) => void) | undefined) {
-		this._ondatarequest = value
-	}
-
-	get onrowdelete(): ((detail: { rowIndex: number; row: T }) => void) | undefined {
-		return this._onrowdelete
-	}
-	set onrowdelete(value: ((detail: { rowIndex: number; row: T }) => void) | undefined) {
-		this._onrowdelete = value
+	set beforeActionCallback(value: ((detail: GridActionEventDetail<T>) => unknown) | undefined) {
+		this._beforeActionCallback = value
 	}
 
 	// Row identification
@@ -977,9 +997,9 @@ export class WebGrid<T = unknown> {
 		this._idValueMember = value
 	}
 
-	get idValueCallback(): ((row: T) => unknown) | undefined { return this._idValueCallback }
-	set idValueCallback(value: ((row: T) => unknown) | undefined) {
-		this._idValueCallback = value
+	get getRowIdCallback(): ((ctx: RowDataContext<T>) => unknown) | undefined { return this._getRowIdCallback }
+	set getRowIdCallback(value: ((ctx: RowDataContext<T>) => unknown) | undefined) {
+		this._getRowIdCallback = value
 	}
 
 	// Row locking
@@ -987,11 +1007,6 @@ export class WebGrid<T = unknown> {
 	set rowLocking(value: RowLockingOptions<T> | undefined) {
 		this._rowLocking = value
 		this.requestUpdate()
-	}
-
-	get onrowlockchange(): ((detail: RowLockChangeDetail<T>) => void) | undefined { return this._onrowlockchange }
-	set onrowlockchange(value: ((detail: RowLockChangeDetail<T>) => void) | undefined) {
-		this._onrowlockchange = value
 	}
 
 	// Column resize & persistence
@@ -1005,11 +1020,6 @@ export class WebGrid<T = unknown> {
 		this._shouldPersistColumnWidths = value
 	}
 
-	get oncolumnresize(): ((detail: ColumnResizeDetail) => void) | undefined { return this._oncolumnresize }
-	set oncolumnresize(value: ((detail: ColumnResizeDetail) => void) | undefined) {
-		this._oncolumnresize = value
-	}
-
 	// Column reorder & persistence
 	get isColumnReorderAllowed(): boolean { return this._isColumnReorderAllowed }
 	set isColumnReorderAllowed(value: boolean) {
@@ -1021,20 +1031,15 @@ export class WebGrid<T = unknown> {
 		this._shouldPersistColumnOrder = value
 	}
 
-	get oncolumnreorder(): ((detail: ColumnReorderDetail) => void) | undefined { return this._oncolumnreorder }
-	set oncolumnreorder(value: ((detail: ColumnReorderDetail) => void) | undefined) {
-		this._oncolumnreorder = value
-	}
-
 	// Fill handle
 	get fillDirection(): FillDirection { return this._fillDirection }
 	set fillDirection(value: FillDirection) {
 		this._fillDirection = value
 	}
 
-	get fillDragCallback(): ((detail: FillDragDetail) => boolean | void) | undefined { return this._fillDragCallback }
-	set fillDragCallback(value: ((detail: FillDragDetail) => boolean | void) | undefined) {
-		this._fillDragCallback = value
+	get beforeFillCallback(): ((ctx: FillContext<T>) => boolean | void | Promise<boolean | void>) | undefined { return this._beforeFillCallback }
+	set beforeFillCallback(value: ((ctx: FillContext<T>) => boolean | void | Promise<boolean | void>) | undefined) {
+		this._beforeFillCallback = value
 	}
 
 	// Row selection
@@ -1042,9 +1047,9 @@ export class WebGrid<T = unknown> {
 		return Array.from(this._selectedRows).sort((a, b) => a - b)
 	}
 
-	get rangeShortcuts(): RangeShortcut<T>[] { return this._rangeShortcuts }
-	set rangeShortcuts(value: RangeShortcut<T>[]) {
-		this._rangeShortcuts = value
+	get rangeShortcuts(): GridRangeShortcut<T>[] { return this._rangeShortcuts }
+	set rangeShortcuts(value: GridRangeShortcut<T>[]) {
+		this._rangeShortcuts = value ?? []
 	}
 
 	isRowSelected(rowIndex: number): boolean {
@@ -1236,13 +1241,6 @@ export class WebGrid<T = unknown> {
 		this._lastClickedCell = value
 	}
 
-	get oncellselectionchange(): ((detail: CellSelectionChangeDetail) => void) | null {
-		return this._oncellselectionchange
-	}
-	set oncellselectionchange(value: ((detail: CellSelectionChangeDetail) => void) | null) {
-		this._oncellselectionchange = value
-	}
-
 	// Paste properties
 	get pasteMode(): PasteMode { return this._pasteMode }
 	set pasteMode(value: PasteMode) { this._pasteMode = value }
@@ -1253,11 +1251,8 @@ export class WebGrid<T = unknown> {
 	get createRowCallback(): CreateRowCallback<T> | undefined { return this._createRowCallback }
 	set createRowCallback(value: CreateRowCallback<T> | undefined) { this._createRowCallback = value }
 
-	get onbeforepaste(): ((detail: BeforePasteDetail<T>) => void) | undefined { return this._onbeforepaste }
-	set onbeforepaste(value: ((detail: BeforePasteDetail<T>) => void) | undefined) { this._onbeforepaste = value }
-
-	get onpaste(): ((detail: PasteDetail<T>) => void) | undefined { return this._onpaste }
-	set onpaste(value: ((detail: PasteDetail<T>) => void) | undefined) { this._onpaste = value }
+	get beforePasteCallback(): ((ctx: BeforePasteContext<T>) => boolean | void | Promise<boolean | void>) | undefined { return this._beforePasteCallback }
+	set beforePasteCallback(value: ((ctx: BeforePasteContext<T>) => boolean | void | Promise<boolean | void>) | undefined) { this._beforePasteCallback = value }
 
 	// New empty row properties — EXPERIMENTAL: API may change
 	get isNewRowEnabled(): boolean { return this._isNewRowEnabled }
@@ -1282,9 +1277,15 @@ export class WebGrid<T = unknown> {
 		this.requestUpdate()
 	}
 
-	get createEmptyRowCallback(): (() => T | Promise<T>) | undefined { return this._createEmptyRowCallback }
-	set createEmptyRowCallback(value: (() => T | Promise<T>) | undefined) {
+	get createEmptyRowCallback(): ((ctx: GridContext<T>) => T | Promise<T>) | undefined { return this._createEmptyRowCallback }
+	set createEmptyRowCallback(value: ((ctx: GridContext<T>) => T | Promise<T>) | undefined) {
 		this._createEmptyRowCallback = value
+	}
+
+	/** The copy the `duplicate` built-in / duplicateRow() inserts (default: shallow copy, `idMember` cleared). */
+	get createDuplicateRowCallback(): ((ctx: RowContext<T>) => T) | undefined { return this._createDuplicateRowCallback }
+	set createDuplicateRowCallback(value: ((ctx: RowContext<T>) => T) | undefined) {
+		this._createDuplicateRowCallback = value
 	}
 
 	// ==========================================================================
@@ -1385,13 +1386,6 @@ export class WebGrid<T = unknown> {
 		}
 	}
 
-	get onexpandedpathschange(): ((detail: TreeExpandedChangeDetail) => void) | undefined {
-		return this._onexpandedpathschange
-	}
-	set onexpandedpathschange(value: ((detail: TreeExpandedChangeDetail) => void) | undefined) {
-		this._onexpandedpathschange = value
-	}
-
 	get isTreeMode(): boolean {
 		return !!this._treePathMember && !!this._treeIndex
 	}
@@ -1406,11 +1400,7 @@ export class WebGrid<T = unknown> {
 		if (wasExpanded) this._expandedPaths.delete(path)
 		else this._expandedPaths.add(path)
 		interactionLogger.debug('tree toggle:', path, wasExpanded ? 'expanded → collapsed' : 'collapsed → expanded', '| set size now:', this._expandedPaths.size)
-		this._onexpandedpathschange?.({
-			path,
-			expanded: !wasExpanded,
-			expandedPaths: this._expandedPaths
-		})
+		this.notify('expand-change', { path, isExpanded: !wasExpanded, expandedPaths: this._expandedPaths })
 		this.requestUpdate()
 	}
 
@@ -1419,12 +1409,14 @@ export class WebGrid<T = unknown> {
 		this._expandedPaths.clear()
 		for (const p of this._treeIndex.nodes.keys()) this._expandedPaths.add(p)
 		interactionLogger.debug('tree expandAll: size =', this._expandedPaths.size)
+		this.notify('expand-change', { path: null, isExpanded: true, expandedPaths: this._expandedPaths })
 		this.requestUpdate()
 	}
 
 	collapseAll(): void {
 		this._expandedPaths.clear()
 		interactionLogger.debug('tree collapseAll')
+		this.notify('expand-change', { path: null, isExpanded: false, expandedPaths: this._expandedPaths })
 		this.requestUpdate()
 	}
 
@@ -1445,6 +1437,7 @@ export class WebGrid<T = unknown> {
 			const node = this._treeIndex.nodes.get(p)
 			if (node) queue.push(...node.childPaths)
 		}
+		this.notify('expand-change', { path, isExpanded: true, expandedPaths: this._expandedPaths })
 		this.requestUpdate()
 	}
 
@@ -1462,6 +1455,7 @@ export class WebGrid<T = unknown> {
 			const node = this._treeIndex.nodes.get(p)
 			if (node) queue.push(...node.childPaths)
 		}
+		this.notify('expand-change', { path, isExpanded: false, expandedPaths: this._expandedPaths })
 		this.requestUpdate()
 	}
 
@@ -1507,9 +1501,9 @@ export class WebGrid<T = unknown> {
 		this.requestUpdate()
 	}
 
-	get treeChevronCallback(): TreeChevronCallback<T> | undefined { return this._treeChevronCallback }
-	set treeChevronCallback(value: TreeChevronCallback<T> | undefined) {
-		this._treeChevronCallback = value
+	get renderChevronCallback(): ChevronCallback<T> | undefined { return this._renderChevronCallback }
+	set renderChevronCallback(value: ChevronCallback<T> | undefined) {
+		this._renderChevronCallback = value
 		this._treeChevronCache = new WeakMap()  // callback changed → cached results are stale
 		this.requestUpdate()
 	}
@@ -1521,7 +1515,7 @@ export class WebGrid<T = unknown> {
 	 * or explicit cache clear.
 	 */
 	getTreeChevronHtml(item: T, expanded: boolean, hasChildren: boolean, level: number, path: string): string {
-		const cb = this._treeChevronCallback
+		const cb = this._renderChevronCallback
 		if (!cb) {
 			// Default: leaves render empty (just a spacer); branches show glyph based on state
 			if (!hasChildren) return ''
@@ -1537,7 +1531,7 @@ export class WebGrid<T = unknown> {
 		const cacheKey = `${expanded ? 'e' : 'c'}|${hasChildren ? '1' : '0'}`
 		let html = perRow.get(cacheKey)
 		if (html === undefined) {
-			html = cb({ expanded, hasChildren, row: item, level, path })
+			html = cb(this.ctx({ row: item, isExpanded: expanded, hasChildren, level, path }))
 			perRow.set(cacheKey, html)
 		}
 		return html
@@ -1706,7 +1700,7 @@ export class WebGrid<T = unknown> {
 		// `treeDataSorted: true` means "trust me, don't re-sort". When the caller
 		// owns the order — either because they want sibling sort handled in JS for
 		// a server-mode simulation, or to compute aggregates like grouped sums —
-		// they'll re-supply items via ondatarequest when sort changes. The grid
+		// they'll re-supply items via data-request when sort changes. The grid
 		// never re-walks the tree in this mode.
 		if (this._treeDataSorted) {
 			const result: T[] = []
@@ -1783,14 +1777,7 @@ export class WebGrid<T = unknown> {
 		this._selectedCellRange = range
 		this.requestUpdate()
 
-		// Fire oncellselectionchange event
-		if (this._oncellselectionchange) {
-			const cells = this.getSelectedCells()
-			this._oncellselectionchange({
-				range,
-				cellCount: cells.length
-			})
-		}
+		this.notify('cell-selection-change', { range, cellCount: this.getSelectedCells().length })
 	}
 
 	clearCellSelection(): void {
@@ -1798,10 +1785,7 @@ export class WebGrid<T = unknown> {
 			this._selectedCellRange = null
 			this.requestUpdate()
 
-			// Fire event
-			if (this._oncellselectionchange) {
-				this._oncellselectionchange({ range: null, cellCount: 0 })
-			}
+			this.notify('cell-selection-change', { range: null, cellCount: 0 })
 		}
 	}
 
@@ -1809,9 +1793,7 @@ export class WebGrid<T = unknown> {
 	clearCellSelection_noRender(): void {
 		if (this._selectedCellRange) {
 			this._selectedCellRange = null
-			if (this._oncellselectionchange) {
-				this._oncellselectionchange({ range: null, cellCount: 0 })
-			}
+			this.notify('cell-selection-change', { range: null, cellCount: 0 })
 		}
 	}
 
@@ -2034,9 +2016,9 @@ export class WebGrid<T = unknown> {
 	}
 
 	get filteredItems(): T[] {
-		// When `onfilterchange` is set, filtering is delegated to the consumer (server-side).
+		// filterMode 'server': filtering is delegated to the consumer (`filter-change`).
 		// The grid still tracks `_filters` to drive the input UI, but doesn't apply them.
-		if (this._onfilterchange) return this._items
+		if (this._filterMode === 'server') return this._items
 
 		if (!this._isFilterable || Object.keys(this._filters).length === 0) {
 			return this._items
@@ -2047,8 +2029,8 @@ export class WebGrid<T = unknown> {
 				if (!filterValue) return true
 				const column = this._columns.find(c => String(c.field) === field)
 				// Per-column custom filter callback overrides built-in substring match
-				if (column?.filter) {
-					const result = column.filter(filterValue, item)
+				if (column?.filterCallback) {
+					const result = column.filterCallback(this.ctx({ row: item, column, field, filterValue }))
 					// null = input incomplete → ignore this filter (all rows pass for it)
 					if (result === null) return true
 					return result
@@ -2071,8 +2053,8 @@ export class WebGrid<T = unknown> {
 		for (const [field, value] of Object.entries(this._filters)) {
 			if (!value) continue
 			const column = this._columns.find(c => String(c.field) === field)
-			if (column?.filter) {
-				if (column.filter(value, probe) === null) invalid.add(field)
+			if (column?.filterCallback) {
+				if (column.filterCallback(this.ctx({ row: probe, column, field, filterValue: value })) === null) invalid.add(field)
 			}
 		}
 		return invalid
@@ -2081,7 +2063,7 @@ export class WebGrid<T = unknown> {
 	get filters(): Record<string, string> { return { ...this._filters } }
 	set filters(value: Record<string, string>) {
 		this._filters = { ...value }
-		this._onfilterchange?.({ ...this._filters })
+		this.notify('filter-change', { filters: { ...this._filters } })
 		this.requestUpdate()
 	}
 
@@ -2092,7 +2074,7 @@ export class WebGrid<T = unknown> {
 			delete next[field]
 			this._filters = next
 		}
-		this._onfilterchange?.({ ...this._filters })
+		this.notify('filter-change', { filters: { ...this._filters } })
 		this.requestUpdate()
 	}
 
@@ -2209,7 +2191,7 @@ export class WebGrid<T = unknown> {
 	 */
 	protected createNewEmptyRow(): T {
 		if (this._createEmptyRowCallback) {
-			const result = this._createEmptyRowCallback()
+			const result = this._createEmptyRowCallback(this.ctx({}))
 			if (result instanceof Promise) {
 				// Async callback - return empty object for now, will update when resolved
 				result.then(row => {
@@ -2275,10 +2257,10 @@ export class WebGrid<T = unknown> {
 	// ==========================================================================
 
 	/**
-	 * Fire ondatarequest event with current state
+	 * Fire the `data-request` event with the current state
 	 */
 	fireDataRequest(trigger: DataRequestTrigger): void {
-		if (this._ondatarequest) {
+		{
 			// For loadMore, skip is current item count; for pagination, it's page-based
 			const skip = trigger === 'loadMore'
 				? this._items.length
@@ -2293,7 +2275,7 @@ export class WebGrid<T = unknown> {
 				skip
 			}
 			dataLogger.debug('fireDataRequest:', trigger, detail)
-			this._ondatarequest(detail)
+			this.notify('data-request', detail)
 		}
 	}
 
@@ -2416,11 +2398,11 @@ export class WebGrid<T = unknown> {
 			)
 		}
 
-		// cellToolbar only matters for top position
-		if (this._cellToolbar !== undefined && !isTop) {
+		// getCellToolbarItemsCallback only matters for top position
+		if (this._getCellToolbarItemsCallback !== undefined && !isTop) {
 			console.warn(
-				`%cWebGrid: cellToolbar has no effect with toolbarPosition="${pos}".\n` +
-				'cellToolbar requires toolbarPosition="top".',
+				`%cWebGrid: getCellToolbarItemsCallback has no effect with toolbarPosition="${pos}".\n` +
+				'getCellToolbarItemsCallback requires toolbarPosition="top".',
 				style
 			)
 		}
@@ -2560,18 +2542,16 @@ export class WebGrid<T = unknown> {
 		return (item as Record<string, unknown>)[field]
 	}
 
-	getCellValue(item: T, column: Column<T>, rowIndex?: number): string {
-		if (column.templateCallback) {
-			return column.templateCallback(item)
+	getCellValue(item: T, column: Column<T>, rowIndex: number): string {
+		if (column.renderCellCallback) {
+			return column.renderCellCallback(this.cellCtx(item, rowIndex, column))
 		}
-		const value = rowIndex !== undefined
-			? this.getCellRawValue(item, rowIndex, String(column.field))
-			: (item as Record<string, unknown>)[String(column.field)]
-		if (column.formatCallback) {
-			return column.formatCallback(value, item)
+		const value = this.getCellRawValue(item, rowIndex, String(column.field))
+		if (column.getDisplayValueCallback) {
+			return column.getDisplayValueCallback(this.cellCtx(item, rowIndex, column))
 		}
 
-		// Auto-format date columns using editorOptions.dateFormat when no formatCallback
+		// Auto-format date columns using editorOptions.dateFormat when no getDisplayValueCallback
 		if (column.editor === 'date' && column.editorOptions?.dateFormat && value) {
 			try {
 				const date = value instanceof Date ? value : new Date(value as string | number)
@@ -2692,12 +2672,7 @@ export class WebGrid<T = unknown> {
 		this._currentCellError = null
 		// NOTE: No requestUpdate() - caller (tryStartEdit) handles surgical DOM update
 
-		// Fire callback
-		this._onroweditstart?.({
-			row: item,
-			rowIndex,
-			field
-		})
+		this.notify('edit-start', { row: item, rowIndex, field })
 	}
 
 	/**
@@ -2709,11 +2684,7 @@ export class WebGrid<T = unknown> {
 			const { rowIndex, field } = prev
 			const item = this.displayItems[rowIndex]
 			if (item) {
-				this._onroweditcancel?.({
-					row: item,
-					rowIndex,
-					field
-				})
+				this.notify('edit-cancel', { row: item, rowIndex, field })
 			}
 			this._editingCell = null
 			this._onInteractionChange?.('editingCell', { prev, current: null })
@@ -2725,8 +2696,8 @@ export class WebGrid<T = unknown> {
 	/**
 	 * Normalize validation result to consistent format
 	 */
-	protected normalizeValidationResult(
-		result: BeforeCommitResult,
+	normalizeValidationResult(
+		result: ValidateResult,
 		value: unknown
 	): { valid: boolean; message?: string; finalValue: unknown } {
 		if (result === null || result === undefined || result === true) {
@@ -2752,7 +2723,7 @@ export class WebGrid<T = unknown> {
 	 * Commit edit with validation
 	 * @param commitEmptyRow - If true and editing empty row, add it to items. If false, just update the draft.
 	 */
-	async commitEdit(rowIndex: number, field: string, newValue: unknown, commitEmptyRow: boolean = false): Promise<void> {
+	async commitEdit(rowIndex: number, field: string, newValue: unknown, commitEmptyRow: boolean = false, source: 'edit' | 'paste' = 'edit'): Promise<void> {
 		dataLogger.debug('commitEdit:', { rowIndex, field, newValue })
 		const column = this._columns.find(c => String(c.field) === field)
 		if (!column) return
@@ -2769,29 +2740,23 @@ export class WebGrid<T = unknown> {
 		this._isValidating = true
 
 		try {
-			// NEW: beforeCommitCallback (preferred)
-			if (column.beforeCommitCallback) {
-				const context: BeforeCommitContext<T> = {
-					value: newValue,
-					oldValue,
+			if (column.validateCallback) {
+				const context: ValidateContext<T> = this.ctx({
 					row: item,
 					rowIndex,
-					field
-				}
-				const result = await Promise.resolve(column.beforeCommitCallback(context))
+					column,
+					colIndex: this._columns.indexOf(column),
+					field,
+					value: newValue,
+					oldValue,
+					source
+				})
+				const result = await Promise.resolve(column.validateCallback(context))
 				const normalized = this.normalizeValidationResult(result, newValue)
 
 				isValid = normalized.valid
 				validationError = normalized.message || null
 				finalValue = normalized.finalValue
-			}
-			// LEGACY: validateCallback function
-			else if (column.validateCallback) {
-				const error = await Promise.resolve(column.validateCallback(newValue, item))
-				if (error) {
-					isValid = false
-					validationError = error
-				}
 			}
 		} catch (err) {
 			isValid = false
@@ -2812,12 +2777,7 @@ export class WebGrid<T = unknown> {
 			if (!isValid) {
 				this.addInvalidCell(rowIndex, field, validationError || "Invalid value")
 				this._currentCellError = validationError
-				this._onvalidationerror?.({
-					row: item,
-					rowIndex,
-					field,
-					error: validationError || "Invalid value"
-				})
+				this.notify('validation-error', { row: item, rowIndex, field, error: validationError || "Invalid value", source })
 			} else {
 				this.removeInvalidCell(rowIndex, field)
 				this._currentCellError = null
@@ -2866,8 +2826,8 @@ export class WebGrid<T = unknown> {
 					// Check if the committed row has any invalid cells
 					const rowHasInvalidCells = this._invalidCells.some(c => c.rowKey === newRowKey)
 
-					// Fire onrowchange with validation state
-					this._onrowchange?.({
+					// Fire row-change with validation state
+					this.notify('row-change', {
 						row: newRow,
 						draftRow: newRow,
 						rowIndex: newRowIndex,
@@ -2913,21 +2873,16 @@ export class WebGrid<T = unknown> {
 		} else {
 			this.addInvalidCell(rowIndex, field, validationError || "Invalid value")
 			this._currentCellError = validationError
-			this._onvalidationerror?.({
-				row: item,
-				rowIndex,
-				field,
-				error: validationError || "Invalid value"
-			})
+			this.notify('validation-error', { row: item, rowIndex, field, error: validationError || "Invalid value", source })
 		}
 
-		// Fire onrowchange only when the value actually changed (or validation
+		// Fire row-change only when the value actually changed (or validation
 		// failed — callers may want to know about that even with no value diff).
 		// This prevents spurious "X → X" events when a user enters edit mode
 		// and exits via arrow keys without typing.
 		const valueChanged = finalValue !== oldValue
 		if (valueChanged || !isValid) {
-			this._onrowchange?.({
+			this.notify('row-change', {
 				row: item,
 				draftRow,
 				rowIndex,
@@ -2949,7 +2904,7 @@ export class WebGrid<T = unknown> {
 	/**
 	 * Update a cell value in the draft row without exiting edit mode.
 	 * Used for checkbox toggling where user may want to toggle multiple times.
-	 * Fires onrowchange but does NOT clear _editingCell.
+	 * Fires row-change but does NOT clear _editingCell.
 	 */
 	updateDraftValue(rowIndex: number, field: string, newValue: unknown): void {
 		const column = this._columns.find(c => String(c.field) === field)
@@ -2976,10 +2931,10 @@ export class WebGrid<T = unknown> {
 			(draftRow as Record<string, unknown>)[field] = newValue
 		}
 
-		// Fire onrowchange event only when the value actually changed
+		// Fire row-change only when the value actually changed
 		if (newValue !== oldValue) {
 			const draftRow = this._draftRows.get(rowIndex) || this._emptyRowDraft || item
-			this._onrowchange?.({
+			this.notify('row-change', {
 				row: item,
 				draftRow,
 				rowIndex,
@@ -3021,26 +2976,26 @@ export class WebGrid<T = unknown> {
 		// 1. Hard veto from column
 		if (column.isEditable === false) return false
 
-		// 2. Column-level function predicate
-		if (typeof column.isEditable === 'function') {
-			if (row !== undefined && !column.isEditable(row)) return false
+		// 2. Column-level per-row predicate
+		if (column.getIsEditableCallback) {
+			if (row !== undefined && !column.getIsEditableCallback(this.ctx({ row }))) return false
 			// Without a row we can't evaluate; let it through to subsequent gates
 		}
 
-		// 3. Grid-level row gate
-		if (this._isRowEditable !== undefined && row !== undefined) {
-			const rowGate = typeof this._isRowEditable === 'function'
-				? this._isRowEditable(row)
+		// 3. Grid-level row gate (callback wins over the static flag)
+		if (row !== undefined) {
+			const rowGate = this._getIsRowEditableCallback
+				? this._getIsRowEditableCallback(this.ctx({ row }))
 				: this._isRowEditable
-			if (!rowGate) return false
+			if (rowGate === false) return false
 		}
 
 		// 4. Column explicit true overrides grid-level (preserves existing web-grid semantic)
 		if (column.isEditable === true) return true
 
-		// 5. Function-form column, having passed its predicate, also overrides grid-level
-		//    so a column can opt rows in even on a read-only grid via per-row callback.
-		if (typeof column.isEditable === 'function' && row !== undefined) return true
+		// 5. A column predicate, having passed, also overrides grid-level so a column can
+		//    opt rows in even on a read-only grid.
+		if (column.getIsEditableCallback && row !== undefined) return true
 
 		// 6. Defer to grid-level isEditable
 		return this._isEditable
@@ -3172,13 +3127,6 @@ export class WebGrid<T = unknown> {
 		this.requestUpdate()
 	}
 
-	get onrowfocus(): ((detail: RowFocusDetail<T>) => void) | undefined {
-		return this._onrowfocus
-	}
-	set onrowfocus(value: ((detail: RowFocusDetail<T>) => void) | undefined) {
-		this._onrowfocus = value
-	}
-
 	/**
 	 * Check if a row is currently focused
 	 */
@@ -3209,15 +3157,8 @@ export class WebGrid<T = unknown> {
 		this._focusedRowIndex = rowIndex
 		this._onInteractionChange?.('focusedRow', { prev: previousRowIndex, current: rowIndex })
 
-		// Fire onrowfocus callback
 		const row = this.displayItems[rowIndex]
-		if (row && this._onrowfocus) {
-			this._onrowfocus({
-				rowIndex,
-				row,
-				previousRowIndex
-			})
-		}
+		if (row) this.notify('row-focus', { rowIndex, row, previousRowIndex })
 	}
 
 	// ==========================================================================
@@ -3225,11 +3166,11 @@ export class WebGrid<T = unknown> {
 	// ==========================================================================
 
 	/**
-	 * Get the unique ID for a row using configured idValueMember/idValueCallback
+	 * Get the unique ID for a row using configured idValueMember/getRowIdCallback
 	 */
 	getRowId(row: T): unknown | undefined {
-		if (this._idValueCallback) {
-			return this._idValueCallback(row)
+		if (this._getRowIdCallback) {
+			return this._getRowIdCallback(this.ctx({ row }))
 		}
 		if (this._idValueMember) {
 			return (row as Record<string, unknown>)[String(this._idValueMember)]
@@ -3289,11 +3230,11 @@ export class WebGrid<T = unknown> {
 
 		// 2. Callback-based sources
 		if (opts.getLockInfoCallback) {
-			const info = opts.getLockInfoCallback(row, rowIndex)
+			const info = opts.getLockInfoCallback(this.rowCtx(row, rowIndex))
 			if (info?.isLocked) return info
 		}
-		if (opts.isLockedCallback) {
-			if (opts.isLockedCallback(row, rowIndex)) {
+		if (opts.getIsLockedCallback) {
+			if (opts.getIsLockedCallback(this.rowCtx(row, rowIndex))) {
 				return { isLocked: true }
 			}
 		}
@@ -3340,8 +3281,7 @@ export class WebGrid<T = unknown> {
 
 		this.requestUpdate()
 
-		// Fire callback
-		this._onrowlockchange?.({
+		this.notify('row-lock-change', {
 			rowId: id,
 			row: found?.row ?? null,
 			rowIndex: found?.index ?? -1,
@@ -3362,7 +3302,7 @@ export class WebGrid<T = unknown> {
 			this.requestUpdate()
 
 			const found = this.findRowById(id)
-			this._onrowlockchange?.({
+			this.notify('row-lock-change', {
 				rowId: id,
 				row: found?.row ?? null,
 				rowIndex: found?.index ?? -1,
@@ -3429,6 +3369,57 @@ export class WebGrid<T = unknown> {
 	}
 
 	// ==========================================================================
+	// Row Operations (the add / delete / duplicate / move-up / move-down built-ins)
+	// ==========================================================================
+
+	/** Insert `row` after `afterRow` (in `items` order), or at the end. */
+	insertRow(row: T, afterRow?: T | null): void {
+		const at = afterRow == null ? -1 : this._items.indexOf(afterRow)
+		const next = [...this._items]
+		next.splice(at === -1 ? next.length : at + 1, 0, row)
+		this.items = next
+	}
+
+	/** Remove the given rows from `items`. */
+	removeRows(rows: T[]): void {
+		if (!rows.length) return
+		const drop = new Set<T>(rows)
+		this.items = this._items.filter(r => !drop.has(r))
+	}
+
+	/**
+	 * Insert a copy of `row` after it — `createDuplicateRowCallback`'s, else a shallow
+	 * copy with the `idMember` field cleared; returns the copy.
+	 */
+	duplicateRow(row: T): T {
+		let copy: T
+		if (this._createDuplicateRowCallback) {
+			copy = this._createDuplicateRowCallback(this.rowCtx(row, this.displayItems.indexOf(row)))
+		} else {
+			const plain = { ...(row as object) } as Record<string, unknown>
+			if (this._idMember) delete plain[this._idMember]
+			copy = plain as T
+		}
+		this.insertRow(copy, row)
+		return copy
+	}
+
+	/** Move `row` one displayed position up (`-1`) or down (`1`) — swaps it with that neighbour in `items`. */
+	moveRow(row: T, delta: -1 | 1): void {
+		const display = this.displayItems
+		const pos = display.indexOf(row)
+		const neighbour = pos === -1 ? undefined : display[pos + delta]
+		if (neighbour === undefined) return
+		const a = this._items.indexOf(row)
+		const b = this._items.indexOf(neighbour)
+		if (a === -1 || b === -1) return
+		const next = [...this._items]
+		next[a] = neighbour
+		next[b] = row
+		this.items = next
+	}
+
+	// ==========================================================================
 	// Edit Lock Checking
 	// ==========================================================================
 
@@ -3454,7 +3445,7 @@ export class WebGrid<T = unknown> {
 			case 'allow':
 				return true
 			case 'callback':
-				return opts?.canEditLockedCallback?.(item, lockInfo) ?? false
+				return opts?.getCanEditLockedCallback?.(this.ctx({ row: item, rowIndex, lockInfo })) ?? false
 			case 'block':
 			default:
 				return false
@@ -3485,7 +3476,7 @@ export class WebGrid<T = unknown> {
 
 	/**
 	 * Set multiple column widths at once (for restoring saved state)
-	 * Accepts the same format as oncolumnresize.allWidths
+	 * Accepts the same format as the column-resize detail's allWidths
 	 */
 	setColumnWidths(widths: ColumnWidthState[]): void {
 		for (const { field, width } of widths) {
@@ -3603,7 +3594,7 @@ export class WebGrid<T = unknown> {
 
 	/**
 	 * Set multiple column orders at once (for restoring saved state)
-	 * Accepts the same format as oncolumnreorder.allOrder
+	 * Accepts the same format as the column-reorder detail's allOrder
 	 */
 	setColumnOrder(order: ColumnOrderState[]): void {
 		this._columnOrder.clear()
@@ -3657,4 +3648,4 @@ export class WebGrid<T = unknown> {
 	}
 }
 
-export default WebGrid
+export default GridEngine

@@ -2,7 +2,7 @@
 // Column Resize Module
 // =============================================================================
 
-import type { GridContext } from '../grid-context.js'
+import type { GridHost } from '../grid-context.js'
 
 /**
  * State for tracking an active resize operation
@@ -29,7 +29,7 @@ let resizeState: ResizeState = {
 }
 
 // Store the current context for document-level handlers
-let activeContext: GridContext | null = null
+let activeContext: GridHost | null = null
 
 /**
  * Get the current resize state (useful for checking if resize is active)
@@ -50,13 +50,13 @@ function parseWidth(width: string | undefined, defaultValue: number): number {
 /**
  * Start a column resize operation
  */
-export function handleResizeStart<T>(ctx: GridContext<T>, e: MouseEvent, field: string): void {
+export function handleResizeStart<T>(ctx: GridHost<T>, e: MouseEvent, field: string): void {
 	const target = e.target as HTMLElement
 	const headerCell = target.closest('.wg__header') as HTMLElement
 	if (!headerCell) return
 
 	// Get column definition for min/max width
-	const column = ctx.grid.columns.find(c => String(c.field) === field)
+	const column = ctx.engine.columns.find(c => String(c.field) === field)
 	if (!column) return
 
 	// Check if column is resizable
@@ -76,7 +76,7 @@ export function handleResizeStart<T>(ctx: GridContext<T>, e: MouseEvent, field: 
 		maxWidth: column.maxWidth ? parseWidth(column.maxWidth, Infinity) : null
 	}
 
-	activeContext = ctx as GridContext
+	activeContext = ctx as GridHost
 
 	// Set min-width to actual column minWidth (not initial width which might be larger)
 	if (column.minWidth) {
@@ -125,7 +125,7 @@ function handleDocumentMouseMove(e: MouseEvent): void {
 	updateAllColumnCells(activeContext, resizeState.field, `${newWidth}px`)
 
 	// Update frozen column offsets if we have frozen columns
-	if (activeContext.grid.freezeColumns > 0 || activeContext.grid.isStickyRowNumbers) {
+	if (activeContext.engine.freezeColumns > 0 || activeContext.engine.isStickyRowNumbers) {
 		updateFrozenColumnOffsets(activeContext)
 	}
 }
@@ -150,7 +150,7 @@ function handleDocumentMouseUp(e: MouseEvent): void {
 	const newWidthStr = `${newWidth}px`
 
 	// Store the width in grid state (skip re-render since we already updated inline styles)
-	ctx.grid.setColumnWidth(field, newWidthStr, true)
+	ctx.engine.setColumnWidth(field, newWidthStr, true)
 
 	// Update the <col> element in colgroup for table-layout: fixed
 	const col = ctx.shadow.querySelector(`col[data-field="${field}"]`) as HTMLElement
@@ -166,19 +166,16 @@ function handleDocumentMouseUp(e: MouseEvent): void {
 	const handle = ctx.shadow.querySelector('.wg__resize-handle--active')
 	handle?.classList.remove('wg__resize-handle--active')
 
-	// Fire callback
-	if (ctx.grid.oncolumnresize) {
-		ctx.grid.oncolumnresize({
-			field,
-			oldWidth,
-			newWidth: newWidthStr,
-			allWidths: ctx.grid.getColumnWidthsState()
-		})
-	}
+	ctx.engine.notify('column-resize', {
+		field,
+		oldWidth,
+		newWidth: newWidthStr,
+		allWidths: ctx.engine.getColumnWidthsState()
+	})
 
 	// Persist to localStorage if enabled
-	if (ctx.grid.shouldPersistColumnWidths && ctx.grid.gridName) {
-		ctx.grid.savePersistedWidths()
+	if (ctx.engine.shouldPersistColumnWidths && ctx.engine.gridName) {
+		ctx.engine.savePersistedWidths()
 	}
 
 	// Clean up
@@ -200,7 +197,7 @@ function handleDocumentMouseUp(e: MouseEvent): void {
 /**
  * Update all cells in a column during resize for visual feedback
  */
-function updateAllColumnCells<T>(ctx: GridContext<T>, field: string, width: string): void {
+function updateAllColumnCells<T>(ctx: GridHost<T>, field: string, width: string): void {
 	// Update all body cells with this field
 	const cells = ctx.shadow.querySelectorAll(`td[data-field="${field}"]`) as NodeListOf<HTMLElement>
 	cells.forEach(cell => {
@@ -216,13 +213,13 @@ const ROW_NUMBER_COLUMN_WIDTH = 40
  * Update frozen column left offsets during resize
  * Recalculates cumulative offsets based on current widths
  */
-function updateFrozenColumnOffsets<T>(ctx: GridContext<T>): void {
-	const frozenCount = ctx.grid.freezeColumns
-	const hasRowNumbers = ctx.grid.isRowNumbersVisible && ctx.grid.isStickyRowNumbers
+function updateFrozenColumnOffsets<T>(ctx: GridHost<T>): void {
+	const frozenCount = ctx.engine.freezeColumns
+	const hasRowNumbers = ctx.engine.isRowNumbersVisible && ctx.engine.isStickyRowNumbers
 	let offset = hasRowNumbers ? ROW_NUMBER_COLUMN_WIDTH : 0
 
 	// Get visual columns (already sorted with frozen first)
-	const visualColumns = ctx.grid.visualColumns
+	const visualColumns = ctx.engine.visualColumns
 
 	// Update each frozen column's left position
 	for (let i = 0; i < frozenCount && i < visualColumns.length; i++) {
@@ -249,13 +246,13 @@ function updateFrozenColumnOffsets<T>(ctx: GridContext<T>): void {
 /**
  * Apply all stored column widths (called after render)
  */
-export function applyStoredColumnWidths<T>(ctx: GridContext<T>): void {
+export function applyStoredColumnWidths<T>(ctx: GridHost<T>): void {
 	const colgroup = ctx.shadow.querySelector('.wg__colgroup')
 	if (!colgroup) return
 
-	for (const column of ctx.grid.columns) {
+	for (const column of ctx.engine.columns) {
 		const fieldStr = String(column.field)
-		const storedWidth = ctx.grid.getColumnWidth(fieldStr)
+		const storedWidth = ctx.engine.getColumnWidth(fieldStr)
 		if (storedWidth) {
 			const col = colgroup.querySelector(`col[data-field="${fieldStr}"]`) as HTMLElement
 			if (col) {

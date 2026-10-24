@@ -5,13 +5,13 @@ import { test, expect, Page, Locator } from '@playwright/test'
  * (docs/test/resize-reorder.html). The page hosts six grids:
  *   #grid           — basic resize + multi-sort.
  *   #grid2          — resize + persistence (gridName + shouldPersistColumnWidths)
- *                     and oncolumnresize logging to [data-testid="resize-log"].
+ *                     and onColumnResize logging to [data-testid="resize-log"].
  *   #grid3          — Status column has `isResizable: false`; its handle gets
  *                     `wg__resize-handle--disabled`.
  *   #gridMovable    — `isMovable: false` on ID / Name / Status — drag-reorder
  *                     of those columns is blocked.
  *   #gridReorder    — drag-to-reorder, freezeColumns=2 (id/name frozen),
- *                     oncolumnreorder logging to [data-testid="reorder-log"].
+ *                     onColumnReorder logging to [data-testid="reorder-log"].
  *   #gridHeaderMenu — right-click header context menu with predefined items.
  *
  * Resize uses a mousedown on `.wg__resize-handle[data-field=…]` followed by
@@ -149,7 +149,7 @@ test.describe('column resize — #grid', () => {
 // =============================================================================
 
 test.describe('column resize — #grid2 (persistence)', () => {
-	test('oncolumnresize fires with field + old/new width into resize-log', async ({ page }) => {
+	test('onColumnResize fires with field + old/new width into resize-log', async ({ page }) => {
 		await resizeColumn(page, 'grid2', 'name', 60)
 		const log = page.locator('[data-testid="resize-log"]')
 		await expect(log).toContainText('Last resize:')
@@ -212,7 +212,7 @@ test.describe('column reorder — #gridReorder', () => {
 		expect(after.indexOf('email')).toBeGreaterThan(after.indexOf('salary'))
 	})
 
-	test('oncolumnreorder callback fires with field + from/to indices into reorder-log', async ({ page }) => {
+	test('onColumnReorder callback fires with field + from/to indices into reorder-log', async ({ page }) => {
 		await reorderColumnTo(page, 'gridReorder', 'salary', 'email')
 
 		const log = page.locator('[data-testid="reorder-log"]')
@@ -313,7 +313,7 @@ test.describe('header context menu — #gridHeaderMenu', () => {
 		await expect(menu).toContainText('Hide Column')
 	})
 
-	test('onheadercontextmenuopen logs which column was opened (header-menu-log)', async ({ page }) => {
+	test('beforeHeaderMenuOpenCallback logs which column was opened (header-menu-log)', async ({ page }) => {
 		await rightClickHeader(page, 'gridHeaderMenu', 'salary')
 
 		const log = page.locator('[data-testid="header-menu-log"]')

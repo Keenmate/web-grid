@@ -3,7 +3,7 @@
 // Excel-like cell range selection via click+drag or shift+click
 // =============================================================================
 
-import type { GridContext } from '../grid-context.js'
+import type { GridHost } from '../grid-context.js'
 import type { CellRange, Column } from '../../types.js'
 import { updateFocusVisual, focusCellElement } from '../navigation/index.js'
 
@@ -39,7 +39,7 @@ let selectionState: CellSelectionState = {
 }
 
 // Store the current context for document-level handlers
-let activeContext: GridContext | null = null
+let activeContext: GridHost | null = null
 
 // rAF throttle state for mousemove
 let pendingMouseEvent: MouseEvent | null = null
@@ -62,18 +62,18 @@ export function isCellSelectionPending(): boolean {
 /**
  * Handle mousedown on a cell to start selection
  */
-export function handleCellMouseDown<T>(ctx: GridContext<T>, rowIndex: number, colIndex: number, event: MouseEvent): void {
+export function handleCellMouseDown<T>(ctx: GridHost<T>, rowIndex: number, colIndex: number, event: MouseEvent): void {
 	// DON'T preventDefault() immediately - let the cell get focus first
 	// We'll preventDefault() later if/when drag threshold is exceeded
 
 	// Clear any existing selection before starting new one (unless extending with Shift)
-	const isExtendingSelection = event.shiftKey && ctx.grid.cellSelectionMode === 'shift'
-	if (ctx.grid.selectedCellRange && !isExtendingSelection) {
-		ctx.grid.clearCellSelection()
+	const isExtendingSelection = event.shiftKey && ctx.engine.cellSelectionMode === 'shift'
+	if (ctx.engine.selectedCellRange && !isExtendingSelection) {
+		ctx.engine.clearCellSelection()
 		removeRangeBorder()
 	}
 
-	const visualCols = ctx.grid.visualColumns
+	const visualCols = ctx.engine.visualColumns
 	const column = visualCols[colIndex]?.column
 	if (!column) return
 
@@ -90,7 +90,7 @@ export function handleCellMouseDown<T>(ctx: GridContext<T>, rowIndex: number, co
 		currentColIndex: colIndex
 	}
 
-	activeContext = ctx as GridContext
+	activeContext = ctx as GridHost
 
 	// Attach document-level listeners
 	document.addEventListener('mousemove', handleDocumentMouseMove)
@@ -101,14 +101,14 @@ export function handleCellMouseDown<T>(ctx: GridContext<T>, rowIndex: number, co
 /**
  * Handle Shift+Click to extend/create range to clicked cell
  */
-export function handleCellShiftClick<T>(ctx: GridContext<T>, rowIndex: number, colIndex: number): void {
+export function handleCellShiftClick<T>(ctx: GridHost<T>, rowIndex: number, colIndex: number): void {
 	// Clear existing border before creating new range
 	removeRangeBorder()
 
 	// If there's a last clicked cell, create range from it to current cell
-	if (ctx.grid.lastClickedCell) {
-		const { rowIndex: startRow, colIndex: startCol } = ctx.grid.lastClickedCell
-		const visualCols = ctx.grid.visualColumns
+	if (ctx.engine.lastClickedCell) {
+		const { rowIndex: startRow, colIndex: startCol } = ctx.engine.lastClickedCell
+		const visualCols = ctx.engine.visualColumns
 		const startColumn = visualCols[startCol]?.column
 		const endColumn = visualCols[colIndex]?.column
 
@@ -122,8 +122,8 @@ export function handleCellShiftClick<T>(ctx: GridContext<T>, rowIndex: number, c
 				endField: String(endColumn.field)
 			}
 			// Clear focused cell when creating selection (avoid visual conflict)
-			ctx.grid.clearFocusedCell()
-			ctx.grid.selectCellRange(range)
+			ctx.engine.clearFocusedCell()
+			ctx.engine.selectCellRange(range)
 			createRangeBorder(ctx)
 
 			// Focus the container so keyboard shortcuts work
@@ -137,7 +137,7 @@ export function handleCellShiftClick<T>(ctx: GridContext<T>, rowIndex: number, c
 		}
 	} else {
 		// First shift+click, just remember this cell
-		ctx.grid.lastClickedCell = { rowIndex, colIndex }
+		ctx.engine.lastClickedCell = { rowIndex, colIndex }
 	}
 }
 
@@ -198,7 +198,7 @@ function processDragUpdate(): void {
 /**
  * Start the actual drag operation (after threshold exceeded)
  */
-function startActualDrag<T>(ctx: GridContext<T>): void {
+function startActualDrag<T>(ctx: GridHost<T>): void {
 	selectionState.isPending = false
 	selectionState.isDragging = true
 
@@ -207,8 +207,8 @@ function startActualDrag<T>(ctx: GridContext<T>): void {
 	container?.classList.add('wg--selecting-cells')
 
 	// Clear focused cell and row so focus outlines disappear immediately when drag begins
-	const oldFocus = ctx.grid.focusedCell
-	ctx.grid.clearFocusedCell()
+	const oldFocus = ctx.engine.focusedCell
+	ctx.engine.clearFocusedCell()
 	updateFocusVisual(ctx, oldFocus, null)
 
 	// Blur the DOM element — mousedown gave it :focus, whose box-shadow persists until blur
@@ -216,11 +216,11 @@ function startActualDrag<T>(ctx: GridContext<T>): void {
 	focused?.blur()
 
 	// Clear focused row visual (tracked separately from cell focus)
-	const focusedRowIndex = ctx.grid.focusedRowIndex
+	const focusedRowIndex = ctx.engine.focusedRowIndex
 	if (focusedRowIndex !== null) {
 		const row = ctx.shadow.querySelector(`tr[data-row-index="${focusedRowIndex}"]`)
 		row?.classList.remove('wg__row--focused')
-		ctx.grid.clearRowFocus()
+		ctx.engine.clearRowFocus()
 	}
 
 	// Apply cell highlighting immediately
@@ -233,7 +233,7 @@ function startActualDrag<T>(ctx: GridContext<T>): void {
 /**
  * Add/remove .wg__cell--in-range class to cells as range changes during drag
  */
-function updateCellHighlighting<T>(ctx: GridContext<T>): void {
+function updateCellHighlighting<T>(ctx: GridHost<T>): void {
 	const { startRowIndex, startColIndex, currentRowIndex, currentColIndex } = selectionState
 
 	// Calculate current range
@@ -269,14 +269,14 @@ function handleDocumentMouseUp(e: MouseEvent): void {
 
 	// If still pending (no drag) in shift mode, create range from last clicked cell
 	if (selectionState.isPending) {
-		const isShiftMode = e.shiftKey && ctx.grid.cellSelectionMode === 'shift'
+		const isShiftMode = e.shiftKey && ctx.engine.cellSelectionMode === 'shift'
 		
-		if (isShiftMode && ctx.grid.lastClickedCell) {
+		if (isShiftMode && ctx.engine.lastClickedCell) {
 			// Shift+click without drag - create range from last clicked cell
 			handleCellShiftClick(ctx, selectionState.startRowIndex, selectionState.startColIndex)
 		} else {
 			// Regular click - just remember the clicked cell for future shift+click
-			ctx.grid.lastClickedCell = {
+			ctx.engine.lastClickedCell = {
 				rowIndex: selectionState.startRowIndex,
 				colIndex: selectionState.startColIndex
 			}
@@ -301,7 +301,7 @@ function handleDocumentMouseUp(e: MouseEvent): void {
 
 		// Restore focus on the start cell (was cleared when drag began)
 		const { startRowIndex, startColIndex } = selectionState
-		ctx.grid.setFocusedCell(startRowIndex, startColIndex)
+		ctx.engine.setFocusedCell(startRowIndex, startColIndex)
 		updateFocusVisual(ctx, null, { rowIndex: startRowIndex, colIndex: startColIndex })
 		focusCellElement(ctx, startRowIndex, startColIndex)
 
@@ -337,7 +337,7 @@ function handleDocumentKeyDown(e: KeyboardEvent): void {
 			removeRangeBorder()
 
 			const { startRowIndex, startColIndex } = selectionState
-			ctx.grid.setFocusedCell(startRowIndex, startColIndex)
+			ctx.engine.setFocusedCell(startRowIndex, startColIndex)
 			updateFocusVisual(ctx, null, { rowIndex: startRowIndex, colIndex: startColIndex })
 			focusCellElement(ctx, startRowIndex, startColIndex)
 		}
@@ -349,7 +349,7 @@ function handleDocumentKeyDown(e: KeyboardEvent): void {
 /**
  * Find which cell is at a given point using elementFromPoint (O(1) hit-test)
  */
-function findCellAtPoint<T>(ctx: GridContext<T>, x: number, y: number): { rowIndex: number; colIndex: number } | null {
+function findCellAtPoint<T>(ctx: GridHost<T>, x: number, y: number): { rowIndex: number; colIndex: number } | null {
 	const element = ctx.shadow.elementFromPoint(x, y) as HTMLElement
 	if (!element) return null
 
@@ -367,11 +367,11 @@ function findCellAtPoint<T>(ctx: GridContext<T>, x: number, y: number): { rowInd
 /**
  * Apply the cell range selection
  */
-function applySelection<T>(ctx: GridContext<T>): void {
+function applySelection<T>(ctx: GridHost<T>): void {
 	const { startRowIndex, startColIndex, currentRowIndex, currentColIndex } = selectionState
 
 	// Get the columns
-	const visualCols = ctx.grid.visualColumns
+	const visualCols = ctx.engine.visualColumns
 	const startColumn = visualCols[startColIndex]?.column
 	const endColumn = visualCols[currentColIndex]?.column
 
@@ -388,10 +388,10 @@ function applySelection<T>(ctx: GridContext<T>): void {
 	}
 
 	// Clear focused cell when creating selection (avoid visual conflict)
-	ctx.grid.clearFocusedCell()
+	ctx.engine.clearFocusedCell()
 
 	// Apply to grid
-	ctx.grid.selectCellRange(range)
+	ctx.engine.selectCellRange(range)
 
 	// Create persistent border
 	createRangeBorder(ctx)
@@ -412,7 +412,7 @@ interface BorderPositions {
  * Compute range border positions from current selectionState (READ-ONLY, no DOM writes).
  * Call this BEFORE updateCellHighlighting to avoid forced reflow.
  */
-function computeRangeBorderPositions<T>(ctx: GridContext<T>): BorderPositions | null {
+function computeRangeBorderPositions<T>(ctx: GridHost<T>): BorderPositions | null {
 	const { startRowIndex, startColIndex, currentRowIndex, currentColIndex } = selectionState
 	const container = ctx.shadow.querySelector('.wg') as HTMLElement
 	if (!container) return null
@@ -450,7 +450,7 @@ function computeRangeBorderPositions<T>(ctx: GridContext<T>): BorderPositions | 
  * Apply pre-computed border positions to DOM (WRITE-ONLY).
  * Reuses existing border element when possible to avoid DOM churn.
  */
-function applyRangeBorder<T>(_ctx: GridContext<T>, positions: BorderPositions | null): void {
+function applyRangeBorder<T>(_ctx: GridHost<T>, positions: BorderPositions | null): void {
 	if (!positions) {
 		removeRangeBorder()
 		return
@@ -474,7 +474,7 @@ function applyRangeBorder<T>(_ctx: GridContext<T>, positions: BorderPositions | 
 /**
  * Create range border during drag (combined read+write for initial creation)
  */
-function createRangeBorderDuringDrag<T>(ctx: GridContext<T>): void {
+function createRangeBorderDuringDrag<T>(ctx: GridHost<T>): void {
 	const positions = computeRangeBorderPositions(ctx)
 	applyRangeBorder(ctx, positions)
 }
@@ -482,11 +482,11 @@ function createRangeBorderDuringDrag<T>(ctx: GridContext<T>): void {
 /**
  * Create persistent range border (after selection complete)
  */
-export function createRangeBorder<T>(ctx: GridContext<T>): void {
+export function createRangeBorder<T>(ctx: GridHost<T>): void {
 	// Remove existing border
 	removeRangeBorder()
 
-	const range = ctx.grid.selectedCellRange
+	const range = ctx.engine.selectedCellRange
 	if (!range) return
 
 	const container = ctx.shadow.querySelector('.wg') as HTMLElement
@@ -537,7 +537,7 @@ export function createRangeBorder<T>(ctx: GridContext<T>): void {
 /**
  * Update range border position (e.g., on scroll)
  */
-export function updateRangeBorder<T>(ctx: GridContext<T>): void {
+export function updateRangeBorder<T>(ctx: GridHost<T>): void {
 	if (!selectionState.rangeBorder) return
 	// Remove and recreate (simpler than recalculating)
 	removeRangeBorder()
@@ -563,7 +563,7 @@ export function removeRangeBorder(): void {
 /**
  * Cleanup after selection operation
  */
-function cleanup<T>(ctx: GridContext<T>): void {
+function cleanup<T>(ctx: GridHost<T>): void {
 	// Remove cell highlighting classes (keep for final selection)
 	// Classes will remain on cells for the final selected range
 	
