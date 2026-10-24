@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Proposed target: **2.0.0-rc01** (package.json still says 1.2.0-rc02) — a major: the callback, event and item API below is breaking, so
+Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
 ### Changed — BREAKING (interaction model, web-components-core rc15)
