@@ -212,7 +212,7 @@ export type Column<T> = {
 	getTooltipCallback?: (ctx: CellContext<T>) => string | null  // Dynamic tooltip (takes priority over tooltipMember)
 	isTooltipHtml?: boolean  // Render tooltip content as HTML instead of plain text
 	// Clipboard: per-cell value conversions (run once per copied / pasted cell; can't cancel)
-	getCopyValueCallback?: (ctx: CellContext<T>) => string  // Text copied for this cell
+	getCopyValueCallback?: (ctx: CellContext<T>) => string  // Text copied for this cell by a single-cell Ctrl+C (range / row / column copies use the raw values)
 	getPasteValueCallback?: (ctx: PasteValueContext<T>) => unknown  // Value stored for the pasted text
 	// Validation tooltip - return HTML string for rich error display
 	getValidationTooltipCallback?: (ctx: ValidationTooltipContext<T>) => string | null

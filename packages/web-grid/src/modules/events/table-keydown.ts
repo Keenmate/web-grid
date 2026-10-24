@@ -20,6 +20,7 @@
 
 import type { GridHost } from '../grid-context.js'
 import { moveFocus, handleCellKeyDown } from '../navigation/index.js'
+import { tryCellShortcuts } from '../navigation/cell-keydown.js'
 import { handleEditorKeyDown } from '../editing/index.js'
 
 /**
@@ -85,6 +86,13 @@ export function handleTableKeyDown<T>(ctx: GridHost<T>, e: Event): void {
 			}
 			return
 		}
+	}
+
+	// User shortcuts on a focused cell win over the pipeline's / grid's own keys
+	if (target.matches('.wg__cell') && ctx.engine.isNavigateMode && !ctx.engine.editingCell) {
+		const rowIndex = parseInt(target.dataset.row || '0', 10)
+		const colIndex = parseInt(target.dataset.col || '0', 10)
+		if (tryCellShortcuts(ctx, e as KeyboardEvent, rowIndex, colIndex)) return
 	}
 
 	// Try action pipeline first (handles 'always' editTrigger mode)

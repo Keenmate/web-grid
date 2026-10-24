@@ -101,7 +101,9 @@
 		]
 		grid.rowShortcuts = [
 			{ shortcut: 'Ctrl+D', action: 'duplicate' },
-			{ shortcut: 'Ctrl+E', id: 'export', text: 'Export', onClick: (d) => log('onClick:export:' + d.row.name) }
+			{ shortcut: 'Ctrl+E', id: 'export', text: 'Export', onClick: (d) => log('onClick:export:' + d.row.name) },
+			// F2 is also the grid's own start-edit key: a configured shortcut wins
+			{ shortcut: 'F2', id: 'f2', text: 'F2 action', onClick: (d) => log('onClick:f2:' + d.row.name) }
 		]
 
 		grid.beforeActionCallback = (d) => {

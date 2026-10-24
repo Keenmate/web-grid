@@ -204,6 +204,14 @@ test.describe('shortcuts', () => {
 		await expect.poll(() => log(page)).toEqual(['before:custom:export:keyboard', 'onClick:export:Gamma', 'onAction:custom', 'event:custom'])
 	})
 
+	test('a configured shortcut wins over a built-in key (F2 = start edit)', async ({ page }) => {
+		await cell(page, 1, 1).click()
+		await clearLog(page)
+		await page.keyboard.press('F2')
+		await expect.poll(() => log(page)).toEqual(['before:custom:f2:keyboard', 'onClick:f2:Beta', 'onAction:custom', 'event:custom'])
+		await expect(grid(page).locator('.wg__cell--editing')).toHaveCount(0)
+	})
+
 	test('Ctrl+Delete fires row-delete (a request — the row stays)', async ({ page }) => {
 		await cell(page, 0, 1).click()
 		await clearLog(page)

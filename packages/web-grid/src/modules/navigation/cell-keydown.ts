@@ -24,6 +24,27 @@ import { openDropdownForCurrentEditor } from '../dropdown/index.js'
 import { openDatePicker } from '../datepicker/index.js'
 
 /**
+ * User shortcuts on a focused (non-editing) cell: range shortcuts when rows are
+ * selected, then row shortcuts. Runs before the action pipeline and the built-in
+ * keys (table-keydown), so a configured chord wins over Delete / arrows / F2.
+ * Returns true when one ran (the key is consumed).
+ */
+export function tryCellShortcuts<T>(ctx: GridHost<T>, e: KeyboardEvent, rowIndex: number, colIndex: number): boolean {
+	const selectedRowIndices = ctx.engine.selectedRows
+	if (selectedRowIndices.length > 0 && handleRangeShortcut(ctx, e, {
+		rows: ctx.engine.getSelectedRowsData(),
+		rowIndices: selectedRowIndices
+	})) {
+		return true
+	}
+	const column = ctx.engine.columns[colIndex]
+	const row = ctx.engine.displayItems[rowIndex]
+	if (!column || !row) return false
+	const field = String(column.field)
+	return handleRowShortcut(ctx, e, { row, rowIndex, column, colIndex, field, value: ctx.engine.getCellRawValue(row, rowIndex, field) })
+}
+
+/**
  * Handle keydown on a focused (non-editing) cell.
  *
  * Returns early if the grid isn't in navigate mode — edit-mode keydowns route
@@ -69,31 +90,6 @@ export function handleCellKeyDown<T>(
 			navigator.clipboard.writeText(textValue)
 		}
 		return // Let browser also handle for visual feedback
-	}
-
-	// Range shortcuts (when rows are selected)
-	const selectedRowIndices = ctx.engine.selectedRows
-	if (selectedRowIndices.length > 0 && handleRangeShortcut(ctx, e, {
-		rows: ctx.engine.getSelectedRowsData(),
-		rowIndices: selectedRowIndices
-	})) {
-		return
-	}
-
-	// Row shortcuts on the focused cell
-	{
-		const column = columns[colIndex]
-		const row = displayItems[rowIndex]
-		if (column && row && handleRowShortcut(ctx, e, {
-			row,
-			rowIndex,
-			column,
-			colIndex,
-			field: String(column.field),
-			value: ctx.engine.getCellRawValue(row, rowIndex, String(column.field))
-		})) {
-			return
-		}
 	}
 
 	switch (e.key) {

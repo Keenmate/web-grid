@@ -100,6 +100,10 @@ export interface GridController<T = any> {
 	selectColumn(colIndex: number, mode?: 'replace' | 'toggle' | 'range'): void
 	selectColumnRange(fromIndex: number, toIndex: number): void
 	clearColumnSelection(): void
+	/** Selected column indices, ascending. */
+	getSelectedColumns(): number[]
+	isColumnSelected(colIndex: number): boolean
+	copySelectedColumnsToClipboard(): Promise<boolean>
 	selectAll(): void
 	// tree
 	isPathExpanded(path: string): boolean
@@ -190,7 +194,7 @@ export interface ValidationTooltipContext<T = any> extends CellContext<T> {
 	error: string
 }
 
-/** ctx of `getRowLockInfoCallback` / `getIsRowLockedCallback` + the lock for `getCanEditLockedCallback`. */
+/** ctx of `rowLocking.getCanEditLockedCallback`: the row + its lock. */
 export interface RowLockContext<T = any> extends RowContext<T> {
 	lockInfo: RowLock
 }

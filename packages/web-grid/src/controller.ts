@@ -64,6 +64,9 @@ export function createGridController<T>(el: GridElement<T>): GridController<T> {
 		selectColumn: (colIndex, mode) => g().selectColumn(colIndex, mode),
 		selectColumnRange: (fromIndex, toIndex) => g().selectColumnRange(fromIndex, toIndex),
 		clearColumnSelection: () => g().clearColumnSelection(),
+		getSelectedColumns: () => [...g().selectedColumns],
+		isColumnSelected: (colIndex) => g().isColumnSelected(colIndex),
+		copySelectedColumnsToClipboard: () => g().copySelectedColumnsToClipboard(),
 		selectAll: () => g().selectAll(),
 		// tree
 		isPathExpanded: (path) => g().isPathExpanded(path),
