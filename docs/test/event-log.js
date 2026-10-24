@@ -17,10 +17,11 @@ const ALL_EVENTS = [
 
 const camel = (name) => 'on' + name.replace(/(^|-)([a-z])/g, (_, __, c) => c.toUpperCase())
 
-/** JSON-safe deep copy: drops functions / DOM nodes / events, Sets → arrays, true cycles → undefined. */
+/** JSON-safe deep copy: drops functions / DOM nodes / events, Sets → arrays, Dates → ISO strings, true cycles → undefined. */
 function toPlain(v, ancestors = []) {
 	if (v === null || typeof v !== 'object') return typeof v === 'function' ? undefined : v
 	if (v instanceof Event || v instanceof Node) return undefined
+	if (v instanceof Date) return v.toISOString()
 	if (ancestors.includes(v) || ancestors.length > 12) return undefined
 	const next = [...ancestors, v]
 	if (v instanceof Set || Array.isArray(v)) return [...v].map((x) => toPlain(x, next))

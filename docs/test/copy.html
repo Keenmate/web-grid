@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — copy fixture</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>copy fixture</h1>
+	<p>Targeted by <code>e2e/copy.spec.ts</code> (runs with clipboard permissions). Navigate mode,
+	row numbers, click cell-selection; the price column has a <code>getCopyValueCallback</code>.</p>
+
+	<web-grid id="grid" is-editable edit-trigger="navigate" is-row-numbers-visible cell-selection-mode="click" style="max-width: 600px;"></web-grid>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+
+		/*
+		 *  col:  0=id  1=name   2=price (getCopyValueCallback → "12.50 EUR")  3=note
+		 *  row 0 | 1 | Apple  | 12.5 | fresh
+		 *  row 1 | 2 | Banana | 3    | (null)
+		 *  row 2 | 3 | Cherry | 7.25 | ripe
+		 */
+		const grid = document.getElementById('grid')
+		grid.columns = [
+			{ field: 'id', title: 'ID', width: '60px', isEditable: false },
+			{ field: 'name', title: 'Name', width: '140px', editor: 'text' },
+			{ field: 'price', title: 'Price', width: '100px', editor: 'number',
+				getCopyValueCallback: ({ value }) => `${Number(value).toFixed(2)} EUR` },
+			{ field: 'note', title: 'Note', width: '120px', editor: 'text' }
+		]
+		grid.items = [
+			{ id: 1, name: 'Apple', price: 12.5, note: 'fresh' },
+			{ id: 2, name: 'Banana', price: 3, note: null },
+			{ id: 3, name: 'Cherry', price: 7.25, note: 'ripe' }
+		]
+	</script>
+</body>
+</html>

@@ -199,3 +199,32 @@ export async function editCell(page: Page, target: Locator, value: string, commi
 	await page.keyboard.press(commitKey)
 	await expect(ed).toHaveCount(0)
 }
+
+/**
+ * Drag-select a cell range with mouse primitives — the cell-selection module
+ * listens for mousemove / mouseup at document level, so page.mouse works without
+ * shadow piercing. Intermediate steps keep the drag continuous.
+ */
+export async function dragSelect(page: Page, fromRow: number, fromCol: number, toRow: number, toCol: number, gridId = 'grid'): Promise<void> {
+	const from = await cell(page, gridId, fromRow, fromCol).boundingBox()
+	const to = await cell(page, gridId, toRow, toCol).boundingBox()
+	if (!from || !to) throw new Error('Cell bounding box missing')
+	const sx = from.x + from.width / 2
+	const sy = from.y + from.height / 2
+	const dx = to.x + to.width / 2
+	const dy = to.y + to.height / 2
+	await page.mouse.move(sx, sy)
+	await page.mouse.down()
+	await page.mouse.move((sx + dx) / 2, (sy + dy) / 2, { steps: 5 })
+	await page.mouse.move(dx, dy, { steps: 5 })
+	await page.mouse.up()
+	// The grid moves focus into its shadow root after a double rAF — wait for it so
+	// a following key press (Ctrl+C, Escape, range shortcut) reaches the grid.
+	await expect.poll(() => gridLocator(page, gridId).evaluate(el => !!el.shadowRoot?.activeElement)).toBe(true)
+}
+
+/** Read the system clipboard (needs `permissions: ['clipboard-read', 'clipboard-write']`). */
+export async function readClipboard(page: Page): Promise<string> {
+	// Windows clipboards hand back CRLF line breaks — normalise to the grid's LF.
+	return (await page.evaluate(() => navigator.clipboard.readText())).replace(/\r\n/g, '\n')
+}

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — row locking fixture</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>row-locking fixture</h1>
+	<p>Targeted by <code>e2e/row-locking.spec.ts</code>. Navigate-mode editable grid, <code>idMember</code> + <code>idValueMember</code> = 'id',
+	row numbers. <code>rowLocking.getLockInfoCallback</code> locks rows whose <code>lock</code> field is set
+	(Beta, by "Carol"). External locks via <code>lockRowById</code>. Events logged to <code>row-locking-log</code>.</p>
+
+	<web-grid id="grid" is-editable edit-trigger="navigate" is-row-numbers-visible style="max-width: 600px;"></web-grid>
+	<pre data-testid="row-locking-log"></pre>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+		import { installEventLog } from './event-log.js'
+
+		/*
+		 *  row | id | name   | qty | lock
+		 *  0   | 1  | Alpha  | 10  | —
+		 *  1   | 2  | Beta   | 20  | { lockedBy: 'Carol', reason: 'review' }
+		 *  2   | 3  | Gamma  | 30  | —
+		 *  3   | 4  | Delta  | 40  | —
+		 */
+		window.seed = () => [
+			{ id: 1, name: 'Alpha', qty: 10, lock: null },
+			{ id: 2, name: 'Beta', qty: 20, lock: { lockedBy: 'Carol', reason: 'review' } },
+			{ id: 3, name: 'Gamma', qty: 30, lock: null },
+			{ id: 4, name: 'Delta', qty: 40, lock: null }
+		]
+		window.lockCtxs = []
+		const grid = document.getElementById('grid')
+		grid.idMember = 'id'
+		grid.idValueMember = 'id'  // the id APIs (lockRowById, findRowById) read idValueMember, not idMember — NOTES.md #11
+		grid.columns = [
+			{ field: 'id', title: 'ID', width: '60px', isEditable: false },
+			{ field: 'name', title: 'Name', width: '160px', editor: 'text' },
+			{ field: 'qty', title: 'Qty', width: '80px', editor: 'number' }
+		]
+		grid.rowLocking = {
+			getLockInfoCallback: ({ row }) => row.lock ? { isLocked: true, ...row.lock } : null
+		}
+		grid.items = window.seed()
+		installEventLog(grid, 'row-locking', ['row-lock-change', 'edit-start', 'paste-complete'])
+	</script>
+</body>
+</html>

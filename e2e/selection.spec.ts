@@ -1,4 +1,4 @@
-import { test, expect, Page, gridLocator, cell, header } from './fixtures'
+import { test, expect, Page, gridLocator, cell, header, dragSelect } from './fixtures'
 
 /**
  * E2E coverage for selection (docs/test/selection.html) — an 8-row / 4-col grid
@@ -26,28 +26,6 @@ function rowNumber(page: Page, rowIndex: number) {
 const selectedRows = (page: Page) => page.locator('[data-testid="selected-rows"]')
 const selectedCells = (page: Page) => page.locator('[data-testid="selected-cells"]')
 const focusedRow = (page: Page) => page.locator('[data-testid="focused-row"]')
-
-/**
- * Drag-select a cell range from cell (fromRow,fromCol) to (toRow,toCol) using
- * mouse primitives — the cell-selection module listens for mousemove/mouseup at
- * the document level, so page.mouse works without shadow piercing. A couple of
- * intermediate steps keep the drag continuous.
- */
-async function dragSelect(page: Page, fromRow: number, fromCol: number, toRow: number, toCol: number) {
-	const from = await cell(page, fromRow, fromCol).boundingBox()
-	const to = await cell(page, toRow, toCol).boundingBox()
-	if (!from || !to) throw new Error('Cell bounding box missing')
-	const sx = from.x + from.width / 2
-	const sy = from.y + from.height / 2
-	const dx = to.x + to.width / 2
-	const dy = to.y + to.height / 2
-
-	await page.mouse.move(sx, sy)
-	await page.mouse.down()
-	await page.mouse.move((sx + dx) / 2, (sy + dy) / 2, { steps: 5 })
-	await page.mouse.move(dx, dy, { steps: 5 })
-	await page.mouse.up()
-}
 
 async function gotoSelection(page: Page) {
 	await page.goto(PAGE)

@@ -123,6 +123,10 @@ its draft stays at index 2, so **Delta's row now shows Gamma's draft**
 (`{ id: 3, name: 'Zulu' }`) and is marked dirty; Gamma shows its original value.
 Same on paging / filtering / tree collapse.
 
+The `idMember` JSDoc (`types.ts:322`) already *claims* drafts are keyed by it
+("pagination, filter, sort … no longer cause an in-flight edit to land on the
+wrong row") — the fixture sets `idMember = 'id'` and the draft still jumps.
+
 **Suggested fix:** key drafts by the stable row key (`getStableRowKey` / id),
 like `_invalidCells`.
 
@@ -143,3 +147,52 @@ unrelated full render (sort, toggling a flag, …).
 
 **Test:** `drafts.spec.ts` "the row-number dirty marker appears right after the
 commit" (`test.fail`).
+
+## 9. Copy ignores drafts (copies the original values)
+
+**Where:** `modules/actions/executors/clipboard-executor.ts:50,70,90,101` and
+`grid.ts` `copySelectedRowsToClipboard` / `copySelectedColumnsToClipboard` /
+`copyCellSelectionToClipboard` read `item[field]`, not `getCellRawValue()`.
+
+**Symptom:** edit Apple → Apricot (draft, shown in the cell), Ctrl+C on the cell
+copies `Apple`. Same for ranges / rows / columns. What you see is not what you copy.
+
+**Suggested fix:** read through `engine.getCellRawValue(row, rowIndex, field)`
+(draft-aware) everywhere a copy is built.
+
+**Test:** `copy.spec.ts` "a focused cell copies its draft (edited) value" (`test.fail`).
+
+**Related (#1):** single-cell Ctrl+C goes through the clipboard executor, which
+ignores `column.getCopyValueCallback` (only the dead `cell-keydown.ts` path
+honours it) — `copy.spec.ts` "a focused cell with getCopyValueCallback copies the
+callback text" is `test.fail('NOTES.md #1')`. The executor also ignores
+`shouldCopyWithHeaders` for a range copied while a cell (not the container) has
+focus; the container-focus path (`modules/events/container-keydown.ts`) honours it.
+
+## 10. Lock tooltip text is hard-coded English
+
+**Where:** `modules/rendering/table.ts:239-241`, `:410`, `:520-522` —
+`'Locked by ${lockedBy}'` / `'This row is locked'`; no `labels` key.
+
+**Suggested fix:** add `labels.rowLocked` + `labels.rowLockedBy` (template with
+`{lockedBy}`) to `GridLabels` / `DEFAULT_LABELS` and use them in all three places.
+The key names in the test are a suggestion — adjust the test with the fix.
+(Listed as an open gap in core `docs/interaction-model-plan.md`.)
+
+**Test:** `row-locking.spec.ts` "the lock tooltip text is translatable through
+labels" (`test.fail`).
+
+## 11. Two row-identity inputs: `idMember` vs `idValueMember` (open question)
+
+**Where:** `grid.ts:3174` `getRowId()` reads `getRowIdCallback` → `idValueMember`
+only; `idMember` (`types.ts:322-326`) is used for the stable row key, built-ins
+and duplicate.
+
+**Observation:** a grid configured with just `idMember = 'id'` (what the
+`idMember` JSDoc recommends) gets `findRowById` → null, `lockRowById` locks
+nothing visible (row-lock-change with `row: null, rowIndex: -1`),
+`updateRowById` / `replaceRowById` → false. You must also set
+`idValueMember`. Two inputs for one concept is easy to get wrong.
+
+**Question:** should `getRowId()` fall back to `idMember` (and `idValueMember` be
+deprecated)? Fixtures set both for now.

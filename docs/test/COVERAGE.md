@@ -82,17 +82,19 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Arrow navigation in navigate mode | ✓ | `basic.spec.ts` | `basic.html` |
 | Home/End/PageUp/PageDown/Ctrl+Home, Shift+Arrow, Delete, Ctrl+G | ✗ | | |
 | Number column ignores letters (GRID-1) | ✗ | | |
-| Ctrl+C cell / range TSV, `shouldCopyWithHeaders`, `getCopyValueCallback` | ✗ | | |
-| `copySelectedRowsToClipboard` | ✗ | | |
+| Ctrl+C cell / range / row / column TSV, `shouldCopyWithHeaders` | ✓ | `copy.spec.ts` | `copy.html` |
+| Ctrl+C honours `getCopyValueCallback` (#1) and drafts (#9) | ✗ fail | `copy.spec.ts` | `copy.html` |
+| `copySelectedRowsToClipboard`, `copyCellSelectionToClipboard`, failure → false | ✓ | `copy.spec.ts` | `copy.html` |
 | `rowShortcuts`, Ctrl+U move, disabled callback, help overlay | ✓ | `shortcuts.spec.ts` | `shortcuts.html` |
 
 ## 5. Rows API & locking
 
 | Feature | Status | Spec | Fixture |
 | --- | :-: | --- | --- |
-| Row locking via `isRowLockedCallback` + dynamic row class | △ | `basic.spec.ts` | `basic.html` |
-| `lockRowById/unlockRowById/isRowLocked/getRowLockInfo`, `row-lock-change` | ✗ | | |
-| Lock blocks F2 / paste; `getLockInfoCallback`, `getCanEditLockedCallback` | ✗ | | |
+| Row locking sources (`getLockInfoCallback`, `getIsLockedCallback`, `lockedMember`, `lockInfoMember`), marker + tooltip | ✓ | `row-locking.spec.ts`, `basic.spec.ts` | `row-locking.html`, `basic.html` |
+| Lock tooltip i18n (#10) | ✗ fail | `row-locking.spec.ts` | `row-locking.html` |
+| `lockRowById/unlockRowById/isRowLocked/getRowLockInfo/clearExternalLocks`, `row-lock-change` | ✓ | `row-locking.spec.ts` | `row-locking.html` |
+| Lock blocks F2 / typing / paste; `lockedEditBehavior` allow / callback + `getCanEditLockedCallback` | ✓ | `row-locking.spec.ts` | `row-locking.html` |
 | `getRowIdCallback` / `idMember`, `updateRowById`, `replaceRowById`, `findRowById` | ✗ | | |
 | `focusCell`, `startEditing` | ✗ | | |
 
