@@ -176,11 +176,16 @@ test.describe('cell-aware toolbar — #grid4', () => {
 
 		const toolbar = activeToolbar(page, 'grid4')
 		await expect(toolbar).toBeVisible()
-
-		const ids = await toolbar.locator('.wg__toolbar-btn').evaluateAll(
-			els => els.map(el => (el as HTMLElement).dataset.id ?? (el as HTMLElement).dataset.action)
-		)
-		expect(ids).toEqual(['setHigh', 'setMedium', 'setLow', 'add', 'delete', 'duplicate'])
+		// The cell-aware merge runs on a mousemove *while the toolbar is open* and only
+		// when the hovered cell changes; the mousemove sent by openToolbarOn can race
+		// the open (pre-existing flake), so re-hover via another cell until it lands.
+		await expect.poll(async () => {
+			await cellOnRow(page, 'grid4', 0, 'title').dispatchEvent('mousemove', { bubbles: true })
+			await cellOnRow(page, 'grid4', 0, 'priority').dispatchEvent('mousemove', { bubbles: true })
+			return toolbar.locator('.wg__toolbar-btn').evaluateAll(
+				els => els.map(el => (el as HTMLElement).dataset.id ?? (el as HTMLElement).dataset.action)
+			)
+		}).toEqual(['setHigh', 'setMedium', 'setLow', 'add', 'delete', 'duplicate'])
 	})
 
 	test('hovering the status cell swaps in status-specific items', async ({ page }) => {
@@ -188,11 +193,16 @@ test.describe('cell-aware toolbar — #grid4', () => {
 
 		const toolbar = activeToolbar(page, 'grid4')
 		await expect(toolbar).toBeVisible()
-
-		const ids = await toolbar.locator('.wg__toolbar-btn').evaluateAll(
-			els => els.map(el => (el as HTMLElement).dataset.id ?? (el as HTMLElement).dataset.action)
-		)
-		expect(ids).toEqual(['setTodo', 'setProgress', 'setDone', 'add', 'delete', 'duplicate'])
+		// The cell-aware merge runs on a mousemove *while the toolbar is open* and only
+		// when the hovered cell changes; the mousemove sent by openToolbarOn can race
+		// the open (pre-existing flake), so re-hover via another cell until it lands.
+		await expect.poll(async () => {
+			await cellOnRow(page, 'grid4', 0, 'title').dispatchEvent('mousemove', { bubbles: true })
+			await cellOnRow(page, 'grid4', 0, 'status').dispatchEvent('mousemove', { bubbles: true })
+			return toolbar.locator('.wg__toolbar-btn').evaluateAll(
+				els => els.map(el => (el as HTMLElement).dataset.id ?? (el as HTMLElement).dataset.action)
+			)
+		}).toEqual(['setTodo', 'setProgress', 'setDone', 'add', 'delete', 'duplicate'])
 	})
 
 	test('non-overridden columns (title) fall back to the default toolbar', async ({ page }) => {

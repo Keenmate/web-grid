@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — filtering fixture</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>filtering fixture</h1>
+	<p>Targeted by <code>e2e/filtering.spec.ts</code>. One grid, filters driven through the API
+	(<code>filters</code> / <code>setFilter</code>); events logged to <code>filtering-log</code>.</p>
+
+	<web-grid id="grid" is-filterable style="max-width: 600px;"></web-grid>
+	<pre data-testid="filtering-log"></pre>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+		import { installEventLog } from './event-log.js'
+
+		/*
+		 *  row | id | name           | city    | salary
+		 *  0   | 1  | Alice Johnson  | Prague  | 85000
+		 *  1   | 2  | Bob Smith      | Brno    | 72000
+		 *  2   | 3  | Carol Williams | Prague  | 92000
+		 *  3   | 4  | David Brown    | Ostrava | 68000
+		 *  4   | 5  | Eva Martinez   | Brno    | 95000
+		 *  5   | 6  | Frank Lee      | Prague  | 88000
+		 *
+		 * salary has a filterCallback: ">N" / "<N" compare, a bare number is equality,
+		 * a lone ">" / "<" is incomplete → null (filter ignored).
+		 */
+		window.seed = () => [
+			{ id: 1, name: 'Alice Johnson', city: 'Prague', salary: 85000 },
+			{ id: 2, name: 'Bob Smith', city: 'Brno', salary: 72000 },
+			{ id: 3, name: 'Carol Williams', city: 'Prague', salary: 92000 },
+			{ id: 4, name: 'David Brown', city: 'Ostrava', salary: 68000 },
+			{ id: 5, name: 'Eva Martinez', city: 'Brno', salary: 95000 },
+			{ id: 6, name: 'Frank Lee', city: 'Prague', salary: 88000 }
+		]
+
+		window.filterCalls = []
+		const grid = document.getElementById('grid')
+		grid.items = window.seed()
+		grid.columns = [
+			{ field: 'id', title: 'ID', width: '60px' },
+			{ field: 'name', title: 'Name', width: '160px' },
+			{ field: 'city', title: 'City', width: '100px' },
+			{
+				field: 'salary', title: 'Salary', width: '100px',
+				filterCallback: (ctx) => {
+					window.filterCalls.push({ field: ctx.field, filterValue: ctx.filterValue, id: ctx.row.id, hasController: !!ctx.controller })
+					const m = /^\s*([<>]?)\s*(\d*)\s*$/.exec(ctx.filterValue)
+					if (!m) return false
+					const [, op, num] = m
+					if (!num) return null
+					const n = Number(num)
+					if (op === '>') return ctx.row.salary > n
+					if (op === '<') return ctx.row.salary < n
+					return ctx.row.salary === n
+				}
+			}
+		]
+		installEventLog(grid, 'filtering', ['filter-change', 'data-request'])
+	</script>
+</body>
+</html>

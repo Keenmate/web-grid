@@ -6,6 +6,7 @@ is one user-observable feature. Status legend:
 - `✗` — no coverage
 - `△` — partial coverage (some paths)
 - `✓` — covered
+- `✗ fail` — pinned by a `test.fail` test (component bug, see `NOTES.md`)
 
 When a row is `✓`/`△`, **Spec** points at the file under `e2e/` and **Fixture**
 at the dedicated page under `docs/test/` (specs hit fixture pages only, never the
@@ -41,14 +42,16 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Single sort, sort cycle, multi-sort | ✓ | `basic.spec.ts` | `basic.html` |
 | Local pagination (page size, next/prev) | ✓ | `basic.spec.ts` | `basic.html` |
 | Page-size selector updates the property | ✓ | `inputs.spec.ts` | `inputs.html` |
-| `isFilterable` / `filters` / `setFilter` narrows rows | ✗ | | |
-| `filter-change` event detail | ✗ | | |
-| Column `filterCallback` | ✗ | | |
-| Server `filterMode` → `data-request`, no local filtering | ✗ | | |
-| Server `paginationMode` → `data-request` {page,size} | ✗ | | |
-| `pageSizes`, `paginationLayout`, `paginationPosition` | ✗ | | |
-| `isPaginationVisible: 'auto'` hides on one page | ✗ | | |
-| `getPaginationLabelsCallback` | ✗ | | |
+| `isFilterable` / `filters` / `setFilter` narrows rows (API only — no filter-row UI, NOTES #4) | ✓ | `filtering.spec.ts` | `filtering.html` |
+| `filter-change` event detail + `onFilterChange` twin | ✓ | `filtering.spec.ts` | `filtering.html` |
+| Filter change resets / clamps the page (NOTES #5) | ✗ fail | `filtering.spec.ts` | `filtering.html` |
+| Column `filterCallback` (incl. null = incomplete) | ✓ | `filtering.spec.ts` | `filtering.html` |
+| Server `filterMode` → `filter-change`, no local filtering (no `data-request` — by design per the event table) | ✓ | `filtering.spec.ts` | `filtering.html` |
+| Server `paginationMode` → `data-request` {page,pageSize,skip,trigger} | ✓ | `pagination.spec.ts` | `pagination.html` |
+| Client paging buttons, disabled ends, `data-request` trigger page / pageSize | ✓ | `pagination.spec.ts` | `pagination.html` |
+| `pageSizes`, `paginationLayout`, `paginationPosition` | ✓ | `pagination.spec.ts` | `pagination.html` |
+| `isPaginationVisible: 'auto'` hides on one page | ✓ | `pagination.spec.ts` | `pagination.html` |
+| `getPaginationLabelsCallback`, pagination `labels` | ✓ | `pagination.spec.ts` | `pagination.html` |
 
 ## 3. Editing
 
@@ -65,8 +68,9 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | `invalidCells` + getters | ✗ | | |
 | Fill handle (drag, cancel, direction constraint) | ✓ | `fill-handle.spec.ts` | `fill-handle.html` |
 | Paste (single / multi-cell, modes, events, proxies) | ✓ | `paste.spec.ts` | `paste.html` |
-| Drafts: dirty marking, indicator, `isCellDirty/isRowDirty/getRowDraft` | ✗ | | |
-| `discardRowDraft` / `discardAllDrafts`, `row-change` detail | ✗ | | |
+| Drafts: dirty marking, indicator, `isCellDirty/isRowDirty/getRowDraft` | ✓ | `drafts.spec.ts` | `drafts.html` |
+| Drafts bugs: cancel leaves a draft (#6), drafts keyed by display index (#7), row-number marker stale (#8) | ✗ fail | `drafts.spec.ts` | `drafts.html` |
+| `discardRowDraft` / `discardAllDrafts`, `row-change` detail + twin | ✓ | `drafts.spec.ts` | `drafts.html` |
 | New row (`isNewRowEnabled`, position, indicator, create callbacks) | ✗ | | |
 
 ## 4. Selection, copy, keyboard

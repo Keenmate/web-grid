@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — pagination fixture</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>pagination fixture</h1>
+	<p>Targeted by <code>e2e/pagination.spec.ts</code>.</p>
+
+	<h2>#grid — client pagination, 23 rows, page-size 5</h2>
+	<web-grid id="grid" is-pageable page-size="5" style="max-width: 600px;"></web-grid>
+
+	<h2>#server — server pagination (answers data-request with a slice of 47 rows)</h2>
+	<web-grid id="server" is-pageable pagination-mode="server" page-size="10" style="max-width: 600px;"></web-grid>
+
+	<pre data-testid="pagination-log"></pre>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+		import { installEventLog } from './event-log.js'
+
+		const columns = [
+			{ field: 'id', title: 'ID', width: '60px' },
+			{ field: 'name', title: 'Name', width: '160px', isSortable: true }
+		]
+		window.makeRows = (n) => Array.from({ length: n }, (_, i) => ({ id: i + 1, name: `Row ${String(i + 1).padStart(2, '0')}` }))
+
+		const grid = document.getElementById('grid')
+		grid.columns = columns
+		grid.pageSizes = [5, 10, 25]
+		grid.items = window.makeRows(23)
+		installEventLog(grid, 'pagination', ['data-request'])
+
+		// Server mode: the "server" holds 47 rows; the grid only ever gets one page.
+		const ALL = window.makeRows(47)
+		const server = document.getElementById('server')
+		server.columns = columns
+		server.pageSizes = [10, 20]
+		server.totalItems = ALL.length
+		server.items = ALL.slice(0, 10)
+		server.addEventListener('data-request', (e) => {
+			const { page, pageSize, sort } = e.detail
+			let rows = [...ALL]
+			if (sort?.[0]) rows.sort((a, b) => (a.name < b.name ? -1 : 1) * (sort[0].direction === 'desc' ? -1 : 1))
+			server.items = rows.slice((page - 1) * pageSize, page * pageSize)
+		})
+		installEventLog(server, 'pagination', ['data-request'])
+	</script>
+</body>
+</html>

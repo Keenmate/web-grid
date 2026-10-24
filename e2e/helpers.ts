@@ -152,3 +152,50 @@ export function contrastRatio(a: RGBA, b: RGBA): number {
 	const darker = Math.min(la, lb)
 	return (lighter + 0.05) / (darker + 0.05)
 }
+
+// =============================================================================
+// Event log (fixtures that use docs/test/event-log.js)
+// =============================================================================
+
+export type LoggedEvent = { type: string; via: 'event' | 'twin'; grid: string; detail: any }
+
+/** Events recorded by `installEventLog` (JSON-safe copies), optionally filtered by type. */
+export async function eventsOf(page: Page, type?: string): Promise<LoggedEvent[]> {
+	return page.evaluate((t) => (window as any).__eventsJson(t), type)
+}
+
+/** Only the DOM-event copies (`via: 'event'`) of a type, optionally from one grid. */
+export async function domEvents(page: Page, type: string, gridId?: string): Promise<any[]> {
+	return (await eventsOf(page, type))
+		.filter(e => e.via === 'event' && (!gridId || e.grid === gridId))
+		.map(e => e.detail)
+}
+
+/** Reset the event log of a fixture page. */
+export async function clearEvents(page: Page, area: string): Promise<void> {
+	await page.evaluate((a) => (window as any).clearEventLog(a), area)
+}
+
+/** Run `fn(grid)` in the page against `web-grid#<id>` and return its (serializable) result. */
+export async function onGrid<R>(page: Page, fn: (el: any) => R, gridId = 'grid'): Promise<R> {
+	return gridLocator(page, gridId).evaluate(fn as any) as Promise<R>
+}
+
+/** The inline editor (`input` / `textarea`) inside a cell. */
+export function editorIn(target: Locator): Locator {
+	return target.locator('input, textarea').first()
+}
+
+/**
+ * Navigate-mode edit: click the cell, F2, replace the text, commit with `commitKey`
+ * (Enter by default). Use only on text / number columns.
+ */
+export async function editCell(page: Page, target: Locator, value: string, commitKey = 'Enter'): Promise<void> {
+	await target.click()
+	await page.keyboard.press('F2')
+	const ed = editorIn(target)
+	await expect(ed).toBeVisible()
+	await ed.fill(value)
+	await page.keyboard.press(commitKey)
+	await expect(ed).toHaveCount(0)
+}
