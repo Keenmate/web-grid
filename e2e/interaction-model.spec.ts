@@ -248,3 +248,48 @@ test.describe('contexts, twins, controller', () => {
 		expect(r.sameController).toBe(true)
 	})
 })
+
+// Open gaps listed in core docs/interaction-model-plan.md ("grid (from phase 5)").
+// The lock-tooltip i18n gap lives in row-locking.spec.ts (NOTES.md #10).
+test.describe('open gaps (interaction-model-plan follow-ups)', () => {
+	test('a move-down built-in keeps keyboard focus on the moved row', async ({ page }) => {
+		test.fail(true, 'NOTES.md #14')
+		await cell(page, 1, 1).click()  // Beta, name column
+		await expect(cell(page, 1, 1)).toBeFocused()
+		await page.evaluate(() => {
+			(document.getElementById('grid') as any).rowShortcuts = [{ shortcut: 'Alt+ArrowDown', action: 'move-down' }]
+		})
+		await cell(page, 1, 1).focus()
+		await page.keyboard.press('Alt+ArrowDown')
+		await expect.poll(() => names(page)).toEqual(['Alpha', 'Gamma', 'Beta', 'Delta'])
+		await expect(cell(page, 2, 1)).toBeFocused({ timeout: 1500 })
+		expect(await grid(page).evaluate((el: any) => el.engine.focusedCell)).toMatchObject({ rowIndex: 2, colIndex: 1 })
+	})
+
+	test('current order: the action event fires before the built-in (listener sees the row still there)', async ({ page }) => {
+		// Pins today's documented order (event table: "Fires after the item's onClick,
+		// before the built-in"). Whether consumers need an after-built-in signal is
+		// NOTES.md #15 (open question).
+		await page.evaluate(() => {
+			const g = document.getElementById('grid') as any
+			g.addEventListener('action', () => { (window as any).__seenInAction = g.items.map((r: any) => r.name) })
+		})
+		await openToolbarOn(page, row(page, 1))
+		await toolbar(page).locator('[data-action="delete"]').click()
+		await expect.poll(() => names(page)).toEqual(['Alpha', 'Gamma', 'Delta'])
+		expect(await page.evaluate(() => (window as any).__seenInAction)).toEqual(['Alpha', 'Beta', 'Gamma', 'Delta'])
+	})
+
+	test('the shortcuts help lists the range shortcuts too', async ({ page }) => {
+		test.fail(true, 'NOTES.md #16')
+		await page.evaluate(() => {
+			const g = document.getElementById('grid') as any
+			g.rangeShortcuts = [{ id: 'sum', text: 'Sum selection', shortcut: 'Ctrl+Shift+S', onClick: () => {} }]
+			g.isShortcutsHelpVisible = true
+		})
+		const help = grid(page).locator('.wg__shortcuts-help')
+		await expect(help).toHaveCount(1)
+		await expect(help).toContainText('Duplicate row')
+		await expect(help).toContainText('Sum selection', { timeout: 1500 })
+	})
+})

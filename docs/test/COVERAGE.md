@@ -80,8 +80,10 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Row / column / cell-range selection, row focus | ✓ | `selection.spec.ts` | `selection.html` |
 | `cellSelectionMode` disabled / shift + selection API | ✗ | | |
 | Arrow navigation in navigate mode | ✓ | `basic.spec.ts` | `basic.html` |
-| Home/End/PageUp/PageDown/Ctrl+Home, Shift+Arrow, Delete, Ctrl+G | ✗ | | |
-| Number column ignores letters (GRID-1) | ✗ | | |
+| Home/End/PageUp/PageDown + Ctrl variants, Delete commits null, typing starts edit, Ctrl+G dialog | ✓ | `keyboard.spec.ts` | `keyboard.html` |
+| Shift+Arrow range extension (#13, feature gap), Meta+G (#3) | ✗ fail | `keyboard.spec.ts` | `keyboard.html` |
+| `rangeShortcuts` on a range / row selection, disabled shortcut | ✓ | `keyboard.spec.ts` | `keyboard.html` |
+| Number column ignores letters (GRID-1, #1) | ✗ fail | `keyboard.spec.ts` | `keyboard.html` |
 | Ctrl+C cell / range / row / column TSV, `shouldCopyWithHeaders` | ✓ | `copy.spec.ts` | `copy.html` |
 | Ctrl+C honours `getCopyValueCallback` (#1) and drafts (#9) | ✗ fail | `copy.spec.ts` | `copy.html` |
 | `copySelectedRowsToClipboard`, `copyCellSelectionToClipboard`, failure → false | ✓ | `copy.spec.ts` | `copy.html` |
@@ -107,7 +109,8 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Row toolbar (floating / multi-row / inline / cell-aware) | ✓ | `toolbar.spec.ts` | `toolbar.html` |
 | `toolbarTrigger` click/button, align, position, offset, column | ✗ | | |
 | Core action items, contexts, `on*` twins, controller | ✓ | `interaction-model.spec.ts` | `interaction-model.html` |
-| Interaction-model open gaps (move-row focus, built-in order, lock tooltip i18n, range shortcuts in help) | ✗ | | |
+| Interaction-model open gaps: move-row focus (#14), range shortcuts in help (#16) | ✗ fail | `interaction-model.spec.ts` | `interaction-model.html` |
+| Built-in order: `action` before the built-in (pinned; question #15); lock tooltip i18n → `row-locking.spec.ts` (#10) | ✓ | `interaction-model.spec.ts` | `interaction-model.html` |
 
 ## 7. Columns
 
@@ -132,7 +135,8 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | --- | :-: | --- | --- |
 | Row focus event | ✓ | `basic.spec.ts`, `selection.spec.ts` | `basic.html`, `selection.html` |
 | Paste events | ✓ | `paste.spec.ts` | `paste.html` |
-| `edit-start`, `edit-cancel`, `cell-selection-change`, `row-delete`, `expand-change` (+ `on*` twins) | ✗ | | |
+| `edit-start`, `edit-cancel`, `cell-selection-change`, `row-delete`, `expand-change` — once each, twin first, same detail | ✓ | `events.spec.ts` | `events.html` |
+| `expand-change` detail is a snapshot (#12) | ✗ fail | `events.spec.ts` | `events.html` |
 
 ## 10. Theming, inputs, i18n, logging
 

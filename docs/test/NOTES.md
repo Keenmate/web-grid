@@ -196,3 +196,73 @@ nothing visible (row-lock-change with `row: null, rowIndex: -1`),
 
 **Question:** should `getRowId()` fall back to `idMember` (and `idValueMember` be
 deprecated)? Fixtures set both for now.
+
+## 12. `expand-change` hands out the grid's live `expandedPaths` Set
+
+**Where:** `grid.ts:1420, 1429, 1436, 1457, 1475` —
+`notify('expand-change', { …, expandedPaths: this._expandedPaths })`.
+
+**Symptom:** a stored detail changes after later toggles (collapse 1.1 → detail
+shows `['1']`; collapse 1 → the *same* earlier detail now shows `[]`). A consumer
+that mutates `detail.expandedPaths` mutates the grid's state without a render.
+Every other event detail is a snapshot (`filter-change` copies `filters`).
+
+**Suggested fix:** `expandedPaths: new Set(this._expandedPaths)`.
+
+**Test:** `events.spec.ts` "an earlier detail.expandedPaths is a snapshot"
+(`test.fail`).
+
+## 13. No keyboard range extension (Shift+Arrow) — feature gap (open question)
+
+**Where:** `modules/navigation/cell-keydown.ts:96-125` — arrows ignore `shiftKey`;
+ranges can only be made with the mouse (drag, or Shift+click twice in
+`cell-selection-mode="shift"`) or `selectCellRange()`.
+
+**Observation:** spreadsheet users expect Shift+Arrow (and Shift+Home/End,
+Ctrl+Shift+Arrow) to grow a range from the focused cell; `rangeShortcuts` and
+range copy are therefore mouse-only workflows. The README says "Click+drag or
+Shift+click to select rectangular ranges", but in the default `click` mode a
+Shift+click on a cell does *not* extend (only `shift` mode handles Shift+click).
+
+**Question:** add Shift+Arrow range extension (and make Shift+click extend in
+`click` mode)? `keyboard.spec.ts` "Shift+Arrow extends a range from the focused
+cell" is `test.fail` until decided.
+
+## 14. Focus is lost after a move-up / move-down built-in
+
+**Where:** `modules/items/index.ts` row built-ins (`moveRow`) re-render the rows;
+nothing restores the focused cell.
+
+**Symptom:** focus Beta's name cell, run `move-down` (row shortcut / toolbar) →
+Beta moves to index 2 but no cell is focused, so repeated Alt+↓ (a typical
+"move row" shortcut) stops after one step.
+
+**Suggested fix:** after `moveRow`, `setFocusedCell(newIndex, colIndex)` and focus
+the cell element when the source was the keyboard / the focused row.
+(Open gap in core `docs/interaction-model-plan.md`.)
+
+**Test:** `interaction-model.spec.ts` "a move-down built-in keeps keyboard focus on
+the moved row" (`test.fail`).
+
+## 15. `action` fires before the built-in — no "after" signal (open question)
+
+`activateGridItem` → core `runAction`: beforeActionCallback → onClick → `action`
+event → built-in. A listener on `action` for `delete` / `add` / `move-*` sees the
+old `items`; there is no event (or awaited promise) after the built-in has
+applied. The plan lists "built-ins run after the `action` event" as an open gap
+without saying what the target is. `interaction-model.spec.ts` pins the current
+order (passing test). **Question:** keep as is (consumers watch `items` /
+`row-change`), add an `action-complete` style event, or pass a `done` promise on
+the detail?
+
+## 16. Shortcuts help omits `rangeShortcuts`
+
+**Where:** `modules/rendering/shortcuts-help.ts` — renders only
+`engine.rowShortcuts` (and returns '' when there are none, even with range
+shortcuts configured).
+
+**Suggested fix:** list `rangeShortcuts` too (own sub-heading, e.g.
+`labels.rangeShortcuts`), and show the help when either list is non-empty.
+
+**Test:** `interaction-model.spec.ts` "the shortcuts help lists the range
+shortcuts too" (`test.fail`).
