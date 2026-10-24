@@ -25,6 +25,9 @@ export interface GridHost<T = unknown> {
 	// Grid logic
 	readonly engine: GridEngine<T>
 
+	/** Write an input (`pageSize`, `freezeColumns`, …) through the element and apply it now. */
+	setInputNow(key: string, value: unknown): void
+
 	// Dropdown runtime state — owned by DropdownService (open flag, options, highlight,
 	// filter text, race-condition flags). The `isCommittingFromKeyboard` and
 	// `isTransitioningCells` flags below are editing-state machine flags, distinct

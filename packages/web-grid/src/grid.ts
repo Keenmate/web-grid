@@ -127,6 +127,23 @@ const DEFAULT_LABELS: GridLabels = {
 	}
 }
 
+/** The settings a `mode` also sets (a preset). Shared by the engine's `mode`
+ * setter and the element's `mode` input (`getBatchValuesCallback`). */
+export const MODE_PRESETS: Record<GridMode, {
+	isEditable?: boolean
+	editTrigger?: EditTrigger
+	dropdownToggleVisibility?: ToggleVisibility
+	shouldShowDropdownOnFocus?: boolean
+	cellSelectionMode?: CellSelectionMode
+}> = {
+	// No editing, click to select cells
+	'read-only': { isEditable: false, dropdownToggleVisibility: 'on-focus', cellSelectionMode: 'click' },
+	// Excel-like: click+drag to select
+	'excel': { isEditable: true, editTrigger: 'navigate', dropdownToggleVisibility: 'always', shouldShowDropdownOnFocus: false, cellSelectionMode: 'click' },
+	// Avoid conflict with always-editing cells
+	'input-matrix': { isEditable: true, editTrigger: 'always', dropdownToggleVisibility: 'always', shouldShowDropdownOnFocus: true, cellSelectionMode: 'shift' },
+}
+
 /**
  * GridEngine - Core logic class for the data grid
  *
@@ -2303,27 +2320,13 @@ export class GridEngine<T = unknown> {
 	 * Called when mode is set.
 	 */
 	protected applyModeDefaults(): void {
-		switch (this._mode) {
-			case "read-only":
-				this._isEditable = false
-				this._dropdownToggleVisibility = "on-focus"
-				this._cellSelectionMode = "click"  // No editing, click to select cells
-				break
-			case "excel":
-				this._isEditable = true
-				this._editTrigger = "navigate"
-				this._dropdownToggleVisibility = "always"
-				this._shouldShowDropdownOnFocus = false
-				this._cellSelectionMode = "click"  // Excel-like: click+drag to select
-				break
-			case "input-matrix":
-				this._isEditable = true
-				this._editTrigger = "always"
-				this._dropdownToggleVisibility = "always"
-				this._shouldShowDropdownOnFocus = true
-				this._cellSelectionMode = "shift"  // Avoid conflict with always-editing cells
-				break
-		}
+		const preset = MODE_PRESETS[this._mode]
+		if (!preset) return
+		if (preset.isEditable !== undefined) this._isEditable = preset.isEditable
+		if (preset.editTrigger !== undefined) this._editTrigger = preset.editTrigger
+		if (preset.dropdownToggleVisibility !== undefined) this._dropdownToggleVisibility = preset.dropdownToggleVisibility
+		if (preset.shouldShowDropdownOnFocus !== undefined) this._shouldShowDropdownOnFocus = preset.shouldShowDropdownOnFocus
+		if (preset.cellSelectionMode !== undefined) this._cellSelectionMode = preset.cellSelectionMode
 	}
 
 	/**

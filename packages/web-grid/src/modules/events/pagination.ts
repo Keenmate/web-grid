@@ -44,7 +44,7 @@ export function handlePaginationClick<T>(ctx: GridHost<T>, e: Event): boolean {
 export function handlePageSizeChange<T>(ctx: GridHost<T>, select: HTMLSelectElement): boolean {
 	const newPageSize = parseInt(select.value, 10)
 	if (newPageSize !== ctx.engine.pageSize) {
-		ctx.engine.pageSize = newPageSize
+		ctx.setInputNow('pageSize', newPageSize)
 		// Reset to page 1 when page size changes
 		ctx.engine.currentPage = 1
 		ctx.engine.fireDataRequest('pageSize')

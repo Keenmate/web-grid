@@ -2,7 +2,7 @@
 // GridElement - Web Component Registration
 // =============================================================================
 
-import { GridEngine } from './grid.js'
+import { GridEngine, MODE_PRESETS } from './grid.js'
 import type {
 	Column,
 	CellValidationState,
@@ -256,6 +256,7 @@ const PAGINATION_MODES = ['client', 'server'] as const
 const EDIT_TRIGGERS = ['click', 'dblclick', 'button', 'always', 'navigate'] as const
 const EDIT_START_SELECTIONS = ['mousePosition', 'selectAll', 'cursorAtStart', 'cursorAtEnd'] as const
 const GRID_MODES = ['read-only', 'excel', 'input-matrix'] as const
+const CELL_SELECTION_MODES = ['disabled', 'click', 'shift'] as const
 const TOGGLE_VISIBILITIES = ['always', 'on-focus'] as const
 const TOOLBAR_VERTICAL_ALIGNS = ['top', 'center', 'bottom'] as const
 const TOOLBAR_HORIZONTAL_ALIGNS = ['start', 'center', 'end', 'cursor'] as const
@@ -363,7 +364,11 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		{ configKey: 'editTrigger', attribute: 'edit-trigger', converter: toEnum(EDIT_TRIGGERS, { default: 'dblclick' }), default: 'dblclick', on: 'update' },
 		{ configKey: 'editStartSelection', attribute: 'edit-start-selection', converter: toEnum(EDIT_START_SELECTIONS, { default: 'mousePosition' }), default: 'mousePosition', on: 'update' },
 		{ configKey: 'shouldCommitOnClickAway', attribute: 'should-commit-on-click-away', converter: toBool('default-true'), default: true, on: 'update' },
-		{ configKey: 'mode', attribute: 'mode', converter: toEnum(GRID_MODES, { default: 'excel' }), default: 'excel', on: 'update' },
+		// A preset: also sets isEditable / editTrigger / dropdown flags / cellSelectionMode in the
+		// same batch; inputs set explicitly in that batch win (core getBatchValuesCallback).
+		{ configKey: 'mode', attribute: 'mode', converter: toEnum(GRID_MODES, { default: 'excel' }), default: 'excel', on: 'update',
+			getBatchValuesCallback: (mode) => MODE_PRESETS[mode as GridMode] ?? null },
+		{ configKey: 'cellSelectionMode', attribute: 'cell-selection-mode', converter: toEnum(CELL_SELECTION_MODES, { default: 'click' }), default: 'click', on: 'update' },
 		// Dropdown editor
 		{ configKey: 'dropdownToggleVisibility', attribute: 'dropdown-toggle-visibility', converter: toEnum(TOGGLE_VISIBILITIES, { default: 'always' }), default: 'always', on: 'update' },
 		{ configKey: 'shouldShowDropdownOnFocus', attribute: 'should-show-dropdown-on-focus', converter: toBool('default-true'), default: true, on: 'update' },
@@ -442,12 +447,24 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	declare onPasteComplete: ((detail: GridEventMap<T>['paste-complete']) => void) | null
 	declare onAction: ((detail: GridEventMap<T>['action']) => void) | null
 
+	readonly #engine: GridEngine<T>
+
+	/** `reinit()`/`update()` are writing inputs into the engine — don't flush from the getter. */
+	#isApplyingInputs = false
+
 	/**
 	 * The internal state engine (composition) — module plumbing. Not public API:
 	 * use the element's properties / methods or `el.controller`.
+	 *
+	 * Reading it first applies pending input writes (core `flush()`), so
+	 * engine-derived state is current right after an assignment:
+	 * `el.pageSize = 25; el.totalPages` / `el.controller.…` without awaiting.
 	 * @internal
 	 */
-	readonly engine: GridEngine<T>
+	get engine(): GridEngine<T> {
+		if (!this.#isApplyingInputs) this.flush()
+		return this.#engine
+	}
 
 	// Shadow DOM root
 	readonly shadow: ShadowRoot
@@ -525,7 +542,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	constructor() {
 		super()
 		this.shadow = this.attachShadow({ mode: 'open' })
-		this.engine = new GridEngine<T>()
+		this.#engine = new GridEngine<T>()
 		// Every ctx / detail carries `controller` + `element`; the engine's
 		// notifications become events (emit → `on*` twin + DOM event).
 		this.engine.attachHost(this, () => this.controller, (name, detail) => {
@@ -564,26 +581,6 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 				removeDropdown(this)
 			}
 		}
-
-		// Restore SYNCHRONOUS property→grid propagation. Core installs an async
-		// (microtask-coalesced) accessor per input in super(); we override each
-		// grid-backed one on the instance with a straight proxy so that
-		// `el.pageSize = 25` (or a preset like `el.mode = 'excel'`, which
-		// cross-writes sibling props) reflects into `this.engine` immediately — the
-		// long-standing web-grid contract. The ATTRIBUTE path stays reactive via
-		// core (attributeChangedCallback → reinit()/update() → the grid). Inputs
-		// not backed by the grid (tooltip delays) keep core's config accessor.
-		const gridTarget = this.engine as unknown as Record<string, unknown>
-		for (const def of (this.constructor as typeof GridElement).inputs) {
-			const key = def.configKey
-			if (!(key in gridTarget)) continue
-			Object.defineProperty(this, key, {
-				configurable: true,
-				enumerable: true,
-				get: () => gridTarget[key],
-				set: (value: unknown) => { gridTarget[key] = value },
-			})
-		}
 	}
 
 	// ==========================================================================
@@ -599,33 +596,42 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	// bodies, which are already written to be re-runnable.
 
 	/** Copy the given input-config keys into the composed GridEngine. Grid setters
-	 * call requestUpdate() → a coalesced render. The `in this.engine` guard skips
-	 * element-local inputs (tooltip delays) whose readers use the config getter. */
+	 * call requestUpdate() → a coalesced render. The `in` guard skips element-local
+	 * inputs (tooltip delays) whose readers use the config getter. `mode` goes
+	 * first: the engine's own mode setter applies its preset, and the batch's
+	 * values (core already resolved preset vs explicit) must land after it. */
 	#applyConfig(cfg: Record<string, unknown>): void {
-		const target = this.engine as unknown as Record<string, unknown>
-		for (const key of Object.keys(cfg)) {
-			if (key in target) target[key] = cfg[key]
+		const target = this.#engine as unknown as Record<string, unknown>
+		this.#isApplyingInputs = true
+		try {
+			if ('mode' in cfg) target.mode = cfg.mode
+			for (const key of Object.keys(cfg)) {
+				if (key !== 'mode' && key in target) target[key] = cfg[key]
+			}
+		} finally {
+			this.#isApplyingInputs = false
 		}
 	}
 
 	protected reinit(): void {
-		// First connect: bridge ONLY explicitly-set attributes into the grid.
-		// Property assignments already wrote the grid synchronously (see the
-		// constructor proxies), and defaults match the grid's own — so seeding
-		// the full config here would clobber preset-derived state (e.g. a
-		// `mode='excel'` bundle) with input defaults. Presence-gating avoids that.
-		const cfg = this.config
-		const target = this.engine as unknown as Record<string, unknown>
-		for (const def of (this.constructor as typeof GridElement).inputs) {
-			if (def.attribute && this.hasAttribute(def.attribute) && def.configKey in target) {
-				target[def.configKey] = cfg[def.configKey]
-			}
-		}
+		// First connect: seed the grid from the merged input config.
+		this.#applyConfig(this.config as Record<string, unknown>)
 	}
 
 	protected update(partial: Record<string, unknown>): void {
-		// Post-connect attribute change: apply just the changed inputs.
+		// Later attribute/property changes: apply just the changed inputs.
 		this.#applyConfig(partial)
+	}
+
+	/**
+	 * Write an input from inside the grid (page-size selector, freeze menu)
+	 * through core's property path — so `el.x`, reflection and the engine stay in
+	 * sync — and apply it now.
+	 * @internal
+	 */
+	setInputNow(key: string, value: unknown): void {
+		(this as unknown as Record<string, unknown>)[key] = value
+		this.flush()
 	}
 
 	protected connect(): void {

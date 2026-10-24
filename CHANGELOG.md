@@ -77,6 +77,15 @@ both non-enumerable, so `JSON.stringify` / logs see only the data.
 | — | `beforeActionCallback(detail)` → `false` cancels any item activation (async OK) |
 | `data-toolbar-item` / `data-action-id` / `data-item-id` on buttons | `data-action` (built-in name or `custom`) + `data-id` |
 
+**Properties go through the core input pipeline** (no grid-side proxies). A property write
+is validated by the input's converter: an invalid value (`el.pageSize = null`, `0`, `'abc'`,
+`el.mode = 'bogus'`) warns and keeps the previous value, as in every other KM component —
+it used to reach the engine. Reads stay synchronous: `el.pageSize = 25; el.totalPages` and
+`el.controller.…` see the new value without awaiting. `mode` is a preset (core
+`getBatchValuesCallback`): it also sets `isEditable`, `editTrigger`, the dropdown flags and
+`cellSelectionMode`; an input set explicitly in the same tick or in the same markup wins,
+whatever the order (`<web-grid mode="excel" edit-trigger="click">` keeps `click`).
+
 **Events** — real DOM events (bubble, not composed) + a camelCase `on*` twin called with the
 same detail first. Replaces the lowercase `on*` properties (which collided with native
 handlers: `onpaste`, `onbeforepaste`, `onselect`).
@@ -103,7 +112,7 @@ handlers: `onpaste`, `onbeforepaste`, `onselect`).
 - `el.controller` (`GridController`) incl. `insertRow`, `removeRows`, `duplicateRow`,
   `moveRow`, `expandSubtree` / `collapseSubtree`, `selectColumn*`, `closeContextMenu`,
   `closeToolbar`; `createDuplicateRowCallback`; `labels.actions` (built-in texts);
-  `filterMode` / `filter-mode`; `menuDivider` re-exported; exported types for every ctx,
+  `filterMode` / `filter-mode`; `cell-selection-mode` attribute; `menuDivider` re-exported; exported types for every ctx,
   item and event detail (`GridContext`, `RowContext`, `CellContext`, `HeaderMenuContext`,
   `GridToolbarItem`, `GridMenuEntry`, `GridShortcut`, `GridActionEventDetail`, `GridEventMap`, …).
 - Menus: labelled dividers, `isActive` (`aria-pressed`, `--active`), lazy submenus, item `tooltip`.
