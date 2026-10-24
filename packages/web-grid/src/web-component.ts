@@ -623,17 +623,6 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		this.#applyConfig(partial)
 	}
 
-	/**
-	 * Write an input from inside the grid (page-size selector, freeze menu)
-	 * through core's property path — so `el.x`, reflection and the engine stay in
-	 * sync — and apply it now.
-	 * @internal
-	 */
-	setInputNow(key: string, value: unknown): void {
-		(this as unknown as Record<string, unknown>)[key] = value
-		this.flush()
-	}
-
 	protected connect(): void {
 		initLogger.debug('connect — grid activated')
 		// Load persisted column widths before initial render

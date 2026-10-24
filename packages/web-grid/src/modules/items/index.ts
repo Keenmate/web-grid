@@ -273,10 +273,10 @@ function runHeaderBuiltIn<T>(host: GridHost<T>, d: GridActionEventDetail<T>): vo
 			return
 		}
 		case 'freeze-column':
-			host.setInputNow('freezeColumns', colIndex + 1)
+			host.setAttributes({ freezeColumns: colIndex + 1 })
 			return
 		case 'unfreeze-column':
-			host.setInputNow('freezeColumns', Math.max(0, colIndex))
+			host.setAttributes({ freezeColumns: Math.max(0, colIndex) })
 			return
 		case 'show-all-columns':
 			engine.columns.forEach(col => { col.isHidden = false })
