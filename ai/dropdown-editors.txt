@@ -44,7 +44,7 @@ Column definition example:
 PROVIDING OPTIONS
 -----------------
 
-There are two ways to supply options to any dropdown editor:
+There are two ways to supply options to a dropdown editor:
 
 1. Static array (options)
 
@@ -58,23 +58,12 @@ There are two ways to supply options to any dropdown editor:
   The EditorOption type requires value (string | number | boolean) and
   label (string), plus allows arbitrary extra properties via [key: string]: unknown.
 
-2. Async loader (loadOptions)
+2. Server search (autocomplete)
 
-  editorOptions: {
-    loadOptions: async (row, field) => {
-      const response = await fetch('/api/options')
-      return response.json()
-    },
-    optionsLoadTrigger: 'oneditstart'
-  }
-
-  loadOptions receives the current row and field name, returns Promise<EditorOption[]>.
-
-optionsLoadTrigger controls when loadOptions is called:
-
-  'immediate'       Load options as soon as the grid renders.
-  'oneditstart'     Load options when the cell enters edit mode (default).
-  'ondropdownopen'  Load options when the dropdown is actually opened.
+  Use editor: 'autocomplete' with searchCallback to fetch options as the
+  user types (see AUTOCOMPLETE-SPECIFIC OPTIONS). To change the options of
+  a select / combobox at runtime, set a new column.editorOptions.options
+  array (e.g. after fetching) and reassign grid.columns.
 
 
 DISPLAY MAPPING
@@ -84,7 +73,8 @@ By default, options use { value, label } properties. When your data uses
 different property names, use member strings or callback functions.
 
 Each mapping has two alternatives: a member (string property name) and a
-callback (function that receives the option object and returns the value).
+callback (receives a ctx { option } - plus non-enumerable controller /
+element - and returns the value).
 Callbacks take priority over members when both are set.
 
 valueMember / getValueCallback
@@ -93,55 +83,55 @@ valueMember / getValueCallback
 
   valueMember: 'id'
   -- or --
-  getValueCallback: (opt) => opt.id
+  getValueCallback: ({ option }) => option.id
 
-displayMember / getDisplayCallback
+displayMember / getDisplayValueCallback
   Which property holds the text shown in the dropdown and in the cell.
   Default property: "label"
 
   displayMember: 'name'
   -- or --
-  getDisplayCallback: (opt) => opt.firstName + ' ' + opt.lastName
+  getDisplayValueCallback: ({ option }) => option.firstName + ' ' + option.lastName
 
-searchMember / getSearchCallback
+searchMember / getSearchValueCallback
   Which property to search/filter against. Falls back to displayMember.
   Useful when display text differs from searchable text.
 
   searchMember: 'searchText'
   -- or --
-  getSearchCallback: (opt) => opt.code + ' ' + opt.name
+  getSearchValueCallback: ({ option }) => option.code + ' ' + option.name
 
 iconMember / getIconCallback
   Property containing an icon string (emoji or text) shown before the label.
 
   iconMember: 'emoji'
   -- or --
-  getIconCallback: (opt) => opt.priority === 'high' ? '!' : ''
+  getIconCallback: ({ option }) => option.priority === 'high' ? '!' : ''
 
 subtitleMember / getSubtitleCallback
   Property containing a subtitle/description shown below the label.
 
   subtitleMember: 'description'
   -- or --
-  getSubtitleCallback: (opt) => opt.department + ' - ' + opt.role
+  getSubtitleCallback: ({ option }) => option.department + ' - ' + option.role
 
-disabledMember / getDisabledCallback
+disabledMember / getIsDisabledCallback
   Property indicating the option cannot be selected.
 
   disabledMember: 'isArchived'
   -- or --
-  getDisabledCallback: (opt) => opt.stock === 0
+  getIsDisabledCallback: ({ option }) => option.stock === 0
 
 groupMember / getGroupCallback
   Property for grouping options under headers.
 
   groupMember: 'category'
   -- or --
-  getGroupCallback: (opt) => opt.type === 'fruit' ? 'Fruits' : 'Vegetables'
+  getGroupCallback: ({ option }) => option.type === 'fruit' ? 'Fruits' : 'Vegetables'
 
 Fallback chain for resolving display value in non-editing cells:
   1. Find option by valueMember (or getValueCallback)
-  2. Use getDisplayCallback if provided
+  2. Use getDisplayValueCallback if provided
   3. Use displayMember property
   4. Use 'label' property
   5. Fall back to raw value as string
@@ -150,10 +140,11 @@ Fallback chain for resolving display value in non-editing cells:
 RENDERING AND BEHAVIOR
 ----------------------
 
-renderOptionCallback(option, context)
+renderOptionCallback(ctx)
   Returns an HTML string for a single dropdown option. When provided,
-  completely replaces the default option rendering. The context object has:
+  completely replaces the default option rendering. The ctx object has:
 
+    option        EditorOption  The option being rendered.
     index         number    Zero-based position in filtered list.
     isHighlighted boolean   True if this option has keyboard/mouse highlight.
     isSelected    boolean   True if this option matches the cell's current value.
@@ -161,14 +152,14 @@ renderOptionCallback(option, context)
 
   Example:
 
-    renderOptionCallback: (opt, ctx) => {
+    renderOptionCallback: ({ option, ...ctx }) => {
       const classes = ['wg__dropdown-option']
       if (ctx.isHighlighted) classes.push('wg__dropdown-option--highlighted')
       if (ctx.isSelected) classes.push('wg__dropdown-option--selected')
       if (ctx.isDisabled) classes.push('wg__dropdown-option--disabled')
       return '<div class="' + classes.join(' ') + '" data-index="' + ctx.index + '">' +
-        '<strong>' + opt.label + '</strong>' +
-        '<small style="margin-left:8px;opacity:0.6">' + opt.code + '</small>' +
+        '<strong>' + option.label + '</strong>' +
+        '<small style="margin-left:8px;opacity:0.6">' + option.code + '</small>' +
       '</div>'
     }
 
@@ -176,12 +167,13 @@ renderOptionCallback(option, context)
   element for mouse selection to work. Use data-disabled="true" on disabled
   options to prevent selection.
 
-onselect(option, row)
-  Event fired after an option is selected and committed. The row parameter
-  is the current row data. Return value is ignored (fire-and-forget event).
+onSelect(ctx)
+  Fired after an option is selected and committed. ctx is the cell ctx
+  ({ row, rowIndex, column, colIndex, field, value }) + option. Return
+  value is ignored (fire-and-forget).
 
   editorOptions: {
-    onselect: (option, row) => {
+    onSelect: ({ option, row }) => {
       console.log('Selected', option.label, 'for row', row.id)
     }
   }
@@ -227,14 +219,14 @@ Grid-level dropdown settings (set on the grid element, overridable per-column):
 AUTOCOMPLETE-SPECIFIC OPTIONS
 ------------------------------
 
-searchCallback(query, row, signal?)
+searchCallback(ctx)
   Async function called after debounce when user types. Returns
-  Promise<EditorOption[]>. Receives the search query, current row data,
-  and an optional AbortSignal for cancellation of in-flight requests.
+  Promise<EditorOption[]>. ctx is the cell ctx + term (what the user
+  typed) + signal (an AbortSignal, aborted when a newer search starts).
 
   editorOptions: {
-    searchCallback: async (query, row, signal) => {
-      const res = await fetch('/api/search?q=' + query, { signal })
+    searchCallback: async ({ term, row, signal }) => {
+      const res = await fetch('/api/search?q=' + term, { signal })
       return res.json()
     }
   }
@@ -302,17 +294,17 @@ Full custom rendering example:
     ],
     valueMember: 'id',
     displayMember: 'name',
-    renderOptionCallback: (opt, ctx) => {
+    renderOptionCallback: ({ option, ...ctx }) => {
       const cls = ['wg__dropdown-option']
       if (ctx.isHighlighted) cls.push('wg__dropdown-option--highlighted')
       if (ctx.isSelected) cls.push('wg__dropdown-option--selected')
       if (ctx.isDisabled) cls.push('wg__dropdown-option--disabled')
       return '<div class="' + cls.join(' ') + '" data-index="' + ctx.index + '"' +
         (ctx.isDisabled ? ' data-disabled="true"' : '') + '>' +
-        '<span class="wg__dropdown-option-icon">' + opt.flag + '</span>' +
+        '<span class="wg__dropdown-option-icon">' + option.flag + '</span>' +
         '<div class="wg__dropdown-option-content">' +
-          '<span class="wg__dropdown-option-label">' + opt.name + '</span>' +
-          '<span class="wg__dropdown-option-subtitle">Pop: ' + opt.population + '</span>' +
+          '<span class="wg__dropdown-option-label">' + option.name + '</span>' +
+          '<span class="wg__dropdown-option-subtitle">Pop: ' + option.population + '</span>' +
         '</div>' +
       '</div>'
     }
@@ -361,7 +353,7 @@ Example 2: Combobox with icons and subtitles
       subtitleMember: 'desc',
       placeholder: 'Search priorities...',
       dropdownMinWidth: '280px',
-      onselect: (option, row) => {
+      onSelect: ({ option, row }) => {
         console.log('Priority changed to', option.label)
       }
     }
@@ -379,9 +371,9 @@ Example 3: Autocomplete with async search
         { value: 1, label: 'Alice Smith' },
         { value: 2, label: 'Bob Johnson' }
       ],
-      searchCallback: async (query, row, signal) => {
+      searchCallback: async ({ term, row, signal }) => {
         const response = await fetch(
-          '/api/users?search=' + encodeURIComponent(query),
+          '/api/users?search=' + encodeURIComponent(term),
           { signal }
         )
         const users = await response.json()
@@ -409,36 +401,17 @@ Example 4: Combobox with callback-based display mapping
     isEditable: true,
     editorOptions: {
       options: products,
-      getValueCallback: (opt) => opt.sku,
-      getDisplayCallback: (opt) => opt.sku + ' - ' + opt.productName,
-      getSearchCallback: (opt) => opt.sku + ' ' + opt.productName + ' ' + opt.category,
-      getIconCallback: (opt) => opt.inStock ? '' : '!',
-      getSubtitleCallback: (opt) => '$' + opt.price.toFixed(2) + ' | ' + opt.category,
-      getDisabledCallback: (opt) => opt.discontinued,
+      getValueCallback: ({ option }) => option.sku,
+      getDisplayValueCallback: ({ option }) => option.sku + ' - ' + option.productName,
+      getSearchValueCallback: ({ option }) => option.sku + ' ' + option.productName + ' ' + option.category,
+      getIconCallback: ({ option }) => option.inStock ? '' : '!',
+      getSubtitleCallback: ({ option }) => '$' + option.price.toFixed(2) + ' | ' + option.category,
+      getIsDisabledCallback: ({ option }) => option.discontinued,
       dropdownMinWidth: '400px'
     }
   }
 
-Example 5: Select with async options loaded on edit start
-
-  {
-    field: 'departmentId',
-    title: 'Department',
-    editor: 'select',
-    isEditable: true,
-    editorOptions: {
-      loadOptions: async (row, field) => {
-        const response = await fetch('/api/departments?company=' + row.companyId)
-        return response.json()
-      },
-      optionsLoadTrigger: 'oneditstart',
-      valueMember: 'id',
-      displayMember: 'name',
-      noOptionsText: 'No departments found'
-    }
-  }
-
-Example 6: Autocomplete with multiple selection
+Example 5: Autocomplete with multiple selection
 
   {
     field: 'tags',
@@ -446,8 +419,8 @@ Example 6: Autocomplete with multiple selection
     editor: 'autocomplete',
     isEditable: true,
     editorOptions: {
-      searchCallback: async (query, row, signal) => {
-        const res = await fetch('/api/tags?q=' + query, { signal })
+      searchCallback: async ({ term, row, signal }) => {
+        const res = await fetch('/api/tags?q=' + term, { signal })
         return res.json()
       },
       multiple: true,
@@ -494,11 +467,17 @@ EditorOption = {
   [key: string]: unknown
 }
 
+OptionContext = { option: EditorOption }           (get*Callback on editorOptions)
+
 OptionRenderContext = {
+  option: EditorOption
   index: number
   isHighlighted: boolean
   isSelected: boolean
   isDisabled: boolean
 }
 
-OptionsLoadTrigger = 'immediate' | 'oneditstart' | 'ondropdownopen'
+OptionSearchContext = { row, rowIndex, column, colIndex, field, value, term: string, signal: AbortSignal }
+OptionSelectContext = { row, rowIndex, column, colIndex, field, value, option: EditorOption }
+
+Every ctx also carries non-enumerable controller and element.

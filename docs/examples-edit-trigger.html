@@ -293,7 +293,7 @@
                 width: '100px',
                 horizontalAlign: 'right',
                 editor: 'number',
-                formatCallback: (val) => val != null ? `$${val.toLocaleString()}` : ''
+                getDisplayValueCallback: ({ value: val }) => val != null ? `$${val.toLocaleString()}` : ''
             }
         ]
 
@@ -352,7 +352,7 @@
                 title: 'Name',
                 width: '150px',
                 editor: 'text',
-                beforeCommitCallback: ({ value }) => {
+                validateCallback: ({ value }) => {
                     if (!value || value.trim() === '') {
                         return { valid: false, error: 'Name is required' }
                     }
@@ -366,8 +366,8 @@
                 width: '100px',
                 horizontalAlign: 'right',
                 editor: 'number',
-                formatCallback: (val) => val != null ? `$${val}K` : '',
-                beforeCommitCallback: ({ value }) => {
+                getDisplayValueCallback: ({ value: val }) => val != null ? `$${val}K` : '',
+                validateCallback: ({ value }) => {
                     if (value == null || value === '') {
                         return { valid: false, error: 'Salary is required' }
                     }
@@ -407,7 +407,7 @@
         document.getElementById('emptyRowEnabled').checked = savedEnabled
 
         // Log when rows are committed
-        gridEmptyRow.onrowchange = (row, field, oldValue, newValue, rowIndex) => {
+        gridEmptyRow.onRowChange = ({ row, field, oldValue, newValue, rowIndex }) => {
             console.log('Row changed:', { row, field, oldValue, newValue, rowIndex })
         }
 
@@ -606,8 +606,8 @@
         })
 
         // Update status when grid changes
-        gridEmptyRow.addEventListener('rowchange', updateStatusPanel)
-        gridEmptyRow.addEventListener('paste', () => setTimeout(updateStatusPanel, 100))
+        gridEmptyRow.addEventListener('row-change', updateStatusPanel)
+        gridEmptyRow.addEventListener('paste-complete', updateStatusPanel)
 
         // Initial status update
         setTimeout(updateStatusPanel, 100)

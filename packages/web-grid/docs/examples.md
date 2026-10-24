@@ -35,7 +35,7 @@ make dev
 | [`examples-product-search.html`](../../../docs/examples-product-search.html) | End-to-end pattern: filterable, editable product catalog |
 | [`examples-height-modes.html`](../../../docs/examples-height-modes.html) | Capped container vs. full-page height vs. `isTableBorderOnly` |
 | [`examples-theming.html`](../../../docs/examples-theming.html) | `--base-*` overrides, custom palette, dark-mode toggling |
-| [`examples-custom-styling.html`](../../../docs/examples-custom-styling.html) | `customStylesCallback`, `rowClassCallback`, `cellClassCallback` |
+| [`examples-custom-styling.html`](../../../docs/examples-custom-styling.html) | `getCustomStylesCallback`, `getRowClassCallback`, `getCellClassCallback` |
 
 ## Cookbook
 
@@ -99,15 +99,15 @@ grid.columns = [{
   editorOptions: {
     minSearchLength: 2,
     debounceMs: 300,
-    searchCallback: async (query, row, signal) => {
-      const r = await fetch(`/api/users?q=${encodeURIComponent(query)}`, { signal })
+    searchCallback: async ({ term, signal }) => {
+      const r = await fetch(`/api/users?q=${encodeURIComponent(term)}`, { signal })
       return (await r.json()).map(u => ({ value: u.id, label: u.name }))
     }
   }
 }]
 ```
 
-The `AbortSignal` cancels in-flight requests when the user types again.
+`ctx.signal` aborts in-flight requests when the user types again.
 
 ### Validate a cell before commit
 
@@ -116,7 +116,7 @@ grid.columns = [{
   field: 'email',
   title: 'Email',
   editor: 'text',
-  beforeCommitCallback: ({ value }) => {
+  validateCallback: ({ value }) => {
     if (!/^[^@]+@[^@]+$/.test(String(value))) {
       return { valid: false, message: 'Invalid email address' }
     }
@@ -125,7 +125,7 @@ grid.columns = [{
 }]
 ```
 
-Return `{ valid: true, transformedValue: … }` to also normalize the input.
+Return `{ valid: true, transformedValue: … }` to also normalize the input. `validateCallback` runs for pasted cells too (`ctx.source === 'paste'`).
 
 ### Custom editor
 
@@ -133,7 +133,7 @@ Return `{ valid: true, transformedValue: … }` to also normalize the input.
 grid.columns = [{
   field: 'color',
   editor: 'custom',
-  cellEditCallback: ({ value, commit, cancel }) => {
+  renderEditorCallback: ({ value, commit, cancel }) => {
     // Open your own UI — modal, popover, color picker, etc.
     myColorPicker.open(value, {
       onPick:   (next) => commit(next),
@@ -147,10 +147,10 @@ grid.columns = [{
 
 ```javascript
 grid.headerContextMenu = [
-  'sortAsc', 'sortDesc', 'clearSort',
-  { dividerBefore: true },
-  'hideColumn',
-  'columnVisibility'
+  'sort-asc', 'sort-desc', 'clear-sort',
+  { divider: true },
+  'hide-column',
+  'column-visibility'
 ]
 ```
 
@@ -167,20 +167,30 @@ grid.columns = [...grid.columns]     // reassign to trigger re-render
 
 ```javascript
 grid.isRowToolbarVisible = true
-grid.rowToolbar = ['add', 'delete', 'duplicate', 'moveUp', 'moveDown']
+grid.rowToolbar = ['move-up', 'move-down', { divider: true }, 'add', 'duplicate', 'delete']
 grid.toolbarPosition = 'right'        // or 'left' / 'top' / 'inline' / 'auto'
 grid.toolbarTrigger = 'hover'
+
+// The built-ins do the work — shape the rows they insert, and only notify in `action`:
+grid.createEmptyRowCallback = () => ({ id: nextId(), title: 'New task' })
+grid.createDuplicateRowCallback = ({ row }) => ({ ...row, id: nextId() })
+grid.beforeActionCallback = async ({ action, row }) => action !== 'delete' || confirm(`Delete ${row.title}?`)
+grid.addEventListener('action', (e) => {
+  if (e.detail.action === 'delete') toast(`Deleted ${e.detail.row.title}`)
+})
 ```
+
+Don't insert / remove rows yourself in an `action` listener for `add` / `delete` / `duplicate` / `move-up` / `move-down` — the row would change twice. For consumer-side handling, use a custom item (`id`, no `action`).
 
 See [`examples-toolbar.html`](../../../docs/examples-toolbar.html).
 
 ### Cell-specific toolbar
 
 ```javascript
-grid.cellToolbar = (row, rowIndex, field, colIndex) => {
+grid.getCellToolbarItemsCallback = ({ row, field }) => {
   if (field === 'status') {
     return [
-      { id: 'approve', icon: '✅', title: 'Approve', onclick: ({ row }) => approve(row) }
+      { id: 'approve', icon: '✅', text: 'Approve', onClick: ({ row }) => approve(row) }
     ]
   }
   return undefined
@@ -190,9 +200,8 @@ grid.cellToolbar = (row, rowIndex, field, colIndex) => {
 ### Master / detail — react to row focus
 
 ```javascript
-grid.onrowfocus = ({ row, rowIndex, previousRowIndex }) => {
-  showDetailsFor(row)
-}
+grid.addEventListener('row-focus', (e) => showDetailsFor(e.detail.row))
+// or the camelCase twin: grid.onRowFocus = ({ row, rowIndex, previousRowIndex }) => …
 ```
 
 ### Cell range selection + clipboard copy
@@ -213,9 +222,9 @@ See [`examples-selection.html`](../../../docs/examples-selection.html).
 grid.columns = [
   { field: 'qty', title: 'Qty', editor: 'number' }
 ]
-grid.fillDragCallback = ({ sourceValue, targetCells, direction }) => {
-  // Return false to cancel
-  // Mutate targetCells.map(c => grid.updateRowById(c.rowId, { [c.field]: sourceValue })) inside
+grid.beforeFillCallback = ({ sourceCell, targetCells, direction }) => {
+  // Return false (or a Promise resolving to false) to cancel the fill
+  return targetCells.length <= 50
 }
 ```
 
@@ -227,13 +236,13 @@ See [`examples-fill-handle.html`](../../../docs/examples-fill-handle.html).
 grid.rowLocking = {
   lockedMember: 'isLocked',
   lockInfoMember: 'lockInfo',
-  lockedEditBehavior: 'block',
-  lockTooltipCallback: (lockInfo, row) => `Locked by ${lockInfo.userName}`
+  lockedEditBehavior: 'callback',
+  getCanEditLockedCallback: ({ row, lockInfo }) => lockInfo.lockedBy === currentUser
 }
 
 // External lock from a WebSocket message:
 socket.on('row-locked', ({ id, userName }) => {
-  grid.lockRowById(id, { userName, lockedAt: new Date() })
+  grid.lockRowById(id, { lockedBy: userName, lockedAt: new Date() })
 })
 socket.on('row-unlocked', ({ id }) => grid.unlockRowById(id))
 ```
@@ -284,7 +293,7 @@ grid.pageSize = 25
 grid.totalItems = 0                   // unknown until first response
 grid.sortMode = 'multi'
 
-grid.ondatarequest = async ({ sort, page, pageSize }) => {
+grid.onDataRequest = async ({ sort, page, pageSize }) => {   // or addEventListener('data-request', …)
   const r = await fetch('/api/rows', {
     method: 'POST',
     body: JSON.stringify({ sort, page, pageSize })
@@ -301,14 +310,15 @@ The grid does **not** slice `items` itself in `paginationMode: 'server'` — you
 
 ```javascript
 grid.isFilterable = true
-grid.onfilterchange = async (filters) => {
-  // filters: { fieldName: 'typed text', ... }
-  const r = await fetch('/api/rows?' + new URLSearchParams(filters))
+grid.filterMode = 'server'            // or <web-grid filter-mode="server">
+grid.addEventListener('filter-change', async (e) => {
+  // e.detail.filters: { fieldName: 'typed text', ... }
+  const r = await fetch('/api/rows?' + new URLSearchParams(e.detail.filters))
   grid.items = await r.json()
-}
+})
 ```
 
-When `onfilterchange` is set, the grid bypasses internal client-side filtering — render filter inputs, fire the callback, trust you to replace `items`.
+With `filterMode: 'server'` the grid bypasses internal client-side filtering — it renders the filter inputs, fires `filter-change`, and trusts you to replace `items`. In the default `'client'` mode `filter-change` still fires, as a notification.
 
 ### Virtual scroll for large datasets
 
@@ -327,8 +337,9 @@ grid.isInfiniteScrollEnabled = true
 grid.infiniteScrollThreshold = 200    // px from bottom that triggers load
 grid.hasMoreItems = true
 
-window.addEventListener('wg-load-more', async () => {
-  const next = await fetch('/api/rows?after=' + grid.items[grid.items.length - 1].id)
+grid.addEventListener('data-request', async (e) => {
+  if (e.detail.trigger !== 'loadMore') return       // mode: 'append', skip: rows already loaded
+  const next = await fetch(`/api/rows?skip=${e.detail.skip}&take=${e.detail.pageSize}`)
   const { items, hasMore } = await next.json()
   grid.items = [...grid.items, ...items]
   grid.hasMoreItems = hasMore
@@ -340,10 +351,12 @@ window.addEventListener('wg-load-more', async () => {
 ```javascript
 grid.rowShortcuts = [
   {
-    keys: 'Ctrl+S',
-    label: 'Save row',
-    handler: ({ row, rowIndex }) => saveRow(row)
-  }
+    shortcut: 'Ctrl+S',
+    id: 'save',
+    text: 'Save row',
+    onClick: ({ row, rowIndex }) => saveRow(row)
+  },
+  { shortcut: 'Ctrl+D', action: 'duplicate' }    // a row built-in
 ]
 grid.isShortcutsHelpVisible = true    // shows help icon top-right
 ```
@@ -354,7 +367,7 @@ See [`examples-shortcuts.html`](../../../docs/examples-shortcuts.html).
 
 ```typescript
 import '@keenmate/web-grid'
-import type { Column, RowChangeDetail } from '@keenmate/web-grid'
+import type { Column, GridElement, GridEventMap } from '@keenmate/web-grid'
 
 interface Employee {
   id: number
@@ -368,11 +381,11 @@ const columns: Column<Employee>[] = [
   { field: 'salary', title: 'Salary', editor: 'number' }
 ]
 
-const grid = document.querySelector<HTMLElement & { columns: Column<Employee>[]; items: Employee[] }>('web-grid')!
+const grid = document.querySelector('web-grid') as GridElement<Employee>
 grid.columns = columns
 grid.items = []
 
-grid.onrowchange = (detail: RowChangeDetail<Employee>) => {
+grid.onRowChange = (detail: GridEventMap<Employee>['row-change']) => {
   console.log(detail.field, detail.oldValue, '→', detail.newValue)
 }
 ```

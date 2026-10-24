@@ -167,20 +167,20 @@ The grid's shadow DOM uses `max-height: inherit`, so setting `max-height` on the
 <web-grid style="height: 100%"></web-grid>
 ```
 
-For full-height mode, also set `tableBorderOnly = true` so the grid doesn't capture wheel events:
+For full-height mode, also set `isTableBorderOnly = true` so the grid doesn't capture wheel events:
 
 ```javascript
-grid.tableBorderOnly = true
+grid.isTableBorderOnly = true
 ```
 
 ### Header context menu with column hide + visibility submenu
 
 ```javascript
 grid.headerContextMenu = [
-  'sortAsc', 'sortDesc', 'clearSort',
-  { dividerBefore: true },
-  'hideColumn',         // hide the right-clicked column
-  'columnVisibility'    // submenu with a toggle per column
+  'sort-asc', 'sort-desc', 'clear-sort',
+  { divider: true },
+  'hide-column',        // hide the right-clicked column
+  'column-visibility'   // submenu with a toggle per column
 ]
 ```
 
@@ -195,15 +195,15 @@ grid.columns = [...grid.columns]   // reassign to trigger re-render
 
 ```javascript
 grid.isRowToolbarVisible = true
-grid.rowToolbar = ['add', 'delete', 'duplicate', 'moveUp', 'moveDown']
+grid.rowToolbar = ['add', 'delete', 'duplicate', 'move-up', 'move-down']   // the built-ins do the work
 ```
 
 ### Master/detail — react to row focus
 
 ```javascript
-grid.onrowfocus = ({ row, rowIndex }) => {
-  showDetailsFor(row)
-}
+grid.addEventListener('row-focus', (e) => showDetailsFor(e.detail.row))
+// or the camelCase property twin:
+grid.onRowFocus = ({ row }) => showDetailsFor(row)
 ```
 
 ### Validate a cell before commit
@@ -213,7 +213,7 @@ grid.columns = [{
   field: 'email',
   title: 'Email',
   editor: 'text',
-  beforeCommitCallback: ({ value }) => {
+  validateCallback: ({ value }) => {
     if (!/^[^@]+@[^@]+$/.test(String(value))) {
       return { valid: false, message: 'Invalid email address' }
     }
@@ -261,21 +261,22 @@ const columns: Column<Employee>[] = [
 - **Frozen Columns** — Stick columns to the left during horizontal scroll
 - **Fill Handle** — Excel-like autofill by dragging a cell's corner
 - **Row Locking** — Optimistic locking with external lock management (WebSocket-ready)
-- **Row Identification** — `idValueMember`/`idValueCallback` for `updateRowById`, `replaceRowById`
+- **Row Identification** — `idValueMember`/`getRowIdCallback` for `updateRowById`, `replaceRowById`
 - **Virtual Scroll** — Render only visible rows for large datasets
 - **Infinite Scroll** — Load-more pattern triggered near bottom of scroll
 - **Dark Mode** — Auto-detects OS/attribute/class preferences
 - **CSS Variable Theming** — 120+ `--wg-*` variables with `--base-*` fallback for cross-component themes
 - **Shadow DOM** — Encapsulated styles, no CSS leakage
 - **Summary Bar** — Configurable summary content at any corner position
-- **Validation** — `beforeCommitCallback` with tooltip display (custom HTML supported)
-- **Row Focus Tracking** — `onrowfocus` for master/detail patterns
+- **Validation** — `validateCallback` (editor commits and paste) with tooltip display (custom HTML supported)
+- **Row Focus Tracking** — the `row-focus` event for master/detail patterns
+- **Events** — real DOM events (`row-change`, `action`, …) plus camelCase `on*` twin properties
 - **i18n** — All UI labels customizable via `labels` property
 - **TypeScript** — Full type definitions exported
 
 ## Architecture
 
-WebGrid uses an **action pipeline** pattern for user interactions. DOM events are captured by the `ActionPipelineAdapter`, which translates them into typed action objects (34 action types). These actions flow through a pipeline that dispatches them to specialized executors (16 executors covering focus, editing, navigation, selection, clipboard, dropdown, fill-handle, etc.). Executors can emit child actions for composability — e.g., committing an edit can trigger a focus-move.
+The grid uses an **action pipeline** pattern for user interactions. DOM events are captured by the `ActionPipelineAdapter`, which translates them into typed action objects (34 action types). These actions flow through a pipeline that dispatches them to specialized executors (16 executors covering focus, editing, navigation, selection, clipboard, dropdown, fill-handle, etc.). Executors can emit child actions for composability — e.g., committing an edit can trigger a focus-move.
 
 ```
 DOM Event → Adapter → Action → Pipeline → Executor → State Change → Render
@@ -310,6 +311,8 @@ This architecture separates mode detection (the adapter decides *what* action a 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
 | `isEditable` | `boolean` | `false` | Enable cell editing |
+| `isRowEditable` | `boolean` | — | Static per-grid row editability |
+| `getIsRowEditableCallback` | `(ctx: { row }) => boolean` | — | Decides editability per row |
 | `editTrigger` | `EditTrigger` | `'dblclick'` | How editing starts: `'click'`, `'dblclick'`, `'button'`, `'always'`, `'navigate'` |
 | `editStartSelection` | `EditStartSelection` | `'selectAll'` | Cursor position when entering edit via navigate: `'mousePosition'`, `'selectAll'`, `'cursorAtStart'`, `'cursorAtEnd'` |
 | `dropdownToggleVisibility` | `ToggleVisibility` | `'on-focus'` | When to show dropdown toggle button: `'always'`, `'on-focus'` |
@@ -334,9 +337,9 @@ This architecture separates mode detection (the adapter decides *what* action a 
 | `paginationMode` | `'client' \| 'server'` | `'client'` | `'client'` = grid slices items; `'server'` = items are already current page |
 | `currentPage` | `number` | `1` | Current page (1-based) |
 | `totalItems` | `number \| null` | `null` | Total item count for server-side pagination |
-| `showPagination` | `boolean \| 'auto'` | `'auto'` | `true` = always show, `false` = never, `'auto'` = hide when ≤1 page |
+| `isPaginationVisible` | `boolean \| 'auto'` | `'auto'` | `true` = always show, `false` = never, `'auto'` = hide when ≤1 page (`showPagination` is a deprecated alias) |
 | `paginationPosition` | `string` | `'bottom-center'` | Position(s): `'bottom-center'`, `'top-right\|bottom-right'` for multiple |
-| `paginationLabelsCallback` | `PaginationLabelsCallback` | — | Callback to customize/translate pagination text |
+| `getPaginationLabelsCallback` | `(ctx: { currentPage, totalPages, totalItems, pageSize }) => Partial<PaginationLabels>` | — | Customize/translate pagination text |
 | `paginationLayout` | `string` | — | Element order: `'pageSize\|previous\|pageInfo\|next'` or `'first\|previous\|pageInfo\|next\|last'` |
 
 ### Row Toolbar
@@ -344,28 +347,34 @@ This architecture separates mode detection (the adapter decides *what* action a 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
 | `isRowToolbarVisible` | `boolean` | `false` | Show row action toolbar |
-| `rowToolbar` | `RowToolbarConfig<T>[]` | `[]` | Toolbar items (predefined strings or custom objects) |
+| `rowToolbar` | `GridToolbarEntry<T>[]` | `['add', 'delete', 'duplicate']` | Toolbar entries: built-in names, action items, dividers (see [Row Toolbar](#row-toolbar-1)) |
 | `toolbarTrigger` | `'hover' \| 'click' \| 'button'` | `'hover'` | How to show toolbar |
 | `toolbarPosition` | `ToolbarPosition` | `'auto'` | Preferred position: `'auto'`, `'left'`, `'right'`, `'top'`, `'inline'` |
 | `toolbarVerticalAlign` | `'top' \| 'center' \| 'bottom'` | `'bottom'` | Vertical alignment for left/right position |
 | `toolbarHorizontalAlign` | `'start' \| 'center' \| 'end' \| 'cursor'` | `'center'` | Horizontal alignment for top position |
 | `toolbarColumn` | `string \| number` | — | Column to pin toolbar over (field name or index) for `'top'` position |
-| `toolbarFollowsCursor` | `boolean` | `false` | Toolbar follows mouse cursor horizontally |
-| `cellToolbar` | `(row, rowIndex, field, colIndex) => RowToolbarConfig[] \| undefined` | — | Cell-specific toolbar items |
+| `shouldToolbarFollowCursor` | `boolean` | `false` | Toolbar follows mouse cursor horizontally |
+| `getCellToolbarItemsCallback` | `(ctx: CellContext<T>) => GridToolbarEntry<T>[] \| null \| undefined` | — | Cell-specific toolbar items, merged over `rowToolbar` by `id` / `action` |
 | `cellToolbarOffset` | `number \| string` | `0.2` | Horizontal offset: `0`–`1` as fraction of cell width, or CSS length (e.g., `'2rem'`) |
 | `toolbarBtnMinWidth` | `string` | — | Min-width for toolbar buttons (CSS value). Overrides `--wg-toolbar-btn-min-width` |
 | `inlineActionsTitle` | `string` | `'Actions'` | Header title for inline actions column (when `toolbarPosition='inline'`). Set to `''` for no title |
 
-> **Deprecated aliases:** `toolbarAlign` → use `toolbarVerticalAlign`; `toolbarTopPosition` → use `toolbarHorizontalAlign`.
+| `createEmptyRowCallback` | `(ctx) => T \| Promise<T>` | — | The row the `add` built-in inserts (default: a blank row) |
+| `createDuplicateRowCallback` | `(ctx: { row, rowIndex }) => T` | — | The copy the `duplicate` built-in inserts (default: shallow copy with `idMember` cleared) |
+| `beforeActionCallback` | `(detail: GridActionEventDetail<T>) => unknown` | — | Runs before any toolbar / menu / shortcut item activates; return `false` to cancel (async OK) |
+
+> **Deprecated aliases:** `toolbarAlign` → use `toolbarVerticalAlign`; `toolbarTopPosition` → use `toolbarHorizontalAlign`; `toolbarFollowsCursor` → use `shouldToolbarFollowCursor`.
 
 ### Context Menu
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `contextMenu` | `ContextMenuItem<T>[]` | — | Cell/row context menu items |
-| `contextMenuXOffset` | `number` | `0` | Horizontal offset from click position |
-| `contextMenuYOffset` | `number` | `4` | Vertical offset from click position |
-| `headerContextMenu` | `HeaderMenuConfig<T>[]` | — | Header context menu items (predefined strings or custom objects) |
+| `contextMenu` | `GridMenuEntry<T>[]` | — | Cell/row context menu entries: built-in names, menu items, dividers (see [Context Menu](#context-menu-1)) |
+| `contextMenuXOffset` | `number` | `8` | Horizontal offset from click position |
+| `contextMenuYOffset` | `number` | `0` | Vertical offset from click position |
+| `headerContextMenu` | `GridHeaderMenuEntry<T>[]` | — | Header context menu entries: built-in names, menu items, dividers |
+| `beforeContextMenuOpenCallback` | `(ctx: CellContext<T>) => false \| GridMenuEntry<T>[] \| void` | — | Runs before the cell menu opens (sync). `false` → no grid menu (the browser's shows); an entries array → shown instead of `contextMenu` |
+| `beforeHeaderMenuOpenCallback` | `(ctx: HeaderMenuContext<T>) => false \| GridHeaderMenuEntry<T>[] \| void` | — | Same for the header menu |
 
 ### Cell Selection
 
@@ -378,11 +387,11 @@ This architecture separates mode detection (the adapter decides *what* action a 
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `rowShortcuts` | `RowShortcut<T>[]` | — | Row-level shortcut definitions |
-| `rangeShortcuts` | `RangeShortcut<T>[]` | — | Multi-row/range shortcut definitions |
+| `rowShortcuts` | `GridShortcut<T>[]` | — | Action items bound to a key on the focused / hovered row (see [Keyboard Shortcuts](#keyboard-shortcuts-1)) |
+| `rangeShortcuts` | `GridRangeShortcut<T>[]` | — | Action items bound to a key on the selected rows / cell range |
 | `isShortcutsHelpVisible` | `boolean` | `false` | Show keyboard shortcuts help icon |
 | `shortcutsHelpPosition` | `'top-right' \| 'top-left'` | `'top-right'` | Help icon position |
-| `shortcutsHelpContentCallback` | `() => string` | — | Custom HTML content to display alongside shortcuts list |
+| `renderShortcutsHelpCallback` | `(ctx) => string` | — | Custom HTML shown alongside the shortcuts list |
 
 ### Column Management
 
@@ -397,14 +406,14 @@ This architecture separates mode detection (the adapter decides *what* action a 
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `fillDragCallback` | `(detail: FillDragDetail) => boolean \| void` | — | Called when fill handle is dragged. Return `false` to cancel. |
+| `beforeFillCallback` | `(ctx: { sourceCell, targetCells, direction }) => boolean \| void \| Promise<…>` | — | Runs before a fill-handle drag applies. Return `false` to cancel (async OK) |
 
 ### Row Identification
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
 | `idValueMember` | `keyof T` | — | Property name containing the row's unique ID |
-| `idValueCallback` | `(row: T) => unknown` | — | Callback returning the row's unique ID |
+| `getRowIdCallback` | `(ctx: { row }) => unknown` | — | Callback returning the row's unique ID |
 
 ### Row Locking
 
@@ -417,12 +426,11 @@ This architecture separates mode detection (the adapter decides *what* action a 
 | Field | Type | Description |
 |-------|------|-------------|
 | `lockedMember` | `keyof T` | Property with boolean lock state |
-| `lockInfoMember` | `keyof T` | Property with `RowLockInfo` object |
-| `isLockedCallback` | `(row, rowIndex) => boolean` | Callback-based lock check |
-| `getLockInfoCallback` | `(row, rowIndex) => RowLockInfo \| null` | Callback-based lock info |
+| `lockInfoMember` | `keyof T` | Property with `RowLock` object |
+| `getIsLockedCallback` | `(ctx: { row, rowIndex }) => boolean` | Callback-based lock check |
+| `getLockInfoCallback` | `(ctx: { row, rowIndex }) => RowLock \| null` | Callback-based lock info |
 | `lockedEditBehavior` | `'block' \| 'allow' \| 'callback'` | Edit behavior for locked rows (default: `'block'`) |
-| `canEditLockedCallback` | `(row, lockInfo) => boolean` | Per-row edit decision (when `'callback'`) |
-| `lockTooltipCallback` | `(lockInfo, row) => string \| null` | Custom tooltip HTML for locked rows |
+| `getCanEditLockedCallback` | `(ctx: { row, rowIndex, lockInfo }) => boolean` | Per-row edit decision (when `'callback'`) |
 
 ### Scroll
 
@@ -430,7 +438,7 @@ This architecture separates mode detection (the adapter decides *what* action a 
 |----------|------|---------|-------------|
 | `isScrollable` | `boolean` | `false` | Enable scroll container with max-height |
 | `scrollMaxHeight` | `string` | `'100vh'` | Max-height when `isScrollable` is `true` |
-| `tableBorderOnly` | `boolean` | `false` | Border only around table, not pagination/toolbar |
+| `isTableBorderOnly` | `boolean` | `false` | Border only around table, not pagination/toolbar (`tableBorderOnly` is a deprecated alias) |
 
 ### Virtual Scroll
 
@@ -461,18 +469,25 @@ This architecture separates mode detection (the adapter decides *what* action a 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
 | `summaryPosition` | `string` | — | Position(s): `'bottom-left'`, `'top-right\|bottom-right'`, etc. |
-| `summaryContentCallback` | `SummaryContentCallback<T>` | — | Callback returning HTML content for the summary bar |
+| `renderSummaryCallback` | `(ctx: { items, allItems, totalItems, currentPage, pageSize, metadata }) => string` | — | Returns the summary bar HTML |
 | `isSummaryInline` | `boolean` | `true` | Share row with pagination when in same area |
-| `summaryMetadata` | `unknown` | — | Server-provided metadata passed to `summaryContentCallback` |
+| `summaryMetadata` | `unknown` | — | Server-provided metadata passed to `renderSummaryCallback` as `ctx.metadata` |
+
+### Filtering
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `filters` | `Record<string, string>` | `{}` | Current filter value per field |
+| `filterMode` | `'client' \| 'server'` | `'client'` | `'server'`: the grid doesn't filter `items` — listen to `filter-change` (`{ filters }`) and load the rows. Attribute `filter-mode` |
 
 ### Styling
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `customStylesCallback` | `() => string` | — | Returns CSS string injected into shadow DOM |
-| `rowClassCallback` | `(row, rowIndex) => string \| null` | — | Dynamic CSS class for rows |
+| `getCustomStylesCallback` | `(ctx) => string` | — | Returns CSS string injected into shadow DOM |
+| `getRowClassCallback` | `(ctx: { row, rowIndex }) => string \| null` | — | Dynamic CSS class for rows |
 | `labels` | `Partial<GridLabels>` | — | Override UI labels for i18n (see [i18n](#i18n)) |
-| `validationTooltipCallback` | `(context) => string \| null` | — | Custom HTML for validation error tooltip (grid-level default) |
+| `getValidationTooltipCallback` | `(ctx: CellContext<T> & { error }) => string \| null` | — | Custom HTML for validation error tooltip (grid-level default) |
 | `invalidCells` | `CellValidationState[]` | `[]` | External validation state for cells |
 
 ## Column Definition
@@ -501,57 +516,69 @@ The `Column<T>` interface defines how each column renders, edits, and behaves.
 | `textOverflow` | `'wrap' \| 'ellipsis'` | Text overflow behavior |
 | `maxLines` | `number` | Maximum visible lines when `textOverflow` is `'wrap'` (CSS line-clamp) |
 | `cellClass` | `string` | Static CSS class applied to all cells in this column |
-| `cellClassCallback` | `(value, row) => string \| null` | Dynamic CSS class based on value/row |
+| `getCellClassCallback` | `(ctx: CellContext<T>) => string \| null` | Dynamic CSS class based on value/row |
+
+Every column callback takes one `ctx`. The cell ctx (`CellContext<T>`) is `{ row, rowIndex, column, colIndex, field, value }`, plus the non-enumerable `controller` and `element`.
 
 ### Content
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `formatCallback` | `(value, row) => string` | Format value for display (text only) |
-| `templateCallback` | `(row) => string` | Custom cell HTML string |
-| `renderCallback` | `(row, element) => void` | Imperative cell rendering (receives the `<td>` element) |
+| `getDisplayValueCallback` | `(ctx: CellContext<T>) => string` | Display text for the cell (escaped) |
+| `renderCellCallback` | `(ctx: CellContext<T>) => string` | Custom cell HTML (wins over `getDisplayValueCallback`) |
+
+### Filtering
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `filterCallback` | `(ctx: { filterValue, row, column, field }) => boolean \| null` | Custom filter predicate; `null` = incomplete input (ignored, input marked invalid) |
 
 ### Editing
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `isEditable` | `boolean` | Enable editing for this column |
+| `getIsEditableCallback` | `(ctx: { row }) => boolean` | Per-row editability for this column (when it returns `true`, the cell is editable even on a read-only grid) |
 | `editor` | `EditorType` | Editor type: `'text'`, `'number'`, `'checkbox'`, `'select'`, `'combobox'`, `'autocomplete'`, `'date'`, `'custom'` |
 | `editTrigger` | `EditTrigger` | Per-column override for edit trigger |
 | `editorOptions` | `EditorOptions<T>` | Editor-specific configuration (see [Editor Types](#editor-types)) |
 | `dropdownToggleVisibility` | `ToggleVisibility` | Per-column override: `'always'` or `'on-focus'` |
 | `shouldOpenDropdownOnEnter` | `boolean` | Per-column override: Enter opens dropdown or moves down |
-| `cellEditCallback` | `(context: CustomEditorContext<T>) => void` | Handler for `'custom'` editor type |
+| `renderEditorCallback` | `(ctx: EditorContext<T>) => void` | Handler for `'custom'` editor type — the cell ctx + `commit(value)` / `cancel()` |
 | `isEditButtonVisible` | `boolean` | Show an edit button in the cell |
 
 ### Validation
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `beforeCommitCallback` | `(context: BeforeCommitContext<T>) => BeforeCommitResult \| Promise<...>` | Validates and optionally transforms value before commit |
-| `validateCallback` | `(value, row) => string \| null \| Promise<...>` | **Deprecated** — use `beforeCommitCallback` instead |
-| `validationTooltipCallback` | `(context) => string \| null` | Custom HTML for this column's validation error tooltip |
+| `validateCallback` | `(ctx: ValidateContext<T>) => ValidateResult \| Promise<ValidateResult>` | Validates and optionally transforms a value — runs for editor commits and pasted cells |
+| `getValidationTooltipCallback` | `(ctx: CellContext<T> & { error }) => string \| null` | Custom HTML for this column's validation error tooltip |
 
-`beforeCommitCallback` receives `{ value, oldValue, row, rowIndex, field }` and can return:
+`validateCallback` receives `{ value, oldValue, row, rowIndex, column, colIndex, field, source: 'edit' | 'paste' }` and can return:
 - `{ valid: true }` or `{ valid: true, transformedValue: ... }` — accept (optionally transform)
 - `{ valid: false, message: 'Error text' }` — reject with message
 - `true` / `null` / `undefined` — accept
 - `false` — reject (no message)
 - `string` — reject with that string as error message
 
+An invalid value is not a veto: it stays as a draft, the cell is marked invalid and the `validation-error` event fires.
+
 ### Tooltip
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `tooltipMember` | `string` | Property name in row data containing tooltip text |
-| `tooltipCallback` | `(value, row) => string \| null` | Dynamic tooltip (takes priority over `tooltipMember`) |
+| `getTooltipCallback` | `(ctx: CellContext<T>) => string \| null` | Dynamic tooltip (takes priority over `tooltipMember`) |
+| `isTooltipHtml` | `boolean` | Render tooltip content as HTML |
 
 ### Clipboard
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `beforeCopyCallback` | `(value, row) => string` | Transform value before copying to clipboard |
-| `beforePasteCallback` | `(value, row) => unknown` | Process pasted value before applying to cell |
+| `getCopyValueCallback` | `(ctx: CellContext<T>) => string` | Text copied for this cell |
+| `getPasteValueCallback` | `(ctx: CellContext<T> & { text }) => unknown` | Value stored for the pasted text |
+
+Grid-level paste hooks: `beforePasteCallback(ctx)` runs before a multi-cell paste (`false` cancels, async OK; add `"rowIndex-colIndex"` keys to `ctx.skipCells` to skip cells) and `createRowCallback({ data, rowIndex })` builds rows for pasted data past the last row. `pasteMode` and `shouldValidateOnPaste` control what gets pasted; `paste-complete` reports the result.
 
 ### Layout
 
@@ -581,7 +608,7 @@ The `Column<T>` interface defines how each column renders, edits, and behaves.
 | `combobox` | Filterable dropdown |
 | `autocomplete` | Async search dropdown |
 | `date` | Date picker |
-| `custom` | Consumer-controlled via `cellEditCallback` |
+| `custom` | Consumer-controlled via `renderEditorCallback` |
 
 ### Text Options
 
@@ -628,29 +655,27 @@ These options are shared across `select`, `combobox`, and `autocomplete` editor 
 | Option | Type | Description |
 |--------|------|-------------|
 | `options` | `EditorOption[]` | Static array of options: `{ value, label, ...extra }` |
-| `loadOptions` | `(row, field) => Promise<EditorOption[]>` | Async option loader |
-| `optionsLoadTrigger` | `OptionsLoadTrigger` | When to call `loadOptions`: `'immediate'`, `'oneditstart'` (default), `'ondropdownopen'` |
 
 #### Display Mapping
 
-By default, options use `value` and `label` properties. Override with member strings or callback functions:
+By default, options use `value` and `label` properties. Override with member strings or callback functions (each callback takes `({ option })`):
 
 | Member Property | Callback Alternative | Description |
 |-----------------|---------------------|-------------|
 | `valueMember` | `getValueCallback` | Property/callback for the option value |
-| `displayMember` | `getDisplayCallback` | Property/callback for display text |
-| `searchMember` | `getSearchCallback` | Property/callback for searchable text (falls back to display) |
+| `displayMember` | `getDisplayValueCallback` | Property/callback for display text |
+| `searchMember` | `getSearchValueCallback` | Property/callback for searchable text (falls back to display) |
 | `iconMember` | `getIconCallback` | Property/callback for icon/emoji |
 | `subtitleMember` | `getSubtitleCallback` | Property/callback for subtitle/description |
-| `disabledMember` | `getDisabledCallback` | Property/callback for disabled state |
+| `disabledMember` | `getIsDisabledCallback` | Property/callback for disabled state |
 | `groupMember` | `getGroupCallback` | Property/callback for grouping options |
 
 #### Rendering & Behavior
 
 | Option | Type | Description |
 |--------|------|-------------|
-| `renderOptionCallback` | `(option, context) => string` | Custom HTML for each option. `context` has `{ index, isHighlighted, isSelected, isDisabled }` |
-| `onselect` | `(option, row) => void` | Fires when an option is selected |
+| `renderOptionCallback` | `(ctx: { option, index, isHighlighted, isSelected, isDisabled }) => string` | Custom HTML for each option |
+| `onSelect` | `(ctx: { option, row, rowIndex, column, field, … }) => void` | Fires when an option is selected |
 | `allowEmpty` | `boolean` | Allow null/empty selection |
 | `emptyLabel` | `string` | Label for empty option (default: `'-- Select --'`) |
 | `noOptionsText` | `string` | Override "No options" message |
@@ -662,7 +687,7 @@ By default, options use `value` and `label` properties. Override with member str
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `searchCallback` | `(query, row, signal?) => Promise<EditorOption[]>` | — | Async search function (receives `AbortSignal` for cancellation) |
+| `searchCallback` | `(ctx: { term, row, rowIndex, column, field, signal }) => Promise<EditorOption[]>` | — | Async search function (`signal` aborts when a newer search starts) |
 | `initialOptions` | `EditorOption[]` | — | Options shown before user starts typing |
 | `minSearchLength` | `number` | `1` | Minimum characters before triggering search |
 | `debounceMs` | `number` | `300` | Debounce delay for search calls |
@@ -671,13 +696,13 @@ By default, options use `value` and `label` properties. Override with member str
 
 ### Custom Editor
 
-Set `editor: 'custom'` and provide a `cellEditCallback` on the column:
+Set `editor: 'custom'` and provide a `renderEditorCallback` on the column:
 
 ```javascript
 {
   field: 'color',
   editor: 'custom',
-  cellEditCallback: ({ value, row, rowIndex, field, commit, cancel }) => {
+  renderEditorCallback: ({ value, row, rowIndex, field, commit, cancel }) => {
     // Open your own UI (modal, popover, etc.)
     // Call commit(newValue) to save, cancel() to discard
   }
@@ -700,42 +725,92 @@ The `mode` property sets sensible defaults for common use cases:
 
 Setting `mode` applies these defaults, but you can override individual properties afterward.
 
+
+## Interaction Model
+
+Callbacks, events and clickable items follow the shared KeenMate interaction model (`@keenmate/web-components-core`):
+
+- **Every callback takes one `ctx` object.** Every ctx and every event detail also carries `controller` (the public `GridController`, same as `el.controller`) and `element` (the `<web-grid>` host) — both non-enumerable, so `JSON.stringify` and logs see only the data.
+- **`*Callback` properties affect behavior** (return a value, or `false` to cancel a `before*Callback`); **events** only notify.
+- **Toolbar buttons, context-menu items and shortcuts are action items** with one shape (below). Activating any of them fires the `action` event.
+
+### Action items
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `action` | built-in name | Runs a built-in (see the tables below). Omit for a custom item |
+| `id` | `string` | Identifies a custom item; reported back in the `action` event |
+| `text` | `string` | Label. On icon toolbar buttons it's the accessible name + tooltip heading (shown as a label only without an `icon` or with `isTextVisible`) |
+| `icon` | `string` | Icon (glyph / markup) |
+| `tooltip` | `string` | Tooltip description line |
+| `shortcut` | `string` | Key chord hint (`'Ctrl+D'`); on `rowShortcuts` / `rangeShortcuts` it's the binding |
+| `isDanger` | `boolean` | Destructive styling |
+| `isDisabled` / `getIsDisabledCallback(ctx)` | `boolean` | Greyed out |
+| `isVisible` / `getIsVisibleCallback(ctx)` | `boolean` | Default `true` |
+| `isActive` / `getIsActiveCallback(ctx)` | `boolean` | Toggle state (`aria-pressed`, `--active` class) |
+| `getTextCallback(ctx)` / `getIconCallback(ctx)` / `getTooltipCallback(ctx)` | `string` | Dynamic text / icon / tooltip |
+| `cssClass` | `string` | Extra CSS classes |
+| `onClick(detail)` | `(detail) => void \| Promise<void>` | Runs on activation with the same detail the `action` event carries |
+| `row` | `number` | Toolbar only — toolbar row, 1 = closest to the grid row |
+| `isTextVisible` | `boolean` | Toolbar only — show `text` next to the icon |
+| `children` / `getChildrenCallback(ctx)` | entries | Menus only — static / lazy (sync or async) submenu |
+| `shouldCloseOnClick` | `boolean` | Menus only — default `true` |
+
+A **divider** is an entry `{ divider: true, text? }` (a labelled one is a group heading), or `menuDivider(text)` exported from the package.
+
+`beforeActionCallback(detail)` runs before any item activates (toolbar, menu, shortcut, built-in or custom) — return `false` to cancel (async OK, e.g. a confirm dialog). Then the item's `onClick` runs, then the `action` event fires, then the built-in does its work.
+
 ## Row Toolbar
 
 ### Basic Setup
 
 ```javascript
 grid.isRowToolbarVisible = true
-grid.rowToolbar = ['add', 'delete', 'duplicate', 'moveUp', 'moveDown']
+grid.rowToolbar = ['add', 'delete', 'duplicate', 'move-up', 'move-down']
 ```
 
-### Predefined Items
+### Built-in Row Actions
 
-| String | Action |
-|--------|--------|
-| `'add'` | Insert a new row after the current row |
-| `'delete'` | Delete the current row |
-| `'duplicate'` | Duplicate the current row |
-| `'moveUp'` | Move row up |
-| `'moveDown'` | Move row down |
+The row built-ins **do the work** (after the `action` event) — don't also insert / remove rows in an `action` listener, or the row changes twice:
+
+| `action` | What it does |
+|----------|--------------|
+| `'add'` | Inserts `createEmptyRowCallback(ctx)`'s row (else a blank row) after the row |
+| `'delete'` | Removes the row |
+| `'duplicate'` | Inserts `createDuplicateRowCallback({ row })`'s copy (else a shallow copy with `idMember` cleared) after the row |
+| `'move-up'` | Swaps the row with the displayed neighbour above |
+| `'move-down'` | Swaps the row with the displayed neighbour below |
+
+Use a string (`'add'`) for the default look, or an object to restyle it: `{ action: 'delete', icon: '🗑️', text: 'Remove' }`. Built-in texts come from `labels.actions`. To veto one (e.g. confirm a delete), return `false` from `beforeActionCallback`.
+
+```javascript
+grid.createEmptyRowCallback = () => ({ id: nextId(), name: '', status: 'new' })
+grid.createDuplicateRowCallback = ({ row }) => ({ ...row, id: nextId(), name: `${row.name} (copy)` })
+grid.beforeActionCallback = async ({ action, row }) => {
+  if (action === 'delete') return confirm(`Delete ${row.name}?`)   // false cancels
+}
+grid.addEventListener('action', (e) => {
+  if (e.detail.action === 'delete') toast(`Deleted ${e.detail.row.name}`)   // notify only
+})
+```
 
 ### Custom Items
 
 ```javascript
 grid.rowToolbar = [
   'add',
+  { divider: true },
   {
     id: 'edit',
     icon: '✏️',
-    title: 'Edit Record',
-    label: 'Edit',          // Optional text label next to icon
-    row: 1,                  // Row in multi-row toolbar (1 = closest to grid row)
-    group: 1,                // Group number for visual dividers
-    danger: false,
-    disabled: (row, rowIndex) => row.locked,
-    hidden: (row, rowIndex) => row.archived,
-    tooltip: { description: 'Open editor', shortcut: 'Enter' },
-    onclick: ({ row, rowIndex }) => { /* ... */ }
+    text: 'Edit Record',                       // accessible name + tooltip heading
+    tooltip: 'Open the editor',                // tooltip description
+    shortcut: 'Enter',                         // tooltip key hint
+    isTextVisible: true,                       // show "Edit Record" next to the icon
+    row: 1,                                    // row in a multi-row toolbar (1 = closest to the grid row)
+    getIsDisabledCallback: ({ row }) => row.locked,
+    getIsVisibleCallback: ({ row }) => !row.archived,
+    onClick: ({ row, rowIndex }) => openEditor(row)
   }
 ]
 ```
@@ -747,21 +822,23 @@ grid.rowToolbar = [
 | `toolbarPosition` | `'auto'`, `'left'`, `'right'`, `'top'`, `'inline'` | Where the toolbar appears relative to the row |
 | `toolbarVerticalAlign` | `'top'`, `'center'`, `'bottom'` | Vertical alignment for `left`/`right` positions |
 | `toolbarHorizontalAlign` | `'start'`, `'center'`, `'end'`, `'cursor'` | Horizontal alignment for `top` position |
-| `toolbarFollowsCursor` | `boolean` | Toolbar tracks mouse position horizontally |
+| `shouldToolbarFollowCursor` | `boolean` | Toolbar tracks mouse position horizontally |
 | `toolbarColumn` | `string \| number` | Pin toolbar above a specific column (for `top` position) |
 
 ### Cell-Specific Toolbar
 
 ```javascript
-grid.cellToolbar = (row, rowIndex, field, colIndex) => {
+grid.getCellToolbarItemsCallback = ({ row, field }) => {
   if (field === 'status') {
     return [
-      { id: 'approve', icon: '✅', title: 'Approve', onclick: ({ row }) => approve(row) }
+      { id: 'approve', icon: '✅', text: 'Approve', onClick: ({ row }) => approve(row) }
     ]
   }
-  return undefined  // No cell-specific toolbar
+  return undefined  // No cell-specific items — the rowToolbar is used
 }
 ```
+
+Cell items are merged over `rowToolbar` by `id` / `action`.
 
 ## Context Menu
 
@@ -771,63 +848,103 @@ grid.cellToolbar = (row, rowIndex, field, colIndex) => {
 grid.contextMenu = [
   {
     id: 'view',
-    label: 'View Details',                         // or (context) => `View ${context.row.name}`
-    icon: '👁️',                                    // or (context) => context.row.active ? '🟢' : '🔴'
-    shortcut: 'Enter',                             // Display-only shortcut hint
-    visible: (context) => true,                    // or static boolean
-    disabled: (context) => context.row.locked,     // or static boolean
-    danger: false,
-    dividerBefore: false,
-    onclick: (context) => { /* context: { row, rowIndex, colIndex, column, cellValue } */ }
+    text: 'View Details',                          // or getTextCallback: (ctx) => `View ${ctx.row.name}`
+    icon: '👁️',                                    // or getIconCallback: (ctx) => ctx.row.active ? '🟢' : '🔴'
+    shortcut: 'Enter',                             // display-only hint
+    getIsVisibleCallback: (ctx) => true,           // or isVisible: boolean
+    getIsDisabledCallback: (ctx) => ctx.row.locked,// or isDisabled: boolean
+    isDanger: false,
+    onClick: (detail) => { /* detail: { row, rowIndex, column, colIndex, field, value, action, id, source, … } */ }
+  },
+  { divider: true, text: 'Rows' },                 // labelled divider
+  'duplicate',                                     // row built-ins work here too
+  'delete',
+  {
+    id: 'more',
+    text: 'More',
+    getChildrenCallback: async (ctx) => loadMoreItems(ctx.row)   // lazy submenu (a loading row shows meanwhile)
   }
 ]
 ```
+
+Cell menu built-ins (by `action` or string): the row built-ins (`add`, `delete`, `duplicate`, `move-up`, `move-down`) and, in tree mode, `expand-all`, `collapse-all`, `expand-tree`, `collapse-tree`.
+
+`beforeContextMenuOpenCallback(ctx)` runs (sync) before the menu opens with the cell ctx: return `false` to show no grid menu (the browser's own menu shows), or an entries array to show instead of `contextMenu`.
 
 ### Header Context Menu
 
 ```javascript
 grid.headerContextMenu = [
-  'sortAsc',                    // Predefined: sort ascending
-  'sortDesc',                   // Predefined: sort descending
-  'clearSort',                  // Predefined: clear sort
-  'hideColumn',                 // Predefined: hide this column
-  'freezeColumn',               // Predefined: freeze/unfreeze column
-  'unfreezeColumn',
-  'columnVisibility',           // Predefined: submenu to toggle column visibility
+  'sort-asc',                   // Built-in: sort ascending
+  'sort-desc',                  // Built-in: sort descending
+  'clear-sort',                 // Built-in: clear sort
+  { divider: true },
+  'hide-column',                // Built-in: hide this column
+  'freeze-column',              // Built-in: freeze column
+  'unfreeze-column',            // Built-in: unfreeze column
+  'column-visibility',          // Built-in: submenu to toggle column visibility
   {
     id: 'custom',
-    label: 'Custom Action',
+    text: 'Custom Action',
     icon: '⚙️',
-    children: [...],             // Static submenu items
-    submenu: (context) => [...], // Dynamic submenu items
-    onclick: (context) => { /* context: { column, field, columnIndex, sortDirection, isFrozen, allColumns, labels } */ }
+    children: [...],                          // static submenu, or
+    getChildrenCallback: (ctx) => [...],      // dynamic submenu (sync or async)
+    onClick: (detail) => { /* detail: { column, field, colIndex, sortDirection, isFrozen, isTreeMode, allColumns, labels, … } */ }
   }
 ]
 ```
 
-## Callbacks
+Column-visibility toggles report `action: 'toggle-column'` (with `id` = the field) and `'show-all-columns'`. On the filler area right of the last column, `ctx.column` is `null` and `colIndex` is `-1`. `beforeHeaderMenuOpenCallback(ctx)` works like `beforeContextMenuOpenCallback`.
 
-These are **callback properties** set on the grid element, not DOM events. Use the naming convention: `on*` callbacks are fire-and-forget notifications; `*Callback` properties return a value that affects behavior (see column-level callbacks above).
+## Keyboard Shortcuts
 
-| Callback | Signature | Description |
-|----------|-----------|-------------|
-| `onrowchange` | `(detail: RowChangeDetail<T>) => void` | Cell value changed. Detail includes `row`, `draftRow`, `rowIndex`, `field`, `oldValue`, `newValue`, `isValid`, `validationError` |
-| `onroweditstart` | `(detail: { row, rowIndex, field }) => void` | Editing started on a cell |
-| `onroweditcancel` | `(detail: { row, rowIndex, field }) => void` | Edit was cancelled (Escape) |
-| `onvalidationerror` | `(detail: { row, rowIndex, field, error }) => void` | Validation failed on commit |
-| `ontoolbarclick` | `(detail: ToolbarClickDetail<T>) => void` | Toolbar button clicked. Detail: `{ item, rowIndex, row, event, triggerElement }` |
-| `onrowaction` | `(detail: { action, rowIndex, row }) => void` | *Legacy* — use `ontoolbarclick` |
-| `oncontextmenuopen` | `(context: ContextMenuContext<T>) => void` | Cell context menu opened |
-| `onheadercontextmenuopen` | `(context: HeaderMenuContext<T>) => void` | Header context menu opened |
-| `ondatarequest` | `(detail: DataRequestDetail) => void` | Sort/page/pageSize changed. Detail: `{ sort, page, pageSize, trigger, mode, skip }` |
-| `onrowdelete` | `(detail: { rowIndex, row }) => void` | Ctrl+Delete pressed on a row. Also dispatched as a DOM `CustomEvent` |
-| `onrowfocus` | `(detail: RowFocusDetail<T>) => void` | Different row was focused. Detail: `{ rowIndex, row, previousRowIndex }` |
-| `onrowlockchange` | `(detail: RowLockChangeDetail<T>) => void` | Row lock state changed |
-| `oncolumnresize` | `(detail: ColumnResizeDetail) => void` | Column resized. Detail: `{ field, oldWidth, newWidth, allWidths }` |
-| `oncolumnreorder` | `(detail: ColumnReorderDetail) => void` | Column reordered. Detail: `{ field, fromIndex, toIndex, allOrder }` |
-| `oncellselectionchange` | `(detail: CellSelectionChangeDetail) => void` | Cell selection changed. Detail: `{ range, cellCount }` |
+```javascript
+grid.rowShortcuts = [
+  { shortcut: 'Ctrl+D', action: 'duplicate' },                     // a row built-in
+  { shortcut: 'F2', id: 'details', text: 'Details', onClick: ({ row }) => openDetails(row) },
+  { shortcut: 'Delete', id: 'archive', text: 'Archive', getIsDisabledCallback: ({ row }) => row.locked }
+]
 
-> **Note:** Only `rowdelete` is also dispatched as a DOM `CustomEvent`. All other callbacks are property-based only.
+grid.rangeShortcuts = [
+  { shortcut: 'Ctrl+E', id: 'export', text: 'Export selection', onClick: ({ rows, rowIndices, cellRange }) => exportRows(rows) }
+]
+```
+
+Row shortcuts act on the focused / hovered row with the cell ctx; range shortcuts act on the selection with `{ rows, rowIndices, cellRange?, cells? }` (custom only). Both fire the `action` event with `source: 'keyboard'`. With `isShortcutsHelpVisible`, the shortcuts are listed in a help popover.
+
+## Events
+
+Every event is a real DOM event (bubbles, not composed) **and** a camelCase `on*` property twin called with the same detail first. Every detail carries the non-enumerable `controller` and `element`.
+
+```javascript
+grid.addEventListener('row-change', (e) => save(e.detail.draftRow))
+// or
+grid.onRowChange = (detail) => save(detail.draftRow)
+```
+
+| Event | Twin | Detail |
+|-------|------|--------|
+| `row-change` | `onRowChange` | A cell value was committed (editor, checkbox, paste, new row): `{ row, draftRow, rowIndex, field, oldValue, newValue, isValid, validationError }` |
+| `edit-start` | `onEditStart` | A cell editor opened: `{ row, rowIndex, field }` |
+| `edit-cancel` | `onEditCancel` | A cell edit was cancelled: `{ row, rowIndex, field }` |
+| `validation-error` | `onValidationError` | `validateCallback` rejected a value: `{ row, rowIndex, field, error, source: 'edit' \| 'paste' }` |
+| `row-focus` | `onRowFocus` | A different row got focus: `{ row, rowIndex, previousRowIndex }` |
+| `row-delete` | `onRowDelete` | Ctrl+Delete on a row — a request; the grid does not delete: `{ row, rowIndex }` |
+| `cell-selection-change` | `onCellSelectionChange` | The selected cell range changed: `{ range, cellCount }` |
+| `data-request` | `onDataRequest` | Sort / page / page size changed or more rows are needed (server-side data): `{ sort, page, pageSize, trigger, mode, skip }` |
+| `filter-change` | `onFilterChange` | A column filter changed: `{ filters }`. With `filterMode: 'server'` the consumer filters |
+| `column-resize` | `onColumnResize` | A column was resized: `{ field, oldWidth, newWidth, allWidths }` |
+| `column-reorder` | `onColumnReorder` | A column was moved: `{ field, fromIndex, toIndex, allOrder }` |
+| `expand-change` | `onExpandChange` | Tree rows expanded / collapsed (toggle, subtree, expand / collapse all): `{ path, isExpanded, expandedPaths }` (`path` is `null` for all) |
+| `row-lock-change` | `onRowLockChange` | A row was locked / unlocked by id: `{ rowId, row, rowIndex, lockInfo, source }` |
+| `paste-complete` | `onPasteComplete` | A multi-cell paste finished: `{ totalCells, successfulCells, failedCells, skippedCells, newRowsCreated, cellResults, hadHeaders }` |
+| `action` | `onAction` | A toolbar / menu / shortcut item was activated: `{ action, id, item, source, sourceEvent, triggerElement, dataset }` + the surface fields (see below) |
+
+`action` detail: `action` is the built-in name or `'custom'`; `source` is `'row-toolbar'`, `'cell-toolbar'`, `'context-menu'`, `'header-menu'` or `'keyboard'`. Row surfaces add `row` / `rowIndex` (cell surfaces also `column` / `colIndex` / `field` / `value`), the header menu its `HeaderMenuContext` fields, range shortcuts `rows` / `rowIndices`. It fires after the item's `onClick`, before the built-in runs.
+
+## Controller
+
+`el.controller` is the public `GridController` facade — the same object every ctx / detail carries as `controller`. It covers rows (`getItems`, `getDisplayItems`, `insertRow`, `removeRows`, `duplicateRow`, `moveRow`, `findRowById`, `updateRowById`, …), drafts and validation, row locking, row / cell / column selection, tree (`expandAll`, `collapseAll`, `expandSubtree`, `collapseSubtree`, `toggleExpandedPath`, …), columns (widths, order), focus / editing (`focusCell`, `startEditing`) and menus (`closeContextMenu`, `closeToolbar`). Most of these are also methods on the element itself (below).
 
 ## Public Methods
 
@@ -861,7 +978,7 @@ These are **callback properties** set on the grid element, not DOM events. Use t
 
 | Method | Returns | Description |
 |--------|---------|-------------|
-| `getRowId(row)` | `unknown \| undefined` | Get the ID of a row using `idValueMember`/`idValueCallback` |
+| `getRowId(row)` | `unknown \| undefined` | Get the ID of a row using `idValueMember`/`getRowIdCallback` |
 | `findRowById(id)` | `{ row, index } \| null` | Find a row by its ID |
 
 ### Row Updates
@@ -876,10 +993,10 @@ These are **callback properties** set on the grid element, not DOM events. Use t
 | Method | Returns | Description |
 |--------|---------|-------------|
 | `isRowLocked(rowOrId)` | `boolean` | Check if a row is locked |
-| `getRowLockInfo(rowOrId)` | `RowLockInfo \| null` | Get lock information for a row |
+| `getRowLockInfo(rowOrId)` | `RowLock \| null` | Get lock information for a row |
 | `lockRowById(id, lockerInfo?)` | `boolean` | Lock a row externally (e.g., from WebSocket message) |
 | `unlockRowById(id)` | `boolean` | Unlock an externally locked row |
-| `getExternalLocks()` | `Map<unknown, RowLockInfo>` | Get all external locks |
+| `getExternalLocks()` | `Map<unknown, RowLock>` | Get all external locks |
 | `clearExternalLocks()` | `void` | Remove all external locks |
 
 ### Row Selection
@@ -921,7 +1038,7 @@ These are **callback properties** set on the grid element, not DOM events. Use t
 
 ### CSS Variable Architecture
 
-WebGrid uses a two-level CSS variable system:
+The grid uses a two-level CSS variable system:
 
 ```css
 web-grid {
@@ -995,14 +1112,14 @@ The `light` versions of the same signals force light mode, e.g. for an app toggl
 grid.columns = [{
   field: 'salary',
   cellClass: 'salary-cell',                                    // Static class
-  cellClassCallback: (value, row) => value > 90000 ? 'high-value' : null  // Dynamic class
+  getCellClassCallback: ({ value }) => value > 90000 ? 'high-value' : null  // Dynamic class
 }]
 
 // Per-row styling
-grid.rowClassCallback = (row, index) => row.status === 'inactive' ? 'row-inactive' : null
+grid.getRowClassCallback = ({ row }) => row.status === 'inactive' ? 'row-inactive' : null
 
 // Inject custom CSS into shadow DOM
-grid.customStylesCallback = () => `
+grid.getCustomStylesCallback = () => `
   .high-value { background: #d1fae5 !important; }
   .row-inactive { opacity: 0.5; }
 `
@@ -1025,7 +1142,18 @@ grid.labels = {
   paginationPerPage: 'per page',
   dropdownNoOptions: 'No options',
   dropdownSearching: 'Searching...',
-  contextMenu: {
+  actions: {                       // built-in row / tree action texts
+    add: 'Add row',
+    delete: 'Delete row',
+    duplicate: 'Duplicate row',
+    moveUp: 'Move up',
+    moveDown: 'Move down',
+    expandAll: 'Expand all',
+    collapseAll: 'Collapse all',
+    expandTree: 'Expand entire tree',
+    collapseTree: 'Collapse entire tree'
+  },
+  contextMenu: {                   // header-menu built-in texts
     sortAsc: 'Sort Ascending',
     sortDesc: 'Sort Descending',
     clearSort: 'Clear Sort',

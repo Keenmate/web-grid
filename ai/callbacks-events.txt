@@ -5,181 +5,248 @@ CALLBACKS AND EVENTS
 
 NAMING CONVENTION
 -----------------
-on* = Events (fire-and-forget notifications, return value is ignored)
-*Callback = Callbacks (return value affects component behavior)
+Events          - real DOM events with kebab-case names (row-change, action, ...)
+                  plus a camelCase on* twin property (onRowChange, onAction, ...).
+                  Fire-and-forget: return values are ignored.
+*Callback       - callbacks whose return value affects component behavior
+                  (get*Callback returns a value, render*Callback returns HTML,
+                  before*Callback can veto with false, create*Callback builds rows).
 
-Events can be safely ignored. The component works without them.
-Callbacks affect behavior. The component depends on the return value.
+Every callback takes ONE argument: a ctx object. Every ctx and every event
+detail carries `controller` (the public GridController, also el.controller)
+and `element` (the <web-grid> host). Both are non-enumerable, so
+JSON.stringify / console.log show only the data.
+
+    grid.getRowClassCallback = ({ rowIndex, controller }) =>
+      controller.isRowDirty(rowIndex) ? 'row-dirty' : null
 
 
-GRID-LEVEL EVENTS (PROPERTY-BASED)
------------------------------------
-All events are set as properties on the grid element. They are NOT DOM
-CustomEvents (except onrowdelete which is both).
+EVENTS
+------
+Events bubble (they are NOT composed). Listen either way:
 
-onrowchange
-  Signature: (detail: RowChangeDetail<T>) => void
-  Fires when a cell value changes (after commit).
+    grid.addEventListener('row-change', (e) => save(e.detail))
+    grid.onRowChange = (detail) => save(detail)     // twin, called with the detail first
+
+The twin receives the detail object (not the CustomEvent).
+
+row-change / onRowChange
   Detail: { row, draftRow, rowIndex, field, oldValue, newValue, isValid, validationError }
-  The row is the original (unchanged). The draftRow contains the user's edits
+  Fires when a cell value is committed (editor, checkbox, paste, new row).
+  The row is the original (unchanged). draftRow contains the user's edits
   including invalid values.
 
-onroweditstart
-  Signature: (detail: { row: T, rowIndex: number, field: string }) => void
-  Fires when editing begins on a cell.
+edit-start / onEditStart
+  Detail: { row, rowIndex, field }
+  Fires when a cell editor opens.
 
-onroweditcancel
-  Signature: (detail: { row: T, rowIndex: number, field: string }) => void
+edit-cancel / onEditCancel
+  Detail: { row, rowIndex, field }
   Fires when the user cancels an edit (Escape key).
 
-onvalidationerror
-  Signature: (detail: { row: T, rowIndex: number, field: string, error: string }) => void
-  Fires when beforeCommitCallback or validateCallback rejects a value.
+validation-error / onValidationError
+  Detail: { row, rowIndex, field, error, source: 'edit' | 'paste' }
+  Fires when column.validateCallback rejects a value (editor commit or paste).
 
-ontoolbarclick
-  Signature: (detail: ToolbarClickDetail<T>) => void
-  Fires when a toolbar button is clicked.
-  Detail: { item: NormalizedToolbarItem<T>, rowIndex: number, row: T, event: MouseEvent, triggerElement: HTMLElement }
-  The triggerElement is the clicked button inside the shadow DOM — usable as a Floating UI anchor for popovers.
+action / onAction
+  Detail: GridActionEventDetail<T> = { action, id?, item, source, sourceEvent?,
+          triggerElement?, dataset, ...surface fields }
+  Fires for every toolbar, inline, cell-toolbar, menu and shortcut item.
+  action: built-in name ('add', 'sort-asc', ...) or 'custom'
+  source: 'row-toolbar' | 'cell-toolbar' | 'context-menu' | 'header-menu' | 'keyboard'
+  Surface fields: row / rowIndex (+ column / colIndex / field / value on
+  cell surfaces), the HeaderMenuContext fields in the header menu, rows /
+  rowIndices (/ cellRange / cells) for range shortcuts.
+  triggerElement is the clicked button (inside the shadow DOM) - usable as
+  a Floating UI anchor for popovers.
+  Fires after the item's onClick and BEFORE the built-in runs. See
+  toolbar-actions.txt.
 
-onrowaction
-  Signature: (detail: { action: string, rowIndex: number, row: T }) => void
-  LEGACY. Use ontoolbarclick instead.
-
-oncontextmenuopen
-  Signature: (context: ContextMenuContext<T>) => void
-  Fires when the cell/row context menu opens.
-  Context: { row, rowIndex, colIndex, column, cellValue }
-
-onheadercontextmenuopen
-  Signature: (context: HeaderMenuContext<T>) => void
-  Fires when the header context menu opens.
-  Context: { column, field, columnIndex, sortDirection, isFrozen, allColumns, labels }
-
-ondatarequest
-  Signature: (detail: DataRequestDetail) => void
-  Fires when sort, page, or pageSize changes.
+data-request / onDataRequest
   Detail: { sort, page, pageSize, trigger, mode, skip }
+  Fires when sort (incl. a header-menu sort), page, or pageSize changes,
+  or more rows are needed (infinite scroll).
   trigger: 'sort' | 'page' | 'pageSize' | 'init' | 'loadMore'
   mode: 'replace' | 'append' (append for infinite scroll loadMore)
 
-onrowdelete
-  Signature: (detail: { rowIndex: number, row: T }) => void
-  Fires when Ctrl+Delete is pressed on a row.
-  NOTE: This is the ONLY callback also dispatched as a DOM CustomEvent.
-  Both the property callback and addEventListener('rowdelete', ...) work.
+filter-change / onFilterChange
+  Detail: { filters }   (current filter value per field)
+  Fires when a column filter changes. With filterMode = 'server'
+  (attribute filter-mode="server") the grid does not filter locally -
+  the consumer filters and sets items.
 
-onrowfocus
-  Signature: (detail: RowFocusDetail<T>) => void
-  Fires when a different row is focused (useful for master/detail patterns).
+row-delete / onRowDelete
+  Detail: { row, rowIndex }
+  Fires when Ctrl+Delete is pressed on a row. A REQUEST - the grid does
+  not delete; remove the row yourself.
+
+row-focus / onRowFocus
   Detail: { rowIndex, row, previousRowIndex }
+  Fires when a different row is focused (useful for master/detail patterns).
 
-onrowlockchange
-  Signature: (detail: RowLockChangeDetail<T>) => void
-  Fires when a row's lock state changes.
+row-lock-change / onRowLockChange
   Detail: { rowId, row, rowIndex, lockInfo, source }
+  Fires when a row's lock state changes.
   source: 'property' | 'callback' | 'external'
 
-oncolumnresize
-  Signature: (detail: ColumnResizeDetail) => void
-  Fires when a column is resized by dragging.
+column-resize / onColumnResize
   Detail: { field, oldWidth, newWidth, allWidths }
+  Fires when a column is resized by dragging.
 
-oncolumnreorder
-  Signature: (detail: ColumnReorderDetail) => void
-  Fires when a column is reordered by dragging.
+column-reorder / onColumnReorder
   Detail: { field, fromIndex, toIndex, allOrder }
+  Fires when a column is reordered by dragging.
 
-oncellselectionchange
-  Signature: (detail: CellSelectionChangeDetail) => void
-  Fires when the cell range selection changes.
+cell-selection-change / onCellSelectionChange
   Detail: { range: CellRange | null, cellCount: number }
+  Fires when the cell range selection changes.
 
-onbeforepaste
-  Signature: (detail: BeforePasteDetail<T>) => void
-  Fires before paste is applied. Allows cancellation or cell skipping.
-  Detail: { rawText, parsedRows, hasHeaders, headerMapping, targetRowIndex,
-  targetColIndex, newRowsCount, cancel, skipCells }
-  Set detail.cancel = true to cancel the entire paste.
-  Add "row-col" keys to detail.skipCells to skip specific cells.
+expand-change / onExpandChange
+  Detail: { path, isExpanded, expandedPaths }
+  Fires when tree rows are expanded / collapsed (toggle, subtree,
+  expand / collapse all - path is null for the "all" operations).
 
-onpaste
-  Signature: (detail: PasteDetail<T>) => void
-  Fires after paste is applied.
+paste-complete / onPasteComplete
   Detail: { totalCells, successfulCells, failedCells, skippedCells,
   newRowsCreated, cellResults, hadHeaders }
+  Fires after a multi-cell paste is applied.
 
 
 GRID-LEVEL CALLBACKS (RETURN VALUE MATTERS)
 -------------------------------------------
 
-fillDragCallback
-  Signature: (detail: FillDragDetail) => boolean | void
-  Called when fill handle drag completes. Return false to cancel the fill.
+beforeActionCallback
+  Signature: (detail: GridActionEventDetail<T>) => unknown
+  Runs before any toolbar / menu / shortcut item activates. Return false
+  (or a Promise resolving to false) to cancel - e.g. a confirm dialog.
 
-paginationLabelsCallback
-  Signature: (context: PaginationLabelsContext) => Partial<PaginationLabels>
+beforeContextMenuOpenCallback
+  Signature: (ctx: CellContext<T>) => false | GridMenuEntry<T>[] | void
+  Sync. Runs before the cell context menu opens. false -> no grid menu
+  (the browser's menu shows); an entries array -> shown instead of contextMenu.
+
+beforeHeaderMenuOpenCallback
+  Signature: (ctx: HeaderMenuContext<T>) => false | GridHeaderMenuEntry<T>[] | void
+  Same contract for the header context menu.
+
+beforePasteCallback
+  Signature: (ctx: BeforePasteContext<T>) => boolean | void | Promise<boolean | void>
+  Runs before a multi-cell paste is applied. Return false to cancel.
+  ctx: { rawText, parsedRows, hasHeaders, headerMapping, targetRowIndex,
+  targetColIndex, newRowsCount, skipCells }
+  Add "rowIndex-colIndex" keys to ctx.skipCells to skip specific cells.
+
+beforeFillCallback
+  Signature: (ctx: FillContext<T>) => boolean | void | Promise<boolean | void>
+  Runs when a fill-handle drag completes. Return false to cancel the fill.
+  ctx: { sourceCell, targetCells, direction }
+
+getCellToolbarItemsCallback
+  Signature: (ctx: CellContext<T>) => GridToolbarEntry<T>[] | null | undefined
+  Cell-specific toolbar items, merged over rowToolbar by id / action.
+
+getPaginationLabelsCallback
+  Signature: (ctx: PaginationLabelsContext<T>) => Partial<PaginationLabels>
+  ctx: { currentPage, totalPages, totalItems, pageSize }
   Returns translated/customized pagination text labels.
 
-summaryContentCallback
-  Signature: (context: SummaryContext<T>) => string
+renderSummaryCallback
+  Signature: (ctx: SummaryContext<T>) => string
+  ctx: { items, allItems, totalItems, currentPage, pageSize, metadata }
   Returns HTML string for the summary bar content.
 
-customStylesCallback
-  Signature: () => string
+getCustomStylesCallback
+  Signature: (ctx: GridContext<T>) => string
   Returns CSS string injected into the shadow DOM.
 
-rowClassCallback
-  Signature: (row: T, rowIndex: number) => string | null
+getRowClassCallback
+  Signature: (ctx: RowContext<T>) => string | null
+  ctx: { row, rowIndex }
   Returns CSS class name(s) to apply to a row element.
 
-validationTooltipCallback
-  Signature: (context: ValidationTooltipContext<T>) => string | null
-  Returns HTML string for validation error tooltips (grid-level default).
+getIsRowEditableCallback
+  Signature: (ctx: RowDataContext<T>) => boolean
+  ctx: { row }. Per-row editability (isRowEditable is the static boolean).
 
-shortcutsHelpContentCallback
-  Signature: () => string
+getRowIdCallback
+  Signature: (ctx: RowDataContext<T>) => unknown
+  ctx: { row }. Row identity (alternative to idValueMember).
+
+getValidationTooltipCallback
+  Signature: (ctx: ValidationTooltipContext<T>) => string | null
+  ctx: the cell ctx + error. Returns HTML for validation error tooltips
+  (grid-level default).
+
+renderShortcutsHelpCallback
+  Signature: (ctx: GridContext<T>) => string
   Returns custom HTML to display alongside the shortcuts help list.
 
+renderChevronCallback
+  Signature: (ctx: ChevronContext<T>) => string
+  ctx: { row, isExpanded, hasChildren, level, path }
+  Returns HTML for the tree chevron (cached per row + expanded state).
+
 createRowCallback
-  Signature: (pastedData: Record<string, unknown>, rowIndex: number) => T
-  Creates a new row object from pasted data when paste adds rows beyond the
-  current items array. Required for multi-row paste to create new rows.
+  Signature: (ctx: CreateRowContext<T>) => T
+  ctx: { data, rowIndex } - data is the pasted values by field.
+  Creates a new row object when a paste adds rows beyond the current items.
+  Required for multi-row paste to create new rows.
 
 createEmptyRowCallback
-  Signature: () => T | Promise<T>
-  Creates a blank row for the new-row entry feature (isNewRowEnabled).
-  Called when the user focuses the empty row at the bottom/top.
+  Signature: (ctx: GridContext<T>) => T | Promise<T>
+  Creates a blank row for the new-row entry feature (isNewRowEnabled) and
+  for the 'add' built-in action (toolbar / menu / shortcut).
+
+createDuplicateRowCallback
+  Signature: (ctx: RowContext<T>) => T
+  ctx: { row, rowIndex }. The copy the 'duplicate' built-in inserts
+  (default: shallow copy with idMember cleared).
+
+
+ROW LOCKING CALLBACKS (ON rowLocking)
+-------------------------------------
+
+getIsLockedCallback:        (ctx: RowContext<T>) => boolean
+getLockInfoCallback:        (ctx: RowContext<T>) => RowLock | null
+getCanEditLockedCallback:   (ctx: RowLockContext<T>) => boolean    ctx: { row, rowIndex, lockInfo }
+
+See row-locking.txt.
 
 
 COLUMN-LEVEL CALLBACKS (ON COLUMN<T>)
 --------------------------------------
+Most column callbacks receive the cell ctx (CellContext<T>):
+{ row, rowIndex, column, colIndex, field, value } (+ controller, element).
 
-formatCallback
-  Signature: (value: unknown, row: T) => string
-  Returns formatted display string for the cell value. Text only (no HTML).
+getDisplayValueCallback
+  Signature: (ctx: CellContext<T>) => string
+  Returns the display string for the cell value. Text only (escaped).
 
-templateCallback
-  Signature: (row: T) => string
-  Returns HTML string for custom cell content.
+renderCellCallback
+  Signature: (ctx: CellContext<T>) => string
+  Returns HTML string for custom cell content (wins over getDisplayValueCallback).
 
-renderCallback
-  Signature: (row: T, element: HTMLElement) => void
-  Imperative cell rendering. Receives the <td> element directly.
-  NOTE: Defined in the type system but not yet wired into rendering.
-
-tooltipCallback
-  Signature: (value: unknown, row: T) => string | null
+getTooltipCallback
+  Signature: (ctx: CellContext<T>) => string | null
   Returns tooltip text for the cell. Takes priority over tooltipMember.
 
-validateCallback (DEPRECATED)
-  Signature: (value: unknown, row: T) => string | null | Promise<string | null>
-  Returns error message or null. Use beforeCommitCallback instead.
+getCellClassCallback
+  Signature: (ctx: CellContext<T>) => string | null
+  Returns dynamic CSS class name(s) for cells in this column.
 
-beforeCommitCallback
-  Signature: (context: BeforeCommitContext<T>) => BeforeCommitResult | Promise<BeforeCommitResult>
-  Validates and optionally transforms value before commit.
-  Context: { value, oldValue, row, rowIndex, field }
+getIsEditableCallback
+  Signature: (ctx: RowDataContext<T>) => boolean
+  ctx: { row }. Per-row editability of the column (isEditable is the static boolean).
+
+filterCallback
+  Signature: (ctx: FilterContext<T>) => boolean | null
+  ctx: { filterValue, row, column, field }. Custom filter predicate.
+
+validateCallback
+  Signature: (ctx: ValidateContext<T>) => ValidateResult | Promise<ValidateResult>
+  Validates and optionally transforms a value before commit (editor) or
+  on paste (with shouldValidateOnPaste).
+  ctx: the cell ctx + { value (candidate), oldValue, source: 'edit' | 'paste' }
   Return values:
     { valid: true }                          Accept
     { valid: true, transformedValue: x }     Accept with transformation
@@ -188,111 +255,86 @@ beforeCommitCallback
     false                                    Reject (no message)
     'Error message'                          Reject with that string as message
 
-cellEditCallback
-  Signature: (context: CustomEditorContext<T>) => void
-  Handler for editor: 'custom'. Receives { value, row, rowIndex, field, commit, cancel }.
+renderEditorCallback
+  Signature: (ctx: EditorContext<T>) => void
+  Handler for editor: 'custom'. ctx: the cell ctx + commit(newValue) / cancel().
 
-cellClassCallback
-  Signature: (value: unknown, row: T) => string | null
-  Returns dynamic CSS class name(s) for cells in this column.
-
-validationTooltipCallback (column-level)
-  Signature: (context: ValidationTooltipContext<T>) => string | null
+getValidationTooltipCallback (column-level)
+  Signature: (ctx: ValidationTooltipContext<T>) => string | null
   Returns HTML for this column's validation error tooltip. Overrides grid-level.
 
-beforeCopyCallback
-  Signature: (value: unknown, row: T) => string
-  Transforms value before copying to clipboard.
+getCopyValueCallback
+  Signature: (ctx: CellContext<T>) => string
+  The text copied to the clipboard for this cell.
 
-beforePasteCallback
-  Signature: (value: string, row: T) => unknown
-  Processes pasted value before applying to the cell.
+getPasteValueCallback
+  Signature: (ctx: PasteValueContext<T>) => unknown
+  ctx: the cell ctx + text (the pasted text). Returns the value to store.
 
 
 EDITOR OPTION CALLBACKS (ON EDITOROPTIONS<T>)
 ----------------------------------------------
 These are set inside column.editorOptions for select, combobox, and
-autocomplete editor types.
-
-loadOptions
-  Signature: (row: T, field: string) => Promise<EditorOption[]>
-  Async option loader. Trigger controlled by optionsLoadTrigger.
+autocomplete editor types. Option callbacks receive ({ option }).
 
 getValueCallback
-  Signature: (option: EditorOption) => string | number
+  Signature: ({ option }) => string | number
   Returns the value to store from an option.
 
-getDisplayCallback
-  Signature: (option: EditorOption) => string
+getDisplayValueCallback
+  Signature: ({ option }) => string
   Returns the display text for an option.
 
-getSearchCallback
-  Signature: (option: EditorOption) => string
+getSearchValueCallback
+  Signature: ({ option }) => string
   Returns searchable text (falls back to display text).
 
 getIconCallback
-  Signature: (option: EditorOption) => string
+  Signature: ({ option }) => string
   Returns icon/emoji for an option.
 
 getSubtitleCallback
-  Signature: (option: EditorOption) => string
+  Signature: ({ option }) => string
   Returns subtitle/description for an option.
 
-getDisabledCallback
-  Signature: (option: EditorOption) => boolean
+getIsDisabledCallback
+  Signature: ({ option }) => boolean
   Returns whether an option is disabled.
 
 getGroupCallback
-  Signature: (option: EditorOption) => string
+  Signature: ({ option }) => string
   Returns group name for grouping options.
 
 renderOptionCallback
-  Signature: (option: EditorOption, context: OptionRenderContext) => string
+  Signature: (ctx: OptionRenderContext<T>) => string
+  ctx: { option, index, isHighlighted, isSelected, isDisabled }
   Returns custom HTML for rendering an option in the dropdown.
-  Context: { index, isHighlighted, isSelected, isDisabled }
 
-onselect
-  Signature: (option: EditorOption, row: T) => void
-  Event (fire-and-forget). Fires when an option is selected.
+onSelect
+  Signature: (ctx: OptionSelectContext<T>) => void
+  ctx: the cell ctx + option. Fire-and-forget; fires when an option is selected.
 
 searchCallback (autocomplete only)
-  Signature: (query: string, row: T, signal?: AbortSignal) => Promise<EditorOption[]>
-  Async search function. Receives AbortSignal for cancellation on new searches.
+  Signature: (ctx: OptionSearchContext<T>) => Promise<EditorOption[]>
+  ctx: the cell ctx + { term, signal }. signal is aborted when a newer
+  search starts.
 
 
-CONTEXT MENU ITEM CALLBACKS
-----------------------------
+ITEM CALLBACKS (TOOLBAR, MENUS, SHORTCUTS)
+-------------------------------------------
+All items are action items (see toolbar-actions.txt). ctx is the surface
+ctx: RowContext (toolbar), CellContext (cell menu, cell toolbar, row
+shortcuts), HeaderMenuContext (header menu), RangeContext (range shortcuts).
 
-onclick (on ContextMenuItem<T>)
-  Signature: (context: ContextMenuContext<T>) => void | Promise<void>
-  Context: { row, rowIndex, colIndex, column, cellValue }
+onClick(detail)                 runs on activation; detail = the action event detail; awaited
+getTextCallback(ctx)            dynamic text
+getIconCallback(ctx)            dynamic icon
+getTooltipCallback(ctx)         dynamic tooltip
+getClassCallback(ctx)           dynamic CSS classes
+getIsVisibleCallback(ctx)       dynamic visibility
+getIsDisabledCallback(ctx)      dynamic disabled state
+getIsActiveCallback(ctx)        dynamic toggle state
+getChildrenCallback(ctx)        menus only: dynamic / lazy submenu (sync or async)
 
-onclick (on HeaderMenuItem<T>)
-  Signature: (context: HeaderMenuContext<T>) => void | Promise<void>
-  Context: { column, field, columnIndex, sortDirection, isFrozen, allColumns, labels }
-
-label/icon/disabled/visible can be static values or functions receiving context.
-submenu: (context) => HeaderMenuItem[] for dynamic submenus.
-
-
-TOOLBAR ITEM CALLBACKS
------------------------
-
-onclick (on RowToolbarItem<T>)
-  Signature: (detail: { row: T, rowIndex: number }) => void | Promise<void>
-
-disabled: boolean | (row: T, rowIndex: number) => boolean
-hidden: boolean | (row: T, rowIndex: number) => boolean
-tooltipCallback: (row: T, rowIndex: number) => string
-
-
-SHORTCUT CALLBACKS
-------------------
-
-RowShortcut<T>.action
-  Signature: (ctx: ShortcutContext<T>) => void | Promise<void>
-  Context: { row, rowIndex, colIndex, column, cellValue }
-
-RangeShortcut<T>.action
-  Signature: (ctx: RangeShortcutContext<T>) => void | Promise<void>
-  Context: { rows, rowIndices, cellRange?, cells? }
+Static forms: text, icon, tooltip, cssClass, isVisible, isDisabled,
+isActive, isDanger, children.

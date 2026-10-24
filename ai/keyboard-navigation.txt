@@ -52,7 +52,7 @@ custom) and the grid's editTrigger setting.
                   editors, Enter navigates down (does not start editing).
   F2              Start editing the focused cell. For dropdown editors,
                   also opens the dropdown. For date editors, opens the
-                  date picker. For custom editors, calls cellEditCallback.
+                  date picker. For custom editors, calls renderEditorCallback.
   Space           Toggle checkbox value. For dropdown/date/custom editors,
                   starts editing and opens the respective picker/editor.
   Escape          If editing with dropdown/datepicker open: first press
@@ -81,88 +81,72 @@ ROW OPERATION KEYS
 ------------------
 These built-in keys operate on the currently focused row.
 
-  Ctrl+Delete     Fire the onrowdelete callback and dispatch a 'rowdelete'
-                  CustomEvent. Does NOT delete the row automatically.
-                  The consumer must handle deletion in the callback.
+  Ctrl+Delete     Fire the row-delete event (twin: onRowDelete). A REQUEST:
+                  it does NOT delete the row. The consumer handles deletion.
 
-                  grid.onrowdelete = ({ rowIndex, row }) => {
-                    grid.items = grid.items.filter((_, i) => i !== rowIndex)
+                  grid.onRowDelete = ({ row }) => {
+                    grid.items = grid.items.filter((r) => r !== row)
                   }
+                  // or grid.addEventListener('row-delete', (e) => ...)
 
-Row move operations (Ctrl+Up to move row up, Ctrl+Down to move row down)
-are available as predefined toolbar items ('moveUp', 'moveDown'), not as
-built-in keyboard shortcuts. To add them as keyboard shortcuts, use
-rowShortcuts (see below).
+Row move operations are available as the built-in actions 'move-up' /
+'move-down' (toolbar, context menu), not as built-in keys. To bind them to
+keys, use rowShortcuts with action: 'move-up' / 'move-down' (see below).
 
 
 ROW SHORTCUTS
 -------------
-rowShortcuts defines keyboard shortcuts that operate on a single focused row.
-Each shortcut requires key, id, label, and action. The action receives a
-context with the row data and position.
+rowShortcuts defines keyboard shortcuts that operate on a single focused
+(or hovered) row. Each entry is an ACTION ITEM bound to a key chord: it
+runs the same pipeline as a toolbar button (beforeActionCallback ->
+onClick -> the `action` event / onAction with source 'keyboard' ->
+the built-in). `action` may name a row built-in ('add', 'delete',
+'duplicate', 'move-up', 'move-down') - the grid then does the work.
 
-Type definition:
+Type definition (GridShortcut<T>):
 
-  type RowShortcut<T> = {
-    key: string                                     // Key combo string
-    id: string                                      // Unique identifier
-    label: string                                   // Display label for help overlay
-    action: (ctx: ShortcutContext<T>) => void        // Handler function
-    disabled?: boolean | ((ctx) => boolean)           // Optionally disable
+  {
+    shortcut: string                       // Key combo string (required)
+    action?: GridRowAction                 // A row built-in
+    id?: string                            // Identifies a custom shortcut
+    text?: string                          // Label in the help overlay (built-ins have one)
+    onClick?: (detail) => void | Promise<void>   // detail = the action event detail
+    isDisabled?: boolean
+    getIsDisabledCallback?: (ctx) => boolean
+    isVisible?: boolean / getIsVisibleCallback?: (ctx) => boolean
   }
 
-  type ShortcutContext<T> = {
+  ctx (CellContext<T>) = {
     row: T                  // The data object for the focused row
     rowIndex: number        // Index in displayItems
-    colIndex: number        // Currently focused column index
     column: Column<T>       // Column definition at colIndex
-    cellValue: unknown      // Raw value of the focused cell
+    colIndex: number        // Currently focused column index
+    field: string
+    value: unknown          // Raw value of the focused cell
+    controller, element     // non-enumerable
   }
+
+A toolbar item with the same `id` shows the shortcut's key in its tooltip.
 
 Example:
 
   grid.rowShortcuts = [
+    { shortcut: 'Delete', action: 'delete' },        // the grid removes the row
+    { shortcut: 'Ctrl+D', action: 'duplicate' },     // uses createDuplicateRowCallback if set
+    { shortcut: 'Ctrl+Up', action: 'move-up' },
+    { shortcut: 'Ctrl+Down', action: 'move-down' },
     {
-      key: 'Delete',
-      id: 'delete-row',
-      label: 'Delete row',
-      action: (ctx) => {
-        grid.items = grid.items.filter((_, i) => i !== ctx.rowIndex)
-      }
-    },
-    {
-      key: 'Ctrl+D',
-      id: 'duplicate-row',
-      label: 'Duplicate row',
-      action: (ctx) => {
-        const copy = { ...ctx.row, id: Date.now() }
-        grid.items = [
-          ...grid.items.slice(0, ctx.rowIndex + 1),
-          copy,
-          ...grid.items.slice(ctx.rowIndex + 1)
-        ]
-      }
-    },
-    {
-      key: 'Ctrl+Up',
-      id: 'move-up',
-      label: 'Move row up',
-      action: (ctx) => {
-        if (ctx.rowIndex === 0) return
-        const items = [...grid.items]
-        ;[items[ctx.rowIndex - 1], items[ctx.rowIndex]] =
-          [items[ctx.rowIndex], items[ctx.rowIndex - 1]]
-        grid.items = items
-      }
-    },
-    {
-      key: 'Shift+F2',
+      shortcut: 'Shift+F2',
       id: 'edit-details',
-      label: 'Edit in modal',
-      disabled: (ctx) => ctx.row.locked,
-      action: (ctx) => openEditModal(ctx.row)
+      text: 'Edit in modal',
+      getIsDisabledCallback: (ctx) => ctx.row.isLocked,
+      onClick: (detail) => openEditModal(detail.row)
     }
   ]
+
+Do not also delete / move the row in onClick or onAction for a built-in
+shortcut - the row would change twice. Veto with beforeActionCallback
+returning false (async OK, e.g. a confirm dialog).
 
 Shortcuts are checked before built-in key handlers. If a shortcut matches,
 it consumes the event (preventDefault) and the built-in behavior is skipped.
@@ -178,17 +162,21 @@ rangeShortcuts defines keyboard shortcuts that operate on multiple selected
 rows or a selected cell range. They work with both row selection (clicking
 row number column) and cell range selection (click+drag or Shift+click).
 
+Each entry is an action item bound to a key (GridRangeShortcut<T>) - custom
+only (no built-in `action`): handle it in onClick or the `action` event
+(source 'keyboard').
+
 Type definition:
 
-  type RangeShortcut<T> = {
-    key: string                                         // Key combo string
-    id: string                                          // Unique identifier
-    label: string                                       // Display label
-    action: (ctx: RangeShortcutContext<T>) => void       // Handler function
-    disabled?: boolean | ((ctx) => boolean)               // Optionally disable
+  {
+    shortcut: string                       // Key combo string (required)
+    id?: string
+    text?: string                          // Label
+    onClick?: (detail) => void | Promise<void>
+    isDisabled?: boolean / getIsDisabledCallback?: (ctx) => boolean
   }
 
-  type RangeShortcutContext<T> = {
+  ctx (RangeContext<T>) = {
     // Always present (populated for row selection, empty arrays for cell range)
     rows: T[]                // Selected row data objects (display order)
     rowIndices: number[]     // Selected row indices (sorted ascending)
@@ -209,25 +197,22 @@ Example:
 
   grid.rangeShortcuts = [
     {
-      key: 'Delete',
+      shortcut: 'Delete',
       id: 'delete-selected',
-      label: 'Delete selected rows',
-      action: (ctx) => {
-        const indexSet = new Set(ctx.rowIndices)
-        grid.items = grid.items.filter((_, i) => !indexSet.has(i))
-      }
+      text: 'Delete selected rows',
+      onClick: ({ rows, controller }) => controller.removeRows(rows)
     },
     {
-      key: 'Ctrl+E',
+      shortcut: 'Ctrl+E',
       id: 'export-selection',
-      label: 'Export selection',
-      action: (ctx) => {
-        if (ctx.cells) {
+      text: 'Export selection',
+      onClick: (detail) => {
+        if (detail.cells) {
           // Cell range selected - export cell data
-          exportCells(ctx.cells)
+          exportCells(detail.cells)
         } else {
           // Row selection - export full rows
-          exportRows(ctx.rows)
+          exportRows(detail.rows)
         }
       }
     }
@@ -247,7 +232,7 @@ SHORTCUTS HELP OVERLAY
 ----------------------
 When isShortcutsHelpVisible is true and rowShortcuts has entries, the grid
 displays a small info icon. Hovering or focusing the icon reveals an overlay
-listing all registered shortcuts with their key combinations and labels.
+listing all registered shortcuts with their key combinations and texts.
 
 Properties:
 
@@ -257,7 +242,7 @@ Properties:
   shortcutsHelpPosition        'top-right' (default) or 'top-left'
                                Where to place the icon in the grid
 
-  shortcutsHelpContentCallback () => string
+  renderShortcutsHelpCallback (ctx) => string
                                Return custom HTML to display above the
                                shortcuts list in the overlay
 
@@ -266,7 +251,7 @@ Example:
   grid.isShortcutsHelpVisible = true
   grid.shortcutsHelpPosition = 'top-right'
 
-  grid.shortcutsHelpContentCallback = () => {
+  grid.renderShortcutsHelpCallback = () => {
     return '<p>Use these shortcuts when a row is focused:</p>'
   }
 
@@ -412,7 +397,7 @@ DATE EDITOR:
   - Enter from navigate mode: start edit and open datepicker
 
 CUSTOM EDITOR:
-  - F2 or Space from navigate mode: start edit and call cellEditCallback
+  - F2 or Space from navigate mode: start edit and call renderEditorCallback
   - The custom editor receives commit() and cancel() functions
   - Grid does not handle keydown inside custom editors
 

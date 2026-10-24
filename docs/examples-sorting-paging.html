@@ -262,7 +262,7 @@
             <h2>Server-Side Pagination (Simulated)</h2>
             <p style="color: #666; margin-bottom: 1rem;">
                 This grid simulates server-side data fetching. Notice the loading state when sorting or paging.
-                The <code>ondatarequest</code> event fires and fetches data from a simulated API.
+                The <code>data-request</code> event (<code>onDataRequest</code>) fires and fetches data from a simulated API.
             </p>
 
             <div class="grid-wrapper">
@@ -313,7 +313,7 @@ grid.currentPage = 1
 grid.isPaginationVisible = true
 
 // Handle data requests
-grid.ondatarequest = (detail) => {
+grid.onDataRequest = (detail) => {
     // detail: { sort, page, pageSize, trigger }
     // trigger: 'sort' | 'page' | 'pageSize' | 'init'
     fetchData(detail).then(res => {
@@ -323,7 +323,7 @@ grid.ondatarequest = (detail) => {
 }
 
 // Custom/translated labels
-grid.paginationLabelsCallback = (ctx) => ({
+grid.getPaginationLabelsCallback = (ctx) => ({
     previous: '← Back',
     next: 'Forward →',
     pageInfo: `${ctx.currentPage}/${ctx.totalPages}`,
@@ -333,13 +333,13 @@ grid.paginationLabelsCallback = (ctx) => ({
 
 // Summary (aggregates, totals)
 grid.summaryPosition = 'bottom-left'
-grid.summaryContentCallback = ({ allItems }) => {
+grid.renderSummaryCallback = ({ allItems }) => {
   const total = allItems.reduce((s, r) => s + r.salary, 0)
   return `<strong>Total:</strong> $${total.toLocaleString()}`
 }
 
 // Server-side: use metadata for aggregates
-grid.summaryContentCallback = ({ metadata }) => {
+grid.renderSummaryCallback = ({ metadata }) => {
   return `<strong>Total:</strong> $${metadata?.total || 0}`
 }
 grid.summaryMetadata = serverResponse.aggregates
@@ -384,7 +384,7 @@ grid.summaryInline = false  // Each on its own row</pre>
             { field: 'id', title: 'ID', width: '60px', horizontalAlign: 'center' },
             { field: 'name', title: 'Name', width: '140px' },
             { field: 'department', title: 'Department', width: '120px' },
-            { field: 'salary', title: 'Salary', width: '100px', horizontalAlign: 'right', formatCallback: v => `$${v.toLocaleString()}` },
+            { field: 'salary', title: 'Salary', width: '100px', horizontalAlign: 'right', getDisplayValueCallback: ({ value: v }) => `$${v.toLocaleString()}` },
             { field: 'status', title: 'Status', width: '100px' },
             { field: 'location', title: 'Location', width: '120px' },
             { field: 'startDate', title: 'Start Date', width: '110px' }
@@ -407,7 +407,7 @@ grid.summaryInline = false  // Each on its own row</pre>
 
         // Summary at same position as pagination (will appear on left)
         grid1.summaryPosition = 'bottom-right'
-        grid1.summaryContentCallback = ({ allItems }) => {
+        grid1.renderSummaryCallback = ({ allItems }) => {
             const totalSalary = allItems.reduce((sum, item) => sum + item.salary, 0)
             const avgSalary = Math.round(totalSalary / allItems.length)
             return `<strong>Total:</strong> $${totalSalary.toLocaleString()} &nbsp;|&nbsp; <strong>Avg:</strong> $${avgSalary.toLocaleString()}`
@@ -427,7 +427,7 @@ grid.summaryInline = false  // Each on its own row</pre>
             }
         }
 
-        grid1.ondatarequest = (detail) => {
+        grid1.onDataRequest = (detail) => {
             updateSortDisplay(detail.sort)
         }
 
@@ -551,7 +551,7 @@ grid.summaryInline = false  // Each on its own row</pre>
         grid2.pageSizes = [10, 25, 50, 100]  // Page size options
         grid2.paginationPosition = 'bottom-right'  // Right-aligned pagination
         // Custom labels (Czech translation example)
-        grid2.paginationLabelsCallback = ({ currentPage, totalPages, totalItems }) => ({
+        grid2.getPaginationLabelsCallback = ({ currentPage, totalPages, totalItems }) => ({
             previous: '← Předchozí',
             next: 'Další →',
             pageInfo: `Strana ${currentPage} z ${totalPages}`,
@@ -621,12 +621,12 @@ grid.summaryInline = false  // Each on its own row</pre>
 
         // Summary using server-provided metadata (aggregates)
         grid2.summaryPosition = 'bottom-right'
-        grid2.summaryContentCallback = ({ metadata }) => {
+        grid2.renderSummaryCallback = ({ metadata }) => {
             const agg = metadata || {}
             return `<strong>Total Salary:</strong> $${agg.totalSalary?.toLocaleString() || 0}`
         }
 
-        grid2.ondatarequest = async (detail) => {
+        grid2.onDataRequest = async (detail) => {
             logEvent(detail.trigger, detail)
 
             const result = await fetchServerData(detail)

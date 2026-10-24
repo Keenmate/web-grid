@@ -14,8 +14,8 @@ selection.txt                    - Row selection, cell ranges, column selection,
 sorting-filtering-pagination.txt - Sorting, filtering, pagination, server-side data, summary
 keyboard-navigation.txt          - Navigation keys, editing keys, custom shortcuts, help overlay
 toolbar-actions.txt              - Row toolbar, inline actions, cell toolbar, context menus
-callbacks-events.txt             - All events (on*) and callbacks (*Callback) reference
-public-methods.txt               - All public methods on the <web-grid> element
+callbacks-events.txt             - All events (kebab DOM events + on* twins) and callbacks (*Callback)
+public-methods.txt               - Public methods on the <web-grid> element and el.controller
 frozen-columns.txt               - Freeze columns to left during horizontal scroll
 fill-handle.txt                  - Excel-like drag-to-fill for copying cell values
 virtual-scroll.txt               - Virtual scroll and infinite scroll for large datasets
@@ -29,6 +29,7 @@ KEYWORD INDEX
 A
 -
 Accessibility -> keyboard-navigation.txt
+action event / onAction -> toolbar-actions.txt, callbacks-events.txt
 Actions -> toolbar-actions.txt
 Alignment -> columns.txt
 Autocomplete -> dropdown-editors.txt
@@ -36,8 +37,13 @@ Auto-scroll -> frozen-columns.txt, keyboard-navigation.txt
 
 B
 -
-beforeCommitCallback -> editing.txt, callbacks-events.txt, columns.txt
+beforeActionCallback -> toolbar-actions.txt, callbacks-events.txt
+beforeContextMenuOpenCallback -> toolbar-actions.txt, callbacks-events.txt
+beforeFillCallback -> fill-handle.txt, callbacks-events.txt
+beforeHeaderMenuOpenCallback -> toolbar-actions.txt, callbacks-events.txt
+beforePasteCallback -> callbacks-events.txt
 Border -> styling-theming.txt
+Built-in actions (add, delete, move-up, sort-asc, ...) -> toolbar-actions.txt
 
 C
 -
@@ -47,8 +53,6 @@ Cell focus -> selection.txt, keyboard-navigation.txt
 Cell range selection -> selection.txt
 Cell toolbar -> toolbar-actions.txt
 cellClass -> columns.txt
-cellClassCallback -> columns.txt
-cellEditCallback -> columns.txt, callbacks-events.txt
 cellSelectionMode -> selection.txt
 Checkboxes -> selection.txt
 Column definition -> columns.txt, typescript-types.txt
@@ -58,8 +62,10 @@ Column selection -> selection.txt
 Combobox -> dropdown-editors.txt
 commitDraft -> editing.txt, public-methods.txt
 Context menu -> toolbar-actions.txt
+controller (el.controller, GridController) -> public-methods.txt, typescript-types.txt
 Copy/paste -> keyboard-navigation.txt, selection.txt
 createEmptyRowCallback -> callbacks-events.txt, editing.txt
+createDuplicateRowCallback -> callbacks-events.txt, toolbar-actions.txt
 createRowCallback -> callbacks-events.txt
 CSS variables -> styling-theming.txt
 Custom element -> basic-setup.txt
@@ -67,7 +73,8 @@ Custom element -> basic-setup.txt
 D
 -
 Data request -> sorting-filtering-pagination.txt, callbacks-events.txt
-Delete row -> keyboard-navigation.txt, callbacks-events.txt
+Delete row -> keyboard-navigation.txt, callbacks-events.txt, toolbar-actions.txt
+Dividers (menu / toolbar) -> toolbar-actions.txt
 Disabled columns -> columns.txt
 Draft management -> editing.txt, public-methods.txt
 Drag-to-fill -> fill-handle.txt
@@ -81,23 +88,29 @@ Editor types -> editing.txt, dropdown-editors.txt
 editTrigger -> editing.txt
 EditorOptions -> dropdown-editors.txt, typescript-types.txt
 Events -> callbacks-events.txt
+expand-change / onExpandChange -> callbacks-events.txt
 Export -> keyboard-navigation.txt, selection.txt
 
 F
 -
 Field -> columns.txt
 Fill handle -> fill-handle.txt
-fillDragCallback -> fill-handle.txt, callbacks-events.txt
 fillDirection -> fill-handle.txt, columns.txt
 Filter -> sorting-filtering-pagination.txt
+filterCallback -> columns.txt, sorting-filtering-pagination.txt
+filterMode ('server') -> sorting-filtering-pagination.txt
 focusCell -> public-methods.txt
-formatCallback -> columns.txt, callbacks-events.txt
 freezeColumns -> frozen-columns.txt
 Frozen columns -> frozen-columns.txt
 
 G
 -
-getDisplayCallback -> dropdown-editors.txt, callbacks-events.txt
+getCellClassCallback -> columns.txt
+getCellToolbarItemsCallback -> toolbar-actions.txt
+getDisplayValueCallback (column / editorOptions) -> columns.txt, dropdown-editors.txt, callbacks-events.txt
+getRowClassCallback -> styling-theming.txt, callbacks-events.txt
+getRowIdCallback -> editing.txt, row-locking.txt
+getTooltipCallback -> columns.txt, callbacks-events.txt
 getValueCallback -> dropdown-editors.txt, callbacks-events.txt
 Grid labels -> sorting-filtering-pagination.txt, callbacks-events.txt
 Grid modes -> grid-modes.txt
@@ -112,7 +125,6 @@ Horizontal align -> columns.txt
 
 I
 -
-idValueCallback -> editing.txt, row-locking.txt
 idValueMember -> editing.txt, row-locking.txt
 Infinite scroll -> virtual-scroll.txt
 Inline actions -> toolbar-actions.txt
@@ -124,6 +136,7 @@ isLocked -> row-locking.txt
 isSortable -> columns.txt, sorting-filtering-pagination.txt
 isVirtualScrollEnabled -> virtual-scroll.txt
 Items -> basic-setup.txt
+Items (action items: toolbar, menus, shortcuts) -> toolbar-actions.txt
 
 K
 -
@@ -152,14 +165,15 @@ isNewRowEnabled -> editing.txt
 
 O
 -
-oncontextmenuopen -> callbacks-events.txt, toolbar-actions.txt
-ondatarequest -> callbacks-events.txt, sorting-filtering-pagination.txt
-onrowchange -> callbacks-events.txt, editing.txt
-onroweditstart -> callbacks-events.txt, editing.txt
-onrowlockchange -> callbacks-events.txt, row-locking.txt
-onselectionchange -> callbacks-events.txt, selection.txt
-onbeforepaste -> callbacks-events.txt
-onpaste -> callbacks-events.txt
+onAction -> toolbar-actions.txt, callbacks-events.txt
+onCellSelectionChange -> callbacks-events.txt, selection.txt
+onClick (items) -> toolbar-actions.txt
+onDataRequest -> callbacks-events.txt, sorting-filtering-pagination.txt
+onEditStart -> callbacks-events.txt, editing.txt
+onFilterChange -> callbacks-events.txt, sorting-filtering-pagination.txt
+onPasteComplete -> callbacks-events.txt
+onRowChange -> callbacks-events.txt, editing.txt
+onRowLockChange -> callbacks-events.txt, row-locking.txt
 
 P
 -
@@ -169,16 +183,19 @@ Public methods -> public-methods.txt
 
 R
 -
+renderCellCallback -> columns.txt, callbacks-events.txt
+renderEditorCallback -> columns.txt, callbacks-events.txt
 renderOptionCallback -> dropdown-editors.txt, callbacks-events.txt
 Resize -> columns.txt
 Row focus -> selection.txt
 Row locking -> row-locking.txt
 Row numbers -> columns.txt, basic-setup.txt
 Row selection -> selection.txt
+Range shortcuts -> keyboard-navigation.txt
 Row shortcuts -> keyboard-navigation.txt
 Row toolbar -> toolbar-actions.txt
 rowLocking -> row-locking.txt, typescript-types.txt
-RowToolbarConfig -> toolbar-actions.txt, typescript-types.txt
+rowToolbar (GridToolbarEntry) -> toolbar-actions.txt, typescript-types.txt
 
 S
 -
@@ -196,11 +213,9 @@ Summary bar -> sorting-filtering-pagination.txt
 
 T
 -
-templateCallback -> columns.txt, callbacks-events.txt
 Text overflow -> columns.txt
 Theming -> styling-theming.txt
 Toolbar -> toolbar-actions.txt
-tooltipCallback -> columns.txt, callbacks-events.txt
 TypeScript -> typescript-types.txt
 Types -> typescript-types.txt
 
@@ -260,7 +275,7 @@ Q: How do I add action buttons to rows?
 A: -> toolbar-actions.txt
 
 Q: How do I add a context menu?
-A: -> toolbar-actions.txt (CELL CONTEXT MENU section)
+A: -> toolbar-actions.txt (CONTEXT MENU section)
 
 Q: What events and callbacks are available?
 A: -> callbacks-events.txt
@@ -296,7 +311,7 @@ Q: How do I add custom keyboard shortcuts?
 A: -> keyboard-navigation.txt (CUSTOM SHORTCUTS section)
 
 Q: How do I handle paste events?
-A: -> callbacks-events.txt (onbeforepaste, onpaste)
+A: -> callbacks-events.txt (beforePasteCallback, paste-complete)
 
 Q: How do I add a new-row entry row?
 A: -> editing.txt (NEW ROW ENTRY section)

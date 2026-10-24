@@ -2,8 +2,159 @@ TYPESCRIPT TYPES
 ================
 @keenmate/web-grid - Key exported types reference.
 
-All types are exported from the package entry point:
-  import type { Column, EditorOptions, SortState } from '@keenmate/web-grid'
+Types are exported from the package entry point:
+  import type { Column, EditorOptions, SortState, GridController, CellContext } from '@keenmate/web-grid'
+
+Runtime exports: GridElement (also the default export; auto-registers
+<web-grid>), GridEngine (the state engine, for standalone / advanced use -
+not the element's public API) and menuDivider (divider factory for
+toolbar / menu entry lists).
+
+
+----------------------------------------------------------------------
+INTERACTION MODEL BASICS
+----------------------------------------------------------------------
+Every callback takes ONE ctx argument. Every ctx and every event detail
+extends GridContext<T>, which carries two NON-ENUMERABLE fields:
+
+  type GridContext<T> = {
+    controller: GridController<T>   the public facade (also el.controller)
+    element: HTMLElement            the <web-grid> host
+  }
+
+JSON.stringify / console.log of a ctx show only the data fields.
+
+
+----------------------------------------------------------------------
+GRIDCONTROLLER<T>
+----------------------------------------------------------------------
+el.controller, and `controller` on every ctx / detail.
+
+  interface GridController<T> {
+    // data
+    getItems(): T[]
+    getDisplayItems(): T[]                       filtered, sorted, paginated, tree-collapsed
+    getColumns(): Column<T>[]
+    getSort(): SortState[]
+    getFilters(): Record<string, string>
+    setFilter(field: string, value: string): void
+    // rows (used by the add / delete / duplicate / move-up / move-down built-ins)
+    insertRow(row: T, afterRow?: T | null): void
+    removeRows(rows: T[]): void
+    duplicateRow(row: T): T
+    moveRow(row: T, delta: -1 | 1): void
+    getRowId(row: T): unknown | undefined
+    findRowById(id: unknown): { row: T; index: number } | null
+    updateRowById(id: unknown, newData: Partial<T>): boolean
+    replaceRowById(id: unknown, newRow: T): boolean
+    // drafts / validation
+    getRowDraft(rowIndex: number): T | undefined
+    hasRowDraft(rowIndex: number): boolean
+    discardRowDraft(rowIndex: number): void
+    getDraftRowIndices(): number[]
+    discardAllDrafts(): void
+    isCellDirty(rowIndex: number, field: string): boolean
+    isRowDirty(rowIndex: number): boolean
+    isCellInvalid(rowIndex: number, field: string): boolean
+    getCellValidationError(rowIndex: number, field: string): string | null
+    getInvalidCells(): CellValidationState[]
+    canEditCell(rowIndex: number, field: string): boolean
+    // row locking
+    isRowLocked(rowOrId: T | unknown): boolean
+    getRowLockInfo(rowOrId: T | unknown): RowLock | null
+    lockRowById(id: unknown, lockerInfo?: Partial<RowLock>): boolean
+    unlockRowById(id: unknown): boolean
+    getExternalLocks(): Map<unknown, RowLock>
+    clearExternalLocks(): void
+    // row selection
+    selectRow(rowIndex: number, mode?: 'replace' | 'toggle' | 'range'): void
+    selectRowRange(fromIndex: number, toIndex: number): void
+    clearSelection(): void
+    isRowSelected(rowIndex: number): boolean
+    getSelectedRows(): number[]
+    getSelectedRowsData(): T[]
+    copySelectedRowsToClipboard(): Promise<boolean>
+    // cell / column selection
+    selectCellRange(range: CellRange): void
+    clearCellSelection(): void
+    getSelectedCellRange(): CellRange | null
+    getSelectedCells(): Array<{ row: T; rowIndex: number; colIndex: number; field: string; value: unknown }>
+    copyCellSelectionToClipboard(): Promise<boolean>
+    selectColumn(colIndex: number, mode?: 'replace' | 'toggle' | 'range'): void
+    selectColumnRange(fromIndex: number, toIndex: number): void
+    clearColumnSelection(): void
+    selectAll(): void
+    // tree
+    isPathExpanded(path: string): boolean
+    toggleExpandedPath(path: string): void
+    expandAll(): void
+    collapseAll(): void
+    expandSubtree(path: string): void
+    collapseSubtree(path: string): void
+    getRowTreeInfo(row: T): { path: string; level: number; hasChildren: boolean } | null
+    // columns
+    setColumnWidth(field: string, width: string): void
+    setColumnWidths(widths: ColumnWidthState[]): void
+    getColumnWidthsState(): ColumnWidthState[]
+    setColumnOrder(order: ColumnOrderState[]): void
+    getColumnOrderState(): ColumnOrderState[]
+    // focus / editing
+    focusCell(rowIndex: number, colIndex: number): void
+    startEditing(rowIndex: number, colIndex: number): void
+    // menus / toolbar
+    closeContextMenu(): void
+    closeToolbar(): void
+  }
+
+
+----------------------------------------------------------------------
+CONTEXTS
+----------------------------------------------------------------------
+All extend GridContext<T> (controller + element, non-enumerable).
+
+  RowDataContext<T>    { row }                    getRowIdCallback, getIsRowEditableCallback,
+                                                  column.getIsEditableCallback
+  RowContext<T>        { row, rowIndex }          toolbar items, getRowClassCallback,
+                                                  createDuplicateRowCallback, row locking
+  CellContext<T>       { row, rowIndex, column, colIndex, field, value }
+                                                  cell menu, row shortcuts, cell toolbar,
+                                                  column callbacks
+  FilterContext<T>     { row, column, field, filterValue }      column.filterCallback
+  ValidateContext<T>   CellContext + { oldValue, source: 'edit' | 'paste' }
+                                                  column.validateCallback (value = candidate)
+  PasteValueContext<T> CellContext + { text }     column.getPasteValueCallback
+  EditorContext<T>     CellContext + { commit(newValue), cancel() }
+                                                  column.renderEditorCallback
+  ValidationTooltipContext<T>  CellContext + { error }
+                                                  getValidationTooltipCallback
+  RowLockContext<T>    RowContext + { lockInfo }  rowLocking.getCanEditLockedCallback
+  OptionContext<T>     { option }                 editorOptions.get*Callback
+  OptionRenderContext<T>  { option, index, isHighlighted, isSelected, isDisabled }
+                                                  editorOptions.renderOptionCallback
+  OptionSearchContext<T>  CellContext + { term, signal }
+                                                  editorOptions.searchCallback
+  OptionSelectContext<T>  CellContext + { option }
+                                                  editorOptions.onSelect
+  RangeContext<T>      { rows, rowIndices, cellRange?, cells? }
+                                                  rangeShortcuts
+  HeaderMenuContext<T> { column: Column<T> | null, field, colIndex, sortDirection,
+                         isFrozen, isTreeMode, allColumns, labels }
+                                                  headerContextMenu, beforeHeaderMenuOpenCallback
+                                                  (column null / field '' / colIndex -1 on the filler)
+  FillContext<T>       { sourceCell: { rowIndex, colIndex, field, value },
+                         targetCells: Array<{ rowIndex, colIndex, field }>,
+                         direction: 'up' | 'down' | 'left' | 'right' }
+                                                  beforeFillCallback
+  BeforePasteContext<T> { rawText, parsedRows, hasHeaders, headerMapping,
+                         targetRowIndex, targetColIndex, newRowsCount, skipCells }
+                                                  beforePasteCallback (false cancels)
+  CreateRowContext<T>  { data, rowIndex }         createRowCallback
+  PaginationLabelsContext<T>  { currentPage, totalPages, totalItems, pageSize }
+                                                  getPaginationLabelsCallback
+  SummaryContext<T>    { items, allItems, totalItems, currentPage, pageSize, metadata }
+                                                  renderSummaryCallback
+  ChevronContext<T>    { row, isExpanded, hasChildren, level, path }
+                                                  renderChevronCallback
 
 
 ----------------------------------------------------------------------
@@ -24,26 +175,28 @@ Defines how a column renders, edits, and behaves.
     headerVerticalAlign?: 'top' | 'middle' | 'bottom'
     textOverflow?: 'wrap' | 'ellipsis'
     maxLines?: number                Line-clamp when textOverflow is 'wrap'.
+    nowrap?: boolean                 Body cells never wrap.
     cellClass?: string               Static CSS class for all cells.
-    cellClassCallback?: (value: unknown, row: T) => string | null
-    formatCallback?: (value: unknown, row: T) => string
-    templateCallback?: (row: T) => string
-    renderCallback?: (row: T, element: HTMLElement) => void
+    getCellClassCallback?: (ctx: CellContext<T>) => string | null
+    getDisplayValueCallback?: (ctx: CellContext<T>) => string     Display text (escaped)
+    renderCellCallback?: (ctx: CellContext<T>) => string          Cell HTML (wins)
     isEditable?: boolean
-    editor?: EditorType
+    getIsEditableCallback?: (ctx: RowDataContext<T>) => boolean
+    editor?: Editor
     editTrigger?: EditTrigger
     editorOptions?: EditorOptions<T>
     dropdownToggleVisibility?: ToggleVisibility
     shouldOpenDropdownOnEnter?: boolean
-    cellEditCallback?: (context: CustomEditorContext<T>) => void
+    validateCallback?: (ctx: ValidateContext<T>) => ValidateResult | Promise<ValidateResult>
+    renderEditorCallback?: (ctx: EditorContext<T>) => void
     isEditButtonVisible?: boolean
-    validateCallback?: (value: unknown, row: T) => string | null | Promise<string | null>
-    beforeCommitCallback?: (context: BeforeCommitContext<T>) => BeforeCommitResult | Promise<BeforeCommitResult>
-    validationTooltipCallback?: (context: ValidationTooltipContext<T>) => string | null
+    getValidationTooltipCallback?: (ctx: ValidationTooltipContext<T>) => string | null
     tooltipMember?: string
-    tooltipCallback?: (value: unknown, row: T) => string | null
-    beforeCopyCallback?: (value: unknown, row: T) => string
-    beforePasteCallback?: (value: string, row: T) => unknown
+    getTooltipCallback?: (ctx: CellContext<T>) => string | null
+    isTooltipHtml?: boolean
+    getCopyValueCallback?: (ctx: CellContext<T>) => string
+    getPasteValueCallback?: (ctx: PasteValueContext<T>) => unknown
+    filterCallback?: (ctx: FilterContext<T>) => boolean | null
     isFrozen?: boolean
     isResizable?: boolean             Default: true
     isMovable?: boolean               Default: true
@@ -51,6 +204,7 @@ Defines how a column renders, edits, and behaves.
     isSortable?: boolean
     isFilterable?: boolean
     fillDirection?: FillDirection
+    isTree?: boolean                  Tree column (indentation + chevron)
   }
 
 
@@ -62,8 +216,6 @@ Configuration for all editor types. Properties are grouped by editor type.
   type EditorOptions<T> = {
     // Shared (select/combobox/autocomplete)
     options?: EditorOption[]
-    loadOptions?: (row: T, field: string) => Promise<EditorOption[]>
-    optionsLoadTrigger?: OptionsLoadTrigger
     valueMember?: string
     displayMember?: string
     searchMember?: string
@@ -71,15 +223,15 @@ Configuration for all editor types. Properties are grouped by editor type.
     subtitleMember?: string
     disabledMember?: string
     groupMember?: string
-    getValueCallback?: (option: EditorOption) => string | number
-    getDisplayCallback?: (option: EditorOption) => string
-    getSearchCallback?: (option: EditorOption) => string
-    getIconCallback?: (option: EditorOption) => string
-    getSubtitleCallback?: (option: EditorOption) => string
-    getDisabledCallback?: (option: EditorOption) => boolean
-    getGroupCallback?: (option: EditorOption) => string
-    renderOptionCallback?: (option: EditorOption, context: OptionRenderContext) => string
-    onselect?: (option: EditorOption, row: T) => void
+    getValueCallback?: (ctx: OptionContext<T>) => string | number
+    getDisplayValueCallback?: (ctx: OptionContext<T>) => string
+    getSearchValueCallback?: (ctx: OptionContext<T>) => string
+    getIconCallback?: (ctx: OptionContext<T>) => string
+    getSubtitleCallback?: (ctx: OptionContext<T>) => string
+    getIsDisabledCallback?: (ctx: OptionContext<T>) => boolean
+    getGroupCallback?: (ctx: OptionContext<T>) => string
+    renderOptionCallback?: (ctx: OptionRenderContext<T>) => string
+    onSelect?: (ctx: OptionSelectContext<T>) => void
     allowEmpty?: boolean
     emptyLabel?: string
     noOptionsText?: string
@@ -107,19 +259,22 @@ Configuration for all editor types. Properties are grouped by editor type.
     outputFormat?: DateOutputFormat
     // Autocomplete
     initialOptions?: EditorOption[]
-    searchCallback?: (query: string, row: T, signal?: AbortSignal) => Promise<EditorOption[]>
+    searchCallback?: (ctx: OptionSearchContext<T>) => Promise<EditorOption[]>
     minSearchLength?: number
     debounceMs?: number
     multiple?: boolean
     maxSelections?: number
   }
 
+  type EditorOption = { value: string | number | boolean, label: string, [key: string]: unknown }
+
 
 ----------------------------------------------------------------------
 SIMPLE TYPE ALIASES
 ----------------------------------------------------------------------
 
-  type EditorType = 'text' | 'number' | 'checkbox' | 'select' | 'combobox' | 'date' | 'autocomplete' | 'custom'
+  type Editor = 'text' | 'number' | 'checkbox' | 'select' | 'combobox' | 'date' | 'autocomplete' | 'custom'
+      (EditorType is a deprecated alias)
 
   type EditTrigger = 'click' | 'dblclick' | 'button' | 'always' | 'navigate'
 
@@ -132,8 +287,6 @@ SIMPLE TYPE ALIASES
   type CellSelectionMode = 'disabled' | 'click' | 'shift'
 
   type ToggleVisibility = 'always' | 'on-focus'
-
-  type OptionsLoadTrigger = 'immediate' | 'oneditstart' | 'ondropdownopen'
 
   type DateOutputFormat = 'date' | 'iso' | 'timestamp'
 
@@ -149,6 +302,15 @@ SIMPLE TYPE ALIASES
 
   type DataRequestMode = 'replace' | 'append'
 
+  type PasteMode = 'skip-non-editable' | 'all-columns' | 'editable-only'
+
+  type TreeDoubleClickBehavior = 'none' | 'toggle'
+
+  type NewRowPosition = 'top' | 'bottom'   (experimental)
+
+(GridMode, ToggleVisibility, EditStartSelection and DataRequestMode are
+documented here for reference but are not re-exported from the entry point.)
+
 
 ----------------------------------------------------------------------
 SORTSTATE
@@ -161,160 +323,136 @@ SORTSTATE
 
 
 ----------------------------------------------------------------------
-ROWTOOLBARCONFIG<T>
+ACTION ITEMS (TOOLBAR, MENUS, SHORTCUTS)
 ----------------------------------------------------------------------
+Built on @keenmate/web-components-core/actions (ActionItem / MenuItem /
+MenuDivider). See toolbar-actions.txt.
 
-  type RowToolbarConfig<T> = PredefinedToolbarItemType | RowToolbarItem<T>
+  type GridRowAction    = 'add' | 'delete' | 'duplicate' | 'move-up' | 'move-down'
+  type GridTreeAction   = 'expand-all' | 'collapse-all' | 'expand-tree' | 'collapse-tree'
+  type GridCellAction   = GridRowAction | GridTreeAction
+  type GridHeaderAction = 'sort-asc' | 'sort-desc' | 'clear-sort' | 'hide-column'
+                        | 'freeze-column' | 'unfreeze-column' | 'column-visibility'
+                        | 'show-all-columns' | 'toggle-column'
+  type GridAction       = GridCellAction | GridHeaderAction
 
-  type PredefinedToolbarItemType = 'add' | 'delete' | 'duplicate' | 'moveUp' | 'moveDown'
-
-  type RowToolbarItem<T> = {
-    id: string
-    icon: string
-    title: string
-    label?: string
-    row?: number                   Row in multi-row toolbar (1 = closest)
-    group?: number                 Group number for divider placement
-    minWidth?: string
-    type?: PredefinedToolbarItemType
-    danger?: boolean
-    disabled?: boolean | ((row: T, rowIndex: number) => boolean)
-    hidden?: boolean | ((row: T, rowIndex: number) => boolean)
-    tooltip?: ToolbarTooltip
-    tooltipCallback?: (row: T, rowIndex: number) => string
-    onclick?: (detail: { row: T, rowIndex: number }) => void | Promise<void>
-  }
-
-
-----------------------------------------------------------------------
-CONTEXTMENUITEM<T>
-----------------------------------------------------------------------
-
-  type ContextMenuItem<T> = {
-    id: string
-    label: string | ((context: ContextMenuContext<T>) => string)
-    icon?: string | ((context: ContextMenuContext<T>) => string)
+  // Common item fields (ActionItem<Ctx, A>)
+  {
+    action?: A | 'custom'          built-in name; omit for a custom item
+    id?: string                    identifies a custom item
+    text?: string
+    icon?: string
+    tooltip?: string
     shortcut?: string
-    disabled?: boolean | ((context: ContextMenuContext<T>) => boolean)
-    visible?: boolean | ((context: ContextMenuContext<T>) => boolean)
-    danger?: boolean
-    dividerBefore?: boolean
-    onclick?: (context: ContextMenuContext<T>) => void | Promise<void>
+    cssClass?: string
+    isVisible?: boolean            default true
+    isDisabled?: boolean
+    isDanger?: boolean
+    isActive?: boolean             toggle state (aria-pressed)
+    getTextCallback?(ctx): string
+    getIconCallback?(ctx): string
+    getTooltipCallback?(ctx): string
+    getClassCallback?(ctx): string | string[]
+    getIsVisibleCallback?(ctx): boolean
+    getIsDisabledCallback?(ctx): boolean
+    getIsActiveCallback?(ctx): boolean
+    onClick?(detail: ActionEventDetail): void | Promise<void>
   }
 
-  type ContextMenuContext<T> = {
-    row: T
-    rowIndex: number
-    colIndex: number
-    column: Column<T>
-    cellValue: unknown
+  // Menu items add (MenuItem<Ctx, A>)
+  {
+    children?: MenuEntry[]
+    getChildrenCallback?(ctx): MenuEntry[] | Promise<MenuEntry[]>
+    shouldCloseOnClick?: boolean   default true
   }
 
+  type MenuDivider = { divider: true, text?: string }     (menuDivider(text?) builds one)
 
-----------------------------------------------------------------------
-HEADERMENUCONFIG<T>
-----------------------------------------------------------------------
-
-  type HeaderMenuConfig<T> = PredefinedHeaderMenuItemType | HeaderMenuItem<T>
-
-  type PredefinedHeaderMenuItemType = 'sortAsc' | 'sortDesc' | 'clearSort' | 'hideColumn' | 'freezeColumn' | 'unfreezeColumn' | 'columnVisibility'
-
-  type HeaderMenuItem<T> = {
-    id: string
-    label: string | ((context: HeaderMenuContext<T>) => string)
-    icon?: string | ((context: HeaderMenuContext<T>) => string)
-    shortcut?: string
-    disabled?: boolean | ((context: HeaderMenuContext<T>) => boolean)
-    visible?: boolean | ((context: HeaderMenuContext<T>) => boolean)
-    danger?: boolean
-    dividerBefore?: boolean
-    onclick?: (context: HeaderMenuContext<T>) => void | Promise<void>
-    children?: HeaderMenuItem<T>[]
-    submenu?: (context: HeaderMenuContext<T>) => HeaderMenuItem<T>[]
+  interface GridToolbarItem<T> extends ActionItem<RowContext<T>, GridRowAction> {
+    row?: number                   toolbar row, 1 = closest (default 1)
+    isTextVisible?: boolean        show text next to the icon
   }
-
-  type HeaderMenuContext<T> = {
-    column: Column<T>
-    field: string
-    columnIndex: number
-    sortDirection: 'asc' | 'desc' | null
-    isFrozen: boolean
-    allColumns: Column<T>[]
-    labels: GridLabels
+  type GridToolbarEntry<T>    = GridRowAction | GridToolbarItem<T> | MenuDivider       rowToolbar
+  type GridMenuItem<T>        = MenuItem<CellContext<T>, GridCellAction>
+  type GridMenuEntry<T>       = GridCellAction | GridMenuItem<T> | MenuDivider         contextMenu
+  type GridHeaderMenuItem<T>  = MenuItem<HeaderMenuContext<T>, GridHeaderAction>
+  type GridHeaderMenuEntry<T> = GridHeaderAction | GridHeaderMenuItem<T> | MenuDivider headerContextMenu
+  interface GridShortcut<T> extends ActionItem<CellContext<T>, GridRowAction> {
+    shortcut: string               required                                            rowShortcuts
+  }
+  interface GridRangeShortcut<T> extends ActionItem<RangeContext<T>, never> {
+    shortcut: string               custom only                                         rangeShortcuts
   }
 
 
 ----------------------------------------------------------------------
-ROWSHORTCUT<T> AND RANGESHORTCUT<T>
+EVENT DETAILS AND GRIDEVENTMAP
 ----------------------------------------------------------------------
+Events are DOM CustomEvents (bubble, not composed) plus camelCase on*
+twins called with the detail. Every detail extends GridContext<T>.
 
-  type RowShortcut<T> = {
-    key: string                    e.g., 'Delete', 'Ctrl+D', 'F3'
-    id: string
-    label: string
-    action: (ctx: ShortcutContext<T>) => void | Promise<void>
-    disabled?: boolean | ((ctx: ShortcutContext<T>) => boolean)
+  type GridEventMap<T> = {
+    'row-change':            RowChangeEventDetail<T>            onRowChange
+    'edit-start':            EditEventDetail<T>                 onEditStart
+    'edit-cancel':           EditEventDetail<T>                 onEditCancel
+    'validation-error':      ValidationErrorEventDetail<T>      onValidationError
+    'row-focus':             RowFocusEventDetail<T>             onRowFocus
+    'row-delete':            RowDeleteEventDetail<T>            onRowDelete
+    'cell-selection-change': CellSelectionChangeEventDetail<T>  onCellSelectionChange
+    'data-request':          DataRequestEventDetail<T>          onDataRequest
+    'filter-change':         FilterChangeEventDetail<T>         onFilterChange
+    'column-resize':         ColumnResizeEventDetail<T>         onColumnResize
+    'column-reorder':        ColumnReorderEventDetail<T>        onColumnReorder
+    'expand-change':         ExpandChangeEventDetail<T>         onExpandChange
+    'row-lock-change':       RowLockChangeEventDetail<T>        onRowLockChange
+    'paste-complete':        PasteCompleteEventDetail<T>        onPasteComplete
+    'action':                GridActionEventDetail<T>           onAction
   }
+  type GridEventName = keyof GridEventMap
 
-  type ShortcutContext<T> = {
-    row: T
-    rowIndex: number
-    colIndex: number
-    column: Column<T>
-    cellValue: unknown
+  EditEventDetail<T>            { row, rowIndex, field }
+  ValidationErrorEventDetail<T> { row, rowIndex, field, error, source: 'edit' | 'paste' }
+  RowDeleteEventDetail<T>       { row, rowIndex }      (a request; the grid does not delete)
+  FilterChangeEventDetail<T>    { filters: Record<string, string> }
+  RowChangeEventDetail<T>       = RowChangeDetail<T> & GridContext<T>
+  RowFocusEventDetail<T>        = RowFocusDetail<T> & GridContext<T>
+  CellSelectionChangeEventDetail<T> = CellSelectionChangeDetail & GridContext<T>
+  DataRequestEventDetail<T>     = DataRequestDetail & GridContext<T>
+  ColumnResizeEventDetail<T>    = ColumnResizeDetail & GridContext<T>
+  ColumnReorderEventDetail<T>   = ColumnReorderDetail & GridContext<T>
+  ExpandChangeEventDetail<T>    = TreeExpandedChangeDetail & GridContext<T>
+  RowLockChangeEventDetail<T>   = RowLockChangeDetail<T> & GridContext<T>
+  PasteCompleteEventDetail<T>   = PasteDetail<T> & GridContext<T>
+
+  // the `action` event (also each item's onClick and beforeActionCallback)
+  type GridActionEventDetail<T> = surface fields & {
+    action: GridAction | 'custom'
+    id?: string
+    item: ActionItem
+    source: 'row-toolbar' | 'cell-toolbar' | 'context-menu' | 'header-menu' | 'keyboard'
+    sourceEvent?: Event
+    triggerElement?: HTMLElement
+    dataset: Record<string, string>
   }
-
-  type RangeShortcut<T> = {
-    key: string
-    id: string
-    label: string
-    action: (ctx: RangeShortcutContext<T>) => void | Promise<void>
-    disabled?: boolean | ((ctx: RangeShortcutContext<T>) => boolean)
-  }
-
-  type RangeShortcutContext<T> = {
-    rows: T[]
-    rowIndices: number[]
-    cellRange?: CellRange
-    cells?: Array<{ row: T, rowIndex: number, colIndex: number, field: string, value: unknown }>
-  }
-
-
-----------------------------------------------------------------------
-FILLDRAGDETAIL
-----------------------------------------------------------------------
-
-  type FillDragDetail = {
-    sourceCell: {
-      rowIndex: number
-      colIndex: number
-      field: string
-      value: unknown
-    }
-    targetCells: Array<{
-      rowIndex: number
-      colIndex: number
-      field: string
-    }>
-    direction: 'up' | 'down' | 'left' | 'right'
-  }
+  Surface fields: row / rowIndex (+ column / colIndex / field / value on
+  cell surfaces), HeaderMenuContext fields (header menu), rows /
+  rowIndices / cellRange / cells (range shortcuts).
 
 
 ----------------------------------------------------------------------
-ROWLOCKINGOPTIONS<T> AND ROWLOCKINFO
+ROWLOCKINGOPTIONS<T> AND ROWLOCK
 ----------------------------------------------------------------------
 
   type RowLockingOptions<T> = {
     lockedMember?: keyof T
     lockInfoMember?: keyof T
-    isLockedCallback?: (row: T, rowIndex: number) => boolean
-    getLockInfoCallback?: (row: T, rowIndex: number) => RowLockInfo | null
+    getIsLockedCallback?: (ctx: RowContext<T>) => boolean
+    getLockInfoCallback?: (ctx: RowContext<T>) => RowLock | null
     lockedEditBehavior?: LockedRowEditBehavior
-    canEditLockedCallback?: (row: T, lockInfo: RowLockInfo) => boolean
-    lockTooltipCallback?: (lockInfo: RowLockInfo, row: T) => string | null
+    getCanEditLockedCallback?: (ctx: RowLockContext<T>) => boolean
   }
 
-  type RowLockInfo = {
+  type RowLock = {                 (RowLockInfo is a deprecated alias)
     isLocked: boolean
     lockedBy?: string
     lockedAt?: Date | string
@@ -326,30 +464,31 @@ ROWLOCKINGOPTIONS<T> AND ROWLOCKINFO
     rowId: unknown
     row: T | null
     rowIndex: number
-    lockInfo: RowLockInfo | null
+    lockInfo: RowLock | null
     source: 'property' | 'callback' | 'external'
   }
 
 
 ----------------------------------------------------------------------
-BEFORECOMMITCONTEXT<T> AND BEFORECOMMITRESULT
+VALIDATION
 ----------------------------------------------------------------------
 
-  type BeforeCommitContext<T> = {
-    value: unknown
-    oldValue: unknown
-    row: T
-    rowIndex: number
-    field: string
-  }
-
-  type BeforeCommitResult = ValidationResult | boolean | string | null | undefined
+  type ValidateResult = ValidationResult | boolean | string | null | undefined
 
   type ValidationResult = {
     valid: boolean
     message?: string
     transformedValue?: unknown
   }
+
+  type CellValidationState = {
+    rowKey: string                 row id (idMember), tree path, or displayed index as a string
+    field: string
+    error: string
+  }
+
+CellValidationState is used by the invalidCells grid property and
+controller.getInvalidCells().
 
 
 ----------------------------------------------------------------------
@@ -383,17 +522,10 @@ DATAREQUESTDETAIL
 
 
 ----------------------------------------------------------------------
-PAGINATIONLABELSCALLBACK
+PAGINATION LABELS
 ----------------------------------------------------------------------
 
-  type PaginationLabelsCallback = (context: PaginationLabelsContext) => Partial<PaginationLabels>
-
-  type PaginationLabelsContext = {
-    currentPage: number
-    totalPages: number
-    totalItems: number
-    pageSize: number
-  }
+  type PaginationLabelsCallback<T> = (ctx: PaginationLabelsContext<T>) => Partial<PaginationLabels>
 
   type PaginationLabels = {
     first: string
@@ -423,7 +555,18 @@ GRIDLABELS
     paginationPerPage: string
     dropdownNoOptions: string
     dropdownSearching: string
-    contextMenu: {
+    actions: {                     built-in row / tree action texts
+      add: string
+      delete: string
+      duplicate: string
+      moveUp: string
+      moveDown: string
+      expandAll: string
+      collapseAll: string
+      expandTree: string
+      collapseTree: string
+    }
+    contextMenu: {                 header menu built-in texts
       sortAsc: string
       sortDesc: string
       clearSort: string
@@ -434,19 +577,6 @@ GRIDLABELS
       showAll: string
     }
   }
-
-
-----------------------------------------------------------------------
-CELLVALIDATIONSTATE
-----------------------------------------------------------------------
-
-  type CellValidationState = {
-    rowIndex: number
-    field: string
-    error: string
-  }
-
-Used by the invalidCells grid property for external validation state.
 
 
 ----------------------------------------------------------------------
@@ -467,32 +597,28 @@ CELLRANGE
 ADDITIONAL EXPORTED TYPES
 ----------------------------------------------------------------------
 
-  type EditorOption = { value: string | number | boolean, label: string, [key: string]: unknown }
-  type OptionRenderContext = { index: number, isHighlighted: boolean, isSelected: boolean, isDisabled: boolean }
-  type CustomEditorContext<T> = { value: unknown, row: T, rowIndex: number, field: string, commit: (newValue: unknown) => void, cancel: () => void }
-  type ValidationTooltipContext<T> = { field: string, error: string, value: unknown, row: T, rowIndex: number }
   type RowFocusDetail<T> = { rowIndex: number, row: T, previousRowIndex: number | null }
   type CellSelectionChangeDetail = { range: CellRange | null, cellCount: number }
   type ColumnWidthState = { field: string, width: string }
   type ColumnOrderState = { field: string, order: number }
   type ColumnResizeDetail = { field: string, oldWidth: string, newWidth: string, allWidths: ColumnWidthState[] }
   type ColumnReorderDetail = { field: string, fromIndex: number, toIndex: number, allOrder: ColumnOrderState[] }
-  type ToolbarClickDetail<T> = { item: NormalizedToolbarItem<T>, rowIndex: number, row: T, event: MouseEvent, triggerElement: HTMLElement }
-  type ToolbarTooltip = { description?: string, shortcut?: string }
-  type SummaryContext<T> = { items: T[], allItems: T[], totalItems: number, currentPage: number, pageSize: number, metadata: unknown }
-  type SummaryContentCallback<T> = (context: SummaryContext<T>) => string
-  type NewRowPosition = 'top' | 'bottom'  (experimental)
+  type TreeExpandedChangeDetail = { path: string | null, isExpanded: boolean, expandedPaths: Set<string> }
+  type SummaryCallback<T> = (ctx: SummaryContext<T>) => string
+  type ChevronCallback<T> = (ctx: ChevronContext<T>) => string
+  type CreateRowCallback<T> = (ctx: CreateRowContext<T>) => T
 
-  type BeforePasteDetail<T> = {
-    rawText: string, parsedRows: string[][], hasHeaders: boolean,
-    headerMapping: PasteColumnMapping[] | null,
-    targetRowIndex: number, targetColIndex: number, newRowsCount: number,
-    cancel: boolean, skipCells: Set<string>
+  type PasteColumnMapping = { pastedHeader: string, gridField: string, colIndex: number }
+  type PasteCellResult = {
+    rowIndex: number, field: string, value: unknown, isValid: boolean,
+    validationError?: string, wasSkipped: boolean,
+    skipReason?: 'non-editable' | 'user-canceled' | 'out-of-bounds' | 'locked'
   }
-  type PasteCellResult = { rowIndex: number, field: string, oldValue: unknown, newValue: unknown, success: boolean, error?: string }
   type PasteDetail<T> = {
     totalCells: number, successfulCells: number, failedCells: number,
     skippedCells: number, newRowsCreated: number,
     cellResults: PasteCellResult[], hadHeaders: boolean
   }
-  type CreateRowCallback<T> = (pastedData: Record<string, unknown>, rowIndex: number) => T
+
+  type QuickGridProps<T>     the full grid property bag (items, columns, every option,
+                             callback and on* twin)

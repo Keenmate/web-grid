@@ -91,17 +91,17 @@ isInfiniteScrollEnabled (boolean, default: false)
 
 infiniteScrollThreshold (number, default: 100)
   Distance from the bottom of the scroll container (in pixels) at which
-  the ondatarequest event fires to load more data.
+  the data-request event (onDataRequest) fires to load more data.
 
 hasMoreItems (boolean, default: true)
   Set to false when there is no more data to load. This prevents further
-  ondatarequest events from firing.
+  data-request events from firing.
 
 
 HOW IT WORKS
 ------------
 When the user scrolls within infiniteScrollThreshold pixels of the bottom,
-the grid fires the ondatarequest event with:
+the grid fires the data-request event (twin: onDataRequest) with:
   trigger: 'loadMore'
   mode: 'append'
   skip: current items.length
@@ -114,7 +114,7 @@ The consumer should:
 Example:
   grid.isInfiniteScrollEnabled = true
   grid.infiniteScrollThreshold = 200
-  grid.ondatarequest = async (detail) => {
+  grid.onDataRequest = async (detail) => {
     if (detail.trigger === 'loadMore') {
       const newItems = await fetchItems(detail.skip, detail.pageSize)
       grid.items = [...grid.items, ...newItems]
@@ -139,7 +139,7 @@ PERFORMANCE CONSIDERATIONS
   (viewportHeight / rowHeight) + (2 * buffer) rows
 - For 10,000 rows with buffer=10, about 30-40 DOM rows exist at any time
 - Column count still affects performance (each row has N cells)
-- beforeCommitCallback, formatCallback, and other per-cell callbacks still
+- getDisplayValueCallback, renderCellCallback, and other per-cell callbacks still
   run only for rendered cells
 - Cell selection and clipboard operations work across the full dataset,
   not just visible rows

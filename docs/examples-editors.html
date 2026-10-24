@@ -56,18 +56,18 @@
         <div class="grid-2">
             <div class="card">
                 <h2>Custom Editor</h2>
-                <p>Use <code>editor: "custom"</code> with <code>cellEditCallback</code> for dialog-based editing.</p>
+                <p>Use <code>editor: "custom"</code> with <code>renderEditorCallback</code> for dialog-based editing.</p>
 
                 <div class="code-block">
                     <pre>{
     field: 'notes',
     editor: 'custom',
-    cellEditCallback: (context) => {
+    renderEditorCallback: (context) => {
         // context contains:
         // - value: current cell value
         // - row: full row data
         // - rowIndex: row index
-        // - field: column field name
+        // - field / column / colIndex: the column
         // - commit(newValue): save and close
         // - cancel(): discard and close
 
@@ -95,20 +95,20 @@
                     <pre>grid.contextMenu = [
     {
         id: 'copy',
-        label: 'Copy value',
+        text: 'Copy value',
         icon: '📋',
-        onclick: (ctx) => {
-            navigator.clipboard.writeText(ctx.cellValue)
+        onClick: (ctx) => {
+            navigator.clipboard.writeText(ctx.value)
         }
     },
+    { divider: true },
     {
         id: 'delete',
-        label: 'Delete row',
+        text: 'Delete row',
         icon: '🗑️',
-        danger: true,
-        dividerBefore: true,
-        disabled: (ctx) => ctx.row.protected,
-        onclick: (ctx) => { ... }
+        isDanger: true,
+        getIsDisabledCallback: (ctx) => ctx.row.protected,
+        onClick: (ctx) => { ... }
     }
 ]</pre>
                 </div>
@@ -122,19 +122,23 @@
                 <div>
                     <h3>Static Properties</h3>
                     <ul>
-                        <li><code>id</code> - Unique identifier (required)</li>
-                        <li><code>label</code> - Display text (string or callback)</li>
+                        <li><code>id</code> - Identifies a custom item</li>
+                        <li><code>action</code> - A built-in instead (<code>'add'</code>, <code>'duplicate'</code>, <code>'delete'</code>, <code>'move-up'</code>, <code>'move-down'</code>, tree <code>'expand-all'</code>…)</li>
+                        <li><code>text</code> - Display text</li>
                         <li><code>icon</code> - Emoji or HTML for icon</li>
-                        <li><code>danger</code> - Red styling for destructive actions</li>
-                        <li><code>dividerBefore</code> - Add separator line above</li>
+                        <li><code>shortcut</code> - Key hint (also activates the item while the menu is open)</li>
+                        <li><code>isDanger</code> - Red styling for destructive actions</li>
+                        <li><code>{ divider: true, text? }</code> - A separator entry (optionally labelled)</li>
                     </ul>
                 </div>
                 <div>
                     <h3>Dynamic Properties</h3>
                     <ul>
-                        <li><code>visible</code> - Show/hide (boolean or callback)</li>
-                        <li><code>disabled</code> - Disable item (boolean or callback)</li>
-                        <li><code>onclick</code> - Click handler with context</li>
+                        <li><code>isVisible</code> / <code>getIsVisibleCallback(ctx)</code> - Show/hide</li>
+                        <li><code>isDisabled</code> / <code>getIsDisabledCallback(ctx)</code> - Disable item</li>
+                        <li><code>getTextCallback(ctx)</code> / <code>getIconCallback(ctx)</code> - Dynamic text / icon</li>
+                        <li><code>children</code> / <code>getChildrenCallback(ctx)</code> - Submenu</li>
+                        <li><code>onClick(detail)</code> - Click handler (also reported by the <code>action</code> event / <code>onAction</code>)</li>
                     </ul>
 
                     <h3 style="margin-top: 1rem;">Context Object</h3>
@@ -143,7 +147,8 @@
                         <li><code>row</code> - Full row data</li>
                         <li><code>rowIndex</code> - Row index</li>
                         <li><code>field</code> - Column field name</li>
-                        <li><code>colIndex</code> - Column index</li>
+                        <li><code>column</code> / <code>colIndex</code> - Column definition / index</li>
+                        <li><code>controller</code> / <code>element</code> - The grid controller and host element</li>
                     </ul>
                 </div>
             </div>
@@ -215,7 +220,7 @@
                 title: 'Notes (custom)',
                 width: '150px',
                 editor: 'custom',
-                cellEditCallback: (context) => {
+                renderEditorCallback: (context) => {
                     logEvent('Custom Editor', `opened for ${context.field} (row ${context.rowIndex + 1})`)
 
                     const newValue = prompt('Edit notes:', context.value || '')
@@ -234,7 +239,7 @@
                 width: '80px',
                 horizontalAlign: 'center',
                 editor: 'checkbox',
-                formatCallback: (val) => val ? '✅' : '❌'
+                getDisplayValueCallback: ({ value: val }) => val ? '✅' : '❌'
             }
         ]
 
@@ -248,48 +253,48 @@
         grid.contextMenu = [
             {
                 id: 'copy',
-                label: 'Copy value',
+                text: 'Copy value',
                 icon: '📋',
-                onclick: (ctx) => {
-                    navigator.clipboard.writeText(String(ctx.cellValue || ''))
-                    logEvent('Copy', `"${ctx.cellValue}" copied to clipboard`)
+                onClick: (ctx) => {
+                    navigator.clipboard.writeText(String(ctx.value || ''))
+                    logEvent('Copy', `"${ctx.value}" copied to clipboard`)
                 }
             },
             {
                 id: 'edit',
-                label: (ctx) => `Edit ${ctx.column.field}`,
+                getTextCallback: (ctx) => `Edit ${ctx.column.field}`,
                 icon: '✏️',
-                onclick: (ctx) => {
-                    logEvent('Edit', `requested for ${ctx.column.field} = "${ctx.cellValue}"`)
+                onClick: (ctx) => {
+                    logEvent('Edit', `requested for ${ctx.column.field} = "${ctx.value}"`)
                 }
             },
+            { divider: true },
             {
                 id: 'view-row',
-                label: 'View row details',
-                dividerBefore: true,
-                onclick: (ctx) => {
+                text: 'View row details',
+                onClick: (ctx) => {
                     logEvent('View', `row ${ctx.rowIndex + 1} details`)
                     alert(JSON.stringify(ctx.row, null, 2))
                 }
             },
             {
                 id: 'toggle-protection',
-                label: (ctx) => ctx.row.protected ? 'Unprotect row' : 'Protect row',
-                icon: (ctx) => ctx.row.protected ? '🔓' : '🔒',
-                onclick: (ctx) => {
+                getTextCallback: (ctx) => ctx.row.protected ? 'Unprotect row' : 'Protect row',
+                getIconCallback: (ctx) => ctx.row.protected ? '🔓' : '🔒',
+                onClick: (ctx) => {
                     ctx.row.protected = !ctx.row.protected
                     grid.items = [...grid.items] // Trigger re-render
                     logEvent('Toggle', `row ${ctx.rowIndex + 1} protection: ${ctx.row.protected}`)
                 }
             },
+            { divider: true },
             {
                 id: 'delete',
-                label: 'Delete row',
+                text: 'Delete row',
                 icon: '🗑️',
-                danger: true,
-                dividerBefore: true,
-                disabled: (ctx) => ctx.row.protected,
-                onclick: (ctx) => {
+                isDanger: true,
+                getIsDisabledCallback: (ctx) => ctx.row.protected,
+                onClick: (ctx) => {
                     if (confirm(`Delete ${ctx.row.name}?`)) {
                         grid.items = grid.items.filter(item => item.id !== ctx.row.id)
                         logEvent('Delete', `row ${ctx.rowIndex + 1} (${ctx.row.name}) deleted`)
@@ -298,8 +303,8 @@
             }
         ]
 
-        // Log context menu open event (uses callback, not addEventListener)
-        grid.oncontextmenuopen = (ctx) => {
+        // Runs before the context menu opens (return false to suppress it, or an entries array to replace it)
+        grid.beforeContextMenuOpenCallback = (ctx) => {
             logEvent('Context Menu', `opened at row ${ctx.rowIndex + 1}, column "${ctx.column.field}"`)
         }
     </script>

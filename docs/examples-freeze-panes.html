@@ -148,7 +148,7 @@
             { field: 'department', title: 'Department', width: '120px' },
             { field: 'role', title: 'Role', width: '100px' },
             { field: 'location', title: 'Location', width: '120px' },
-            { field: 'salary', title: 'Salary', width: '100px', formatCallback: v => '$' + v?.toLocaleString() },
+            { field: 'salary', title: 'Salary', width: '100px', getDisplayValueCallback: ({ value: v }) => '$' + v?.toLocaleString() },
             { field: 'startDate', title: 'Start Date', width: '110px' },
             { field: 'status', title: 'Status', width: '100px' },
             { field: 'phone', title: 'Phone', width: '120px' },
@@ -192,7 +192,7 @@
             { field: 'department', title: 'Department', width: '120px' },
             { field: 'role', title: 'Role', width: '100px' },
             { field: 'location', title: 'Location', width: '120px' },
-            { field: 'salary', title: 'Salary', width: '100px', formatCallback: v => '$' + v?.toLocaleString() },
+            { field: 'salary', title: 'Salary', width: '100px', getDisplayValueCallback: ({ value: v }) => '$' + v?.toLocaleString() },
             { field: 'phone', title: 'Phone', width: '120px' },
             { field: 'status', title: 'Status', width: '100px', frozen: true }  // This will move to the left
         ]

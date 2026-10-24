@@ -17,9 +17,11 @@ web-grid/
 │       ├── tsconfig.json
 │       ├── vite.config.ts
 │       └── src/
-│           ├── grid.ts       # Core WebGrid class (state, logic)
+│           ├── grid.ts       # Core GridEngine class (state, logic)
 │           ├── web-component.ts  # GridElement (DOM, events, rendering)
 │           ├── types.ts      # All TypeScript type definitions
+│           ├── interaction.ts # GridController, callback contexts, action items, event map
+│           ├── controller.ts # el.controller facade (createGridController)
 │           ├── index.ts      # Main entry point
 │           ├── css/          # Modular CSS files
 │           └── modules/      # Feature modules
@@ -172,36 +174,45 @@ If in doubt, no transition is better than a slow one.
 
 ### Naming Convention: Events vs Callbacks
 
-Use distinct naming patterns to differentiate between events (fire-and-forget notifications) and callbacks (return value affects behavior).
+The grid follows the shared KeenMate interaction model (web-components-core `/actions`, SPEC §12.5 / §12.12). Distinct naming separates notifications from hooks that affect behavior. Every callback takes ONE `ctx` object; every ctx and event detail carries non-enumerable `controller` (`GridController`, also `el.controller`) and `element`.
 
-**Events** - `on*` lowercase, handler return value is ignored:
+**Events** - real DOM events (kebab-case, bubble, not composed) + a camelCase `on*` property twin called with the same detail first. Return value is ignored. Declared in the `EVENTS` table in `web-component.ts`, typed in `GridEventMap` (`interaction.ts`):
 ```typescript
-// Grid-level events
-onrowchange        // "row changed" notification
-onroweditstart     // "editing started" notification
-onvalidationerror  // "validation failed" notification
+// Grid-level events                    // twin
+'row-change'                            // onRowChange       — "row changed" notification
+'edit-start' / 'edit-cancel'            // onEditStart / onEditCancel
+'validation-error'                      // onValidationError
+'action'                                // onAction          — any toolbar / menu / shortcut item activated
+// … row-focus, row-delete, cell-selection-change, data-request, filter-change,
+//   column-resize, column-reorder, expand-change, row-lock-change, paste-complete
 
-// EditorOptions events
-onselect           // "option was selected" notification
+// EditorOptions notification
+onSelect(ctx)                           // "option was selected"
 
-// Toolbar/ContextMenu item events
-onclick            // "item was clicked" notification
+// Action items (toolbar / context menu / shortcuts)
+onClick(detail)                         // "item was activated" — same detail as the `action` event
 ```
 
-**Callbacks** - `*Callback` suffix, return value affects component behavior:
+**Callbacks** - `*Callback` suffix, return value affects component behavior. Prefixes: `get*Callback` (returns a value), `render*Callback` (returns HTML / renders), `create*Callback` (returns a new row), `before*Callback` (`false` cancels; async OK where documented):
 ```typescript
 // Column callbacks
-formatCallback        // returns display string
-tooltipCallback       // returns tooltip text
-validateCallback      // returns error message → blocks commit
-beforeCommitCallback  // returns ValidationResult → can block/transform
-cellEditCallback      // takes over cell editing
+getDisplayValueCallback  // returns display string
+renderCellCallback       // returns cell HTML
+getTooltipCallback       // returns tooltip text
+validateCallback         // returns ValidateResult → marks invalid / transforms
+renderEditorCallback     // takes over cell editing (ctx.commit / ctx.cancel)
+
+// Grid callbacks
+getRowClassCallback, createEmptyRowCallback, createDuplicateRowCallback,
+beforeActionCallback, beforeContextMenuOpenCallback, beforePasteCallback, beforeFillCallback
 
 // EditorOptions callbacks
-getDisplayCallback    // returns display text for option
-onSearchCallback      // returns search results (async)
-renderOptionCallback  // returns HTML string for option
+getDisplayValueCallback  // returns display text for option
+searchCallback           // returns search results (async)
+renderOptionCallback     // returns HTML string for option
 ```
+
+Built-in item names are kebab-case (`'move-up'`, `'sort-asc'`, `'expand-all'`) and the row built-ins (`add`, `delete`, `duplicate`, `move-up`, `move-down`) do the work themselves after the `action` event. Do not add lowercase `on*` properties (they collide with native `HTMLElement` handlers like `onpaste` / `onselect`).
 
 **Why this matters:**
 - Events can be safely ignored - component works without them

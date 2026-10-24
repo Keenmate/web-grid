@@ -47,7 +47,7 @@
             <h2>Organizations</h2>
             <p>Each row carries a <code>path</code> like <code>"1.2.3"</code>. Levels and parent paths are derived automatically; provide <code>treeLevelMember</code> / <code>treeParentMember</code> if your DB already computes them.</p>
             <p><strong>Sorting in tree mode</strong> is sibling-aware: clicking a header sorts each parent's children among themselves (e.g., "sort each department's sub-teams by Annual Budget"). The hierarchy stays intact — parents always appear above their children.</p>
-            <p>For <strong>custom sort logic</strong> (e.g., sort departments by total budget aggregated over all descendants), set <code>treeDataSorted: true</code>, listen to <code>ondatarequest</code>, sort the items yourself, and push them back via <code>grid.items = …</code>. The grid will trust your order completely and skip its internal sibling sort.</p>
+            <p>For <strong>custom sort logic</strong> (e.g., sort departments by total budget aggregated over all descendants), set <code>treeDataSorted: true</code>, listen to the <code>data-request</code> event (<code>onDataRequest</code>), sort the items yourself, and push them back via <code>grid.items = …</code>. The grid will trust your order completely and skip its internal sibling sort.</p>
             <p><strong>Keyboard:</strong> click a cell, then arrows move focus, <strong>Ctrl/Cmd + ←</strong> collapses the focused parent (or walks up to the nearest expanded ancestor), <strong>Ctrl/Cmd + →</strong> expands. Right-click for tree context-menu items. (This grid is in <code>editTrigger: 'navigate'</code>.)</p>
 
             <div class="controls">
@@ -101,32 +101,33 @@
             <web-grid id="navGrid" style="max-width: 100%; max-height: 500px; border: 1px solid #e2e8f0;"></web-grid>
 
             <pre style="margin-top: 1rem; background: #f8f9fa; padding: 0.75rem; border-radius: 4px; font-size: 0.85rem; overflow-x: auto;"><code>// Heterogeneous tree: only leaf rows are editable
-const isLeafRow = row =&gt; !parentPaths.has(row.path)
+const isLeafRow = ({ row }) =&gt; !parentPaths.has(row.path)
 
 navGrid.editTrigger = 'navigate'
 navGrid.isEditable = true
 navGrid.columns = [
     { field: 'name', title: 'Organization', isTree: true },     // tree column — always read-only
-    { field: 'headcount', title: 'Headcount', isEditable: isLeafRow, editor: 'number' },
-    { field: 'budget',    title: 'Annual Budget', isEditable: isLeafRow, editor: 'number' },
-    { field: 'location',  title: 'Location', isEditable: isLeafRow },
+    { field: 'headcount', title: 'Headcount', isEditable: true, getIsEditableCallback: isLeafRow, editor: 'number' },
+    { field: 'budget',    title: 'Annual Budget', isEditable: true, getIsEditableCallback: isLeafRow, editor: 'number' },
+    { field: 'location',  title: 'Location', isEditable: true, getIsEditableCallback: isLeafRow },
     { field: 'status',    title: 'Status' }                     // never editable
 ]
 
 navGrid.contextMenu = [
     'expand-all', 'collapse-all',
-    { dividerBefore: true },
+    { divider: true },
     'expand-tree', 'collapse-tree',
-    { dividerBefore: true,
-      label: 'Show row data',
+    { divider: true },
+    { id: 'show-data',
+      text: 'Show row data',
       icon: 'ℹ',
-      onclick: ctx =&gt; alert(JSON.stringify(ctx.row, null, 2)) }
+      onClick: ({ row }) =&gt; alert(JSON.stringify(row, null, 2)) }
 ]</code></pre>
         </div>
 
         <div class="card">
-            <h2>Row-Level Editability with <code>isRowEditable</code></h2>
-            <p>Same Tab-skips-read-only-rows behaviour as the previous card, but expressed differently. Instead of a per-column <code>isEditable: predicate</code> on every column, this grid uses <strong><code>isRowEditable</code></strong> at the grid level — one function decides whether the whole row is editable. Useful when the same condition applies across all columns.</p>
+            <h2>Row-Level Editability with <code>getIsRowEditableCallback</code></h2>
+            <p>Same Tab-skips-read-only-rows behaviour as the previous card, but expressed differently. Instead of a per-column <code>getIsEditableCallback</code> on every column, this grid uses <strong><code>getIsRowEditableCallback</code></strong> at the grid level — one function decides whether the whole row is editable. Useful when the same condition applies across all columns.</p>
             <p>Here the rule is non-tree-related: <strong>only rows with status "Active" are editable</strong>. <em>Channel</em> (Reorganizing) and <em>IT</em> (Frozen) are read-only even though they're leaves; parent rows like Acme / Engineering remain editable. Tab walks past Channel and IT and lands on the next Active row.</p>
 
             <web-grid id="rowGateGrid" style="max-width: 100%; max-height: 500px; border: 1px solid #e2e8f0;"></web-grid>
@@ -134,7 +135,7 @@ navGrid.contextMenu = [
             <pre style="margin-top: 1rem; background: #f8f9fa; padding: 0.75rem; border-radius: 4px; font-size: 0.85rem; overflow-x: auto;"><code>// Grid-level row gate — applies to every column on every row
 rowGateGrid.editTrigger = 'navigate'
 rowGateGrid.isEditable = true
-rowGateGrid.isRowEditable = row =&gt; row.status === 'Active'
+rowGateGrid.getIsRowEditableCallback = ({ row }) =&gt; row.status === 'Active'
 
 rowGateGrid.columns = [
     { field: 'name', title: 'Organization', isTree: true },     // tree column — always read-only
@@ -145,7 +146,7 @@ rowGateGrid.columns = [
 ]</code></pre>
 
             <p style="margin-top: 1rem; font-size: 0.9rem; color: #555;">
-                <strong>When to use which:</strong> per-column <code>isEditable: predicate</code> when different columns need different rules; grid-level <code>isRowEditable</code> when the rule is uniform. The two compose — a row must pass <em>both</em> gates to be editable.
+                <strong>When to use which:</strong> per-column <code>getIsEditableCallback</code> when different columns need different rules; grid-level <code>getIsRowEditableCallback</code> when the rule is uniform. The two compose — a row must pass <em>both</em> gates to be editable.
             </p>
         </div>
 
@@ -179,7 +180,7 @@ rowGateGrid.columns = [
 
         <div class="card">
             <h2>Custom Sort: Grouped Aggregate</h2>
-            <p>When you want to sort siblings by an <strong>aggregate over their descendants</strong> (e.g. "sort departments by total budget across all sub-teams"), set <code>treeDataSorted: true</code> and own the order yourself. The grid will fire <code>ondatarequest</code> when sort changes, you compute the aggregate, sort, and push items back. The grid never re-sorts internally in this mode.</p>
+            <p>When you want to sort siblings by an <strong>aggregate over their descendants</strong> (e.g. "sort departments by total budget across all sub-teams"), set <code>treeDataSorted: true</code> and own the order yourself. The grid will fire <code>data-request</code> (<code>onDataRequest</code>) when sort changes, you compute the aggregate, sort, and push items back. The grid never re-sorts internally in this mode.</p>
 
             <web-grid id="aggGrid" style="max-width: 100%; max-height: 500px; border: 1px solid #e2e8f0;"></web-grid>
 
@@ -191,7 +192,7 @@ rowGateGrid.columns = [
             <pre style="background: #f8f9fa; padding: 0.75rem; border-radius: 4px; font-size: 0.85rem; overflow-x: auto;"><code>aggGrid.treeDataSorted = true              // grid won't re-sort
 aggGrid.expandedPaths = new Set(allPaths)  // own expansion too, so re-setting items keeps it stable
 
-aggGrid.ondatarequest = ({ sort }) =&gt; {
+aggGrid.onDataRequest = ({ sort }) =&gt; {
     if (!sort.length) {
         aggGrid.items = [...originalData]
         return
@@ -239,19 +240,19 @@ aggGrid.ondatarequest = ({ sort }) =&gt; {
 
         <div class="card">
             <h2>Other Path Formats + Custom Chevron Icons</h2>
-            <p>The grid auto-detects the separator — the same data shape works with <code>/</code> (filesystem) or <code>\</code> (Windows) paths. This grid also swaps the default <code>▼ / ▶</code> glyphs for Font Awesome icons via <code>treeChevronCallback</code>.</p>
+            <p>The grid auto-detects the separator — the same data shape works with <code>/</code> (filesystem) or <code>\</code> (Windows) paths. This grid also swaps the default <code>▼ / ▶</code> glyphs for Font Awesome icons via <code>renderChevronCallback</code>.</p>
 
             <web-grid id="files" style="max-width: 100%; max-height: 360px; border: 1px solid #e2e8f0;"></web-grid>
 
             <h3 style="margin-top: 1.5rem;">How the Font Awesome icons are wired up</h3>
             <ol>
                 <li>Add the Font Awesome stylesheet to the page <code>&lt;head&gt;</code> — once it's loaded, the <code>@font-face</code> is registered globally and reachable from inside the grid's shadow DOM.</li>
-                <li>Class definitions (<code>.fa-folder::before { content: '\f07b' }</code> etc.) live in the document and don't pierce the shadow DOM — re-declare just the ones you use via <code>customStylesCallback</code>.</li>
-                <li>Return the icon HTML from <code>treeChevronCallback({ expanded, hasChildren, row, level, path })</code>. Result is cached per <code>(row, expanded, hasChildren)</code>, so the callback fires at most a handful of times per row.</li>
+                <li>Class definitions (<code>.fa-folder::before { content: '\f07b' }</code> etc.) live in the document and don't pierce the shadow DOM — re-declare just the ones you use via <code>getCustomStylesCallback</code>.</li>
+                <li>Return the icon HTML from <code>renderChevronCallback({ isExpanded, hasChildren, row, level, path })</code>. Result is cached per <code>(row, isExpanded, hasChildren)</code>, so the callback fires at most a handful of times per row.</li>
             </ol>
             <pre style="background: #f8f9fa; padding: 0.75rem; border-radius: 4px; font-size: 0.85rem; overflow-x: auto;"><code>&lt;link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6/css/all.min.css"&gt;
 
-files.customStylesCallback = () =&gt; `
+files.getCustomStylesCallback = () =&gt; `
     .fa-solid { font-family: 'Font Awesome 6 Free'; font-weight: 900; }
     .fa-folder::before      { content: '\f07b'; }
     .fa-folder-open::before { content: '\f07c'; }
@@ -259,9 +260,9 @@ files.customStylesCallback = () =&gt; `
     .fa-folder, .fa-folder-open { color: #f4c430; }
 `
 
-files.treeChevronCallback = ({ expanded, hasChildren }) =&gt; {
+files.renderChevronCallback = ({ isExpanded, hasChildren }) =&gt; {
     if (!hasChildren) return '&lt;i class="fa-solid fa-file"&gt;&lt;/i&gt;'
-    return expanded
+    return isExpanded
         ? '&lt;i class="fa-solid fa-folder-open"&gt;&lt;/i&gt;'
         : '&lt;i class="fa-solid fa-folder"&gt;&lt;/i&gt;'
 }</code></pre>
@@ -316,13 +317,13 @@ files.treeChevronCallback = ({ expanded, hasChildren }) =&gt; {
         const orgColumns = [
             { field: 'name', title: 'Organization', width: '300px', isTree: true, isSortable: true },
             { field: 'headcount', title: 'Headcount', width: '110px', horizontalAlign: 'right', isSortable: true,
-                formatCallback: v => v != null ? v.toLocaleString() : '' },
+                getDisplayValueCallback: ({ value: v }) => v != null ? v.toLocaleString() : '' },
             { field: 'budget', title: 'Annual Budget', width: '160px', horizontalAlign: 'right', isSortable: true,
-                formatCallback: v => v != null ? `$${(v / 1_000_000).toFixed(1)}M` : '' },
+                getDisplayValueCallback: ({ value: v }) => v != null ? `$${(v / 1_000_000).toFixed(1)}M` : '' },
             { field: 'location', title: 'Location', width: '160px', isSortable: true },
             { field: 'founded', title: 'Founded', width: '110px', horizontalAlign: 'center', isSortable: true },
             { field: 'status', title: 'Status', width: '140px', isSortable: true,
-                cellClassCallback: v => v === 'Active' ? null : 'status-warn' }
+                getCellClassCallback: ({ value: v }) => v === 'Active' ? null : 'status-warn' }
         ]
 
         const grid = document.getElementById('grid')
@@ -338,7 +339,7 @@ files.treeChevronCallback = ({ expanded, hasChildren }) =&gt; {
         grid.isHoverable = true
         grid.isStriped = true
 
-        grid.customStylesCallback = () => `
+        grid.getCustomStylesCallback = () => `
             .status-warn { color: #b54708; font-weight: 500; }
         `
 
@@ -348,7 +349,7 @@ files.treeChevronCallback = ({ expanded, hasChildren }) =&gt; {
         grid.contextMenu = [
             'expand-all',
             'collapse-all',
-            { dividerBefore: true },
+            { divider: true },
             'expand-tree',
             'collapse-tree'
         ]
@@ -358,7 +359,7 @@ files.treeChevronCallback = ({ expanded, hasChildren }) =&gt; {
             const paths = [...grid.expandedPaths].sort()
             expandedEl.textContent = paths.length === 0 ? '(none — all collapsed)' : paths.join(', ')
         }
-        grid.onexpandedpathschange = renderExpanded
+        grid.onExpandChange = renderExpanded
         renderExpanded()
 
         // Controls
@@ -395,23 +396,23 @@ files.treeChevronCallback = ({ expanded, hasChildren }) =&gt; {
             const idx = r.path.lastIndexOf('.')
             if (idx >= 0) navParentPaths.add(r.path.slice(0, idx))
         }
-        const isLeafRow = row => !navParentPaths.has(row.path)
+        const isLeafRow = ({ row }) => !navParentPaths.has(row.path)
 
         const navGrid = document.getElementById('navGrid')
         navGrid.items = orgData
         navGrid.columns = [
             { field: 'name', title: 'Organization', width: '300px', isTree: true, isSortable: true },
             { field: 'headcount', title: 'Headcount', width: '120px', horizontalAlign: 'right',
-                isEditable: isLeafRow, editor: 'number', isSortable: true,
-                formatCallback: v => v != null ? v.toLocaleString() : '' },
+                isEditable: true, getIsEditableCallback: isLeafRow, editor: 'number', isSortable: true,
+                getDisplayValueCallback: ({ value: v }) => v != null ? v.toLocaleString() : '' },
             { field: 'budget', title: 'Annual Budget', width: '160px', horizontalAlign: 'right',
-                isEditable: isLeafRow, editor: 'number', isSortable: true,
-                formatCallback: v => v != null ? `$${(v / 1_000_000).toFixed(1)}M` : '' },
+                isEditable: true, getIsEditableCallback: isLeafRow, editor: 'number', isSortable: true,
+                getDisplayValueCallback: ({ value: v }) => v != null ? `$${(v / 1_000_000).toFixed(1)}M` : '' },
             { field: 'location', title: 'Location', width: '160px',
-                isEditable: isLeafRow, isSortable: true },
+                isEditable: true, getIsEditableCallback: isLeafRow, isSortable: true },
             { field: 'status', title: 'Status', width: '140px',
-                isEditable: isLeafRow, isSortable: true,
-                cellClassCallback: v => v === 'Active' ? null : 'status-warn' }
+                isEditable: true, getIsEditableCallback: isLeafRow, isSortable: true,
+                getCellClassCallback: ({ value: v }) => v === 'Active' ? null : 'status-warn' }
         ]
         navGrid.treePathMember = 'path'
         navGrid.defaultExpandDepth = 99       // start fully expanded so all rows are reachable
@@ -422,26 +423,27 @@ files.treeChevronCallback = ({ expanded, hasChildren }) =&gt; {
         navGrid.isHoverable = true
         navGrid.isStriped = true
 
-        navGrid.customStylesCallback = () => `
+        navGrid.getCustomStylesCallback = () => `
             .status-warn { color: #b54708; font-weight: 500; }
         `
 
         navGrid.contextMenu = [
             'expand-all',
             'collapse-all',
-            { dividerBefore: true },
+            { divider: true },
             'expand-tree',
             'collapse-tree',
+            { divider: true },
             {
-                dividerBefore: true,
-                label: 'Show row data',
+                id: 'show-data',
+                text: 'Show row data',
                 icon: 'ℹ',
-                onclick: ctx => alert(JSON.stringify(ctx.row, null, 2))
+                onClick: ({ row }) => alert(JSON.stringify(row, null, 2))
             }
         ]
 
         // -----------------------------------------------------------------
-        // Row-level editability via grid.isRowEditable
+        // Row-level editability via grid.getIsRowEditableCallback
         // -----------------------------------------------------------------
         // Grid-level row gate: only "Active" rows are editable. Channel
         // (Reorganizing) and IT (Frozen) are read-only across every column.
@@ -452,13 +454,13 @@ files.treeChevronCallback = ({ expanded, hasChildren }) =&gt; {
             { field: 'name', title: 'Organization', width: '300px', isTree: true, isSortable: true },
             { field: 'headcount', title: 'Headcount', width: '120px', horizontalAlign: 'right',
                 editor: 'number', isSortable: true,
-                formatCallback: v => v != null ? v.toLocaleString() : '' },
+                getDisplayValueCallback: ({ value: v }) => v != null ? v.toLocaleString() : '' },
             { field: 'budget', title: 'Annual Budget', width: '160px', horizontalAlign: 'right',
                 editor: 'number', isSortable: true,
-                formatCallback: v => v != null ? `$${(v / 1_000_000).toFixed(1)}M` : '' },
+                getDisplayValueCallback: ({ value: v }) => v != null ? `$${(v / 1_000_000).toFixed(1)}M` : '' },
             { field: 'location', title: 'Location', width: '160px', isSortable: true },
             { field: 'status', title: 'Status', width: '140px', isSortable: true,
-                cellClassCallback: v => v === 'Active' ? null : 'status-warn' }
+                getCellClassCallback: ({ value: v }) => v === 'Active' ? null : 'status-warn' }
         ]
         rowGateGrid.treePathMember = 'path'
         rowGateGrid.defaultExpandDepth = 99
@@ -466,34 +468,34 @@ files.treeChevronCallback = ({ expanded, hasChildren }) =&gt; {
         rowGateGrid.treeDoubleClickBehavior = 'toggle'
         rowGateGrid.editTrigger = 'navigate'
         rowGateGrid.isEditable = true
-        rowGateGrid.isRowEditable = row => row.status === 'Active'
+        rowGateGrid.getIsRowEditableCallback = ({ row }) => row.status === 'Active'
         rowGateGrid.isHoverable = true
         rowGateGrid.isStriped = true
 
-        rowGateGrid.customStylesCallback = () => `
+        rowGateGrid.getCustomStylesCallback = () => `
             .status-warn { color: #b54708; font-weight: 500; }
         `
 
         rowGateGrid.contextMenu = [
             'expand-all',
             'collapse-all',
-            { dividerBefore: true },
+            { divider: true },
             'expand-tree',
             'collapse-tree'
         ]
 
         // -----------------------------------------------------------------
-        // Custom sort by grouped aggregate (treeDataSorted=true + ondatarequest)
+        // Custom sort by grouped aggregate (treeDataSorted=true + onDataRequest)
         // -----------------------------------------------------------------
         const aggGrid = document.getElementById('aggGrid')
         const aggColumns = [
             { field: 'name', title: 'Organization', width: '280px', isTree: true },
             { field: 'headcount', title: 'Headcount', width: '110px', horizontalAlign: 'right',
                 isSortable: true,
-                formatCallback: v => v != null ? v.toLocaleString() : '' },
+                getDisplayValueCallback: ({ value: v }) => v != null ? v.toLocaleString() : '' },
             { field: 'budget', title: 'Annual Budget', width: '160px', horizontalAlign: 'right',
                 isSortable: true,
-                formatCallback: v => v != null ? `$${(v / 1_000_000).toFixed(1)}M` : '' }
+                getDisplayValueCallback: ({ value: v }) => v != null ? `$${(v / 1_000_000).toFixed(1)}M` : '' }
         ]
 
         // Pre-compute the path → row and parent → children maps once.
@@ -550,7 +552,7 @@ files.treeChevronCallback = ({ expanded, hasChildren }) =&gt; {
         aggGrid.isStriped = true
 
         // Re-supply pre-sorted items whenever sort changes
-        aggGrid.ondatarequest = ({ sort }) => {
+        aggGrid.onDataRequest = ({ sort }) => {
             if (!sort || sort.length === 0) {
                 aggGrid.items = [...orgData]
                 return
@@ -571,9 +573,9 @@ files.treeChevronCallback = ({ expanded, hasChildren }) =&gt; {
         const cvColumns = [
             { field: 'name', title: 'Organization', width: '280px', isTree: true, isSortable: true },
             { field: 'headcount', title: 'Headcount', width: '110px', horizontalAlign: 'right', isSortable: true,
-                formatCallback: v => v != null ? v.toLocaleString() : '' },
+                getDisplayValueCallback: ({ value: v }) => v != null ? v.toLocaleString() : '' },
             { field: 'budget', title: 'Annual Budget', width: '160px', horizontalAlign: 'right', isSortable: true,
-                formatCallback: v => v != null ? `$${(v / 1_000_000).toFixed(1)}M` : '' },
+                getDisplayValueCallback: ({ value: v }) => v != null ? `$${(v / 1_000_000).toFixed(1)}M` : '' },
             { field: 'location', title: 'Location', width: '160px', isSortable: true },
             { field: 'founded', title: 'Founded', width: '110px', horizontalAlign: 'center', isSortable: true },
             { field: 'status', title: 'Status', width: '140px', isSortable: true }
@@ -587,12 +589,12 @@ files.treeChevronCallback = ({ expanded, hasChildren }) =&gt; {
         cvGrid.isHoverable = true
         cvGrid.isStriped = true
         cvGrid.headerContextMenu = [
-            'sortAsc',
-            'sortDesc',
-            'clearSort',
-            { dividerBefore: true },
-            'hideColumn',
-            'columnVisibility'
+            'sort-asc',
+            'sort-desc',
+            'clear-sort',
+            { divider: true },
+            'hide-column',
+            'column-visibility'
         ]
 
         const cvTogglesEl = document.getElementById('cvToggles')
@@ -674,7 +676,7 @@ files.treeChevronCallback = ({ expanded, hasChildren }) =&gt; {
         const fileColumns = [
             { field: 'name', title: 'Name', width: '280px', isTree: true },
             { field: 'size', title: 'Size', width: '110px', horizontalAlign: 'right',
-                formatCallback: v => v == null ? '' : `${v.toLocaleString()} B` },
+                getDisplayValueCallback: ({ value: v }) => v == null ? '' : `${v.toLocaleString()} B` },
             { field: 'kind', title: 'Kind', width: '120px' }
         ]
 
@@ -690,7 +692,7 @@ files.treeChevronCallback = ({ expanded, hasChildren }) =&gt; {
         // @font-face is registered globally once the <link> in <head> loads.
         // Inject the minimal class→content rules we need so .fa-solid icons render
         // inside the grid.
-        files.customStylesCallback = () => `
+        files.getCustomStylesCallback = () => `
             .fa-solid {
                 font-family: 'Font Awesome 6 Free';
                 font-weight: 900;
@@ -705,9 +707,9 @@ files.treeChevronCallback = ({ expanded, hasChildren }) =&gt; {
 
         // Per-row chevron — folder vs file icon. Cached per (row, expanded), so
         // this fires at most twice per folder and once per file across re-renders.
-        files.treeChevronCallback = ({ expanded, hasChildren }) => {
+        files.renderChevronCallback = ({ isExpanded, hasChildren }) => {
             if (!hasChildren) return '<i class="fa-solid fa-file"></i>'
-            return expanded
+            return isExpanded
                 ? '<i class="fa-solid fa-folder-open"></i>'
                 : '<i class="fa-solid fa-folder"></i>'
         }

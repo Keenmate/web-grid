@@ -37,14 +37,14 @@
 
             <div class="card">
                 <h2>Callback Overrides</h2>
-                <p>Use callbacks for complex data transformations:</p>
+                <p>Use callbacks for complex data transformations (each takes one ctx: <code>{ option }</code>):</p>
                 <ul>
-                    <li><code>getValueCallback(opt)</code></li>
-                    <li><code>getDisplayCallback(opt)</code></li>
-                    <li><code>getIconCallback(opt)</code></li>
-                    <li><code>getSubtitleCallback(opt)</code></li>
-                    <li><code>getDisabledCallback(opt)</code></li>
-                    <li><code>getSearchCallback(opt)</code></li>
+                    <li><code>getValueCallback({ option })</code></li>
+                    <li><code>getDisplayValueCallback({ option })</code></li>
+                    <li><code>getIconCallback({ option })</code></li>
+                    <li><code>getSubtitleCallback({ option })</code></li>
+                    <li><code>getIsDisabledCallback({ option })</code></li>
+                    <li><code>getSearchValueCallback({ option })</code></li>
                 </ul>
             </div>
         </div>
@@ -55,7 +55,7 @@
 
             <div class="code-block">
                 <pre>editorOptions: {
-    renderOptionCallback: (opt, ctx) => {
+    renderOptionCallback: ({ option: opt, ...ctx }) => {
         const classes = ['wg__dropdown-option']
         if (ctx.isHighlighted) classes.push('wg__dropdown-option--highlighted')
         if (ctx.isSelected) classes.push('wg__dropdown-option--selected')
@@ -70,8 +70,9 @@
 
             <div class="note">
                 <div class="note-title">Context Properties</div>
-                <p>The <code>ctx</code> object provides:</p>
+                <p>The ctx object provides:</p>
                 <ul>
+                    <li><code>option</code> - The option being rendered</li>
                     <li><code>index</code> - Option index in the list</li>
                     <li><code>isHighlighted</code> - Currently highlighted by keyboard</li>
                     <li><code>isSelected</code> - Currently selected value</li>
@@ -82,21 +83,21 @@
 
         <div class="card">
             <h2>Dynamic Cell Styling</h2>
-            <p>The Priority column also uses <code>cellClassCallback</code> to apply CSS classes based on the cell value, and <code>customStylesCallback</code> to inject the matching styles into the shadow DOM.</p>
+            <p>The Priority column also uses <code>getCellClassCallback</code> to apply CSS classes based on the cell value, <code>renderCellCallback</code> for the cell HTML, and <code>getCustomStylesCallback</code> to inject the matching styles into the shadow DOM.</p>
 
             <div class="code-block">
                 <pre>// Column definition
 {
     field: 'priority',
-    cellClassCallback: (value) =&gt; value ? `priority-${value}` : null,
-    formatCallback: (value) =&gt; {
+    getCellClassCallback: ({ value }) =&gt; value ? `priority-${value}` : null,
+    renderCellCallback: ({ value }) =&gt; {
         const opt = priorityOptions.find(o =&gt; o.value === value)
         return `&lt;span style="..."&gt;&lt;/span&gt;${opt.label}`
     }
 }
 
 // Inject styles into shadow DOM
-grid.customStylesCallback = () =&gt; `
+grid.getCustomStylesCallback = () =&gt; `
     .priority-critical { background: color-mix(in srgb, #dc3545 12%, transparent); }
     .priority-high { background: color-mix(in srgb, #fd7e14 12%, transparent); }
     .priority-medium { background: color-mix(in srgb, #ffc107 12%, transparent); }
@@ -105,8 +106,8 @@ grid.customStylesCallback = () =&gt; `
             </div>
 
             <div class="note">
-                <div class="note-title">Why customStylesCallback?</div>
-                <p>Since WebGrid uses Shadow DOM, external page CSS cannot reach cell elements. Use <code>customStylesCallback</code> to inject CSS rules that target classes added by <code>cellClassCallback</code>.</p>
+                <div class="note-title">Why getCustomStylesCallback?</div>
+                <p>Since WebGrid uses Shadow DOM, external page CSS cannot reach cell elements. Use <code>getCustomStylesCallback</code> to inject CSS rules that target classes added by <code>getCellClassCallback</code>.</p>
             </div>
         </div>
 
@@ -163,17 +164,17 @@ grid.customStylesCallback = () =&gt; `
                 title: 'Priority (custom render)',
                 width: '180px',
                 editor: 'select',
-                formatCallback: (value) => {
+                renderCellCallback: ({ value }) => {
                     const opt = priorityOptions.find(o => o.value === value)
                     if (!opt) return value ?? ''
                     return `<span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: ${opt.color}; margin-right: 6px; vertical-align: middle;"></span>${opt.label}`
                 },
-                cellClassCallback: (value) => value ? `priority-${value}` : null,
+                getCellClassCallback: ({ value }) => value ? `priority-${value}` : null,
                 editorOptions: {
                     options: priorityOptions,
                     disabledMember: 'disabled',
                     // Custom render with colored dot
-                    renderOptionCallback: (opt, ctx) => {
+                    renderOptionCallback: ({ option: opt, ...ctx }) => {
                         const classes = ['wg__dropdown-option']
                         if (ctx.isHighlighted) classes.push('wg__dropdown-option--highlighted')
                         if (ctx.isSelected) classes.push('wg__dropdown-option--selected')
@@ -183,7 +184,7 @@ grid.customStylesCallback = () =&gt; `
                             ${opt.label}
                         </div>`
                     },
-                    onselect: (opt, row) => {
+                    onSelect: ({ option: opt, row }) => {
                         console.log('Priority selected:', opt.label, 'for row:', row.id)
                     }
                 }
@@ -226,10 +227,10 @@ grid.customStylesCallback = () =&gt; `
                     minSearchLength: 1,
                     debounceMs: 200,
                     // Custom callbacks for complex data
-                    getDisplayCallback: (opt) => `${opt.firstName} ${opt.lastName}`,
-                    getIconCallback: (opt) => opt.avatar,
-                    getSubtitleCallback: (opt) => opt.email,
-                    searchCallback: async (query) => {
+                    getDisplayValueCallback: ({ option: opt }) => `${opt.firstName} ${opt.lastName}`,
+                    getIconCallback: ({ option: opt }) => opt.avatar,
+                    getSubtitleCallback: ({ option: opt }) => opt.email,
+                    searchCallback: async ({ term: query }) => {
                         await new Promise(r => setTimeout(r, 300))
                         const users = [
                             { id: 1, firstName: 'Alice', lastName: 'Johnson', email: 'alice@example.com', avatar: '👩' },
@@ -255,8 +256,8 @@ grid.customStylesCallback = () =&gt; `
         grid.tooltipShowDelay = 0
         grid.tooltipHideDelay = 100
 
-        // Inject custom styles into shadow DOM for cellClassCallback classes
-        grid.customStylesCallback = () => `
+        // Inject custom styles into shadow DOM for getCellClassCallback classes
+        grid.getCustomStylesCallback = () => `
             .priority-critical { background: color-mix(in srgb, #dc3545 12%, transparent); }
             .priority-high { background: color-mix(in srgb, #fd7e14 12%, transparent); }
             .priority-medium { background: color-mix(in srgb, #ffc107 12%, transparent); }

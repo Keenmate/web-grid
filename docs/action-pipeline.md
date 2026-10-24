@@ -118,7 +118,7 @@ Returning an array of `GridAction` produces child actions. Returning `void` or `
 | `renderExecutor` | `renderCell` | Re-render a single cell's DOM, optionally focus editor and set cursor position |
 | `dropdownExecutor` | `openDropdown`, `closeDropdown`, `toggleDropdown`, `dropdownNavigate`, `dropdownSelect` | All dropdown lifecycle and interaction |
 | `datepickerExecutor` | `openDatePicker`, `closeDatePicker`, `toggleDatePicker` | Date picker lifecycle |
-| `customEditorExecutor` | `openCustomEditor` | Invoke `cellEditCallback` for custom editor implementations |
+| `customEditorExecutor` | `openCustomEditor` | Invoke `renderEditorCallback` for custom editor implementations |
 | `checkboxExecutor` | `toggleCheckbox` | Toggle boolean cell value |
 | `selectionExecutor` | `selectRow`, `selectColumn`, `clearSelection` | Row/column/cell selection state and visual updates (surgical DOM, no re-render) |
 | `cellSelectionExecutor` | `startCellSelection` | Initiate cell range selection drag tracking |

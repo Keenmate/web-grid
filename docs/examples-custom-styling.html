@@ -205,7 +205,7 @@
 
         <div class="card">
             <h2>Rainbow Salary + Inactive Rows</h2>
-            <p>Demonstrates <code>cellClassCallback</code> for value-based cell styling and <code>rowClassCallback</code> for row-level styling.</p>
+            <p>Demonstrates <code>getCellClassCallback</code> for value-based cell styling and <code>getRowClassCallback</code> for row-level styling.</p>
 
             <ul>
                 <li><strong>Salary column:</strong> Rainbow gradient from red (low) through yellow/green to purple (high)</li>
@@ -267,11 +267,11 @@
         <div class="card">
             <h2>How It Works</h2>
 
-            <h3>1. cellClassCallback (Column-level)</h3>
-            <p>Returns a CSS class based on cell value and row data:</p>
+            <h3>1. getCellClassCallback (Column-level)</h3>
+            <p>Returns a CSS class based on the cell context (<code>value</code>, <code>row</code>, <code>column</code>, …):</p>
             <pre><code>{
     field: 'salary',
-    cellClassCallback: (value, row) =&gt; {
+    getCellClassCallback: ({ value, row }) =&gt; {
         if (value &lt; 65000) return 'salary-1'
         if (value &lt; 72000) return 'salary-2'
         // ... more ranges
@@ -279,16 +279,16 @@
     }
 }</code></pre>
 
-            <h3>2. rowClassCallback (Grid-level)</h3>
+            <h3>2. getRowClassCallback (Grid-level)</h3>
             <p>Returns a CSS class for the entire row:</p>
-            <pre><code>grid.rowClassCallback = (row, index) =&gt; {
+            <pre><code>grid.getRowClassCallback = ({ row, rowIndex }) =&gt; {
     if (row.status === 'Inactive') return 'row-inactive'
     return null
 }</code></pre>
 
-            <h3>3. customStylesCallback (Required for Shadow DOM)</h3>
+            <h3>3. getCustomStylesCallback (Required for Shadow DOM)</h3>
             <p>Injects CSS into the shadow root:</p>
-            <pre><code>grid.customStylesCallback = () =&gt; `
+            <pre><code>grid.getCustomStylesCallback = () =&gt; `
     .salary-1 { background: #fee2e2 !important; }
     .salary-2 { background: #ffedd5 !important; }
     .row-inactive { opacity: 0.5; }
@@ -383,9 +383,9 @@
                 horizontalAlign: 'right',
                 verticalAlign: 'bottom',
                 editor: 'number',
-                formatCallback: (val) => val != null ? `$${val.toLocaleString()}` : '',
+                getDisplayValueCallback: ({ value: val }) => val != null ? `$${val.toLocaleString()}` : '',
                 // Dynamic cell styling based on salary value
-                cellClassCallback: (value, row) => getSalaryClass(value)
+                getCellClassCallback: ({ value, row }) => getSalaryClass(value)
             },
             {
                 field: 'hireDate',
@@ -402,8 +402,8 @@
                 width: '60px',
                 horizontalAlign: 'center',
                 isEditable: false,
-                // Use templateCallback to render Font Awesome icons
-                templateCallback: (row) => {
+                // Use renderCellCallback to render Font Awesome icons
+                renderCellCallback: ({ row }) => {
                     if (row.sex === 'M') return '<i class="fa-solid fa-mars sex-male"></i>'
                     if (row.sex === 'F') return '<i class="fa-solid fa-venus sex-female"></i>'
                     if (row.sex === 'snowman') return '<i class="fa-solid fa-snowman sex-snowman"></i>'
@@ -426,14 +426,14 @@
                 width: '180px',
                 editor: 'autocomplete',
                 // Cell styling based on selected product's group
-                cellClassCallback: (value, row) => {
+                getCellClassCallback: ({ value, row }) => {
                     const product = productOptions.find(p => p.id === value)
                     if (!product) return null
                     return `product-${product.group.toLowerCase()}`
                 },
                 editorOptions: {
                     initialOptions: productOptions,
-                    searchCallback: async (query) => {
+                    searchCallback: async ({ term: query }) => {
                         await new Promise(r => setTimeout(r, 150)) // Simulate async
                         return productOptions.filter(p =>
                             p.name.toLowerCase().includes(query.toLowerCase()) ||
@@ -447,7 +447,7 @@
                     dropdownMinWidth: '220px',  // Wider than 180px cell
                     editStartSelection: 'selectAll',
                     // Custom dropdown rendering with group colors
-                    renderOptionCallback: (opt, ctx) => {
+                    renderOptionCallback: ({ option: opt, ...ctx }) => {
                         const classes = ['wg__dropdown-option']
                         if (ctx.isHighlighted) classes.push('wg__dropdown-option--highlighted')
                         if (ctx.isSelected) classes.push('wg__dropdown-option--selected')
@@ -469,7 +469,7 @@
                 title: 'Notes (custom)',
                 width: '150px',
                 editor: 'custom',
-                cellEditCallback: ({ value, row, rowIndex, field, commit, cancel }) => {
+                renderEditorCallback: ({ value, row, rowIndex, field, commit, cancel }) => {
                     // Detect dark mode
                     const isDark = document.documentElement.classList.contains('dark')
 
@@ -556,14 +556,14 @@
         grid.sortMode = 'multi'  // Enable multi-column sorting
 
         // Dynamic row styling - gray out inactive employees
-        grid.rowClassCallback = (row, index) => {
+        grid.getRowClassCallback = ({ row, rowIndex: index }) => {
             if (row.status === 'Inactive') return 'row-inactive'
             return null
         }
 
         // Inject custom styles into Shadow DOM using CSS variables
         // CSS variables inherit through shadow DOM boundary, so dark mode switching works automatically
-        grid.customStylesCallback = () => `
+        grid.getCustomStylesCallback = () => `
             /* Import Font Awesome */
             @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css');
 
@@ -656,7 +656,7 @@
             { field: 'name', title: 'Name', width: '140px' },
             { field: 'department', title: 'Department', width: '100px' },
             { field: 'salary', title: 'Salary', width: '90px', horizontalAlign: 'right',
-              formatCallback: (val) => val != null ? `$${val.toLocaleString()}` : '' }
+              getDisplayValueCallback: ({ value: val }) => val != null ? `$${val.toLocaleString()}` : '' }
         ]
 
         // Default grid (shows double border issue)

@@ -1,6 +1,10 @@
 COLUMN DEFINITIONS IN @keenmate/web-grid
 =========================================
 
+Every column callback takes ONE ctx object. Most receive the cell ctx
+(CellContext<T>): { row, rowIndex, column, colIndex, field, value } plus
+non-enumerable controller (GridController) and element (the host).
+
 A column is defined by the Column<T> interface. Each object in the columns
 array controls how one column renders, edits, validates, and behaves.
 
@@ -66,14 +70,14 @@ maxLines (number)
 
 cellClass (string)
     Static CSS class applied to every cell in the column. Requires
-    customStylesCallback on the grid to inject styles into Shadow DOM.
+    getCustomStylesCallback on the grid to inject styles into Shadow DOM.
 
-cellClassCallback ((value: unknown, row: T) => string | null)
-    Dynamic CSS class computed per cell. Receives the cell value and the
+getCellClassCallback ((ctx: CellContext<T>) => string | null)
+    Dynamic CSS class computed per cell. ctx has the cell value and the
     full row object. Return null to apply no class.
 
     Example:
-      cellClassCallback: (value, row) =>
+      getCellClassCallback: ({ value, row }) =>
         value > 90000 ? 'high-value' : null
 
 
@@ -81,44 +85,34 @@ cellClassCallback ((value: unknown, row: T) => string | null)
 ---------------------
 
 There are three ways to customize cell display content. They are checked
-in this priority order: templateCallback > formatCallback > default.
+in this priority order: renderCellCallback > getDisplayValueCallback > default.
 
-formatCallback ((value: unknown, row: T) => string)
+getDisplayValueCallback ((ctx: CellContext<T>) => string)
     Formats the raw cell value into a display string. The result is
     HTML-escaped before rendering. Use for text-only formatting like
     currency, dates, percentages.
 
     Example:
-      formatCallback: (value) => '$' + Number(value).toFixed(2)
+      getDisplayValueCallback: ({ value }) => '$' + Number(value).toFixed(2)
 
-    Special behavior with checkbox editor: if formatCallback is set on a
+    Special behavior with checkbox editor: if getDisplayValueCallback is set on a
     checkbox column, the formatted text is shown instead of the default
     checkbox element.
 
-templateCallback ((row: T) => string)
+renderCellCallback ((ctx: CellContext<T>) => string)
     Returns raw HTML to render in the cell. NOT HTML-escaped -- you can
-    include tags, images, links, etc. Receives the full row, not just
-    the field value. Takes priority over formatCallback.
+    include tags, images, links, etc. ctx has the full row as well as
+    the field value. Takes priority over getDisplayValueCallback.
 
     Example:
-      templateCallback: (row) =>
+      renderCellCallback: ({ row }) =>
         '<span style="color:red">' + row.name + '</span>'
 
     WARNING: You are responsible for escaping user input to prevent XSS.
 
-renderCallback ((row: T, element: HTMLElement) => void)
-    Imperative rendering. Receives the <td> DOM element directly. Use
-    for complex content that needs direct DOM manipulation (e.g.,
-    mounting framework components into the cell).
-
-    Note: This is defined in the type system but is not yet wired into
-    the rendering pipeline as of the current version. Use
-    templateCallback for HTML content instead.
-
 Summary of differences:
-    formatCallback  -- text only, auto-escaped, receives (value, row)
-    templateCallback -- raw HTML, NOT escaped, receives (row)
-    renderCallback  -- imperative DOM access, receives (row, td element)
+    getDisplayValueCallback -- text only, auto-escaped
+    renderCellCallback      -- raw HTML, NOT escaped
 
 
 4. EDITING
@@ -127,6 +121,11 @@ Summary of differences:
 isEditable (boolean)
     Enable editing for this column. The grid-level isEditable must also
     be true (or a grid mode like 'excel'/'input-matrix' must be set).
+
+getIsEditableCallback ((ctx: { row }) => boolean)
+    Per-row editability for this column (e.g. editable only on employee
+    rows in a teams + employees tree). When it returns true the cell is
+    editable even on a read-only grid.
 
 editor (EditorType)
     Editor type to use. One of:
@@ -137,7 +136,7 @@ editor (EditorType)
       'combobox'     -- Filterable dropdown
       'autocomplete' -- Async search dropdown
       'date'         -- Date picker
-      'custom'       -- Consumer-controlled via cellEditCallback
+      'custom'       -- Consumer-controlled via renderEditorCallback
 
 editTrigger (EditTrigger)
     Per-column override for how editing starts. One of:
@@ -158,12 +157,12 @@ editorOptions (EditorOptions<T>)
     Checkbox: trueValue, falseValue
     Date: minDate, maxDate, dateFormat, outputFormat
     Dropdown (select/combobox/autocomplete):
-      options, loadOptions, optionsLoadTrigger,
+      options,
       valueMember, displayMember, searchMember,
       iconMember, subtitleMember, disabledMember, groupMember,
-      getValueCallback, getDisplayCallback, getSearchCallback,
-      getIconCallback, getSubtitleCallback, getDisabledCallback,
-      getGroupCallback, renderOptionCallback, onselect,
+      getValueCallback, getDisplayValueCallback, getSearchValueCallback,
+      getIconCallback, getSubtitleCallback, getIsDisabledCallback,
+      getGroupCallback, renderOptionCallback, onSelect,
       allowEmpty, emptyLabel, noOptionsText, searchingText,
       dropdownMinWidth, placeholder
     Autocomplete-specific:
@@ -179,18 +178,18 @@ shouldOpenDropdownOnEnter (boolean)
     Per-column override. When true, pressing Enter opens the dropdown
     instead of moving to the next row.
 
-cellEditCallback ((context: CustomEditorContext<T>) => void)
-    Handler for 'custom' editor type. The context provides:
+renderEditorCallback ((ctx: EditorContext<T>) => void)
+    Handler for 'custom' editor type. ctx is the cell ctx plus:
       value     -- Current cell value
       row       -- Row data object
       rowIndex  -- Row index
-      field     -- Field name
-      commit    -- Function: call commit(newValue) to save
+      column, colIndex, field
+      commit    -- Function: call commit(newValue) to save (runs validateCallback)
       cancel    -- Function: call cancel() to discard
 
     Example:
       editor: 'custom',
-      cellEditCallback: ({ value, row, rowIndex, field, commit, cancel }) => {
+      renderEditorCallback: ({ value, row, rowIndex, field, commit, cancel }) => {
         const result = prompt('Enter value:', value)
         if (result !== null) commit(result)
         else cancel()
@@ -204,19 +203,23 @@ isEditButtonVisible (boolean)
 5. VALIDATION
 -------------
 
-beforeCommitCallback
+validateCallback
     Signature:
-      (context: BeforeCommitContext<T>) => BeforeCommitResult | Promise<BeforeCommitResult>
+      (ctx: ValidateContext<T>) => ValidateResult | Promise<ValidateResult>
 
-    Called before a cell edit is committed to the data. Can validate and
-    optionally transform the value. Supports async (return a Promise).
+    Called before a cell edit is committed to the data, and for pasted
+    cells (when shouldValidateOnPaste). Can validate and optionally
+    transform the value. Supports async (return a Promise). Not a veto:
+    an invalid value is kept as a draft and the cell marked invalid.
 
-    The context object contains:
+    The ctx object contains:
       value     -- The new value being committed
       oldValue  -- The previous value
       row       -- The row data object
       rowIndex  -- The row index
+      column, colIndex
       field     -- The field name
+      source    -- 'edit' (editor commit) or 'paste'
 
     Return values and their meaning:
 
@@ -244,14 +247,14 @@ beforeCommitCallback
           Reject. The string is used as the error message.
 
     Example:
-      beforeCommitCallback: ({ value, oldValue, row }) => {
+      validateCallback: ({ value, oldValue, row }) => {
         if (value === '') return { valid: false, message: 'Required' }
         if (value < 0) return { valid: true, transformedValue: 0 }
         return { valid: true }
       }
 
     Async example:
-      beforeCommitCallback: async ({ value, field }) => {
+      validateCallback: async ({ value, field }) => {
         const exists = await checkDuplicate(field, value)
         if (exists) return 'Value already exists'
         return true
@@ -262,23 +265,16 @@ beforeCommitCallback
       - A tooltip with the error message appears on hover
       - The value is stored as a draft (uncommitted change)
       - The original row data is NOT modified
-      - The onrowchange callback fires with isValid: false
+      - The row-change event (onRowChange) fires with isValid: false
+      - The validation-error event (onValidationError) fires
 
-validationTooltipCallback
+getValidationTooltipCallback
     Signature:
-      (context: ValidationTooltipContext<T>) => string | null
+      (ctx: ValidationTooltipContext<T>) => string | null
 
     Customize the HTML content of the validation error tooltip for this
-    column. Context contains: field, error, value, row, rowIndex.
+    column. ctx is the cell ctx + error.
     Return null to use the default error display. Can return HTML.
-
-validateCallback (DEPRECATED)
-    Signature:
-      (value: unknown, row: T) => string | null | Promise<string | null>
-
-    Legacy validation. Return null for valid, or an error string.
-    Use beforeCommitCallback instead -- it supports value transformation
-    and richer return types.
 
 
 6. TOOLTIP
@@ -292,12 +288,12 @@ tooltipMember (string)
       // Row: { name: 'Alice', nameTooltip: 'Full name: Alice Smith' }
       { field: 'name', tooltipMember: 'nameTooltip' }
 
-tooltipCallback ((value: unknown, row: T) => string | null)
+getTooltipCallback ((ctx: CellContext<T>) => string | null)
     Dynamic tooltip computed per cell. Takes priority over tooltipMember.
     Return null for no tooltip.
 
     Example:
-      tooltipCallback: (value, row) =>
+      getTooltipCallback: ({ value, row }) =>
         row.description ? row.description : null
 
     Tooltip show/hide delays are controlled by grid-level properties:
@@ -308,21 +304,23 @@ tooltipCallback ((value: unknown, row: T) => string | null)
 7. CLIPBOARD
 -------------
 
-beforeCopyCallback ((value: unknown, row: T) => string)
-    Transform the cell value before it is copied to the clipboard.
+getCopyValueCallback ((ctx: CellContext<T>) => string)
+    The text copied to the clipboard for this cell (a per-cell
+    conversion, not a veto).
     Useful for formatting values differently for clipboard than for
     display (e.g., removing currency symbols, using ISO dates).
 
     Example:
-      beforeCopyCallback: (value) => new Date(value).toISOString()
+      getCopyValueCallback: ({ value }) => new Date(value).toISOString()
 
-beforePasteCallback ((value: string, row: T) => unknown)
-    Process a pasted value before applying it to the cell. The input
-    is always a string (from clipboard TSV). Return the value in the
-    type the data model expects.
+getPasteValueCallback ((ctx: PasteValueContext<T>) => unknown)
+    Convert a pasted value before applying it to the cell. ctx is the
+    cell ctx + text (always a string, from clipboard TSV). Return the
+    value in the type the data model expects. (To cancel a whole paste
+    use the grid-level beforePasteCallback.)
 
     Example:
-      beforePasteCallback: (value) => parseFloat(value) || 0
+      getPasteValueCallback: ({ text }) => parseFloat(text) || 0
 
 
 8. LAYOUT
@@ -344,7 +342,7 @@ isMovable (boolean, default: true)
 isHidden (boolean)
     Column is not rendered in the table but remains in the columns
     array. Useful for toggling visibility at runtime (e.g., via header
-    context menu 'columnVisibility' action).
+    context menu 'column-visibility' action).
 
 isSortable (boolean)
     Enable sorting for this column. The grid must also have sortMode
@@ -353,6 +351,12 @@ isSortable (boolean)
 isFilterable (boolean)
     Enable the per-column filter input for this column. The grid must
     also have isFilterable set to true.
+
+filterCallback ((ctx: { filterValue, row, column, field }) => boolean | null)
+    Custom filter predicate, replacing the built-in case-insensitive
+    substring match. true = row passes, false = excluded, null = input
+    incomplete (filter ignored, input marked .invalid). Runs before
+    sorting / pagination, so there is no rowIndex.
 
 
 9. FILL
@@ -363,7 +367,7 @@ fillDirection (FillDirection)
       'vertical' -- Fill handle drags only up/down
       'all'      -- Fill handle drags in any direction
 
-    This only applies when the grid has a fillDragCallback set.
+    Applies whenever the fill handle is available (see fill-handle.txt).
 
 
 10. FULL COLUMN DEFINITION EXAMPLE
@@ -384,10 +388,10 @@ fillDirection (FillDirection)
       headerHorizontalAlign: 'center',
       textOverflow: 'ellipsis',
       cellClass: 'salary-cell',
-      cellClassCallback: (value) => value > 100000 ? 'high-salary' : null,
+      getCellClassCallback: ({ value }) => value > 100000 ? 'high-salary' : null,
 
       // Content
-      formatCallback: (value) => '$' + Number(value).toLocaleString(),
+      getDisplayValueCallback: ({ value }) => '$' + Number(value).toLocaleString(),
 
       // Editing
       isEditable: true,
@@ -401,7 +405,7 @@ fillDirection (FillDirection)
       },
 
       // Validation
-      beforeCommitCallback: ({ value, oldValue }) => {
+      validateCallback: ({ value, oldValue }) => {
         if (value === null || value === '') {
           return { valid: false, message: 'Salary is required' }
         }
@@ -415,12 +419,12 @@ fillDirection (FillDirection)
       },
 
       // Tooltip
-      tooltipCallback: (value, row) =>
+      getTooltipCallback: ({ value, row }) =>
         'Last updated: ' + row.salaryUpdatedAt,
 
       // Clipboard
-      beforeCopyCallback: (value) => String(value),
-      beforePasteCallback: (value) => parseFloat(value.replace(/[$,]/g, '')) || 0,
+      getCopyValueCallback: ({ value }) => String(value),
+      getPasteValueCallback: ({ text }) => parseFloat(text.replace(/[$,]/g, '')) || 0,
 
       // Layout
       isFrozen: false,
@@ -454,11 +458,11 @@ Here is a dropdown column example with editorOptions:
         emptyLabel: '-- None --',
         placeholder: 'Search departments...',
         dropdownMinWidth: '250px',
-        onselect: (option, row) => {
+        onSelect: ({ option, row }) => {
           console.log('Selected:', option.label, 'for row', row.id)
         }
       },
-      beforeCommitCallback: ({ value }) => {
+      validateCallback: ({ value }) => {
         if (!value) return { valid: false, message: 'Department required' }
         return true
       }
@@ -471,7 +475,7 @@ Here is a custom editor column example:
       title: 'Color',
       isEditable: true,
       editor: 'custom',
-      cellEditCallback: ({ value, row, commit, cancel }) => {
+      renderEditorCallback: ({ value, row, commit, cancel }) => {
         const picker = document.createElement('input')
         picker.type = 'color'
         picker.value = value || '#000000'
@@ -479,7 +483,7 @@ Here is a custom editor column example:
         document.body.appendChild(picker)
         picker.click()
       },
-      templateCallback: (row) =>
+      renderCellCallback: ({ row }) =>
         '<span style="display:inline-block;width:20px;height:20px;'
         + 'background:' + (row.color || '#ccc') + '"></span> '
         + (row.color || 'None')

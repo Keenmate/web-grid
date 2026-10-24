@@ -143,33 +143,33 @@ Three mechanisms for applying CSS classes to cells and rows:
     cellClass: 'status-cell'
   }]
 
-2. cellClassCallback (dynamic, per column):
+2. getCellClassCallback (dynamic, per column):
 
   grid.columns = [{
     field: 'salary',
-    cellClassCallback: (value, row) => value > 90000 ? 'high-value' : null
+    getCellClassCallback: ({ value, row }) => value > 90000 ? 'high-value' : null
   }]
 
-3. rowClassCallback (dynamic, per row):
+3. getRowClassCallback (dynamic, per row):
 
-  grid.rowClassCallback = (row, index) => {
+  grid.getRowClassCallback = ({ row }) => {
     if (row.status === 'inactive') return 'row-inactive'
     if (row.isNew) return 'row-new'
     return null
   }
 
 IMPORTANT: These classes are applied INSIDE the Shadow DOM. External stylesheets
-cannot reach them. You MUST use customStylesCallback to define the CSS rules for
+cannot reach them. You MUST use getCustomStylesCallback to define the CSS rules for
 these classes. Without it, the classes are added to elements but have no effect.
 
 
 CUSTOM STYLES INJECTION
 ------------------------
-The customStylesCallback property returns a CSS string that gets injected into the
-Shadow DOM. This is the ONLY way to style custom classes from cellClassCallback or
-rowClassCallback.
+The getCustomStylesCallback property returns a CSS string that gets injected into the
+Shadow DOM. This is the ONLY way to style custom classes from getCellClassCallback or
+getRowClassCallback.
 
-  grid.customStylesCallback = () => `
+  grid.getCustomStylesCallback = () => `
     .high-value {
       background: #d1fae5 !important;
       font-weight: 600;
@@ -198,7 +198,7 @@ Full example combining all three:
     {
       field: 'salary',
       cellClass: 'numeric',
-      cellClassCallback: (value, row) => {
+      getCellClassCallback: ({ value, row }) => {
         if (value > 100000) return 'salary-high'
         if (value < 30000) return 'salary-low'
         return null
@@ -206,14 +206,14 @@ Full example combining all three:
     },
     {
       field: 'status',
-      cellClassCallback: (value) => 'status-' + value
+      getCellClassCallback: ({ value }) => 'status-' + value
     }
   ]
 
-  grid.rowClassCallback = (row, index) =>
+  grid.getRowClassCallback = ({ row }) =>
     row.deleted ? 'row-deleted' : null
 
-  grid.customStylesCallback = () => `
+  grid.getCustomStylesCallback = () => `
     .numeric { text-align: right; font-variant-numeric: tabular-nums; }
     .salary-high { background: #d1fae5 !important; }
     .salary-low { background: #fee2e2 !important; }

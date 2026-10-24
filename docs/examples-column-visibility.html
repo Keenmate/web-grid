@@ -96,18 +96,18 @@
 
         <div class="card">
             <h2>Header Context Menu</h2>
-            <p>Enable the predefined menu items <code>'columnVisibility'</code> and <code>'hideColumn'</code>:</p>
+            <p>Enable the predefined menu items <code>'column-visibility'</code> and <code>'hide-column'</code>:</p>
             <div class="code-block">
                 <pre>grid.headerContextMenu = [
-    'sortAsc',
-    'sortDesc',
-    'clearSort',
-    { dividerBefore: true },
-    'hideColumn',        // hide this column (right-click target)
-    'columnVisibility'   // submenu with a toggle for each column
+    'sort-asc',
+    'sort-desc',
+    'clear-sort',
+    { divider: true },
+    'hide-column',        // hide this column (right-click target)
+    'column-visibility'   // submenu with a toggle for each column
 ]</pre>
             </div>
-            <p style="margin-top: 0.75rem;">The <code>'columnVisibility'</code> submenu is generated dynamically from the current columns and shows a <em>Show all</em> entry plus one toggle per column.</p>
+            <p style="margin-top: 0.75rem;">The <code>'column-visibility'</code> submenu is generated dynamically from the current columns and shows a <em>Show all</em> entry plus one toggle per column.</p>
         </div>
 
         <div class="card">
@@ -147,10 +147,10 @@ grid.columns = [...grid.columns]</pre>
                     <tr>
                         <td style="padding: 0.5rem; border-bottom: 1px solid #e2e8f0;"><code>grid.headerContextMenu</code></td>
                         <td style="padding: 0.5rem; border-bottom: 1px solid #e2e8f0;"><code>(string | object)[]</code></td>
-                        <td style="padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">Array of predefined items and custom entries. Include <code>'hideColumn'</code> and/or <code>'columnVisibility'</code>.</td>
+                        <td style="padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">Array of predefined items and custom entries. Include <code>'hide-column'</code> and/or <code>'column-visibility'</code>.</td>
                     </tr>
                     <tr>
-                        <td style="padding: 0.5rem;"><code>'columnVisibility'</code></td>
+                        <td style="padding: 0.5rem;"><code>'column-visibility'</code></td>
                         <td style="padding: 0.5rem;"><code>string</code></td>
                         <td style="padding: 0.5rem;">Submenu entry — auto-generates a toggle per column plus a <em>Show all</em> row.</td>
                     </tr>
@@ -185,7 +185,7 @@ grid.columns = [...grid.columns]</pre>
             { field: 'name', title: 'Name', width: '160px' },
             { field: 'email', title: 'Email', width: '200px' },
             { field: 'department', title: 'Department', width: '140px' },
-            { field: 'salary', title: 'Salary', width: '110px', horizontalAlign: 'right', formatCallback: (v) => v != null ? `$${v.toLocaleString()}` : '' },
+            { field: 'salary', title: 'Salary', width: '110px', horizontalAlign: 'right', getDisplayValueCallback: ({ value: v }) => v != null ? `$${v.toLocaleString()}` : '' },
             { field: 'location', title: 'Location', width: '130px' },
             { field: 'phone', title: 'Phone', width: '120px' }
         ]
@@ -201,12 +201,12 @@ grid.columns = [...grid.columns]</pre>
 
         // Enable header context menu entries for visibility control
         grid.headerContextMenu = [
-            'sortAsc',
-            'sortDesc',
-            'clearSort',
-            { dividerBefore: true },
-            'hideColumn',
-            'columnVisibility'
+            'sort-asc',
+            'sort-desc',
+            'clear-sort',
+            { divider: true },
+            'hide-column',
+            'column-visibility'
         ]
 
         // ---- External UI ----------------------------------------------------

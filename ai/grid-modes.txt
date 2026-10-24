@@ -99,7 +99,7 @@ Common configuration:
   grid.mode = "excel"
   grid.isRowToolbarVisible = true
   grid.rowToolbar = ["add", "delete", "duplicate"]
-  grid.fillDragCallback = (detail) => { /* handle fill */ }
+  grid.beforeFillCallback = (ctx) => { /* return false to cancel the fill */ }
   grid.isCheckboxAlwaysEditable = true
 
 

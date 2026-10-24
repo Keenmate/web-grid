@@ -302,20 +302,20 @@ Two hooks for per-row / per-cell styling:
 grid.columns = [{
   field: 'salary',
   cellClass: 'salary-cell',                                              // Static class on every cell in this column
-  cellClassCallback: (value, row) => value > 90000 ? 'high-value' : null // Dynamic class per value
+  getCellClassCallback: ({ value }) => value > 90000 ? 'high-value' : null // Dynamic class per value
 }]
 ```
 
 ### Per-row class
 
 ```javascript
-grid.rowClassCallback = (row, index) => row.status === 'inactive' ? 'row-inactive' : null
+grid.getRowClassCallback = ({ row }) => row.status === 'inactive' ? 'row-inactive' : null
 ```
 
 ### Inject custom CSS into the shadow DOM
 
 ```javascript
-grid.customStylesCallback = () => `
+grid.getCustomStylesCallback = () => `
   .high-value { background: #d1fae5 !important; }
   .row-inactive { opacity: 0.5; }
 `
@@ -336,6 +336,6 @@ The output is a list of `:root { --base-*: … }` declarations, which feed strai
 
 ## See also
 
-- [Usage / API reference](./usage.md) — `customStylesCallback`, `rowClassCallback`, `cellClassCallback`, `labels`.
+- [Usage / API reference](./usage.md) — `getCustomStylesCallback`, `getRowClassCallback`, `getCellClassCallback`, `labels`.
 - [Examples](./examples.md) — `examples-theming.html`, `examples-custom-styling.html`.
 - [`component-variables.manifest.json`](../component-variables.manifest.json) — the machine-readable variable catalog.

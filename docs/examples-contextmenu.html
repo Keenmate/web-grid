@@ -144,59 +144,59 @@
                 <h2>Context Menu API</h2>
                 <h3>Grid Properties</h3>
                 <table class="props-table">
-                    <tr><td><code>contextMenu</code></td><td>Array of menu item configurations</td></tr>
-                    <tr><td><code>contextMenuXOffset</code></td><td>Horizontal offset from click (default: 0)</td></tr>
-                    <tr><td><code>contextMenuYOffset</code></td><td>Vertical offset from click (default: 4)</td></tr>
-                    <tr><td><code>oncontextmenuopen</code></td><td>Callback fired when context menu opens</td></tr>
+                    <tr><td><code>contextMenu</code></td><td>Array of entries: built-in names (<code>'add'</code>, <code>'duplicate'</code>, <code>'delete'</code>, <code>'move-up'</code>, <code>'move-down'</code>, tree <code>'expand-all'</code>…), menu items, dividers</td></tr>
+                    <tr><td><code>contextMenuXOffset</code></td><td>Horizontal offset from click (default: 8)</td></tr>
+                    <tr><td><code>contextMenuYOffset</code></td><td>Vertical offset from click (default: 0)</td></tr>
+                    <tr><td><code>beforeContextMenuOpenCallback</code></td><td>Runs before the menu opens (sync): <code>false</code> → no grid menu, an entries array → shown instead</td></tr>
+                    <tr><td><code>onAction</code> / <code>action</code> event</td><td>Fired for every item click (<code>source: 'context-menu'</code>)</td></tr>
                 </table>
 
-                <h3 style="margin-top: 1rem;">ContextMenuItem Properties</h3>
+                <h3 style="margin-top: 1rem;">Menu Item Properties</h3>
                 <table class="props-table">
-                    <tr><td><code>id</code></td><td>Unique identifier</td></tr>
-                    <tr><td><code>label</code></td><td>Display text (string or function)</td></tr>
-                    <tr><td><code>icon</code></td><td>Emoji or HTML icon (string or function)</td></tr>
-                    <tr><td><code>shortcut</code></td><td>Keyboard shortcut (e.g., "C", "Delete")</td></tr>
-                    <tr><td><code>disabled</code></td><td>Disable state (boolean or function)</td></tr>
-                    <tr><td><code>visible</code></td><td>Visibility (boolean or function)</td></tr>
-                    <tr><td><code>danger</code></td><td>Red styling for destructive actions</td></tr>
-                    <tr><td><code>dividerBefore</code></td><td>Add divider line before item</td></tr>
-                    <tr><td><code>onclick</code></td><td>Click handler receiving context</td></tr>
+                    <tr><td><code>action</code></td><td>Built-in name (omit for a custom item)</td></tr>
+                    <tr><td><code>id</code></td><td>Identifies a custom item</td></tr>
+                    <tr><td><code>text</code> / <code>getTextCallback</code></td><td>Display text (static or per ctx)</td></tr>
+                    <tr><td><code>icon</code> / <code>getIconCallback</code></td><td>Emoji or HTML icon</td></tr>
+                    <tr><td><code>shortcut</code></td><td>Key hint; pressing it while the menu is open activates the item</td></tr>
+                    <tr><td><code>isDisabled</code> / <code>getIsDisabledCallback</code></td><td>Disabled state</td></tr>
+                    <tr><td><code>isVisible</code> / <code>getIsVisibleCallback</code></td><td>Visibility</td></tr>
+                    <tr><td><code>isDanger</code></td><td>Red styling for destructive actions</td></tr>
+                    <tr><td><code>children</code> / <code>getChildrenCallback</code></td><td>Submenu (static, or lazy / async)</td></tr>
+                    <tr><td><code>{ divider: true, text? }</code></td><td>A divider entry (optionally labelled)</td></tr>
+                    <tr><td><code>onClick</code></td><td>Click handler receiving the action detail</td></tr>
                 </table>
             </div>
 
             <div class="card">
                 <h2>Context Object</h2>
-                <p>The context passed to callbacks:</p>
+                <p>The cell context passed to item callbacks (and, plus <code>action</code> / <code>id</code> / <code>source</code>, to <code>onClick</code>):</p>
                 <table class="props-table">
                     <tr><td><code>row</code></td><td>The row data object</td></tr>
                     <tr><td><code>rowIndex</code></td><td>Index of the row</td></tr>
                     <tr><td><code>colIndex</code></td><td>Index of the column</td></tr>
-                    <tr><td><code>column</code></td><td>The column definition</td></tr>
-                    <tr><td><code>cellValue</code></td><td>The value of the clicked cell</td></tr>
+                    <tr><td><code>column</code> / <code>field</code></td><td>The column definition / its field</td></tr>
+                    <tr><td><code>value</code></td><td>The value of the clicked cell</td></tr>
+                    <tr><td><code>controller</code> / <code>element</code></td><td>The grid controller (<code>el.controller</code>) and the host element</td></tr>
                 </table>
 
                 <div class="code-block" style="margin-top: 1rem;">
                     <pre>grid.contextMenu = [
     {
         id: 'copy',
-        label: (ctx) => `Copy "${ctx.column.title}"`,
+        getTextCallback: (ctx) => `Copy "${ctx.column.title}"`,
         icon: '📋',
-        shortcut: 'C',  // Press C to trigger
-        onclick: (ctx) => {
-            navigator.clipboard.writeText(
-                String(ctx.cellValue)
-            )
+        shortcut: 'C',  // Press C while the menu is open
+        onClick: (detail) => {
+            navigator.clipboard.writeText(String(detail.value))
         }
     },
+    { divider: true },
+    // Built-in: removes the row itself
     {
-        id: 'delete',
-        label: 'Delete',
+        action: 'delete',
         icon: '🗑️',
-        shortcut: 'Delete',
-        danger: true,
-        dividerBefore: true,
-        disabled: (ctx) => ctx.row.isProtected,
-        onclick: (ctx) => deleteRow(ctx.rowIndex)
+        isDanger: true,
+        getIsDisabledCallback: (ctx) => ctx.row.isProtected
     }
 ]</pre>
                 </div>
@@ -240,18 +240,19 @@
                 <h2>Header Context Menu API</h2>
                 <h3>Grid Properties</h3>
                 <table class="props-table">
-                    <tr><td><code>headerContextMenu</code></td><td>Array of predefined strings or item configs</td></tr>
-                    <tr><td><code>onheadercontextmenuopen</code></td><td>Callback fired when header menu opens</td></tr>
+                    <tr><td><code>headerContextMenu</code></td><td>Array of built-in names, menu items and dividers</td></tr>
+                    <tr><td><code>beforeHeaderMenuOpenCallback</code></td><td>Runs before the header menu opens (sync): <code>false</code> → no grid menu, an entries array → shown instead</td></tr>
                 </table>
 
                 <h3 style="margin-top: 1rem;">Predefined Actions</h3>
                 <table class="props-table">
-                    <tr><td><code>'sortAsc'</code></td><td>Sort ascending</td></tr>
-                    <tr><td><code>'sortDesc'</code></td><td>Sort descending</td></tr>
-                    <tr><td><code>'clearSort'</code></td><td>Clear sort (auto-hides if not sorted)</td></tr>
-                    <tr><td><code>'hideColumn'</code></td><td>Remove column from grid</td></tr>
-                    <tr><td><code>'freezeColumn'</code></td><td>Freeze up to this column</td></tr>
-                    <tr><td><code>'unfreezeColumn'</code></td><td>Unfreeze this column</td></tr>
+                    <tr><td><code>'sort-asc'</code></td><td>Sort ascending</td></tr>
+                    <tr><td><code>'sort-desc'</code></td><td>Sort descending</td></tr>
+                    <tr><td><code>'clear-sort'</code></td><td>Clear sort (auto-hides if not sorted)</td></tr>
+                    <tr><td><code>'hide-column'</code></td><td>Remove column from grid</td></tr>
+                    <tr><td><code>'freeze-column'</code></td><td>Freeze up to this column</td></tr>
+                    <tr><td><code>'unfreeze-column'</code></td><td>Unfreeze this column</td></tr>
+                    <tr><td><code>'column-visibility'</code></td><td>Submenu toggling each column's visibility</td></tr>
                 </table>
             </div>
 
@@ -259,27 +260,28 @@
                 <h2>HeaderMenuContext</h2>
                 <p>The context passed to header menu callbacks:</p>
                 <table class="props-table">
-                    <tr><td><code>column</code></td><td>The column definition</td></tr>
-                    <tr><td><code>field</code></td><td>Column field name</td></tr>
-                    <tr><td><code>columnIndex</code></td><td>Index of the column</td></tr>
+                    <tr><td><code>column</code></td><td>The column definition (<code>null</code> on the filler area right of the last column)</td></tr>
+                    <tr><td><code>field</code></td><td>Column field name (<code>''</code> on the filler)</td></tr>
+                    <tr><td><code>colIndex</code></td><td>Index of the column (<code>-1</code> on the filler)</td></tr>
                     <tr><td><code>sortDirection</code></td><td>'asc' | 'desc' | null</td></tr>
                     <tr><td><code>isFrozen</code></td><td>Whether column is frozen</td></tr>
                 </table>
 
                 <div class="code-block" style="margin-top: 1rem;">
                     <pre>grid.headerContextMenu = [
-    'sortAsc',
-    'sortDesc',
-    'clearSort',
-    { dividerBefore: true },
-    'freezeColumn',
-    'unfreezeColumn',
-    { dividerBefore: true },
+    'sort-asc',
+    'sort-desc',
+    'clear-sort',
+    { divider: true },
+    'freeze-column',
+    'unfreeze-column',
+    { divider: true },
     {
         id: 'export',
-        label: (ctx) => `Export ${ctx.field}`,
+        getTextCallback: (ctx) => `Export ${ctx.field}`,
+        getIsVisibleCallback: (ctx) => ctx.column !== null,  // hide on the filler
         icon: '📊',
-        onclick: (ctx) => exportColumn(ctx.field)
+        onClick: (detail) => exportColumn(detail.field)
     }
 ]</pre>
                 </div>
@@ -351,59 +353,59 @@
             { field: 'id', title: 'ID', width: '60px', horizontalAlign: 'center' },
             { field: 'name', title: 'Product Name', isSortable: true },
             { field: 'category', title: 'Category', isSortable: true, width: '120px' },
-            { field: 'price', title: 'Price', width: '100px', horizontalAlign: 'right', formatCallback: (v) => `$${v.toFixed(2)}` },
+            { field: 'price', title: 'Price', width: '100px', horizontalAlign: 'right', getDisplayValueCallback: ({ value: v }) => `$${v.toFixed(2)}` },
             { field: 'stock', title: 'Stock', width: '80px', horizontalAlign: 'center' },
-            { field: 'active', title: 'Status', width: '80px', horizontalAlign: 'center', formatCallback: (v) => v ? '✓' : '✗' }
+            { field: 'active', title: 'Status', width: '80px', horizontalAlign: 'center', getDisplayValueCallback: ({ value: v }) => v ? '✓' : '✗' }
         ]
 
         // Read-only context menu
         const readOnlyContextMenu = [
             {
                 id: 'view',
-                label: 'View Details',
+                text: 'View Details',
                 icon: '👁️',
                 shortcut: 'V',
-                onclick: (ctx) => {
+                onClick: (ctx) => {
                     showMessage(`Viewing: ${ctx.row.name} (ID: ${ctx.row.id})`)
                 }
             },
             {
                 id: 'copy-cell',
-                label: (ctx) => `Copy "${ctx.column.title}"`,
+                getTextCallback: (ctx) => `Copy "${ctx.column.title}"`,
                 icon: '📋',
                 shortcut: 'C',
-                onclick: (ctx) => {
-                    navigator.clipboard.writeText(String(ctx.cellValue))
-                    showMessage(`Copied: ${ctx.cellValue}`)
+                onClick: (ctx) => {
+                    navigator.clipboard.writeText(String(ctx.value))
+                    showMessage(`Copied: ${ctx.value}`)
                 }
             },
             {
                 id: 'copy-row',
-                label: 'Copy Row as JSON',
+                text: 'Copy Row as JSON',
                 icon: '📄',
                 shortcut: 'J',
-                onclick: (ctx) => {
+                onClick: (ctx) => {
                     navigator.clipboard.writeText(JSON.stringify(ctx.row, null, 2))
                     showMessage('Row copied as JSON')
                 }
             },
             {
                 id: 'convert-eur',
-                label: 'Convert to Euro',
+                text: 'Convert to Euro',
                 icon: '💶',
                 shortcut: 'E',
-                visible: (ctx) => ctx.column.field === 'price',
-                onclick: (ctx) => {
+                getIsVisibleCallback: (ctx) => ctx.field === 'price',
+                onClick: (ctx) => {
                     showConversionDialog(ctx.row.name, ctx.row.price)
                 }
             },
+            { divider: true },
             {
                 id: 'export',
-                label: 'Export to CSV',
+                text: 'Export to CSV',
                 icon: '📊',
                 shortcut: 'X',
-                dividerBefore: true,
-                onclick: (ctx) => {
+                onClick: (ctx) => {
                     showMessage(`Would export: ${ctx.row.name}`)
                 }
             }
@@ -414,8 +416,9 @@
         grid1.items = products
         grid1.columns = readOnlyColumns
         grid1.contextMenu = readOnlyContextMenu
-        grid1.oncontextmenuopen = (ctx) => {
-            console.log('Context menu opened:', ctx)
+        // Runs before the menu opens; return false to suppress it, or an entries array to replace it
+        grid1.beforeContextMenuOpenCallback = (ctx) => {
+            console.log('Context menu opening:', ctx)
         }
 
         // =============================================================
@@ -447,7 +450,7 @@
                 horizontalAlign: 'right',
                 isEditable: true,
                 editor: 'number',
-                formatCallback: (v) => `$${v.toFixed(2)}`
+                getDisplayValueCallback: ({ value: v }) => `$${v.toFixed(2)}`
             },
             {
                 field: 'stock',
@@ -467,75 +470,66 @@
             }
         ]
 
-        // Editable context menu with conditional items
+        // Editable context menu with conditional items.
+        // 'duplicate' and 'delete' are built-ins — the grid inserts / removes the row itself.
         const editableContextMenu = [
             {
                 id: 'edit',
-                label: 'Edit Cell',
+                text: 'Edit Cell',
                 icon: '✏️',
-                onclick: (ctx) => {
-                    showMessage(`Double-click the cell to edit "${ctx.column.title}"`)
+                onClick: (detail) => {
+                    showMessage(`Double-click the cell to edit "${detail.column.title}"`)
                 }
             },
-            {
-                id: 'duplicate',
-                label: 'Duplicate Row',
-                icon: '📑',
-                onclick: (ctx) => {
-                    const newProduct = { ...ctx.row, id: Math.max(...products.map(p => p.id)) + 1 }
-                    products = [...products.slice(0, ctx.rowIndex + 1), newProduct, ...products.slice(ctx.rowIndex + 1)]
-                    grid2.items = products
-                    showMessage(`Duplicated: ${ctx.row.name}`)
-                }
-            },
+            { action: 'duplicate', text: 'Duplicate Row', icon: '📑' },
             {
                 id: 'toggle-active',
-                label: (ctx) => ctx.row.active ? 'Deactivate' : 'Activate',
+                getTextCallback: (ctx) => ctx.row.active ? 'Deactivate' : 'Activate',
                 icon: '🔄',
-                onclick: (ctx) => {
-                    products[ctx.rowIndex].active = !products[ctx.rowIndex].active
-                    grid2.items = [...products]
-                    showMessage(`${ctx.row.name} is now ${products[ctx.rowIndex].active ? 'active' : 'inactive'}`)
+                onClick: ({ row }) => {
+                    row.active = !row.active
+                    grid2.items = [...grid2.items]
+                    showMessage(`${row.name} is now ${row.active ? 'active' : 'inactive'}`)
                 }
             },
             {
                 id: 'restock',
-                label: 'Restock (+10)',
+                text: 'Restock (+10)',
                 icon: '📦',
-                visible: (ctx) => ctx.row.stock < 20,
-                onclick: (ctx) => {
-                    products[ctx.rowIndex].stock += 10
-                    grid2.items = [...products]
-                    showMessage(`${ctx.row.name} stock increased to ${products[ctx.rowIndex].stock}`)
+                getIsVisibleCallback: (ctx) => ctx.row.stock < 20,
+                onClick: ({ row }) => {
+                    row.stock += 10
+                    grid2.items = [...grid2.items]
+                    showMessage(`${row.name} stock increased to ${row.stock}`)
                 }
             },
+            { divider: true },
             {
-                id: 'delete',
-                label: 'Delete',
+                action: 'delete',
+                text: 'Delete',
                 icon: '🗑️',
-                danger: true,
-                dividerBefore: true,
-                disabled: (ctx) => ctx.row.active,
-                onclick: (ctx) => {
-                    products = products.filter((_, i) => i !== ctx.rowIndex)
-                    grid2.items = products
-                    showMessage(`Deleted: ${ctx.row.name}`)
-                }
+                isDanger: true,
+                getIsDisabledCallback: (ctx) => ctx.row.active
             }
         ]
 
-        // Initialize editable grid
+        // Initialize editable grid (its own copy of the rows)
         const grid2 = document.getElementById('grid2')
-        grid2.items = products
+        grid2.items = products.map(p => ({ ...p }))
         grid2.columns = editableColumns
         grid2.isEditable = true
         grid2.editTrigger = 'dblclick'
         grid2.contextMenu = editableContextMenu
+        // The copy the 'duplicate' built-in inserts (default: shallow copy with the id cleared)
+        grid2.createDuplicateRowCallback = ({ row }) => ({ ...row, id: Math.max(...grid2.items.map(p => p.id)) + 1 })
+        // The built-ins already did the work — just report it
+        grid2.onAction = (detail) => {
+            if (detail.action === 'duplicate') showMessage(`Duplicated: ${detail.row.name}`)
+            else if (detail.action === 'delete') showMessage(`Deleted: ${detail.row.name}`)
+        }
 
-        grid2.onrowchange = (detail) => {
-            if (detail.isValid) {
-                products[detail.rowIndex] = { ...products[detail.rowIndex], [detail.field]: detail.newValue }
-            }
+        grid2.onRowChange = (detail) => {
+            if (detail.isValid) detail.row[detail.field] = detail.newValue
         }
 
         // =============================================================
@@ -546,9 +540,10 @@
         grid3.items = products.slice(0, 4)
         grid3.columns = readOnlyColumns
         grid3.contextMenu = [
-            { id: 'action1', label: 'Action 1', icon: '📋' },
-            { id: 'action2', label: 'Action 2', icon: '✏️' },
-            { id: 'action3', label: 'Action 3', icon: '🗑️', danger: true, dividerBefore: true }
+            { id: 'action1', text: 'Action 1', icon: '📋' },
+            { id: 'action2', text: 'Action 2', icon: '✏️' },
+            { divider: true },
+            { id: 'action3', text: 'Action 3', icon: '🗑️', isDanger: true }
         ]
 
         // Offset sliders
@@ -577,12 +572,12 @@
             { field: 'name', title: 'Product Name', width: '160px', isSortable: true },
             { field: 'category', title: 'Category', isSortable: true, width: '120px' },
             { field: 'supplier', title: 'Supplier', width: '140px', isSortable: true },
-            { field: 'price', title: 'Price', width: '100px', horizontalAlign: 'right', isSortable: true, formatCallback: (v) => `$${v.toFixed(2)}` },
-            { field: 'discount', title: 'Discount', width: '90px', horizontalAlign: 'center', isSortable: true, formatCallback: (v) => v > 0 ? `${v}%` : '-' },
+            { field: 'price', title: 'Price', width: '100px', horizontalAlign: 'right', isSortable: true, getDisplayValueCallback: ({ value: v }) => `$${v.toFixed(2)}` },
+            { field: 'discount', title: 'Discount', width: '90px', horizontalAlign: 'center', isSortable: true, getDisplayValueCallback: ({ value: v }) => v > 0 ? `${v}%` : '-' },
             { field: 'stock', title: 'Stock', width: '80px', horizontalAlign: 'center', isSortable: true },
-            { field: 'weight', title: 'Weight', width: '90px', horizontalAlign: 'right', isSortable: true, formatCallback: (v) => `${v} kg` },
-            { field: 'rating', title: 'Rating', width: '80px', horizontalAlign: 'center', isSortable: true, formatCallback: (v) => `★ ${v}` },
-            { field: 'active', title: 'Status', width: '90px', horizontalAlign: 'center', formatCallback: (v) => v ? '✓ Active' : '✗ Inactive' }
+            { field: 'weight', title: 'Weight', width: '90px', horizontalAlign: 'right', isSortable: true, getDisplayValueCallback: ({ value: v }) => `${v} kg` },
+            { field: 'rating', title: 'Rating', width: '80px', horizontalAlign: 'center', isSortable: true, getDisplayValueCallback: ({ value: v }) => `★ ${v}` },
+            { field: 'active', title: 'Status', width: '90px', horizontalAlign: 'center', getDisplayValueCallback: ({ value: v }) => v ? '✓ Active' : '✗ Inactive' }
         ]
 
         // Store original columns for "Show All Columns"
@@ -595,31 +590,32 @@
 
         // Header context menu with predefined and custom actions
         gridHeader.headerContextMenu = [
-            'sortAsc',
-            'sortDesc',
-            'clearSort',
-            { dividerBefore: true },
-            'freezeColumn',
-            'unfreezeColumn',
-            { dividerBefore: true },
-            'columnVisibility',  // Submenu with all columns - toggle visibility
-            'hideColumn',
-            { dividerBefore: true },
+            'sort-asc',
+            'sort-desc',
+            'clear-sort',
+            { divider: true },
+            'freeze-column',
+            'unfreeze-column',
+            { divider: true },
+            'column-visibility',  // Submenu with all columns - toggle visibility
+            'hide-column',
+            { divider: true },
             {
                 id: 'exportColumn',
-                label: (ctx) => `Export "${ctx.column.title}" Data`,
+                getTextCallback: (ctx) => `Export "${ctx.column?.title}" Data`,
+                getIsVisibleCallback: (ctx) => ctx.column !== null,  // hidden on the filler right of the last column
                 icon: '📊',
-                onclick: (ctx) => {
-                    const values = products.map(p => p[ctx.field])
-                    showMessage(`Would export ${values.length} values from "${ctx.column.title}"`)
+                onClick: (detail) => {
+                    const values = products.map(p => p[detail.field])
+                    showMessage(`Would export ${values.length} values from "${detail.column.title}"`)
                 }
             }
         ]
 
-        // Log header context menu events
-        gridHeader.onheadercontextmenuopen = (ctx) => {
+        // Log header context menu opens (return false to suppress the menu, or an array to replace it)
+        gridHeader.beforeHeaderMenuOpenCallback = (ctx) => {
             document.getElementById('headerMenuLog').innerHTML =
-                `<strong>Menu opened:</strong> ${ctx.column.title} (field: "${ctx.field}", index: ${ctx.columnIndex}, frozen: ${ctx.isFrozen}, sort: ${ctx.sortDirection || 'none'})`
+                `<strong>Menu opened:</strong> ${ctx.column ? ctx.column.title : '(filler)'} (field: "${ctx.field}", index: ${ctx.colIndex}, frozen: ${ctx.isFrozen}, sort: ${ctx.sortDirection || 'none'})`
         }
     </script>
 </body>

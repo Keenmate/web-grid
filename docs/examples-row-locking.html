@@ -145,8 +145,8 @@ grid.rowLocking = {
                 <p>Compute lock status from row data:</p>
                 <div class="code-block">
                     <pre>grid.rowLocking = {
-    isLockedCallback: (row) => row.status === 'approved',
-    getLockInfoCallback: (row) => ({
+    getIsLockedCallback: ({ row }) => row.status === 'approved',
+    getLockInfoCallback: ({ row }) => ({
         isLocked: row.status === 'approved',
         lockedBy: row.approvedBy,
         reason: 'Approved records cannot be edited'
@@ -174,7 +174,7 @@ grid.updateRowById(123, { name: 'Updated Name' })</pre>
                     <pre>// Required: Configure row identification
 grid.idValueMember = 'id'
 // Or use callback:
-// grid.idValueCallback = (row) => row.employeeId
+// grid.getRowIdCallback = ({ row }) => row.employeeId
 
 // Configure row locking
 grid.rowLocking = {
@@ -183,25 +183,20 @@ grid.rowLocking = {
     lockInfoMember: 'lockInfo',
 
     // Callback sources
-    isLockedCallback: (row) => row.status === 'locked',
-    getLockInfoCallback: (row) => ({ ... }),
+    getIsLockedCallback: ({ row }) => row.status === 'locked',
+    getLockInfoCallback: ({ row }) => ({ ... }),
 
     // Edit behavior
     lockedEditBehavior: 'block',  // 'block' | 'allow' | 'callback'
-    canEditLockedCallback: (row, lockInfo) => {
+    getCanEditLockedCallback: ({ row, lockInfo }) => {
         return lockInfo.lockedBy === currentUser
-    },
-
-    // Custom tooltip
-    lockTooltipCallback: (lockInfo, row) => {
-        return `Locked by ${lockInfo.lockedBy} at ${lockInfo.lockedAt}`
     }
 }
 
-// Listen for lock changes
-grid.onrowlockchange = (detail) => {
-    console.log('Lock changed:', detail)
-}</pre>
+// Listen for lock changes (the row-lock-change event, or its onRowLockChange twin)
+grid.addEventListener('row-lock-change', (e) => {
+    console.log('Lock changed:', e.detail)
+})</pre>
                 </div>
             </div>
         </div>
@@ -231,7 +226,7 @@ grid.rowLocking = { lockedEditBehavior: 'allow' }
 // Custom callback to decide
 grid.rowLocking = {
     lockedEditBehavior: 'callback',
-    canEditLockedCallback: (row, lockInfo) => {
+    getCanEditLockedCallback: ({ row, lockInfo }) => {
         // Allow if current user is the locker
         return lockInfo.lockedBy === currentUser
     }
@@ -324,7 +319,7 @@ if (result) {
                 }
             },
             { field: 'salary', title: 'Salary', width: '100px', horizontalAlign: 'right', isEditable: true, editor: 'number',
-                formatCallback: (v) => '$' + Number(v).toLocaleString()
+                getDisplayValueCallback: ({ value: v }) => '$' + Number(v).toLocaleString()
             },
             { field: 'status', title: 'Status', width: '100px', isEditable: true, editor: 'select',
                 editorOptions: {
@@ -369,7 +364,7 @@ if (result) {
         }
 
         // Listen for row changes
-        grid.onrowchange = (detail) => {
+        grid.onRowChange = (detail) => {
             console.log('Row changed:', detail)
             if (detail.isValid) {
                 showToast(`Updated ${detail.field}: ${detail.newValue}`, 'success')
@@ -377,7 +372,7 @@ if (result) {
         }
 
         // Listen for lock changes
-        grid.onrowlockchange = (detail) => {
+        grid.onRowLockChange = (detail) => {
             console.log('Lock changed:', detail)
             updateExternalLocksDisplay()
         }
@@ -457,7 +452,7 @@ if (result) {
                 ...grid.rowLocking,
                 lockedEditBehavior: behavior,
                 // For callback mode, allow editing if you're the locker
-                canEditLockedCallback: behavior === 'callback'
+                getCanEditLockedCallback: behavior === 'callback'
                     ? (row, lockInfo) => {
                         const currentUser = document.getElementById('lockerName').value
                         return lockInfo.lockedBy === currentUser

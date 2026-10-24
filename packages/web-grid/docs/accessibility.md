@@ -40,7 +40,7 @@ The cursor position on edit-start is configurable via `editStartSelection`: `'se
 | **Ctrl + A** | Select all cells (where supported) |
 | **Ctrl + C** | Copy the selected range as TSV (Excel-compatible) |
 | **Ctrl + V** | Paste TSV at the focused cell (runs the paste pipeline) |
-| **Ctrl + Delete** | Delete the current row — fires `onrowdelete` |
+| **Ctrl + Delete** | Request deleting the current row — fires the `row-delete` event (`onRowDelete`); the grid itself doesn't delete |
 
 ### Tree mode
 
@@ -57,9 +57,10 @@ Per-row and per-range custom shortcuts are registered via `rowShortcuts` and `ra
 ```javascript
 grid.rowShortcuts = [
   {
-    keys: 'Ctrl+S',
-    label: 'Save row',
-    handler: ({ row, rowIndex }) => saveRow(row)
+    shortcut: 'Ctrl+S',
+    id: 'save',
+    text: 'Save row',
+    onClick: ({ row, rowIndex }) => saveRow(row)
   }
 ]
 grid.isShortcutsHelpVisible = true     // surfaces a ⓘ icon with the full key list
@@ -99,7 +100,7 @@ See the [color-scheme contract](./theming.md#color-scheme-contract) for the dark
 
 ## Form integration
 
-`<web-grid>` is not a form control in the HTML sense — it does not synthesize a hidden input, does not participate in `FormData` submission, and does not fire `change` / `invalid` events on the host. Consumers wire row data into their forms manually via `onrowchange` and the [paste API](./usage.md#paste-api).
+`<web-grid>` is not a form control in the HTML sense — it does not synthesize a hidden input, does not participate in `FormData` submission, and does not fire `change` / `invalid` events on the host. Consumers wire row data into their forms manually via the `row-change` event and the [paste API](./usage.md#paste-api).
 
 If you need form participation, wrap the grid in a controller that flattens `grid.items` into hidden inputs at submit time.
 
@@ -111,6 +112,6 @@ If you need WCAG 2.2 AA compliance for a grid with explicit cell-selection or vi
 
 ## See also
 
-- [Usage / API reference](./usage.md) — `isShortcutsHelpVisible`, `rowShortcuts`, `editStartSelection`, `onrowdelete`.
+- [Usage / API reference](./usage.md) — `isShortcutsHelpVisible`, `rowShortcuts`, `editStartSelection`, the `row-delete` event.
 - [Theming → color-scheme contract](./theming.md#color-scheme-contract) — contrast and dark-mode flips.
 - [`examples-shortcuts.html`](../../../docs/examples-shortcuts.html) — interactive demo of custom shortcuts + help overlay.

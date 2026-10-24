@@ -134,23 +134,23 @@
 
         <div class="grid-2">
             <div class="card">
-                <h2>Predefined Toolbar Items</h2>
-                <p>Use these string shortcuts for common row actions:</p>
+                <h2>Built-in Toolbar Items</h2>
+                <p>Use these built-in names (as strings, or as <code>action</code> on an item to override its icon / text) for common row actions. Built-ins <strong>do the work</strong> after the <code>action</code> event: you don't insert / remove / move the row yourself.</p>
 
                 <table class="actions-table">
                     <thead>
                         <tr>
-                            <th>ID</th>
+                            <th>action</th>
                             <th>Icon</th>
                             <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr><td><code>add</code></td><td><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg></td><td>Add new row below</td></tr>
+                        <tr><td><code>add</code></td><td><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg></td><td>Insert <code>createEmptyRowCallback(ctx)</code>'s row (else a blank row) below</td></tr>
                         <tr><td><code>delete</code></td><td><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3l10 10M13 3L3 13"/></svg></td><td>Delete current row (danger style)</td></tr>
-                        <tr><td><code>duplicate</code></td><td><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="8" height="8" rx="1"/><path d="M3 11V4a1 1 0 011-1h7"/></svg></td><td>Duplicate current row</td></tr>
-                        <tr><td><code>moveUp</code></td><td><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V3M4 7l4-4 4 4"/></svg></td><td>Move row up</td></tr>
-                        <tr><td><code>moveDown</code></td><td><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v10M4 9l4 4 4-4"/></svg></td><td>Move row down</td></tr>
+                        <tr><td><code>duplicate</code></td><td><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="8" height="8" rx="1"/><path d="M3 11V4a1 1 0 011-1h7"/></svg></td><td>Insert <code>createDuplicateRowCallback({ row })</code>'s copy (else a shallow copy, <code>idMember</code> cleared) below</td></tr>
+                        <tr><td><code>move-up</code></td><td><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V3M4 7l4-4 4 4"/></svg></td><td>Swap with the displayed row above</td></tr>
+                        <tr><td><code>move-down</code></td><td><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v10M4 9l4 4 4-4"/></svg></td><td>Swap with the displayed row below</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -158,25 +158,24 @@
             <div class="card">
                 <h2>Usage</h2>
                 <div class="code-block">
-                    <pre>// Enable toolbar with predefined actions
+                    <pre>// Enable toolbar with built-in actions
 grid.isRowToolbarVisible = true
-grid.rowToolbar = ['add', 'delete', 'duplicate', 'moveUp', 'moveDown']
+grid.rowToolbar = ['add', 'delete', 'duplicate', 'move-up', 'move-down']
 grid.toolbarTrigger = 'hover' // or 'click', 'button'
 
-// Handle toolbar clicks
-grid.ontoolbarclick = (detail) => {
-    const { item, rowIndex, row } = detail
-    console.log('Clicked:', item.id, 'on row', rowIndex)
+// Shape the rows the built-ins insert
+grid.createEmptyRowCallback = () => ({ id: nextId++, title: 'New Task' })
+grid.createDuplicateRowCallback = ({ row }) => ({ ...row, id: nextId++ })
 
-    switch (item.id) {
-        case 'add':
-            // Add new row after current
-            break
-        case 'delete':
-            // Delete current row
-            break
-        // ...
-    }
+// Every click fires the `action` event (+ the onAction twin) —
+// the built-in runs right after it, so only react here (toast, log, save)
+grid.onAction = ({ action, id, row, rowIndex, source }) => {
+    console.log(action, id, 'on row', rowIndex, 'from', source)
+}
+
+// Veto any item (async OK, e.g. a confirm dialog)
+grid.beforeActionCallback = ({ action, row }) => {
+    if (action === 'delete') return confirm(`Delete ${row.title}?`)
 }</pre>
                 </div>
             </div>
@@ -184,25 +183,27 @@ grid.ontoolbarclick = (detail) => {
 
         <div class="card">
             <h2>Custom Toolbar Items</h2>
-            <p>Define custom items with icons, labels, and handlers:</p>
+            <p>Define custom items (an <code>id</code>, no built-in <code>action</code>) with icons, texts, and handlers:</p>
             <div class="code-block">
                 <pre>grid.rowToolbar = [
-    'add',  // Predefined shorthand
+    'add',  // Built-in shorthand
     'delete',
+    { divider: true },
     {
         id: 'archive',
         icon: '📦',
-        title: 'Archive row',
-        onclick: ({ row, rowIndex }) => {
+        text: 'Archive row',
+        onClick: ({ row, rowIndex }) => {
             console.log('Archiving row:', row)
         }
     },
     {
         id: 'lock',
         icon: '🔒',
-        title: 'Lock row',
-        disabled: (row) => row.locked,  // Dynamic disabled state
-        onclick: ({ row }) => {
+        text: 'Lock row',
+        getIsDisabledCallback: ({ row }) => row.locked,  // Dynamic disabled state
+        getIsActiveCallback: ({ row }) => row.flagged,   // Toggle state (aria-pressed)
+        onClick: ({ row }) => {
             row.locked = true
         }
     }
@@ -212,37 +213,31 @@ grid.ontoolbarclick = (detail) => {
 
         <div class="card">
             <h2>Rich Tooltips</h2>
-            <p>Toolbar buttons support rich tooltips with title, description, and keyboard shortcut. Hover over a button to see it in action!</p>
+            <p>Toolbar buttons show a rich tooltip: <code>text</code> is the heading, <code>tooltip</code> the description, <code>shortcut</code> the key line. Hover over a button to see it in action!</p>
             <div class="code-block">
                 <pre>// Static tooltip with description
 grid.rowToolbar = [
     {
-        id: 'duplicate',
+        action: 'duplicate',
         icon: '⧉',
-        title: 'Duplicate',
-        tooltip: {
-            description: 'Create a copy of this task',
-            shortcut: 'D'  // Optional - auto-detected from rowShortcuts
-        }
+        text: 'Duplicate',
+        tooltip: 'Create a copy of this task',
+        shortcut: 'D'  // Optional - auto-detected from rowShortcuts
     }
 ]
 
-// Dynamic tooltip with callback
+// Dynamic tooltip with a callback
 grid.rowToolbar = [
     {
         id: 'info',
         icon: 'ℹ',
-        title: 'Info',
-        tooltipCallback: (row, rowIndex) => {
-            return `&lt;strong&gt;Task #${row.id}&lt;/strong&gt;
-                    &lt;div&gt;Priority: ${row.priority}&lt;/div&gt;
-                    &lt;div&gt;Assigned to: ${row.assignee}&lt;/div&gt;`
-        }
+        text: 'Info',
+        getTooltipCallback: ({ row }) => `Task #${row.id} · ${row.priority} · ${row.assignee}`
     }
 ]</pre>
             </div>
             <p class="note" style="margin-top: 0.5rem; font-size: 0.875rem; color: #666;">
-                <strong>Note:</strong> When toolbar items have matching <code>rowShortcuts</code> (same <code>id</code>),
+                <strong>Note:</strong> When toolbar items have a matching <code>rowShortcuts</code> entry (same <code>id</code> or built-in <code>action</code>),
                 the keyboard shortcut is automatically shown in the tooltip.
             </p>
         </div>
@@ -251,57 +246,48 @@ grid.rowToolbar = [
             <h2>Keyboard Shortcuts on Hover</h2>
             <p>When the toolbar is visible (hovering over a row), keyboard shortcuts work on that row - no cell focus required!</p>
             <div class="code-block">
-                <pre>// Define shortcuts that work when toolbar is visible
+                <pre>// Shortcuts are action items bound to a key; `action` may name a row built-in
 grid.rowShortcuts = [
+    { shortcut: 'd', action: 'duplicate', text: 'Duplicate row' },
+    { shortcut: 'Delete', action: 'delete', text: 'Delete row' },
+    { shortcut: 'ArrowUp', action: 'move-up', text: 'Move up' },
     {
-        key: 'd',
-        id: 'duplicate',
-        label: 'Duplicate row',
-        action: (ctx) => {
-            // ctx.row, ctx.rowIndex available
-            duplicateRow(ctx.rowIndex)
-        }
-    },
-    {
-        key: 'Delete',
-        id: 'delete',
-        label: 'Delete row',
-        action: (ctx) => deleteRow(ctx.rowIndex)
-    },
-    {
-        key: 'ArrowUp',
-        id: 'moveUp',
-        label: 'Move up',
-        action: (ctx) => moveRowUp(ctx.rowIndex)
+        shortcut: 'e',
+        id: 'export',
+        text: 'Export row',
+        onClick: ({ row, rowIndex }) => exportRow(row)  // custom item
     }
 ]</pre>
             </div>
         </div>
 
         <div class="card">
-            <h2>Multi-Row Toolbar with Groups</h2>
-            <p>Use <code>row</code> and <code>group</code> properties to organize toolbar buttons into multiple rows and groups:</p>
+            <h2>Multi-Row Toolbar with Dividers</h2>
+            <p>Use the <code>row</code> property and <code>{ divider: true }</code> entries to organize toolbar buttons into multiple rows and groups:</p>
             <web-grid id="grid2" isStriped isHoverable style="max-width: 100%; max-height: 400px; border: 1px solid #e2e8f0;"></web-grid>
             <div class="code-block" style="margin-top: 1rem;">
-                <pre>// Row 1: Move actions (group 1) | CRUD actions (group 2)
-// Row 2: Custom actions with labels
+                <pre>// Row 1: Move actions | CRUD actions
+// Row 2: Custom actions (one with a visible text label)
 grid.rowToolbar = [
-    { id: 'moveUp', type: 'moveUp', icon: '↑', title: 'Move up', row: 1, group: 1 },
-    { id: 'moveDown', type: 'moveDown', icon: '↓', title: 'Move down', row: 1, group: 1 },
-    { id: 'add', type: 'add', icon: '+', title: 'Add', row: 1, group: 2 },
-    { id: 'duplicate', type: 'duplicate', icon: '⧉', title: 'Duplicate', row: 1, group: 2 },
-    { id: 'delete', type: 'delete', icon: '−', title: 'Delete', danger: true, row: 1, group: 2 },
+    { action: 'move-up', icon: '↑', text: 'Move up', row: 1 },
+    { action: 'move-down', icon: '↓', text: 'Move down', row: 1 },
+    { divider: true },
+    { action: 'add', icon: '+', text: 'Add', row: 1 },
+    { action: 'duplicate', icon: '⧉', text: 'Duplicate', row: 1 },
+    { action: 'delete', icon: '−', text: 'Delete', isDanger: true, row: 1 },
 
-    { id: 'export', icon: '📤', title: 'Export row', row: 2, group: 1 },
-    { id: 'preview', icon: '👁', title: 'Preview', label: 'View', row: 2, group: 1 },
-    { id: 'archive', icon: '📦', title: 'Archive', row: 2, group: 2 }
+    { id: 'export', icon: '📤', text: 'Export row', row: 2 },
+    { id: 'preview', icon: '👁', text: 'View', isTextVisible: true, row: 2 },
+    { divider: true },
+    { id: 'archive', icon: '📦', text: 'Archive', row: 2 }
 ]</pre>
             </div>
         </div>
 
         <div class="card">
             <h2>Cell-Aware Toolbar</h2>
-            <p>Use <code>cellToolbar</code> callback to show different toolbar options based on which cell the user is hovering over.
+            <p>Use the <code>getCellToolbarItemsCallback</code> callback to show different toolbar options based on which cell the user is hovering over
+               (merged over <code>rowToolbar</code> by <code>id</code> / <code>action</code>).
                Combined with <code>shouldToolbarFollowCursor</code>, the toolbar follows your mouse and updates its buttons per column.</p>
             <web-grid id="grid4" isStriped isHoverable style="max-width: 100%; max-height: 400px; border: 1px solid #e2e8f0;"></web-grid>
             <div class="code-block" style="margin-top: 1rem;">
@@ -309,33 +295,36 @@ grid.rowToolbar = [
 grid.shouldToolbarFollowCursor = true  // Toolbar follows mouse
 grid.cellToolbarOffset = 0.2     // Position at 20% from cell left edge (0-1)
 
-// Different actions per column
-grid.cellToolbar = (row, rowIndex, field, colIndex) => {
+// Different actions per column (ctx: row, rowIndex, column, colIndex, field, value)
+grid.getCellToolbarItemsCallback = ({ field }) => {
     switch (field) {
         case 'priority':
             return [
-                { id: 'setHigh', icon: '🔴', title: 'Set High' },
-                { id: 'setMedium', icon: '🟡', title: 'Set Medium' },
-                { id: 'setLow', icon: '🟢', title: 'Set Low' }
+                { id: 'setHigh', icon: '🔴', text: 'Set High' },
+                { id: 'setMedium', icon: '🟡', text: 'Set Medium' },
+                { id: 'setLow', icon: '🟢', text: 'Set Low' }
             ]
         case 'status':
             return [
-                { id: 'setTodo', icon: '📋', title: 'Set Todo' },
-                { id: 'setProgress', icon: '🔄', title: 'Set In Progress' },
-                { id: 'setDone', icon: '✅', title: 'Set Done' }
+                { id: 'setTodo', icon: '📋', text: 'Set Todo' },
+                { id: 'setProgress', icon: '🔄', text: 'Set In Progress' },
+                { id: 'setDone', icon: '✅', text: 'Set Done' }
             ]
         default:
             return undefined  // Use default toolbar
     }
-}</pre>
+}
+
+grid.onAction = ({ id, row }) => { /* id === 'setHigh', ... */ }</pre>
             </div>
         </div>
 
         <div class="card">
             <h2>Inline Actions Column</h2>
             <p>Use <code>toolbarPosition="inline"</code> to render toolbar buttons as a fixed column instead of a floating popup.
-               Buttons are always visible, with support for <code>disabled</code> and <code>hidden</code> callbacks per row.
-               Keyboard shortcuts via <code>rowShortcuts</code> work when hovering over a row (try <kbd>Delete</kbd> or <kbd>A</kbd>).</p>
+               Buttons are always visible, with support for <code>getIsDisabledCallback</code> and <code>getIsVisibleCallback</code> per row.
+               Keyboard shortcuts via <code>rowShortcuts</code> work when hovering over a row (try <kbd>Delete</kbd> or <kbd>A</kbd>);
+               <code>beforeActionCallback</code> vetoes deleting high-priority tasks.</p>
             <web-grid id="grid3" isStriped isHoverable style="max-width: 100%; max-height: 400px; border: 1px solid #e2e8f0;"></web-grid>
             <div class="code-block" style="margin-top: 1rem;">
                 <pre>grid.isRowToolbarVisible = true
@@ -346,22 +335,26 @@ grid.rowToolbar = [
     {
         id: 'edit',
         icon: '✏️',
-        title: 'Edit',
-        disabled: (row) => row.status === 'Done'  // Disable for completed tasks
+        text: 'Edit',
+        getIsDisabledCallback: ({ row }) => row.status === 'Done'  // Disable for completed tasks
     },
     {
-        id: 'delete',
+        action: 'delete',
         icon: '🗑️',
-        title: 'Delete',
-        danger: true,
-        hidden: (row) => row.priority === 'High'  // Hide for high priority tasks
+        text: 'Delete',
+        getIsVisibleCallback: ({ row }) => row.priority !== 'High'  // Hide for high priority tasks
     },
     {
         id: 'archive',
         icon: '📦',
-        title: 'Archive'
+        text: 'Archive'
     }
-]</pre>
+]
+
+// The Delete shortcut doesn't see the button's visibility — veto it here
+grid.beforeActionCallback = ({ action, row }) => {
+    if (action === 'delete' && row.priority === 'High') return false
+}</pre>
             </div>
         </div>
     </div>
@@ -401,7 +394,7 @@ grid.rowToolbar = [
         document.getElementById('btnMinWidthInput').value = savedBtnMinWidth
 
         // Sample data
-        let tasks = [
+        const tasks = [
             { id: 1, title: 'Design system architecture', priority: 'High', status: 'In Progress', assignee: 'Alice' },
             { id: 2, title: 'Implement user authentication', priority: 'High', status: 'Todo', assignee: 'Bob' },
             { id: 3, title: 'Create database schema', priority: 'Medium', status: 'Done', assignee: 'Carol' },
@@ -447,24 +440,40 @@ grid.rowToolbar = [
             setTimeout(() => toast.remove(), 3000)
         }
 
+        const nextId = (rows) => Math.max(0, ...rows.map(t => t.id)) + 1
+
+        // The row built-ins (add / delete / duplicate / move-up / move-down) do the work;
+        // these factories shape the rows `add` / `duplicate` insert, and onAction toasts.
+        function wireStandard(g) {
+            g.createEmptyRowCallback = () => ({ id: nextId(g.items), title: 'New Task', priority: 'Medium', status: 'Todo', assignee: '' })
+            g.createDuplicateRowCallback = ({ row }) => ({ ...row, id: nextId(g.items), title: row.title + ' (copy)' })
+            g.onAction = (detail) => {
+                const { action, row, rowIndex, source } = detail
+                console.log('Action:', action, detail.id, rowIndex, source)
+                switch (action) {
+                    case 'add': showToast(`Added new task at row ${rowIndex + 2}`, 'success'); break
+                    case 'delete': showToast(`Deleted: ${row.title}`, 'error'); break
+                    case 'duplicate': showToast(`Duplicated: ${row.title}`, 'success'); break
+                    case 'move-up': showToast(`Moved "${row.title}" up`); break
+                    case 'move-down': showToast(`Moved "${row.title}" down`); break
+                }
+            }
+        }
+
         // Initialize grid
         const grid = document.getElementById('grid')
         grid.items = tasks
         grid.columns = columns
         grid.isRowToolbarVisible = true
-        // Use explicit groups to show dividers between move and CRUD actions
-        // Tooltips show description + keyboard shortcut (auto-detected from rowShortcuts)
+        // A divider separates move and CRUD actions
+        // Tooltips show text + description + keyboard shortcut (auto-detected from rowShortcuts)
         grid.rowToolbar = [
-            { id: 'moveUp', type: 'moveUp', icon: '↑', title: 'Move up', group: 1,
-              tooltip: { description: 'Move this task higher in the list' } },
-            { id: 'moveDown', type: 'moveDown', icon: '↓', title: 'Move down', group: 1,
-              tooltip: { description: 'Move this task lower in the list' } },
-            { id: 'add', type: 'add', icon: '+', title: 'Add', group: 2,
-              tooltip: { description: 'Insert a new task below this one' } },
-            { id: 'duplicate', type: 'duplicate', icon: '⧉', title: 'Duplicate', group: 2,
-              tooltip: { description: 'Create a copy of this task' } },
-            { id: 'delete', type: 'delete', icon: '−', title: 'Delete', group: 2,
-              tooltip: { description: 'Permanently remove this task' } }
+            { action: 'move-up', icon: '↑', text: 'Move up', tooltip: 'Move this task higher in the list' },
+            { action: 'move-down', icon: '↓', text: 'Move down', tooltip: 'Move this task lower in the list' },
+            { divider: true },
+            { action: 'add', icon: '+', text: 'Add', tooltip: 'Insert a new task below this one' },
+            { action: 'duplicate', icon: '⧉', text: 'Duplicate', tooltip: 'Create a copy of this task' },
+            { action: 'delete', icon: '−', text: 'Delete', tooltip: 'Permanently remove this task' }
         ]
         grid.toolbarTrigger = savedTrigger
         grid.toolbarPosition = savedPosition
@@ -475,112 +484,15 @@ grid.rowToolbar = [
         grid.cellToolbarOffset = savedCellToolbarOffset
         if (savedBtnMinWidth) grid.toolbarBtnMinWidth = savedBtnMinWidth
 
-        // Keyboard shortcuts - work on hovered row when toolbar is visible
+        // Keyboard shortcuts - work on hovered row when toolbar is visible.
+        // They run the same built-ins (and fire the same `action` event, source: 'keyboard').
         grid.rowShortcuts = [
-            {
-                key: 'd',
-                id: 'duplicate',
-                label: 'Duplicate row',
-                action: (ctx) => {
-                    const dupId = Math.max(...tasks.map(t => t.id)) + 1
-                    const duplicate = { ...ctx.row, id: dupId, title: ctx.row.title + ' (copy)' }
-                    tasks.splice(ctx.rowIndex + 1, 0, duplicate)
-                    grid.items = [...tasks]
-                    showToast(`Duplicated: ${ctx.row.title}`, 'success')
-                }
-            },
-            {
-                key: 'Delete',
-                id: 'delete',
-                label: 'Delete row',
-                action: (ctx) => {
-                    const deleted = tasks.splice(ctx.rowIndex, 1)[0]
-                    grid.items = [...tasks]
-                    showToast(`Deleted: ${deleted.title}`, 'error')
-                }
-            },
-            {
-                key: 'ArrowUp',
-                id: 'moveUp',
-                label: 'Move row up',
-                action: (ctx) => {
-                    if (ctx.rowIndex > 0) {
-                        [tasks[ctx.rowIndex], tasks[ctx.rowIndex - 1]] = [tasks[ctx.rowIndex - 1], tasks[ctx.rowIndex]]
-                        grid.items = [...tasks]
-                        showToast(`Moved "${ctx.row.title}" up`)
-                    }
-                }
-            },
-            {
-                key: 'ArrowDown',
-                id: 'moveDown',
-                label: 'Move row down',
-                action: (ctx) => {
-                    if (ctx.rowIndex < tasks.length - 1) {
-                        [tasks[ctx.rowIndex], tasks[ctx.rowIndex + 1]] = [tasks[ctx.rowIndex + 1], tasks[ctx.rowIndex]]
-                        grid.items = [...tasks]
-                        showToast(`Moved "${ctx.row.title}" down`)
-                    }
-                }
-            }
+            { shortcut: 'd', action: 'duplicate', text: 'Duplicate row' },
+            { shortcut: 'Delete', action: 'delete', text: 'Delete row' },
+            { shortcut: 'ArrowUp', action: 'move-up', text: 'Move row up' },
+            { shortcut: 'ArrowDown', action: 'move-down', text: 'Move row down' }
         ]
-
-        // Handle toolbar clicks
-        grid.ontoolbarclick = (detail) => {
-            const { item, rowIndex, row } = detail
-            console.log('Toolbar click:', item.id, rowIndex, row)
-
-            switch (item.id) {
-                case 'add': {
-                    const newId = Math.max(...tasks.map(t => t.id)) + 1
-                    const newTask = {
-                        id: newId,
-                        title: 'New Task',
-                        priority: 'Medium',
-                        status: 'Todo',
-                        assignee: ''
-                    }
-                    tasks.splice(rowIndex + 1, 0, newTask)
-                    grid.items = [...tasks]
-                    showToast(`Added new task at row ${rowIndex + 2}`, 'success')
-                    break
-                }
-
-                case 'delete': {
-                    const deleted = tasks.splice(rowIndex, 1)[0]
-                    grid.items = [...tasks]
-                    showToast(`Deleted: ${deleted.title}`, 'error')
-                    break
-                }
-
-                case 'duplicate': {
-                    const dupId = Math.max(...tasks.map(t => t.id)) + 1
-                    const duplicate = { ...row, id: dupId, title: row.title + ' (copy)' }
-                    tasks.splice(rowIndex + 1, 0, duplicate)
-                    grid.items = [...tasks]
-                    showToast(`Duplicated: ${row.title}`, 'success')
-                    break
-                }
-
-                case 'moveUp': {
-                    if (rowIndex > 0) {
-                        [tasks[rowIndex], tasks[rowIndex - 1]] = [tasks[rowIndex - 1], tasks[rowIndex]]
-                        grid.items = [...tasks]
-                        showToast(`Moved "${row.title}" up`)
-                    }
-                    break
-                }
-
-                case 'moveDown': {
-                    if (rowIndex < tasks.length - 1) {
-                        [tasks[rowIndex], tasks[rowIndex + 1]] = [tasks[rowIndex + 1], tasks[rowIndex]]
-                        grid.items = [...tasks]
-                        showToast(`Moved "${row.title}" down`)
-                    }
-                    break
-                }
-            }
-        }
+        wireStandard(grid)
 
         // Trigger control
         document.getElementById('triggerSelect').addEventListener('change', (e) => {
@@ -654,8 +566,7 @@ grid.rowToolbar = [
         // Multi-row toolbar example
         // ============================================================
         const grid2 = document.getElementById('grid2')
-        let tasks2 = tasks.map(t => ({...t}))  // Clone for independent data
-        grid2.items = tasks2
+        grid2.items = tasks.map(t => ({...t}))  // Clone for independent data
         grid2.columns = columns
 
         grid2.isRowToolbarVisible = true
@@ -666,78 +577,33 @@ grid.rowToolbar = [
 
         // Multi-row toolbar configuration
         grid2.rowToolbar = [
-            // Row 1: Move actions (group 1) | CRUD actions (group 2)
-            { id: 'moveUp', type: 'moveUp', icon: '↑', title: 'Move up', row: 1, group: 1 },
-            { id: 'moveDown', type: 'moveDown', icon: '↓', title: 'Move down', row: 1, group: 1 },
-            { id: 'add', type: 'add', icon: '+', title: 'Add', row: 1, group: 2 },
-            { id: 'duplicate', type: 'duplicate', icon: '⧉', title: 'Duplicate', row: 1, group: 2 },
-            { id: 'delete', type: 'delete', icon: '−', title: 'Delete', danger: true, row: 1, group: 2 },
+            // Row 1: Move actions | CRUD actions
+            { action: 'move-up', icon: '↑', text: 'Move up', row: 1 },
+            { action: 'move-down', icon: '↓', text: 'Move down', row: 1 },
+            { divider: true },
+            { action: 'add', icon: '+', text: 'Add', row: 1 },
+            { action: 'duplicate', icon: '⧉', text: 'Duplicate', row: 1 },
+            { action: 'delete', icon: '−', text: 'Delete', isDanger: true, row: 1 },
 
             // Row 2: Custom actions
-            { id: 'export', icon: '📤', title: 'Export row', row: 2, group: 1 },
-            { id: 'preview', icon: '👁', title: 'Preview', label: 'View', row: 2, group: 1 },
-            { id: 'archive', icon: '📦', title: 'Archive', row: 2, group: 2 }
+            { id: 'export', icon: '📤', text: 'Export row', row: 2 },
+            { id: 'preview', icon: '👁', text: 'View', isTextVisible: true, row: 2 },
+            { divider: true },
+            { id: 'archive', icon: '📦', text: 'Archive', row: 2 }
         ]
 
-        grid2.ontoolbarclick = (detail) => {
-            const { item, rowIndex, row } = detail
-
-            switch (item.id) {
-                case 'add': {
-                    const newId = Math.max(...tasks2.map(t => t.id)) + 1
-                    const newTask = {
-                        id: newId,
-                        title: 'New Task',
-                        priority: 'Medium',
-                        status: 'Todo',
-                        assignee: ''
-                    }
-                    tasks2.splice(rowIndex + 1, 0, newTask)
-                    grid2.items = [...tasks2]
-                    showToast(`Added new task at row ${rowIndex + 2}`, 'success')
-                    break
-                }
-                case 'duplicate': {
-                    const dupId = Math.max(...tasks2.map(t => t.id)) + 1
-                    const duplicate = { ...row, id: dupId, title: row.title + ' (copy)' }
-                    tasks2.splice(rowIndex + 1, 0, duplicate)
-                    grid2.items = [...tasks2]
-                    showToast(`Duplicated: ${row.title}`, 'success')
-                    break
-                }
-                case 'delete': {
-                    const deleted = tasks2.splice(rowIndex, 1)[0]
-                    grid2.items = [...tasks2]
-                    showToast(`Deleted: ${deleted.title}`, 'error')
-                    break
-                }
-                case 'moveUp': {
-                    if (rowIndex > 0) {
-                        [tasks2[rowIndex], tasks2[rowIndex - 1]] = [tasks2[rowIndex - 1], tasks2[rowIndex]]
-                        grid2.items = [...tasks2]
-                        showToast(`Moved "${row.title}" up`)
-                    }
-                    break
-                }
-                case 'moveDown': {
-                    if (rowIndex < tasks2.length - 1) {
-                        [tasks2[rowIndex], tasks2[rowIndex + 1]] = [tasks2[rowIndex + 1], tasks2[rowIndex]]
-                        grid2.items = [...tasks2]
-                        showToast(`Moved "${row.title}" down`)
-                    }
-                    break
-                }
-                default:
-                    showToast(`${item.title}: ${row.title}`)
-            }
+        wireStandard(grid2)
+        const standardAction2 = grid2.onAction
+        grid2.onAction = (detail) => {
+            standardAction2(detail)
+            if (detail.action === 'custom') showToast(`${detail.item.text}: ${detail.row.title}`)
         }
 
         // ============================================================
         // Cell-aware toolbar example
         // ============================================================
         const grid4 = document.getElementById('grid4')
-        let tasks4 = tasks.map(t => ({...t}))  // Clone for independent data
-        grid4.items = tasks4
+        grid4.items = tasks.map(t => ({...t}))  // Clone for independent data
         grid4.columns = columns
 
         grid4.isRowToolbarVisible = true
@@ -750,162 +616,92 @@ grid.rowToolbar = [
         grid4.rowToolbar = ['add', 'delete', 'duplicate']
 
         // Cell-specific toolbar - different actions per column
-        grid4.cellToolbar = (row, rowIndex, field, colIndex) => {
+        grid4.getCellToolbarItemsCallback = ({ field }) => {
             switch (field) {
                 case 'priority':
                     return [
-                        { id: 'setHigh', icon: '🔴', title: 'Set High Priority' },
-                        { id: 'setMedium', icon: '🟡', title: 'Set Medium Priority' },
-                        { id: 'setLow', icon: '🟢', title: 'Set Low Priority' }
+                        { id: 'setHigh', icon: '🔴', text: 'Set High Priority' },
+                        { id: 'setMedium', icon: '🟡', text: 'Set Medium Priority' },
+                        { id: 'setLow', icon: '🟢', text: 'Set Low Priority' }
                     ]
                 case 'status':
                     return [
-                        { id: 'setTodo', icon: '📋', title: 'Set Todo' },
-                        { id: 'setProgress', icon: '🔄', title: 'Set In Progress' },
-                        { id: 'setDone', icon: '✅', title: 'Set Done' }
+                        { id: 'setTodo', icon: '📋', text: 'Set Todo' },
+                        { id: 'setProgress', icon: '🔄', text: 'Set In Progress' },
+                        { id: 'setDone', icon: '✅', text: 'Set Done' }
                     ]
                 default:
                     return undefined  // Use default toolbar
             }
         }
 
-        grid4.ontoolbarclick = (detail) => {
-            const { item, rowIndex, row } = detail
-
-            switch (item.id) {
-                case 'setHigh':
-                    tasks4[rowIndex].priority = 'High'
-                    grid4.items = [...tasks4]
-                    showToast(`Set "${row.title}" to High priority`, 'error')
-                    break
-                case 'setMedium':
-                    tasks4[rowIndex].priority = 'Medium'
-                    grid4.items = [...tasks4]
-                    showToast(`Set "${row.title}" to Medium priority`)
-                    break
-                case 'setLow':
-                    tasks4[rowIndex].priority = 'Low'
-                    grid4.items = [...tasks4]
-                    showToast(`Set "${row.title}" to Low priority`, 'success')
-                    break
-                case 'setTodo':
-                    tasks4[rowIndex].status = 'Todo'
-                    grid4.items = [...tasks4]
-                    showToast(`Set "${row.title}" to Todo`)
-                    break
-                case 'setProgress':
-                    tasks4[rowIndex].status = 'In Progress'
-                    grid4.items = [...tasks4]
-                    showToast(`Set "${row.title}" to In Progress`)
-                    break
-                case 'setDone':
-                    tasks4[rowIndex].status = 'Done'
-                    grid4.items = [...tasks4]
-                    showToast(`Set "${row.title}" to Done`, 'success')
-                    break
-                case 'add': {
-                    const newId = Math.max(...tasks4.map(t => t.id)) + 1
-                    const newTask = { id: newId, title: 'New Task', priority: 'Medium', status: 'Todo', assignee: '' }
-                    tasks4.splice(rowIndex + 1, 0, newTask)
-                    grid4.items = [...tasks4]
-                    showToast(`Added new task`, 'success')
-                    break
-                }
-                case 'delete': {
-                    const deleted = tasks4.splice(rowIndex, 1)[0]
-                    grid4.items = [...tasks4]
-                    showToast(`Deleted: ${deleted.title}`, 'error')
-                    break
-                }
-                case 'duplicate': {
-                    const dupId = Math.max(...tasks4.map(t => t.id)) + 1
-                    const duplicate = { ...row, id: dupId, title: row.title + ' (copy)' }
-                    tasks4.splice(rowIndex + 1, 0, duplicate)
-                    grid4.items = [...tasks4]
-                    showToast(`Duplicated: ${row.title}`, 'success')
-                    break
-                }
-            }
+        // add / delete / duplicate are built-ins (wireStandard); the cell items are custom
+        wireStandard(grid4)
+        const standardAction4 = grid4.onAction
+        const cellUpdates = {
+            setHigh: ['priority', 'High', 'error'], setMedium: ['priority', 'Medium', 'info'], setLow: ['priority', 'Low', 'success'],
+            setTodo: ['status', 'Todo', 'info'], setProgress: ['status', 'In Progress', 'info'], setDone: ['status', 'Done', 'success']
+        }
+        grid4.onAction = (detail) => {
+            standardAction4(detail)
+            const update = cellUpdates[detail.id]
+            if (detail.action !== 'custom' || !update) return
+            const [field, value, toastType] = update
+            grid4.items = grid4.items.map(r => r === detail.row ? { ...r, [field]: value } : r)
+            showToast(`Set "${detail.row.title}" to ${value}${field === 'priority' ? ' priority' : ''}`, toastType)
         }
 
         // ============================================================
         // Inline actions column example
         // ============================================================
         const grid3 = document.getElementById('grid3')
-        let tasks3 = tasks.map(t => ({...t}))  // Clone for independent data
-        grid3.items = tasks3
+        grid3.items = tasks.map(t => ({...t}))  // Clone for independent data
         grid3.columns = columns
 
         grid3.isRowToolbarVisible = true
         grid3.toolbarPosition = 'inline'  // Key setting: renders as column
         grid3.inlineActionsTitle = 'Actions'
 
-        // Inline toolbar with disabled/hidden callbacks
+        // Inline toolbar with disabled / visible callbacks
         grid3.rowToolbar = [
             {
                 id: 'edit',
                 icon: '✏️',
-                title: 'Edit task',
-                disabled: (row) => row.status === 'Done'  // Disable for completed
+                text: 'Edit task',
+                getIsDisabledCallback: ({ row }) => row.status === 'Done'  // Disable for completed
             },
             {
-                id: 'delete',
+                action: 'delete',
                 icon: '🗑️',
-                title: 'Delete task',
-                danger: true,
-                hidden: (row) => row.priority === 'High'  // Hide for high priority
+                text: 'Delete task',
+                isDanger: true,
+                getIsVisibleCallback: ({ row }) => row.priority !== 'High'  // Hide for high priority
             },
             {
                 id: 'archive',
                 icon: '📦',
-                title: 'Archive task'
+                text: 'Archive task'
             }
         ]
 
         // Keyboard shortcuts - triggered by hovering a row and pressing the key
         grid3.rowShortcuts = [
-            {
-                key: 'Delete',
-                id: 'delete',
-                label: 'Delete row',
-                action: (ctx) => {
-                    // Respect hidden callback
-                    if (ctx.row.priority === 'High') {
-                        showToast('Cannot delete high priority tasks', 'error')
-                        return
-                    }
-                    const deleted = tasks3.splice(ctx.rowIndex, 1)[0]
-                    grid3.items = [...tasks3]
-                    showToast(`Deleted: ${deleted.title}`, 'error')
-                }
-            },
-            {
-                key: 'a',
-                id: 'archive',
-                label: 'Archive row',
-                action: (ctx) => {
-                    showToast(`Archived: ${ctx.row.title}`, 'success')
-                }
-            }
+            { shortcut: 'Delete', action: 'delete', text: 'Delete row' },
+            { shortcut: 'a', id: 'archive', text: 'Archive row' }
         ]
 
-        grid3.ontoolbarclick = (detail) => {
-            const { item, rowIndex, row } = detail
-
-            switch (item.id) {
-                case 'edit':
-                    showToast(`Editing: ${row.title}`)
-                    break
-                case 'delete': {
-                    const deleted = tasks3.splice(rowIndex, 1)[0]
-                    grid3.items = [...tasks3]
-                    showToast(`Deleted: ${deleted.title}`, 'error')
-                    break
-                }
-                case 'archive':
-                    showToast(`Archived: ${row.title}`, 'success')
-                    break
+        // The Delete shortcut doesn't know the button is hidden for high priority — veto it
+        grid3.beforeActionCallback = ({ action, row }) => {
+            if (action === 'delete' && row.priority === 'High') {
+                showToast('Cannot delete high priority tasks', 'error')
+                return false
             }
+        }
+
+        grid3.onAction = ({ action, id, row }) => {
+            if (id === 'edit') showToast(`Editing: ${row.title}`)
+            else if (action === 'delete') showToast(`Deleted: ${row.title}`, 'error')
+            else if (id === 'archive') showToast(`Archived: ${row.title}`, 'success')
         }
     </script>
 </body>

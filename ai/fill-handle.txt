@@ -25,14 +25,15 @@ at the top-right corner when the cell is on the last row (so the user can
 drag upward).
 
 
-FILL DRAG CALLBACK
-------------------
-fillDragCallback (property on grid element)
-  Type: (detail: FillDragDetail) => boolean | void
-  Called when the user completes a fill drag. Return false to cancel the
-  entire fill operation. Return anything else (or nothing) to allow it.
+BEFORE-FILL CALLBACK
+--------------------
+beforeFillCallback (property on grid element)
+  Type: (ctx: FillContext<T>) => boolean | void | Promise<boolean | void>
+  Called when the user completes a fill drag. Return false (or a Promise
+  resolving to false) to cancel the entire fill operation. Return anything
+  else (or nothing) to allow it.
 
-  FillDragDetail structure:
+  FillContext structure (+ controller, element - non-enumerable):
     sourceCell: {
       rowIndex: number    Row index of the dragged-from cell
       colIndex: number    Column index of the dragged-from cell
@@ -52,9 +53,9 @@ fillDragCallback (property on grid element)
       larger delta. Same-cell defaults to 'down'.
 
 Example:
-  grid.fillDragCallback = (detail) => {
-    console.log('Filling', detail.sourceCell.value, 'into', detail.targetCells.length, 'cells')
-    if (detail.sourceCell.field === 'id') {
+  grid.beforeFillCallback = ({ sourceCell, targetCells }) => {
+    console.log('Filling', sourceCell.value, 'into', targetCells.length, 'cells')
+    if (sourceCell.field === 'id') {
       return false  // Don't allow filling ID column
     }
   }
@@ -90,15 +91,15 @@ Additionally, value compatibility is checked:
   - Text, autocomplete, checkbox, and custom editors accept any value
 
 
-ONROWCHANGE EVENT
------------------
-After a fill operation completes, onrowchange fires for each filled cell
+ROW-CHANGE EVENT
+----------------
+After a fill operation completes, the row-change event (onRowChange) fires for each filled cell
 individually. Each call receives the standard RowChangeDetail with the
 field, oldValue, newValue, row, draftRow, rowIndex, isValid, and
 validationError.
 
 The fill is applied via commitEdit internally, which means
-beforeCommitCallback validation runs for each target cell. Invalid values
+validateCallback validation runs for each target cell. Invalid values
 still appear in the draft row but are flagged with validation errors.
 
 

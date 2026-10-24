@@ -178,10 +178,10 @@ cellSelectionMode: 'shift'  // Avoids conflict</code></pre>
                     <li><strong>Ctrl+Alt+S</strong> - Sum values in selected cells (cell range only)</li>
                 </ul>
                 <pre style="background: #f8fafc; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.85rem; margin-top: 0.5rem;"><code>grid.rangeShortcuts = [{
-    key: 'Delete',
+    shortcut: 'Delete',
     id: 'delete-or-clear',
-    label: 'Delete rows or clear cells',
-    action: ({ rows, cells, cellRange }) => {
+    text: 'Delete rows or clear cells',
+    onClick: ({ rowIndices, cells, cellRange }) => {
         if (cellRange) {
             // Cell range mode - clear values
             cells.forEach(({ row, field }) => {
@@ -201,7 +201,7 @@ cellSelectionMode: 'shift'  // Avoids conflict</code></pre>
         <!-- EXAMPLE 5: Row Focus (Master/Detail) -->
         <div class="card">
             <h2>Row Focus (Master/Detail Pattern)</h2>
-            <p>Click any data cell to focus its row. The <code>onrowfocus</code> callback fires with the focused row's data — perfect for master/detail layouts. Row number clicks do <strong>not</strong> trigger focus (they handle row selection). Clicking outside the grid clears focus.</p>
+            <p>Click any data cell to focus its row. The <code>row-focus</code> event (and its <code>onRowFocus</code> twin) fires with the focused row's data — perfect for master/detail layouts. Row number clicks do <strong>not</strong> trigger focus (they handle row selection). Clicking outside the grid clears focus.</p>
 
             <div style="display: flex; gap: 1.5rem; flex-wrap: wrap;">
                 <div style="flex: 1; min-width: 400px;">
@@ -225,12 +225,12 @@ cellSelectionMode: 'shift'  // Avoids conflict</code></pre>
             <div class="note" style="margin-top: 1rem;">
                 <div class="note-title">Row Focus API</div>
                 <ul>
-                    <li><strong>Click cell</strong> — Focuses that row, fires <code>onrowfocus</code></li>
+                    <li><strong>Click cell</strong> — Focuses that row, fires <code>row-focus</code> / <code>onRowFocus</code></li>
                     <li><strong>Click row number</strong> — Selects row (does NOT focus)</li>
                     <li><strong>Click outside</strong> — Clears row focus</li>
                     <li><strong>grid.focusedRowIndex</strong> — Get/set focused row programmatically</li>
                 </ul>
-                <pre style="background: #f8fafc; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.85rem; margin-top: 0.5rem;"><code>grid.onrowfocus = ({ rowIndex, row, previousRowIndex }) => {
+                <pre style="background: #f8fafc; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.85rem; margin-top: 0.5rem;"><code>grid.onRowFocus = ({ rowIndex, row, previousRowIndex }) => {
     detailPanel.innerHTML = renderDetail(row)
     console.log(`Row ${rowIndex} focused (was: ${previousRowIndex})`)
 }
@@ -288,8 +288,8 @@ grid.focusedRowIndex = null // Clear focus</code></pre>
                     <td>Get array of {row, rowIndex, colIndex, field, value} objects</td>
                 </tr>
                 <tr>
-                    <td><code>oncellselectionchange</code></td>
-                    <td>Event fired when cell selection changes</td>
+                    <td><code>cell-selection-change</code> / <code>onCellSelectionChange</code></td>
+                    <td>Event (and twin) fired when cell selection changes: <code>{ range, cellCount }</code></td>
                 </tr>
             </table>
 
@@ -300,8 +300,8 @@ grid.focusedRowIndex = null // Clear focus</code></pre>
                     <td>Get/set the focused row index (null if none)</td>
                 </tr>
                 <tr>
-                    <td><code>onrowfocus</code></td>
-                    <td>Callback fired when focused row changes: <code>{ rowIndex, row, previousRowIndex }</code></td>
+                    <td><code>row-focus</code> / <code>onRowFocus</code></td>
+                    <td>Event (and twin) fired when focused row changes: <code>{ rowIndex, row, previousRowIndex }</code></td>
                 </tr>
             </table>
 
@@ -309,11 +309,11 @@ grid.focusedRowIndex = null // Clear focus</code></pre>
             <table class="props-table">
                 <tr>
                     <td><code>rangeShortcuts</code></td>
-                    <td>Array of shortcuts that operate on selected rows or cells</td>
+                    <td>Action items bound to a key (<code>{ shortcut, id?, text, onClick(detail), isDisabled }</code>) that operate on selected rows or cells; they also fire the <code>action</code> event with <code>source: 'keyboard'</code></td>
                 </tr>
                 <tr>
-                    <td><code>RangeShortcutContext</code></td>
-                    <td>Context passed to shortcuts: { rows, rowIndices, cells?, cellRange? }</td>
+                    <td><code>RangeContext</code></td>
+                    <td>Fields on the <code>onClick</code> detail: { rows, rowIndices, cells?, cellRange? } (+ <code>controller</code>, <code>element</code>)</td>
                 </tr>
             </table>
         </div>
@@ -362,7 +362,7 @@ grid.focusedRowIndex = null // Clear focus</code></pre>
             { field: 'id', title: 'ID', width: '80px' },
             { field: 'name', title: 'Name', width: '120px', isEditable: true },
             { field: 'department', title: 'Department', width: '120px', isEditable: true },
-            { field: 'salary', title: 'Salary', width: '100px', formatCallback: v => '$' + v?.toLocaleString(), isEditable: true, editor: 'number' },
+            { field: 'salary', title: 'Salary', width: '100px', getDisplayValueCallback: ({ value: v }) => '$' + v?.toLocaleString(), isEditable: true, editor: 'number' },
             { field: 'hours', title: 'Hours', width: '80px', editor: 'number', isEditable: true },
             {
                 field: 'status',
@@ -396,10 +396,10 @@ grid.focusedRowIndex = null // Clear focus</code></pre>
 
         gridRowSelection.rangeShortcuts = [
             {
-                key: 'Delete',
+                shortcut: 'Delete',
                 id: 'delete-rows',
-                label: 'Delete selected rows',
-                action: ({ rows, rowIndices }) => {
+                text: 'Delete selected rows',
+                onClick: ({ rows, rowIndices }) => {
                     const log = document.getElementById('rowSelectionLog')
                     log.innerHTML = `<span style="color: #dc2626;"><strong>DELETED:</strong> ${rows.length} row(s) - ${rows.map(r => r.name).join(', ')}</span>`
                     for (const idx of [...rowIndices].reverse()) {
@@ -410,10 +410,10 @@ grid.focusedRowIndex = null // Clear focus</code></pre>
                 }
             },
             {
-                key: 'Ctrl+C',
+                shortcut: 'Ctrl+C',
                 id: 'copy-rows',
-                label: 'Copy to clipboard',
-                action: async ({ rows }) => {
+                text: 'Copy to clipboard',
+                onClick: async ({ rows }) => {
                     const log = document.getElementById('rowSelectionLog')
                     const success = await gridRowSelection.copySelectedRowsToClipboard()
                     if (success) {
@@ -500,10 +500,10 @@ grid.focusedRowIndex = null // Clear focus</code></pre>
 
         gridCellRangeClick.rangeShortcuts = [
             {
-                key: 'Delete',
+                shortcut: 'Delete',
                 id: 'clear-cells',
-                label: 'Clear selected cells',
-                action: ({ cells, cellRange }) => {
+                text: 'Clear selected cells',
+                onClick: ({ cells, cellRange }) => {
                     if (!cellRange) return
                     const log = document.getElementById('cellRangeClickLog')
                     log.innerHTML = `<span style="color: #dc2626;"><strong>CLEARED:</strong> ${cells.length} cell(s)</span>`
@@ -515,10 +515,10 @@ grid.focusedRowIndex = null // Clear focus</code></pre>
                 }
             },
             {
-                key: 'Ctrl+C',
+                shortcut: 'Ctrl+C',
                 id: 'copy-cells',
-                label: 'Copy to clipboard',
-                action: async ({ cells, cellRange }) => {
+                text: 'Copy to clipboard',
+                onClick: async ({ cells, cellRange }) => {
                     if (!cellRange) return
                     const log = document.getElementById('cellRangeClickLog')
                     const success = await gridCellRangeClick.copyCellSelectionToClipboard()
@@ -605,24 +605,24 @@ grid.focusedRowIndex = null // Clear focus</code></pre>
         })
 
         // Wire up all events for logging
-        gridCellRangeClick.onrowfocus = (detail) => {
-            logEvent('onrowfocus', `row ${detail.rowIndex}` + (detail.previousRowIndex != null ? ` (prev: ${detail.previousRowIndex})` : ''))
+        gridCellRangeClick.onRowFocus = (detail) => {
+            logEvent('onRowFocus', `row ${detail.rowIndex}` + (detail.previousRowIndex != null ? ` (prev: ${detail.previousRowIndex})` : ''))
         }
-        gridCellRangeClick.onrowchange = (detail) => {
-            logEvent('onrowchange', `row ${detail.rowIndex}, field: ${detail.field}, ${JSON.stringify(detail.oldValue)} → ${JSON.stringify(detail.newValue)}`)
+        gridCellRangeClick.onRowChange = (detail) => {
+            logEvent('onRowChange', `row ${detail.rowIndex}, field: ${detail.field}, ${JSON.stringify(detail.oldValue)} → ${JSON.stringify(detail.newValue)}`)
         }
-        gridCellRangeClick.oncellselectionchange = (detail) => {
+        gridCellRangeClick.onCellSelectionChange = (detail) => {
             if (detail.range) {
-                logEvent('oncellselectionchange', `${detail.cellCount} cell(s)`)
+                logEvent('onCellSelectionChange', `${detail.cellCount} cell(s)`)
             } else {
-                logEvent('oncellselectionchange', 'cleared')
+                logEvent('onCellSelectionChange', 'cleared')
             }
         }
-        gridCellRangeClick.onroweditstart = (detail) => {
-            logEvent('onroweditstart', `row ${detail.rowIndex}, field: ${detail.field}`)
+        gridCellRangeClick.onEditStart = (detail) => {
+            logEvent('onEditStart', `row ${detail.rowIndex}, field: ${detail.field}`)
         }
-        gridCellRangeClick.onroweditcancel = (detail) => {
-            logEvent('onroweditcancel', `row ${detail.rowIndex}, field: ${detail.field}`)
+        gridCellRangeClick.onEditCancel = (detail) => {
+            logEvent('onEditCancel', `row ${detail.rowIndex}, field: ${detail.field}`)
         }
 
         // Selection status (polled)
@@ -652,10 +652,10 @@ grid.focusedRowIndex = null // Clear focus</code></pre>
 
         gridCellRangeShift.rangeShortcuts = [
             {
-                key: 'Delete',
+                shortcut: 'Delete',
                 id: 'clear-cells-shift',
-                label: 'Clear selected cells',
-                action: ({ cells, cellRange }) => {
+                text: 'Clear selected cells',
+                onClick: ({ cells, cellRange }) => {
                     if (!cellRange) return
                     const log = document.getElementById('cellRangeShiftLog')
                     log.innerHTML = `<span style="color: #dc2626;"><strong>CLEARED:</strong> ${cells.length} cell(s)</span>`
@@ -667,10 +667,10 @@ grid.focusedRowIndex = null // Clear focus</code></pre>
                 }
             },
             {
-                key: 'Ctrl+C',
+                shortcut: 'Ctrl+C',
                 id: 'copy-shift',
-                label: 'Copy to clipboard',
-                action: async ({ rows, cells, cellRange }) => {
+                text: 'Copy to clipboard',
+                onClick: async ({ rows, cells, cellRange }) => {
                     const log = document.getElementById('cellRangeShiftLog')
                     if (cellRange) {
                         const success = await gridCellRangeShift.copyCellSelectionToClipboard()
@@ -717,10 +717,10 @@ grid.focusedRowIndex = null // Clear focus</code></pre>
 
         gridRangeShortcuts.rangeShortcuts = [
             {
-                key: 'Delete',
+                shortcut: 'Delete',
                 id: 'delete-or-clear',
-                label: 'Delete rows or clear cells',
-                action: ({ rows, rowIndices, cells, cellRange }) => {
+                text: 'Delete rows or clear cells',
+                onClick: ({ rows, rowIndices, cells, cellRange }) => {
                     const log = document.getElementById('rangeShortcutsLog')
                     if (cellRange) {
                         log.innerHTML = `<span style="color: #dc2626;"><strong>CLEARED:</strong> ${cells.length} cell(s)</span>`
@@ -740,10 +740,10 @@ grid.focusedRowIndex = null // Clear focus</code></pre>
                 }
             },
             {
-                key: 'Ctrl+C',
+                shortcut: 'Ctrl+C',
                 id: 'copy-unified',
-                label: 'Copy to clipboard',
-                action: async ({ rows, cells, cellRange }) => {
+                text: 'Copy to clipboard',
+                onClick: async ({ rows, cells, cellRange }) => {
                     const log = document.getElementById('rangeShortcutsLog')
                     if (cellRange) {
                         const success = await gridRangeShortcuts.copyCellSelectionToClipboard()
@@ -763,10 +763,10 @@ grid.focusedRowIndex = null // Clear focus</code></pre>
                 }
             },
             {
-                key: 'Ctrl+Alt+E',
+                shortcut: 'Ctrl+Alt+E',
                 id: 'export',
-                label: 'Export selected data',
-                action: ({ rows, cells, cellRange }) => {
+                text: 'Export selected data',
+                onClick: ({ rowIndices, cells, cellRange }) => {
                     const log = document.getElementById('rangeShortcutsLog')
                     if (cellRange) {
                         log.innerHTML = `<span style="color: #16a34a;"><strong>EXPORTED:</strong> ${cells.length} cell(s) to console</span>`
@@ -778,10 +778,10 @@ grid.focusedRowIndex = null // Clear focus</code></pre>
                 }
             },
             {
-                key: 'Ctrl+Alt+S',
+                shortcut: 'Ctrl+Alt+S',
                 id: 'sum-cells',
-                label: 'Sum selected cells',
-                action: ({ cells, cellRange }) => {
+                text: 'Sum selected cells',
+                onClick: ({ cells, cellRange }) => {
                     if (!cellRange) return
                     const log = document.getElementById('rangeShortcutsLog')
                     const sum = cells.reduce((acc, { value }) => {
@@ -836,7 +836,7 @@ grid.focusedRowIndex = null // Clear focus</code></pre>
             `
         }
 
-        gridRowFocus.onrowfocus = ({ rowIndex, row, previousRowIndex }) => {
+        gridRowFocus.onRowFocus = ({ rowIndex, row, previousRowIndex }) => {
             detailPanel.innerHTML = renderDetail(row)
             const prevLabel = previousRowIndex !== null ? `row ${previousRowIndex}` : 'none'
             focusLog.innerHTML = `<strong>Focused:</strong> row ${rowIndex} (${row.name}) — <span style="color: #94a3b8;">previous: ${prevLabel}</span>`

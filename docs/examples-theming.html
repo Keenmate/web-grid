@@ -373,7 +373,7 @@
 			{ field: 'name',   title: 'Name',   width: '140px' },
 			{ field: 'role',   title: 'Role',   width: '120px' },
 			{ field: 'salary', title: 'Salary', width: '100px', horizontalAlign: 'right',
-			  formatCallback: v => v != null ? `$${v.toLocaleString()}` : '' },
+			  getDisplayValueCallback: ({ value: v }) => v != null ? `$${v.toLocaleString()}` : '' },
 			{ field: 'active', title: 'Active', width: '80px',  editor: 'checkbox' }
 		]
 		grid.isHoverable = true

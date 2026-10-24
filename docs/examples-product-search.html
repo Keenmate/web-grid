@@ -182,8 +182,8 @@
                 <h2>How it works</h2>
                 <ol style="margin-left: 1.25rem; color: #4a5568; line-height: 1.8;">
                     <li>The cell stores a <code>productId</code> (number).</li>
-                    <li><code>formatCallback</code> looks up the product in the catalog and returns its name for display.</li>
-                    <li><code>cellEditCallback</code> opens a modal search dialog instead of inline editing.</li>
+                    <li><code>getDisplayValueCallback</code> looks up the product in the catalog and returns its name for display.</li>
+                    <li><code>renderEditorCallback</code> opens a modal search dialog instead of inline editing.</li>
                     <li>When the user picks a product, <code>context.commit(id)</code> saves the id and the grid re-renders the name automatically.</li>
                     <li>Sibling columns (<em>SKU</em>, <em>Price</em>) also read from the catalog using the same id.</li>
                 </ol>
@@ -196,11 +196,11 @@
     field: 'productId',
     title: 'Product',
     editor: 'custom',
-    formatCallback: (id) =&gt; {
+    getDisplayValueCallback: ({ value: id }) =&gt; {
         const p = catalog.find(p =&gt; p.id === id)
         return p ? p.name : '—'
     },
-    cellEditCallback: (context) =&gt; {
+    renderEditorCallback: (context) =&gt; {
         openProductSearch(context, catalog)
         // dialog calls context.commit(product.id)
         // or context.cancel()
@@ -220,7 +220,7 @@
                 <li>
                     <strong>Refreshing dependent cells:</strong> the grid re-renders only the cell that was edited.
                     When other columns derive their display from the edited field (SKU/Category/Price/Total here),
-                    reassign <code>grid.items = [...rows]</code> in <code>onrowchange</code> to force a full re-render.
+                    reassign <code>grid.items = [...rows]</code> in <code>onRowChange</code> to force a full re-render.
                     If you instead store real product fields on the row, you don't need this.
                 </li>
             </ul>
@@ -290,25 +290,25 @@
                 title: 'Product',
                 width: '240px',
                 editor: 'custom',
-                formatCallback: (id) => {
+                getDisplayValueCallback: ({ value: id }) => {
                     const p = lookupProduct(id)
                     return p ? p.name : '— click to search —'
                 },
-                cellEditCallback: (context) => openProductSearch(context)
+                renderEditorCallback: (context) => openProductSearch(context)
             },
             {
                 field: 'sku',
                 title: 'SKU',
                 width: '120px',
                 isEditable: false,
-                formatCallback: (_v, row) => lookupProduct(row.productId)?.sku ?? ''
+                getDisplayValueCallback: ({ row }) => lookupProduct(row.productId)?.sku ?? ''
             },
             {
                 field: 'category',
                 title: 'Category',
                 width: '130px',
                 isEditable: false,
-                formatCallback: (_v, row) => lookupProduct(row.productId)?.category ?? ''
+                getDisplayValueCallback: ({ row }) => lookupProduct(row.productId)?.category ?? ''
             },
             {
                 field: 'unitPrice',
@@ -316,7 +316,7 @@
                 width: '110px',
                 horizontalAlign: 'right',
                 isEditable: false,
-                formatCallback: (_v, row) => {
+                getDisplayValueCallback: ({ row }) => {
                     const p = lookupProduct(row.productId)
                     return p ? '$' + p.price.toFixed(2) : ''
                 }
@@ -328,7 +328,7 @@
                 width: '110px',
                 horizontalAlign: 'right',
                 isEditable: false,
-                formatCallback: (_v, row) => {
+                getDisplayValueCallback: ({ row }) => {
                     const p = lookupProduct(row.productId)
                     if (!p) return ''
                     return '$' + (p.price * (row.qty || 0)).toFixed(2)
@@ -343,7 +343,7 @@
         grid.editTrigger = 'navigate'
         grid.isHoverable = true
 
-        grid.onrowchange = (detail) => {
+        grid.onRowChange = (detail) => {
             if (!detail.isValid) return
             rows[detail.rowIndex] = { ...detail.draftRow }
             if (detail.field === 'productId') {
@@ -353,7 +353,7 @@
                 logEvent('Cell changed', `row ${detail.rowIndex + 1}, ${detail.field} = ${detail.newValue}`)
             }
             // SKU / Category / Unit Price / Total all derive their display from
-            // other fields via formatCallback (productId → catalog lookup; Total
+            // other fields via getDisplayValueCallback (productId → catalog lookup; Total
             // also depends on qty). The grid only re-renders the cell that was
             // edited, so we reassign items to force a full re-render and refresh
             // the dependent cells.

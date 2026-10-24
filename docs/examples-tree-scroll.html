@@ -128,9 +128,9 @@
         const columns = [
             { field: 'name', title: 'Organization', width: '320px', isTree: true },
             { field: 'headcount', title: 'Headcount', width: '120px', horizontalAlign: 'right',
-                formatCallback: v => v != null ? v.toLocaleString() : '' },
+                getDisplayValueCallback: ({ value: v }) => v != null ? v.toLocaleString() : '' },
             { field: 'budget', title: 'Annual Budget', width: '160px', horizontalAlign: 'right',
-                formatCallback: v => v != null ? `$${(v / 1_000_000).toFixed(1)}M` : '' },
+                getDisplayValueCallback: ({ value: v }) => v != null ? `$${(v / 1_000_000).toFixed(1)}M` : '' },
             { field: 'path', title: 'Path', width: '180px' }
         ]
 
@@ -170,7 +170,7 @@
         }
         refreshVisibleCount()
 
-        vsGrid.onexpandedpathschange = refreshVisibleCount
+        vsGrid.onExpandChange = refreshVisibleCount
 
         document.getElementById('vsEnabled').addEventListener('change', e => {
             vsGrid.isVirtualScrollEnabled = e.target.checked
@@ -243,7 +243,7 @@
             return batch
         }
 
-        isGrid.ondatarequest = async (detail) => {
+        isGrid.onDataRequest = async (detail) => {
             if (detail.trigger !== 'loadMore') return
             isLoadingEl.style.display = ''
             const more = await fetchNextBatch()

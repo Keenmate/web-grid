@@ -6,6 +6,14 @@ CRITICAL NOTES
 - The import itself registers the custom element. No manual registration needed.
 - Setting the "mode" property applies sensible defaults for editing, selection,
   and dropdown behavior. You can override individual properties after setting mode.
+- Every callback takes ONE ctx object; ctx and event details carry non-enumerable
+  `controller` (GridController, also grid.controller) and `element`.
+- Events are DOM events with kebab-case names (row-change, action, data-request, ...)
+  plus camelCase on* twin properties (onRowChange, onAction, onDataRequest, ...).
+  See callbacks-events.txt.
+- Toolbar buttons, menu items and shortcuts are action items ({ action | id, text,
+  icon, onClick, ... }); built-ins like 'add' / 'delete' do the work themselves.
+  See toolbar-actions.txt.
 
 
 INSTALLATION
@@ -84,6 +92,7 @@ is-striped              isStriped               boolean    false     Alternate r
 is-hoverable            isHoverable             boolean    false     Highlight row on hover
 sort-mode               sortMode                string     'none'    'none', 'single', or 'multi'
 is-filterable           isFilterable            boolean    false     Show per-column filter inputs
+filter-mode             filterMode              string     'client'  'server': the consumer filters (filter-change event)
 is-pageable             isPageable              boolean    false     Enable pagination
 page-size               pageSize                number     10        Rows per page
 is-editable             isEditable              boolean    false     Enable cell editing
@@ -126,8 +135,8 @@ columns : Column<T>[]
     isEditable         - Enable editing for this column
     editor             - Editor type: 'text', 'number', 'checkbox', 'select',
                          'combobox', 'autocomplete', 'date', 'custom'
-    formatCallback     - Function to format display value: (value, row) => string
-    templateCallback   - Function returning HTML string: (row) => string
+    getDisplayValueCallback - Display text for the cell: ({ value, row, ... }) => string
+    renderCellCallback      - Cell HTML: ({ row, value, ... }) => string
     horizontalAlign    - 'left', 'center', 'right', 'justify'
     isSortable         - Enable sorting for this column
     isFilterable       - Enable filtering for this column

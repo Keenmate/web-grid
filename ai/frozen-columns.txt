@@ -116,18 +116,18 @@ HEADER CONTEXT MENU ACTIONS
 ----------------------------
 Two predefined header context menu items for freeze management:
 
-  'freezeColumn'    Freezes the right-clicked column
-  'unfreezeColumn'  Unfreezes the right-clicked column
+  'freeze-column'    Freezes columns up to and including the right-clicked one
+  'unfreeze-column'  Unfreezes the right-clicked column
 
 Usage:
   grid.headerContextMenu = [
-    'freezeColumn',
-    'unfreezeColumn',
-    'sortAsc',
-    'sortDesc'
+    'freeze-column',
+    'unfreeze-column',
+    'sort-asc',
+    'sort-desc'
   ]
 
-The header context menu context includes an isFrozen boolean indicating
+The header menu ctx (HeaderMenuContext) includes an isFrozen boolean indicating
 whether the clicked column is currently frozen.
 
 

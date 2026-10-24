@@ -11,7 +11,11 @@ GRID-LEVEL EDITING PROPERTIES
 ------------------------------
 
 isEditable (boolean, default: false)
-  Master switch. Must be true for any editing to occur.
+  Master switch. Must be true for any editing to occur (a column's
+  getIsEditableCallback returning true is the one exception).
+
+isRowEditable (boolean) / getIsRowEditableCallback (({ row }) => boolean)
+  Row-level editability: a static flag, or a per-row callback.
 
 editTrigger (EditTrigger, default: 'dblclick')
   How editing starts. Values:
@@ -181,14 +185,11 @@ SELECT EDITOR (editor: 'select')
 ---------------------------------
 
 Dropdown list. User picks from a fixed set of options. Cannot type custom
-values. For full dropdown documentation including option loading, member
+values. For full dropdown documentation including member
 properties, rendering callbacks, and grouping, see dropdown-editors.txt.
 
 Key options (editorOptions):
   options               -- Static array of { value, label } objects.
-  loadOptions           -- Async function returning options.
-  optionsLoadTrigger    -- When to call loadOptions: 'immediate',
-                           'oneditstart' (default), 'ondropdownopen'.
   valueMember           -- Property name for value (default: 'value').
   displayMember         -- Property name for display text (default: 'label').
   renderOptionCallback  -- Custom HTML for each option.
@@ -240,8 +241,8 @@ Async search dropdown. Options are fetched from a server based on user input.
 For full dropdown documentation, see dropdown-editors.txt.
 
 Key options (editorOptions):
-  searchCallback   -- (query, row, signal?) => Promise<EditorOption[]>.
-                      Receives an AbortSignal for request cancellation.
+  searchCallback   -- ({ term, row, signal, ... }) => Promise<EditorOption[]>.
+                      signal is an AbortSignal for request cancellation.
   initialOptions   -- Options shown before user types anything.
   minSearchLength  -- Minimum characters before search fires (default: 1).
   debounceMs       -- Debounce delay in ms for search calls (default: 300).
@@ -254,8 +255,8 @@ Example:
     field: 'assignee',
     editor: 'autocomplete',
     editorOptions: {
-      searchCallback: async (query, row, signal) => {
-        const res = await fetch(`/api/users?q=${query}`, { signal })
+      searchCallback: async ({ term, row, signal }) => {
+        const res = await fetch(`/api/users?q=${term}`, { signal })
         return res.json()
       },
       minSearchLength: 2,
@@ -269,25 +270,26 @@ CUSTOM EDITOR (editor: 'custom')
 ---------------------------------
 
 The grid renders a placeholder cell. The consumer provides all editing UI
-via the cellEditCallback on the column. Call commit(newValue) to save or
+via the renderEditorCallback on the column. Call commit(newValue) to save or
 cancel() to discard.
 
 Column property:
-  cellEditCallback  -- (context: CustomEditorContext) => void
+  renderEditorCallback  -- (ctx: EditorContext<T>) => void
 
-CustomEditorContext fields:
+EditorContext fields (the cell ctx + commit / cancel):
   value     -- Current cell value.
   row       -- The row data object.
   rowIndex  -- Index of the row.
+  column, colIndex
   field     -- Field name.
-  commit    -- Function: call commit(newValue) to save.
+  commit    -- Function: call commit(newValue) to save (runs validateCallback).
   cancel    -- Function: call cancel() to discard changes.
 
 Example:
   {
     field: 'color',
     editor: 'custom',
-    cellEditCallback: ({ value, row, rowIndex, field, commit, cancel }) => {
+    renderEditorCallback: ({ value, row, rowIndex, field, commit, cancel }) => {
       // Open a color picker modal, then:
       //   commit('#ff0000')  -- save new value
       //   cancel()           -- discard
@@ -305,10 +307,10 @@ The editing flow is: Start -> Edit -> Commit or Cancel.
 
 1. START
    - Triggered by the configured editTrigger (click, dblclick, navigate, etc).
-   - grid.startEdit(rowIndex, field) is called internally.
+   - The grid starts the edit internally (programmatically: grid.startEditing(rowIndex, colIndex)).
    - A draft copy of the row is created (if not already drafted).
    - The cell DOM is replaced with the appropriate editor.
-   - The onroweditstart callback fires.
+   - The edit-start event (onEditStart) fires.
    - For editTrigger='navigate', typing a printable character starts editing
      with that character pre-filled.
 
@@ -321,13 +323,13 @@ The editing flow is: Start -> Edit -> Commit or Cancel.
 3. COMMIT
    - Triggered by: Enter key, Tab key, blur (clicking away), or selecting a
      dropdown option.
-   - Validation runs (beforeCommitCallback or deprecated validateCallback).
-   - If valid: draft row is updated, cell returns to display mode, onrowchange
-     fires.
-   - If valid with transform: beforeCommitCallback can return
+   - Validation runs (column.validateCallback, source 'edit').
+   - If valid: draft row is updated, cell returns to display mode, the
+     row-change event (onRowChange) fires.
+   - If valid with transform: validateCallback can return
      { valid: true, transformedValue: cleanedValue } to modify the value.
    - If invalid: value is still stored in the draft (marked invalid), cell
-     shows validation error, onvalidationerror fires. The original data is
+     shows validation error, validation-error (onValidationError) fires. The original data is
      never modified.
    - After commit, focus moves based on the trigger:
        Enter  -- moves focus down one row (to the tab-start column if Tab
@@ -337,23 +339,24 @@ The editing flow is: Start -> Edit -> Commit or Cancel.
 
 4. CANCEL
    - Triggered by: Escape key.
-   - grid.cancelEdit() is called.
    - The editor is removed; cell returns to display mode showing the draft
      value (or original if no prior edits).
-   - The onroweditcancel callback fires.
+   - The edit-cancel event (onEditCancel) fires.
    - Focus returns to the cell in navigate mode.
 
 Note: The original items array is NEVER mutated. All changes live in draft
 rows. The consumer decides when/how to persist changes (e.g., after
-onrowchange fires).
+row-change / onRowChange fires).
 
 
 VALIDATION
 ----------
 
-beforeCommitCallback (column-level, preferred)
-  Called before each cell value is committed. Receives a context object:
-    { value, oldValue, row, rowIndex, field }
+validateCallback (column-level)
+  Called before each cell value is committed (and for pasted cells when
+  shouldValidateOnPaste). Receives one ctx object:
+    { value, oldValue, row, rowIndex, column, colIndex, field, source }
+  source is 'edit' (editor commit) or 'paste'.
 
   Return values:
     { valid: true }                              -- Accept value.
@@ -369,27 +372,23 @@ beforeCommitCallback (column-level, preferred)
     {
       field: 'age',
       editor: 'number',
-      beforeCommitCallback: ({ value, row }) => {
+      validateCallback: ({ value, row }) => {
         if (value < 0) return { valid: false, message: 'Age cannot be negative' }
         if (value > 150) return 'Unrealistic age'
         return { valid: true, transformedValue: Math.round(value) }
       }
     }
 
-validateCallback (column-level, DEPRECATED -- use beforeCommitCallback)
-  (value, row) => string | null | Promise<string | null>
-  Return a string to reject with that error message, or null to accept.
-
-validationTooltipCallback (grid-level and column-level)
-  Customizes the validation error tooltip. Receives:
-    { field, error, value, row, rowIndex }
+getValidationTooltipCallback (grid-level and column-level)
+  Customizes the validation error tooltip. Receives the cell ctx + error:
+    { row, rowIndex, column, colIndex, field, value, error }
   Return an HTML string for rich error display, or null for default.
   Column-level overrides grid-level.
 
 invalidCells (grid-level property)
   CellValidationState[] -- External validation state. Set this to mark cells
   as invalid from outside the grid (e.g., server-side validation).
-  Each entry: { rowIndex, field, error }.
+  Each entry: { rowKey, field, error } (rowKey = the row id via idMember, the tree path, or the displayed index as a string).
 
 Validation helper methods:
   grid.isCellInvalid(rowIndex, field)        -- Returns boolean.
@@ -413,18 +412,14 @@ Methods:
                                      have drafts.
   grid.discardAllDrafts()         -- Discards all drafts and clears all
                                      validation errors.
-  grid.discardCellDraft(rowIndex, field)
-                                  -- Discards the draft for a single cell.
-                                     If the draft row then matches the original,
-                                     the entire draft row is removed.
 
 Draft behavior:
   - A draft is created the first time a cell in a row enters edit mode.
   - The draft is a shallow clone of the original row ({ ...item }).
   - Subsequent edits to other cells in the same row reuse the existing draft.
   - Invalid values ARE stored in the draft (so the user's input is preserved).
-  - getCellRawValue returns the draft value when a draft exists.
-  - The onrowchange callback includes both row (original) and draftRow (with
+  - Cell ctx `value` (and the displayed value) is the draft value when a draft exists.
+  - The row-change detail includes both row (original) and draftRow (with
     changes) so the consumer can compare.
 
 Dirty indicator:
@@ -449,24 +444,26 @@ Dirty indicator:
     .wg__row-number--dirty           -- on row number cells of dirty rows
 
 
-EVENTS (CALLBACKS)
-------------------
+EVENTS
+------
 
-These are property-based callbacks set on the grid element, not DOM events.
-Return values are ignored (fire-and-forget).
+DOM events (kebab-case, bubble, not composed) with a camelCase on* twin
+property called with the same detail. Return values are ignored.
 
-onroweditstart
+    grid.addEventListener('row-change', (e) => save(e.detail))
+    grid.onRowChange = (detail) => save(detail)
+
+edit-start / onEditStart
   Fires when editing starts on a cell.
-  Signature: (detail: { row, rowIndex, field }) => void
+  Detail: { row, rowIndex, field }
 
-onroweditcancel
+edit-cancel / onEditCancel
   Fires when editing is cancelled (Escape key).
-  Signature: (detail: { row, rowIndex, field }) => void
+  Detail: { row, rowIndex, field }
 
-onrowchange
+row-change / onRowChange
   Fires when a cell value is committed (whether valid or invalid).
-  Signature: (detail: RowChangeDetail) => void
-  RowChangeDetail fields:
+  Detail (RowChangeDetail + controller / element):
     row              -- Original row (unchanged).
     draftRow         -- Draft row with the user's changes.
     rowIndex         -- Index of the row.
@@ -476,9 +473,9 @@ onrowchange
     isValid          -- Whether validation passed.
     validationError  -- Error message if validation failed, or null.
 
-onvalidationerror
-  Fires when validation fails during commit.
-  Signature: (detail: { row, rowIndex, field, error }) => void
+validation-error / onValidationError
+  Fires when validation fails during an editor commit or a paste.
+  Detail: { row, rowIndex, field, error, source: 'edit' | 'paste' }
 
 
 PER-COLUMN EDITING OVERRIDES
@@ -488,6 +485,7 @@ Several grid-level editing properties can be overridden on individual columns.
 
 Column-level overrides:
   isEditable                  -- Enable/disable editing for this specific column.
+  getIsEditableCallback       -- Per-row editability for this column ({ row }) => boolean.
   editor                      -- Editor type for this column.
   editTrigger                 -- Override the grid's editTrigger for this column.
                                  Example: most columns use 'navigate' but one
@@ -498,9 +496,9 @@ Column-level overrides:
                                  on this column.
   isEditButtonVisible         -- Show an edit button (pencil icon) in the cell.
   editorOptions               -- Editor-specific options for this column.
-  cellEditCallback            -- Handler for custom editor type.
-  beforeCommitCallback        -- Validation/transform for this column.
-  validationTooltipCallback   -- Custom tooltip for this column's errors.
+  renderEditorCallback            -- Handler for custom editor type.
+  validateCallback        -- Validation/transform for this column.
+  getValidationTooltipCallback   -- Custom tooltip for this column's errors.
 
 Example with per-column overrides:
   grid.editTrigger = 'navigate'  // grid default
@@ -512,7 +510,7 @@ Example with per-column overrides:
       shouldOpenDropdownOnEnter: true,
       editorOptions: { options: [...] } },
     { field: 'notes', editor: 'custom',
-      cellEditCallback: (ctx) => openModal(ctx) }
+      renderEditorCallback: (ctx) => openModal(ctx) }
   ]
 
 
@@ -546,9 +544,10 @@ newRowPosition ('top' | 'bottom', default: 'bottom')
 newRowIndicator (string, default: '+')
   Text shown in the row number column for the empty row.
 
-createEmptyRowCallback (() => T | Promise<T>)
+createEmptyRowCallback ((ctx) => T | Promise<T>)
   Creates the blank row object. Called once when the empty row is first
-  accessed. Can be async.
+  accessed. Can be async. The 'add' built-in action (row toolbar, context
+  menu, shortcut) inserts this callback's row too.
 
 Example:
 

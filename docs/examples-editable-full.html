@@ -130,7 +130,7 @@
 
         <!-- Validation Demo -->
         <div class="card">
-            <h2>Validation with beforeCommitCallback</h2>
+            <h2>Validation with validateCallback</h2>
             <p>Validation rules applied to each column. Invalid cells remain marked until fixed:</p>
             <ul class="feature-list">
                 <li><strong>Name:</strong> Required, minimum 2 characters</li>
@@ -228,7 +228,7 @@
         gridNavigate.columns = navigateColumns
         gridNavigate.isEditable = true
         gridNavigate.editTrigger = 'navigate'
-        gridNavigate.onrowchange = (detail) => {
+        gridNavigate.onRowChange = (detail) => {
             if (detail.isValid) {
                 navigateData[detail.rowIndex] = { ...detail.draftRow }
                 showStatus('navigateStatus', `Changed ${detail.field}: "${detail.oldValue}" → "${detail.newValue}"`, 'success')
@@ -253,7 +253,7 @@
                 title: 'Name',
                 isEditable: true,
                 editor: 'text',
-                beforeCommitCallback: ({ value }) => {
+                validateCallback: ({ value }) => {
                     const str = String(value || '').trim()
                     if (!str) return 'Name is required'
                     if (str.length < 2) return 'Name must be at least 2 characters'
@@ -267,7 +267,7 @@
                 horizontalAlign: 'center',
                 isEditable: true,
                 editor: 'number',
-                beforeCommitCallback: ({ value }) => {
+                validateCallback: ({ value }) => {
                     const num = Number(value)
                     if (isNaN(num)) return 'Age must be a number'
                     if (num < 0) return 'Age cannot be negative'
@@ -282,7 +282,7 @@
                 horizontalAlign: 'center',
                 isEditable: true,
                 editor: 'number',
-                beforeCommitCallback: ({ value }) => {
+                validateCallback: ({ value }) => {
                     const num = Number(value)
                     if (num < 0 || num > 100) return 'Score must be 0-100'
                     return { valid: true, transformedValue: Math.round(num) }
@@ -293,7 +293,7 @@
                 title: 'Email',
                 isEditable: true,
                 editor: 'text',
-                beforeCommitCallback: ({ value }) => {
+                validateCallback: ({ value }) => {
                     const str = String(value || '')
                     if (!str.includes('@')) return 'Invalid email format'
                     return { valid: true, transformedValue: str.toLowerCase() }
@@ -306,7 +306,7 @@
         gridValidation.columns = validationColumns
         gridValidation.isEditable = true
         gridValidation.editTrigger = 'navigate'
-        gridValidation.onrowchange = (detail) => {
+        gridValidation.onRowChange = (detail) => {
             if (detail.isValid) {
                 validationData[detail.rowIndex] = { ...detail.draftRow }
                 showStatus('validationStatus', `✓ ${detail.field} updated to "${detail.newValue}"`, 'success')
@@ -343,7 +343,7 @@
         ]
 
         // Async search for autocomplete
-        async function searchCountries(query, row, signal) {
+        async function searchCountries({ term: query, signal }) {
             await new Promise((resolve, reject) => {
                 const timeout = setTimeout(resolve, 300)
                 signal?.addEventListener('abort', () => {
@@ -384,7 +384,7 @@
                 width: '130px',
                 isEditable: true,
                 editor: 'combobox',
-                formatCallback: (v) => cityOptions.find(c => c.value === v)?.label || v,
+                getDisplayValueCallback: ({ value: v }) => cityOptions.find(c => c.value === v)?.label || v,
                 editorOptions: {
                     options: cityOptions,
                     valueMember: 'value',
@@ -398,10 +398,10 @@
                 width: '150px',
                 isEditable: true,
                 editor: 'autocomplete',
-                formatCallback: (v) => allCountries.find(c => c.value === v)?.label || v,
+                getDisplayValueCallback: ({ value: v }) => allCountries.find(c => c.value === v)?.label || v,
                 editorOptions: {
                     initialOptions: allCountries.slice(0, 5),
-                    loadOptions: searchCountries,
+                    searchCallback: searchCountries,
                     minSearchLength: 1,
                     debounceMs: 200,
                     valueMember: 'value',
@@ -428,7 +428,7 @@
         gridAllEditors.columns = allEditorsColumns
         gridAllEditors.isEditable = true
         gridAllEditors.editTrigger = 'navigate'
-        gridAllEditors.onrowchange = (detail) => {
+        gridAllEditors.onRowChange = (detail) => {
             if (detail.isValid) {
                 allEditorsData[detail.rowIndex] = { ...detail.draftRow }
                 showStatus('allEditorsStatus', `Changed ${detail.field}: ${JSON.stringify(detail.newValue)}`, 'success')
@@ -454,8 +454,8 @@
                 title: 'Settings (JSON)',
                 isEditable: true,
                 editor: 'custom',
-                formatCallback: (v) => v ? JSON.stringify(v).substring(0, 30) + (JSON.stringify(v).length > 30 ? '...' : '') : '(empty)',
-                cellEditCallback: (context) => {
+                getDisplayValueCallback: ({ value: v }) => v ? JSON.stringify(v).substring(0, 30) + (JSON.stringify(v).length > 30 ? '...' : '') : '(empty)',
+                renderEditorCallback: (context) => {
                     jsonEditorContext = context
                     document.getElementById('jsonEditingRow').textContent = `Editing: ${context.row.name}`
                     document.getElementById('jsonTextarea').value = context.value ? JSON.stringify(context.value, null, 2) : ''
@@ -472,7 +472,7 @@
         gridCustomEditor.columns = customEditorColumns
         gridCustomEditor.isEditable = true
         gridCustomEditor.editTrigger = 'navigate'
-        gridCustomEditor.onrowchange = (detail) => {
+        gridCustomEditor.onRowChange = (detail) => {
             if (detail.isValid) {
                 customEditorData[detail.rowIndex] = { ...detail.draftRow }
                 showStatus('customEditorStatus', `Updated settings for ${detail.row.name}`, 'success')
@@ -520,14 +520,14 @@
             { field: 'id', title: 'ID', width: '50px', horizontalAlign: 'center' },
             { field: 'name', title: 'Name', isEditable: true, editor: 'text', editTrigger: 'always' },
             { field: 'qty', title: 'Quantity', width: '100px', horizontalAlign: 'center', isEditable: true, editor: 'number', editTrigger: 'always' },
-            { field: 'price', title: 'Price', width: '100px', horizontalAlign: 'right', isEditable: true, editor: 'number', editTrigger: 'always', formatCallback: (v) => `$${v.toFixed(2)}` }
+            { field: 'price', title: 'Price', width: '100px', horizontalAlign: 'right', isEditable: true, editor: 'number', editTrigger: 'always', getDisplayValueCallback: ({ value: v }) => `$${v.toFixed(2)}` }
         ]
 
         const gridAlways = document.getElementById('gridAlways')
         gridAlways.items = alwaysEditableData
         gridAlways.columns = alwaysEditableColumns
         gridAlways.isEditable = true
-        gridAlways.onrowchange = (detail) => {
+        gridAlways.onRowChange = (detail) => {
             if (detail.isValid) {
                 alwaysEditableData[detail.rowIndex] = { ...detail.draftRow }
             }

@@ -53,7 +53,7 @@
                 <ul>
                     <li><code>gridName: "my-grid"</code> - Unique name for localStorage key</li>
                     <li><code>shouldPersistColumnWidths: true</code> - Enable automatic persistence</li>
-                    <li><code>oncolumnresize</code> - Callback fired after resize with all column widths</li>
+                    <li><code>column-resize</code> event / <code>onColumnResize</code> - Fired after resize with all column widths</li>
                 </ul>
             </div>
         </div>
@@ -162,10 +162,10 @@
             <div class="note" style="margin-top: 1rem;">
                 <div class="note-title">Predefined Actions</div>
                 <ul>
-                    <li><code>sortAsc</code> / <code>sortDesc</code> - Sort column</li>
-                    <li><code>clearSort</code> - Clear sort (only shown if sorted)</li>
-                    <li><code>hideColumn</code> - Hide the column</li>
-                    <li><code>freezeColumn</code> / <code>unfreezeColumn</code> - Freeze/unfreeze</li>
+                    <li><code>sort-asc</code> / <code>sort-desc</code> - Sort column</li>
+                    <li><code>clear-sort</code> - Clear sort (only shown if sorted)</li>
+                    <li><code>hide-column</code> - Hide the column</li>
+                    <li><code>freeze-column</code> / <code>unfreeze-column</code> - Freeze/unfreeze</li>
                 </ul>
             </div>
         </div>
@@ -194,12 +194,12 @@
                             <td>Enable automatic order persistence</td>
                         </tr>
                         <tr>
-                            <td><code>oncolumnresize</code></td>
-                            <td>Callback fired after column resize</td>
+                            <td><code>onColumnResize</code></td>
+                            <td>Twin of the <code>column-resize</code> event, fired after column resize</td>
                         </tr>
                         <tr>
-                            <td><code>oncolumnreorder</code></td>
-                            <td>Callback fired after column reorder</td>
+                            <td><code>onColumnReorder</code></td>
+                            <td>Twin of the <code>column-reorder</code> event, fired after column reorder</td>
                         </tr>
                     </table>
                 </div>
@@ -207,7 +207,7 @@
                     <h3>Column-Level Properties</h3>
                     <table class="props-table">
                         <tr>
-                            <td><code>resizable</code></td>
+                            <td><code>isResizable</code></td>
                             <td>Set to <code>false</code> to disable resize</td>
                         </tr>
                         <tr>
@@ -224,10 +224,10 @@
         </div>
 
         <div class="card">
-            <h2>Callback Data Structures</h2>
+            <h2>Event Details</h2>
 
-            <h3>oncolumnresize</h3>
-            <p>The <code>oncolumnresize</code> callback receives a detail object with:</p>
+            <h3>onColumnResize</h3>
+            <p>The <code>column-resize</code> event (and its <code>onColumnResize</code> twin) carries a detail object with:</p>
 
             <pre style="background: #f8fafc; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.85rem;"><code>{
     field: "name",           // Which column was resized
@@ -240,8 +240,8 @@
     ]
 }</code></pre>
 
-            <h3 style="margin-top: 1.5rem;">oncolumnreorder</h3>
-            <p>The <code>oncolumnreorder</code> callback receives a detail object with:</p>
+            <h3 style="margin-top: 1.5rem;">onColumnReorder</h3>
+            <p>The <code>column-reorder</code> event (and its <code>onColumnReorder</code> twin) carries a detail object with:</p>
 
             <pre style="background: #f8fafc; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.85rem;"><code>{
     field: "email",          // Which column was moved
@@ -312,7 +312,7 @@
             { field: 'name', title: 'Name', width: '150px' },
             { field: 'email', title: 'Email', width: '200px' },
             { field: 'department', title: 'Department', width: '120px', minWidth: '40px' },
-            { field: 'salary', title: 'Salary', width: '100px', formatCallback: v => '$' + v?.toLocaleString() },
+            { field: 'salary', title: 'Salary', width: '100px', getDisplayValueCallback: ({ value: v }) => '$' + v?.toLocaleString() },
             { field: 'status', title: 'Status', width: '100px' },
             { field: 'phone', title: 'Phone', width: '120px' }
         ]
@@ -340,7 +340,7 @@
         grid2.shouldPersistColumnOrder = true
 
         // Callback to show resize data
-        grid2.oncolumnresize = (detail) => {
+        grid2.onColumnResize = (detail) => {
             const log = document.getElementById('resizeLog')
             log.innerHTML = `<strong>Last resize:</strong> ${detail.field} changed from ${detail.oldWidth} to ${detail.newWidth}<br>
             <strong>All widths:</strong> ${JSON.stringify(detail.allWidths)}`
@@ -410,7 +410,7 @@
             { field: 'department', title: 'Department', width: '120px', minWidth: '40px' },
             { field: 'role', title: 'Role', width: '100px' },
             { field: 'location', title: 'Location', width: '120px' },
-            { field: 'salary', title: 'Salary', width: '100px', formatCallback: v => '$' + v?.toLocaleString() },
+            { field: 'salary', title: 'Salary', width: '100px', getDisplayValueCallback: ({ value: v }) => '$' + v?.toLocaleString() },
             { field: 'startDate', title: 'Start Date', width: '110px' },
             { field: 'status', title: 'Status', width: '100px' },
             { field: 'phone', title: 'Phone', width: '120px' },
@@ -445,7 +445,7 @@
             { field: 'department', title: 'Department', width: '120px', minWidth: '40px' },
             { field: 'role', title: 'Role', width: '100px' },
             { field: 'location', title: 'Location', width: '120px' },
-            { field: 'salary', title: 'Salary', width: '100px', formatCallback: v => '$' + v?.toLocaleString() },
+            { field: 'salary', title: 'Salary', width: '100px', getDisplayValueCallback: ({ value: v }) => '$' + v?.toLocaleString() },
             { field: 'status', title: 'Status', width: '100px' }
         ]
 
@@ -462,7 +462,7 @@
         gridReorder.shouldPersistColumnOrder = true
 
         // Callback to show reorder data
-        gridReorder.oncolumnreorder = (detail) => {
+        gridReorder.onColumnReorder = (detail) => {
             const log = document.getElementById('reorderLog')
             log.innerHTML = `<strong>Last reorder:</strong> "${detail.field}" moved from index ${detail.fromIndex} to ${detail.toIndex}<br>
             <strong>All order:</strong> ${JSON.stringify(detail.allOrder)}`
@@ -504,7 +504,7 @@
             { field: 'department', title: 'Department', width: '120px' },
             { field: 'role', title: 'Role', width: '100px' },
             { field: 'location', title: 'Location', width: '120px' },
-            { field: 'salary', title: 'Salary', width: '100px', formatCallback: v => '$' + v?.toLocaleString() },
+            { field: 'salary', title: 'Salary', width: '100px', getDisplayValueCallback: ({ value: v }) => '$' + v?.toLocaleString() },
             { field: 'status', title: 'Status', width: '100px' }
         ]
 
@@ -525,7 +525,7 @@
             { field: 'name', title: 'Name', width: '150px' },
             { field: 'email', title: 'Email', width: '200px' },
             { field: 'department', title: 'Department', width: '120px' },
-            { field: 'salary', title: 'Salary', width: '100px', formatCallback: v => '$' + v?.toLocaleString() },
+            { field: 'salary', title: 'Salary', width: '100px', getDisplayValueCallback: ({ value: v }) => '$' + v?.toLocaleString() },
             { field: 'status', title: 'Status', width: '100px' }
         ]
 
@@ -542,19 +542,19 @@
 
         // Header context menu with predefined and custom actions
         gridHeaderMenu.headerContextMenu = [
-            'sortAsc',
-            'sortDesc',
-            'clearSort',
-            { dividerBefore: true },
-            'freezeColumn',
-            'unfreezeColumn',
-            { dividerBefore: true },
-            'hideColumn',
+            'sort-asc',
+            'sort-desc',
+            'clear-sort',
+            { divider: true },
+            'freeze-column',
+            'unfreeze-column',
+            { divider: true },
+            'hide-column',
             {
                 id: 'showAllColumns',
-                label: 'Show All Columns',
+                text: 'Show All Columns',
                 icon: '👁',
-                onclick: (ctx) => {
+                onClick: () => {
                     // Restore all columns from original
                     gridHeaderMenu.columns = [...originalHeaderMenuColumns]
                     document.getElementById('headerMenuLog').innerHTML = `Restored all columns`
@@ -562,10 +562,10 @@
             }
         ]
 
-        // Log header menu events
-        gridHeaderMenu.onheadercontextmenuopen = (ctx) => {
+        // Runs before the header menu opens (return false to suppress it, or an array to replace it)
+        gridHeaderMenu.beforeHeaderMenuOpenCallback = (ctx) => {
             document.getElementById('headerMenuLog').innerHTML =
-                `<strong>Menu opened:</strong> ${ctx.field} (index: ${ctx.columnIndex}, frozen: ${ctx.isFrozen}, sort: ${ctx.sortDirection || 'none'})`
+                `<strong>Menu opened:</strong> ${ctx.field} (index: ${ctx.colIndex}, frozen: ${ctx.isFrozen}, sort: ${ctx.sortDirection || 'none'})`
         }
     </script>
 </body>

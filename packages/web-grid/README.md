@@ -17,7 +17,7 @@ Works **standalone** out of the box — no theme provider required. Reads `--bas
 - Spreadsheet-like keyboard navigation (Arrow / Tab / Home / End / PageUp / PageDown) with Excel-like commit-on-click-away.
 - Single- or multi-column sorting, per-column filtering, client- or server-side pagination.
 - Cell range selection with TSV clipboard copy/paste (Excel-compatible).
-- Floating, inline, or cell-specific row toolbars; cell + header context menus with predefined and custom items.
+- Floating, inline, or cell-specific row toolbars; cell + header context menus and keyboard shortcuts — all one action-item shape, with built-ins that do the work and a single `action` event.
 - Frozen columns, drag-to-resize, drag-to-reorder, fill handle, virtual scroll, infinite scroll.
 - ltree-style tree mode with chevron + indent, per-row custom shortcuts, optimistic row locking.
 - 209 `--wg-*` CSS variables with `--base-*` fallback for cross-component themes.
@@ -29,7 +29,7 @@ Works **standalone** out of the box — no theme provider required. Reads `--bas
 
 ## Demos & docs
 
-- 📘 [Usage / API reference](./docs/usage.md) — properties, columns, editors, callbacks, methods.
+- 📘 [Usage / API reference](./docs/usage.md) — properties, columns, editors, callbacks, events, `el.controller`, methods.
 - 🎨 [Theming](./docs/theming.md) — `--wg-*` variables, dark-mode signals, cascade layers, Theme Designer integration.
 - 📚 [Examples / cookbook](./docs/examples.md) — recipes for sorting, editing, tree mode, virtual scroll, theming, more.
 - ♿ [Accessibility](./docs/accessibility.md) — keyboard model, ARIA, focus management, contrast targets.

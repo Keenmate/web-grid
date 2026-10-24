@@ -144,7 +144,7 @@ grid.infiniteScrollThreshold = 100  // Default: 100px
 grid.hasMoreItems = true  // Set false when done
 
 // Handle load more events
-grid.ondatarequest = async (detail) => {
+grid.onDataRequest = async (detail) => {
   if (detail.trigger === 'loadMore') {
     // detail.mode = 'append'
     // detail.skip = current item count
@@ -170,7 +170,7 @@ grid.ondatarequest = async (detail) => {
 }
 
 // Usage
-grid.ondatarequest = (detail) => {
+grid.onDataRequest = (detail) => {
   if (detail.mode === 'append') {
     // Infinite scroll - append to existing
     fetchData({ skip: detail.skip, take: 50 }).then(data => {
@@ -217,7 +217,7 @@ grid.ondatarequest = (detail) => {
             { field: 'id', title: 'ID', width: '70px', horizontalAlign: 'center' },
             { field: 'name', title: 'Name', width: '150px', isEditable: true },
             { field: 'department', title: 'Department', width: '120px', isEditable: true },
-            { field: 'salary', title: 'Salary', width: '100px', horizontalAlign: 'right', isEditable: true, formatCallback: v => `$${v.toLocaleString()}` },
+            { field: 'salary', title: 'Salary', width: '100px', horizontalAlign: 'right', isEditable: true, getDisplayValueCallback: ({ value: v }) => `$${v.toLocaleString()}` },
             { field: 'status', title: 'Status', width: '100px', isEditable: true },
             { field: 'location', title: 'Location', width: '120px', isEditable: true },
             { field: 'startDate', title: 'Start Date', width: '110px' }
@@ -245,32 +245,26 @@ grid.ondatarequest = (detail) => {
         grid1.toolbarTrigger = 'hover'
         grid1.rowToolbar = [
             {
+                id: 'edit',
                 icon: '✏️',
-                title: 'Edit row',
-                onclick: (row, index) => {
-                    alert(`Edit row ${index + 1}: ${row.name}`)
+                text: 'Edit row',
+                onClick: ({ row, rowIndex }) => {
+                    alert(`Edit row ${rowIndex + 1}: ${row.name}`)
                 }
             },
-            {
-                icon: '📋',
-                title: 'Duplicate row',
-                onclick: (row, index) => {
-                    const newRow = { ...row, id: grid1.items.length + 1, name: `${row.name} (copy)` }
-                    const items = [...grid1.items]
-                    items.splice(index + 1, 0, newRow)
-                    grid1.items = items
-                }
-            },
-            {
-                icon: '🗑️',
-                title: 'Delete row',
-                onclick: (row, index) => {
-                    if (confirm(`Delete ${row.name}?`)) {
-                        grid1.items = grid1.items.filter((_, i) => i !== index)
-                    }
-                }
-            }
+            // Built-ins do the work: `duplicate` inserts createDuplicateRowCallback's copy,
+            // `delete` removes the row (after beforeActionCallback allows it).
+            { action: 'duplicate', icon: '📋', text: 'Duplicate row' },
+            { action: 'delete', icon: '🗑️', text: 'Delete row' }
         ]
+        grid1.createDuplicateRowCallback = ({ row }) => ({
+            ...row,
+            id: Math.max(...grid1.items.map(r => r.id)) + 1,
+            name: `${row.name} (copy)`
+        })
+        grid1.beforeActionCallback = ({ action, row }) => {
+            if (action === 'delete') return confirm(`Delete ${row.name}?`)
+        }
 
         function loadData(count) {
             // Update button states
@@ -325,18 +319,23 @@ grid.ondatarequest = (detail) => {
         grid2.toolbarTrigger = 'hover'
         grid2.rowToolbar = [
             {
+                id: 'view',
                 icon: '👁️',
-                title: 'View details',
-                onclick: (row, index) => {
-                    alert(`Row ${index + 1}:\n${JSON.stringify(row, null, 2)}`)
+                text: 'View details',
+                onClick: ({ row, rowIndex }) => {
+                    alert(`Row ${rowIndex + 1}:\n${JSON.stringify(row, null, 2)}`)
                 }
             },
             {
+                // A custom item (no built-in `action`): the page removes the row itself
+                // so it can refresh the stats right after.
+                id: 'remove',
                 icon: '🗑️',
-                title: 'Delete row',
-                onclick: (row, index) => {
+                text: 'Delete row',
+                isDanger: true,
+                onClick: ({ row }) => {
                     if (confirm(`Delete ${row.name}?`)) {
-                        grid2.items = grid2.items.filter((_, i) => i !== index)
+                        grid2.items = grid2.items.filter(r => r !== row)
                         updateStats()
                     }
                 }
@@ -384,7 +383,7 @@ grid.ondatarequest = (detail) => {
         }
 
         // Handle data requests
-        grid2.ondatarequest = async (detail) => {
+        grid2.onDataRequest = async (detail) => {
             if (detail.trigger === 'loadMore') {
                 loadingIndicator.classList.remove('hidden')
 

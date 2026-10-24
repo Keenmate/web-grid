@@ -7,6 +7,11 @@ All methods are called on the <web-grid> DOM element:
   const grid = document.getElementById('grid')
   grid.focusCell(0, 1)
 
+The same operations (plus a few more - see CONTROLLER below) are on
+grid.controller, the public GridController facade that every callback ctx
+and event detail also carries as `controller`:
+  grid.onRowFocus = ({ rowIndex, controller }) => controller.focusCell(rowIndex, 0)
+
 
 ----------------------------------------------------------------------
 FOCUS AND EDITING
@@ -24,8 +29,8 @@ startEditing(rowIndex: number, colIndex: number): void
 
 openCustomEditor(rowIndex: number, colIndex: number): void
   Open the custom editor for a cell with editor: 'custom'. Invokes the
-  column's cellEditCallback with { value, row, rowIndex, field, commit,
-  cancel }.
+  column's renderEditorCallback with the cell ctx + commit / cancel
+  ({ row, rowIndex, column, colIndex, field, value, commit, cancel }).
 
 
 ----------------------------------------------------------------------
@@ -65,7 +70,7 @@ VALIDATION
 ----------------------------------------------------------------------
 
 isCellInvalid(rowIndex: number, field: string): boolean
-  Check if a cell has a validation error (from beforeCommitCallback or
+  Check if a cell has a validation error (from validateCallback or
   external invalidCells).
 
 getCellValidationError(rowIndex: number, field: string): string | null
@@ -76,17 +81,17 @@ canEditCell(rowIndex: number, field: string): boolean
   Check if a cell can be edited. Considers:
   - Column isEditable setting
   - Row locking state and lockedEditBehavior
-  - canEditLockedCallback result
+  - rowLocking.getCanEditLockedCallback result
 
 
 ----------------------------------------------------------------------
 ROW IDENTIFICATION
 ----------------------------------------------------------------------
-Requires idValueMember or idValueCallback to be configured.
+Requires idValueMember or getRowIdCallback to be configured.
 
 getRowId(row: T): unknown | undefined
   Get the unique ID of a row using the configured idValueMember or
-  idValueCallback.
+  getRowIdCallback.
 
 findRowById(id: unknown): { row: T, index: number } | null
   Find a row by its unique ID. Returns the row object and its current
@@ -117,18 +122,18 @@ ROW LOCKING
 ----------------------------------------------------------------------
 Query methods accept either a row object or a row ID.
 External lock methods require row identification (idValueMember or
-idValueCallback).
+getRowIdCallback).
 
 isRowLocked(rowOrId: T | unknown): boolean
   Check if a row is locked (from any source: property, callback, or
   external).
 
-getRowLockInfo(rowOrId: T | unknown): RowLockInfo | null
+getRowLockInfo(rowOrId: T | unknown): RowLock | null
   Get lock information for a row. Returns null if not locked.
 
-lockRowById(id: unknown, lockerInfo?: RowLockInfo): boolean
-  Lock a row externally. Returns true if the row was found. Fires
-  onrowlockchange event.
+lockRowById(id: unknown, lockerInfo?: Partial<RowLock>): boolean
+  Lock a row externally. Returns true if the row was found. Fires the
+  row-lock-change event (onRowLockChange).
 
   grid.lockRowById(42, {
     isLocked: true,
@@ -140,7 +145,7 @@ unlockRowById(id: unknown): boolean
   Unlock an externally locked row. Returns true if the row was found
   and was locked.
 
-getExternalLocks(): Map<unknown, RowLockInfo>
+getExternalLocks(): Map<unknown, RowLock>
   Get all external locks as a Map keyed by row ID.
 
 clearExternalLocks(): void
@@ -235,3 +240,66 @@ setColumnOrder(order: ColumnOrderState[]): void
 getColumnOrderState(): ColumnOrderState[]
   Get current column order. Returns array of { field, order }.
   Same format used by localStorage persistence and setColumnOrder.
+
+
+----------------------------------------------------------------------
+TREE
+----------------------------------------------------------------------
+
+isPathExpanded(path: string): boolean
+toggleExpandedPath(path: string): void
+expandAll(): void
+collapseAll(): void
+  Tree mode (treePathMember). Each change fires the expand-change event
+  (onExpandChange) with { path, isExpanded, expandedPaths }.
+
+
+----------------------------------------------------------------------
+CONTROLLER (grid.controller)
+----------------------------------------------------------------------
+GridController<T> - the public facade. Available as grid.controller and
+as `controller` on every callback ctx and event detail (non-enumerable).
+It has the methods above (drafts, validation, row identification and
+updates, locking, selection, columns, focusCell, startEditing, tree) plus:
+
+Data
+  getItems(): T[]
+  getDisplayItems(): T[]            rows as displayed (filtered, sorted, paginated, tree-collapsed)
+  getColumns(): Column<T>[]
+  getSort(): SortState[]
+  getFilters(): Record<string, string>
+  setFilter(field: string, value: string): void
+
+Rows (what the add / delete / duplicate / move-up / move-down built-ins use)
+  insertRow(row: T, afterRow?: T | null): void    insert after afterRow (items order), or at the end
+  removeRows(rows: T[]): void
+  duplicateRow(row: T): T                         createDuplicateRowCallback, else a shallow copy
+                                                  with idMember cleared; returns the copy
+  moveRow(row: T, delta: -1 | 1): void            one displayed position up / down
+
+Validation
+  getInvalidCells(): CellValidationState[]
+
+Selection
+  getSelectedRows(): number[]
+  selectColumn(colIndex: number, mode?: 'replace' | 'toggle' | 'range'): void
+  selectColumnRange(fromIndex: number, toIndex: number): void
+  clearColumnSelection(): void
+  selectAll(): void
+  getSelectedCellRange(): CellRange | null
+
+Tree
+  expandSubtree(path: string): void               expand path and every descendant
+  collapseSubtree(path: string): void
+  getRowTreeInfo(row: T): { path, level, hasChildren } | null
+
+Menus / toolbar
+  closeContextMenu(): void
+  closeToolbar(): void
+
+Example (a custom toolbar item that archives the row):
+
+  grid.rowToolbar = ['add', 'delete', {
+    id: 'archive', icon: '📦', text: 'Archive',
+    onClick: ({ row, controller }) => controller.removeRows([row])
+  }]

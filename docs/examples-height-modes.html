@@ -226,7 +226,7 @@
                 title: 'Salary',
                 width: '110px',
                 horizontalAlign: 'right',
-                formatCallback: (v) => v != null ? `$${v.toLocaleString()}` : ''
+                getDisplayValueCallback: ({ value: v }) => v != null ? `$${v.toLocaleString()}` : ''
             },
             { field: 'status', title: 'Status', width: '110px' }
         ]

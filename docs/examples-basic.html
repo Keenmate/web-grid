@@ -170,7 +170,7 @@
                 width: '150px',
                 headerInfo: 'Full name of the employee',
                 editor: 'text',
-                tooltipCallback: (val, row) => `${val} - ${row.department}\nManager: ${row.manager}`
+                getTooltipCallback: ({ value: val, row }) => `${val} - ${row.department}\nManager: ${row.manager}`
             },
             { field: 'email', title: 'Email', width: '180px', editor: 'text' },
             {
@@ -194,9 +194,9 @@
                 horizontalAlign: 'right',
                 editor: 'number',
                 cellClass: 'salary-highlight',
-                cellClassCallback: (val, row) => val >= 90000 ? 'salary-high' : null,
-                formatCallback: (val) => val != null ? `$${val.toLocaleString()}` : '',
-                tooltipCallback: (val, row) => val != null ? `${row.name}'s salary: $${val.toLocaleString()}/year` : ''
+                getCellClassCallback: ({ value: val, row }) => val >= 90000 ? 'salary-high' : null,
+                getDisplayValueCallback: ({ value: val }) => val != null ? `$${val.toLocaleString()}` : '',
+                getTooltipCallback: ({ value: val, row }) => val != null ? `${row.name}'s salary: $${val.toLocaleString()}/year` : ''
             },
             {
                 field: 'startDate',
@@ -210,7 +210,7 @@
                     outputFormat: 'iso',
                     editStartSelection: 'selectAll'
                 },
-                formatCallback: (val) => {
+                getDisplayValueCallback: ({ value: val }) => {
                     if (!val) return ''
                     const date = new Date(val)
                     const day = String(date.getDate()).padStart(2, '0')
@@ -248,7 +248,7 @@
                     minSearchLength: 2,
                     debounceMs: 300,
                     showOnFocus: false,
-                    searchCallback: async (query, row, signal) => {
+                    searchCallback: async ({ term: query, row, signal }) => {
                         await new Promise(resolve => setTimeout(resolve, 500))
                         const allManagers = [
                             { value: 'John Doe', label: 'John Doe' },
@@ -288,24 +288,24 @@
 
         // Lock rows that are On Leave or Inactive
         grid.rowLocking = {
-            isLockedCallback: (row) => row.status === 'On Leave' || row.status === 'Inactive'
+            getIsLockedCallback: ({ row }) => row.status === 'On Leave' || row.status === 'Inactive'
         }
 
         // Inject custom styles for dynamic classes (Shadow DOM requires this)
-        grid.customStylesCallback = () => `
+        grid.getCustomStylesCallback = () => `
             .salary-highlight { background-color: #fef9c3 !important; }
             .salary-high { background-color: #d1fae5 !important; color: #065f46; }
             .row-inactive { opacity: 0.6; background-color: #f3f4f6 !important; }
         `
 
         // Dynamic row styling based on status
-        grid.rowClassCallback = (row, index) => {
+        grid.getRowClassCallback = ({ row, rowIndex: index }) => {
             if (row.status === 'On Leave' || row.status === 'Inactive') return 'row-inactive'
             return null
         }
 
         // Handle Ctrl+Delete to delete rows
-        grid.onrowdelete = ({ rowIndex, row }) => {
+        grid.onRowDelete = ({ rowIndex, row }) => {
             if (confirm(`Delete row ${rowIndex + 1} (${row.name})?`)) {
                 sampleData.splice(rowIndex, 1)
                 grid.items = [...sampleData]
@@ -314,13 +314,13 @@
 
         // Display focused row
         const focusedRowEl = document.getElementById('focusedRowState')
-        grid.onrowfocus = ({ rowIndex, row }) => {
+        grid.onRowFocus = ({ rowIndex, row }) => {
             focusedRowEl.innerHTML = `Row ${rowIndex} — <strong>${row.name}</strong> (${row.department}, $${row.salary?.toLocaleString()})`
         }
 
         // Display current sort state (cascading sort)
         const sortStateEl = document.getElementById('sortState')
-        grid.ondatarequest = ({ sort }) => {
+        grid.onDataRequest = ({ sort }) => {
             if (!sort || sort.length === 0) {
                 sortStateEl.textContent = 'No sorting applied'
                 sortStateEl.style.color = '#666'

@@ -18,7 +18,7 @@ STATE:
 
 API:
 - focusedRowIndex: number | null   - get/set the focused row
-- onrowfocus: (detail) => void     - callback when row focus changes
+- row-focus event / onRowFocus(detail) - fires when row focus changes
 - isRowFocused(rowIndex): boolean  - check if row is focused
 - clearRowFocus(): void            - clear focus
 
@@ -41,7 +41,7 @@ CSS CLASSES:
 HOW IT'S TRIGGERED:
 - Click on row when grid is NOT editable (isEditable: false)
 - Or when cell is not editable
-- Sets focusedRowIndex and fires onrowfocus callback
+- Sets focusedRowIndex and fires the row-focus event (onRowFocus twin)
 
 RENDERING:
 - table.ts lines 378 and 673: adds .wg__row--focused class based on isRowFocused()
@@ -91,7 +91,7 @@ FLOW:
    - Calculates final width
    - Stores in grid state via setColumnWidth(field, width, skipRender=true)
    - Updates <col> element in colgroup
-   - Fires oncolumnresize callback
+   - Fires the column-resize event (onColumnResize twin)
    - Persists to localStorage if enabled
    - Cleans up listeners and state
 
@@ -154,13 +154,13 @@ HOW IT WORKS:
    - User clicks cell in empty row, starts editing
    - User types value
    - On Tab: save value to _emptyRowDraft, move to next cell, DON'T commit row
-   - On Enter: if row has data, commit to items[] and fire onrowchange
+   - On Enter: if row has data, commit to items[] and fire the row-change event
 
 4. Commit logic (commitEdit in grid.ts):
    - Takes commitEmptyRow: boolean parameter
    - If editing empty row and commitEmptyRow=true (Enter pressed):
      - Check if row has any data via emptyRowHasData()
-     - If yes: add to _items[], fire onrowchange, reset _emptyRowDraft to null
+     - If yes: add to _items[], fire row-change, reset _emptyRowDraft to null
    - If commitEmptyRow=false (Tab pressed):
      - Just update _emptyRowDraft, exit edit mode, keep draft
 
@@ -241,7 +241,7 @@ ASYNC CALLBACK:
 COMMIT FLOW:
 1. User presses Enter/Tab in editor
 2. Keyboard handler calls commitCurrentEditor(ctx, editor, commitEmptyRow)
-3. commitCurrentEditor extracts value and calls ctx.grid.commitEdit(...)
+3. commitCurrentEditor extracts value and calls ctx.engine.commitEdit(...)
 4. commitEdit validates, updates draft, optionally adds to items
 5. Keyboard handler calls moveFocusAfterCommit() for Tab, or handles focus for Enter
 

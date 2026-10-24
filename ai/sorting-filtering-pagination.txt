@@ -31,15 +31,16 @@ User interaction:
   - Ctrl+Click (or Cmd+Click) in multi mode: adds the column to the existing
     sort. If already sorted asc, toggles to desc. If already desc, removes it.
 
-When sorting changes, the grid resets currentPage to 1 and fires the
-ondatarequest callback with trigger='sort'.
+When sorting changes (header click or a header-menu sort), the grid resets
+currentPage to 1 and fires the data-request event (twin: onDataRequest)
+with trigger='sort'.
 
 Client-side sorting (default): the grid sorts items automatically using
 localeCompare for strings, numeric comparison for numbers, and string
 coercion as fallback. Multi-column sort compares columns in priority order.
 
-Server-side sorting: set ondatarequest to fetch data from your server.
-The detail.sort array tells you the requested sort state.
+Server-side sorting: listen to data-request (or set onDataRequest) to fetch
+data from your server. The detail.sort array tells you the requested sort state.
 
 Example -- enable multi-column sort with initial state:
 
@@ -80,10 +81,30 @@ Client-side filtering (default): the grid filters items before sorting and
 pagination. For each active filter, the cell value is converted to a string
 and tested for case-insensitive inclusion of the filter text.
 
-Server-side filtering: use the ondatarequest callback. The filters are
-currently managed client-side in the grid's internal state. For server-side
-filtering, listen to ondatarequest and apply your own filter logic on the
-server.
+Custom matching per column: column.filterCallback(ctx) with
+ctx = { filterValue, row, column, field }. Return true (row passes), false
+(row excluded) or null (input incomplete - the filter is ignored and the
+input gets an .invalid class).
+
+    { field: 'age', isFilterable: true,
+      filterCallback: ({ filterValue, row }) => {
+        const m = /^>\s*(\d+)$/.exec(filterValue)
+        if (!m) return filterValue.startsWith('>') ? null : String(row.age).includes(filterValue)
+        return row.age > Number(m[1])
+      } }
+
+Every filter change fires the filter-change event (twin: onFilterChange)
+with detail { filters } (current filter value per field). The current
+filters are readable / writable as grid.filters.
+
+Server-side filtering: set filterMode = 'server' (attribute
+filter-mode="server"). The grid then does NOT filter items itself; handle
+filter-change, query your server and set items:
+
+    grid.filterMode = 'server'
+    grid.onFilterChange = async ({ filters }) => {
+      grid.items = await fetchRows({ filters })
+    }
 
 Example:
 
@@ -123,7 +144,8 @@ Grid properties:
                       pagination so the grid can calculate total pages. For
                       client-side mode, the grid uses items.length.
 
-  showPagination      Boolean or 'auto'. Default: 'auto'.
+  isPaginationVisible Boolean or 'auto'. Default: true. (showPagination is a
+                      deprecated alias.)
                       true -- always show pagination bar.
                       false -- never show.
                       'auto' -- hide when total pages is 1 or less.
@@ -144,11 +166,11 @@ Grid properties:
                       Example: 'pageSize|previous|pageInfo|next' shows page
                       size selector on the left.
 
-  paginationLabelsCallback
-                      Function. Receives context, returns partial label
+  getPaginationLabelsCallback
+                      Function. Receives a ctx, returns partial label
                       overrides for i18n/localization.
 
-                      Type: (context: PaginationLabelsContext) => Partial<PaginationLabels>
+                      Type: (ctx: PaginationLabelsContext) => Partial<PaginationLabels>
 
                       PaginationLabelsContext:
                         { currentPage, totalPages, totalItems, pageSize }
@@ -168,7 +190,7 @@ Example -- client-side pagination:
 
 Example -- custom pagination labels (i18n):
 
-  grid.paginationLabelsCallback = (ctx) => ({
+  grid.getPaginationLabelsCallback = (ctx) => ({
     first: 'Prvni',
     previous: 'Predchozi',
     next: 'Dalsi',
@@ -191,14 +213,15 @@ Static labels can also be set via the labels property:
   }
 
 
-SERVER-SIDE DATA (ondatarequest)
---------------------------------
-The ondatarequest callback fires whenever the user changes sort, page, or
-page size. Use it to fetch data from a server.
+SERVER-SIDE DATA (data-request event)
+-------------------------------------
+The data-request DOM event (twin: onDataRequest) fires whenever the user
+changes sort, page, or page size. Use it to fetch data from a server.
 
-  grid.ondatarequest = (detail) => {
-    // detail is DataRequestDetail
+  grid.onDataRequest = (detail) => {
+    // detail is DataRequestDetail (+ controller / element)
   }
+  // or: grid.addEventListener('data-request', (e) => load(e.detail))
 
 DataRequestDetail type:
 
@@ -215,7 +238,7 @@ DataRequestDetail type:
   DataRequestMode: 'replace' | 'append'
 
 The trigger field tells you what changed:
-  'sort'     -- user clicked a sortable header
+  'sort'     -- user clicked a sortable header or used a header-menu sort
   'page'     -- user navigated to a different page
   'pageSize' -- user changed the page size selector
   'init'     -- initial data load (if triggered programmatically)
@@ -236,7 +259,7 @@ To use server-side pagination:
 1. Set paginationMode to 'server'.
 2. Set totalItems to the total row count from the server.
 3. Set items to only the current page of data.
-4. Implement ondatarequest to fetch new pages from the server.
+4. Handle data-request (onDataRequest) to fetch new pages from the server.
 
 Example:
 
@@ -277,7 +300,7 @@ Example:
   }
 
   // Handle user interactions (page change, sort, page size change)
-  grid.ondatarequest = (detail) => {
+  grid.onDataRequest = (detail) => {
     loadData(detail)
   }
 
@@ -298,11 +321,11 @@ Grid properties:
                       Use pipe for multiple: 'top-right|bottom-right'.
                       Not set by default (no summary shown).
 
-  summaryContentCallback
+  renderSummaryCallback
                       Function returning an HTML string for the summary.
-                      Receives a SummaryContext object.
+                      Receives a SummaryContext ctx.
 
-                      Type: (context: SummaryContext) => string
+                      Type: (ctx: SummaryContext) => string
 
                       SummaryContext:
                         {
@@ -320,14 +343,14 @@ Grid properties:
                       gets its own row.
 
   summaryMetadata     Any value. Default: undefined. Server-provided metadata
-                      passed through to summaryContentCallback as
-                      context.metadata. Useful for server-calculated aggregates
+                      passed through to renderSummaryCallback as
+                      ctx.metadata. Useful for server-calculated aggregates
                       (sums, averages) that cannot be computed client-side.
 
 Example -- client-side summary:
 
   grid.summaryPosition = 'bottom-left'
-  grid.summaryContentCallback = (ctx) => {
+  grid.renderSummaryCallback = (ctx) => {
     const total = ctx.allItems.reduce((sum, row) => sum + row.amount, 0)
     return `<strong>Total:</strong> $${total.toFixed(2)} (${ctx.totalItems} rows)`
   }
@@ -335,14 +358,14 @@ Example -- client-side summary:
 Example -- server-side summary with metadata:
 
   grid.summaryPosition = 'bottom-right'
-  grid.summaryContentCallback = (ctx) => {
+  grid.renderSummaryCallback = (ctx) => {
     const meta = ctx.metadata
     if (!meta) return ''
     return `Sum: $${meta.sum} | Avg: $${meta.average}`
   }
 
-  // In your ondatarequest handler:
-  grid.ondatarequest = async (detail) => {
+  // In your data-request handler:
+  grid.onDataRequest = async (detail) => {
     const response = await fetch(`/api/data?page=${detail.page}`)
     const data = await response.json()
     grid.items = data.rows
@@ -364,7 +387,8 @@ When using client-side mode, the grid processes items in this order:
 
   items --> filteredItems --> sortedItems --> paginatedItems --> displayItems
 
-1. filteredItems: applies column filters (case-insensitive substring match)
+1. filteredItems: applies column filters (case-insensitive substring match or
+   column.filterCallback; skipped when filterMode is 'server')
 2. sortedItems: applies multi-column sort using localeCompare / numeric compare
 3. paginatedItems: slices by currentPage and pageSize (client mode only;
    server mode skips slicing)

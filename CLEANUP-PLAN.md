@@ -4,6 +4,8 @@
 Clean up property names, CSS variables, and event/callback naming to align with web-multiselect and web-daterangepicker patterns.
 
 **Status:** Complete (Published as 1.0.0-rc10)
+
+> Historical (1.0). Several names below were renamed again by the 2.0 interaction model — e.g. `fillDragCallback` → `beforeFillCallback`, `cellClassCallback` → `getCellClassCallback`, the lowercase `on*` callbacks → DOM events + camelCase twins. See `CHANGELOG.md` → Unreleased for the current API.
 **Scope:** Breaking changes (new library, no backwards compatibility needed)
 
 ---

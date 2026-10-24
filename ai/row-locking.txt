@@ -8,7 +8,7 @@ OVERVIEW
 Row locking prevents editing of rows that are locked by other users or
 processes. Three lock sources exist: property-based, callback-based, and
 external API. Locks are configured via the rowLocking property on the grid.
-Row identification (idValueMember or idValueCallback) is required for
+Row identification (idValueMember or getRowIdCallback) is required for
 external lock methods.
 
 
@@ -17,11 +17,11 @@ CONFIGURATION
 grid.rowLocking = {
   lockedMember: 'isLocked',
   lockInfoMember: 'lockInfo',
-  lockedEditBehavior: 'block',
-  lockTooltipCallback: (lockInfo, row) => {
-    return 'Locked by ' + lockInfo.lockedBy
-  }
+  lockedEditBehavior: 'block'
 }
+
+Every rowLocking callback takes ONE ctx: { row, rowIndex } (+ lockInfo for
+getCanEditLockedCallback, + non-enumerable controller / element).
 
 
 LOCK SOURCE 1: PROPERTY-BASED
@@ -33,7 +33,7 @@ lockedMember (keyof T)
   // Row: { id: 1, name: 'Alice', isLocked: true }
 
 lockInfoMember (keyof T)
-  Property name on the row object containing a RowLockInfo object.
+  Property name on the row object containing a RowLock object.
 
   grid.rowLocking = { lockInfoMember: 'lockInfo' }
   // Row: { id: 1, name: 'Alice', lockInfo: { isLocked: true, lockedBy: 'Bob' } }
@@ -41,15 +41,15 @@ lockInfoMember (keyof T)
 
 LOCK SOURCE 2: CALLBACK-BASED
 ------------------------------
-isLockedCallback (row: T, rowIndex: number) => boolean
+getIsLockedCallback ((ctx: { row, rowIndex }) => boolean)
   Callback that determines if a row is locked.
 
-getLockInfoCallback (row: T, rowIndex: number) => RowLockInfo | null
+getLockInfoCallback ((ctx: { row, rowIndex }) => RowLock | null)
   Callback returning detailed lock information.
 
   grid.rowLocking = {
-    isLockedCallback: (row) => row.status === 'in-review',
-    getLockInfoCallback: (row) => ({
+    getIsLockedCallback: ({ row }) => row.status === 'in-review',
+    getLockInfoCallback: ({ row }) => ({
       isLocked: row.status === 'in-review',
       lockedBy: row.reviewer,
       reason: 'Under review'
@@ -60,11 +60,11 @@ getLockInfoCallback (row: T, rowIndex: number) => RowLockInfo | null
 LOCK SOURCE 3: EXTERNAL API
 ----------------------------
 For real-time lock management (e.g., WebSocket-driven collaborative editing).
-Requires idValueMember or idValueCallback to be set.
+Requires idValueMember or getRowIdCallback to be set.
 
 lockRowById(id, lockerInfo?)
   Lock a row by its ID. Returns boolean (true if row found).
-  lockerInfo is an optional RowLockInfo object.
+  lockerInfo is an optional Partial<RowLock> object.
 
   grid.lockRowById(42, {
     isLocked: true,
@@ -78,14 +78,14 @@ unlockRowById(id)
   grid.unlockRowById(42)
 
 getExternalLocks()
-  Returns Map<unknown, RowLockInfo> of all external locks.
+  Returns Map<unknown, RowLock> of all external locks.
 
 clearExternalLocks()
   Remove all external locks at once.
 
 
-ROWLOCKINFO TYPE
-----------------
+ROWLOCK TYPE
+------------
   {
     isLocked: boolean
     lockedBy?: string          Who locked (user name or ID)
@@ -107,16 +107,16 @@ lockedEditBehavior on RowLockingOptions<T>
     Editing is allowed despite the lock. Only visual indicators are shown.
 
   'callback'
-    Consumer decides per-row via canEditLockedCallback.
+    Consumer decides per-row via getCanEditLockedCallback.
 
 
-canEditLockedCallback (row: T, lockInfo: RowLockInfo) => boolean
+getCanEditLockedCallback ((ctx: { row, rowIndex, lockInfo }) => boolean)
   Only used when lockedEditBehavior is 'callback'. Return true to allow
   editing the specific locked row, false to block it.
 
   grid.rowLocking = {
     lockedEditBehavior: 'callback',
-    canEditLockedCallback: (row, lockInfo) => {
+    getCanEditLockedCallback: ({ row, lockInfo }) => {
       return lockInfo.lockedBy === currentUser
     }
   }
@@ -124,16 +124,10 @@ canEditLockedCallback (row: T, lockInfo: RowLockInfo) => boolean
 
 LOCK TOOLTIP
 ------------
-lockTooltipCallback (lockInfo: RowLockInfo, row: T) => string | null
-  Returns HTML string for the tooltip shown when hovering the lock icon.
-  Return null for no tooltip.
-
-  grid.rowLocking = {
-    lockTooltipCallback: (lockInfo) => {
-      return '<strong>Locked by:</strong> ' + lockInfo.lockedBy +
-             '<br><strong>Since:</strong> ' + lockInfo.lockedAt
-    }
-  }
+The lock icon (row number column) and locked cells show a tooltip
+"Locked by <lockedBy>" (or "This row is locked" without lockedBy). It is
+not customizable (the former lockTooltipCallback was never called and is
+removed).
 
 
 VISUAL INDICATORS
@@ -152,20 +146,23 @@ CSS variables:
   --wg-row-locked-opacity  Default: 0.7
 
 
-ONROWLOCKCHANGE EVENT
+ROW-LOCK-CHANGE EVENT
 ---------------------
-Fires when a row's lock state changes.
+The row-lock-change DOM event (twin: onRowLockChange) fires when a row's
+lock state changes.
 
-  grid.onrowlockchange = (detail) => {
+  grid.onRowLockChange = (detail) => {
     console.log('Row', detail.rowId, 'lock changed')
     console.log('Source:', detail.source)  // 'property', 'callback', or 'external'
   }
 
-  RowLockChangeDetail<T>:
+  grid.addEventListener('row-lock-change', (e) => console.log(e.detail.rowId))
+
+  Detail (RowLockChangeDetail<T> + controller / element):
     rowId: unknown              Row identifier
     row: T | null               Row data (null if row not found)
     rowIndex: number            Row index
-    lockInfo: RowLockInfo | null  Current lock info (null if unlocked)
+    lockInfo: RowLock | null    Current lock info (null if unlocked)
     source: 'property' | 'callback' | 'external'
 
 
@@ -175,15 +172,14 @@ isRowLocked(rowOrId)
   Returns boolean. Accepts a row object or a row ID.
 
 getRowLockInfo(rowOrId)
-  Returns RowLockInfo | null. Accepts a row object or a row ID.
+  Returns RowLock | null. Accepts a row object or a row ID.
 
 
 WEBSOCKET INTEGRATION EXAMPLE
 ------------------------------
   grid.idValueMember = 'id'
   grid.rowLocking = {
-    lockedEditBehavior: 'block',
-    lockTooltipCallback: (info) => 'Locked by ' + info.lockedBy
+    lockedEditBehavior: 'block'
   }
 
   websocket.onmessage = (event) => {
@@ -208,7 +204,7 @@ identification to be configured:
 
   grid.idValueMember = 'id'
   // or
-  grid.idValueCallback = (row) => row.id
+  grid.getRowIdCallback = ({ row }) => row.id
 
 Without this, the grid cannot find rows by ID and the lock methods will
 return false.

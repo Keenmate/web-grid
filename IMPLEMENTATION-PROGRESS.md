@@ -6,6 +6,8 @@ Porting QuickGrid.svelte (web-grid-3) to TypeScript web component (web-grid-4).
 
 **Status: ~90% complete**
 
+> **API names below are historical.** The 2.0 interaction model (see `CHANGELOG.md` → Unreleased) renamed the callbacks, events and item shapes: lowercase `on*` properties became DOM events + camelCase twins (`row-change` / `onRowChange`, `action` / `onAction`, `data-request` / `onDataRequest`, …), every callback takes one `ctx` (`formatCallback` → `getDisplayValueCallback`, `beforeCommitCallback` → `validateCallback`, `cellEditCallback` → `renderEditorCallback`, …), toolbar / menu / shortcut items are core action items (`text`, `onClick`, `{ divider: true }`), built-ins are kebab-case (`move-up`, `sort-asc`) and do the work, and `el.grid` became `el.controller`. The "IMPLEMENTED" checklist uses the current names.
+
 ---
 
 ## Recent Changes (January 2026)
@@ -180,7 +182,7 @@ Porting QuickGrid.svelte (web-grid-3) to TypeScript web component (web-grid-4).
 - [x] Display with column configuration
 - [x] **Multi-column sorting** - click header for single, Ctrl+click for multi-column sort
 - [ ] **Filterable columns** - logic exists but filter row UI NOT RENDERED
-- [x] **Server-side pagination** - totalItems, currentPage, showPagination, ondatarequest event
+- [x] **Server-side pagination** - totalItems, currentPage, isPaginationVisible, data-request event
 - [x] Striped/hoverable rows
 - [x] Column alignment (left, center, right)
 - [x] Column sizing (width, minWidth, maxWidth)
@@ -205,64 +207,62 @@ Porting QuickGrid.svelte (web-grid-3) to TypeScript web component (web-grid-4).
 - [x] **Date** - calendar picker, minDate, maxDate, dateFormat, outputFormat (date/iso/timestamp)
 
 ### Validation
-- [x] beforeCommitCallback (preferred) - full context, async, transform value
-- [x] validateCallback (legacy) - simple error message return
+- [x] validateCallback - full ctx, async, transform value; runs for editor commits and paste
 - [x] Invalid cells tracking (invalidCells array)
-- [x] onvalidationerror event
+- [x] validation-error event (onValidationError)
 - [x] Cell-level invalid CSS class
 
 ### Formatting & Rendering
-- [x] formatCallback - transform value to display string
-- [x] templateCallback - return HTML string for cell
-- [x] tooltipCallback - dynamic tooltip per cell
+- [x] getDisplayValueCallback - transform value to display string
+- [x] renderCellCallback - return HTML string for cell
+- [x] getTooltipCallback - dynamic tooltip per cell
 - [x] tooltipMember - static tooltip from row property
 
 ### Dropdown Options
 - [x] Static options array
-- [x] loadOptions async with optionsLoadTrigger
 - [x] Member properties: valueMember, displayMember, searchMember, iconMember, subtitleMember, disabledMember, groupMember
-- [x] Callback overrides: getValueCallback, getDisplayCallback, getSearchCallback, getIconCallback, getSubtitleCallback, getDisabledCallback, getGroupCallback
+- [x] Callback overrides ({ option } ctx): getValueCallback, getDisplayValueCallback, getSearchValueCallback, getIconCallback, getSubtitleCallback, getIsDisabledCallback, getGroupCallback
 - [x] renderOptionCallback - custom HTML for options
-- [x] onselect event
+- [x] onSelect notification
 - [x] allowEmpty/emptyLabel
 
 ### Row Toolbar
-- [x] Predefined actions: add, delete, duplicate, moveUp, moveDown
-- [x] Custom toolbar items with onclick
+- [x] Built-in actions (do the work): add, delete, duplicate, move-up, move-down
+- [x] Custom toolbar items (action items) with onClick
 - [x] Toolbar positioning: left/right/top based on available space
-- [x] toolbarAlign: center or top (vertical alignment)
-- [x] toolbarTopPosition: start/center/end/cursor (horizontal position when above row)
+- [x] toolbarVerticalAlign: top / center / bottom (vertical alignment)
+- [x] toolbarHorizontalAlign: start/center/end/cursor (horizontal position when above row)
 - [x] Toolbar triggers: hover, click, button
-- [x] Disabled state (static or callback)
-- [x] Danger styling
-- [x] Divider grouping
-- [x] ontoolbarclick event
-- [x] Connector arrow for moveUp/moveDown tracking (bracket-style for left/right, L-shaped for top)
+- [x] Disabled state (isDisabled or getIsDisabledCallback)
+- [x] Danger styling (isDanger)
+- [x] Divider entries ({ divider: true })
+- [x] action event (onAction)
+- [x] Connector arrow for move-up/move-down tracking (bracket-style for left/right, L-shaped for top)
 
 ### Tooltips
-- [x] Cell tooltips (tooltipCallback, tooltipMember)
+- [x] Cell tooltips (getTooltipCallback, tooltipMember)
 - [x] Header info tooltips (headerInfo property, displays info icon)
 - [x] Floating UI positioning with arrows
 - [x] Configurable show/hide delays
 
 ### Events
-- [x] onrowchange - fires with full RowChangeDetail
-- [x] onroweditstart - fires when editing begins
-- [x] onroweditcancel - fires when editing cancelled
-- [x] onvalidationerror - fires on validation failure
-- [x] ontoolbarclick - fires on toolbar item click
-- [x] oncontextmenuopen - fires before context menu renders
+- [x] row-change / onRowChange - fires with full RowChangeDetail
+- [x] edit-start / onEditStart - fires when editing begins
+- [x] edit-cancel / onEditCancel - fires when editing cancelled
+- [x] validation-error / onValidationError - fires on validation failure
+- [x] action / onAction - fires on any toolbar / menu / shortcut item
+- [x] beforeContextMenuOpenCallback - runs before the context menu renders (false / replacement entries)
 
 ### Custom Editor
-- [x] `editor: "custom"` with `cellEditCallback`
+- [x] `editor: "custom"` with `renderEditorCallback`
 - [x] Context with value, row, rowIndex, field, commit, cancel
 - [x] Triggered by F2, Space, double-click, navigate mode
 
 ### Context Menu
 - [x] Right-click opens context menu
 - [x] Floating UI positioning
-- [x] Dynamic label/visible/disabled callbacks
-- [x] dividerBefore, danger styling, icons
+- [x] Dynamic getTextCallback / getIsVisibleCallback / getIsDisabledCallback
+- [x] Divider entries, isDanger styling, icons
 - [x] Close on outside click / Escape
 - [x] CSS variables with --base-* fallbacks
 

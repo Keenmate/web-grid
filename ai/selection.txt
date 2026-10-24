@@ -47,7 +47,7 @@ Methods:
 
   copySelectedRowsToClipboard()
     Returns Promise<boolean>. Copies selected rows as TSV (tab-separated).
-    Respects shouldCopyWithHeaders. Uses raw values (no beforeCopyCallback).
+    Respects shouldCopyWithHeaders. Uses raw values (no getCopyValueCallback).
 
 Example:
   grid.isRowNumbersVisible = true
@@ -96,10 +96,10 @@ Interaction patterns (cellSelectionMode = 'shift'):
 Methods:
   selectCellRange(range)
     Programmatically select a CellRange. Clears row/column selection.
-    Fires oncellselectionchange callback.
+    Fires the cell-selection-change event (onCellSelectionChange).
 
   clearCellSelection()
-    Clears cell range selection. Fires oncellselectionchange with null range.
+    Clears cell range selection. Fires cell-selection-change with a null range.
 
   getSelectedCells()
     Returns Array<{ row: T, rowIndex: number, colIndex: number, field: string, value: unknown }>
@@ -108,12 +108,13 @@ Methods:
   copyCellSelectionToClipboard()
     Returns Promise<boolean>. Copies cells as TSV. Respects shouldCopyWithHeaders.
 
-  selectAll()
+  grid.controller.selectAll()
     Selects all cells (entire visible data range as one CellRange).
     Triggered by clicking the row number header cell (#).
 
-Callback:
-  oncellselectionchange    - (detail: { range: CellRange | null, cellCount: number }) => void
+Event:
+  cell-selection-change / onCellSelectionChange
+    Detail: { range: CellRange | null, cellCount: number }
     Fires when cell selection changes (created or cleared).
 
 Example:
@@ -125,7 +126,7 @@ Example:
     startField: 'name', endField: 'status'
   })
 
-  grid.oncellselectionchange = (detail) => {
+  grid.onCellSelectionChange = (detail) => {
     console.log('Selected', detail.cellCount, 'cells')
   }
 
@@ -157,25 +158,19 @@ When isColumnReorderAllowed is false:
 
 Selecting columns clears row selection and cell range selection.
 
-Properties (on grid instance):
-  selectedColumns          - number[] (read-only, sorted ascending, visual indices)
-
-Methods:
-  selectColumn(colIndex, mode?)
+Methods (on grid.controller - not on the element itself):
+  grid.controller.selectColumn(colIndex, mode?)
     mode: 'replace' (default), 'toggle', 'range'
 
-  selectColumnRange(fromIndex, toIndex)
+  grid.controller.selectColumnRange(fromIndex, toIndex)
     Selects all columns between fromIndex and toIndex (inclusive).
 
-  clearColumnSelection()
+  grid.controller.clearColumnSelection()
     Clears all selected columns.
 
-  isColumnSelected(colIndex)
-    Returns boolean.
-
-  copySelectedColumnsToClipboard()
-    Returns Promise<boolean>. Copies all rows for selected columns as TSV.
-    Respects shouldCopyWithHeaders.
+Copying selected columns (all rows as TSV, respecting shouldCopyWithHeaders)
+is available through Ctrl+C. There is no public getter for the selected
+columns.
 
 Visual feedback:
   Selected column headers get the CSS class: wg__header--selected
@@ -202,8 +197,8 @@ Property:
     Set to a number to programmatically focus a row.
     Set to null to clear focus.
 
-Callback:
-  onrowfocus               - (detail: RowFocusDetail<T>) => void
+Event:
+  row-focus / onRowFocus   - detail: RowFocusDetail<T> (+ controller / element)
     Fires when a different row is focused.
 
   RowFocusDetail type:
@@ -214,21 +209,21 @@ Callback:
     }
 
 Master/detail pattern:
-  Use onrowfocus to update a detail panel when the user clicks different rows.
+  Use onRowFocus to update a detail panel when the user clicks different rows.
 
-  grid.onrowfocus = (detail) => {
+  grid.onRowFocus = (detail) => {
     detailPanel.innerHTML = renderDetail(detail.row)
     console.log('Moved from row', detail.previousRowIndex, 'to', detail.rowIndex)
   }
 
 Behavior:
-  - Click on data cell -> fires onrowfocus on mouseup (click), NOT on mousedown
-  - Keyboard navigation (Tab, arrows) -> fires onrowfocus immediately on focus
-  - Click on row number -> selects row but does NOT change focus or fire onrowfocus
-  - Cell range selection (drag/shift+click) -> does NOT fire onrowfocus
+  - Click on data cell -> fires row-focus on mouseup (click), NOT on mousedown
+  - Keyboard navigation (Tab, arrows) -> fires row-focus immediately on focus
+  - Click on row number -> selects row but does NOT change focus or fire row-focus
+  - Cell range selection (drag/shift+click) -> does NOT fire row-focus
   - Click outside grid -> clears focus (focusedRowIndex becomes null)
   - Starting cell range drag -> clears focus
-  - Programmatic: grid.focusedRowIndex = 3 (focuses row 3, fires onrowfocus)
+  - Programmatic: grid.focusedRowIndex = 3 (focuses row 3, fires row-focus)
   - Programmatic: grid.focusedRowIndex = null (clears focus)
 
 The focused row gets CSS class: wg__row--focused
@@ -246,7 +241,7 @@ Format:
 Built-in Ctrl+C behavior:
   When a selection exists and the container is focused, Ctrl+C copies:
     1. Cell range selection -> copyCellSelectionToClipboard()
-    2. Column selection     -> copySelectedColumnsToClipboard()
+    2. Column selection     -> all rows of the selected columns
     3. Row selection        -> copySelectedRowsToClipboard()
     4. Single focused cell  -> copies that cell's value
 
@@ -256,8 +251,8 @@ shouldCopyWithHeaders property:
   grid.shouldCopyWithHeaders = true
 
   When true, the first TSV row is column titles. Applies to all copy methods:
-  copySelectedRowsToClipboard(), copyCellSelectionToClipboard(),
-  copySelectedColumnsToClipboard().
+  copySelectedRowsToClipboard(), copyCellSelectionToClipboard(), and
+  Ctrl+C on a column selection.
 
   Example output (shouldCopyWithHeaders = true):
     Name\tAge\tEmail
@@ -268,19 +263,23 @@ shouldCopyWithHeaders property:
     Alice\t28\talice@example.com
     Bob\t34\tbob@example.com
 
-Per-column beforeCopyCallback:
-  Transforms a cell value before it is written to the clipboard.
+Per-column getCopyValueCallback:
+  The text written to the clipboard for a cell (ctx = the cell ctx).
   Currently applied only when copying a SINGLE focused cell via Ctrl+C.
   NOT applied by the bulk copy methods (copySelectedRowsToClipboard, etc.).
 
   column definition:
-    { field: 'price', beforeCopyCallback: (value, row) => '$' + value }
+    { field: 'price', getCopyValueCallback: ({ value, row }) => '$' + value }
 
-Per-column beforePasteCallback:
-  Processes a pasted value before applying it to a cell.
+Per-column getPasteValueCallback:
+  Converts a pasted value before applying it to a cell (ctx = the cell ctx + text).
 
   column definition:
-    { field: 'price', beforePasteCallback: (value, row) => parseFloat(value) }
+    { field: 'price', getPasteValueCallback: ({ text }) => parseFloat(text) }
+
+To cancel a whole multi-cell paste (or skip cells), use the grid-level
+beforePasteCallback(ctx) -> false; after a paste the paste-complete event
+(onPasteComplete) fires. See callbacks-events.txt.
 
 
 RANGE SHORTCUTS
@@ -289,18 +288,20 @@ Range shortcuts are keyboard shortcuts that operate on multiple selected rows
 or a cell range. They work with both row selection and cell range selection.
 
 Property:
-  rangeShortcuts           - RangeShortcut<T>[]
+  rangeShortcuts           - GridRangeShortcut<T>[]
 
-RangeShortcut type:
+GridRangeShortcut type (an action item bound to a key; custom only):
   {
-    key: string            // e.g., "Delete", "Ctrl+E", "Shift+F2"
-    id: string             // Unique identifier
-    label: string          // Display label for shortcuts help overlay
-    action: (ctx: RangeShortcutContext<T>) => void | Promise<void>
-    disabled?: boolean | ((ctx: RangeShortcutContext<T>) => boolean)
+    shortcut: string       // e.g., "Delete", "Ctrl+E", "Shift+F2"
+    id?: string            // Identifies the shortcut (reported in the action event)
+    text?: string          // Label
+    onClick?: (detail) => void | Promise<void>   // detail = ctx + action fields
+    isDisabled?: boolean
+    getIsDisabledCallback?: (ctx: RangeContext<T>) => boolean
   }
+Activation fires the `action` event / onAction with source 'keyboard'.
 
-RangeShortcutContext type:
+RangeContext type (+ controller / element):
   {
     rows: T[]              // Selected rows data (for row selection)
     rowIndices: number[]   // Selected row indices (sorted ascending)
@@ -334,29 +335,29 @@ Built-in keyboard shortcuts (always active, no configuration needed):
 Example:
   grid.rangeShortcuts = [
     {
-      key: 'Delete',
+      shortcut: 'Delete',
       id: 'delete-rows',
-      label: 'Delete selected rows',
-      action: (ctx) => {
+      text: 'Delete selected rows',
+      onClick: ({ rows, controller }) => {
         // Remove selected rows from data
-        grid.items = grid.items.filter((_, i) => !ctx.rowIndices.includes(i))
+        controller.removeRows(rows)
       }
     },
     {
-      key: 'Ctrl+E',
+      shortcut: 'Ctrl+E',
       id: 'export-selection',
-      label: 'Export selection',
-      action: (ctx) => {
-        if (ctx.cellRange) {
+      text: 'Export selection',
+      onClick: (detail) => {
+        if (detail.cellRange) {
           // Export cell range
-          const values = ctx.cells.map(c => c.value)
+          const values = detail.cells.map(c => c.value)
           exportData(values)
         } else {
           // Export selected rows
-          exportData(ctx.rows)
+          exportData(detail.rows)
         }
       },
-      disabled: (ctx) => ctx.rows.length === 0 && !ctx.cellRange
+      getIsDisabledCallback: (ctx) => ctx.rows.length === 0 && !ctx.cellRange
     }
   ]
 
