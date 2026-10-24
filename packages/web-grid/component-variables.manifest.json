@@ -193,6 +193,8 @@
     { "name": "wg-toolbar-btn-bg-hover", "category": "toolbar", "usage": "Toolbar button hover background" },
     { "name": "wg-toolbar-btn-bg-active", "category": "toolbar", "usage": "Toolbar button active/pressed background" },
     { "name": "wg-toolbar-btn-color", "category": "toolbar", "usage": "Toolbar button icon and text color" },
+    { "name": "wg-toolbar-btn-active-color", "category": "toolbar", "usage": "Toolbar / inline button color while toggled on (isActive, aria-pressed)" },
+    { "name": "wg-toolbar-btn-bg-pressed", "category": "toolbar", "usage": "Toolbar / inline button background while toggled on (isActive, aria-pressed)" },
     { "name": "wg-toolbar-btn-gap", "category": "toolbar", "usage": "Gap between toolbar buttons (4px)" },
     { "name": "wg-toolbar-row-gap", "category": "toolbar", "usage": "Gap between toolbar rows (2px)" },
     { "name": "wg-toolbar-row-padding", "category": "toolbar", "usage": "Padding inside toolbar rows" },

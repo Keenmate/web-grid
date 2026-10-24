@@ -88,6 +88,13 @@
 	color: var(--wg-danger-color);
 }
 
+/* Toggle state (isActive / getIsActiveCallback → aria-pressed) */
+.wg__toolbar-btn--active,
+.wg__inline-action-btn--active {
+	color: var(--wg-toolbar-btn-active-color);
+	background: var(--wg-toolbar-btn-bg-pressed);
+}
+
 .wg__toolbar-label {
 	font-size: var(--wg-toolbar-label-font-size);
 	white-space: nowrap;
