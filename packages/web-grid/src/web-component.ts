@@ -447,24 +447,12 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	declare onPasteComplete: ((detail: GridEventMap<T>['paste-complete']) => void) | null
 	declare onAction: ((detail: GridEventMap<T>['action']) => void) | null
 
-	readonly #engine: GridEngine<T>
-
-	/** `reinit()`/`update()` are writing inputs into the engine — don't flush from the getter. */
-	#isApplyingInputs = false
-
 	/**
 	 * The internal state engine (composition) — module plumbing. Not public API:
 	 * use the element's properties / methods or `el.controller`.
-	 *
-	 * Reading it first applies pending input writes (core `flush()`), so
-	 * engine-derived state is current right after an assignment:
-	 * `el.pageSize = 25; el.totalPages` / `el.controller.…` without awaiting.
 	 * @internal
 	 */
-	get engine(): GridEngine<T> {
-		if (!this.#isApplyingInputs) this.flush()
-		return this.#engine
-	}
+	readonly engine: GridEngine<T>
 
 	// Shadow DOM root
 	readonly shadow: ShadowRoot
@@ -542,7 +530,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	constructor() {
 		super()
 		this.shadow = this.attachShadow({ mode: 'open' })
-		this.#engine = new GridEngine<T>()
+		this.engine = new GridEngine<T>()
 		// Every ctx / detail carries `controller` + `element`; the engine's
 		// notifications become events (emit → `on*` twin + DOM event).
 		this.engine.attachHost(this, () => this.controller, (name, detail) => {
@@ -601,15 +589,10 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	 * first: the engine's own mode setter applies its preset, and the batch's
 	 * values (core already resolved preset vs explicit) must land after it. */
 	#applyConfig(cfg: Record<string, unknown>): void {
-		const target = this.#engine as unknown as Record<string, unknown>
-		this.#isApplyingInputs = true
-		try {
-			if ('mode' in cfg) target.mode = cfg.mode
-			for (const key of Object.keys(cfg)) {
-				if (key !== 'mode' && key in target) target[key] = cfg[key]
-			}
-		} finally {
-			this.#isApplyingInputs = false
+		const target = this.engine as unknown as Record<string, unknown>
+		if ('mode' in cfg) target.mode = cfg.mode
+		for (const key of Object.keys(cfg)) {
+			if (key !== 'mode' && key in target) target[key] = cfg[key]
 		}
 	}
 
@@ -691,9 +674,9 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	get columnMinWidth(): string | undefined { return this.engine.columnMinWidth }
 	set columnMinWidth(value: string | undefined) { this.engine.columnMinWidth = value }
 
-	get filters(): Record<string, string> { return this.engine.filters }
+	get filters(): Record<string, string> { this.flush(); return this.engine.filters }
 	set filters(value: Record<string, string>) { this.engine.filters = value }
-	setFilter(field: string, value: string): void { this.engine.setFilter(field, value) }
+	setFilter(field: string, value: string): void { this.flush(); this.engine.setFilter(field, value) }
 
 	get isPageable(): boolean { return this.engine.isPageable }
 	set isPageable(value: boolean) { this.engine.isPageable = value }
@@ -752,8 +735,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	get isDirtyIndicatorVisible(): boolean { return this.engine.isDirtyIndicatorVisible }
 	set isDirtyIndicatorVisible(value: boolean) { this.engine.isDirtyIndicatorVisible = value }
 
-	isCellDirty(rowIndex: number, field: string): boolean { return this.engine.isCellDirty(rowIndex, field) }
-	isRowDirty(rowIndex: number): boolean { return this.engine.isRowDirty(rowIndex) }
+	isCellDirty(rowIndex: number, field: string): boolean { this.flush(); return this.engine.isCellDirty(rowIndex, field) }
+	isRowDirty(rowIndex: number): boolean { this.flush(); return this.engine.isRowDirty(rowIndex) }
 
 	get isStickyRowNumbers(): boolean { return this.engine.isStickyRowNumbers }
 	set isStickyRowNumbers(value: boolean) { this.engine.isStickyRowNumbers = value }
@@ -777,10 +760,10 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	set toolbarHorizontalAlign(value: 'start' | 'center' | 'end' | 'cursor') { this.engine.toolbarHorizontalAlign = value }
 
 	// Deprecated aliases
-	get toolbarAlign(): 'top' | 'center' | 'bottom' { return this.engine.toolbarVerticalAlign }
+	get toolbarAlign(): 'top' | 'center' | 'bottom' { return this.toolbarVerticalAlign }
 	set toolbarAlign(value: 'top' | 'center' | 'bottom') { this.toolbarVerticalAlign = value }
 
-	get toolbarTopPosition(): 'start' | 'center' | 'end' | 'cursor' { return this.engine.toolbarHorizontalAlign }
+	get toolbarTopPosition(): 'start' | 'center' | 'end' | 'cursor' { return this.toolbarHorizontalAlign }
 	set toolbarTopPosition(value: 'start' | 'center' | 'end' | 'cursor') { this.toolbarHorizontalAlign = value }
 
 	get toolbarTrigger(): 'hover' | 'click' | 'button' { return this.engine.toolbarTrigger }
@@ -796,7 +779,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	set shouldToolbarFollowCursor(value: boolean) { this.engine.shouldToolbarFollowCursor = value }
 
 	/** @deprecated use `shouldToolbarFollowCursor` */
-	get toolbarFollowsCursor(): boolean { return this.engine.shouldToolbarFollowCursor }
+	get toolbarFollowsCursor(): boolean { return this.shouldToolbarFollowCursor }
 	/** @deprecated use `shouldToolbarFollowCursor` */
 	set toolbarFollowsCursor(value: boolean) { this.shouldToolbarFollowCursor = value }
 
@@ -850,23 +833,23 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	set rangeShortcuts(value: GridRangeShortcut<T>[]) { this.engine.rangeShortcuts = value }
 
 	// Row selection
-	get selectedRows(): number[] { return this.engine.selectedRows }
-	selectRow(rowIndex: number, mode: 'replace' | 'toggle' | 'range' = 'replace'): void { this.engine.selectRow(rowIndex, mode) }
-	selectRowRange(fromIndex: number, toIndex: number): void { this.engine.selectRowRange(fromIndex, toIndex) }
-	clearSelection(): void { this.engine.clearSelection() }
-	isRowSelected(rowIndex: number): boolean { return this.engine.isRowSelected(rowIndex) }
-	getSelectedRowsData(): T[] { return this.engine.getSelectedRowsData() }
-	copySelectedRowsToClipboard(): Promise<boolean> { return this.engine.copySelectedRowsToClipboard() }
+	get selectedRows(): number[] { this.flush(); return this.engine.selectedRows }
+	selectRow(rowIndex: number, mode: 'replace' | 'toggle' | 'range' = 'replace'): void { this.flush(); this.engine.selectRow(rowIndex, mode) }
+	selectRowRange(fromIndex: number, toIndex: number): void { this.flush(); this.engine.selectRowRange(fromIndex, toIndex) }
+	clearSelection(): void { this.flush(); this.engine.clearSelection() }
+	isRowSelected(rowIndex: number): boolean { this.flush(); return this.engine.isRowSelected(rowIndex) }
+	getSelectedRowsData(): T[] { this.flush(); return this.engine.getSelectedRowsData() }
+	copySelectedRowsToClipboard(): Promise<boolean> { this.flush(); return this.engine.copySelectedRowsToClipboard() }
 
 	// Cell range selection
 	get cellSelectionMode() { return this.engine.cellSelectionMode }
 	set cellSelectionMode(value) { this.engine.cellSelectionMode = value }
 
 	get selectedCellRange() { return this.engine.selectedCellRange }
-	selectCellRange(range: any): void { this.engine.selectCellRange(range) }
-	clearCellSelection(): void { this.engine.clearCellSelection() }
-	getSelectedCells() { return this.engine.getSelectedCells() }
-	copyCellSelectionToClipboard(): Promise<boolean> { return this.engine.copyCellSelectionToClipboard() }
+	selectCellRange(range: any): void { this.flush(); this.engine.selectCellRange(range) }
+	clearCellSelection(): void { this.flush(); this.engine.clearCellSelection() }
+	getSelectedCells() { this.flush(); return this.engine.getSelectedCells() }
+	copyCellSelectionToClipboard(): Promise<boolean> { this.flush(); return this.engine.copyCellSelectionToClipboard() }
 
 	get shouldCopyWithHeaders(): boolean { return this.engine.shouldCopyWithHeaders }
 	set shouldCopyWithHeaders(value: boolean) { this.engine.shouldCopyWithHeaders = value }
@@ -913,10 +896,10 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	get defaultExpandDepth(): number | null { return this.engine.defaultExpandDepth }
 	set defaultExpandDepth(value: number | null) { this.engine.defaultExpandDepth = value }
 
-	isPathExpanded(path: string): boolean { return this.engine.isPathExpanded(path) }
-	toggleExpandedPath(path: string): void { this.engine.toggleExpandedPath(path) }
-	expandAll(): void { this.engine.expandAll() }
-	collapseAll(): void { this.engine.collapseAll() }
+	isPathExpanded(path: string): boolean { this.flush(); return this.engine.isPathExpanded(path) }
+	toggleExpandedPath(path: string): void { this.flush(); this.engine.toggleExpandedPath(path) }
+	expandAll(): void { this.flush(); this.engine.expandAll() }
+	collapseAll(): void { this.flush(); this.engine.collapseAll() }
 
 	get treeDoubleClickBehavior(): import('./types.js').TreeDoubleClickBehavior { return this.engine.treeDoubleClickBehavior }
 	set treeDoubleClickBehavior(value: import('./types.js').TreeDoubleClickBehavior) { this.engine.treeDoubleClickBehavior = value }
@@ -966,7 +949,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	set isPaginationVisible(value: boolean | 'auto') { this.engine.isPaginationVisible = value }
 
 	/** @deprecated use `isPaginationVisible` */
-	get showPagination(): boolean | 'auto' { return this.engine.isPaginationVisible }
+	get showPagination(): boolean | 'auto' { return this.isPaginationVisible }
 	/** @deprecated use `isPaginationVisible` */
 	set showPagination(value: boolean | 'auto') { this.isPaginationVisible = value }
 
@@ -1070,7 +1053,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	set isTableBorderOnly(value: boolean) { this.engine.isTableBorderOnly = value }
 
 	/** @deprecated use `isTableBorderOnly` */
-	get tableBorderOnly(): boolean { return this.engine.isTableBorderOnly }
+	get tableBorderOnly(): boolean { return this.isTableBorderOnly }
 	/** @deprecated use `isTableBorderOnly` */
 	set tableBorderOnly(value: boolean) { this.isTableBorderOnly = value }
 
@@ -1113,48 +1096,48 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	set shouldValidateOnPaste(value: boolean) { this.engine.shouldValidateOnPaste = value }
 
 	// Computed properties
-	get displayItems(): T[] { return this.engine.displayItems }
-	get totalPages(): number { return this.engine.totalPages }
-	get isNavigateMode(): boolean { return this.engine.isNavigateMode }
+	get displayItems(): T[] { this.flush(); return this.engine.displayItems }
+	get totalPages(): number { this.flush(); return this.engine.totalPages }
+	get isNavigateMode(): boolean { this.flush(); return this.engine.isNavigateMode }
 
 	// Draft row methods
-	getRowDraft(rowIndex: number): T | undefined { return this.engine.getRowDraft(rowIndex) }
-	hasRowDraft(rowIndex: number): boolean { return this.engine.hasRowDraft(rowIndex) }
-	discardRowDraft(rowIndex: number): void { this.engine.discardRowDraft(rowIndex) }
-	getDraftRowIndices(): number[] { return this.engine.getDraftRowIndices() }
-	discardAllDrafts(): void { this.engine.discardAllDrafts() }
+	getRowDraft(rowIndex: number): T | undefined { this.flush(); return this.engine.getRowDraft(rowIndex) }
+	hasRowDraft(rowIndex: number): boolean { this.flush(); return this.engine.hasRowDraft(rowIndex) }
+	discardRowDraft(rowIndex: number): void { this.flush(); this.engine.discardRowDraft(rowIndex) }
+	getDraftRowIndices(): number[] { this.flush(); return this.engine.getDraftRowIndices() }
+	discardAllDrafts(): void { this.flush(); this.engine.discardAllDrafts() }
 
 	// Validation methods
-	isCellInvalid(rowIndex: number, field: string): boolean { return this.engine.isCellInvalid(rowIndex, field) }
-	getCellValidationError(rowIndex: number, field: string): string | null { return this.engine.getCellValidationError(rowIndex, field) }
+	isCellInvalid(rowIndex: number, field: string): boolean { this.flush(); return this.engine.isCellInvalid(rowIndex, field) }
+	getCellValidationError(rowIndex: number, field: string): string | null { this.flush(); return this.engine.getCellValidationError(rowIndex, field) }
 
 	// Row identification methods
-	getRowId(row: T): unknown | undefined { return this.engine.getRowId(row) }
-	findRowById(id: unknown): { row: T; index: number } | null { return this.engine.findRowById(id) }
+	getRowId(row: T): unknown | undefined { this.flush(); return this.engine.getRowId(row) }
+	findRowById(id: unknown): { row: T; index: number } | null { this.flush(); return this.engine.findRowById(id) }
 
 	// Row locking methods
-	isRowLocked(rowOrId: T | unknown): boolean { return this.engine.isRowLocked(rowOrId) }
-	getRowLockInfo(rowOrId: T | unknown): RowLock | null { return this.engine.getRowLockInfo(rowOrId) }
-	lockRowById(id: unknown, lockerInfo?: Partial<RowLock>): boolean { return this.engine.lockRowById(id, lockerInfo) }
-	unlockRowById(id: unknown): boolean { return this.engine.unlockRowById(id) }
-	getExternalLocks(): Map<unknown, RowLock> { return this.engine.getExternalLocks() }
-	clearExternalLocks(): void { this.engine.clearExternalLocks() }
+	isRowLocked(rowOrId: T | unknown): boolean { this.flush(); return this.engine.isRowLocked(rowOrId) }
+	getRowLockInfo(rowOrId: T | unknown): RowLock | null { this.flush(); return this.engine.getRowLockInfo(rowOrId) }
+	lockRowById(id: unknown, lockerInfo?: Partial<RowLock>): boolean { this.flush(); return this.engine.lockRowById(id, lockerInfo) }
+	unlockRowById(id: unknown): boolean { this.flush(); return this.engine.unlockRowById(id) }
+	getExternalLocks(): Map<unknown, RowLock> { this.flush(); return this.engine.getExternalLocks() }
+	clearExternalLocks(): void { this.flush(); this.engine.clearExternalLocks() }
 
 	// Row update methods (for WebSocket/external updates)
-	updateRowById(id: unknown, newData: Partial<T>): boolean { return this.engine.updateRowById(id, newData) }
-	replaceRowById(id: unknown, newRow: T): boolean { return this.engine.replaceRowById(id, newRow) }
+	updateRowById(id: unknown, newData: Partial<T>): boolean { this.flush(); return this.engine.updateRowById(id, newData) }
+	replaceRowById(id: unknown, newRow: T): boolean { this.flush(); return this.engine.replaceRowById(id, newRow) }
 
 	// Edit permission check
-	canEditCell(rowIndex: number, field: string): boolean { return this.engine.canEditCell(rowIndex, field) }
+	canEditCell(rowIndex: number, field: string): boolean { this.flush(); return this.engine.canEditCell(rowIndex, field) }
 
 	// Column width methods
-	setColumnWidth(field: string, width: string): void { this.engine.setColumnWidth(field, width) }
-	setColumnWidths(widths: ColumnWidthState[]): void { this.engine.setColumnWidths(widths) }
-	getColumnWidthsState(): ColumnWidthState[] { return this.engine.getColumnWidthsState() }
+	setColumnWidth(field: string, width: string): void { this.flush(); this.engine.setColumnWidth(field, width) }
+	setColumnWidths(widths: ColumnWidthState[]): void { this.flush(); this.engine.setColumnWidths(widths) }
+	getColumnWidthsState(): ColumnWidthState[] { this.flush(); return this.engine.getColumnWidthsState() }
 
 	// Column order methods
-	setColumnOrder(order: ColumnOrderState[]): void { this.engine.setColumnOrder(order) }
-	getColumnOrderState(): ColumnOrderState[] { return this.engine.getColumnOrderState() }
+	setColumnOrder(order: ColumnOrderState[]): void { this.flush(); this.engine.setColumnOrder(order) }
+	getColumnOrderState(): ColumnOrderState[] { this.flush(); return this.engine.getColumnOrderState() }
 
 	// Public methods for focus and editing
 	/**
@@ -1162,6 +1145,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	 * State is updated immediately so pending renders use the correct position.
 	 */
 	focusCell(rowIndex: number, colIndex: number): void {
+		this.flush()
 		const columns = this.engine.columns
 		const displayItems = this.engine.displayItems
 		if (rowIndex < 0 || rowIndex >= displayItems.length) return
@@ -1181,6 +1165,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	 * Uses surgical DOM update instead of full re-render.
 	 */
 	startEditing(rowIndex: number, colIndex: number): void {
+		this.flush()
 		const columns = this.engine.columns
 		if (colIndex < 0 || colIndex >= columns.length) return
 

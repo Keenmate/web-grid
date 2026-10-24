@@ -5,8 +5,9 @@ import { test, expect, type Page } from '@playwright/test'
  *   - `mode` is a preset via core `getBatchValuesCallback` — it also sets the
  *     editing flags + cellSelectionMode in the same batch; inputs set explicitly
  *     in that batch win, whatever the order
- *   - property reads are synchronous; engine-derived state is current right
- *     after a write (`el.engine` flushes pending writes)
+ *   - property reads are synchronous; engine-derived getters / methods /
+ *     `el.controller` flush pending writes, so derived state is current right
+ *     after a write (the internal `el.engine` is fed on the flush)
  *   - invalid property values are rejected (warned, previous value kept)
  *   - UI-driven input changes (page-size selector) update the element property
  *
@@ -52,7 +53,9 @@ test.describe('mode preset (core getBatchValuesCallback)', () => {
 		await mount(page, '')
 		expect(await read(page, el => {
 			el.mode = 'input-matrix'
-			return [el.editTrigger, el.cellSelectionMode, el.engine.editTrigger, el.engine.cellSelectionMode]
+			const sync = [el.editTrigger, el.cellSelectionMode]
+			el.flush() // the engine (internal) is fed on the flush
+			return [...sync, el.engine.editTrigger, el.engine.cellSelectionMode]
 		})).toEqual(['always', 'shift', 'always', 'shift'])
 	})
 
@@ -61,6 +64,7 @@ test.describe('mode preset (core getBatchValuesCallback)', () => {
 		expect(await read(page, el => {
 			el.editTrigger = 'click'
 			el.mode = 'excel'
+			el.flush()
 			return [el.editTrigger, el.engine.editTrigger, el.engine.isEditable]
 		})).toEqual(['click', 'click', true])
 	})
@@ -69,6 +73,7 @@ test.describe('mode preset (core getBatchValuesCallback)', () => {
 		await mount(page, 'edit-trigger="click"')
 		expect(await read(page, el => {
 			el.mode = 'excel'
+			el.flush()
 			return [el.editTrigger, el.engine.editTrigger]
 		})).toEqual(['navigate', 'navigate'])
 	})
@@ -92,8 +97,8 @@ test.describe('property path', () => {
 			el.pageSize = null
 			el.pageSize = 0
 			el.mode = 'bogus'
-			return [el.pageSize, el.engine.pageSize, el.mode, el.totalPages]
-		})).toEqual([34, 34, 'excel', 3])
+			return [el.pageSize, el.totalPages, el.engine.pageSize, el.mode]
+		})).toEqual([34, 3, 34, 'excel'])
 		expect(warnings.filter(w => w.includes('rejected invalid value'))).toHaveLength(3)
 	})
 

@@ -10,7 +10,8 @@ import { closeContextMenu } from './modules/contextmenu/index.js'
 import { closeToolbarAndReset } from './modules/toolbar/index.js'
 
 export function createGridController<T>(el: GridElement<T>): GridController<T> {
-	const g = () => el.engine
+	// Apply pending input writes first (core flush) so `el.x = …; controller.…` sees them.
+	const g = () => { el.flush(); return el.engine }
 	return {
 		// data
 		getItems: () => g().items,

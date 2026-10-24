@@ -246,6 +246,7 @@ test.describe('web-component paste proxies', () => {
 
 		const result = await gridLocator(page).evaluate((el: any) => {
 			el.pasteMode = 'all-columns'
+			el.flush() // the engine (internal) is fed on the flush
 			return { hostRead: el.pasteMode, coreRead: el.engine.pasteMode }
 		})
 
@@ -258,6 +259,7 @@ test.describe('web-component paste proxies', () => {
 
 		const result = await gridLocator(page).evaluate((el: any) => {
 			el.shouldValidateOnPaste = false
+			el.flush() // the engine (internal) is fed on the flush
 			return { hostRead: el.shouldValidateOnPaste, coreRead: el.engine.shouldValidateOnPaste }
 		})
 
