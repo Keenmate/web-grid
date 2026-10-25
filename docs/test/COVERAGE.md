@@ -31,7 +31,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | `cellClass`, `getCellClassCallback`, `getRowClassCallback`, `renderCellCallback` | ✓ | `custom-styling.spec.ts` | `custom-styling.html` |
 | Container (max-height) vs full-height (`isTableBorderOnly`) | ✓ | `height-modes.spec.ts` | `height-modes.html` |
 | `isHoverable`, `isStriped`, `isScrollable` + `scrollMaxHeight`, `isTableBorderOnly`, `isStickyRowNumbers` | ✓ | `display-options.spec.ts`, `freeze-panes.spec.ts` | `display-options.html`, `freeze-panes.html` |
-| `scrollMaxHeight` reset to default (#34) | ✗ fail | `display-options.spec.ts` | `display-options.html` |
+| `scrollMaxHeight` reset to default — property and attribute paths (#34, test fixed) | ✓ | `display-options.spec.ts` | `display-options.html` |
 | Freeze panes (`freezeColumns`, column `isFrozen`) | ✓ | `freeze-panes.spec.ts` | `freeze-panes.html` |
 | Column visibility (`isHidden`, hide-column / column-visibility menu) | ✓ | `column-visibility.spec.ts` | `column-visibility.html` |
 | Virtual scroll (1,000 rows) + infinite scroll | ✓ | `virtual-scroll.spec.ts` | `virtual-scroll.html` |
@@ -120,7 +120,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Header context menu (predefined + custom) | ✓ | `contextmenu.spec.ts`, `resize-reorder.spec.ts` | `contextmenu.html`, `resize-reorder.html` |
 | Row toolbar (floating / multi-row / inline / cell-aware) | ✓ | `toolbar.spec.ts` | `toolbar.html` |
 | `toolbarTrigger` click / button, `toolbarPosition` left / right / top / inline, `toolbarHorizontalAlign`, `toolbarColumn`, `inlineActionsTitle` | ✓ | `toolbar-options.spec.ts` | `toolbar-options.html` |
-| Inline actions header default label (#28) | ✗ fail | `toolbar-options.spec.ts` | `toolbar-options.html` |
+| Inline actions header default label (#28 fixed) | ✓ | `toolbar-options.spec.ts` | `toolbar-options.html` |
 | Core action items, contexts, `on*` twins, controller | ✓ | `interaction-model.spec.ts` | `interaction-model.html` |
 | Interaction-model open gaps: move-row focus (#14), range shortcuts in help (#16) | ✗ fail | `interaction-model.spec.ts` | `interaction-model.html` |
 | Built-in order: `action` before the built-in (pinned; question #15); lock tooltip i18n → `row-locking.spec.ts` (#10) | ✓ | `interaction-model.spec.ts` | `interaction-model.html` |

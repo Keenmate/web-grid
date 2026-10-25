@@ -464,7 +464,9 @@ display checkbox enabled and toggle on click (dispatch `toggleCheckbox`).
 **Test:** `dropdown-flags.spec.ts` "isCheckboxAlwaysEditable: one click on the
 checkbox toggles it" (`test.fail`).
 
-## 28. Inline actions header is blank by default
+## 28. Inline actions header is blank by default — FIXED
+
+**Fixed:** `inlineActionsTitle || labels.inlineActionsHeader` (an empty title falls back to the label).
 
 **Where:** `modules/rendering/table.ts:85` —
 `inlineActionsTitle ?? labels.inlineActionsHeader`; the input default for
@@ -561,7 +563,9 @@ the only migrated component still on a private loglevel copy.)
 
 **Tests:** `logging.spec.ts` — 2 tests (`test.fail`).
 
-## 34. `scrollMaxHeight` can't be reset to the default
+## 34. `scrollMaxHeight` can't be reset to the default — FIXED
+
+**Fixed:** not a component bug — the surgical render path already calls `removeProperty('--wg-scroll-max-height')`. The pinned test set the *property* and then removed an attribute that was never there (a DOM no-op, no attributeChangedCallback). Test rewritten to cover both real paths (property back to `'100vh'`, attribute set → removed); it passes without a code change.
 
 **Where:** `web-component.ts:1603-1604, 1630-1631` — `--wg-scroll-max-height` is
 only *set* when `scrollMaxHeight !== '100vh'`; nothing removes it.

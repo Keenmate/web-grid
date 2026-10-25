@@ -42,10 +42,15 @@ test.describe('container flags', () => {
 	})
 
 	test('resetting scrollMaxHeight to its default releases the custom cap', async ({ page }) => {
-		test.fail(true, 'NOTES.md #34')
+		// property path: back to the default value
 		await onGrid(page, el => { el.isScrollable = true; el.scrollMaxHeight = '200px' }, 'flat')
 		await expect.poll(async () => (await wg(page).boundingBox())!.height).toBeLessThanOrEqual(202)
-		await onGrid(page, el => el.removeAttribute('scroll-max-height'), 'flat')  // back to 100vh
+		await onGrid(page, el => { el.scrollMaxHeight = '100vh' }, 'flat')
+		await expect.poll(async () => (await wg(page).boundingBox())!.height, { timeout: 1500 }).toBeGreaterThan(400)
+		// attribute path: removing the attribute resets to the default
+		await onGrid(page, el => el.setAttribute('scroll-max-height', '200px'), 'flat')
+		await expect.poll(async () => (await wg(page).boundingBox())!.height).toBeLessThanOrEqual(202)
+		await onGrid(page, el => el.removeAttribute('scroll-max-height'), 'flat')
 		await expect.poll(async () => (await wg(page).boundingBox())!.height, { timeout: 1500 }).toBeGreaterThan(400)
 	})
 

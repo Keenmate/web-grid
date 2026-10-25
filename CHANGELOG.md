@@ -156,6 +156,8 @@ handlers: `onpaste`, `onbeforepaste`, `onselect`).
   (shallow merge); the groups merge too now (`GridLabelsInput` type).
 - `expand-change` handed out the grid's live `expandedPaths` Set — an earlier detail changed with
   later toggles, and mutating it changed the grid's state. The detail carries a snapshot now.
+- The inline actions column header was blank by default — the `inline-actions-title` default `''`
+  hid `labels.inlineActionsHeader` ("Actions").
 
 ### Changed
 

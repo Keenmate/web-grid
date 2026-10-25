@@ -122,9 +122,10 @@ test.describe('toolbarPosition', () => {
 })
 
 test('the inline actions header defaults to labels.inlineActionsHeader ("Actions")', async ({ page }) => {
-	test.fail(true, 'NOTES.md #28')
 	await onGrid(page, el => el.setAttribute('toolbar-position', 'inline'))
 	await expect(gridLocator(page).locator('thead th.wg__inline-actions-header')).toHaveText('Actions', { timeout: 1500 })
+	await onGrid(page, el => { el.labels = { inlineActionsHeader: 'Akce' } })
+	await expect(gridLocator(page).locator('thead th.wg__inline-actions-header')).toHaveText('Akce')
 })
 
 test('an invalid toolbar-position is rejected (previous kept)', async ({ page }) => {
