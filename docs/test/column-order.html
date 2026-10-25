@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — column order fixture</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>column-order fixture</h1>
+	<p>Targeted by <code>e2e/column-order.spec.ts</code>. <code>#persist</code>: gridName 'co-test',
+	shouldPersistColumnOrder, isColumnReorderAllowed. <code>#late</code>: the same with columns assigned before <code>gridName</code> (NOTES.md #29 — property order matters).
+	<code>#locked</code>: reorder not allowed (default).
+	Events in <code>column-order-log</code>.</p>
+
+	<h2>#persist</h2>
+	<web-grid id="persist" is-column-reorder-allowed style="max-width: 600px;"></web-grid>
+	<h2>#late — same, but columns are set BEFORE gridName (gridName 'co-late')</h2>
+	<web-grid id="late" is-column-reorder-allowed style="max-width: 600px;"></web-grid>
+	<h2>#locked</h2>
+	<web-grid id="locked" style="max-width: 600px;"></web-grid>
+	<pre data-testid="column-order-log"></pre>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+		import { installEventLog } from './event-log.js'
+
+		const columns = () => [
+			{ field: 'id', title: 'ID', width: '60px' },
+			{ field: 'name', title: 'Name', width: '120px' },
+			{ field: 'city', title: 'City', width: '120px' },
+			{ field: 'qty', title: 'Qty', width: '80px' }
+		]
+		const items = () => [
+			{ id: 1, name: 'Alpha', city: 'Prague', qty: 1 },
+			{ id: 2, name: 'Beta', city: 'Brno', qty: 2 }
+		]
+		const persist = document.getElementById('persist')
+		persist.gridName = 'co-test'
+		persist.shouldPersistColumnOrder = true
+		persist.columns = columns()
+		persist.items = items()
+		installEventLog(persist, 'column-order', ['column-reorder'])
+
+		const late = document.getElementById('late')
+		late.columns = columns()
+		late.items = items()
+		late.gridName = 'co-late'
+		late.shouldPersistColumnOrder = true
+		installEventLog(late, 'column-order', ['column-reorder'])
+
+		const locked = document.getElementById('locked')
+		locked.columns = columns()
+		locked.items = items()
+		installEventLog(locked, 'column-order', ['column-reorder'])
+	</script>
+</body>
+</html>

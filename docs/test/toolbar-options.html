@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — toolbar options fixture</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+	<style>
+		/* room on every side so floating-ui keeps the preferred placement */
+		.stage { padding: 160px 260px; }
+	</style>
+</head>
+<body>
+	<h1>toolbar-options fixture</h1>
+	<p>Targeted by <code>e2e/toolbar-options.spec.ts</code>: <code>toolbarTrigger</code> click / button,
+	<code>toolbarPosition</code> left / right / top, <code>toolbarHorizontalAlign</code>,
+	<code>toolbarColumn</code>, <code>cellToolbarOffset</code>. Default trigger: click.</p>
+
+	<div class="stage">
+		<web-grid id="grid" is-row-toolbar-visible toolbar-trigger="click" style="width: 520px;"></web-grid>
+	</div>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+
+		/* 4 rows; col 0=id 1=name 2=city 3=qty */
+		const grid = document.getElementById('grid')
+		grid.idMember = 'id'
+		grid.columns = [
+			{ field: 'id', title: 'ID', width: '60px' },
+			{ field: 'name', title: 'Name', width: '140px' },
+			{ field: 'city', title: 'City', width: '140px' },
+			{ field: 'qty', title: 'Qty', width: '80px' }
+		]
+		grid.items = [
+			{ id: 1, name: 'Alpha', city: 'Prague', qty: 1 },
+			{ id: 2, name: 'Beta', city: 'Brno', qty: 2 },
+			{ id: 3, name: 'Gamma', city: 'Ostrava', qty: 3 },
+			{ id: 4, name: 'Delta', city: 'Plzen', qty: 4 }
+		]
+		grid.rowToolbar = ['add', 'delete', { id: 'ping', text: 'Ping', icon: '•', onClick: () => { window.__pinged = (window.__pinged || 0) + 1 } }]
+	</script>
+</body>
+</html>

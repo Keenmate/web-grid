@@ -1,4 +1,4 @@
-import { test, expect, Page, Locator, gridLocator } from './fixtures'
+import { test, expect, Page, Locator, gridLocator, clickMenuItem } from './fixtures'
 
 /**
  * Smoke tests for tree mode against the tree fixture (docs/test/tree.html).
@@ -182,20 +182,15 @@ test.describe('cellContextMenu — predefined tree items', () => {
 		await expect(menu.locator('text=Collapse all')).toBeVisible()
 	})
 
-	// TODO: these three tests verify clicking through to the predefined item handlers.
-	// The menu opens correctly (visibility tests above prove it), but clicking the
-	// menu items hits a Playwright + Floating UI interaction: the menu uses
-	// `position: fixed`, and Playwright's pre-click "is this element in the viewport"
-	// check fails even when the element is visually visible. Force-clicking and
-	// scrolling the trigger cell to the viewport top didn't unstick it. Revisit
-	// when we've isolated whether to override Floating UI placement during tests
-	// or use page.evaluate to invoke the handler directly.
-	test.skip('"Expand all" / "Collapse all" do NOT appear on leaf rows', async ({ page }) => {
+	// Menu items are clicked via `clickMenuItem` (a JS click): the Floating-UI menu is
+	// `position: fixed`, and Playwright's viewport actionability check rejected it
+	// even with `force` — these three were skipped for that reason.
+	test('"Expand all" / "Collapse all" do NOT appear on leaf rows', async ({ page }) => {
 		await gotoTreeDemo(page)
 
 		const leafRow = gridLocator(page)
 			.locator('tbody tr')
-			.filter({ has: page.locator('.wg__tree-chevron--leaf') })
+			.filter({ has: page.locator('.wg__tree-leaf-spacer') })
 			.first()
 		const leafCell = leafRow.locator('.wg__cell').first()
 		await openCellContextMenuOn(leafCell, page)
@@ -208,7 +203,7 @@ test.describe('cellContextMenu — predefined tree items', () => {
 		await expect(menu.locator('text=Expand entire tree')).toBeVisible()
 	})
 
-	test.skip('"Expand entire tree" expands everything', async ({ page }) => {
+	test('"Expand entire tree" expands everything', async ({ page }) => {
 		await gotoTreeDemo(page)
 
 		const before = await visibleRowCount(page)
@@ -216,18 +211,18 @@ test.describe('cellContextMenu — predefined tree items', () => {
 		await openCellContextMenu(page, GRID, 0, 0)
 		const menu = page.locator('.wg-context-menu').first()
 		await expect(menu).toBeVisible()
-		await menu.locator('text=Expand entire tree').click({ force: true })
+		await clickMenuItem(page, 'Expand entire tree')
 
 		await expect.poll(() => visibleRowCount(page)).toBeGreaterThan(before)
 	})
 
-	test.skip('"Collapse entire tree" hides everything except roots', async ({ page }) => {
+	test('"Collapse entire tree" hides everything except roots', async ({ page }) => {
 		await gotoTreeDemo(page)
 
 		await openCellContextMenu(page, GRID, 0, 0)
 		const menu = page.locator('.wg-context-menu').first()
 		await expect(menu).toBeVisible()
-		await menu.locator('text=Collapse entire tree').click({ force: true })
+		await clickMenuItem(page, 'Collapse entire tree')
 
 		// Only the root row(s) remain. orgData has one root (Acme).
 		await expect.poll(() => visibleRowCount(page)).toBe(1)

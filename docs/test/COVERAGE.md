@@ -69,7 +69,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | `isCheckboxAlwaysEditable` (#27, dead flag) | ✗ fail | `dropdown-flags.spec.ts` | `dropdown-flags.html` |
 | `mode` preset (read-only / excel / input-matrix) | ✓ | `grid-modes.spec.ts`, `inputs.spec.ts` | `grid-modes.html`, `inputs.html` |
 | `validateCallback` (string / result / transform) | ✓ | `validation.spec.ts` | `validation.html` |
-| `invalidCells` + getters | ✗ | | |
+| `invalidCells` (read + assign) + `isCellInvalid` / `getCellValidationError` | ✓ | `validation.spec.ts` | `validation.html` |
 | Fill handle (drag, cancel, direction constraint) | ✓ | `fill-handle.spec.ts` | `fill-handle.html` |
 | Paste (single / multi-cell, modes, events, proxies) | ✓ | `paste.spec.ts` | `paste.html` |
 | Drafts: dirty marking, indicator, `isCellDirty/isRowDirty/getRowDraft` | ✓ | `drafts.spec.ts` | `drafts.html` |
@@ -83,7 +83,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Feature | Status | Spec | Fixture |
 | --- | :-: | --- | --- |
 | Row / column / cell-range selection, row focus | ✓ | `selection.spec.ts` | `selection.html` |
-| `cellSelectionMode` disabled / shift + selection API | ✗ | | |
+| `cellSelectionMode` click / disabled / shift; row + cell-range selection API | ✓ | `selection-api.spec.ts` | `selection-api.html` |
 | Arrow navigation in navigate mode | ✓ | `basic.spec.ts` | `basic.html` |
 | Home/End/PageUp/PageDown + Ctrl variants, Delete commits null, typing starts edit, Ctrl+G dialog | ✓ | `keyboard.spec.ts` | `keyboard.html` |
 | Go-to-row Escape keeps focus (#24) | ✗ fail | `keyboard.spec.ts` | `keyboard.html` |
@@ -115,7 +115,8 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Cell context menu (labels, visible/disabled/danger/divider/shortcut, offsets) | ✓ | `contextmenu.spec.ts`, `editors.spec.ts` | `contextmenu.html`, `editors.html` |
 | Header context menu (predefined + custom) | ✓ | `contextmenu.spec.ts`, `resize-reorder.spec.ts` | `contextmenu.html`, `resize-reorder.html` |
 | Row toolbar (floating / multi-row / inline / cell-aware) | ✓ | `toolbar.spec.ts` | `toolbar.html` |
-| `toolbarTrigger` click/button, align, position, offset, column | ✗ | | |
+| `toolbarTrigger` click / button, `toolbarPosition` left / right / top / inline, `toolbarHorizontalAlign`, `toolbarColumn`, `inlineActionsTitle` | ✓ | `toolbar-options.spec.ts` | `toolbar-options.html` |
+| Inline actions header default label (#28) | ✗ fail | `toolbar-options.spec.ts` | `toolbar-options.html` |
 | Core action items, contexts, `on*` twins, controller | ✓ | `interaction-model.spec.ts` | `interaction-model.html` |
 | Interaction-model open gaps: move-row focus (#14), range shortcuts in help (#16) | ✗ fail | `interaction-model.spec.ts` | `interaction-model.html` |
 | Built-in order: `action` before the built-in (pinned; question #15); lock tooltip i18n → `row-locking.spec.ts` (#10) | ✓ | `interaction-model.spec.ts` | `interaction-model.html` |
@@ -126,14 +127,15 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | --- | :-: | --- | --- |
 | Resize, persistence, `isResizable` opt-out | ✓ | `resize-reorder.spec.ts` | `resize-reorder.html` |
 | Reorder, `isMovable` opt-out | ✓ | `resize-reorder.spec.ts` | `resize-reorder.html` |
-| `gridName` + `shouldPersistColumnOrder` + `setColumnOrder`, `isColumnReorderAllowed=false` | ✗ | | |
+| `gridName` + `shouldPersistColumnOrder` (save, restore, orphan cleanup), `setColumnOrder`, `isColumnReorderAllowed` off | ✓ | `column-order.spec.ts` | `column-order.html` |
+| Persisted state with gridName set before columns (#29), `setColumnOrder` persisted (#30) | ✗ fail | `column-order.spec.ts` | `column-order.html` |
 
 ## 8. Tree
 
 | Feature | Status | Spec | Fixture |
 | --- | :-: | --- | --- |
 | Tree mode expand/collapse, Ctrl+Arrow, Tab nav, `isRowEditable`, tree column locked | ✓ | `tree.spec.ts` | `tree.html` |
-| Predefined tree context-menu items | △ | `tree.spec.ts` (3 skipped) | `tree.html` |
+| Predefined tree context-menu items (incl. clicking through) | ✓ | `tree.spec.ts` | `tree.html` |
 | Tree + virtual / infinite scroll | ✓ | `tree-scroll.spec.ts` | `tree-scroll.html` |
 | Chevron / glyph callbacks | ✗ | | |
 

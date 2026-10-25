@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — selection API fixture</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>selection-api fixture</h1>
+	<p>Targeted by <code>e2e/selection-api.spec.ts</code>: row / cell-range selection through the API and
+	<code>cellSelectionMode</code> disabled / shift. Navigate mode, row numbers. Events in <code>selection-api-log</code>.</p>
+
+	<web-grid id="grid" is-editable edit-trigger="navigate" is-row-numbers-visible style="max-width: 600px;"></web-grid>
+	<pre data-testid="selection-api-log"></pre>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+		import { installEventLog } from './event-log.js'
+
+		/* 6 rows: id 1..6, name A..F, qty id*10; col 0=id 1=name 2=qty */
+		const grid = document.getElementById('grid')
+		grid.idMember = 'id'
+		grid.columns = [
+			{ field: 'id', title: 'ID', width: '60px', isEditable: false },
+			{ field: 'name', title: 'Name', width: '120px', editor: 'text' },
+			{ field: 'qty', title: 'Qty', width: '80px', editor: 'number' }
+		]
+		grid.items = Array.from({ length: 6 }, (_, i) => ({ id: i + 1, name: 'ABCDEF'[i], qty: (i + 1) * 10 }))
+		installEventLog(grid, 'selection-api', ['cell-selection-change'])
+	</script>
+</body>
+</html>

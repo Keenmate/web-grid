@@ -135,3 +135,42 @@ test.describe('validateCallback string result (score column)', () => {
 		await expect(cell(page, 3, COL.score)).toContainText('95')
 	})
 })
+
+// =============================================================================
+// invalidCells + getters (server-side validation, read-back)
+// =============================================================================
+
+test.describe('invalidCells API', () => {
+	test('a failed commit is readable via invalidCells / isCellInvalid / getCellValidationError', async ({ page }) => {
+		await gotoValidation(page)
+		await editCell(page, 1, COL.score, '150')
+		await expect(cell(page, 1, COL.score)).toHaveClass(/wg__cell--invalid/)
+		const state = await gridLocator(page).evaluate((el: any) => ({
+			list: el.invalidCells,
+			invalid: el.isCellInvalid(1, 'score'),
+			other: el.isCellInvalid(1, 'name'),
+			error: el.getCellValidationError(1, 'score'),
+			none: el.getCellValidationError(0, 'score')
+		}))
+		expect(state.list).toEqual([{ rowKey: expect.any(String), field: 'score', error: 'Max 100' }])
+		expect(state).toMatchObject({ invalid: true, other: false, error: 'Max 100', none: null })
+	})
+
+	test('a valid re-commit clears the entry', async ({ page }) => {
+		await gotoValidation(page)
+		await editCell(page, 1, COL.score, '150')
+		await editCell(page, 1, COL.score, '50')
+		await expect(cell(page, 1, COL.score)).not.toHaveClass(/wg__cell--invalid/)
+		expect(await gridLocator(page).evaluate((el: any) => el.invalidCells)).toEqual([])
+	})
+
+	test('assigning invalidCells (server-side errors) marks those cells', async ({ page }) => {
+		await gotoValidation(page)
+		const key = await gridLocator(page).evaluate((el: any) => String(el.items[2].id))
+		await gridLocator(page).evaluate((el: any, k: string) => { el.invalidCells = [{ rowKey: k, field: 'email', error: 'Taken' }] }, key)
+		await expect(cell(page, 2, COL.email)).toHaveClass(/wg__cell--invalid/)
+		expect(await gridLocator(page).evaluate((el: any) => [el.isCellInvalid(2, 'email'), el.getCellValidationError(2, 'email')])).toEqual([true, 'Taken'])
+		await gridLocator(page).evaluate((el: any) => { el.invalidCells = [] })
+		await expect(cell(page, 2, COL.email)).not.toHaveClass(/wg__cell--invalid/)
+	})
+})

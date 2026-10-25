@@ -439,3 +439,48 @@ display checkbox enabled and toggle on click (dispatch `toggleCheckbox`).
 
 **Test:** `dropdown-flags.spec.ts` "isCheckboxAlwaysEditable: one click on the
 checkbox toggles it" (`test.fail`).
+
+## 28. Inline actions header is blank by default
+
+**Where:** `modules/rendering/table.ts:85` —
+`inlineActionsTitle ?? labels.inlineActionsHeader`; the input default for
+`inline-actions-title` is `''` (`web-component.ts`, `toText({ default: '', isEmptyAllowed: true })`),
+and `''` is not nullish, so the "Actions" label is never used.
+
+**Suggested fix:** `inlineActionsTitle || labels.inlineActionsHeader` (or make the
+input default `undefined`).
+
+**Test:** `toolbar-options.spec.ts` "the inline actions header defaults to
+labels.inlineActionsHeader" (`test.fail`).
+
+## 29. Persisted column state is wiped when `gridName` is set before `columns`
+
+**Where:** `web-component.ts:1001-1035` — the `gridName` /
+`shouldPersistColumn*` setters call `loadPersistedState()` immediately;
+`grid.ts:3522-3563` builds `validFields` from the *current* columns. With no
+columns yet every stored entry is "orphaned", nothing is applied, and the
+cleanup branch re-saves an **empty** state — the user's saved layout is lost.
+
+**Symptom:** the natural setup order (config first, then `columns` / `items`)
+never restores a persisted order / widths. Works only when `columns` are
+assigned first (the `resize-reorder.html` fixture happens to do that).
+
+**Suggested fix:** defer the load until columns exist (load on the `columns`
+setter / first render when `gridName` is set), and never prune when the column
+list is empty.
+
+**Test:** `column-order.spec.ts` "the persisted order is restored when gridName
+is set before the columns" (`test.fail`); `#late` covers the working order.
+
+## 30. `setColumnOrder()` is not persisted
+
+**Where:** `grid.ts:3602-3610` — updates `_columnOrder` and re-renders but never
+calls `savePersistedState()` (a drag reorder does).
+
+**Symptom:** with `shouldPersistColumnOrder`, an order applied through the API (e.g. a
+"reset columns" button) is lost on reload / the previous drag order comes back.
+
+**Suggested fix:** save in `setColumnOrder` (and `setColumnWidths`) when the
+persist flag is on.
+
+**Test:** `column-order.spec.ts` "setColumnOrder is persisted too" (`test.fail`).
