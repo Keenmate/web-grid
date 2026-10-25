@@ -163,6 +163,8 @@ handlers: `onpaste`, `onbeforepaste`, `onselect`).
   `setColumnOrder()` / `setColumnWidths()` are persisted like a drag / resize.
 - `startEditing()` rendered an orphaned editor into a read-only / locked cell the engine had
   refused to edit.
+- The shortcuts help listed only `rowShortcuts` (and stayed hidden with range shortcuts only);
+  `rangeShortcuts` are listed under `labels.rangeShortcuts` ("Selection shortcuts").
 
 ### Changed
 

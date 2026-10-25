@@ -275,7 +275,9 @@ order (passing test). **Question:** keep as is (consumers watch `items` /
 `row-change`), add an `action-complete` style event, or pass a `done` promise on
 the detail?
 
-## 16. Shortcuts help omits `rangeShortcuts`
+## 16. Shortcuts help omits `rangeShortcuts` — FIXED
+
+**Fixed:** the help lists `rangeShortcuts` too (sub-heading `labels.rangeShortcuts`, "Selection shortcuts", when both lists exist) and shows when either list is non-empty; setting `rangeShortcuts` re-renders.
 
 **Where:** `modules/rendering/shortcuts-help.ts` — renders only
 `engine.rowShortcuts` (and returns '' when there are none, even with range

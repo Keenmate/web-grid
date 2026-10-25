@@ -281,7 +281,6 @@ test.describe('open gaps (interaction-model-plan follow-ups)', () => {
 	})
 
 	test('the shortcuts help lists the range shortcuts too', async ({ page }) => {
-		test.fail(true, 'NOTES.md #16')
 		await page.evaluate(() => {
 			const g = document.getElementById('grid') as any
 			g.rangeShortcuts = [{ id: 'sum', text: 'Sum selection', shortcut: 'Ctrl+Shift+S', onClick: () => {} }]
@@ -291,5 +290,18 @@ test.describe('open gaps (interaction-model-plan follow-ups)', () => {
 		await expect(help).toHaveCount(1)
 		await expect(help).toContainText('Duplicate row')
 		await expect(help).toContainText('Sum selection', { timeout: 1500 })
+		await expect(help.locator('.wg__shortcuts-help-title').nth(1)).toHaveText('Selection shortcuts')
+	})
+
+	test('the shortcuts help shows with range shortcuts only', async ({ page }) => {
+		await page.evaluate(() => {
+			const g = document.getElementById('grid') as any
+			g.rowShortcuts = []
+			g.rangeShortcuts = [{ id: 'sum', text: 'Sum selection', shortcut: 'Ctrl+Shift+S', onClick: () => {} }]
+			g.isShortcutsHelpVisible = true
+		})
+		const help = grid(page).locator('.wg__shortcuts-help')
+		await expect(help).toContainText('Sum selection')
+		await expect(help.locator('.wg__shortcuts-help-title')).toHaveCount(1)
 	})
 })

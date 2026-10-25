@@ -88,6 +88,7 @@ const DEFAULT_LABELS: GridLabels = {
 
 	// Shortcuts help
 	keyboardShortcuts: 'Keyboard shortcuts',
+	rangeShortcuts: 'Selection shortcuts',
 
 	// Pagination
 	paginationFirst: '⏮',
@@ -1099,6 +1100,7 @@ export class GridEngine<T = unknown> {
 	get rangeShortcuts(): GridRangeShortcut<T>[] { return this._rangeShortcuts }
 	set rangeShortcuts(value: GridRangeShortcut<T>[]) {
 		this._rangeShortcuts = value ?? []
+		this.requestUpdate()  // the shortcuts help lists them
 	}
 
 	isRowSelected(rowIndex: number): boolean {

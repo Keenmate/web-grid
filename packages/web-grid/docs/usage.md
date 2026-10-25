@@ -823,6 +823,7 @@ All UI labels are customizable via the `labels` property:
 grid.labels = {
   rowActions: 'Actions',
   keyboardShortcuts: 'Keyboard shortcuts',
+  rangeShortcuts: 'Selection shortcuts',  // shortcuts-help sub-heading for rangeShortcuts
   paginationFirst: 'First',
   paginationPrevious: 'Previous',
   paginationNext: 'Next',

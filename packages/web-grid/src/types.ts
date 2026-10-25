@@ -559,6 +559,7 @@ export type GridLabels = {
 
 	// Shortcuts help
 	keyboardShortcuts: string       // Shortcuts help icon title
+	rangeShortcuts: string          // Shortcuts help sub-heading above the rangeShortcuts (with rowShortcuts too)
 
 	// Pagination (defaults, can be overridden by getPaginationLabelsCallback)
 	paginationFirst: string

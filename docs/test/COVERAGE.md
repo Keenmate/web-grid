@@ -122,7 +122,8 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | `toolbarTrigger` click / button, `toolbarPosition` left / right / top / inline, `toolbarHorizontalAlign`, `toolbarColumn`, `inlineActionsTitle` | ✓ | `toolbar-options.spec.ts` | `toolbar-options.html` |
 | Inline actions header default label (#28 fixed) | ✓ | `toolbar-options.spec.ts` | `toolbar-options.html` |
 | Core action items, contexts, `on*` twins, controller | ✓ | `interaction-model.spec.ts` | `interaction-model.html` |
-| Interaction-model open gaps: move-row focus (#14), range shortcuts in help (#16) | ✗ fail | `interaction-model.spec.ts` | `interaction-model.html` |
+| Range shortcuts in the shortcuts help (#16 fixed) | ✓ | `interaction-model.spec.ts` | `interaction-model.html` |
+| Interaction-model open gap: move-row focus (#14) | ✗ fail | `interaction-model.spec.ts` | `interaction-model.html` |
 | Built-in order: `action` before the built-in (pinned; question #15); lock tooltip i18n → `row-locking.spec.ts` (#10) | ✓ | `interaction-model.spec.ts` | `interaction-model.html` |
 
 ## 7. Columns
