@@ -158,6 +158,9 @@ handlers: `onpaste`, `onbeforepaste`, `onselect`).
   later toggles, and mutating it changed the grid's state. The detail carries a snapshot now.
 - The inline actions column header was blank by default — the `inline-actions-title` default `''`
   hid `labels.inlineActionsHeader` ("Actions").
+- Persisted column state was wiped when `gridName` / the persist flags were set before `columns`
+  (every stored entry looked orphaned and was pruned); the load now waits for the columns.
+  `setColumnOrder()` / `setColumnWidths()` are persisted like a drag / resize.
 
 ### Changed
 

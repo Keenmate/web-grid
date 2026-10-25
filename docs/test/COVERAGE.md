@@ -132,7 +132,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Resize, persistence, `isResizable` opt-out | ✓ | `resize-reorder.spec.ts` | `resize-reorder.html` |
 | Reorder, `isMovable` opt-out | ✓ | `resize-reorder.spec.ts` | `resize-reorder.html` |
 | `gridName` + `shouldPersistColumnOrder` (save, restore, orphan cleanup), `setColumnOrder`, `isColumnReorderAllowed` off | ✓ | `column-order.spec.ts` | `column-order.html` |
-| Persisted state with gridName set before columns (#29), `setColumnOrder` persisted (#30) | ✗ fail | `column-order.spec.ts` | `column-order.html` |
+| Persisted state with gridName set before columns (#29 fixed), `setColumnOrder` persisted (#30 fixed) | ✓ | `column-order.spec.ts` | `column-order.html` |
 
 ## 8. Tree
 

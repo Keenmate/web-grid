@@ -303,6 +303,8 @@ export class GridEngine<T = unknown> {
 	protected _isValidating: boolean = false
 	/** Drafts keyed by row identity (see `draftKey`) — they follow their row through sort / page / filter. */
 	protected _draftRows: Map<unknown, T> = new Map()
+	/** loadPersistedState() ran before any columns existed — retried when `columns` is set. */
+	protected _isPersistedStateLoadPending = false
 
 	// Navigation
 	protected _focusedCell: FocusedCell = null
@@ -438,6 +440,8 @@ export class GridEngine<T = unknown> {
 		for (const col of value) {
 			if (col.editorOptions) bindOptionContext(col.editorOptions, (fields) => this.ctx(fields))
 		}
+		// A persisted-state load requested before any columns existed runs now
+		if (this._isPersistedStateLoadPending && value.length > 0) this.loadPersistedState()
 		this.requestUpdate()
 	}
 
@@ -3581,6 +3585,7 @@ export class GridEngine<T = unknown> {
 				this._columnWidths.set(field, width)
 			}
 		}
+		if (this._shouldPersistColumnWidths) this.savePersistedState()
 		this.requestUpdate()
 	}
 
@@ -3615,6 +3620,13 @@ export class GridEngine<T = unknown> {
 	 */
 	loadPersistedState(): void {
 		if (!this._gridName || typeof localStorage === 'undefined') return
+		// No columns yet (e.g. gridName / persist flags set before `columns`): every stored
+		// entry would look orphaned and be pruned. Defer until the columns arrive.
+		if (this._columns.length === 0) {
+			this._isPersistedStateLoadPending = true
+			return
+		}
+		this._isPersistedStateLoadPending = false
 
 		try {
 			const key = `wg-${this._gridName}-state`
@@ -3700,6 +3712,7 @@ export class GridEngine<T = unknown> {
 				this._columnOrder.set(field, orderValue)
 			}
 		}
+		if (this._shouldPersistColumnOrder) this.savePersistedState()
 		this.requestUpdate()
 	}
 

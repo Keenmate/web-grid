@@ -67,7 +67,6 @@ test('the persisted order is restored after a reload (columns set before gridNam
 })
 
 test('the persisted order is restored when gridName is set before the columns', async ({ page }) => {
-	test.fail(true, 'NOTES.md #29')
 	await dragHeader(page, 'persist', 'city', 'id')
 	const after = await order(page, 'persist')
 	expect(after[0]).toBe('city')
@@ -85,7 +84,6 @@ test('setColumnOrder applies an order; getColumnOrderState reads it back', async
 })
 
 test('setColumnOrder is persisted too (survives a reload)', async ({ page }) => {
-	test.fail(true, 'NOTES.md #30')
 	await onGrid(page, el => el.setColumnOrder([
 		{ field: 'qty', order: 0 }, { field: 'name', order: 1 }, { field: 'city', order: 2 }, { field: 'id', order: 3 }
 	]), 'late')

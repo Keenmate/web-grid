@@ -479,7 +479,9 @@ input default `undefined`).
 **Test:** `toolbar-options.spec.ts` "the inline actions header defaults to
 labels.inlineActionsHeader" (`test.fail`).
 
-## 29. Persisted column state is wiped when `gridName` is set before `columns`
+## 29. Persisted column state is wiped when `gridName` is set before `columns` — FIXED
+
+**Fixed:** `loadPersistedState()` with no columns yet defers (no pruning) and runs when `columns` is assigned.
 
 **Where:** `web-component.ts:1001-1035` — the `gridName` /
 `shouldPersistColumn*` setters call `loadPersistedState()` immediately;
@@ -498,7 +500,9 @@ list is empty.
 **Test:** `column-order.spec.ts` "the persisted order is restored when gridName
 is set before the columns" (`test.fail`); `#late` covers the working order.
 
-## 30. `setColumnOrder()` is not persisted
+## 30. `setColumnOrder()` is not persisted — FIXED
+
+**Fixed:** `setColumnOrder` / `setColumnWidths` save when the matching persist flag is on.
 
 **Where:** `grid.ts:3602-3610` — updates `_columnOrder` and re-renders but never
 calls `savePersistedState()` (a drag reorder does).
