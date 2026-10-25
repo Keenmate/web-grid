@@ -171,6 +171,8 @@ handlers: `onpaste`, `onbeforepaste`, `onselect`).
   to the cell the dialog was opened from.
 - The validation-error tooltip of a cell appeared only after an unrelated full render (and a
   fixed value kept the old one); the surgical cell update writes the tooltip attributes too.
+- `tooltipHideDelay` was ignored when the pointer left the grid: closing the hover row toolbar
+  hid every tooltip at once; it now hides only a toolbar-button tooltip.
 
 ### Changed
 

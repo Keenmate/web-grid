@@ -128,7 +128,6 @@ test.describe('delays', () => {
 	})
 
 	test('tooltipHideDelay keeps it up after leaving', async ({ page }) => {
-		test.fail(true, 'NOTES.md #23')
 		await onGrid(page, el => { el.tooltipHideDelay = 700 })
 		await hover(page, cell(page, 0, 0))
 		await expect(tip(page)).toHaveClass(/wg__tooltip--visible/)

@@ -396,7 +396,9 @@ until something re-renders the grid.
 **Test:** `tooltip.spec.ts` "the error tooltip is there right after the failed
 commit" (`test.fail`); the other validation-tooltip tests force a full render.
 
-## 23. `tooltipHideDelay` is not honoured
+## 23. `tooltipHideDelay` is not honoured — FIXED
+
+**Fixed:** root cause: leaving the grid closes the hover row toolbar, and `closeToolbarAndReset` / `showToolbarForRow` called `hideTooltip(ctx, 0)` to drop a toolbar-button tooltip — killing the cell tooltip immediately. They now hide only a tooltip anchored to a `.wg__toolbar-btn`.
 
 **Where:** `modules/tooltip/event-listeners.ts:51` passes `ctx.tooltipHideDelay`
 (reads back as 700 via property and attribute), yet the tooltip is gone ~350 ms

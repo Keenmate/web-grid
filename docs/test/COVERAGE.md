@@ -171,7 +171,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Tooltips: `getTooltipCallback`, `tooltipMember`, `isTooltipHtml`, `headerInfo`, validation tooltip (column / grid callback), `tooltipShowDelay` | ✓ | `tooltip.spec.ts` | `tooltip.html` |
 | Tooltip / editor attribute escaping, no attribute injection from row data (#21 fixed) | ✓ | `tooltip.spec.ts`, `editors.spec.ts` | `tooltip.html`, `editors.html` |
 | Validation tooltip right after the commit, cleared by a valid one (#22 fixed) | ✓ | `tooltip.spec.ts` | `tooltip.html` |
-| `tooltipHideDelay` (#23) | ✗ fail | `tooltip.spec.ts` | `tooltip.html` |
+| `tooltipHideDelay` (#23 fixed) | ✓ | `tooltip.spec.ts` | `tooltip.html` |
 | `shortcutsHelpPosition`, `renderShortcutsHelpCallback`, help visibility | ✓ | `display-options.spec.ts` | `display-options.html` |
 
 ## Not covered yet

@@ -167,7 +167,7 @@ export function showToolbarForRow<T>(
 
 	// Hide any toolbar tooltip left over from the previous toolbar
 	// (mouseleave won't fire when the toolbar DOM is removed)
-	hideTooltip(ctx, 0)
+	hideToolbarTooltip(ctx)
 
 	// Reset cell toolbar state so next cell change will always update the HTML
 	// (openToolbar rebuilds with base rowToolbar items, not cell-specific items)
@@ -252,7 +252,7 @@ export function closeToolbarAndReset<T>(ctx: GridHost<T>): void {
 	ctx.toolbar.reset()
 	toolbarCells.delete(ctx)
 	// Hide any toolbar tooltip (mouseleave won't fire when DOM is removed)
-	hideTooltip(ctx, 0)
+	hideToolbarTooltip(ctx)
 	closeToolbar()
 }
 
@@ -387,4 +387,14 @@ export function handleInlineActionClick<T>(
 		sourceEvent: event,
 		triggerElement
 	})
+}
+
+/**
+ * Hide the tooltip of a toolbar button (mouseleave won't fire when the toolbar DOM
+ * is removed). Leaves a cell's tooltip alone — closing the hover toolbar as the
+ * pointer leaves the grid must not cut the cell tooltip's `tooltipHideDelay` short.
+ */
+function hideToolbarTooltip<T>(ctx: GridHost<T>): void {
+	const anchor = ctx.tooltip.anchor
+	if (anchor && anchor.matches('.wg__toolbar-btn')) hideTooltip(ctx, 0)
 }
