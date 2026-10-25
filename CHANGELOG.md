@@ -139,6 +139,10 @@ handlers: `onpaste`, `onbeforepaste`, `onselect`).
   index). They are keyed by row identity now — the `idMember` (or `treePathMember`) value, else the
   row object — as the `idMember` docs already promised. `getDraftRowIndices()` returns the display
   indices of the displayed rows that have a draft.
+- **Security:** HTML attribute values were not quote-escaped — row data in a tooltip
+  (`getTooltipCallback` / `tooltipMember`) or a cell value could close `data-tooltip="…"` /
+  `value="…"` and inject attributes. `"` and `'` are escaped everywhere now (a quoted value also
+  reached the text editor truncated).
 
 ### Changed
 

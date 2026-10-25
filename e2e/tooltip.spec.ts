@@ -55,9 +55,14 @@ test.describe('cell tooltips', () => {
 	})
 
 	test('tooltip text containing double quotes survives (attribute is escaped)', async ({ page }) => {
-		test.fail(true, 'NOTES.md #21')
 		await onGrid(page, el => { el.items = [{ ...el.items[0], name: 'Say "hi"' }, el.items[1]] })
 		await expect(cell(page, 0, 0)).toHaveAttribute('data-tooltip', 'Name: Say "hi"', { timeout: 2000 })
+	})
+
+	test('row data cannot inject attributes through the tooltip (NOTES.md #21)', async ({ page }) => {
+		await onGrid(page, el => { el.items = [{ ...el.items[0], name: `x" data-injected="1' onclick='1` }, el.items[1]] })
+		await expect(cell(page, 0, 0)).toHaveAttribute('data-tooltip', `Name: x" data-injected="1' onclick='1`, { timeout: 2000 })
+		await expect(gridLocator(page).locator('[data-injected], td[onclick]')).toHaveCount(0)
 	})
 
 	test('plain tooltips escape markup', async ({ page }) => {

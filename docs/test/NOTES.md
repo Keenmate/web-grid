@@ -347,7 +347,9 @@ helper on the ctx) so totals reflect what the user sees.
 **Test:** `summary.spec.ts` "re-renders after an edit, and the sum sees the
 edited (draft) value" (`test.fail`).
 
-## 21. Tooltip attributes are not quote-escaped
+## 21. Tooltip attributes are not quote-escaped — FIXED
+
+**Fixed:** `escapeHtml` (the one escape every template uses, text and attribute values) now escapes `" '` too — tooltips, editor `value="…"`, `data-value`, … can no longer be closed / injected by row data. Tests: quoted tooltip, attribute-injection attempt, quoted value in the text editor.
 
 **Where:** `web-component.ts:1193` `escapeHtml()` (textContent → innerHTML)
 escapes `& < >` but not `"`; the result is interpolated into `data-tooltip="…"`

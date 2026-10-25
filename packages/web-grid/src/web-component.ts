@@ -1190,10 +1190,19 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	// GridHost Implementation - Required by module functions
 	// ==========================================================================
 
+	/**
+	 * Escape for HTML text AND attribute values (`& < > " '`). Every attribute
+	 * interpolation (`data-tooltip="…"`, editor `value="…"`, …) goes through this,
+	 * so row data can't close the attribute and inject new ones.
+	 */
 	escapeHtml(text: string): string {
-		const div = document.createElement('div')
-		div.textContent = text
-		return div.innerHTML
+		if (text == null) return ''
+		return String(text)
+			.replace(/&/g, '&amp;')
+			.replace(/</g, '&lt;')
+			.replace(/>/g, '&gt;')
+			.replace(/"/g, '&quot;')
+			.replace(/'/g, '&#39;')
 	}
 
 	getCurrentEditingColumn(): Column<T> | null {

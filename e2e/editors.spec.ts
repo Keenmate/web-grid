@@ -333,3 +333,11 @@ test.describe('contextMenu — custom items', () => {
 		await expect(dividers).toHaveCount(2)
 	})
 })
+
+test('a text value with quotes reaches the editor intact (attribute escaping, NOTES.md #21)', async ({ page }) => {
+	await gotoDemo(page)
+	await gridLocator(page).evaluate((el: any) => { el.items = [{ ...el.items[0], name: `Say "hi" it's` }, ...el.items.slice(1)] })
+	await cell(page, 0, 1).click()
+	await page.keyboard.press('F2')
+	await expect(cell(page, 0, 1).locator('input')).toHaveValue(`Say "hi" it's`)
+})
