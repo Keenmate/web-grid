@@ -215,7 +215,9 @@ nothing visible (row-lock-change with `row: null, rowIndex: -1`),
 **Question:** should `getRowId()` fall back to `idMember` (and `idValueMember` be
 deprecated)? Fixtures set both for now.
 
-## 12. `expand-change` hands out the grid's live `expandedPaths` Set
+## 12. `expand-change` hands out the grid's live `expandedPaths` Set — FIXED
+
+**Fixed:** `expandedPaths: new Set(this._expandedPaths)` in all five `expand-change` notifications.
 
 **Where:** `grid.ts:1420, 1429, 1436, 1457, 1475` —
 `notify('expand-change', { …, expandedPaths: this._expandedPaths })`.

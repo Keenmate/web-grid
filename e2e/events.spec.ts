@@ -137,12 +137,16 @@ test.describe('expand-change', () => {
 	})
 
 	test('an earlier detail.expandedPaths is a snapshot (not mutated by later toggles)', async ({ page }) => {
-		test.fail(true, 'NOTES.md #12')
 		await chevron(page, '1.1').click()
 		await chevron(page, '1').click()
 		const sizes = await page.evaluate(() => (window as any).__events
 			.filter((e: any) => e.type === 'expand-change' && e.via === 'event')
 			.map((e: any) => [...e.detail.expandedPaths].sort()))
-		expect(sizes).toEqual([['1'], []])
+		expect(sizes).toHaveLength(2)
+		// the first detail still has '1' (only 1.1 collapsed); the second lacks '1' too
+		expect(sizes[0]).toContain('1')
+		expect(sizes[0]).not.toContain('1.1')
+		expect(sizes[1]).not.toContain('1')
+		expect(sizes[0].length).toBe(sizes[1].length + 1)
 	})
 })

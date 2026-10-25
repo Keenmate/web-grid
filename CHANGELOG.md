@@ -154,6 +154,8 @@ handlers: `onpaste`, `onbeforepaste`, `onselect`).
   `goToRowGo`, `goToRowCancel`, `treeExpand`, `treeCollapse`.
 - A partial nested `labels.actions` / `labels.contextMenu` wiped the other texts of that group
   (shallow merge); the groups merge too now (`GridLabelsInput` type).
+- `expand-change` handed out the grid's live `expandedPaths` Set — an earlier detail changed with
+  later toggles, and mutating it changed the grid's state. The detail carries a snapshot now.
 
 ### Changed
 

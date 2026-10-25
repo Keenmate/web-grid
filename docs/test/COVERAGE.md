@@ -150,7 +150,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Row focus event | ✓ | `basic.spec.ts`, `selection.spec.ts` | `basic.html`, `selection.html` |
 | Paste events | ✓ | `paste.spec.ts` | `paste.html` |
 | `edit-start`, `edit-cancel`, `cell-selection-change`, `row-delete`, `expand-change` — once each, twin first, same detail | ✓ | `events.spec.ts` | `events.html` |
-| `expand-change` detail is a snapshot (#12) | ✗ fail | `events.spec.ts` | `events.html` |
+| `expand-change` detail is a snapshot (#12 fixed) | ✓ | `events.spec.ts` | `events.html` |
 
 ## 10. Theming, inputs, i18n, logging
 

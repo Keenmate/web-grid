@@ -1425,7 +1425,7 @@ export class GridEngine<T = unknown> {
 		if (wasExpanded) this._expandedPaths.delete(path)
 		else this._expandedPaths.add(path)
 		interactionLogger.debug('tree toggle:', path, wasExpanded ? 'expanded → collapsed' : 'collapsed → expanded', '| set size now:', this._expandedPaths.size)
-		this.notify('expand-change', { path, isExpanded: !wasExpanded, expandedPaths: this._expandedPaths })
+		this.notify('expand-change', { path, isExpanded: !wasExpanded, expandedPaths: new Set(this._expandedPaths) })
 		this.requestUpdate()
 	}
 
@@ -1434,14 +1434,14 @@ export class GridEngine<T = unknown> {
 		this._expandedPaths.clear()
 		for (const p of this._treeIndex.nodes.keys()) this._expandedPaths.add(p)
 		interactionLogger.debug('tree expandAll: size =', this._expandedPaths.size)
-		this.notify('expand-change', { path: null, isExpanded: true, expandedPaths: this._expandedPaths })
+		this.notify('expand-change', { path: null, isExpanded: true, expandedPaths: new Set(this._expandedPaths) })
 		this.requestUpdate()
 	}
 
 	collapseAll(): void {
 		this._expandedPaths.clear()
 		interactionLogger.debug('tree collapseAll')
-		this.notify('expand-change', { path: null, isExpanded: false, expandedPaths: this._expandedPaths })
+		this.notify('expand-change', { path: null, isExpanded: false, expandedPaths: new Set(this._expandedPaths) })
 		this.requestUpdate()
 	}
 
@@ -1462,7 +1462,7 @@ export class GridEngine<T = unknown> {
 			const node = this._treeIndex.nodes.get(p)
 			if (node) queue.push(...node.childPaths)
 		}
-		this.notify('expand-change', { path, isExpanded: true, expandedPaths: this._expandedPaths })
+		this.notify('expand-change', { path, isExpanded: true, expandedPaths: new Set(this._expandedPaths) })
 		this.requestUpdate()
 	}
 
@@ -1480,7 +1480,7 @@ export class GridEngine<T = unknown> {
 			const node = this._treeIndex.nodes.get(p)
 			if (node) queue.push(...node.childPaths)
 		}
-		this.notify('expand-change', { path, isExpanded: false, expandedPaths: this._expandedPaths })
+		this.notify('expand-change', { path, isExpanded: false, expandedPaths: new Set(this._expandedPaths) })
 		this.requestUpdate()
 	}
 
