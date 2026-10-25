@@ -61,8 +61,12 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Select / combobox / autocomplete in depth | ✓ | `dropdowns.spec.ts` | `dropdowns.html` |
 | Date editor (open, select, keyboard, min/max, months) | ✓ | `datepicker.spec.ts` | `datepicker.html` |
 | `editTrigger` click / dblclick / navigate, `shouldCommitOnClickAway` | ✓ | `edit-trigger.spec.ts` | `edit-trigger.html` |
-| `editTrigger` button / always per column, `editStartSelection` | ✗ | | |
-| Number editor parsing | ✗ | | |
+| `editTrigger` 'always', column override, `editStartSelection` (grid + column, all 4 modes) | ✓ | `edit-modes.spec.ts` | `edit-modes.html` |
+| `editTrigger: 'button'` has no button (#26, question) | ✗ fail | `edit-modes.spec.ts` | `edit-modes.html` |
+| Number editor parsing (ints, decimals, padding, empty → null, negatives) | ✓ | `edit-modes.spec.ts` | `edit-modes.html` |
+| Number editor rejects non-numbers / honours `editorOptions` min/max/decimals (#25) | ✗ fail | `edit-modes.spec.ts` | `edit-modes.html` |
+| `dropdownToggleVisibility`, `shouldShowDropdownOnFocus`, `shouldOpenDropdownOnEnter` (grid + column), checkbox Space toggle | ✓ | `dropdown-flags.spec.ts` | `dropdown-flags.html` |
+| `isCheckboxAlwaysEditable` (#27, dead flag) | ✗ fail | `dropdown-flags.spec.ts` | `dropdown-flags.html` |
 | `mode` preset (read-only / excel / input-matrix) | ✓ | `grid-modes.spec.ts`, `inputs.spec.ts` | `grid-modes.html`, `inputs.html` |
 | `validateCallback` (string / result / transform) | ✓ | `validation.spec.ts` | `validation.html` |
 | `invalidCells` + getters | ✗ | | |
@@ -82,6 +86,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | `cellSelectionMode` disabled / shift + selection API | ✗ | | |
 | Arrow navigation in navigate mode | ✓ | `basic.spec.ts` | `basic.html` |
 | Home/End/PageUp/PageDown + Ctrl variants, Delete commits null, typing starts edit, Ctrl+G dialog | ✓ | `keyboard.spec.ts` | `keyboard.html` |
+| Go-to-row Escape keeps focus (#24) | ✗ fail | `keyboard.spec.ts` | `keyboard.html` |
 | Shift+Arrow range extension (#13, feature gap), Meta+G (#3) | ✗ fail | `keyboard.spec.ts` | `keyboard.html` |
 | `rangeShortcuts` on a range / row selection, disabled shortcut | ✓ | `keyboard.spec.ts` | `keyboard.html` |
 | Number column ignores letters (GRID-1, #1) | ✗ fail | `keyboard.spec.ts` | `keyboard.html` |

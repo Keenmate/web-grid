@@ -390,3 +390,52 @@ opened (`moveFocus(ctx, oldRow, colIndex)`).
 **Test:** `keyboard.spec.ts` "Escape closes the dialog and returns focus to the
 cell" (`test.fail`). Before this split the old combined test was flaky because it
 read `focusedCell` before the deferred clear.
+
+## 25. Number editor: no validation, documented options ignored
+
+**Where:** `modules/editing/renderers.ts:86-108` (`renderNumberEditor` reads
+`editorOptions` into `opts` and never uses it), parse in
+`modules/actions/executors/edit-executor.ts:110-118` (`parseFloat`, falling back
+to the raw string).
+
+**Symptoms:**
+- `abc` in a number column is committed as the **string** `"abc"`;
+- `12abc` is silently truncated to `12` (`parseFloat`);
+- `editorOptions.min / max / step / decimalPlaces / allowNegative` (`types.ts:113-118`)
+  have no effect (500 with `max: 100` is stored as 500, `-3` with
+  `allowNegative: false` as -3, `1.239` with `decimalPlaces: 2` as 1.239).
+
+**Suggested fix:** strict parse (`Number()` + `isFinite`), reject / mark invalid
+non-numbers, and apply the options (clamp or validation error — decide which),
+or drop the options from the type.
+
+**Tests:** `edit-modes.spec.ts` — 3 number-editor tests (`test.fail`).
+
+## 26. `editTrigger: 'button'` has no button (open question)
+
+**Where:** `types.ts:43` lists `'button'`; nothing renders an edit button —
+only `modules/editing/lifecycle.ts:216` treats it like `click`/`dblclick` for
+Tab auto-open. With `'button'` a cell can't be put into edit mode with the mouse
+at all.
+
+**Question:** implement the button (icon in editable cells, like the toolbar's
+`toolbarTrigger: 'button'`), or remove the value?
+
+**Test:** `edit-modes.spec.ts` "'button': an edit button in the cell starts
+editing" (`test.fail`).
+
+## 27. `isCheckboxAlwaysEditable` has no effect
+
+**Where:** declared in the input table (`web-component.ts:376`), stored by the
+engine (`grid.ts:566-570`), documented in `types.ts:360` ("Make checkboxes
+always interactive, even in navigate mode") — never read anywhere.
+
+**Symptom:** in navigate mode a click on a checkbox only focuses the cell (the
+display checkbox is `disabled`, `modules/rendering/display.ts:41`); toggling
+needs Space. Setting the flag changes nothing.
+
+**Suggested fix:** when the flag (or `editTrigger: 'always'`) is on, render the
+display checkbox enabled and toggle on click (dispatch `toggleCheckbox`).
+
+**Test:** `dropdown-flags.spec.ts` "isCheckboxAlwaysEditable: one click on the
+checkbox toggles it" (`test.fail`).

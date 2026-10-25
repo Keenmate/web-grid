@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — edit modes fixture</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>edit-modes fixture</h1>
+	<p>Targeted by <code>e2e/edit-modes.spec.ts</code>: number-editor parsing / options,
+	<code>editTrigger</code> 'always' / 'button' / per-column overrides, <code>editStartSelection</code>.
+	Grid default <code>edit-trigger="dblclick"</code>; events in <code>edit-modes-log</code>.</p>
+
+	<web-grid id="grid" is-editable edit-trigger="dblclick" style="max-width: 700px;"></web-grid>
+	<pre data-testid="edit-modes-log"></pre>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+		import { installEventLog } from './event-log.js'
+
+		/*
+		 * col 0 name  text                           "Alpha" / "Beta"
+		 * col 1 qty   number                         10 / 20
+		 * col 2 price number, editorOptions { min: 0, max: 100, decimalPlaces: 2, allowNegative: false }
+		 * col 3 note  text, column editTrigger 'click'
+		 */
+		const grid = document.getElementById('grid')
+		grid.idMember = 'id'
+		grid.columns = [
+			{ field: 'name', title: 'Name', width: '140px', editor: 'text' },
+			{ field: 'qty', title: 'Qty', width: '80px', editor: 'number' },
+			{ field: 'price', title: 'Price', width: '90px', editor: 'number', editorOptions: { min: 0, max: 100, decimalPlaces: 2, allowNegative: false } },
+			{ field: 'note', title: 'Note', width: '140px', editor: 'text', editTrigger: 'click' }
+		]
+		grid.items = [
+			{ id: 1, name: 'Alpha', qty: 10, price: 9.5, note: 'hello world' },
+			{ id: 2, name: 'Beta', qty: 20, price: 12, note: 'second' }
+		]
+		installEventLog(grid, 'edit-modes', ['row-change', 'edit-start', 'edit-cancel'])
+	</script>
+</body>
+</html>

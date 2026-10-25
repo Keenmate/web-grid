@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — dropdown flags fixture</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>dropdown-flags fixture</h1>
+	<p>Targeted by <code>e2e/dropdown-flags.spec.ts</code>: <code>dropdownToggleVisibility</code>,
+	<code>shouldShowDropdownOnFocus</code>, <code>shouldOpenDropdownOnEnter</code> (grid + column),
+	<code>isCheckboxAlwaysEditable</code>. Navigate mode, explicit flags in markup.</p>
+
+	<web-grid id="grid" is-editable edit-trigger="navigate" should-show-dropdown-on-focus="false" style="max-width: 600px;"></web-grid>
+	<pre data-testid="dropdown-flags-log"></pre>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+		import { installEventLog } from './event-log.js'
+
+		/* col 0 name (text)  1 status (select: todo / doing / done)  2 done (checkbox)  3 owner (select, column shouldOpenDropdownOnEnter) */
+		const status = [{ value: 'todo', label: 'To do' }, { value: 'doing', label: 'Doing' }, { value: 'done', label: 'Done' }]
+		const owners = [{ value: 'ann', label: 'Ann' }, { value: 'bob', label: 'Bob' }]
+		const grid = document.getElementById('grid')
+		grid.idMember = 'id'
+		grid.columns = [
+			{ field: 'name', title: 'Name', width: '120px', editor: 'text' },
+			{ field: 'status', title: 'Status', width: '120px', editor: 'select', editorOptions: { options: status } },
+			{ field: 'done', title: 'Done', width: '70px', editor: 'checkbox' },
+			{ field: 'owner', title: 'Owner', width: '120px', editor: 'select', editorOptions: { options: owners }, shouldOpenDropdownOnEnter: true }
+		]
+		grid.items = [
+			{ id: 1, name: 'Alpha', status: 'todo', done: false, owner: 'ann' },
+			{ id: 2, name: 'Beta', status: 'doing', done: true, owner: 'bob' }
+		]
+		installEventLog(grid, 'dropdown-flags', ['row-change', 'edit-start'])
+	</script>
+</body>
+</html>
