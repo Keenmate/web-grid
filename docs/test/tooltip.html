@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — tooltip fixture</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>tooltip fixture</h1>
+	<p>Targeted by <code>e2e/tooltip.spec.ts</code>. <code>tooltip-show-delay="0"</code> /
+	<code>tooltip-hide-delay="0"</code> so the spec controls timing; it raises them to test the delays.</p>
+
+	<web-grid id="grid" tooltip-show-delay="0" tooltip-hide-delay="0" is-editable edit-trigger="navigate" style="max-width: 700px;"></web-grid>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+
+		/*
+		 * col 0 name  — getTooltipCallback → "Name: <raw value>" (plain text)
+		 * col 1 note  — tooltipMember 'hint' (row 1 has no hint → no tooltip)
+		 * col 2 rich  — getTooltipCallback + isTooltipHtml → "<b>bold</b> <value>" (no quoted attributes — NOTES.md #21)
+		 * col 3 code  — headerInfo "Unique code"; validateCallback (must be 3 letters);
+		 *               column getValidationTooltipCallback → "<i>Fix: error</i>"
+		 * col 4 qty   — validateCallback (>= 0); no column tooltip callback → grid-level
+		 *               getValidationTooltipCallback is set by the spec when needed
+		 */
+		const grid = document.getElementById('grid')
+		grid.idMember = 'id'
+		grid.columns = [
+			{ field: 'name', title: 'Name', width: '120px', getTooltipCallback: (ctx) => `Name: ${ctx.value}` },
+			{ field: 'note', title: 'Note', width: '100px', tooltipMember: 'hint' },
+			{ field: 'rich', title: 'Rich', width: '100px', isTooltipHtml: true, getTooltipCallback: (ctx) => `<b>bold</b> ${ctx.value}` },
+			{ field: 'code', title: 'Code', width: '100px', editor: 'text', headerInfo: 'Unique code',
+				validateCallback: ({ value }) => /^[A-Z]{3}$/.test(String(value)) ? null : 'Code must be 3 capital letters',
+				getValidationTooltipCallback: (ctx) => `<i>Fix: ${ctx.error}</i>` },
+			{ field: 'qty', title: 'Qty', width: '80px', editor: 'number',
+				validateCallback: ({ value }) => Number(value) >= 0 ? null : 'Must not be negative' }
+		]
+		grid.items = [
+			{ id: 1, name: 'Alpha', note: 'n1', hint: 'Hint one', rich: 'r1', code: 'AAA', qty: 1 },
+			{ id: 2, name: 'Beta', note: 'n2', hint: null, rich: 'r2', code: 'BBB', qty: 2 }
+		]
+	</script>
+</body>
+</html>

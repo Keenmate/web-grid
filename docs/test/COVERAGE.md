@@ -152,6 +152,8 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Table-driven attribute → property → removal loop over all inputs | ✗ | | |
 | `labels` across menus / pagination / go-to-row | ✗ | | |
 | Logging silent by default | ✗ | | |
-| Summary row (`renderSummaryCallback`, position, inline, metadata) | ✗ | | |
-| Tooltips (`getTooltipCallback`, validation tooltip, delays) | ✗ | | |
+| Summary row (`renderSummaryCallback` ctx, `summaryPosition`, `isSummaryInline`, `summaryMetadata`, totalItems) | ✓ | `summary.spec.ts` | `summary.html` |
+| Summary refresh after an edit, draft-aware (#20) | ✗ fail | `summary.spec.ts` | `summary.html` |
+| Tooltips: `getTooltipCallback`, `tooltipMember`, `isTooltipHtml`, `headerInfo`, validation tooltip (column / grid callback), `tooltipShowDelay` | ✓ | `tooltip.spec.ts` | `tooltip.html` |
+| Tooltip quote escaping (#21), validation tooltip without re-render (#22), `tooltipHideDelay` (#23) | ✗ fail | `tooltip.spec.ts` | `tooltip.html` |
 | `shortcutsHelpPosition`, `renderShortcutsHelpCallback` | ✗ | | |

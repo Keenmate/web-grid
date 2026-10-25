@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — summary fixture</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>summary fixture</h1>
+	<p>Targeted by <code>e2e/summary.spec.ts</code>. 7 rows (qty 1..7), page-size 3, summary bottom-right;
+	the callback renders <code>page=… shown=… all=… total=… sum=… meta=…</code> into <code>[data-testid=sum]</code>.</p>
+
+	<web-grid id="grid" is-pageable page-size="3" summary-position="bottom-right" is-editable edit-trigger="navigate"
+		style="max-width: 600px;"></web-grid>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+
+		window.summaryCalls = 0
+		const grid = document.getElementById('grid')
+		grid.idMember = 'id'
+		grid.columns = [
+			{ field: 'id', title: 'ID', width: '60px', isEditable: false },
+			{ field: 'qty', title: 'Qty', width: '80px', editor: 'number' }
+		]
+		grid.items = Array.from({ length: 7 }, (_, i) => ({ id: i + 1, qty: i + 1 }))
+		grid.renderSummaryCallback = (ctx) => {
+			window.summaryCalls++
+			window.lastSummaryCtx = { hasController: !!ctx.controller }
+			const sum = ctx.items.reduce((s, r) => s + Number(r.qty), 0)
+			const meta = ctx.metadata ? JSON.stringify(ctx.metadata) : '-'
+			return `<span data-testid="sum">page=${ctx.currentPage} size=${ctx.pageSize} shown=${ctx.items.length} all=${ctx.allItems.length} total=${ctx.totalItems} sum=${sum} meta=${meta}</span>`
+		}
+	</script>
+</body>
+</html>

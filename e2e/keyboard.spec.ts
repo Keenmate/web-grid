@@ -122,7 +122,7 @@ test.describe('Ctrl+G go to row', () => {
 		expect(await focused(page)).toEqual([17, 3])
 	})
 
-	test('Enter in the input goes; Escape cancels and keeps focus', async ({ page }) => {
+	test('Enter in the input goes', async ({ page }) => {
 		await cell(page, 2, 1).click()
 		await page.keyboard.press('Control+g')
 		await gotoDialog(page).locator('.wg__goto-input').fill('5')
@@ -130,11 +130,17 @@ test.describe('Ctrl+G go to row', () => {
 		await expect(gotoDialog(page)).toHaveCount(0)
 		expect(await focused(page)).toEqual([4, 1])
 		await expect(cell(page, 4, 1)).toBeFocused()
+	})
 
+	test('Escape closes the dialog and returns focus to the cell', async ({ page }) => {
+		test.fail(true, 'NOTES.md #24')
+		await cell(page, 4, 1).click()
 		await page.keyboard.press('Control+g')
 		await expect(gotoDialog(page)).toBeVisible()
 		await page.keyboard.press('Escape')
 		await expect(gotoDialog(page)).toHaveCount(0)
+		await expect(cell(page, 4, 1)).toBeFocused({ timeout: 1500 })
+		await page.waitForTimeout(100)  // the focus-left check runs a frame later
 		expect(await focused(page)).toEqual([4, 1])
 	})
 

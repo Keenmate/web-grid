@@ -317,3 +317,76 @@ blur don't commit). Same for a locked row.
 `engine.editingCell?.rowIndex === rowIndex && field matches` after `startEdit`.
 
 **Test:** `row-api.spec.ts` "startEditing a read-only cell does nothing" (`test.fail`).
+
+## 20. Summary is not refreshed after a cell edit (and can't see drafts)
+
+**Where:** commits use the surgical cell update (no full `render()`), and
+`renderSummary` (`modules/rendering/table.ts:~810`) passes `displayItems` — the
+original rows, not the drafts.
+
+**Symptom:** edit qty 1 → 10 on page 1: the summary keeps `sum=6` (the callback
+isn't even called again) until an unrelated full render; and after that render
+it still sums the original `items` because the edit lives in a draft.
+
+**Suggested fix:** re-render the summary area after `commitEdit` /
+`row-change`; give the callback draft-aware rows (or a `getCellValue(row, field)`
+helper on the ctx) so totals reflect what the user sees.
+
+**Test:** `summary.spec.ts` "re-renders after an edit, and the sum sees the
+edited (draft) value" (`test.fail`).
+
+## 21. Tooltip attributes are not quote-escaped
+
+**Where:** `web-component.ts:1193` `escapeHtml()` (textContent → innerHTML)
+escapes `& < >` but not `"`; the result is interpolated into `data-tooltip="…"`
+/ `data-tooltip-html="…"` (`modules/rendering/table.ts:158, 347-372, 410, 627`).
+
+**Symptom:** a tooltip text with a double quote (`Say "hi"`) is cut at the quote;
+HTML tooltips with quoted attributes (`<b class="x">`) lose everything after the
+first `"` — and the remainder is parsed as extra attributes on the `<td>`
+(attribute injection from row data via `getTooltipCallback` / `tooltipMember`).
+
+**Suggested fix:** an attribute-safe escape (`&quot;` / `&#39;` too) for every
+attribute interpolation.
+
+**Test:** `tooltip.spec.ts` "tooltip text containing double quotes survives"
+(`test.fail`). The fixture's HTML tooltips avoid quoted attributes.
+
+## 22. Validation tooltip only appears after a full render
+
+**Where:** the commit path updates the cell surgically (adds
+`wg__cell--invalid`) but not the `data-tooltip` / `data-tooltip-html` attribute,
+which is only written by the full row renderer (`modules/rendering/table.ts:360-372`).
+
+**Symptom:** after a failed commit the cell is red but hovering shows no error
+until something re-renders the grid.
+
+**Test:** `tooltip.spec.ts` "the error tooltip is there right after the failed
+commit" (`test.fail`); the other validation-tooltip tests force a full render.
+
+## 23. `tooltipHideDelay` is not honoured
+
+**Where:** `modules/tooltip/event-listeners.ts:51` passes `ctx.tooltipHideDelay`
+(reads back as 700 via property and attribute), yet the tooltip is gone ~350 ms
+after the pointer leaves the cell. Not root-caused — something else removes the
+tooltip (another `hideTooltip` / re-render path) before the hide timer fires.
+`tooltipShowDelay` works.
+
+**Test:** `tooltip.spec.ts` "tooltipHideDelay keeps it up after leaving" (`test.fail`).
+
+## 24. Go-to-row Escape / Cancel loses the grid focus
+
+**Where:** `modules/navigation/go-to-row-dialog.ts:46-48` — `closeDialog()` just
+removes the overlay; the focused `<input>` disappears, focus falls to `<body>`,
+and the focus-out check (`modules/navigation/focus.ts:~540`) then clears
+`focusedCell` a frame later.
+
+**Symptom:** Ctrl+G → Escape: no cell is focused, arrow keys do nothing until the
+user clicks back into the grid. (Go / Enter is fine — it focuses the target.)
+
+**Suggested fix:** on cancel, re-focus the cell that was focused when the dialog
+opened (`moveFocus(ctx, oldRow, colIndex)`).
+
+**Test:** `keyboard.spec.ts` "Escape closes the dialog and returns focus to the
+cell" (`test.fail`). Before this split the old combined test was flaky because it
+read `focusedCell` before the deferred clear.
