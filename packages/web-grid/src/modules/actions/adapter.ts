@@ -384,6 +384,11 @@ export class ActionPipelineAdapter<T = unknown> {
 				return false  // Already editing, let native input handle it
 			}
 
+			// Number columns: only a digit / minus / decimal point starts editing
+			if (this.ctx.engine.columns[cell.colIndex]?.editor === 'number' && !/[\d.\-]/.test(e.key)) {
+				return true  // consumed: a letter on a number cell does nothing
+			}
+
 			e.preventDefault()
 			e.stopPropagation()
 

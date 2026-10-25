@@ -1171,22 +1171,12 @@ export class GridEngine<T = unknown> {
 
 			const rowCells: string[] = []
 			for (const vc of this.visualColumns) {
-				const field = String(vc.column.field)
-				const value = (rowData as Record<string, unknown>)[field]
-				const cellText = value == null ? '' : String(value)
-				rowCells.push(cellText)
+				rowCells.push(this.clipboardCellText(rowData, rowIndex, String(vc.column.field)))
 			}
 			rows.push(rowCells.join('\t'))
 		}
 
-		const tsv = rows.join('\n')
-
-		try {
-			await navigator.clipboard.writeText(tsv)
-			return true
-		} catch {
-			return false
-		}
+		return this.writeClipboardText(rows.join('\n'))
 	}
 
 	/**
@@ -1220,22 +1210,12 @@ export class GridEngine<T = unknown> {
 			for (const colIndex of selectedColIndices) {
 				const vc = this.visualColumns[colIndex]
 				if (!vc) continue
-				const field = String(vc.column.field)
-				const value = (rowData as Record<string, unknown>)[field]
-				const cellText = value == null ? '' : String(value)
-				rowCells.push(cellText)
+				rowCells.push(this.clipboardCellText(rowData, rowIndex, String(vc.column.field)))
 			}
 			rows.push(rowCells.join('\t'))
 		}
 
-		const tsv = rows.join('\n')
-
-		try {
-			await navigator.clipboard.writeText(tsv)
-			return true
-		} catch {
-			return false
-		}
+		return this.writeClipboardText(rows.join('\n'))
 	}
 
 	// Cell range selection
@@ -2005,19 +1985,43 @@ export class GridEngine<T = unknown> {
 					continue
 				}
 
-				const field = String(column.field)
-				const value = (rowData as Record<string, unknown>)[field]
-				// Convert value to string, handle null/undefined
-				const cellText = value == null ? '' : String(value)
-				rowCells.push(cellText)
+				rowCells.push(this.clipboardCellText(rowData, row, String(column.field)))
 			}
 			rows.push(rowCells.join('\t'))
 		}
 
-		const tsv = rows.join('\n')
+		return this.writeClipboardText(rows.join('\n'))
+	}
 
+	/**
+	 * Copy the focused cell to the clipboard (single-cell Ctrl+C): the column's
+	 * `getCopyValueCallback` text when set, otherwise the raw (draft-aware) value.
+	 * @returns true if copy was successful, false if no focused cell or clipboard failed
+	 */
+	async copyFocusedCellToClipboard(): Promise<boolean> {
+		const focused = this._focusedCell
+		if (!focused) return false
+		const row = this.displayItems[focused.rowIndex]
+		const column = this._columns[focused.colIndex]
+		if (!row || !column) return false
+		const text = column.getCopyValueCallback
+			? String(column.getCopyValueCallback(this.cellCtx(row, focused.rowIndex, column, focused.colIndex)) ?? '')
+			: this.clipboardCellText(row, focused.rowIndex, String(column.field))
+		return this.writeClipboardText(text)
+	}
+
+	/** Clipboard text for one cell: the draft-aware raw value; null → '', objects → JSON. */
+	private clipboardCellText(row: T, rowIndex: number, field: string): string {
+		const value = this.getCellRawValue(row, rowIndex, field)
+		if (value == null) return ''
+		if (typeof value === 'object' && !(value instanceof Date)) return JSON.stringify(value)
+		return String(value)
+	}
+
+	/** Write to the clipboard; a rejection (no permission / insecure context) resolves false. */
+	private async writeClipboardText(text: string): Promise<boolean> {
 		try {
-			await navigator.clipboard.writeText(tsv)
+			await navigator.clipboard.writeText(text)
 			return true
 		} catch {
 			return false
@@ -2197,9 +2201,13 @@ export class GridEngine<T = unknown> {
 		if (this._emptyRowDraft) {
 			return this._emptyRowDraft
 		}
-		// Create and cache the empty row
+		// Create and cache the empty row. The default factory reads the columns, so a
+		// row built before any columns exist (e.g. `is-new-row-enabled` in markup, a
+		// render before `columns` is assigned) is not cached — it would lack the fields.
 		const newRow = this.createNewEmptyRow()
-		this._emptyRowDraft = newRow
+		if (this._createEmptyRowCallback || this._columns.length > 0) {
+			this._emptyRowDraft = newRow
+		}
 		return newRow
 	}
 

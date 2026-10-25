@@ -5,7 +5,7 @@
 
 import type { ActionExecutor, ExecutorContext } from '../pipeline.js'
 import type { GridAction, StartEditAction, DeleteCellAction, EscapeEditAction } from '../types.js'
-import { tryStartEdit, clearEditingVisual, focusCellElement } from '../../navigation/focus.js'
+import { tryStartEdit, clearEditingVisual, focusCellElement, moveFocus } from '../../navigation/focus.js'
 import { removeDropdown, getOptionDisplayValue } from '../../dropdown/index.js'
 import { renderCell } from '../../rendering/index.js'
 
@@ -21,7 +21,7 @@ export const editExecutor: ActionExecutor = {
 				executeStartEdit(ctx, action)
 				break
 			case 'commitEdit':
-				executeCommitEdit(ctx, action.commitEmptyRow, action.target)
+				executeCommitEdit(ctx, action.commitEmptyRow, action.target, action.focusEmptyRowColIndex)
 				break
 			case 'cancelEdit':
 				executeCancelEdit(ctx)
@@ -52,7 +52,8 @@ function executeStartEdit(ctx: ExecutorContext, action: StartEditAction): void {
 async function executeCommitEdit(
 	ctx: ExecutorContext,
 	commitEmptyRow?: boolean,
-	target?: { rowIndex: number; colIndex: number }
+	target?: { rowIndex: number; colIndex: number },
+	focusEmptyRowColIndex?: number
 ): Promise<void> {
 	const editingCell = ctx.engine.editingCell
 
@@ -139,6 +140,19 @@ async function executeCommitEdit(
 
 	// Re-render the cell (now has correct value with getDisplayValueCallback applied)
 	renderCell(ctx, rowIndex, colIndex)
+
+	if (focusEmptyRowColIndex !== undefined) {
+		// An empty-row commit re-renders the grid, and the render restores focus to
+		// the pre-render cell on a timeout — focus the fresh empty row after that,
+		// so the next row can be typed straight away.
+		setTimeout(() => {
+			const engine = ctx.engine
+			const emptyRowIndex = engine.newRowPosition === 'top' ? 0 : engine.displayItems.length - 1
+			if (engine.isEmptyRowIndex(emptyRowIndex)) {
+				moveFocus(ctx, emptyRowIndex, focusEmptyRowColIndex)
+			}
+		}, 0)
+	}
 }
 
 /**

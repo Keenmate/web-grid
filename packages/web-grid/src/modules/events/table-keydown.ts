@@ -10,13 +10,16 @@
 //     After toggling, focus is restored to the row whose tree path stays
 //     visible (same path for expand/same-row-collapse, ancestor for
 //     ancestor-walk collapse).
-//  2. Action pipeline pass-through (`always` editTrigger). When the
-//     pipeline claims the event, we stop.
-//  3. Datepicker passthrough — let navigation keys bubble to the picker's
+//  2. User row / range shortcuts on a focused cell.
+//  3. The action pipeline (`pipelineAdapter.tryHandleKeyDown`) — the ONE path
+//     for every built-in cell / editor key (navigation, edit start / commit /
+//     cancel, Delete, Ctrl+C, type-to-edit) in every editTrigger mode. When
+//     it claims the event, we stop.
+//  4. Datepicker passthrough — let navigation keys bubble to the picker's
 //     own document-level handler so it can drive its calendar.
-//  4. Editor input dispatch — calls `handleEditorKeyDown` for any focused
-//     editor (text / number / combobox / autocomplete / date).
-//  5. Cell dispatch — calls `handleCellKeyDown` for any focused cell.
+//  5. Residual editor keys — `handleEditorKeyDown` (select type-to-search).
+//  6. Residual cell keys — `handleCellKeyDown` (Ctrl/Cmd+G, Enter on text
+//     columns, Escape, Ctrl/Cmd+Delete).
 
 import type { GridHost } from '../grid-context.js'
 import { moveFocus, handleCellKeyDown } from '../navigation/index.js'

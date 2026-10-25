@@ -77,7 +77,8 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Drafts bugs: cancel leaves a draft (#6), drafts keyed by display index (#7), row-number marker stale (#8) | ✗ fail | `drafts.spec.ts` | `drafts.html` |
 | `discardRowDraft` / `discardAllDrafts`, `row-change` detail + twin | ✓ | `drafts.spec.ts` | `drafts.html` |
 | New row: `isNewRowEnabled`, `newRowPosition`, `newRowIndicator`, empty-row draft, `createRowCallback` (paste) | ✓ | `new-row.spec.ts` | `new-row.html` |
-| New row committed by Enter / Tab, `createEmptyRowCallback` row lands (#17); pasted numbers typed (#18) | ✗ fail | `new-row.spec.ts` | `new-row.html` |
+| New row committed by Enter / Tab (focus stays on the fresh empty row), `createEmptyRowCallback` row lands (#17 fixed) | ✓ | `new-row.spec.ts` | `new-row.html` |
+| Pasted numbers typed (#18) | ✗ fail | `new-row.spec.ts` | `new-row.html` |
 
 ## 4. Selection, copy, keyboard
 
@@ -88,11 +89,12 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Arrow navigation in navigate mode | ✓ | `basic.spec.ts` | `basic.html` |
 | Home/End/PageUp/PageDown + Ctrl variants, Delete commits null, typing starts edit, Ctrl+G dialog | ✓ | `keyboard.spec.ts` | `keyboard.html` |
 | Go-to-row Escape keeps focus (#24) | ✗ fail | `keyboard.spec.ts` | `keyboard.html` |
-| Shift+Arrow range extension (#13, feature gap), Meta+G (#3) | ✗ fail | `keyboard.spec.ts` | `keyboard.html` |
+| Meta+G go-to-row (#3 fixed), Cmd+Delete row-delete | ✓ | `keyboard.spec.ts`, `events.spec.ts` | `keyboard.html`, `events.html` |
+| Shift+Arrow range extension (#13, feature gap) | ✗ fail | `keyboard.spec.ts` | `keyboard.html` |
 | `rangeShortcuts` on a range / row selection, disabled shortcut | ✓ | `keyboard.spec.ts` | `keyboard.html` |
-| Number column ignores letters (GRID-1, #1) | ✗ fail | `keyboard.spec.ts` | `keyboard.html` |
+| Number column ignores letters (GRID-1, #1 fixed) | ✓ | `keyboard.spec.ts` | `keyboard.html` |
 | Ctrl+C cell / range / row / column TSV, `shouldCopyWithHeaders` | ✓ | `copy.spec.ts` | `copy.html` |
-| Ctrl+C honours `getCopyValueCallback` (#1) and drafts (#9) | ✗ fail | `copy.spec.ts` | `copy.html` |
+| Ctrl+C honours `getCopyValueCallback` (#1 fixed) and drafts (#9 fixed); clipboard rejection handled (GRID-2) | ✓ | `copy.spec.ts` | `copy.html` |
 | `copySelectedRowsToClipboard`, `copyCellSelectionToClipboard`, failure → false | ✓ | `copy.spec.ts` | `copy.html` |
 | `rowShortcuts`, Ctrl+U move, disabled callback, help overlay | ✓ | `shortcuts.spec.ts` | `shortcuts.html` |
 

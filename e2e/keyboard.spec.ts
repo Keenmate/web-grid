@@ -101,7 +101,6 @@ test.describe('editing keys', () => {
 	})
 
 	test('a letter on a number column does not start editing', async ({ page }) => {
-		test.fail(true, 'NOTES.md #1')
 		await cell(page, 0, 2).click()
 		await page.keyboard.press('a')
 		await page.waitForTimeout(150)
@@ -145,7 +144,6 @@ test.describe('Ctrl+G go to row', () => {
 	})
 
 	test('Meta+G opens the go-to-row dialog (macOS)', async ({ page }) => {
-		test.fail(true, 'NOTES.md #3')
 		await cell(page, 0, 1).click()
 		await page.keyboard.press('Meta+g')
 		await expect(gotoDialog(page)).toBeVisible({ timeout: 1500 })

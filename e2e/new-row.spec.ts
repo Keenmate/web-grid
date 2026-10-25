@@ -61,7 +61,6 @@ test('isNewRowEnabled=false removes it (attribute removal)', async ({ page }) =>
 })
 
 test('Tab within the empty row keeps a draft; Enter commits it into items with a row-change', async ({ page }) => {
-	test.fail(true, 'NOTES.md #17')
 	await typeInto(page, 2, 1, 'Gamma', 'Tab')
 	expect(await names(page)).toEqual(['Alpha', 'Beta'])  // not yet committed
 	await expect(cell(page, 2, 1)).toHaveText('Gamma')
@@ -74,8 +73,15 @@ test('Tab within the empty row keeps a draft; Enter commits it into items with a
 	expect(ev).toMatchObject({ rowIndex: 2, field: 'qty', oldValue: null, newValue: 30, isValid: true, row: { name: 'Gamma', qty: 30 } })
 })
 
+test('after Enter commits the row, focus is on the fresh empty row (same column)', async ({ page }) => {
+	await typeInto(page, 2, 1, 'Gamma', 'Enter')
+	await expect.poll(() => names(page)).toEqual(['Alpha', 'Beta', 'Gamma'])
+	await expect(cell(page, 3, 1)).toBeFocused()
+	await page.keyboard.press('d')
+	await expect(editorIn(cell(page, 3, 1))).toHaveValue('d')
+})
+
 test('Tab on the last editable cell commits the row too', async ({ page }) => {
-	test.fail(true, 'NOTES.md #17')
 	await typeInto(page, 2, 1, 'Gamma', 'Tab')
 	await typeInto(page, 2, 2, '31', 'Tab')
 	await expect.poll(() => names(page)).toEqual(['Alpha', 'Beta', 'Gamma'])
@@ -88,7 +94,6 @@ test('Enter on an untouched empty row adds nothing', async ({ page }) => {
 })
 
 test("newRowPosition 'top': a committed row is inserted at the top", async ({ page }) => {
-	test.fail(true, 'NOTES.md #17')
 	await onGrid(page, el => { el.newRowPosition = 'top' })
 	await typeInto(page, 0, 1, 'Zero', 'Enter')
 	await expect.poll(() => names(page)).toEqual(['Zero', 'Alpha', 'Beta'])
@@ -96,7 +101,6 @@ test("newRowPosition 'top': a committed row is inserted at the top", async ({ pa
 })
 
 test('createEmptyRowCallback seeds the empty row (and is used for the next one)', async ({ page }) => {
-	test.fail(true, 'NOTES.md #17')
 	await onGrid(page, el => {
 		let n = 100
 		el.createEmptyRowCallback = (ctx: any) => ({ id: ++n, name: '', qty: 1, hasController: !!ctx.controller })

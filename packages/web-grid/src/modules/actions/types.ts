@@ -67,6 +67,11 @@ export type CommitEditAction = {
 	commitEmptyRow?: boolean
 	/** Target cell (for 'always' edit mode where editingCell isn't tracked) */
 	target?: CellCoordinates
+	/**
+	 * After the commit settles (and the grid re-rendered), focus this column of
+	 * the empty (new) row — Enter / Tab-on-last-cell on the empty row.
+	 */
+	focusEmptyRowColIndex?: number
 }
 
 /**

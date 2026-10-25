@@ -34,6 +34,15 @@ function executeNavigate(ctx: ExecutorContext, action: NavigateAction): GridActi
 		ctx.engine.editingCell.rowIndex === from.rowIndex &&
 		ctx.engine.editingCell.field === fromField
 
+	// Empty (new) row: Enter, or Tab on its last editable cell, commits the row into
+	// `items` (when it has data) and keeps focus on the (fresh) empty row.
+	if (isEditing && ctx.engine.isEmptyRowIndex(from.rowIndex)) {
+		const focusColIndex = getEmptyRowCommitFocusCol(ctx, from, action)
+		if (focusColIndex !== null) {
+			return [{ type: 'commitEdit', commitEmptyRow: true, focusEmptyRowColIndex: focusColIndex }]
+		}
+	}
+
 	// If no target (e.g., Enter on last row, Tab on last cell), still commit if editing
 	if (!target) {
 		if (isEditing) {
@@ -61,6 +70,26 @@ function executeNavigate(ctx: ExecutorContext, action: NavigateAction): GridActi
 	}
 
 	return [transitionAction]
+}
+
+/**
+ * For a key that commits the empty row (Enter; Tab on the row's last editable
+ * cell), the column to focus on the empty row afterwards — the column where a
+ * Tab run started (Excel-like) for Enter, the first editable column for Tab.
+ * null when the key does not commit the empty row.
+ */
+function getEmptyRowCommitFocusCol(ctx: ExecutorContext, from: CellCoordinates, action: NavigateAction): number | null {
+	const editableCols = ctx.engine.getEditableColumns(ctx.engine.displayItems[from.rowIndex])
+	if (action.direction === 'enter') {
+		const colIndex = ctx.engine.tabTraversalStartColIndex ?? from.colIndex
+		ctx.engine.tabTraversalStartColIndex = null
+		return colIndex
+	}
+	if (action.direction === 'tab' && editableCols.length > 0 &&
+		editableCols[editableCols.length - 1].index === from.colIndex) {
+		return editableCols[0].index
+	}
+	return null
 }
 
 /**

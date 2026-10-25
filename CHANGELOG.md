@@ -124,6 +124,17 @@ handlers: `onpaste`, `onbeforepaste`, `onselect`).
 - A row shortcut fired twice when a cell had focus and the hover toolbar was open on the same row.
 - Paste validation treated `null` as invalid (an editor commit treats it as valid) — both now
   share one result contract.
+- **One keyboard path.** Cell / editor keys were handled twice (action pipeline + a dead copy in
+  the cell / editor keydown handlers); the pipeline is now the only path. Fallout fixed:
+  a letter typed on an `editor: 'number'` cell no longer starts editing; single-cell Ctrl+C
+  honours `getCopyValueCallback`; the new (empty) row is committed by Enter / Tab on its last
+  editable cell again (focus moves to the fresh empty row); a clipboard rejection is never an
+  unhandled promise rejection.
+- Copy (Ctrl+C and the `copy*ToClipboard` methods) copies what the cell shows — draft values,
+  not the originals; objects copy as JSON on every path; a range copied while a cell has focus
+  honours `shouldCopyWithHeaders`.
+- Cmd+G (go to row) and Cmd+Delete (`row-delete` request) work on macOS.
+- An empty row built before `columns` were assigned was cached without the column fields.
 
 ### Changed
 

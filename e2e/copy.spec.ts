@@ -39,7 +39,6 @@ test.describe('keyboard Ctrl+C', () => {
 	})
 
 	test('a focused cell copies its draft (edited) value', async ({ page }) => {
-		test.fail(true, 'NOTES.md #9')
 		await editCell(page, cell(page, 0, 1), 'Apricot')
 		await cell(page, 0, 1).click()
 		await page.keyboard.press('Control+c')
@@ -47,10 +46,17 @@ test.describe('keyboard Ctrl+C', () => {
 	})
 
 	test('a focused cell with getCopyValueCallback copies the callback text', async ({ page }) => {
-		test.fail(true, 'NOTES.md #1')
 		await cell(page, 0, 2).click()
 		await page.keyboard.press('Control+c')
 		expect(await copied(page)).toBe('12.50 EUR')
+	})
+
+	test('a clipboard rejection on Ctrl+C is handled (no unhandled rejection)', async ({ page }) => {
+		// GRID-2: the fixtures fail the test on any uncaught page error
+		await page.evaluate(() => { navigator.clipboard.writeText = () => Promise.reject(new Error('denied')) })
+		await cell(page, 0, 1).click()
+		await page.keyboard.press('Control+c')
+		await page.waitForTimeout(150)
 	})
 
 	test('a dragged cell range copies TSV (null → empty)', async ({ page }) => {

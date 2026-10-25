@@ -85,6 +85,13 @@ test('row-delete: Ctrl+Delete on a cell is a request — { row, rowIndex }, the 
 	await expect(cell(page, 1, 1)).toHaveText('Beta')
 })
 
+test('row-delete: Cmd+Delete (macOS) is the same request', async ({ page }) => {
+	await cell(page, 1, 1).click()
+	await page.keyboard.press('Meta+Delete')
+	expect(await onceWithTwin(page, 'row-delete')).toEqual({ row: { id: 2, name: 'Beta', qty: 20 }, rowIndex: 1 })
+	await expect(cell(page, 1, 1)).toHaveText('Beta')
+})
+
 test('plain Delete clears the cell (row-change to null), no row-delete', async ({ page }) => {
 	await cell(page, 0, 1).click()
 	await page.keyboard.press('Delete')

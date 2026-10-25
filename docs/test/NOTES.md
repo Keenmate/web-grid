@@ -12,7 +12,9 @@ IDs `GRID-n` come from the cross-repo plan
 
 ---
 
-## 1. GRID-1 — duplicated cell key handling; the cell-keydown copy is dead code
+## 1. GRID-1 — duplicated cell key handling; the cell-keydown copy is dead code — FIXED
+
+**Fixed:** one key path — the action pipeline adapter owns every built-in cell / editor key; the dead branches in `cell-keydown.ts` (Ctrl+C, arrows, Tab, Home/End/PageUp/PageDown, F2, Space, Delete, type-to-edit) and `editor-keydown.ts` (Enter, Tab, Escape, F2, closed-dropdown arrows) are gone. The number-column digit filter now lives in the adapter's type-to-edit branch; single-cell Ctrl+C goes through `engine.copyFocusedCellToClipboard()`, which honours `getCopyValueCallback`. Tests un-pinned.
 
 **Where:** `packages/web-grid/src/modules/navigation/cell-keydown.ts:71-93`
 (Ctrl+C) and `:394-410` (printable-key → start edit, with the number-column digit
@@ -34,7 +36,9 @@ number-column digit filter into the adapter's printable-key branch (or into the
 **Test:** `keyboard.spec.ts` "a letter on a number column does not start editing"
 (`test.fail`).
 
-## 2. GRID-2 — `navigator.clipboard.writeText` rejection is unhandled
+## 2. GRID-2 — `navigator.clipboard.writeText` rejection is unhandled — FIXED
+
+**Fixed:** deleted with #1; every copy (keyboard and API) goes through the engine's `writeClipboardText`, which catches the rejection (API methods resolve false). `copy.spec.ts` "a clipboard rejection on Ctrl+C is handled".
 
 **Where:** `cell-keydown.ts:90` (`navigator.clipboard.writeText(textValue)` — not
 awaited, no `.catch`). Dead today because of #1, so no current e2e trips it; it
@@ -50,7 +54,9 @@ in the existing suite, but it came from the fixture page
 (`docs/test/editors.html`, a context-menu `onClick` writing to the clipboard
 without permission), not the component — fixed in the fixture with `.catch`.
 
-## 3. GRID-3 — Ctrl+G go-to-row ignores `metaKey`
+## 3. GRID-3 — Ctrl+G go-to-row ignores `metaKey` — FIXED
+
+**Fixed:** `ctrlKey || metaKey` (Cmd+Delete row-delete request too — `events.spec.ts`).
 
 **Where:** `cell-keydown.ts:271-276` checks `e.ctrlKey` only; every other grid
 shortcut accepts `ctrlKey || metaKey`.
@@ -148,7 +154,9 @@ unrelated full render (sort, toggling a flag, …).
 **Test:** `drafts.spec.ts` "the row-number dirty marker appears right after the
 commit" (`test.fail`).
 
-## 9. Copy ignores drafts (copies the original values)
+## 9. Copy ignores drafts (copies the original values) — FIXED
+
+**Fixed:** the clipboard executor delegates to the engine copy methods (range / columns / rows / focused cell), which read `getCellRawValue` (draft-aware); objects copy as JSON on every path; a range copied with a cell focused now honours `shouldCopyWithHeaders`.
 
 **Where:** `modules/actions/executors/clipboard-executor.ts:50,70,90,101` and
 `grid.ts` `copySelectedRowsToClipboard` / `copySelectedColumnsToClipboard` /
@@ -267,7 +275,9 @@ shortcuts configured).
 **Test:** `interaction-model.spec.ts` "the shortcuts help lists the range
 shortcuts too" (`test.fail`).
 
-## 17. The new (empty) row can't be committed from the keyboard
+## 17. The new (empty) row can't be committed from the keyboard — FIXED
+
+**Fixed:** the navigate executor turns Enter (and Tab on the empty row's last editable cell) while editing the empty row into `commitEdit { commitEmptyRow: true }`, then focuses the fresh empty row (Enter: same / Tab-start column, Tab: first editable column); the dead editor-keydown branches are deleted. Also fixed on the way: an empty row built before `columns` existed was cached without fields (the committed row lacked `id: null`). `new-row.spec.ts` + "after Enter commits the row, focus is on the fresh empty row".
 
 **Where:** `modules/events/table-keydown.ts:98` runs the action pipeline before
 `handleEditorKeyDown`; the pipeline maps editor Enter / Tab to a plain `navigate`
