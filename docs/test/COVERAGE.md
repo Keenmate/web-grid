@@ -110,7 +110,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | `getRowIdCallback` / `idValueMember`, `getRowId`, `updateRowById`, `replaceRowById`, `findRowById` | ✓ | `row-api.spec.ts` | `row-api.html` |
 | `idMember` alone identifies rows (#11, question) | ✗ fail | `row-api.spec.ts` | `row-api.html` |
 | `focusCell`, `startEditing` | ✓ | `row-api.spec.ts` | `row-api.html` |
-| `startEditing` on a read-only cell (#19) | ✗ fail | `row-api.spec.ts` | `row-api.html` |
+| `startEditing` on a read-only cell (#19 fixed) | ✓ | `row-api.spec.ts` | `row-api.html` |
 
 ## 6. Menus, toolbar, interaction model
 

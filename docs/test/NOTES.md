@@ -325,7 +325,9 @@ before `commitEdit` / `createRowCallback`.
 
 **Test:** `new-row.spec.ts` "rows created by a paste get typed values" (`test.fail`).
 
-## 19. `startEditing()` renders an editor into a cell the engine refused to edit
+## 19. `startEditing()` renders an editor into a cell the engine refused to edit — FIXED
+
+**Fixed:** `startEditing` swaps in the editor only when the engine actually started editing that cell.
 
 **Where:** `web-component.ts:1167-1187` — calls `engine.startEdit()` (which
 silently returns for read-only / locked cells, `grid.ts:2653`) and then

@@ -88,7 +88,6 @@ test.describe('focusCell / startEditing', () => {
 	})
 
 	test('startEditing a read-only cell does nothing', async ({ page }) => {
-		test.fail(true, 'NOTES.md #19')
 		await onGrid(page, el => el.startEditing(0, 3))
 		await page.waitForTimeout(100)
 		expect(await domEvents(page, 'edit-start')).toEqual([])

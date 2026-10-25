@@ -1175,6 +1175,9 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 
 		// Update state (no longer triggers requestUpdate)
 		this.engine.startEdit(rowIndex, field)
+		// The engine refuses read-only / locked cells — render an editor only when it started
+		const editing = this.engine.editingCell
+		if (!editing || editing.rowIndex !== rowIndex || editing.field !== field) return
 
 		// Surgical DOM update
 		const cell = this.shadow.querySelector(

@@ -161,6 +161,8 @@ handlers: `onpaste`, `onbeforepaste`, `onselect`).
 - Persisted column state was wiped when `gridName` / the persist flags were set before `columns`
   (every stored entry looked orphaned and was pruned); the load now waits for the columns.
   `setColumnOrder()` / `setColumnWidths()` are persisted like a drag / resize.
+- `startEditing()` rendered an orphaned editor into a read-only / locked cell the engine had
+  refused to edit.
 
 ### Changed
 
