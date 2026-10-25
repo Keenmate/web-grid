@@ -116,3 +116,88 @@ test.describe('property path', () => {
 		expect(await read(page, el => [el.pageSize, el.engine.pageSize, el.totalPages])).toEqual([25, 25, 4])
 	})
 })
+
+// =============================================================================
+// Table-driven: every input in GridElement.inputs (attribute → property →
+// removal → default, and property writes). Samples are derived from the input's
+// default / converter so new inputs are covered automatically.
+// =============================================================================
+
+test.describe('every input (table-driven)', () => {
+	test('attribute → property, removal → default, property write → read-back', async ({ page }) => {
+		await mount(page, '')
+		const results = await page.evaluate(() => {
+			const SPECIAL: Record<string, [string, unknown]> = {
+				isPaginationVisible: ['auto', 'auto'],
+				paginationLayout: ['previous|next', 'previous|next'],
+				paginationPosition: ['top-left', 'top-left'],
+				scrollMaxHeight: ['300px', '300px'],
+				columnMinWidth: ['50px', '50px'],
+				summaryPosition: ['top-left', 'top-left'],
+				cellToolbarOffset: ['0.5', 0.5],
+				inlineActionsTitle: ['Ops', 'Ops'],
+				newRowIndicator: ['*', '*'],
+				treeExpandedGlyph: ['-', '-'],
+				treeCollapsedGlyph: ['+', '+']
+			}
+			const sample = (d: any): [string, unknown] | null => {
+				if (SPECIAL[d.configKey]) return SPECIAL[d.configKey]
+				const values = d.converter.values as string[] | undefined
+				if (values) {
+					const v = values.find(x => x !== d.default)!
+					return [v, v]
+				}
+				if (typeof d.default === 'boolean') return d.default ? ['false', false] : ['', true]
+				if (typeof d.default === 'number') return [String(d.default + 3), d.default + 3]
+				return null
+			}
+			const el = document.getElementById('t') as any
+			const out: any[] = []
+			for (const d of (customElements.get('web-grid') as any).inputs) {
+				const s = sample(d)
+				if (!s) { out.push({ key: d.configKey, skipped: true }); continue }
+				const [raw, parsed] = s
+				el.setAttribute(d.attribute, raw)
+				el.flush()
+				const afterAttr = el[d.configKey]
+				el.removeAttribute(d.attribute)
+				el.flush()
+				const afterRemove = el[d.configKey]
+				el[d.configKey] = parsed
+				el.flush()
+				const afterProp = el[d.configKey]
+				el[d.configKey] = d.default
+				el.flush()
+				out.push({ key: d.configKey, parsed, afterAttr, def: d.default, afterRemove, afterProp })
+			}
+			return out
+		})
+		expect(results.filter((r: any) => r.skipped)).toEqual([])
+		for (const r of results) {
+			expect.soft(r.afterAttr, `${r.key}: attribute → property`).toEqual(r.parsed)
+			// nullable text inputs (default undefined) come back as null after removal —
+			// both mean "unset", so compare them loosely
+			expect.soft(r.afterRemove ?? undefined, `${r.key}: removal → default`).toEqual(r.def ?? undefined)
+			expect.soft(r.afterProp, `${r.key}: property write → read-back`).toEqual(r.parsed)
+		}
+		expect(results.length).toBeGreaterThan(55)
+	})
+
+	test('every enum input rejects an unknown attribute value (previous value kept)', async ({ page }) => {
+		await mount(page, '')
+		const results = await page.evaluate(() => {
+			const el = document.getElementById('t') as any
+			return (customElements.get('web-grid') as any).inputs
+				.filter((d: any) => d.converter.values)
+				.map((d: any) => {
+					el.setAttribute(d.attribute, 'definitely-not-valid')
+					el.flush()
+					const v = el[d.configKey]
+					el.removeAttribute(d.attribute)
+					el.flush()
+					return { key: d.configKey, v, def: d.default }
+				})
+		})
+		for (const r of results) expect.soft(r.v, `${r.key}: invalid attribute`).toEqual(r.def)
+	})
+})

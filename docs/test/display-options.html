@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — display options fixture</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>display-options fixture</h1>
+	<p>Targeted by <code>e2e/display-options.spec.ts</code>: container flags (<code>isHoverable</code>,
+	<code>isStriped</code>, <code>isScrollable</code> + <code>scrollMaxHeight</code>, <code>isTableBorderOnly</code>,
+	<code>isStickyRowNumbers</code>), the shortcuts help (<code>shortcutsHelpPosition</code>,
+	<code>renderShortcutsHelpCallback</code>), and tree chevrons (<code>treeExpandedGlyph</code> /
+	<code>treeCollapsedGlyph</code> / <code>renderChevronCallback</code>).</p>
+
+	<h2>#flat — 30 rows, row numbers, one row shortcut, help visible</h2>
+	<web-grid id="flat" is-row-numbers-visible is-shortcuts-help-visible style="max-width: 500px;"></web-grid>
+
+	<h2>#tree — Root › Child › Leaf, Other</h2>
+	<web-grid id="tree" style="max-width: 400px;"></web-grid>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+
+		const flat = document.getElementById('flat')
+		flat.idMember = 'id'
+		flat.columns = [
+			{ field: 'id', title: 'ID', width: '60px' },
+			{ field: 'name', title: 'Name', width: '600px' }
+		]
+		flat.items = Array.from({ length: 30 }, (_, i) => ({ id: i + 1, name: `Row ${i + 1}` }))
+		flat.rowShortcuts = [{ shortcut: 'Ctrl+D', action: 'duplicate' }]
+
+		const tree = document.getElementById('tree')
+		tree.treePathMember = 'path'
+		tree.treeDataSorted = true
+		tree.columns = [{ field: 'name', title: 'Name', width: '220px', isTree: true }]
+		tree.items = [
+			{ path: '1', name: 'Root' },
+			{ path: '1.1', name: 'Child' },
+			{ path: '1.1.1', name: 'Leaf' },
+			{ path: '2', name: 'Other' }
+		]
+	</script>
+</body>
+</html>

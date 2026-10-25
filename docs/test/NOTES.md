@@ -532,3 +532,16 @@ dropzone (its `setLogLevel` re-levels every registered category), or loop over
 the only migrated component still on a private loglevel copy.)
 
 **Tests:** `logging.spec.ts` — 2 tests (`test.fail`).
+
+## 34. `scrollMaxHeight` can't be reset to the default
+
+**Where:** `web-component.ts:1603-1604, 1630-1631` — `--wg-scroll-max-height` is
+only *set* when `scrollMaxHeight !== '100vh'`; nothing removes it.
+
+**Symptom:** `scrollMaxHeight = '200px'` then back to `'100vh'` (or removing the
+`scroll-max-height` attribute) keeps the 200px cap until the element is rebuilt.
+
+**Suggested fix:** `removeProperty('--wg-scroll-max-height')` in the else branch.
+
+**Test:** `display-options.spec.ts` "resetting scrollMaxHeight to its default
+releases the custom cap" (`test.fail`).

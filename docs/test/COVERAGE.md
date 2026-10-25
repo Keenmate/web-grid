@@ -30,7 +30,8 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | `formatCallback` / cell class callbacks | ✓ | `basic.spec.ts`, `custom-styling.spec.ts` | `basic.html`, `custom-styling.html` |
 | `cellClass`, `getCellClassCallback`, `getRowClassCallback`, `renderCellCallback` | ✓ | `custom-styling.spec.ts` | `custom-styling.html` |
 | Container (max-height) vs full-height (`isTableBorderOnly`) | ✓ | `height-modes.spec.ts` | `height-modes.html` |
-| `isHoverable`, `scrollMaxHeight`, `isStickyRowNumbers` | △ | `freeze-panes.spec.ts` (sticky row numbers) | `freeze-panes.html` |
+| `isHoverable`, `isStriped`, `isScrollable` + `scrollMaxHeight`, `isTableBorderOnly`, `isStickyRowNumbers` | ✓ | `display-options.spec.ts`, `freeze-panes.spec.ts` | `display-options.html`, `freeze-panes.html` |
+| `scrollMaxHeight` reset to default (#34) | ✗ fail | `display-options.spec.ts` | `display-options.html` |
 | Freeze panes (`freezeColumns`, column `isFrozen`) | ✓ | `freeze-panes.spec.ts` | `freeze-panes.html` |
 | Column visibility (`isHidden`, hide-column / column-visibility menu) | ✓ | `column-visibility.spec.ts` | `column-visibility.html` |
 | Virtual scroll (1,000 rows) + infinite scroll | ✓ | `virtual-scroll.spec.ts` | `virtual-scroll.html` |
@@ -137,7 +138,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Tree mode expand/collapse, Ctrl+Arrow, Tab nav, `isRowEditable`, tree column locked | ✓ | `tree.spec.ts` | `tree.html` |
 | Predefined tree context-menu items (incl. clicking through) | ✓ | `tree.spec.ts` | `tree.html` |
 | Tree + virtual / infinite scroll | ✓ | `tree-scroll.spec.ts` | `tree-scroll.html` |
-| Chevron / glyph callbacks | ✗ | | |
+| `treeExpandedGlyph` / `treeCollapsedGlyph` / `renderChevronCallback` | ✓ | `display-options.spec.ts` | `display-options.html` |
 
 ## 9. Events
 
@@ -156,7 +157,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Core theme context (page signal → `data-context-theme`), `--base-*` chain | ✓ | `theme-context.spec.ts` | `theme-context.html` |
 | Contrast in dark mode (3 theme depths) | ✓ | `dark-mode.spec.ts` | `dark-mode.html` |
 | Inputs: mode preset batch, sync property reads, invalid values rejected | ✓ | `inputs.spec.ts` | `inputs.html` |
-| Table-driven attribute → property → removal loop over all inputs | ✗ | | |
+| Table-driven attribute → property → removal → property loop over all 63 inputs; enum inputs reject unknown values | ✓ | `inputs.spec.ts` | `inputs.html` |
 | `labels` across toolbar / header menu / pagination / shortcuts help / dropdown | ✓ | `i18n.spec.ts` | `i18n.html` |
 | Nested `labels` merge (#31), go-to-row + chevron texts (#32) | ✗ fail | `i18n.spec.ts` | `i18n.html` |
 | Logging silent by default, `getCategories`, `setCategoryLevel` | ✓ | `logging.spec.ts` | `logging.html` |
@@ -165,4 +166,12 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Summary refresh after an edit, draft-aware (#20) | ✗ fail | `summary.spec.ts` | `summary.html` |
 | Tooltips: `getTooltipCallback`, `tooltipMember`, `isTooltipHtml`, `headerInfo`, validation tooltip (column / grid callback), `tooltipShowDelay` | ✓ | `tooltip.spec.ts` | `tooltip.html` |
 | Tooltip quote escaping (#21), validation tooltip without re-render (#22), `tooltipHideDelay` (#23) | ✗ fail | `tooltip.spec.ts` | `tooltip.html` |
-| `shortcutsHelpPosition`, `renderShortcutsHelpCallback` | ✗ | | |
+| `shortcutsHelpPosition`, `renderShortcutsHelpCallback`, help visibility | ✓ | `display-options.spec.ts` | `display-options.html` |
+
+## Not covered yet
+
+- `cellToolbarOffset` (cell-aware toolbar offset) and `toolbarVerticalAlign` beyond the default.
+- `shouldToolbarFollowCursor` positioning (only via the existing cell-aware toolbar tests).
+- DOM move (disconnect → connect) state preservation — not in the grid WP; D1 applies to drp / dropzone / editor / cp.
+- Async `createEmptyRowCallback` (Promise) and `beforeFillCallback` vetoes beyond `fill-handle.spec.ts`.
+- `treeDoubleClickBehavior` / `defaultExpandDepth` are only exercised through `tree.spec.ts`.
