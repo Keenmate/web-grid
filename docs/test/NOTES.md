@@ -266,3 +266,54 @@ shortcuts configured).
 
 **Test:** `interaction-model.spec.ts` "the shortcuts help lists the range
 shortcuts too" (`test.fail`).
+
+## 17. The new (empty) row can't be committed from the keyboard
+
+**Where:** `modules/events/table-keydown.ts:98` runs the action pipeline before
+`handleEditorKeyDown`; the pipeline maps editor Enter / Tab to a plain `navigate`
+→ `commitEdit` **without** `commitEmptyRow` (`modules/actions/event-mapper.ts:118-170`,
+`executors/navigate-executor.ts:38-45`). The empty-row commit logic in
+`modules/editing/editor-keydown.ts:160-215` (Enter, Tab on the last editable
+cell) is never reached — the same duplicated-handler pattern as GRID-1 (#1).
+
+**Symptom:** with `is-new-row-enabled`, typing into the empty row and pressing
+Enter / Tab-on-last-cell keeps the values in the empty-row draft forever; no row
+is added to `items`, no `row-change` for the new row, `createEmptyRowCallback`'s
+row never lands. (Only a dropdown Enter, `dropdownSelect` with
+`commitEmptyRow: true`, can commit.)
+
+**Suggested fix:** in the pipeline's navigate/commit path pass
+`commitEmptyRow: true` for Enter, and for Tab when on the empty row's last
+editable cell; then delete the dead editor-keydown branches.
+
+**Tests:** `new-row.spec.ts` — 4 commit tests (`test.fail`).
+
+## 18. Pasted values into `editor: 'number'` columns stay strings
+
+**Where:** `modules/paste/index.ts` — pasted text is committed as-is; the number
+editor path converts (`drafts.spec.ts` shows a typed `15` stored as a number).
+
+**Symptom:** pasting `21` into a number column → draft `qty: "21"`; rows created
+by a paste past the end get `"30"`. Sorting / summing / validation then see
+strings.
+
+**Suggested fix:** run pasted text through the column editor's parse step
+(number → `Number()`, checkbox → boolean, date → the configured output format)
+before `commitEdit` / `createRowCallback`.
+
+**Test:** `new-row.spec.ts` "rows created by a paste get typed values" (`test.fail`).
+
+## 19. `startEditing()` renders an editor into a cell the engine refused to edit
+
+**Where:** `web-component.ts:1167-1187` — calls `engine.startEdit()` (which
+silently returns for read-only / locked cells, `grid.ts:2653`) and then
+unconditionally swaps the cell's DOM to `renderCellEditor(...)`.
+
+**Symptom:** `startEditing(0, 3)` on a read-only column: no `edit-start`, the
+engine is not editing, but an `<input>` appears in the cell (orphaned — Enter /
+blur don't commit). Same for a locked row.
+
+**Suggested fix:** only do the DOM swap when
+`engine.editingCell?.rowIndex === rowIndex && field matches` after `startEdit`.
+
+**Test:** `row-api.spec.ts` "startEditing a read-only cell does nothing" (`test.fail`).

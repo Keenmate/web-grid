@@ -71,7 +71,8 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Drafts: dirty marking, indicator, `isCellDirty/isRowDirty/getRowDraft` | ✓ | `drafts.spec.ts` | `drafts.html` |
 | Drafts bugs: cancel leaves a draft (#6), drafts keyed by display index (#7), row-number marker stale (#8) | ✗ fail | `drafts.spec.ts` | `drafts.html` |
 | `discardRowDraft` / `discardAllDrafts`, `row-change` detail + twin | ✓ | `drafts.spec.ts` | `drafts.html` |
-| New row (`isNewRowEnabled`, position, indicator, create callbacks) | ✗ | | |
+| New row: `isNewRowEnabled`, `newRowPosition`, `newRowIndicator`, empty-row draft, `createRowCallback` (paste) | ✓ | `new-row.spec.ts` | `new-row.html` |
+| New row committed by Enter / Tab, `createEmptyRowCallback` row lands (#17); pasted numbers typed (#18) | ✗ fail | `new-row.spec.ts` | `new-row.html` |
 
 ## 4. Selection, copy, keyboard
 
@@ -97,8 +98,10 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Lock tooltip i18n (#10) | ✗ fail | `row-locking.spec.ts` | `row-locking.html` |
 | `lockRowById/unlockRowById/isRowLocked/getRowLockInfo/clearExternalLocks`, `row-lock-change` | ✓ | `row-locking.spec.ts` | `row-locking.html` |
 | Lock blocks F2 / typing / paste; `lockedEditBehavior` allow / callback + `getCanEditLockedCallback` | ✓ | `row-locking.spec.ts` | `row-locking.html` |
-| `getRowIdCallback` / `idMember`, `updateRowById`, `replaceRowById`, `findRowById` | ✗ | | |
-| `focusCell`, `startEditing` | ✗ | | |
+| `getRowIdCallback` / `idValueMember`, `getRowId`, `updateRowById`, `replaceRowById`, `findRowById` | ✓ | `row-api.spec.ts` | `row-api.html` |
+| `idMember` alone identifies rows (#11, question) | ✗ fail | `row-api.spec.ts` | `row-api.html` |
+| `focusCell`, `startEditing` | ✓ | `row-api.spec.ts` | `row-api.html` |
+| `startEditing` on a read-only cell (#19) | ✗ fail | `row-api.spec.ts` | `row-api.html` |
 
 ## 6. Menus, toolbar, interaction model
 
