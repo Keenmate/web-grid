@@ -167,6 +167,8 @@ handlers: `onpaste`, `onbeforepaste`, `onselect`).
   `rangeShortcuts` are listed under `labels.rangeShortcuts` ("Selection shortcuts").
 - Focus was lost after a move-up / move-down built-in (a repeated move shortcut stopped after
   one step); the focused cell now follows its row.
+- Go-to-row Escape / Cancel left no cell focused (arrow keys dead until a click); focus returns
+  to the cell the dialog was opened from.
 
 ### Changed
 

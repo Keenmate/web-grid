@@ -89,7 +89,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | `cellSelectionMode` click / disabled / shift; row + cell-range selection API | ✓ | `selection-api.spec.ts` | `selection-api.html` |
 | Arrow navigation in navigate mode | ✓ | `basic.spec.ts` | `basic.html` |
 | Home/End/PageUp/PageDown + Ctrl variants, Delete commits null, typing starts edit, Ctrl+G dialog | ✓ | `keyboard.spec.ts` | `keyboard.html` |
-| Go-to-row Escape keeps focus (#24) | ✗ fail | `keyboard.spec.ts` | `keyboard.html` |
+| Go-to-row Escape / Cancel keeps focus (#24 fixed) | ✓ | `keyboard.spec.ts` | `keyboard.html` |
 | Meta+G go-to-row (#3 fixed), Cmd+Delete row-delete | ✓ | `keyboard.spec.ts`, `events.spec.ts` | `keyboard.html`, `events.html` |
 | Shift+Arrow range extension (#13, feature gap) | ✗ fail | `keyboard.spec.ts` | `keyboard.html` |
 | `rangeShortcuts` on a range / row selection, disabled shortcut | ✓ | `keyboard.spec.ts` | `keyboard.html` |

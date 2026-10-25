@@ -132,7 +132,6 @@ test.describe('Ctrl+G go to row', () => {
 	})
 
 	test('Escape closes the dialog and returns focus to the cell', async ({ page }) => {
-		test.fail(true, 'NOTES.md #24')
 		await cell(page, 4, 1).click()
 		await page.keyboard.press('Control+g')
 		await expect(gotoDialog(page)).toBeVisible()
@@ -141,6 +140,16 @@ test.describe('Ctrl+G go to row', () => {
 		await expect(cell(page, 4, 1)).toBeFocused({ timeout: 1500 })
 		await page.waitForTimeout(100)  // the focus-left check runs a frame later
 		expect(await focused(page)).toEqual([4, 1])
+	})
+
+	test('Cancel returns focus to the cell too', async ({ page }) => {
+		await cell(page, 3, 2).click()
+		await page.keyboard.press('Control+g')
+		await gotoDialog(page).locator('.wg__goto-btn--cancel').click()
+		await expect(gotoDialog(page)).toHaveCount(0)
+		await expect(cell(page, 3, 2)).toBeFocused({ timeout: 1500 })
+		await page.keyboard.press('ArrowDown')
+		expect(await focused(page)).toEqual([4, 2])
 	})
 
 	test('Meta+G opens the go-to-row dialog (macOS)', async ({ page }) => {

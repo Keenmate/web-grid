@@ -14,7 +14,7 @@
 // Validation: numeric, in-range, otherwise the input is refocused + selected.
 
 import type { GridHost } from '../grid-context.js'
-import { updateFocusVisual } from './focus.js'
+import { updateFocusVisual, moveFocus } from './focus.js'
 
 /**
  * Render and open the Ctrl+G dialog. `colIndex` is the column the user was
@@ -44,8 +44,16 @@ export function showGoToRowDialog<T>(ctx: GridHost<T>, colIndex: number): void {
 	const goBtn = overlay.querySelector('.wg__goto-btn--go') as HTMLButtonElement
 	const cancelBtn = overlay.querySelector('.wg__goto-btn--cancel') as HTMLButtonElement
 
+	// The cell focused when the dialog opened — Cancel / Escape / a backdrop click return to it
+	const origin = ctx.engine.focusedCell
+
 	const closeDialog = () => {
 		overlay.remove()
+	}
+
+	const cancelDialog = () => {
+		closeDialog()
+		if (origin) moveFocus(ctx, origin.rowIndex, origin.colIndex)
 	}
 
 	const goToRow = () => {
@@ -90,9 +98,9 @@ export function showGoToRowDialog<T>(ctx: GridHost<T>, colIndex: number): void {
 
 	// Event handlers
 	goBtn.addEventListener('click', goToRow)
-	cancelBtn.addEventListener('click', closeDialog)
+	cancelBtn.addEventListener('click', cancelDialog)
 	overlay.addEventListener('click', (e) => {
-		if (e.target === overlay) closeDialog()
+		if (e.target === overlay) cancelDialog()
 	})
 	input.addEventListener('keydown', (e) => {
 		if (e.key === 'Enter') {
@@ -100,7 +108,7 @@ export function showGoToRowDialog<T>(ctx: GridHost<T>, colIndex: number): void {
 			goToRow()
 		} else if (e.key === 'Escape') {
 			e.preventDefault()
-			closeDialog()
+			cancelDialog()
 		}
 	})
 

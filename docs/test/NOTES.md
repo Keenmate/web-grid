@@ -404,7 +404,9 @@ tooltip (another `hideTooltip` / re-render path) before the hide timer fires.
 
 **Test:** `tooltip.spec.ts` "tooltipHideDelay keeps it up after leaving" (`test.fail`).
 
-## 24. Go-to-row Escape / Cancel loses the grid focus
+## 24. Go-to-row Escape / Cancel loses the grid focus — FIXED
+
+**Fixed:** Escape / Cancel / a backdrop click re-focus the cell that was focused when the dialog opened (`moveFocus`).
 
 **Where:** `modules/navigation/go-to-row-dialog.ts:46-48` — `closeDialog()` just
 removes the overlay; the focused `<input>` disappears, focus falls to `<body>`,
