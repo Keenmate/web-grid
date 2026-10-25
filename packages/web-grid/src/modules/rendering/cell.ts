@@ -98,6 +98,16 @@ export function renderCell<T>(
 		const value = ctx.engine.getCellValue(item, column, rowIndex)
 		cell.innerHTML = wrapTreeCell(ctx, column, item, renderCellDisplay(ctx, rowIndex, colIndex, column, value, isFocused, isEditable))
 	}
+
+	// The row's dirty state may have changed with this cell — keep the row-number
+	// marker in step (the full renderer sets it; surgical commits must too).
+	const rowNumberCell = cell.parentElement?.querySelector('.wg__row-number') as HTMLElement | null
+	if (rowNumberCell && !rowNumberCell.matches('.wg__row-number--locked, .wg__empty-row-indicator')) {
+		rowNumberCell.classList.toggle(
+			'wg__row-number--dirty',
+			ctx.engine.isDirtyIndicatorVisible && ctx.engine.isRowDirty(rowIndex)
+		)
+	}
 }
 
 /**

@@ -2520,7 +2520,16 @@ export class GridEngine<T = unknown> {
 	 * Check if any cell in a row has been modified
 	 */
 	isRowDirty(rowIndex: number): boolean {
-		return this.draftAt(rowIndex) !== undefined
+		const draftRow = this.draftAt(rowIndex)
+		const originalItem = this.displayItems[rowIndex]
+		return !!draftRow && !!originalItem && this.draftDiffers(draftRow, originalItem)
+	}
+
+	/** True when any field of the draft differs from the original row. */
+	private draftDiffers(draftRow: T, originalItem: T): boolean {
+		const draft = draftRow as Record<string, unknown>
+		const orig = originalItem as Record<string, unknown>
+		return Object.keys(draft).some(key => draft[key] !== orig[key])
 	}
 
 	discardRowDraft(rowIndex: number): void {
@@ -2712,10 +2721,8 @@ export class GridEngine<T = unknown> {
 		const item = this.displayItems[rowIndex]
 		if (!item) return
 
-		// Clone row to draft if not already cloned (preserves dirty values across edits)
-		if (this.draftAt(rowIndex) === undefined) {
-			this.setDraftAt(rowIndex, { ...item })
-		}
+		// No draft yet: commitEdit / updateDraftValue create it lazily, so opening an
+		// editor and cancelling leaves the row clean.
 
 		const prev = this._editingCell
 		this._editingCell = {
@@ -2930,6 +2937,13 @@ export class GridEngine<T = unknown> {
 			this.addInvalidCell(rowIndex, field, validationError || "Invalid value")
 			this._currentCellError = validationError
 			this.notify('validation-error', { row: item, rowIndex, field, error: validationError || "Invalid value", source })
+		}
+
+		// A draft that is back to the original values (and has no invalid cell) is dropped,
+		// so committing an unchanged value doesn't leave a phantom draft behind.
+		const rowKey = this.rowKeyForIndex(rowIndex)
+		if (!this.draftDiffers(draftRow, item) && !this._invalidCells.some(c => c.rowKey === rowKey)) {
+			this.deleteDraftAt(rowIndex)
 		}
 
 		// Fire row-change only when the value actually changed (or validation

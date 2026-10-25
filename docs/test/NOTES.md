@@ -102,7 +102,9 @@ or clamp `currentPage` to `totalPages` in `paginatedItems`.
 **Test:** `filtering.spec.ts` "a filter change while on a later page keeps rows
 visible" (`test.fail`).
 
-## 6. Opening an editor and cancelling leaves a phantom draft
+## 6. Opening an editor and cancelling leaves a phantom draft — FIXED
+
+**Fixed:** `startEdit` no longer clones the row into a draft (commitEdit / updateDraftValue create it lazily); a commit that brings the draft back to the original values (with no invalid cell) drops the draft; `isRowDirty` is value-based.
 
 **Where:** `grid.ts` `startEdit()` (~`:2662`) clones the row into `_draftRows`
 before anything is typed; `cancelEdit()` never removes it.
@@ -143,7 +145,9 @@ like `_invalidCells`.
 **Test:** `drafts.spec.ts` "a draft follows its row when the view is re-sorted"
 (`test.fail`).
 
-## 8. Row-number dirty marker is not refreshed after a commit
+## 8. Row-number dirty marker is not refreshed after a commit — FIXED
+
+**Fixed:** the surgical `renderCell` keeps the row-number `wg__row-number--dirty` marker in step.
 
 **Where:** commit paths use the surgical cell update; the row-number cell
 (`modules/rendering/table.ts:246/527`, `wg__row-number--dirty`) is only rebuilt

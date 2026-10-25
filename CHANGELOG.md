@@ -145,6 +145,10 @@ handlers: `onpaste`, `onbeforepaste`, `onselect`).
   reached the text editor truncated).
 - A filter (or a shorter `items`) on a later client page rendered an empty grid with "Page 3 of 1";
   `currentPage` is clamped to the last page now.
+- Opening an editor and cancelling (or committing the unchanged value) left a phantom draft —
+  `isRowDirty` / `hasRowDraft` / `getDraftRowIndices()` reported the clean row as dirty; `isRowDirty` is
+  value-based now. The row-number dirty marker updates right after a commit (it waited for an
+  unrelated full render).
 
 ### Changed
 

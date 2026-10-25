@@ -47,7 +47,6 @@ test.describe('dirty state', () => {
 	})
 
 	test('the row-number dirty marker appears right after the commit', async ({ page }) => {
-		test.fail(true, 'NOTES.md #8')
 		await editCell(page, cell(page, 1, NAME), 'Beta 2')
 		await expect(rowNumber(page, 1)).toHaveClass(/wg__row-number--dirty/, { timeout: 2000 })
 		await expect(rowNumber(page, 0)).not.toHaveClass(/wg__row-number--dirty/)
@@ -85,7 +84,6 @@ test.describe('dirty state', () => {
 	})
 
 	test('opening an editor and cancelling leaves the row clean', async ({ page }) => {
-		test.fail(true, 'NOTES.md #6')
 		await cell(page, 0, NAME).click()
 		await page.keyboard.press('F2')
 		await expect(editorIn(cell(page, 0, NAME))).toBeVisible()
@@ -148,6 +146,9 @@ test.describe('discarding', () => {
 		await editCell(page, cell(page, 1, NAME), 'Beta')
 		await expect(cell(page, 1, NAME)).not.toHaveClass(/wg__cell--dirty/)
 		expect(await onGrid(page, el => el.isCellDirty(1, 'name'))).toBe(false)
+		// the draft is back to the original → no phantom draft, the row-number marker clears too
+		expect(await onGrid(page, el => [el.isRowDirty(1), el.hasRowDraft(1), el.getDraftRowIndices()])).toEqual([false, false, []])
+		await expect(rowNumber(page, 1)).not.toHaveClass(/wg__row-number--dirty/)
 	})
 })
 
