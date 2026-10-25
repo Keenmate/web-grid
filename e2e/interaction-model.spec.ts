@@ -253,7 +253,6 @@ test.describe('contexts, twins, controller', () => {
 // The lock-tooltip i18n gap lives in row-locking.spec.ts (NOTES.md #10).
 test.describe('open gaps (interaction-model-plan follow-ups)', () => {
 	test('a move-down built-in keeps keyboard focus on the moved row', async ({ page }) => {
-		test.fail(true, 'NOTES.md #14')
 		await cell(page, 1, 1).click()  // Beta, name column
 		await expect(cell(page, 1, 1)).toBeFocused()
 		await page.evaluate(() => {
@@ -264,6 +263,10 @@ test.describe('open gaps (interaction-model-plan follow-ups)', () => {
 		await expect.poll(() => names(page)).toEqual(['Alpha', 'Gamma', 'Beta', 'Delta'])
 		await expect(cell(page, 2, 1)).toBeFocused({ timeout: 1500 })
 		expect(await grid(page).evaluate((el: any) => el.engine.focusedCell)).toMatchObject({ rowIndex: 2, colIndex: 1 })
+		// repeated: the same row keeps moving
+		await page.keyboard.press('Alt+ArrowDown')
+		await expect.poll(() => names(page)).toEqual(['Alpha', 'Gamma', 'Delta', 'Beta'])
+		await expect(cell(page, 3, 1)).toBeFocused({ timeout: 1500 })
 	})
 
 	test('current order: the action event fires before the built-in (listener sees the row still there)', async ({ page }) => {

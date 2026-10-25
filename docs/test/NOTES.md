@@ -248,7 +248,9 @@ Shift+click on a cell does *not* extend (only `shift` mode handles Shift+click).
 `click` mode)? `keyboard.spec.ts` "Shift+Arrow extends a range from the focused
 cell" is `test.fail` until decided.
 
-## 14. Focus is lost after a move-up / move-down built-in
+## 14. Focus is lost after a move-up / move-down built-in — FIXED
+
+**Fixed:** the move-up / move-down built-in moves the focused cell with its row (the moved one or the swapped neighbour); the post-render restore then focuses it — repeated Alt+ArrowDown keeps moving the same row.
 
 **Where:** `modules/items/index.ts` row built-ins (`moveRow`) re-render the rows;
 nothing restores the focused cell.

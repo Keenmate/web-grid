@@ -165,6 +165,8 @@ handlers: `onpaste`, `onbeforepaste`, `onselect`).
   refused to edit.
 - The shortcuts help listed only `rowShortcuts` (and stayed hidden with range shortcuts only);
   `rangeShortcuts` are listed under `labels.rangeShortcuts` ("Selection shortcuts").
+- Focus was lost after a move-up / move-down built-in (a repeated move shortcut stopped after
+  one step); the focused cell now follows its row.
 
 ### Changed
 

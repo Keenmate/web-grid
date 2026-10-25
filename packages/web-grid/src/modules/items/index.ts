@@ -214,9 +214,19 @@ async function runRowBuiltIn<T>(host: GridHost<T>, d: GridActionEventDetail<T>):
 			if (row !== undefined) engine.duplicateRow(row)
 			return
 		case 'move-up':
-		case 'move-down':
-			if (row !== undefined) engine.moveRow(row, d.action === 'move-up' ? -1 : 1)
+		case 'move-down': {
+			if (row === undefined) return
+			// The focused cell follows its row (the moved one, or the neighbour it swapped
+			// with), so e.g. a repeated Alt+ArrowDown keeps moving the same row.
+			const focused = engine.focusedCell
+			const focusedRow = focused ? engine.displayItems[focused.rowIndex] : undefined
+			engine.moveRow(row, d.action === 'move-up' ? -1 : 1)
+			if (focused && focusedRow !== undefined) {
+				const newIndex = engine.displayItems.indexOf(focusedRow)
+				if (newIndex >= 0 && newIndex !== focused.rowIndex) engine.setFocusedCell(newIndex, focused.colIndex)
+			}
 			return
+		}
 	}
 }
 
