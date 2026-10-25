@@ -4,6 +4,7 @@
 // =============================================================================
 
 import type { GridHost } from '../grid-context.js'
+import type { Column } from '../../types.js'
 import { renderCellEditor } from '../editing/index.js'
 import { renderCellDisplay } from './display.js'
 import { wrapTreeCell } from './tree-render.js'
@@ -335,42 +336,9 @@ export function renderDataRows<T>(ctx: GridHost<T>): string {
 			// In navigate mode, ALL cells are focusable (not just editable)
 			const tabindexAttr = ctx.engine.isNavigateMode ? 'tabindex="0"' : ''
 
-			// Get cell tooltip (callback takes priority over member, then validation error)
-			// getTooltipCallback gets the RAW value (ctx.value), not the formatted value
-			let tooltipAttr = ''
-			if (column.getTooltipCallback) {
-				// ctx.value is the RAW value, not the formatted one
-				const tooltipText = column.getTooltipCallback(ctx.engine.cellCtx(item, rowIndex, column))
-				if (tooltipText) {
-					const attr = column.isTooltipHtml ? 'data-tooltip-html' : 'data-tooltip'
-					tooltipAttr = `${attr}="${ctx.escapeHtml(tooltipText)}"`
-				}
-			} else if (column.tooltipMember) {
-				const tooltipText = (item as Record<string, unknown>)[column.tooltipMember]
-				if (tooltipText && typeof tooltipText === 'string') {
-					const attr = column.isTooltipHtml ? 'data-tooltip-html' : 'data-tooltip'
-					tooltipAttr = `${attr}="${ctx.escapeHtml(tooltipText)}"`
-				}
-			}
-			// Show validation error as tooltip for invalid cells (if no other tooltip)
-			if (!tooltipAttr && ctx.engine.isCellInvalid(rowIndex, field)) {
-				const errorMsg = ctx.engine.getCellValidationError(rowIndex, field)
-				if (errorMsg) {
-					// getValidationTooltipCallback: column-level first, then grid-level
-					const validationTooltipCb = column.getValidationTooltipCallback || ctx.engine.getValidationTooltipCallback
-					if (validationTooltipCb) {
-						const htmlContent = validationTooltipCb(Object.assign(ctx.engine.cellCtx(item, rowIndex, column), { error: errorMsg }))
-						if (htmlContent) {
-							// Use data-tooltip-html for HTML content (not escaped)
-							tooltipAttr = `data-tooltip-html="${ctx.escapeHtml(htmlContent)}"`
-						}
-					}
-					// Fallback to plain text if no callback or callback returned null
-					if (!tooltipAttr) {
-						tooltipAttr = `data-tooltip="${ctx.escapeHtml(errorMsg)}"`
-					}
-				}
-			}
+			// Cell tooltip: getTooltipCallback > tooltipMember > validation error
+			const tooltip = getCellTooltip(ctx, item, rowIndex, column)
+			const tooltipAttr = tooltip ? `${tooltip.attr}="${ctx.escapeHtml(tooltip.text)}"` : ''
 
 			const innerHtml = shouldShowEditor
 				? renderCellEditor(ctx, rowIndex, originalIndex, column)
@@ -614,41 +582,9 @@ export function renderDataRowsVirtual<T>(ctx: GridHost<T>, params: VirtualScroll
 			// In navigate mode, ALL cells are focusable (not just editable)
 			const tabindexAttr = ctx.engine.isNavigateMode ? 'tabindex="0"' : ''
 
-			// Get cell tooltip (callback takes priority over member, then validation error)
-			let tooltipAttr = ''
-			if (column.getTooltipCallback) {
-				// ctx.value is the RAW value, not the formatted one
-				const tooltipText = column.getTooltipCallback(ctx.engine.cellCtx(item, rowIndex, column))
-				if (tooltipText) {
-					const attr = column.isTooltipHtml ? 'data-tooltip-html' : 'data-tooltip'
-					tooltipAttr = `${attr}="${ctx.escapeHtml(tooltipText)}"`
-				}
-			} else if (column.tooltipMember) {
-				const tooltipText = (item as Record<string, unknown>)[column.tooltipMember]
-				if (tooltipText && typeof tooltipText === 'string') {
-					const attr = column.isTooltipHtml ? 'data-tooltip-html' : 'data-tooltip'
-					tooltipAttr = `${attr}="${ctx.escapeHtml(tooltipText)}"`
-				}
-			}
-			// Show validation error as tooltip for invalid cells (if no other tooltip)
-			if (!tooltipAttr && ctx.engine.isCellInvalid(rowIndex, field)) {
-				const errorMsg = ctx.engine.getCellValidationError(rowIndex, field)
-				if (errorMsg) {
-					// getValidationTooltipCallback: column-level first, then grid-level
-					const validationTooltipCb = column.getValidationTooltipCallback || ctx.engine.getValidationTooltipCallback
-					if (validationTooltipCb) {
-						const htmlContent = validationTooltipCb(Object.assign(ctx.engine.cellCtx(item, rowIndex, column), { error: errorMsg }))
-						if (htmlContent) {
-							// Use data-tooltip-html for HTML content (not escaped)
-							tooltipAttr = `data-tooltip-html="${ctx.escapeHtml(htmlContent)}"`
-						}
-					}
-					// Fallback to plain text if no callback or callback returned null
-					if (!tooltipAttr) {
-						tooltipAttr = `data-tooltip="${ctx.escapeHtml(errorMsg)}"`
-					}
-				}
-			}
+			// Cell tooltip: getTooltipCallback > tooltipMember > validation error
+			const tooltip = getCellTooltip(ctx, item, rowIndex, column)
+			const tooltipAttr = tooltip ? `${tooltip.attr}="${ctx.escapeHtml(tooltip.text)}"` : ''
 
 			const innerHtml = shouldShowEditor
 				? renderCellEditor(ctx, rowIndex, originalIndex, column)
@@ -833,4 +769,36 @@ export function renderSummary<T>(ctx: GridHost<T>, position: string): string {
 	if (isTop) classes.push('wg__summary--top')
 
 	return `<div class="${classes.join(' ')}">${content}</div>`
+}
+
+/**
+ * The tooltip of a body cell — `getTooltipCallback` (raw value in ctx) > `tooltipMember`
+ * > the validation error of an invalid cell (`getValidationTooltipCallback`, column then
+ * grid, as HTML; else the plain message). `attr` is `data-tooltip` (text) or
+ * `data-tooltip-html`. Shared by the full row renderers and the surgical `renderCell`.
+ */
+export function getCellTooltip<T>(
+	ctx: GridHost<T>,
+	item: T,
+	rowIndex: number,
+	column: Column<T>
+): { attr: 'data-tooltip' | 'data-tooltip-html'; text: string } | null {
+	const textAttr = column.isTooltipHtml ? 'data-tooltip-html' : 'data-tooltip'
+	if (column.getTooltipCallback) {
+		const text = column.getTooltipCallback(ctx.engine.cellCtx(item, rowIndex, column))
+		if (text) return { attr: textAttr, text }
+	} else if (column.tooltipMember) {
+		const text = (item as Record<string, unknown>)[column.tooltipMember]
+		if (text && typeof text === 'string') return { attr: textAttr, text }
+	}
+	const field = String(column.field)
+	if (!ctx.engine.isCellInvalid(rowIndex, field)) return null
+	const errorMsg = ctx.engine.getCellValidationError(rowIndex, field)
+	if (!errorMsg) return null
+	const validationTooltipCb = column.getValidationTooltipCallback || ctx.engine.getValidationTooltipCallback
+	if (validationTooltipCb) {
+		const html = validationTooltipCb(Object.assign(ctx.engine.cellCtx(item, rowIndex, column), { error: errorMsg }))
+		if (html) return { attr: 'data-tooltip-html', text: html }
+	}
+	return { attr: 'data-tooltip', text: errorMsg }
 }

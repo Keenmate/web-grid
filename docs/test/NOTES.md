@@ -382,7 +382,9 @@ attribute interpolation.
 **Test:** `tooltip.spec.ts` "tooltip text containing double quotes survives"
 (`test.fail`). The fixture's HTML tooltips avoid quoted attributes.
 
-## 22. Validation tooltip only appears after a full render
+## 22. Validation tooltip only appears after a full render — FIXED
+
+**Fixed:** the tooltip logic moved into one `getCellTooltip()` (`modules/rendering/table.ts`) used by both full row renderers and the surgical `renderCell`, which now sets / clears `data-tooltip` / `data-tooltip-html`.
 
 **Where:** the commit path updates the cell surgically (adds
 `wg__cell--invalid`) but not the `data-tooltip` / `data-tooltip-html` attribute,

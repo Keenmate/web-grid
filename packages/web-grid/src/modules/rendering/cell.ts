@@ -7,6 +7,7 @@ import type { GridHost } from '../grid-context.js'
 import { renderCellEditor } from '../editing/index.js'
 import { renderCellDisplay } from './display.js'
 import { wrapTreeCell } from './tree-render.js'
+import { getCellTooltip } from './table.js'
 
 export type RenderCellOptions = {
 	/** Focus the editor after rendering (for edit mode) */
@@ -85,6 +86,12 @@ export function renderCell<T>(
 
 	// Update classes (replace all)
 	cell.className = classes.join(' ')
+
+	// Tooltip attributes (a commit can make the cell invalid / valid again)
+	const tooltip = getCellTooltip(ctx, item, rowIndex, column)
+	cell.removeAttribute('data-tooltip')
+	cell.removeAttribute('data-tooltip-html')
+	if (tooltip) cell.setAttribute(tooltip.attr, tooltip.text)
 
 	// Update content
 	if (shouldShowEditor) {

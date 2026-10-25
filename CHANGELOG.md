@@ -169,6 +169,8 @@ handlers: `onpaste`, `onbeforepaste`, `onselect`).
   one step); the focused cell now follows its row.
 - Go-to-row Escape / Cancel left no cell focused (arrow keys dead until a click); focus returns
   to the cell the dialog was opened from.
+- The validation-error tooltip of a cell appeared only after an unrelated full render (and a
+  fixed value kept the old one); the surgical cell update writes the tooltip attributes too.
 
 ### Changed
 

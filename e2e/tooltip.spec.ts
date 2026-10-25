@@ -81,14 +81,17 @@ test.describe('cell tooltips', () => {
 })
 
 test.describe('validation tooltips', () => {
-	/** The validation tooltip attribute only appears on a full render (NOTES.md #22) — force one. */
+	/** Some tests force a full render too (the surgical path is covered by the first test, NOTES.md #22). */
 	const fullRender = (page: Page) => onGrid(page, el => { el.isStriped = !el.isStriped })
 
 	test('the error tooltip is there right after the failed commit', async ({ page }) => {
-		test.fail(true, 'NOTES.md #22')
 		await editCell(page, cell(page, 1, 4), '-5')
 		await expect(cell(page, 1, 4)).toHaveClass(/wg__cell--invalid/)
 		await expect(cell(page, 1, 4)).toHaveAttribute('data-tooltip', 'Must not be negative', { timeout: 2000 })
+		// a valid commit clears it again, still without a full render
+		await editCell(page, cell(page, 1, 4), '5')
+		await expect(cell(page, 1, 4)).not.toHaveClass(/wg__cell--invalid/)
+		await expect(cell(page, 1, 4)).not.toHaveAttribute('data-tooltip', /./)
 	})
 
 	test('column getValidationTooltipCallback renders HTML for an invalid cell', async ({ page }) => {
