@@ -185,7 +185,9 @@ callback text" is `test.fail('NOTES.md #1')`. The executor also ignores
 `shouldCopyWithHeaders` for a range copied while a cell (not the container) has
 focus; the container-focus path (`modules/events/container-keydown.ts`) honours it.
 
-## 10. Lock tooltip text is hard-coded English
+## 10. Lock tooltip text is hard-coded English — FIXED
+
+**Fixed:** `labels.rowLocked` / `labels.rowLockedBy` (`{lockedBy}`) via `engine.getLockTooltip()` in all four render sites.
 
 **Where:** `modules/rendering/table.ts:239-241`, `:410`, `:520-522` —
 `'Locked by ${lockedBy}'` / `'This row is locked'`; no `labels` key.
@@ -505,7 +507,9 @@ persist flag is on.
 
 **Test:** `column-order.spec.ts` "setColumnOrder is persisted too" (`test.fail`).
 
-## 31. `labels` merge is shallow — a partial `actions` / `contextMenu` wipes the rest
+## 31. `labels` merge is shallow — a partial `actions` / `contextMenu` wipes the rest — FIXED
+
+**Fixed:** the `labels` setter deep-merges `actions` and `contextMenu`; new `GridLabelsInput` type (partial nested groups) for the setter.
 
 **Where:** `grid.ts:904` — `this._labels = { ...DEFAULT_LABELS, ...value }`.
 
@@ -519,7 +523,9 @@ action label (`add`, `duplicate`, `move-up`, …, tree items) becomes `undefined
 **Test:** `i18n.spec.ts` "a partial nested labels.actions keeps the other action
 labels" (`test.fail`).
 
-## 32. Hard-coded English outside `labels`
+## 32. Hard-coded English outside `labels` — FIXED
+
+**Fixed:** `labels.goToRow` (`{max}`), `goToRowGo`, `goToRowCancel`, `treeExpand`, `treeCollapse` (+ #10's lock texts).
 
 Not translatable today (no `labels` keys):
 - go-to-row dialog — "Go to row (1-N):", "Cancel", "Go"

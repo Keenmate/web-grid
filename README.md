@@ -486,7 +486,7 @@ This architecture separates mode detection (the adapter decides *what* action a 
 |----------|------|---------|-------------|
 | `getCustomStylesCallback` | `(ctx) => string` | — | Returns CSS string injected into shadow DOM |
 | `getRowClassCallback` | `(ctx: { row, rowIndex }) => string \| null` | — | Dynamic CSS class for rows |
-| `labels` | `Partial<GridLabels>` | — | Override UI labels for i18n (see [i18n](#i18n)) |
+| `labels` | `GridLabelsInput` (partial `GridLabels`, nested groups too) | — | Override UI labels for i18n (see [i18n](#i18n)) |
 | `getValidationTooltipCallback` | `(ctx: CellContext<T> & { error }) => string \| null` | — | Custom HTML for validation error tooltip (grid-level default) |
 | `invalidCells` | `CellValidationState[]` | `[]` | External validation state for cells |
 
@@ -1142,6 +1142,13 @@ grid.labels = {
   paginationPerPage: 'per page',
   dropdownNoOptions: 'No options',
   dropdownSearching: 'Searching...',
+  rowLocked: 'This row is locked',
+  rowLockedBy: 'Locked by {lockedBy}',
+  goToRow: 'Go to row (1-{max}):',  // Ctrl/Cmd+G dialog
+  goToRowGo: 'Go',
+  goToRowCancel: 'Cancel',
+  treeExpand: 'Expand',          // tree chevron aria-label
+  treeCollapse: 'Collapse',
   actions: {                       // built-in row / tree action texts
     add: 'Add row',
     delete: 'Delete row',

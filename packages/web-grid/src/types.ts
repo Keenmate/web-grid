@@ -573,6 +573,19 @@ export type GridLabels = {
 	dropdownNoOptions: string       // "No options" - shown when filter returns empty
 	dropdownSearching: string       // "Searching..." - shown during async search
 
+	// Row locking (row-number / row tooltip)
+	rowLocked: string               // "This row is locked" - no lockedBy known
+	rowLockedBy: string             // "Locked by {lockedBy}"
+
+	// Go-to-row dialog (Ctrl/Cmd+G)
+	goToRow: string                 // "Go to row (1-{max}):"
+	goToRowGo: string               // "Go"
+	goToRowCancel: string           // "Cancel"
+
+	// Tree chevron aria-label
+	treeExpand: string              // "Expand"
+	treeCollapse: string            // "Collapse"
+
 	// Built-in row / tree action texts (toolbar, cell context menu, shortcuts help)
 	actions: {
 		add: string                  // "Add row"
@@ -597,6 +610,13 @@ export type GridLabels = {
 		columnVisibility: string     // "Column Visibility"
 		showAll: string              // "Show all" - first option in column visibility submenu
 	}
+}
+
+/** What `labels` accepts: any subset, including a subset of the nested `actions` / `contextMenu`
+ * groups — everything not given keeps its default. */
+export type GridLabelsInput = Partial<Omit<GridLabels, 'actions' | 'contextMenu'>> & {
+	actions?: Partial<GridLabels['actions']>
+	contextMenu?: Partial<GridLabels['contextMenu']>
 }
 
 // Summary content callback (returns HTML)

@@ -17,6 +17,7 @@ import type {
 	SummaryCallback,
 	ToolbarPosition,
 	GridLabels,
+	GridLabelsInput,
 	RowLock,
 	RowLockingOptions,
 	ColumnWidthState,
@@ -978,7 +979,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	set getRowClassCallback(value: ((ctx: RowContext<T>) => string | null) | undefined) { this.engine.getRowClassCallback = value }
 
 	get labels(): GridLabels { return this.engine.labels }
-	set labels(value: Partial<GridLabels>) { this.engine.labels = value }
+	set labels(value: GridLabelsInput) { this.engine.labels = value }
 
 	get summaryMetadata(): unknown { return this.engine.summaryMetadata }
 	set summaryMetadata(value: unknown) { this.engine.summaryMetadata = value }

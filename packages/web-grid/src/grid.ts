@@ -21,6 +21,7 @@ import type {
 	SummaryCallback,
 	ToolbarPosition,
 	GridLabels,
+	GridLabelsInput,
 	RowLock,
 	RowLockingOptions,
 	ColumnWidthState,
@@ -100,6 +101,19 @@ const DEFAULT_LABELS: GridLabels = {
 	// Dropdown
 	dropdownNoOptions: 'No options',
 	dropdownSearching: 'Searching...',
+
+	// Row locking
+	rowLocked: 'This row is locked',
+	rowLockedBy: 'Locked by {lockedBy}',
+
+	// Go-to-row dialog
+	goToRow: 'Go to row (1-{max}):',
+	goToRowGo: 'Go',
+	goToRowCancel: 'Cancel',
+
+	// Tree chevron
+	treeExpand: 'Expand',
+	treeCollapse: 'Collapse',
 
 	// Built-in row / tree actions
 	actions: {
@@ -901,8 +915,21 @@ export class GridEngine<T = unknown> {
 
 	// Labels/i18n - merge with defaults so partial updates work
 	get labels(): GridLabels { return this._labels }
-	set labels(value: Partial<GridLabels>) {
-		this._labels = { ...DEFAULT_LABELS, ...value }
+	/** Tooltip text for a locked row (`labels.rowLockedBy` / `labels.rowLocked`). */
+	getLockTooltip(lockInfo: RowLock | null | undefined): string {
+		return lockInfo?.lockedBy
+			? this._labels.rowLockedBy.replace('{lockedBy}', String(lockInfo.lockedBy))
+			: this._labels.rowLocked
+	}
+
+	set labels(value: GridLabelsInput) {
+		// The nested groups merge too — a partial `actions` / `contextMenu` keeps the other texts
+		this._labels = {
+			...DEFAULT_LABELS,
+			...value,
+			actions: { ...DEFAULT_LABELS.actions, ...value?.actions },
+			contextMenu: { ...DEFAULT_LABELS.contextMenu, ...value?.contextMenu }
+		}
 		this.requestUpdate()
 	}
 

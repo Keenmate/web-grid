@@ -80,7 +80,6 @@ test('a partial labels object keeps the other defaults', async ({ page }) => {
 })
 
 test('a partial nested labels.actions keeps the other action labels', async ({ page }) => {
-	test.fail(true, 'NOTES.md #31')
 	await onGrid(page, el => { el.labels = { actions: { delete: 'Smazat' } } })
 	await openToolbarOn(page, gridLocator(page).locator('tr[data-row-index="1"]'))
 	await expect(toolbar(page).locator('[data-action="delete"]')).toHaveAttribute('aria-label', 'Smazat')
@@ -88,7 +87,6 @@ test('a partial nested labels.actions keeps the other action labels', async ({ p
 })
 
 test('the go-to-row dialog texts are translatable through labels', async ({ page }) => {
-	test.fail(true, 'NOTES.md #32')
 	await onGrid(page, el => { el.labels = { goToRow: 'Přejít na řádek', goToRowCancel: 'Zrušit', goToRowGo: 'Přejít' } })
 	await cell(page, 0, 1).click()
 	await page.keyboard.press('Control+g')
@@ -96,4 +94,12 @@ test('the go-to-row dialog texts are translatable through labels', async ({ page
 	await expect(dlg).toBeVisible()
 	await expect(dlg.locator('.wg__goto-label')).toContainText('Přejít na řádek', { timeout: 1500 })
 	await expect(dlg.locator('.wg__goto-btn--cancel')).toHaveText('Zrušit')
+	await expect(dlg.locator('.wg__goto-btn--go')).toHaveText('Přejít')
+})
+
+test('a partial nested labels.contextMenu keeps the other header-menu labels', async ({ page }) => {
+	expect(await onGrid(page, el => {
+		el.labels = { contextMenu: { hideColumn: 'Skrýt' } }
+		return [el.labels.contextMenu.hideColumn, el.labels.contextMenu.sortAsc, el.labels.actions.add, el.labels.paginationNext]
+	})).toEqual(['Skrýt', 'Sort Ascending', 'Add row', '▶'])
 })

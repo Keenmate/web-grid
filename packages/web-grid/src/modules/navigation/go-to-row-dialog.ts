@@ -28,13 +28,14 @@ export function showGoToRowDialog<T>(ctx: GridHost<T>, colIndex: number): void {
 	// Create dialog overlay
 	const overlay = document.createElement('div')
 	overlay.className = 'wg__goto-overlay'
+	const labels = ctx.engine.labels
 	overlay.innerHTML = `
 		<div class="wg__goto-dialog">
-			<label class="wg__goto-label">Go to row (1-${displayItems.length}):</label>
+			<label class="wg__goto-label">${ctx.escapeHtml(labels.goToRow.replace('{max}', String(displayItems.length)))}</label>
 			<input type="number" class="wg__goto-input" min="1" max="${displayItems.length}" value="1" />
 			<div class="wg__goto-buttons">
-				<button type="button" class="wg__goto-btn wg__goto-btn--cancel">Cancel</button>
-				<button type="button" class="wg__goto-btn wg__goto-btn--go">Go</button>
+				<button type="button" class="wg__goto-btn wg__goto-btn--cancel">${ctx.escapeHtml(labels.goToRowCancel)}</button>
+				<button type="button" class="wg__goto-btn wg__goto-btn--go">${ctx.escapeHtml(labels.goToRowGo)}</button>
 			</div>
 		</div>
 	`

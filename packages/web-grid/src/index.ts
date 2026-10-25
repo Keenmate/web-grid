@@ -51,6 +51,7 @@ export type {
 
 	// Labels/i18n
 	GridLabels,
+	GridLabelsInput,
 
 	// Row locking types
 	RowLock,

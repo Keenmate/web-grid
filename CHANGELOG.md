@@ -149,6 +149,11 @@ handlers: `onpaste`, `onbeforepaste`, `onselect`).
   `isRowDirty` / `hasRowDraft` / `getDraftRowIndices()` reported the clean row as dirty; `isRowDirty` is
   value-based now. The row-number dirty marker updates right after a commit (it waited for an
   unrelated full render).
+- Hard-coded English: the lock tooltip, the go-to-row dialog and the tree chevron `aria-label` are
+  translatable — new `labels` keys `rowLocked`, `rowLockedBy` (`{lockedBy}`), `goToRow` (`{max}`),
+  `goToRowGo`, `goToRowCancel`, `treeExpand`, `treeCollapse`.
+- A partial nested `labels.actions` / `labels.contextMenu` wiped the other texts of that group
+  (shallow merge); the groups merge too now (`GridLabelsInput` type).
 
 ### Changed
 

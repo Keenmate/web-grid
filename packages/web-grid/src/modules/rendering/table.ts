@@ -236,9 +236,7 @@ export function renderDataRows<T>(ctx: GridHost<T>): string {
 			const frozenClass = stickyRowNumbers ? ' wg__cell--frozen' : ''
 
 			if (isLocked) {
-				const lockTooltip = lockInfo?.lockedBy
-					? `Locked by ${lockInfo.lockedBy}`
-					: 'This row is locked'
+				const lockTooltip = ctx.engine.getLockTooltip(lockInfo)
 				rowNumberCell = `<td class="wg__cell wg__row-number wg__row-number--locked${frozenClass}" style="${stickyStyle}" data-tooltip="${ctx.escapeHtml(lockTooltip)}" data-row-number="${rowIndex}">🔒</td>`
 			} else if (isEmptyRow) {
 				rowNumberCell = `<td class="wg__cell wg__row-number wg__empty-row-indicator${frozenClass}" style="${stickyStyle}" data-row-number="${rowIndex}">${ctx.engine.newRowIndicator}</td>`
@@ -407,7 +405,7 @@ export function renderDataRows<T>(ctx: GridHost<T>): string {
 
 		// Row tooltip for locked rows (when no row numbers visible)
 		const rowTooltipAttr = isLocked && !showRowNumbers
-			? `data-tooltip="${ctx.escapeHtml(lockInfo?.lockedBy ? `Locked by ${lockInfo.lockedBy}` : 'This row is locked')}"`
+			? `data-tooltip="${ctx.escapeHtml(ctx.engine.getLockTooltip(lockInfo))}"`
 			: ''
 
 		return `<tr class="${rowClasses.join(' ')}" data-row-index="${rowIndex}" ${rowTooltipAttr}>${rowNumberCell}${inlineActionsCell}${actionsCell}${cells}<td class="wg__cell wg__filler" data-row="${rowIndex}"></td></tr>`
@@ -517,9 +515,7 @@ export function renderDataRowsVirtual<T>(ctx: GridHost<T>, params: VirtualScroll
 			const frozenClass = stickyRowNumbers ? ' wg__cell--frozen' : ''
 
 			if (isLocked) {
-				const lockTooltip = lockInfo?.lockedBy
-					? `Locked by ${lockInfo.lockedBy}`
-					: 'This row is locked'
+				const lockTooltip = ctx.engine.getLockTooltip(lockInfo)
 				rowNumberCell = `<td class="wg__cell wg__row-number wg__row-number--locked${frozenClass}" style="${stickyStyle}" data-tooltip="${ctx.escapeHtml(lockTooltip)}" data-row-number="${rowIndex}">🔒</td>`
 			} else if (isEmptyRow) {
 				rowNumberCell = `<td class="wg__cell wg__row-number wg__empty-row-indicator${frozenClass}" style="${stickyStyle}" data-row-number="${rowIndex}">${ctx.engine.newRowIndicator}</td>`
@@ -687,7 +683,7 @@ export function renderDataRowsVirtual<T>(ctx: GridHost<T>, params: VirtualScroll
 
 		// Row tooltip for locked rows (when no row numbers visible)
 		const rowTooltipAttr = isLocked && !showRowNumbers
-			? `data-tooltip="${ctx.escapeHtml(lockInfo?.lockedBy ? `Locked by ${lockInfo.lockedBy}` : 'This row is locked')}"`
+			? `data-tooltip="${ctx.escapeHtml(ctx.engine.getLockTooltip(lockInfo))}"`
 			: ''
 
 		visibleRows.push(`<tr class="${rowClasses.join(' ')}" data-row-index="${rowIndex}" ${rowTooltipAttr}>${rowNumberCell}${inlineActionsCell}${actionsCell}${cells}<td class="wg__cell wg__filler" data-row="${rowIndex}"></td></tr>`)

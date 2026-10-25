@@ -104,7 +104,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Feature | Status | Spec | Fixture |
 | --- | :-: | --- | --- |
 | Row locking sources (`getLockInfoCallback`, `getIsLockedCallback`, `lockedMember`, `lockInfoMember`), marker + tooltip | ✓ | `row-locking.spec.ts`, `basic.spec.ts` | `row-locking.html`, `basic.html` |
-| Lock tooltip i18n (#10) | ✗ fail | `row-locking.spec.ts` | `row-locking.html` |
+| Lock tooltip i18n (#10 fixed) | ✓ | `row-locking.spec.ts` | `row-locking.html` |
 | `lockRowById/unlockRowById/isRowLocked/getRowLockInfo/clearExternalLocks`, `row-lock-change` | ✓ | `row-locking.spec.ts` | `row-locking.html` |
 | Lock blocks F2 / typing / paste; `lockedEditBehavior` allow / callback + `getCanEditLockedCallback` | ✓ | `row-locking.spec.ts` | `row-locking.html` |
 | `getRowIdCallback` / `idValueMember`, `getRowId`, `updateRowById`, `replaceRowById`, `findRowById` | ✓ | `row-api.spec.ts` | `row-api.html` |
@@ -162,7 +162,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Inputs: mode preset batch, sync property reads, invalid values rejected | ✓ | `inputs.spec.ts` | `inputs.html` |
 | Table-driven attribute → property → removal → property loop over all 63 inputs; enum inputs reject unknown values | ✓ | `inputs.spec.ts` | `inputs.html` |
 | `labels` across toolbar / header menu / pagination / shortcuts help / dropdown | ✓ | `i18n.spec.ts` | `i18n.html` |
-| Nested `labels` merge (#31), go-to-row + chevron texts (#32) | ✗ fail | `i18n.spec.ts` | `i18n.html` |
+| Nested `labels` merge (#31 fixed), go-to-row + chevron texts (#32 fixed) | ✓ | `i18n.spec.ts` | `i18n.html` |
 | Logging silent by default, `getCategories`, `setCategoryLevel` | ✓ | `logging.spec.ts` | `logging.html` |
 | `enableLogging` / `setLogLevel` reach the categories (#33) | ✗ fail | `logging.spec.ts` | `logging.html` |
 | Summary row (`renderSummaryCallback` ctx, `summaryPosition`, `isSummaryInline`, `summaryMetadata`, totalItems) | ✓ | `summary.spec.ts` | `summary.html` |
