@@ -117,7 +117,9 @@ make `isRowDirty` value-based like `isCellDirty`.
 **Test:** `drafts.spec.ts` "opening an editor and cancelling leaves the row clean"
 (`test.fail`).
 
-## 7. Drafts are keyed by display index — they jump rows on sort / page / filter
+## 7. Drafts are keyed by display index — they jump rows on sort / page / filter — FIXED
+
+**Fixed:** drafts are keyed by row identity — the `idMember` / `treePathMember` value, else the row object itself (never the display index). The index-based API (`getRowDraft(i)`, `isRowDirty(i)`, …) resolves the displayed row first; `getDraftRowIndices()` lists the display indices of displayed rows with a draft. `updateRowById` / `replaceRowById` also looked drafts up by the `items` index — fixed with it. New tests: no-`idMember` sort, filter.
 
 **Where:** `grid.ts` `_draftRows: Map<number, T>` keyed by `rowIndex` (the
 *display* index); `getCellRawValue`, `isCellDirty`, `isRowDirty`,

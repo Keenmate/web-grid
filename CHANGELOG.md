@@ -135,6 +135,10 @@ handlers: `onpaste`, `onbeforepaste`, `onselect`).
   honours `shouldCopyWithHeaders`.
 - Cmd+G (go to row) and Cmd+Delete (`row-delete` request) work on macOS.
 - An empty row built before `columns` were assigned was cached without the column fields.
+- Drafts jumped rows on sort / page / filter / tree toggle (they were keyed by the display
+  index). They are keyed by row identity now — the `idMember` (or `treePathMember`) value, else the
+  row object — as the `idMember` docs already promised. `getDraftRowIndices()` returns the display
+  indices of the displayed rows that have a draft.
 
 ### Changed
 

@@ -322,7 +322,8 @@ export type QuickGridProps<T> = {
 	// Field on each row uniquely identifying it. Internal state (drafts, invalid-cell markers)
 	// is keyed by this value, so pagination, filter, sort, and tree expand/collapse no longer
 	// cause an in-flight edit / invalid marker to land on the wrong row when the displayed
-	// order changes. Falls back to `treePathMember` (tree mode) → displayed-row index string.
+	// order changes. Falls back to `treePathMember` (tree mode) → for drafts, the row object
+	// itself; for invalid-cell markers, the displayed-row index string.
 	idMember?: keyof T | string
 	// Sorting
 	sort?: SortState[]  // Current sort state (can be set for initial/server-side sort)

@@ -287,7 +287,8 @@ export class GridEngine<T = unknown> {
 	protected _editingCell: EditingCell = null
 	protected _currentCellError: string | null = null
 	protected _isValidating: boolean = false
-	protected _draftRows: Map<number, T> = new Map()
+	/** Drafts keyed by row identity (see `draftKey`) — they follow their row through sort / page / filter. */
+	protected _draftRows: Map<unknown, T> = new Map()
 
 	// Navigation
 	protected _focusedCell: FocusedCell = null
@@ -2450,19 +2451,60 @@ export class GridEngine<T = unknown> {
 	// Draft Row Management
 	// ==========================================================================
 
+	/**
+	 * Identity a draft is stored under: the row's `idMember` (or `treePathMember`)
+	 * value when set, otherwise the row object itself — never the display index, so
+	 * a draft stays with its row when the view is sorted, paged, filtered or a tree
+	 * branch toggles.
+	 */
+	private draftKey(item: T): unknown {
+		const member = this._idMember ?? this._treePathMember
+		if (member) {
+			const v = (item as Record<string, unknown>)[member]
+			if (v !== undefined && v !== null) return `key:${String(v)}`
+		}
+		return item
+	}
+
+	/** The draft of the row at a display index (the empty row has its own draft). */
+	private draftAt(rowIndex: number): T | undefined {
+		const item = this.displayItems[rowIndex]
+		return item ? this._draftRows.get(this.draftKey(item)) : undefined
+	}
+
+	private setDraftAt(rowIndex: number, draft: T): void {
+		const item = this.displayItems[rowIndex]
+		if (item) this._draftRows.set(this.draftKey(item), draft)
+	}
+
+	private deleteDraftAt(rowIndex: number): void {
+		const item = this.displayItems[rowIndex]
+		if (item) this._draftRows.delete(this.draftKey(item))
+	}
+
+	/** Display indices of the displayed rows that have a draft. */
+	private draftRowIndices(): number[] {
+		if (this._draftRows.size === 0) return []
+		const out: number[] = []
+		this.displayItems.forEach((item, i) => {
+			if (!this.isEmptyRowIndex(i) && this._draftRows.has(this.draftKey(item))) out.push(i)
+		})
+		return out
+	}
+
 	getRowDraft(rowIndex: number): T | undefined {
-		return this._draftRows.get(rowIndex)
+		return this.draftAt(rowIndex)
 	}
 
 	hasRowDraft(rowIndex: number): boolean {
-		return this._draftRows.has(rowIndex)
+		return this.draftAt(rowIndex) !== undefined
 	}
 
 	/**
 	 * Check if a specific cell has been modified (draft value differs from original)
 	 */
 	isCellDirty(rowIndex: number, field: string): boolean {
-		const draftRow = this._draftRows.get(rowIndex)
+		const draftRow = this.draftAt(rowIndex)
 		if (!draftRow) return false
 		const originalItem = this.displayItems[rowIndex]
 		if (!originalItem) return false
@@ -2475,11 +2517,11 @@ export class GridEngine<T = unknown> {
 	 * Check if any cell in a row has been modified
 	 */
 	isRowDirty(rowIndex: number): boolean {
-		return this._draftRows.has(rowIndex)
+		return this.draftAt(rowIndex) !== undefined
 	}
 
 	discardRowDraft(rowIndex: number): void {
-		this._draftRows.delete(rowIndex)
+		this.deleteDraftAt(rowIndex)
 		const rowKey = this.rowKeyForIndex(rowIndex)
 		if (rowKey !== null) {
 			this._invalidCells = this._invalidCells.filter(c => c.rowKey !== rowKey)
@@ -2492,7 +2534,7 @@ export class GridEngine<T = unknown> {
 	 * Removes the field from the draft row, or deletes the draft row if it becomes empty
 	 */
 	discardCellDraft(rowIndex: number, field: string): void {
-		const draftRow = this._draftRows.get(rowIndex)
+		const draftRow = this.draftAt(rowIndex)
 		if (!draftRow) return
 
 		const originalItem = this.displayItems[rowIndex]
@@ -2515,7 +2557,7 @@ export class GridEngine<T = unknown> {
 		}
 
 		if (!hasChanges) {
-			this._draftRows.delete(rowIndex)
+			this.deleteDraftAt(rowIndex)
 		}
 
 		// Clear any invalid cell state for this field
@@ -2528,7 +2570,7 @@ export class GridEngine<T = unknown> {
 	}
 
 	getDraftRowIndices(): number[] {
-		return Array.from(this._draftRows.keys())
+		return this.draftRowIndices()
 	}
 
 	discardAllDrafts(): void {
@@ -2545,7 +2587,7 @@ export class GridEngine<T = unknown> {
 		// Empty row uses item directly (which is _emptyRowDraft via displayItems)
 		// Don't check _draftRows for empty row - it has its own draft system
 		if (!this.isEmptyRowIndex(rowIndex)) {
-			const draftRow = this._draftRows.get(rowIndex)
+			const draftRow = this._draftRows.get(this.draftKey(item))
 			if (draftRow) {
 				return (draftRow as Record<string, unknown>)[field]
 			}
@@ -2668,8 +2710,8 @@ export class GridEngine<T = unknown> {
 		if (!item) return
 
 		// Clone row to draft if not already cloned (preserves dirty values across edits)
-		if (!this._draftRows.has(rowIndex)) {
-			this._draftRows.set(rowIndex, { ...item })
+		if (this.draftAt(rowIndex) === undefined) {
+			this.setDraftAt(rowIndex, { ...item })
 		}
 
 		const prev = this._editingCell
@@ -2870,10 +2912,10 @@ export class GridEngine<T = unknown> {
 		}
 
 		// ALWAYS update draft row (valid OR invalid) - preserves user input
-		let draftRow = this._draftRows.get(rowIndex)
+		let draftRow = this.draftAt(rowIndex)
 		if (!draftRow) {
 			draftRow = { ...item }
-			this._draftRows.set(rowIndex, draftRow)
+			this.setDraftAt(rowIndex, draftRow)
 		}
 		(draftRow as Record<string, unknown>)[field] = finalValue
 
@@ -2934,17 +2976,17 @@ export class GridEngine<T = unknown> {
 			(this._emptyRowDraft as Record<string, unknown>)[field] = newValue
 		} else {
 			// Update draft row (create if needed)
-			let draftRow = this._draftRows.get(rowIndex)
+			let draftRow = this.draftAt(rowIndex)
 			if (!draftRow) {
 				draftRow = { ...item }
-				this._draftRows.set(rowIndex, draftRow)
+				this.setDraftAt(rowIndex, draftRow)
 			}
 			(draftRow as Record<string, unknown>)[field] = newValue
 		}
 
 		// Fire row-change only when the value actually changed
 		if (newValue !== oldValue) {
-			const draftRow = this._draftRows.get(rowIndex) || this._emptyRowDraft || item
+			const draftRow = this.draftAt(rowIndex) || this._emptyRowDraft || item
 			this.notify('row-change', {
 				row: item,
 				draftRow,
@@ -3354,7 +3396,7 @@ export class GridEngine<T = unknown> {
 		Object.assign(this._items[found.index], newData)
 
 		// Update draft if exists
-		const draft = this._draftRows.get(found.index)
+		const draft = this._draftRows.get(this.draftKey(found.row))
 		if (draft) {
 			Object.assign(draft, newData)
 		}
@@ -3373,7 +3415,7 @@ export class GridEngine<T = unknown> {
 		this._items[found.index] = newRow
 
 		// Clear draft for this row (data was replaced externally)
-		this._draftRows.delete(found.index)
+		this._draftRows.delete(this.draftKey(found.row))
 
 		this.requestUpdate()
 		return true

@@ -96,13 +96,28 @@ test.describe('dirty state', () => {
 	})
 
 	test('a draft follows its row when the view is re-sorted', async ({ page }) => {
-		test.fail(true, 'NOTES.md #7')
 		await editCell(page, cell(page, 2, NAME), 'Zulu')   // Gamma (id 3, index 2) → Zulu (draft)
 		await header(page, 'name').locator('.wg__sort-indicator').click()  // asc by the ORIGINAL names → Gamma moves to index 3
 		// The edited row is id 3 wherever it lands; its draft must stay with it.
 		const view = await onGrid(page, el => el.displayItems.map((r: any, i: number) => ({ id: r.id, shown: el.getRowDraft(i)?.name ?? r.name })))
 		expect(view.find((v: any) => v.id === 3)!.shown).toBe('Zulu')
 		expect(view.filter((v: any) => v.shown === 'Zulu')).toHaveLength(1)
+	})
+
+	test('without idMember a draft follows its row object (sort)', async ({ page }) => {
+		await onGrid(page, el => { el.idMember = null })
+		await editCell(page, cell(page, 2, NAME), 'Zulu')
+		await header(page, 'name').locator('.wg__sort-indicator').click()
+		const view = await onGrid(page, el => el.displayItems.map((r: any, i: number) => ({ id: r.id, shown: el.getRowDraft(i)?.name ?? r.name })))
+		expect(view.filter((v: any) => v.shown === 'Zulu').map((v: any) => v.id)).toEqual([3])
+	})
+
+	test('a draft follows its row through a filter; getDraftRowIndices lists display indices', async ({ page }) => {
+		await editCell(page, cell(page, 3, NAME), 'Delta 2')  // id 4
+		await onGrid(page, el => { el.isFilterable = true; el.filters = { name: 'delta' } })
+		await expect.poll(() => onGrid(page, el => el.displayItems.map((r: any) => r.id))).toEqual([4])
+		expect(await onGrid(page, el => [el.getRowDraft(0)?.name, el.getDraftRowIndices(), el.isRowDirty(0)])).toEqual(['Delta 2', [0], true])
+		await expect(cell(page, 0, NAME)).toHaveText('Delta 2')
 	})
 })
 

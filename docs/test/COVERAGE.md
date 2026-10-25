@@ -74,7 +74,8 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Fill handle (drag, cancel, direction constraint) | ✓ | `fill-handle.spec.ts` | `fill-handle.html` |
 | Paste (single / multi-cell, modes, events, proxies) | ✓ | `paste.spec.ts` | `paste.html` |
 | Drafts: dirty marking, indicator, `isCellDirty/isRowDirty/getRowDraft` | ✓ | `drafts.spec.ts` | `drafts.html` |
-| Drafts bugs: cancel leaves a draft (#6), drafts keyed by display index (#7), row-number marker stale (#8) | ✗ fail | `drafts.spec.ts` | `drafts.html` |
+| Drafts follow their row through sort / filter, with and without `idMember` (#7 fixed) | ✓ | `drafts.spec.ts` | `drafts.html` |
+| Drafts bugs: cancel leaves a draft (#6), row-number marker stale (#8) | ✗ fail | `drafts.spec.ts` | `drafts.html` |
 | `discardRowDraft` / `discardAllDrafts`, `row-change` detail + twin | ✓ | `drafts.spec.ts` | `drafts.html` |
 | New row: `isNewRowEnabled`, `newRowPosition`, `newRowIndicator`, empty-row draft, `createRowCallback` (paste) | ✓ | `new-row.spec.ts` | `new-row.html` |
 | New row committed by Enter / Tab (focus stays on the fresh empty row), `createEmptyRowCallback` row lands (#17 fixed) | ✓ | `new-row.spec.ts` | `new-row.html` |

@@ -68,6 +68,7 @@ export interface GridController<T = any> {
 	getRowDraft(rowIndex: number): T | undefined
 	hasRowDraft(rowIndex: number): boolean
 	discardRowDraft(rowIndex: number): void
+	/** Display indices of the currently displayed rows that have a draft (drafts follow their row, see `idMember`). */
 	getDraftRowIndices(): number[]
 	discardAllDrafts(): void
 	isCellDirty(rowIndex: number, field: string): boolean
