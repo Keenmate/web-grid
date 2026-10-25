@@ -484,3 +484,51 @@ calls `savePersistedState()` (a drag reorder does).
 persist flag is on.
 
 **Test:** `column-order.spec.ts` "setColumnOrder is persisted too" (`test.fail`).
+
+## 31. `labels` merge is shallow — a partial `actions` / `contextMenu` wipes the rest
+
+**Where:** `grid.ts:904` — `this._labels = { ...DEFAULT_LABELS, ...value }`.
+
+**Symptom:** `labels = { actions: { delete: 'Smazat' } }` → every other built-in
+action label (`add`, `duplicate`, `move-up`, …, tree items) becomes `undefined`
+(toolbar buttons lose their `aria-label`, menu items render empty). Same for
+`labels.contextMenu`.
+
+**Suggested fix:** deep-merge the nested `actions` / `contextMenu` groups.
+
+**Test:** `i18n.spec.ts` "a partial nested labels.actions keeps the other action
+labels" (`test.fail`).
+
+## 32. Hard-coded English outside `labels`
+
+Not translatable today (no `labels` keys):
+- go-to-row dialog — "Go to row (1-N):", "Cancel", "Go"
+  (`modules/navigation/go-to-row-dialog.ts:33-37`);
+- tree chevron `aria-label` "Expand" / "Collapse" (`modules/rendering/tree-render.ts:40`);
+- lock tooltips (#10).
+
+**Suggested fix:** `labels.goToRow` (template with `{max}`), `labels.goToRowGo`,
+`labels.goToRowCancel`, `labels.treeExpand`, `labels.treeCollapse` — key names
+in the test are a suggestion.
+
+**Test:** `i18n.spec.ts` "the go-to-row dialog texts are translatable through
+labels" (`test.fail`).
+
+## 33. `enableLogging()` / `setLogLevel()` don't reach the category loggers
+
+**Where:** `packages/web-grid/src/logger.ts` — a vendored `loglevel`
+(`src/vendor/loglevel`), not core's `/logging`. `enableLogging()` /
+`setLogLevel()` call `log.setLevel()` on the **root** logger; the `GRID:*`
+child loggers were created (with the then-silent level) at module load and
+don't follow. Only `setCategoryLevel()` produces output.
+
+**Symptom:** the documented `window.components['web-grid'].logging.enableLogging()`
+(see the `logger.ts` header) prints nothing.
+
+**Suggested fix:** move to core `@keenmate/web-components-core/logging` like
+dropzone (its `setLogLevel` re-levels every registered category), or loop over
+`LOGGING_CATEGORIES` in `enableLogging` / `disableLogging` / `setLogLevel`.
+**Question:** is the grid's logging migration to core `/logging` planned? (It is
+the only migrated component still on a private loglevel copy.)
+
+**Tests:** `logging.spec.ts` — 2 tests (`test.fail`).

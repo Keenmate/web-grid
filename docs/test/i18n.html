@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — i18n fixture</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>i18n fixture</h1>
+	<p>Targeted by <code>e2e/i18n.spec.ts</code>. One grid exposing every labelled surface: row toolbar
+	built-ins, header context menu built-ins, pagination, shortcuts help, a combobox (typing a non-match shows "no options"), the
+	go-to-row dialog. The spec assigns <code>labels</code>.</p>
+
+	<web-grid id="grid" is-editable edit-trigger="navigate" is-row-toolbar-visible is-pageable page-size="2"
+		is-shortcuts-help-visible sort-mode="single" style="max-width: 600px;"></web-grid>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+
+		const grid = document.getElementById('grid')
+		grid.idMember = 'id'
+		grid.columns = [
+			{ field: 'id', title: 'ID', width: '60px', isEditable: false },
+			{ field: 'name', title: 'Name', width: '140px', editor: 'text' },
+			{ field: 'kind', title: 'Kind', width: '120px', editor: 'combobox', editorOptions: { options: [{ value: 'a', label: 'Apple' }] } }
+		]
+		grid.items = [
+			{ id: 1, name: 'Alpha', kind: null },
+			{ id: 2, name: 'Beta', kind: null },
+			{ id: 3, name: 'Gamma', kind: null }
+		]
+		grid.rowToolbar = ['add', 'delete', 'duplicate', 'move-up', 'move-down']
+		grid.headerContextMenu = ['sort-asc', 'sort-desc', 'clear-sort', 'hide-column', 'freeze-column', 'column-visibility']
+		grid.rowShortcuts = [{ shortcut: 'Ctrl+D', action: 'duplicate' }]
+	</script>
+</body>
+</html>

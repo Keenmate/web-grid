@@ -157,8 +157,10 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Contrast in dark mode (3 theme depths) | ✓ | `dark-mode.spec.ts` | `dark-mode.html` |
 | Inputs: mode preset batch, sync property reads, invalid values rejected | ✓ | `inputs.spec.ts` | `inputs.html` |
 | Table-driven attribute → property → removal loop over all inputs | ✗ | | |
-| `labels` across menus / pagination / go-to-row | ✗ | | |
-| Logging silent by default | ✗ | | |
+| `labels` across toolbar / header menu / pagination / shortcuts help / dropdown | ✓ | `i18n.spec.ts` | `i18n.html` |
+| Nested `labels` merge (#31), go-to-row + chevron texts (#32) | ✗ fail | `i18n.spec.ts` | `i18n.html` |
+| Logging silent by default, `getCategories`, `setCategoryLevel` | ✓ | `logging.spec.ts` | `logging.html` |
+| `enableLogging` / `setLogLevel` reach the categories (#33) | ✗ fail | `logging.spec.ts` | `logging.html` |
 | Summary row (`renderSummaryCallback` ctx, `summaryPosition`, `isSummaryInline`, `summaryMetadata`, totalItems) | ✓ | `summary.spec.ts` | `summary.html` |
 | Summary refresh after an edit, draft-aware (#20) | ✗ fail | `summary.spec.ts` | `summary.html` |
 | Tooltips: `getTooltipCallback`, `tooltipMember`, `isTooltipHtml`, `headerInfo`, validation tooltip (column / grid callback), `tooltipShowDelay` | ✓ | `tooltip.spec.ts` | `tooltip.html` |

@@ -228,3 +228,26 @@ export async function readClipboard(page: Page): Promise<string> {
 	// Windows clipboards hand back CRLF line breaks — normalise to the grid's LF.
 	return (await page.evaluate(() => navigator.clipboard.readText())).replace(/\r\n/g, '\n')
 }
+
+/** The top-level context menu (`.wg-context-menu` also matches submenus). */
+export function menuRoot(page: Page): Locator {
+	return page.locator('.wg-context-menu:not(.wg-context-menu--submenu)')
+}
+
+/**
+ * Open a cell / header context menu: move the mouse there, then dispatch a full
+ * `contextmenu` event (Playwright's right-click was flaky through shadow DOM).
+ */
+export async function openContextMenu(page: Page, target: Locator): Promise<void> {
+	await target.scrollIntoViewIfNeeded()
+	const box = await target.boundingBox()
+	if (!box) throw new Error('No bounding box for contextmenu target')
+	const x = box.x + box.width / 2
+	const y = box.y + box.height / 2
+	await page.mouse.move(x, y)
+	await target.dispatchEvent('contextmenu', {
+		bubbles: true, cancelable: true, button: 2, buttons: 2,
+		clientX: x, clientY: y, screenX: x, screenY: y
+	})
+	await expect(menuRoot(page)).toBeVisible()
+}
