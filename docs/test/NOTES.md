@@ -84,7 +84,9 @@ advertises "per-column filtering".
 or should the dead option / CSS / JSDoc be removed and filtering documented as
 API-only? `filtering.spec.ts` covers the API path only.
 
-## 5. A filter change does not reset / clamp `currentPage`
+## 5. A filter change does not reset / clamp `currentPage` — FIXED
+
+**Fixed:** client pagination clamps `currentPage` to the last page when the view shrinks (a filter, or a shorter `items`) — clamp rather than reset, so a page that still exists is kept and a restored page + filter set at init survives until the items arrive.
 
 **Where:** `grid.ts:2087` (`setFilter`) and `:2081` (`filters` setter) — neither
 touches `_currentPage`; `paginatedItems` (`:2130`) then slices past the end.

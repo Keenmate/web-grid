@@ -2146,7 +2146,10 @@ export class GridEngine<T = unknown> {
 			// Server-side pagination: items are already the current page, don't slice
 			result = baseItems
 		} else {
-			// Client-side pagination: slice the items array
+			// Client-side pagination: slice the items array. A page past the end (a filter
+			// or a shorter `items` left fewer pages) is clamped to the last page.
+			const lastPage = Math.max(1, Math.ceil(baseItems.length / this._pageSize))
+			if (this._currentPage > lastPage) this._currentPage = lastPage
 			const start = (this._currentPage - 1) * this._pageSize
 			const end = start + this._pageSize
 			result = baseItems.slice(start, end)

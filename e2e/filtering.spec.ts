@@ -70,12 +70,19 @@ test.describe('client filtering', () => {
 	})
 
 	test('a filter change while on a later page keeps rows visible (page resets / clamps)', async ({ page }) => {
-		test.fail(true, 'NOTES.md #5')
 		await onGrid(page, el => { el.isPageable = true; el.pageSize = 2; el.currentPage = 3 })
 		expect(await names(page)).toEqual(['Eva Martinez', 'Frank Lee'])
 		await onGrid(page, el => el.setFilter('city', 'brno'))  // 2 matches → 1 page
 		await expect(rowCount(page)).toHaveCount(2)
 		expect(await onGrid(page, el => el.currentPage)).toBe(1)
+		await expect(gridLocator(page).locator('.wg__pagination-info')).toContainText('Page 1 of 1')
+	})
+
+	test('a filter that still leaves the current page keeps it (clamp, not reset)', async ({ page }) => {
+		await onGrid(page, el => { el.isPageable = true; el.pageSize = 1; el.currentPage = 2 })
+		await onGrid(page, el => el.setFilter('city', 'brno'))  // 2 matches → 2 pages
+		await expect(rowCount(page)).toHaveCount(1)
+		expect(await onGrid(page, el => el.currentPage)).toBe(2)
 	})
 })
 

@@ -143,6 +143,8 @@ handlers: `onpaste`, `onbeforepaste`, `onselect`).
   (`getTooltipCallback` / `tooltipMember`) or a cell value could close `data-tooltip="…"` /
   `value="…"` and inject attributes. `"` and `'` are escaped everywhere now (a quoted value also
   reached the text editor truncated).
+- A filter (or a shorter `items`) on a later client page rendered an empty grid with "Page 3 of 1";
+  `currentPage` is clamped to the last page now.
 
 ### Changed
 

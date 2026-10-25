@@ -45,7 +45,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Page-size selector updates the property | ✓ | `inputs.spec.ts` | `inputs.html` |
 | `isFilterable` / `filters` / `setFilter` narrows rows (API only — no filter-row UI, NOTES #4) | ✓ | `filtering.spec.ts` | `filtering.html` |
 | `filter-change` event detail + `onFilterChange` twin | ✓ | `filtering.spec.ts` | `filtering.html` |
-| Filter change resets / clamps the page (NOTES #5) | ✗ fail | `filtering.spec.ts` | `filtering.html` |
+| Filter change clamps the page (NOTES #5 fixed) | ✓ | `filtering.spec.ts` | `filtering.html` |
 | Column `filterCallback` (incl. null = incomplete) | ✓ | `filtering.spec.ts` | `filtering.html` |
 | Server `filterMode` → `filter-change`, no local filtering (no `data-request` — by design per the event table) | ✓ | `filtering.spec.ts` | `filtering.html` |
 | Server `paginationMode` → `data-request` {page,pageSize,skip,trigger} | ✓ | `pagination.spec.ts` | `pagination.html` |
