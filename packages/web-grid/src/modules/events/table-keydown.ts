@@ -43,7 +43,7 @@ export function handleTableKeyDown<T>(ctx: GridHost<T>, e: Event): void {
 		ctx.engine.isTreeMode &&
 		ctx.engine.focusedCell &&
 		!ctx.engine.editingCell &&
-		(ke.ctrlKey || ke.metaKey) &&
+		(ke.ctrlKey || ke.metaKey) && !ke.shiftKey &&  // Ctrl+Shift+Arrow extends a cell range
 		(ke.key === 'ArrowLeft' || ke.key === 'ArrowRight')
 	) {
 		const { rowIndex, colIndex } = ctx.engine.focusedCell

@@ -169,12 +169,78 @@ test.describe('range selection from the keyboard', () => {
 		await expect(gridLocator(page).locator('.wg__cell--in-range')).toHaveCount(6)
 	})
 
+	const rangeOf = (page: Page) => onGrid(page, el => el.selectedCellRange &&
+		[el.selectedCellRange.startRowIndex, el.selectedCellRange.startColIndex, el.selectedCellRange.endRowIndex, el.selectedCellRange.endColIndex])
+
 	test('Shift+Arrow extends a range from the focused cell', async ({ page }) => {
-		test.fail(true, 'NOTES.md #13')
 		await cell(page, 1, 1).click()
 		await page.keyboard.press('Shift+ArrowDown')
 		await page.keyboard.press('Shift+ArrowRight')
 		await expect.poll(() => onGrid(page, el => el.getSelectedCells().length), { timeout: 1500 }).toBe(4)
+		await expect(gridLocator(page).locator('.wg__cell--in-range')).toHaveCount(4)
+	})
+
+	test('Shift+Arrow grows and shrinks; the anchor keeps focus', async ({ page }) => {
+		await cell(page, 2, 1).click()
+		await page.keyboard.press('Shift+ArrowDown')
+		await page.keyboard.press('Shift+ArrowDown')
+		expect(await rangeOf(page)).toEqual([2, 1, 4, 1])
+		await page.keyboard.press('Shift+ArrowUp')
+		expect(await rangeOf(page)).toEqual([2, 1, 3, 1])
+		// past the anchor: the range flips to the other side
+		await page.keyboard.press('Shift+ArrowUp')
+		await page.keyboard.press('Shift+ArrowUp')
+		expect(await rangeOf(page)).toEqual([2, 1, 1, 1])
+		// back onto the anchor → no range
+		await page.keyboard.press('Shift+ArrowDown')
+		expect(await rangeOf(page)).toBe(null)
+		await expect(cell(page, 2, 1)).toBeFocused()
+	})
+
+	test('Shift+Home / Shift+End go to the row start / end; Ctrl+Shift+Arrow to the data edge', async ({ page }) => {
+		await cell(page, 3, 2).click()
+		await page.keyboard.press('Shift+End')
+		expect(await rangeOf(page)).toEqual([3, 2, 3, 3])
+		await page.keyboard.press('Shift+Home')
+		expect(await rangeOf(page)).toEqual([3, 2, 3, 0])
+		await page.keyboard.press('Control+Shift+ArrowDown')
+		expect(await rangeOf(page)).toEqual([3, 2, 24, 0])
+		await page.keyboard.press('Control+Shift+ArrowUp')
+		await page.keyboard.press('Control+Shift+ArrowRight')
+		expect(await rangeOf(page)).toEqual([3, 2, 0, 3])
+		await expect(cell(page, 3, 2)).toBeFocused()
+	})
+
+	test("Shift+click extends from the focused cell in 'click' mode (no edit starts)", async ({ page }) => {
+		await cell(page, 1, 1).click()
+		await cell(page, 3, 3).click({ modifiers: ['Shift'] })
+		expect(await rangeOf(page)).toEqual([1, 1, 3, 3])
+		await expect(gridLocator(page).locator('.wg__cell--in-range')).toHaveCount(9)
+		await expect(cell(page, 1, 1)).toBeFocused()
+		expect(await onGrid(page, el => el.editingCell ?? null)).toBe(null)
+		// keyboard keeps working from the same anchor
+		await page.keyboard.press('Shift+ArrowLeft')
+		expect(await rangeOf(page)).toEqual([1, 1, 3, 2])
+	})
+
+	test("'disabled' mode: Shift+Arrow and Shift+click select nothing", async ({ page }) => {
+		await onGrid(page, el => el.setAttribute('cell-selection-mode', 'disabled'))
+		await cell(page, 1, 1).click()
+		await page.keyboard.press('Shift+ArrowDown')
+		await cell(page, 3, 3).click({ modifiers: ['Shift'] })
+		expect(await rangeOf(page)).toBe(null)
+	})
+
+	test('while editing, Shift+Arrow selects text in the editor (no range)', async ({ page }) => {
+		await cell(page, 1, 1).click()
+		await page.keyboard.press('F2')
+		const ed = editorIn(cell(page, 1, 1))
+		await expect(ed).toBeVisible()
+		await ed.evaluate((i: HTMLInputElement) => i.setSelectionRange(0, 0))
+		await page.keyboard.press('Shift+ArrowRight')
+		await page.keyboard.press('Shift+ArrowRight')
+		expect(await ed.evaluate((i: HTMLInputElement) => [i.selectionStart, i.selectionEnd])).toEqual([0, 2])
+		expect(await rangeOf(page)).toBe(null)
 	})
 })
 

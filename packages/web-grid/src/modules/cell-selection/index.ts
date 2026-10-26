@@ -598,3 +598,104 @@ function cleanup<T>(ctx: GridHost<T>): void {
 	}
 	activeContext = null
 }
+
+// =============================================================================
+// Range extension from the focused cell (Shift+Arrow / Shift+Home/End /
+// Ctrl+Shift+Arrow, and Shift+click in 'click' mode)
+// =============================================================================
+// The focused cell is the anchor: it keeps focus, the other corner moves.
+// Column indices are `data-col` values (like the drag path); moves step through
+// the *visual* column order.
+
+/**
+ * Select the range from the focused cell (anchor) to (rowIndex, colIndex).
+ * Target == anchor → the range is cleared. Returns false when there is nothing
+ * to anchor on (no focused cell) or cell selection is disabled.
+ */
+export function extendCellRangeTo<T>(ctx: GridHost<T>, rowIndex: number, colIndex: number): boolean {
+	const engine = ctx.engine
+	if (engine.cellSelectionMode === 'disabled') return false
+	const anchor = engine.focusedCell
+	if (!anchor) return false
+	const visualCols = engine.visualColumns
+	const startColumn = visualCols.find(v => v.originalIndex === anchor.colIndex)?.column
+	const endColumn = visualCols.find(v => v.originalIndex === colIndex)?.column
+	if (!startColumn || !endColumn) return false
+
+	if (rowIndex === anchor.rowIndex && colIndex === anchor.colIndex) {
+		if (engine.selectedCellRange) {
+			engine.clearCellSelection()
+			removeRangeBorder()
+		}
+		return true
+	}
+	// Row / column selections give way to the cell range (selectCellRange clears rows)
+	if (engine.selectedColumns.length > 0) engine.clearColumnSelection()
+	engine.selectCellRange({
+		startRowIndex: anchor.rowIndex,
+		startColIndex: anchor.colIndex,
+		endRowIndex: rowIndex,
+		endColIndex: colIndex,
+		startField: String(startColumn.field),
+		endField: String(endColumn.field)
+	})
+	// Border now (the cells are in the DOM); the render re-positions it
+	createRangeBorder(ctx)
+	return true
+}
+
+/** Keys that move the range's free corner (with Shift). */
+export function isRangeExtensionKey(e: KeyboardEvent): boolean {
+	return e.shiftKey && !e.altKey &&
+		['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)
+}
+
+/**
+ * Shift+Arrow grows / shrinks the range by one cell, Ctrl(Cmd)+Shift+Arrow goes
+ * to the data edge, Shift+Home / End to the row start / end. Returns true when
+ * handled (the caller prevents the default).
+ */
+export function extendCellRangeByKey<T>(ctx: GridHost<T>, e: KeyboardEvent): boolean {
+	const engine = ctx.engine
+	const anchor = engine.focusedCell
+	if (!anchor || engine.cellSelectionMode === 'disabled') return false
+
+	// The free corner: the current range's end when it is anchored here, else the anchor
+	const range = engine.selectedCellRange
+	const isAnchoredHere = !!range && range.startRowIndex === anchor.rowIndex && range.startColIndex === anchor.colIndex
+	let row = isAnchoredHere ? range!.endRowIndex : anchor.rowIndex
+	const endCol = isAnchoredHere ? range!.endColIndex : anchor.colIndex
+
+	const order = engine.visualColumns.map(v => v.originalIndex)
+	let pos = order.indexOf(endCol)
+	if (pos < 0) return false
+	const lastPos = order.length - 1
+
+	// Data rows only (the new empty row is not part of a range)
+	const count = engine.displayItems.length
+	let minRow = 0
+	let maxRow = count - 1
+	if (maxRow >= 0 && engine.isEmptyRowIndex(maxRow)) maxRow--
+	if (count > 0 && engine.isEmptyRowIndex(0)) minRow = 1
+	if (maxRow < minRow) return false
+
+	const isToEdge = e.ctrlKey || e.metaKey
+	switch (e.key) {
+		case 'ArrowUp': row = isToEdge ? minRow : Math.max(minRow, row - 1); break
+		case 'ArrowDown': row = isToEdge ? maxRow : Math.min(maxRow, row + 1); break
+		case 'ArrowLeft': pos = isToEdge ? 0 : Math.max(0, pos - 1); break
+		case 'ArrowRight': pos = isToEdge ? lastPos : Math.min(lastPos, pos + 1); break
+		case 'Home': pos = 0; break
+		case 'End': pos = lastPos; break
+		default: return false
+	}
+	const col = order[pos]
+	if (!extendCellRangeTo(ctx, row, col)) return false
+
+	// Keep the moving corner in view (the anchor keeps focus)
+	requestAnimationFrame(() => {
+		const cell = ctx.shadow.querySelector(`td.wg__cell[data-row="${row}"][data-col="${col}"]`) as HTMLElement | null
+		cell?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+	})
+	return true
+}

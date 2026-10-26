@@ -36,6 +36,11 @@ Arrow keys move one cell at a time. Other keys jump farther.
 
   Ctrl+G          Open "Go To Row" dialog for jumping to a specific row number
 
+  Shift+Arrow     Grow / shrink a cell range from the focused cell (anchor
+                  keeps focus). Shift+Home / Shift+End: to the row start / end.
+                  Ctrl+Shift+Arrow: to the data edge. Not in cellSelectionMode
+                  'disabled'; while editing, Shift+Arrow selects editor text.
+
 Tab traversal tracks a "start column." When you Tab across columns and then
 press Enter, focus moves down to the next row at the column where you started
 Tab traversal. Arrow keys reset this tracking.
@@ -160,7 +165,8 @@ RANGE SHORTCUTS
 ---------------
 rangeShortcuts defines keyboard shortcuts that operate on multiple selected
 rows or a selected cell range. They work with both row selection (clicking
-row number column) and cell range selection (click+drag or Shift+click).
+row number column) and cell range selection (click+drag, Shift+click or
+Shift+Arrow).
 
 Each entry is an action item bound to a key (GridRangeShortcut<T>) - custom
 only (no built-in `action`): handle it in onClick or the `action` event

@@ -267,7 +267,7 @@ Cell menu items get the cell ctx `{ row, rowIndex, column, colIndex, field, valu
 
 | Property | Type | Default | Description |
 |---|---|---|---|
-| `cellSelectionMode` | `CellSelectionMode` | `'click'` | `'disabled'`, `'click'`, `'shift'` |
+| `cellSelectionMode` | `CellSelectionMode` | `'click'` | `'disabled'`, `'click'` (drag; Shift+click extends from the focused cell), `'shift'` (Shift+click twice). Except `'disabled'`: Shift+Arrow / Shift+Home/End / Ctrl+Shift+Arrow grow the range from the focused cell |
 | `shouldCopyWithHeaders` | `boolean` | `false` | Include column headers when copying cell selection to clipboard |
 
 ### Keyboard shortcuts

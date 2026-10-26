@@ -2460,8 +2460,8 @@ export class GridEngine<T = unknown> {
 		if (this._cellSelectionMode === 'click' && this._editTrigger === 'click') {
 			initLogger.warn(
 				'cellSelectionMode="click" conflicts with editTrigger="click". ' +
-				'Cell range selection takes priority. Use Shift+click to enter edit mode, ' +
-				'or change to cellSelectionMode="shift" to avoid confusion.'
+				'Cell range selection takes priority (drag selects, Shift+click extends the range); ' +
+				'use F2 / Enter to edit, or change to cellSelectionMode="shift" to avoid confusion.'
 			)
 		}
 	}

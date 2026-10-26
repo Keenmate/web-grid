@@ -240,7 +240,9 @@ Every other event detail is a snapshot (`filter-change` copies `filters`).
 **Test:** `events.spec.ts` "an earlier detail.expandedPaths is a snapshot"
 (`test.fail`).
 
-## 13. No keyboard range extension (Shift+Arrow) — feature gap (open question)
+## 13. No keyboard range extension (Shift+Arrow) — feature gap — FIXED
+
+**Fixed:** Shift+Arrow grows / shrinks the cell range from the focused cell (the anchor keeps focus), Shift+Home / End go to the row start / end, Ctrl+Shift+Arrow to the data edge; Shift+click extends from the focused cell in `click` mode too (no edit start); `shift` mode unchanged; `disabled` → nothing; while editing Shift+Arrow stays text selection.
 
 **Where:** `modules/navigation/cell-keydown.ts:96-125` — arrows ignore `shiftKey`;
 ranges can only be made with the mouse (drag, or Shift+click twice in

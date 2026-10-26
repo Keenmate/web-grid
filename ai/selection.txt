@@ -60,13 +60,21 @@ Example:
 
 CELL RANGE SELECTION
 --------------------
-Rectangular cell ranges are selected by click+drag or shift+click on data cells.
-The behavior depends on cellSelectionMode.
+Rectangular cell ranges are selected by click+drag, shift+click, or from the
+keyboard. The behavior depends on cellSelectionMode.
+
+Keyboard (any mode but 'disabled', cell focused, not editing):
+  Shift+Arrow          grow / shrink the range by one cell from the focused cell
+                       (the anchor keeps focus; crossing it flips the range)
+  Shift+Home / End     to the start / end of the row
+  Ctrl+Shift+Arrow     to the data edge (first / last row or column)
+  While editing, Shift+Arrow selects text in the editor instead.
 
 Property:
   cellSelectionMode        - CellSelectionMode
     'disabled'  - No cell range selection
-    'click'     - Click+drag on cells to select range (default, used in excel/read-only modes)
+    'click'     - Click+drag on cells to select range; Shift+click extends the
+                  range from the focused cell (default, excel/read-only modes)
     'shift'     - Shift+click to select range; plain click edits (used in input-matrix mode)
 
   selectedCellRange        - CellRange | null (read-only)

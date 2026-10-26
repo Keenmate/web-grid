@@ -95,7 +95,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Home/End/PageUp/PageDown + Ctrl variants, Delete commits null, typing starts edit, Ctrl+G dialog | ✓ | `keyboard.spec.ts` | `keyboard.html` |
 | Go-to-row Escape / Cancel keeps focus (#24 fixed) | ✓ | `keyboard.spec.ts` | `keyboard.html` |
 | Meta+G go-to-row (#3 fixed), Cmd+Delete row-delete | ✓ | `keyboard.spec.ts`, `events.spec.ts` | `keyboard.html`, `events.html` |
-| Shift+Arrow range extension (#13, feature gap) | ✗ fail | `keyboard.spec.ts` | `keyboard.html` |
+| Shift+Arrow / Shift+Home/End / Ctrl+Shift+Arrow range from the focused cell, Shift+click in `click` mode, `disabled`, editing = text selection (#13 fixed) | ✓ | `keyboard.spec.ts` | `keyboard.html` |
 | `rangeShortcuts` on a range / row selection, disabled shortcut | ✓ | `keyboard.spec.ts` | `keyboard.html` |
 | Number column ignores letters (GRID-1, #1 fixed) | ✓ | `keyboard.spec.ts` | `keyboard.html` |
 | Ctrl+C cell / range / row / column TSV, `shouldCopyWithHeaders` | ✓ | `copy.spec.ts` | `copy.html` |

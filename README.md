@@ -251,7 +251,7 @@ const columns: Column<Employee>[] = [
 - **Inline Editing** — 8 editor types: `text`, `number`, `checkbox`, `select`, `combobox`, `autocomplete`, `date`, `custom`
 - **Grid Modes** — `read-only`, `excel`, `input-matrix` — each sets sensible defaults
 - **Keyboard Navigation** — Spreadsheet-like Arrow/Tab/Home/End/PageUp/PageDown navigation
-- **Cell Range Selection** — Click+drag or Shift+click to select rectangular ranges
+- **Cell Range Selection** — Click+drag, Shift+click (extends from the focused cell) or Shift+Arrow / Shift+Home/End / Ctrl+Shift+Arrow to select rectangular ranges
 - **Clipboard** — Copy/paste TSV data (Excel-compatible), per-column transform callbacks
 - **Row Toolbar** — Floating, inline, or cell-specific action buttons
 - **Context Menu** — Right-click menu for cells and column headers (with predefined actions)
@@ -381,7 +381,7 @@ This architecture separates mode detection (the adapter decides *what* action a 
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `cellSelectionMode` | `CellSelectionMode` | `'click'` | How to select cell ranges: `'disabled'`, `'click'`, `'shift'` |
+| `cellSelectionMode` | `CellSelectionMode` | `'click'` | How to select cell ranges: `'disabled'` (none), `'click'` (drag; Shift+click extends from the focused cell), `'shift'` (Shift+click twice / Shift+drag). In every mode but `'disabled'`, Shift+Arrow grows / shrinks the range from the focused cell (the anchor keeps focus), Shift+Home / End go to the row start / end, Ctrl+Shift+Arrow to the data edge; while editing, Shift+Arrow selects text in the editor |
 | `shouldCopyWithHeaders` | `boolean` | `false` | Include column headers when copying cell selection to clipboard |
 
 ### Keyboard Shortcuts

@@ -87,6 +87,9 @@ export function handleCellClickToEdit<T>(ctx: GridHost<T>, e: Event): void {
 		return
 	}
 
+	// 'click' selection mode: Shift+click extends the cell range — never starts an edit
+	if ((e as MouseEvent).shiftKey && ctx.engine.cellSelectionMode === 'click') return
+
 	// Try pipeline first
 	if (ctx.pipelineAdapter?.tryHandleClick(e as MouseEvent)) {
 		return

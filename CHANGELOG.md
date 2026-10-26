@@ -134,6 +134,11 @@ handlers: `onpaste`, `onbeforepaste`, `onselect`).
   Drafts are never pruned when `items` is set (server paging: a missing row is another page) —
   they leave via `replaceRowById`, `discardDraft`, `discardRowDraft`, `discardAllDrafts`. Server
   paging + editing without a usable row id logs a warning once.
+- **Keyboard range selection.** Shift+Arrow grows / shrinks a cell range from the focused cell (the
+  anchor keeps focus), Shift+Home / End extend to the row start / end, Ctrl+Shift+Arrow to the data
+  edge. In `cellSelectionMode: 'click'` (the default) Shift+click now extends the range from the
+  focused cell (it started an edit with `editTrigger: 'click'`); `'shift'` mode is unchanged,
+  `'disabled'` selects nothing, and while editing Shift+Arrow still selects text in the editor.
 - **Filter row.** `isFilterable` now renders a row under the header with a text input for every
   column with `isFilterable: true` (it was API-only — the option, the `.wg__filter-*` CSS and the
   `--wg-filter-*` variables were orphaned). Debounced typing (Enter applies, Escape clears) →

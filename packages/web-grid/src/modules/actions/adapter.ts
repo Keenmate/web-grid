@@ -25,6 +25,7 @@ import { customEditorExecutor } from './executors/custom-editor-executor.js'
 import { mapKeyDownToAction, isPipelineKey, mapMouseDownToActions } from './event-mapper.js'
 import { getCursorPositionFromClick } from '../navigation/focus.js'
 import type { CellCoordinates } from './types.js'
+import { extendCellRangeTo, extendCellRangeByKey, isRangeExtensionKey } from '../cell-selection/index.js'
 
 /**
  * Adapter that bridges GridElement event handlers with the action pipeline.
@@ -270,6 +271,15 @@ export class ActionPipelineAdapter<T = unknown> {
 			e.preventDefault()
 			e.stopPropagation()
 			this.pipeline.dispatch(action)
+			return true
+		}
+
+		// Not editing: Shift+Arrow / Shift+Home/End / Ctrl+Shift+Arrow grow or shrink the
+		// cell range from the focused cell (the anchor keeps focus)
+		if (isRangeExtensionKey(e) && this.ctx.engine.cellSelectionMode !== 'disabled') {
+			e.preventDefault()
+			e.stopPropagation()
+			extendCellRangeByKey(this.ctx, e)
 			return true
 		}
 
@@ -531,6 +541,15 @@ export class ActionPipelineAdapter<T = unknown> {
 				shiftKey: true
 			})
 			e.preventDefault()
+			return true
+		}
+
+		// 'click' mode: Shift+click extends the range from the focused cell (the anchor
+		// keeps focus — no default mousedown focus move, no edit start)
+		if (selectionMode === 'click' && isShiftClick && isCellClick && !isAlways && !isEditing && this.ctx.engine.focusedCell) {
+			e.preventDefault()
+			e.stopPropagation()
+			extendCellRangeTo(this.ctx, cell.rowIndex, cell.colIndex)
 			return true
 		}
 
