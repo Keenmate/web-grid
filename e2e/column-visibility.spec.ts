@@ -219,10 +219,11 @@ test.describe("'column-visibility' submenu", () => {
 
 		// Seven rows: "Show all" + six column toggles.
 		await expect(submenu.locator('.wg-context-menu__item')).toHaveCount(7)
-		// Every per-column toggle should be active (aria-pressed) initially
-		// (all columns visible). The icon character for checked is ☑.
-		const checkedToggles = submenu.locator('.wg-context-menu__item--toggle.wg-context-menu__item--active[data-action="toggle-column"][aria-pressed="true"]')
+		// Every per-column toggle is toggled on initially (all columns visible): a
+		// menuitemcheckbox with aria-checked="true". The icon character for checked is ☑.
+		const checkedToggles = submenu.locator('.wg-context-menu__item--toggle.wg-context-menu__item--toggled[role="menuitemcheckbox"][data-action="toggle-column"][aria-checked="true"]')
 		await expect(checkedToggles).toHaveCount(6)
+		await expect(submenu.locator('[data-action="show-all-columns"]')).toHaveAttribute('role', 'menuitemcheckbox')
 	})
 
 	test('clicking a column toggle in the submenu hides that column', async ({ page }) => {

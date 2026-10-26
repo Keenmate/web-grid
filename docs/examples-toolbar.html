@@ -202,7 +202,7 @@ grid.beforeActionCallback = ({ action, row }) => {
         icon: '🔒',
         text: 'Lock row',
         getIsDisabledCallback: ({ row }) => row.locked,  // Dynamic disabled state
-        getIsActiveCallback: ({ row }) => row.flagged,   // Toggle state (aria-pressed)
+        getIsToggledCallback: ({ row }) => row.flagged,   // Toggle state (aria-pressed)
         onClick: ({ row }) => {
             row.locked = true
         }

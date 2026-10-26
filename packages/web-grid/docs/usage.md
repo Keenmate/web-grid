@@ -162,7 +162,7 @@ Toolbar buttons, context-menu items and shortcuts share one shape (web-component
 | `isDanger` | Destructive styling |
 | `isDisabled` / `getIsDisabledCallback(ctx)` | Greyed out |
 | `isVisible` / `getIsVisibleCallback(ctx)` | Default `true` |
-| `isActive` / `getIsActiveCallback(ctx)` | Toggle state (`aria-pressed`, `--active`) |
+| `isToggled` / `getIsToggledCallback(ctx)` | Toggle state (`aria-pressed` on buttons, `menuitemcheckbox` + `aria-checked` in menus, `--toggled`) |
 | `cssClass` | Extra classes |
 | `onClick(detail)` | Runs on activation with the `action` detail (awaited) |
 | `row`, `isTextVisible` | Toolbar only — toolbar row (1 = closest to the grid row); show the text next to the icon |
@@ -201,7 +201,7 @@ grid.rowToolbar = [
     isDanger: false,
     getIsDisabledCallback: ({ row }) => row.locked,   // or isDisabled: boolean
     getIsVisibleCallback: ({ row }) => !row.archived, // or isVisible: boolean
-    getIsActiveCallback: ({ row }) => row.flagged,    // toggle state (aria-pressed)
+    getIsToggledCallback: ({ row }) => row.flagged,   // toggle state (aria-pressed)
     onClick: ({ row, rowIndex }) => openEditor(row)
   }
 ]

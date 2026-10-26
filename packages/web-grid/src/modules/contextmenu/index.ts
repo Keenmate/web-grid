@@ -55,7 +55,7 @@ const CONTEXT_MENU_STYLES = `
 	--wg-cm-text-secondary: var(--base-text-color-2, #666);
 	--wg-cm-text-danger: var(--base-danger-color, #d32f2f);
 	--wg-cm-hover-bg: var(--base-hover-bg, #f5f5f5);
-	--wg-cm-active-color: var(--base-accent-color, var(--base-primary-color, #1a73e8));
+	--wg-cm-toggled-color: var(--base-accent-color, var(--base-primary-color, #1a73e8));
 	--wg-cm-disabled-opacity: 0.5;
 
 	/* Typography */
@@ -114,8 +114,8 @@ const CONTEXT_MENU_STYLES = `
 	background: color-mix(in srgb, var(--wg-cm-text-danger) 10%, transparent);
 }
 
-.wg-context-menu__item--active {
-	color: var(--wg-cm-active-color);
+.wg-context-menu__item--toggled {
+	color: var(--wg-cm-toggled-color);
 }
 
 .wg-context-menu__icon {
@@ -181,11 +181,11 @@ const CONTEXT_MENU_STYLES = `
 	opacity: 0.4;
 }
 
-.wg-context-menu__item--toggle.wg-context-menu__item--active {
+.wg-context-menu__item--toggle.wg-context-menu__item--toggled {
 	color: inherit;
 }
 
-.wg-context-menu__item--toggle.wg-context-menu__item--active .wg-context-menu__icon {
+.wg-context-menu__item--toggle.wg-context-menu__item--toggled .wg-context-menu__icon {
 	opacity: 1;
 }
 `
@@ -236,16 +236,21 @@ function fillLevel<Ctx>(level: HTMLElement, spec: MenuSpec<Ctx>, entries: readon
 			'wg-context-menu__item',
 			r.isDisabled ? 'wg-context-menu__item--disabled' : '',
 			r.isDanger ? 'wg-context-menu__item--danger' : '',
-			r.isActive ? 'wg-context-menu__item--active' : '',
+			r.isToggled ? 'wg-context-menu__item--toggled' : '',
 			entry.hasChildren ? 'wg-context-menu__item--has-submenu' : '',
 			isToggle ? 'wg-context-menu__item--toggle' : '',
 			r.cssClass
 		].filter(Boolean).join(' ')
-		el.setAttribute('role', 'menuitem')
+		// An item that defines its toggle state is a menuitemcheckbox (core /menu convention)
+		const item = entry.item
+		const isToggleItem = item.isToggled !== undefined
+			|| typeof item.getIsToggledCallback === 'function'
+			|| spec.defaults?.(item)?.isToggled !== undefined
+		el.setAttribute('role', isToggleItem ? 'menuitemcheckbox' : 'menuitem')
+		if (isToggleItem) el.setAttribute('aria-checked', String(r.isToggled))
 		el.dataset.action = r.action
 		if (r.id !== undefined) el.dataset.id = r.id
 		if (r.isDisabled) el.setAttribute('aria-disabled', 'true')
-		if (r.isActive) el.setAttribute('aria-pressed', 'true')
 		if (r.tooltip) el.title = r.tooltip
 		el.innerHTML = `${r.icon ? `<span class="wg-context-menu__icon">${r.icon}</span>` : ''}<span class="wg-context-menu__label">${escapeText(r.text)}</span>${r.shortcut ? `<span class="wg-context-menu__shortcut">${escapeText(r.shortcut)}</span>` : ''}`
 		itemOf.set(el, { item: entry.item, isDisabled: r.isDisabled, hasChildren: entry.hasChildren, shortcut: r.shortcut })

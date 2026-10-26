@@ -268,7 +268,7 @@
   --wg-toolbar-btn-bg-hover: var(--wg-hover-bg);
   --wg-toolbar-btn-bg-active: var(--wg-active-bg);
   --wg-toolbar-btn-color: var(--wg-text-color-1);
-  --wg-toolbar-btn-active-color: var(--wg-accent-color);
+  --wg-toolbar-btn-toggled-color: var(--wg-accent-color);
   --wg-toolbar-btn-bg-pressed: var(--wg-active-bg);
 
   /* Toolbar Trigger Button */

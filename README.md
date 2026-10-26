@@ -755,7 +755,7 @@ Callbacks, events and clickable items follow the shared KeenMate interaction mod
 | `isDanger` | `boolean` | Destructive styling |
 | `isDisabled` / `getIsDisabledCallback(ctx)` | `boolean` | Greyed out |
 | `isVisible` / `getIsVisibleCallback(ctx)` | `boolean` | Default `true` |
-| `isActive` / `getIsActiveCallback(ctx)` | `boolean` | Toggle state (`aria-pressed`, `--active` class) |
+| `isToggled` / `getIsToggledCallback(ctx)` | `boolean` | Toggle state — the thing it toggles is ON (`aria-pressed` on buttons, `role="menuitemcheckbox"` + `aria-checked` in menus, `--toggled` class) |
 | `getTextCallback(ctx)` / `getIconCallback(ctx)` / `getTooltipCallback(ctx)` | `string` | Dynamic text / icon / tooltip |
 | `cssClass` | `string` | Extra CSS classes |
 | `onClick(detail)` | `(detail) => void \| Promise<void>` | Runs on activation with the same detail the `action` event carries |

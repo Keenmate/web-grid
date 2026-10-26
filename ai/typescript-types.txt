@@ -350,14 +350,14 @@ MenuDivider). See toolbar-actions.txt.
     isVisible?: boolean            default true
     isDisabled?: boolean
     isDanger?: boolean
-    isActive?: boolean             toggle state (aria-pressed)
+    isToggled?: boolean            toggle state (aria-pressed / aria-checked)
     getTextCallback?(ctx): string
     getIconCallback?(ctx): string
     getTooltipCallback?(ctx): string
     getClassCallback?(ctx): string | string[]
     getIsVisibleCallback?(ctx): boolean
     getIsDisabledCallback?(ctx): boolean
-    getIsActiveCallback?(ctx): boolean
+    getIsToggledCallback?(ctx): boolean
     onClick?(detail: ActionEventDetail): void | Promise<void>
   }
 

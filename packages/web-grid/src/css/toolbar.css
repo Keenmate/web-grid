@@ -88,10 +88,10 @@
 	color: var(--wg-danger-color);
 }
 
-/* Toggle state (isActive / getIsActiveCallback → aria-pressed) */
-.wg__toolbar-btn--active,
-.wg__inline-action-btn--active {
-	color: var(--wg-toolbar-btn-active-color);
+/* Toggle state (isToggled / getIsToggledCallback → aria-pressed) */
+.wg__toolbar-btn--toggled,
+.wg__inline-action-btn--toggled {
+	color: var(--wg-toolbar-btn-toggled-color);
 	background: var(--wg-toolbar-btn-bg-pressed);
 }
 

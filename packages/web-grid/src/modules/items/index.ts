@@ -132,13 +132,13 @@ export function withHeaderBuiltInChildren<T>(item: MenuItem<HeaderMenuContext<T>
 			const togglable = ctx.allColumns.filter((col: Column<T>) => !(ctx.isTreeMode && col.isTree))
 			const allVisible = togglable.every(col => !col.isHidden)
 			return [
-				{ action: 'show-all-columns', icon: allVisible ? '☑' : '☐', isActive: allVisible, shouldCloseOnClick: false },
+				{ action: 'show-all-columns', icon: allVisible ? '☑' : '☐', isToggled: allVisible, shouldCloseOnClick: false },
 				...togglable.map(col => ({
 					action: 'toggle-column' as const,
 					id: String(col.field),
 					text: col.title || String(col.field),
 					icon: col.isHidden ? '☐' : '☑',
-					isActive: !col.isHidden,
+					isToggled: !col.isHidden,
 					shouldCloseOnClick: false
 				}))
 			]

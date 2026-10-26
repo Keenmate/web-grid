@@ -70,7 +70,7 @@
 			'add',
 			'duplicate',
 			'delete',
-			{ id: 'flag', text: 'Flag', icon: '⚑', getIsActiveCallback: ({ row }) => row.qty >= 30, onClick: (d) => log('onClick:flag:' + d.row.name) },
+			{ id: 'flag', text: 'Flag', icon: '⚑', getIsToggledCallback: ({ row }) => row.qty >= 30, onClick: (d) => log('onClick:flag:' + d.row.name) },
 			{ id: 'hidden', text: 'Hidden', icon: '✗', getIsVisibleCallback: () => false }
 		]
 		grid.createEmptyRowCallback = () => ({ id: 100 + grid.items.length, name: 'New', qty: 0 })

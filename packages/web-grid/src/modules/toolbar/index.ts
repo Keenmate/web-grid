@@ -124,7 +124,7 @@ export function renderToolbarButton<T>(button: ToolbarButton<T>, index: number, 
 	const classes = [
 		baseClass,
 		r.isDanger ? `${baseClass}--danger` : '',
-		r.isActive ? `${baseClass}--active` : '',
+		r.isToggled ? `${baseClass}--toggled` : '',
 		r.isDisabled ? `${baseClass}--disabled` : '',
 		r.cssClass
 	].filter(Boolean).join(' ')
@@ -132,7 +132,7 @@ export function renderToolbarButton<T>(button: ToolbarButton<T>, index: number, 
 	const showText = !r.icon || button.item.isTextVisible === true
 	const labelHtml = showText && r.text ? `<span class="wg__toolbar-label">${text}</span>` : ''
 	const idAttr = r.id !== undefined ? ` data-id="${escapeAttr(r.id)}"` : ''
-	const pressed = r.isActive ? ' aria-pressed="true"' : ''
+	const pressed = r.isToggled ? ' aria-pressed="true"' : ''
 	return `<button type="button" class="${classes}" data-action="${escapeAttr(r.action)}"${idAttr} data-wg-index="${index}" title="${text}" aria-label="${text}"${pressed}${r.isDisabled ? ' disabled' : ''}>${r.icon ?? ''}${labelHtml}</button>`
 }
 

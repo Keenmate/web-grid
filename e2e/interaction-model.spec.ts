@@ -58,13 +58,14 @@ test.describe('row toolbar — core action items', () => {
 		await expect(toolbar(page).locator('[data-action="delete"]')).toHaveAttribute('aria-label', 'Delete row')
 		// move-up is disabled on the first row (built-in default state)
 		await expect(toolbar(page).locator('[data-action="move-up"]')).toBeDisabled()
-		// getIsActiveCallback → aria-pressed (row 0 qty 10 → not active)
+		// getIsToggledCallback → aria-pressed (row 0 qty 10 → not toggled)
 		await expect(toolbar(page).locator('[data-id="flag"]')).not.toHaveAttribute('aria-pressed', 'true')
 	})
 
 	test('a custom item: before → onClick → onAction → event, with the row on the detail', async ({ page }) => {
 		await openToolbarOn(page, row(page, 2))
 		await expect(toolbar(page).locator('[data-id="flag"]')).toHaveAttribute('aria-pressed', 'true')
+		await expect(toolbar(page).locator('[data-id="flag"]')).toHaveClass(/wg__toolbar-btn--toggled/)
 		await toolbar(page).locator('[data-id="flag"]').click()
 		await expect.poll(() => log(page)).toEqual(['before:custom:flag:row-toolbar', 'onClick:flag:Gamma', 'onAction:custom', 'event:custom'])
 		const [d] = await page.evaluate(() => (window as any).__details)

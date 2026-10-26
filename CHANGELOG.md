@@ -59,12 +59,12 @@ both non-enumerable, so `JSON.stringify` / logs see only the data.
 
 | Old | New |
 |---|---|
-| toolbar `{ id, icon, title, label, type, danger, disabled, hidden, tooltip: { description, shortcut }, tooltipCallback, onclick({ row, rowIndex }) }` | `{ action?, id?, icon, text, tooltip, shortcut, isDanger, isDisabled, isVisible, isActive, cssClass, get*Callback(ctx), onClick(detail), row, isTextVisible }` — `text` is the accessible name + tooltip heading (shown only without an icon or with `isTextVisible`), `tooltip` the description |
+| toolbar `{ id, icon, title, label, type, danger, disabled, hidden, tooltip: { description, shortcut }, tooltipCallback, onclick({ row, rowIndex }) }` | `{ action?, id?, icon, text, tooltip, shortcut, isDanger, isDisabled, isVisible, isToggled, cssClass, get*Callback(ctx), onClick(detail), row, isTextVisible }` — `text` is the accessible name + tooltip heading (shown only without an icon or with `isTextVisible`), `tooltip` the description |
 | toolbar `group: n` / menu `dividerBefore: true` | a divider entry `{ divider: true, text? }` (or `menuDivider(text)`, exported) |
 | `minWidth` on a toolbar item (was dropped anyway) | `cssClass` / `--wg-toolbar-btn-min-width` |
 | built-ins `'add' \| 'delete' \| 'duplicate' \| 'moveUp' \| 'moveDown'` were icon presets — the consumer did the work in `ontoolbarclick` | `'add' \| 'delete' \| 'duplicate' \| 'move-up' \| 'move-down'` **do the work** (before the `action` event, which then sees the result): add inserts `createEmptyRowCallback(ctx)`'s row (else a blank row) after the row; delete removes it; duplicate inserts `createDuplicateRowCallback({ row })`'s copy (else a shallow copy with `idMember` cleared); move swaps with the displayed neighbour. Veto with `beforeActionCallback` → `false`. **Remove your own add / delete / move code from the old `ontoolbarclick` or the row changes twice.** Built-in texts: `labels.actions` |
 | `cellToolbar(row, rowIndex, field, colIndex)` | `getCellToolbarItemsCallback(cellCtx)` — merged over `rowToolbar` by `id` / `action` |
-| menu `{ id, label \| (ctx) => …, icon \| fn, visible \| fn, disabled \| fn, danger, type, onclick(ctx) }` | `{ action?, id?, text, getTextCallback, icon, getIconCallback, isVisible, getIsVisibleCallback, isDisabled, getIsDisabledCallback, isDanger, isActive, shortcut, onClick(detail), children, getChildrenCallback, shouldCloseOnClick }` |
+| menu `{ id, label \| (ctx) => …, icon \| fn, visible \| fn, disabled \| fn, danger, type, onclick(ctx) }` | `{ action?, id?, text, getTextCallback, icon, getIconCallback, isVisible, getIsVisibleCallback, isDisabled, getIsDisabledCallback, isDanger, isToggled, shortcut, onClick(detail), children, getChildrenCallback, shouldCloseOnClick }` |
 | header `submenu(ctx)` / `children` (child `onclick` never ran) | `children` / `getChildrenCallback(ctx)` (sync or async — a loading row shows meanwhile); every child activates |
 | header built-ins `'sortAsc' \| 'sortDesc' \| 'clearSort' \| 'hideColumn' \| 'freezeColumn' \| 'unfreezeColumn' \| 'columnVisibility'` | kebab: `'sort-asc' \| 'sort-desc' \| 'clear-sort' \| 'hide-column' \| 'freeze-column' \| 'unfreeze-column' \| 'column-visibility'` (toggles report `action: 'toggle-column'` with `id` = field, and `'show-all-columns'`) |
 | cell built-ins `'expand-all' \| …` (`type: …` on an object) | same names, by `action`; the row built-ins work in the cell menu too |
@@ -106,6 +106,14 @@ handlers: `onpaste`, `onbeforepaste`, `onselect`).
 | `onexpandedpathschange({ path, expanded })` (toggle only) | `expand-change` / `onExpandChange({ path, isExpanded, expandedPaths })` — also for expand / collapse all (`path: null`) and subtree |
 | `onrowlockchange` | `row-lock-change` / `onRowLockChange` |
 | `onpaste` (shadowed `HTMLElement.onpaste`) | `paste-complete` / `onPasteComplete` |
+
+**Toggle state is `isToggled`** (web-components-core rename, no alias): item `isActive` /
+`getIsActiveCallback` → `isToggled` / `getIsToggledCallback`; classes `wg__toolbar-btn--active` /
+`wg__inline-action-btn--active` / `wg-context-menu__item--active` → `…--toggled`; CSS variable
+`--wg-toolbar-btn-active-color` → `--wg-toolbar-btn-toggled-color`. Toolbar buttons keep
+`aria-pressed`; a context-menu item that defines its toggle state (e.g. the column-visibility
+toggles) is `role="menuitemcheckbox"` + `aria-checked="true|false"` (was `menuitem` +
+`aria-pressed`).
 
 **Activation order (web-components-core #15):** `beforeActionCallback` (`false` cancels) →
 item `onClick` → the built-in → the `action` event / `onAction`. The event is a notification
@@ -173,7 +181,7 @@ event.
   `filterMode` / `filter-mode`; `cell-selection-mode` attribute; `menuDivider` re-exported; exported types for every ctx,
   item and event detail (`GridContext`, `RowContext`, `CellContext`, `HeaderMenuContext`,
   `GridToolbarItem`, `GridMenuEntry`, `GridShortcut`, `GridActionEventDetail`, `GridEventMap`, …).
-- Menus: labelled dividers, `isActive` (`aria-pressed`, `--active`), lazy submenus, item `tooltip`.
+- Menus: labelled dividers, `isToggled` (`role="menuitemcheckbox"` + `aria-checked`, `--toggled`), lazy submenus, item `tooltip`.
 
 ### Fixed
 

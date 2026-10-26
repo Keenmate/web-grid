@@ -349,8 +349,8 @@ getTooltipCallback(ctx)         dynamic tooltip
 getClassCallback(ctx)           dynamic CSS classes
 getIsVisibleCallback(ctx)       dynamic visibility
 getIsDisabledCallback(ctx)      dynamic disabled state
-getIsActiveCallback(ctx)        dynamic toggle state
+getIsToggledCallback(ctx)       dynamic toggle state
 getChildrenCallback(ctx)        menus only: dynamic / lazy submenu (sync or async)
 
 Static forms: text, icon, tooltip, cssClass, isVisible, isDisabled,
-isActive, isDanger, children.
+isToggled, isDanger, children.

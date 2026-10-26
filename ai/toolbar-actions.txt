@@ -87,10 +87,10 @@ controller, element }):
       isDanger?: boolean            // destructive styling
       isDisabled?: boolean          // greyed out, not clickable
       isVisible?: boolean           // default true
-      isActive?: boolean            // toggle state: aria-pressed="true" + --active class
+      isToggled?: boolean           // toggle state: aria-pressed="true" + --toggled class
       cssClass?: string             // extra CSS classes (e.g. a per-button min-width)
       getTextCallback?(ctx) / getIconCallback?(ctx) / getTooltipCallback?(ctx) / getClassCallback?(ctx)
-      getIsVisibleCallback?(ctx) / getIsDisabledCallback?(ctx) / getIsActiveCallback?(ctx)
+      getIsVisibleCallback?(ctx) / getIsDisabledCallback?(ctx) / getIsToggledCallback?(ctx)
       onClick?(detail)              // detail = the action event detail; awaited
       row?: number                  // toolbar row, 1 = closest to the grid row (default 1)
       isTextVisible?: boolean       // show `text` next to the icon
@@ -308,10 +308,10 @@ Menu item (GridMenuItem<T>, ctx = CellContext<T>):
       isVisible?: boolean            // default true
       isDisabled?: boolean
       isDanger?: boolean
-      isActive?: boolean             // toggle state (aria-pressed, checkmark styling)
+      isToggled?: boolean            // toggle state (menuitemcheckbox + aria-checked, checkmark styling)
       cssClass?: string
       getTextCallback?(ctx) / getIconCallback?(ctx) / getTooltipCallback?(ctx) / getClassCallback?(ctx)
-      getIsVisibleCallback?(ctx) / getIsDisabledCallback?(ctx) / getIsActiveCallback?(ctx)
+      getIsVisibleCallback?(ctx) / getIsDisabledCallback?(ctx) / getIsToggledCallback?(ctx)
       onClick?(detail)               // awaited
       children?: GridMenuEntry<T>[]  // static submenu
       getChildrenCallback?(ctx)      // dynamic / lazy submenu (sync or async; a loading row shows meanwhile)
@@ -392,7 +392,7 @@ Built-in names:
 
 A sort from the header menu also fires `data-request` (trigger 'sort').
 The column-visibility submenu stays open after toggling items, updating
-checkmarks (isActive) in real time. Its entries report action
+checkmarks (isToggled) in real time. Its entries report action
 'show-all-columns', and 'toggle-column' with id = the column field.
 
 Header menu items have the same shape as cell menu items, with ctx =
