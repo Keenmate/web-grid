@@ -42,11 +42,17 @@ test('totalItems (server mode) feeds ctx.totalItems', async ({ page }) => {
 	await expect(text(page)).toContainText('total=120')
 })
 
-test('re-renders after an edit, and the sum sees the edited (draft) value', async ({ page }) => {
-	test.fail(true, 'NOTES.md #20')
+test('re-renders after an edit (the commit is surgical — no full render)', async ({ page }) => {
 	const before = await page.evaluate(() => (window as any).summaryCalls)
 	await editCell(page, cell(page, 0, 1), '10')
 	await expect.poll(() => page.evaluate(() => (window as any).summaryCalls)).toBeGreaterThan(before)
+	await expect(text(page)).toHaveCount(1)
+})
+
+test('the sum sees the edited (draft) value', async ({ page }) => {
+	// Open question (NOTES.md #20): ctx.items are the original rows; drafts are not merged.
+	test.fail(true, 'NOTES.md #20')
+	await editCell(page, cell(page, 0, 1), '10')
 	await expect(text(page)).toContainText('sum=15', { timeout: 2000 })  // 10 + 2 + 3
 })
 

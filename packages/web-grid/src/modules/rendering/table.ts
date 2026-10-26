@@ -739,6 +739,23 @@ export function renderPagination<T>(ctx: GridHost<T>, position: string = 'bottom
  * @param position Position string (e.g., "bottom-left", "top-right")
  */
 export function renderSummary<T>(ctx: GridHost<T>, position: string): string {
+	if (!ctx.engine.renderSummaryCallback) return ''
+	const content = renderSummaryContent(ctx)
+
+	// Determine alignment class from position
+	const isTop = position.startsWith('top-')
+	const alignment = position.replace('top-', '').replace('bottom-', '')
+
+	const classes = ['wg__summary']
+	if (alignment === 'left') classes.push('wg__summary--left')
+	else if (alignment === 'right') classes.push('wg__summary--right')
+	if (isTop) classes.push('wg__summary--top')
+
+	return `<div class="${classes.join(' ')}">${content}</div>`
+}
+
+/** The `renderSummaryCallback` HTML for the current view ('' without a callback). */
+export function renderSummaryContent<T>(ctx: GridHost<T>): string {
 	const callback = ctx.engine.renderSummaryCallback
 	if (!callback) return ''
 
@@ -758,17 +775,7 @@ export function renderSummary<T>(ctx: GridHost<T>, position: string): string {
 		pageSize,
 		metadata: ctx.engine.summaryMetadata
 	}))
-
-	// Determine alignment class from position
-	const isTop = position.startsWith('top-')
-	const alignment = position.replace('top-', '').replace('bottom-', '')
-
-	const classes = ['wg__summary']
-	if (alignment === 'left') classes.push('wg__summary--left')
-	else if (alignment === 'right') classes.push('wg__summary--right')
-	if (isTop) classes.push('wg__summary--top')
-
-	return `<div class="${classes.join(' ')}">${content}</div>`
+	return content ?? ''
 }
 
 /**

@@ -122,6 +122,7 @@ import {
 	renderDataRowsVirtual,
 	renderPagination,
 	renderSummary,
+	renderSummaryContent,
 	renderCell,
 	renderShortcutsHelpIcon as renderShortcutsHelpIconModule
 } from './modules/rendering/index.js'
@@ -536,6 +537,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		// notifications become events (emit → `on*` twin + DOM event).
 		this.engine.attachHost(this, () => this.controller, (name, detail) => {
 			this.emit(name, detail as never)
+			// Commits update cells surgically (no full render) — refresh the summary too
+			if (name === 'row-change') this.scheduleSummaryRefresh()
 		})
 
 		this.scrollEvents = createScrollEventManager()
@@ -1228,6 +1231,22 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	// ==========================================================================
 	// Update Mechanism
 	// ==========================================================================
+
+	private isSummaryRefreshPending = false
+
+	/** Re-render the summary blocks (once per microtask burst) without a full render. */
+	private scheduleSummaryRefresh(): void {
+		if (!this.engine.renderSummaryCallback || this.isSummaryRefreshPending) return
+		this.isSummaryRefreshPending = true
+		queueMicrotask(() => {
+			this.isSummaryRefreshPending = false
+			if (this.updatePending) return  // a full render is queued — it renders the summary
+			const blocks = this.shadow.querySelectorAll('.wg__summary')
+			if (blocks.length === 0) return
+			const content = renderSummaryContent(this)
+			blocks.forEach(block => { block.innerHTML = content })
+		})
+	}
 
 	private requestUpdate(): void {
 		if (this.updatePending) return

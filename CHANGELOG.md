@@ -173,6 +173,8 @@ handlers: `onpaste`, `onbeforepaste`, `onselect`).
   fixed value kept the old one); the surgical cell update writes the tooltip attributes too.
 - `tooltipHideDelay` was ignored when the pointer left the grid: closing the hover row toolbar
   hid every tooltip at once; it now hides only a toolbar-button tooltip.
+- The summary (`renderSummaryCallback`) was not refreshed after a cell edit (commits update the
+  cell surgically); a `row-change` now re-renders the summary blocks.
 
 ### Changed
 

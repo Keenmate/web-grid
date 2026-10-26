@@ -8,7 +8,8 @@ export {
 	renderDataRows,
 	renderDataRowsVirtual,
 	renderPagination,
-	renderSummary
+	renderSummary,
+	renderSummaryContent
 } from './table.js'
 
 export type { VirtualScrollParams } from './table.js'

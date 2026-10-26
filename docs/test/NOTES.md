@@ -346,7 +346,9 @@ blur don't commit). Same for a locked row.
 
 **Test:** `row-api.spec.ts` "startEditing a read-only cell does nothing" (`test.fail`).
 
-## 20. Summary is not refreshed after a cell edit (and can't see drafts)
+## 20. Summary is not refreshed after a cell edit (and can't see drafts) — refresh FIXED, drafts open
+
+**Partly fixed:** a `row-change` schedules a summary-only refresh (one per microtask burst; skipped when a full render is queued) — `summary.spec.ts` "re-renders after an edit". **Open question (draft-awareness):** today `ctx.items` / `ctx.allItems` are the original rows, so a sum ignores unsaved edits → propose either passing draft-merged copies in `items` / `allItems` (what the user sees; breaks row identity for consumers that compare references) or adding a `ctx.getCellValue(row, field)` helper (draft-aware, additive). `summary.spec.ts` "the sum sees the edited (draft) value" stays `test.fail`.
 
 **Where:** commits use the surgical cell update (no full `render()`), and
 `renderSummary` (`modules/rendering/table.ts:~810`) passes `displayItems` — the
