@@ -89,9 +89,19 @@ test.describe('checkbox', () => {
 	})
 
 	test('isCheckboxAlwaysEditable: one click on the checkbox toggles it', async ({ page }) => {
-		test.fail(true, 'NOTES.md #27')
 		await onGrid(page, el => el.setAttribute('is-checkbox-always-editable', ''))
 		await cell(page, 1, 2).locator('input[type="checkbox"]').click({ force: true })
 		await expect.poll(() => onGrid(page, el => el.getRowDraft(1)?.done), { timeout: 1500 }).toBe(false)
+		await expect(cell(page, 1, 2).locator('input[type="checkbox"]')).not.toBeChecked()
+		// a second click toggles back
+		await cell(page, 1, 2).locator('input[type="checkbox"]').click({ force: true })
+		await expect.poll(() => onGrid(page, el => (el.getRowDraft(1) ?? el.items[1]).done)).toBe(true)
+	})
+
+	test('isCheckboxAlwaysEditable off (default): a click on the checkbox only focuses the cell', async ({ page }) => {
+		await cell(page, 1, 2).locator('input[type="checkbox"]').click({ force: true })
+		await page.waitForTimeout(150)
+		expect(await onGrid(page, el => el.getRowDraft(1))).toBeUndefined()
+		await expect(cell(page, 1, 2).locator('input[type="checkbox"]')).toBeDisabled()
 	})
 })

@@ -38,14 +38,16 @@ export function renderCellDisplay<T>(
 		const opts = column.editorOptions || {}
 		const trueValue = opts.trueValue !== undefined ? opts.trueValue : true
 		const isChecked = rawValue === trueValue
-		// Display-mode checkbox: always disabled (click on cell handles toggling)
+		// Display-mode checkbox: disabled (click on cell handles toggling), unless
+		// isCheckboxAlwaysEditable makes it interactive — one click toggles it.
 		// Non-editable cells get additional visual styling via CSS
+		const isInteractive = isEditable && ctx.engine.isCheckboxAlwaysEditable
 		return `
 			<input
 				type="checkbox"
 				class="wg__checkbox-display${isEditable ? '' : ' wg__checkbox-display--readonly'}"
 				${isChecked ? 'checked' : ''}
-				disabled
+				${isInteractive ? '' : 'disabled'}
 				tabindex="-1"
 				data-row="${rowIndex}"
 				data-field="${field}"

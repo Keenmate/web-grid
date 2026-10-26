@@ -410,6 +410,15 @@ export class ActionPipelineAdapter<T = unknown> {
 		return false
 	}
 
+	/** True when the pointer is over an enabled (isCheckboxAlwaysEditable) display checkbox. */
+	private isClickOnEnabledDisplayCheckbox(e: MouseEvent, target: HTMLElement): boolean {
+		if (!this.ctx.engine.isCheckboxAlwaysEditable) return false
+		const checkbox = target.closest('.wg__cell')?.querySelector('.wg__checkbox-display') as HTMLInputElement | null
+		if (!checkbox || checkbox.disabled) return false
+		const r = checkbox.getBoundingClientRect()
+		return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom
+	}
+
 	/**
 	 * Try to handle a focus event via the pipeline.
 	 * Returns true if the event was handled.
@@ -522,6 +531,16 @@ export class ActionPipelineAdapter<T = unknown> {
 				shiftKey: true
 			})
 			e.preventDefault()
+			return true
+		}
+
+		// isCheckboxAlwaysEditable: the display checkbox is enabled — one click on it toggles
+		// it (the same toggle as Space on a focused checkbox cell). The display checkbox has
+		// `pointer-events: none` (clicks land on the cell), so hit-test its box.
+		if (!isAlways && !isEditing && this.isClickOnEnabledDisplayCheckbox(e, target)) {
+			e.preventDefault()
+			this.pipeline.dispatch({ type: 'focusCell', target: cell, selectText: false })
+			this.pipeline.dispatch({ type: 'toggleCheckbox', target: cell })
 			return true
 		}
 

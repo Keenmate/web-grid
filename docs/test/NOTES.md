@@ -464,7 +464,9 @@ at all.
 **Test:** `edit-modes.spec.ts` "'button': an edit button in the cell starts
 editing" (`test.fail`).
 
-## 27. `isCheckboxAlwaysEditable` has no effect
+## 27. `isCheckboxAlwaysEditable` has no effect — FIXED
+
+**Fixed:** with the flag on, an editable cell's display checkbox renders enabled and a click on it (hit-tested — the display checkbox keeps `pointer-events: none`, no CSS change) runs the same `toggleCheckbox` as Space. `editTrigger: 'always'` was already interactive (real editor).
 
 **Where:** declared in the input table (`web-component.ts:376`), stored by the
 engine (`grid.ts:566-570`), documented in `types.ts:360` ("Make checkboxes

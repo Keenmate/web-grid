@@ -67,7 +67,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Number editor parsing (ints, decimals, padding, empty → null, negatives) | ✓ | `edit-modes.spec.ts` | `edit-modes.html` |
 | Number editor rejects non-numbers / honours `editorOptions` min/max/decimals (#25) | ✗ fail | `edit-modes.spec.ts` | `edit-modes.html` |
 | `dropdownToggleVisibility`, `shouldShowDropdownOnFocus`, `shouldOpenDropdownOnEnter` (grid + column), checkbox Space toggle | ✓ | `dropdown-flags.spec.ts` | `dropdown-flags.html` |
-| `isCheckboxAlwaysEditable` (#27, dead flag) | ✗ fail | `dropdown-flags.spec.ts` | `dropdown-flags.html` |
+| `isCheckboxAlwaysEditable` one-click toggle, off by default (#27 fixed) | ✓ | `dropdown-flags.spec.ts` | `dropdown-flags.html` |
 | `mode` preset (read-only / excel / input-matrix) | ✓ | `grid-modes.spec.ts`, `inputs.spec.ts` | `grid-modes.html`, `inputs.html` |
 | `validateCallback` (string / result / transform) | ✓ | `validation.spec.ts` | `validation.html` |
 | `invalidCells` (read + assign) + `isCellInvalid` / `getCellValidationError` | ✓ | `validation.spec.ts` | `validation.html` |

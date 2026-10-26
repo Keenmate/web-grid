@@ -177,6 +177,8 @@ handlers: `onpaste`, `onbeforepaste`, `onselect`).
   cell surgically); a `row-change` now re-renders the summary blocks.
 - Pasted values in `editor: 'number'` columns stayed strings (`"21"`) — in drafts and in rows
   created by the paste; they are numbers now (blank → null; non-numeric text is kept for validation).
+- `isCheckboxAlwaysEditable` had no effect; with it on, one click on a display checkbox toggles
+  it in navigate / click modes (the same toggle as Space).
 
 ### Changed
 
