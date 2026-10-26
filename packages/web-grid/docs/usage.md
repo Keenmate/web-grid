@@ -67,7 +67,7 @@ The `QuickGridProps<T>` type defined in `src/types.ts` is the canonical source o
 |---|---|---|---|
 | `items` | `T[]` | `[]` | Row data — the only required "content" property |
 | `columns` | `Column<T>[]` | `[]` | Column definitions (see [Column definition](#column-definition)) |
-| `idMember` | `keyof T \| string` | — | Field that uniquely identifies a row. Internal state (drafts, invalid-cell markers) is keyed by this value; falls back to `treePathMember` or displayed-row index |
+| `idMember` | `keyof T \| string \| null` | `'id'` | Field that uniquely identifies a row — the only row-id member (`getRowId`, `findRowById`, `updateRowById`, `replaceRowById`, row locking; `getIdCallback` wins). Internal state (drafts, invalid-cell markers) is keyed by this value; falls back to `treePathMember` or displayed-row index |
 
 ### Display
 
@@ -634,7 +634,7 @@ grid.getRowClassCallback = ({ row, controller }) =>
 | `renderShortcutsHelpCallback` | `{}` | HTML shown with the shortcuts list |
 | `getValidationTooltipCallback` | cell ctx + `error` | Validation tooltip HTML (column-level wins) |
 | `getIsRowEditableCallback` | `{ row }` | `boolean` — per-row editability |
-| `getRowIdCallback` | `{ row }` | The row's id |
+| `getIdCallback` | `{ row }` | The row's id (wins over `idMember`) |
 | `renderChevronCallback` | `{ row, isExpanded, hasChildren, level, path }` | Chevron HTML (tree) |
 | `createEmptyRowCallback` | `{}` | New row (`add` built-in, new-row entry); may be async |
 | `createDuplicateRowCallback` | `{ row, rowIndex }` | The copy the `duplicate` built-in inserts |
@@ -764,7 +764,7 @@ After a paste, the `paste-complete` event (`onPasteComplete`) reports `{ totalCe
 
 | Method | Returns | Description |
 |---|---|---|
-| `getRowId(row)` | `unknown \| undefined` | Get the ID using `idValueMember` / `getRowIdCallback` |
+| `getRowId(row)` | `unknown \| undefined` | Get the ID using `getIdCallback` / `idMember` (default `'id'`) |
 | `findRowById(id)` | `{ row, index } \| null` | Find a row by its ID |
 
 ### Row updates

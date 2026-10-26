@@ -217,9 +217,8 @@ export class GridEngine<T = unknown> {
 	protected _shortcutsHelpPosition: 'top-right' | 'top-left' = 'top-right'
 	protected _renderShortcutsHelpCallback: ((ctx: GridContext<T>) => string) | undefined = undefined
 
-	// Row identification
-	protected _idValueMember: keyof T | undefined = undefined
-	protected _getRowIdCallback: ((ctx: RowDataContext<T>) => unknown) | undefined = undefined
+	// Row identification (the member is `_idMember`, below)
+	protected _getIdCallback: ((ctx: RowDataContext<T>) => unknown) | undefined = undefined
 
 	// Row locking
 	protected _rowLocking: RowLockingOptions<T> | undefined = undefined
@@ -351,7 +350,7 @@ export class GridEngine<T = unknown> {
 	protected _treePathMember: string | null = null
 	protected _treeLevelMember: string | null = null
 	protected _treeParentMember: string | null = null
-	protected _idMember: string | null = null
+	protected _idMember: string | null = 'id'
 	protected _hasWarnedAboutMissingRowId: boolean = false
 	protected _treeSeparator: string | null = null  // null = auto-detect
 	protected _treeDataSorted: boolean = false
@@ -1041,15 +1040,10 @@ export class GridEngine<T = unknown> {
 		this._beforeActionCallback = value
 	}
 
-	// Row identification
-	get idValueMember(): keyof T | undefined { return this._idValueMember }
-	set idValueMember(value: keyof T | undefined) {
-		this._idValueMember = value
-	}
-
-	get getRowIdCallback(): ((ctx: RowDataContext<T>) => unknown) | undefined { return this._getRowIdCallback }
-	set getRowIdCallback(value: ((ctx: RowDataContext<T>) => unknown) | undefined) {
-		this._getRowIdCallback = value
+	// Row identification — `getIdCallback` is the computed twin of `idMember`
+	get getIdCallback(): ((ctx: RowDataContext<T>) => unknown) | undefined { return this._getIdCallback }
+	set getIdCallback(value: ((ctx: RowDataContext<T>) => unknown) | undefined) {
+		this._getIdCallback = value
 	}
 
 	// Row locking
@@ -1331,17 +1325,15 @@ export class GridEngine<T = unknown> {
 	}
 
 	/**
-	 * Return a stable string key for a row. Coalesce order: idMember value → treePathMember
+	 * Return a stable string key for a row. Coalesce order: row id (getIdCallback / idMember) → treePathMember
 	 * value → displayed-index string fallback. Used to key drafts and invalid-cell markers
 	 * so they don't drift when the displayed order changes (sort, filter, page, tree toggle).
 	 *
-	 * Distinct from `getRowId` which is the row-locking identifier (any type).
+	 * `getRowId` (the `getIdCallback` / `idMember` value, any type) stringified.
 	 */
 	getStableRowKey(item: T, displayedIndex: number): string {
-		if (this._idMember) {
-			const v = (item as Record<string, unknown>)[this._idMember]
-			if (v !== undefined && v !== null) return String(v)
-		}
+		const id = this.getRowId(item)
+		if (id !== undefined && id !== null) return String(id)
 		if (this._treePathMember) {
 			const v = (item as Record<string, unknown>)[this._treePathMember]
 			if (v !== undefined && v !== null) return String(v)
@@ -1349,10 +1341,16 @@ export class GridEngine<T = unknown> {
 		return String(displayedIndex)
 	}
 
+	/** True when the row has an id (`getRowId`) or a tree path — i.e. its key is not the display index. */
+	private hasStableIdentity(item: T): boolean {
+		if (this.getRowId(item) != null) return true
+		return !!this._treePathMember && (item as Record<string, unknown>)[this._treePathMember] != null
+	}
+
 	private maybeWarnAboutRowIdentity(): void {
 		if (this._hasWarnedAboutMissingRowId) return
 		if (!this._isEditable) return
-		if (this._idMember || this._treePathMember) return
+		if (this._idMember || this._getIdCallback || this._treePathMember) return
 		this._hasWarnedAboutMissingRowId = true
 		initLogger.warn(
 			'editable grid has no `idMember` (and no `treePathMember`). ' +
@@ -2487,9 +2485,10 @@ export class GridEngine<T = unknown> {
 	 * branch toggles.
 	 */
 	private draftKey(item: T): unknown {
-		const member = this._idMember ?? this._treePathMember
-		if (member) {
-			const v = (item as Record<string, unknown>)[member]
+		const id = this.getRowId(item)
+		if (id !== undefined && id !== null) return `key:${String(id)}`
+		if (this._treePathMember) {
+			const v = (item as Record<string, unknown>)[this._treePathMember]
 			if (v !== undefined && v !== null) return `key:${String(v)}`
 		}
 		return item
@@ -2897,7 +2896,7 @@ export class GridEngine<T = unknown> {
 					}
 
 					const newRowKey = this.getStableRowKey(newRow, newRowIndex)
-					const usingIndexFallback = !this._idMember && !this._treePathMember
+					const usingIndexFallback = !this.hasStableIdentity(newRow)
 					this._invalidCells = this._invalidCells.map(c => {
 						if (c.rowKey === oldRowKey) {
 							return { ...c, rowKey: newRowKey }
@@ -3262,14 +3261,15 @@ export class GridEngine<T = unknown> {
 	// ==========================================================================
 
 	/**
-	 * Get the unique ID for a row using configured idValueMember/getRowIdCallback
+	 * The row's id: `getIdCallback({ row })` when set, else the `idMember` field
+	 * (default `'id'`). `undefined` when neither yields one.
 	 */
 	getRowId(row: T): unknown | undefined {
-		if (this._getRowIdCallback) {
-			return this._getRowIdCallback(this.ctx({ row }))
+		if (this._getIdCallback) {
+			return this._getIdCallback(this.ctx({ row }))
 		}
-		if (this._idValueMember) {
-			return (row as Record<string, unknown>)[String(this._idValueMember)]
+		if (this._idMember && row && typeof row === 'object') {
+			return (row as Record<string, unknown>)[this._idMember]
 		}
 		return undefined
 	}

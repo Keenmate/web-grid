@@ -168,9 +168,9 @@ getIsRowEditableCallback
   Signature: (ctx: RowDataContext<T>) => boolean
   ctx: { row }. Per-row editability (isRowEditable is the static boolean).
 
-getRowIdCallback
+getIdCallback
   Signature: (ctx: RowDataContext<T>) => unknown
-  ctx: { row }. Row identity (alternative to idValueMember).
+  ctx: { row }. Computed row id; wins over idMember (default 'id').
 
 getValidationTooltipCallback
   Signature: (ctx: ValidationTooltipContext<T>) => string | null

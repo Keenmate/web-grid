@@ -200,7 +200,9 @@ The key names in the test are a suggestion — adjust the test with the fix.
 **Test:** `row-locking.spec.ts` "the lock tooltip text is translatable through
 labels" (`test.fail`).
 
-## 11. Two row-identity inputs: `idMember` vs `idValueMember` (open question)
+## 11. Two row-identity inputs: `idMember` vs `idValueMember` — FIXED
+
+**Fixed:** `idMember` (default `'id'`) is the only row-id member — `getRowId` / `findRowById` / `updateRowById` / `replaceRowById` / `lockRowById` and the draft / invalid-cell keys read it; `idValueMember` removed, `getRowIdCallback` renamed `getIdCallback` (wins over `idMember`).
 
 **Where:** `grid.ts:3174` `getRowId()` reads `getRowIdCallback` → `idValueMember`
 only; `idMember` (`types.ts:322-326`) is used for the stable row key, built-ins

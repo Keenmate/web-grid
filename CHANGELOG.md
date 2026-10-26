@@ -29,7 +29,7 @@ both non-enumerable, so `JSON.stringify` / logs see only the data.
 | `validationTooltipCallback(ctx)` (grid + column) | `getValidationTooltipCallback(ctx)` — ctx is the cell + `error` |
 | `treeChevronCallback({ expanded, … })` | `renderChevronCallback({ row, isExpanded, hasChildren, level, path })` |
 | `isRowEditable: boolean \| (row) => boolean` | `isRowEditable: boolean` + `getIsRowEditableCallback({ row })` |
-| `idValueCallback(row)` | `getRowIdCallback({ row })` |
+| `idValueCallback(row)` / `idValueMember` | `getIdCallback({ row })` / `idMember` (see below) |
 | `createEmptyRowCallback()` / `createRowCallback(pastedData, rowIndex)` | `createEmptyRowCallback(ctx)` / `createRowCallback({ data, rowIndex })` |
 | `rowLocking.isLockedCallback(row, i)` / `getLockInfoCallback(row, i)` / `canEditLockedCallback(row, lock)` | `getIsLockedCallback({ row, rowIndex })` / `getLockInfoCallback({ row, rowIndex })` / `getCanEditLockedCallback({ row, rowIndex, lockInfo })`; `lockTooltipCallback` (never called) removed |
 | `fillDragCallback(detail)` → `false` | `beforeFillCallback(ctx)` → `false` cancels (async OK) |
@@ -117,6 +117,13 @@ handlers: `onpaste`, `onbeforepaste`, `onselect`).
   `getCategories()` returns bare names (`['INIT', 'DATA', 'UI', 'INTERACTION', 'PERF']`) and
   `setCategoryLevel()` on the registry takes them (`setCategoryLevel('DATA', 'debug')`). The
   grid's configuration / persistence warnings go through the loggers (no direct `console.*`).
+- **One row-id member: `idMember`, default `'id'`.** `idValueMember` is removed; `getRowId()`,
+  `findRowById`, `updateRowById`, `replaceRowById` and `lockRowById` read `idMember` (they used
+  to need `idValueMember` and returned nothing with `idMember` alone). The callback twin is
+  **`getIdCallback({ row })`** (was `getRowIdCallback`) and wins over `idMember`; drafts and
+  invalid-cell markers are keyed by the same id. With the new default, rows that carry an `id`
+  field are identified without configuration; set `idMember = null` for rows without ids. The
+  `duplicate` built-in clears the `id` field of the copy by default.
 
 ### Added
 

@@ -171,10 +171,10 @@ grid.updateRowById(123, { name: 'Updated Name' })</pre>
             <div class="card">
                 <h2>Configuration</h2>
                 <div class="code-block">
-                    <pre>// Required: Configure row identification
-grid.idValueMember = 'id'
+                    <pre>// Row identification: idMember (default 'id')
+grid.idMember = 'id'
 // Or use callback:
-// grid.getRowIdCallback = ({ row }) => row.employeeId
+// grid.getIdCallback = ({ row }) => row.employeeId
 
 // Configure row locking
 grid.rowLocking = {
@@ -350,8 +350,8 @@ if (result) {
         grid.isRowNumbersVisible = true
         grid.mode = 'excel'
 
-        // Configure row identification (required for external locks)
-        grid.idValueMember = 'id'
+        // Row identification (idMember defaults to 'id'; needed for external locks)
+        grid.idMember = 'id'
 
         // Configure row locking
         grid.rowLocking = {

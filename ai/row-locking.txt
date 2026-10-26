@@ -8,7 +8,7 @@ OVERVIEW
 Row locking prevents editing of rows that are locked by other users or
 processes. Three lock sources exist: property-based, callback-based, and
 external API. Locks are configured via the rowLocking property on the grid.
-Row identification (idValueMember or getRowIdCallback) is required for
+Row identification (idMember, default 'id', or getIdCallback) is used for
 external lock methods.
 
 
@@ -60,7 +60,7 @@ getLockInfoCallback ((ctx: { row, rowIndex }) => RowLock | null)
 LOCK SOURCE 3: EXTERNAL API
 ----------------------------
 For real-time lock management (e.g., WebSocket-driven collaborative editing).
-Requires idValueMember or getRowIdCallback to be set.
+Rows are found by idMember (default 'id') or getIdCallback.
 
 lockRowById(id, lockerInfo?)
   Lock a row by its ID. Returns boolean (true if row found).
@@ -177,7 +177,7 @@ getRowLockInfo(rowOrId)
 
 WEBSOCKET INTEGRATION EXAMPLE
 ------------------------------
-  grid.idValueMember = 'id'
+  grid.idMember = 'id'   // the default
   grid.rowLocking = {
     lockedEditBehavior: 'block'
   }
@@ -200,11 +200,11 @@ WEBSOCKET INTEGRATION EXAMPLE
 REQUIREMENTS
 ------------
 External lock methods (lockRowById, unlockRowById, etc.) require row
-identification to be configured:
+identification (idMember defaults to 'id'):
 
-  grid.idValueMember = 'id'
+  grid.idMember = 'id'   // the default
   // or
-  grid.getRowIdCallback = ({ row }) => row.id
+  grid.getIdCallback = ({ row }) => row.id
 
 Without this, the grid cannot find rows by ID and the lock methods will
 return false.

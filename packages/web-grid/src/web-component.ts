@@ -874,10 +874,15 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	get createDuplicateRowCallback(): ((ctx: RowContext<T>) => T) | undefined { return this.engine.createDuplicateRowCallback }
 	set createDuplicateRowCallback(value: ((ctx: RowContext<T>) => T) | undefined) { this.engine.createDuplicateRowCallback = value }
 
-	// Tree / hierarchy
+	/**
+	 * Field that uniquely identifies a row (default `'id'`; `null` = none). The only row-id
+	 * member: drafts, invalid-cell markers, `getRowId` / `findRowById` / `updateRowById` /
+	 * `replaceRowById` / `lockRowById` use it (`getIdCallback` wins when set).
+	 */
 	get idMember(): string | null { return this.engine.idMember }
 	set idMember(value: string | null) { this.engine.idMember = value }
 
+	// Tree / hierarchy
 	get treePathMember(): string | null { return this.engine.treePathMember }
 	set treePathMember(value: string | null) { this.engine.treePathMember = value }
 
@@ -989,12 +994,10 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	get isSummaryInline(): boolean { return this.engine.isSummaryInline }
 	set isSummaryInline(value: boolean) { this.engine.isSummaryInline = value }
 
-	// Row identification
-	get idValueMember(): keyof T | undefined { return this.engine.idValueMember }
-	set idValueMember(value: keyof T | undefined) { this.engine.idValueMember = value }
-
-	get getRowIdCallback(): ((ctx: RowDataContext<T>) => unknown) | undefined { return this.engine.getRowIdCallback }
-	set getRowIdCallback(value: ((ctx: RowDataContext<T>) => unknown) | undefined) { this.engine.getRowIdCallback = value }
+	// Row identification (`idMember` above; this is its computed twin)
+	/** The row's id when `idMember` can't express it (`{ row }` → id). Wins over `idMember`. */
+	get getIdCallback(): ((ctx: RowDataContext<T>) => unknown) | undefined { return this.engine.getIdCallback }
+	set getIdCallback(value: ((ctx: RowDataContext<T>) => unknown) | undefined) { this.engine.getIdCallback = value }
 
 	// Row locking
 	get rowLocking(): RowLockingOptions<T> | undefined { return this.engine.rowLocking }

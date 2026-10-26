@@ -112,7 +112,7 @@ CONTEXTS
 ----------------------------------------------------------------------
 All extend GridContext<T> (controller + element, non-enumerable).
 
-  RowDataContext<T>    { row }                    getRowIdCallback, getIsRowEditableCallback,
+  RowDataContext<T>    { row }                    getIdCallback, getIsRowEditableCallback,
                                                   column.getIsEditableCallback
   RowContext<T>        { row, rowIndex }          toolbar items, getRowClassCallback,
                                                   createDuplicateRowCallback, row locking

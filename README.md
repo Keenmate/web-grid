@@ -261,7 +261,7 @@ const columns: Column<Employee>[] = [
 - **Frozen Columns** — Stick columns to the left during horizontal scroll
 - **Fill Handle** — Excel-like autofill by dragging a cell's corner
 - **Row Locking** — Optimistic locking with external lock management (WebSocket-ready)
-- **Row Identification** — `idValueMember`/`getRowIdCallback` for `updateRowById`, `replaceRowById`
+- **Row Identification** — `idMember` (default `'id'`) / `getIdCallback` for drafts, `findRowById`, `updateRowById`, `replaceRowById`, row locking
 - **Virtual Scroll** — Render only visible rows for large datasets
 - **Infinite Scroll** — Load-more pattern triggered near bottom of scroll
 - **Dark Mode** — Auto-detects OS/attribute/class preferences
@@ -412,8 +412,8 @@ This architecture separates mode detection (the adapter decides *what* action a 
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `idValueMember` | `keyof T` | — | Property name containing the row's unique ID |
-| `getRowIdCallback` | `(ctx: { row }) => unknown` | — | Callback returning the row's unique ID |
+| `idMember` | `string \| null` | `'id'` | Field containing the row's unique ID — the only row-id member: drafts, invalid-cell markers, `getRowId`, `findRowById`, `updateRowById`, `replaceRowById`, row locking. `null` = rows have no id |
+| `getIdCallback` | `(ctx: { row }) => unknown` | — | Callback returning the row's unique ID (wins over `idMember`) |
 
 ### Row Locking
 
@@ -978,7 +978,7 @@ grid.onRowChange = (detail) => save(detail.draftRow)
 
 | Method | Returns | Description |
 |--------|---------|-------------|
-| `getRowId(row)` | `unknown \| undefined` | Get the ID of a row using `idValueMember`/`getRowIdCallback` |
+| `getRowId(row)` | `unknown \| undefined` | Get the ID of a row using `getIdCallback` / `idMember` |
 | `findRowById(id)` | `{ row, index } \| null` | Find a row by its ID |
 
 ### Row Updates

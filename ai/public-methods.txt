@@ -87,11 +87,11 @@ canEditCell(rowIndex: number, field: string): boolean
 ----------------------------------------------------------------------
 ROW IDENTIFICATION
 ----------------------------------------------------------------------
-Requires idValueMember or getRowIdCallback to be configured.
+Rows are identified by idMember (default 'id') or getIdCallback.
 
 getRowId(row: T): unknown | undefined
-  Get the unique ID of a row using the configured idValueMember or
-  getRowIdCallback.
+  Get the unique ID of a row: getIdCallback({ row }) when set, else
+  row[idMember].
 
 findRowById(id: unknown): { row: T, index: number } | null
   Find a row by its unique ID. Returns the row object and its current
@@ -121,8 +121,8 @@ replaceRowById(id: unknown, newRow: T): boolean
 ROW LOCKING
 ----------------------------------------------------------------------
 Query methods accept either a row object or a row ID.
-External lock methods require row identification (idValueMember or
-getRowIdCallback).
+External lock methods identify rows by idMember (default 'id') or
+getIdCallback.
 
 isRowLocked(rowOrId: T | unknown): boolean
   Check if a row is locked (from any source: property, callback, or

@@ -108,8 +108,8 @@ G
 getCellClassCallback -> columns.txt
 getCellToolbarItemsCallback -> toolbar-actions.txt
 getDisplayValueCallback (column / editorOptions) -> columns.txt, dropdown-editors.txt, callbacks-events.txt
+getIdCallback -> editing.txt, row-locking.txt
 getRowClassCallback -> styling-theming.txt, callbacks-events.txt
-getRowIdCallback -> editing.txt, row-locking.txt
 getTooltipCallback -> columns.txt, callbacks-events.txt
 getValueCallback -> dropdown-editors.txt, callbacks-events.txt
 Grid labels -> sorting-filtering-pagination.txt, callbacks-events.txt
@@ -125,7 +125,7 @@ Horizontal align -> columns.txt
 
 I
 -
-idValueMember -> editing.txt, row-locking.txt
+idMember -> editing.txt, row-locking.txt
 Infinite scroll -> virtual-scroll.txt
 Inline actions -> toolbar-actions.txt
 inlineActionsTitle -> toolbar-actions.txt

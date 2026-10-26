@@ -1,12 +1,11 @@
 import { test, expect, cell, onGrid, domEvents, clearEvents, waitForRows, editorIn, editCell } from './fixtures'
 
 /**
- * Row API — identity (`idValueMember`, `getRowIdCallback`, `idMember` — see
- * NOTES.md #11), `getRowId`, `findRowById`, `updateRowById`, `replaceRowById`,
+ * Row API — identity (`idMember`, default `'id'`, and `getIdCallback` — NOTES.md #11), `getRowId`, `findRowById`, `updateRowById`, `replaceRowById`,
  * `focusCell`, `startEditing`.
  *
  * Fixture: docs/test/row-api.html — Alpha/Beta/Gamma (id 1-3, code A-1/B-2/G-3);
- * cols 0=id, 1=name, 2=qty, 3=code. idMember + idValueMember = 'id'.
+ * cols 0=id, 1=name, 2=qty, 3=code. idMember left at its default 'id'.
  */
 
 const PAGE = '/test/row-api.html'
@@ -18,23 +17,28 @@ test.beforeEach(async ({ page }) => {
 })
 
 test.describe('identity', () => {
-	test('idValueMember: getRowId / findRowById (index into items); unknown id → null', async ({ page }) => {
+	test('idMember (default id): getRowId / findRowById (index into items); unknown id → null', async ({ page }) => {
 		expect(await onGrid(page, el => [el.getRowId(el.items[1]), el.findRowById(3), el.findRowById(99)])).toEqual([
 			2, { row: { id: 3, name: 'Gamma', qty: 30, code: 'G-3' }, index: 2 }, null
 		])
 	})
 
-	test('getRowIdCallback wins over idValueMember and gets { row } + context', async ({ page }) => {
+	test('getIdCallback wins over idMember and gets { row } + context', async ({ page }) => {
 		const r = await onGrid(page, el => {
-			el.getRowIdCallback = (ctx: any) => { (window as any).__idCtx = !!ctx.controller; return ctx.row.code }
+			el.getIdCallback = (ctx: any) => { (window as any).__idCtx = !!ctx.controller; return ctx.row.code }
 			return [el.getRowId(el.items[0]), el.findRowById('B-2')?.index, el.findRowById(2), (window as any).__idCtx]
 		})
 		expect(r).toEqual(['A-1', 1, null, true])
 	})
 
-	test('idMember alone identifies rows for the id APIs', async ({ page }) => {
-		test.fail(true, 'NOTES.md #11')
-		expect(await onGrid(page, el => { el.idValueMember = undefined; return el.findRowById(2)?.index })).toBe(1)
+	test('idMember defaults to id; another member re-keys the id APIs; null turns them off', async ({ page }) => {
+		expect(await onGrid(page, el => el.idMember)).toBe('id')
+		expect(await onGrid(page, el => { el.idMember = 'code'; return [el.findRowById('B-2')?.index, el.findRowById(2)] })).toEqual([1, null])
+		expect(await onGrid(page, el => { el.idMember = null; return [el.getRowId(el.items[0]), el.findRowById(1)] })).toEqual([undefined, null])
+	})
+
+	test('the removed idValueMember / getRowIdCallback are not inputs any more', async ({ page }) => {
+		expect(await onGrid(page, el => ['idValueMember' in el, 'getRowIdCallback' in el])).toEqual([false, false])
 	})
 })
 

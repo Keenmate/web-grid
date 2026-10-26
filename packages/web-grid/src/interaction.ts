@@ -137,7 +137,7 @@ export interface GridController<T = any> {
 /** Base of every callback ctx and event detail. */
 export type GridContext<T = any> = ComponentContext<GridController<T>>
 
-/** A row without a position — `getRowIdCallback`, `getIsRowEditableCallback`, `column.getIsEditableCallback`. */
+/** A row without a position — `getIdCallback`, `getIsRowEditableCallback`, `column.getIsEditableCallback`. */
 export interface RowDataContext<T = any> extends GridContext<T> {
 	row: T
 }

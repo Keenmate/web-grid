@@ -8,7 +8,7 @@
 </head>
 <body>
 	<h1>row-locking fixture</h1>
-	<p>Targeted by <code>e2e/row-locking.spec.ts</code>. Navigate-mode editable grid, <code>idMember</code> + <code>idValueMember</code> = 'id',
+	<p>Targeted by <code>e2e/row-locking.spec.ts</code>. Navigate-mode editable grid, <code>idMember</code> = 'id',
 	row numbers. <code>rowLocking.getLockInfoCallback</code> locks rows whose <code>lock</code> field is set
 	(Beta, by "Carol"). External locks via <code>lockRowById</code>. Events logged to <code>row-locking-log</code>.</p>
 
@@ -35,7 +35,6 @@
 		window.lockCtxs = []
 		const grid = document.getElementById('grid')
 		grid.idMember = 'id'
-		grid.idValueMember = 'id'  // the id APIs (lockRowById, findRowById) read idValueMember, not idMember — NOTES.md #11
 		grid.columns = [
 			{ field: 'id', title: 'ID', width: '60px', isEditable: false },
 			{ field: 'name', title: 'Name', width: '160px', editor: 'text' },
