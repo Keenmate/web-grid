@@ -43,7 +43,8 @@ import type {
 	GridRangeShortcut,
 	GridActionEventDetail,
 	GridEventMap,
-	DraftInfo
+	DraftInfo,
+	BeforePageChangeContext
 } from './interaction.js'
 import { createGridController } from './controller.js'
 
@@ -1048,6 +1049,16 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	}
 
 	// Fill handle: `false` cancels the fill (async OK)
+	/**
+	 * Runs before a user action swaps the displayed rows — pager buttons, page-size change,
+	 * header sort and filter-row changes in server mode (`ctx.trigger`: `'page'` / `'pageSize'` /
+	 * `'sort'` / `'filter'`; `fromPage`, `toPage`, `drafts`). `false` → stay; a number → go to
+	 * that page instead; may be async (the pager is disabled meanwhile). Programmatic
+	 * `currentPage` writes and infinite-scroll `loadMore` skip it.
+	 */
+	get beforePageChangeCallback(): ((ctx: BeforePageChangeContext<T>) => boolean | number | void | Promise<boolean | number | void>) | undefined { return this.engine.beforePageChangeCallback }
+	set beforePageChangeCallback(value: ((ctx: BeforePageChangeContext<T>) => boolean | number | void | Promise<boolean | number | void>) | undefined) { this.engine.beforePageChangeCallback = value }
+
 	get beforeFillCallback(): ((ctx: FillContext<T>) => boolean | void | Promise<boolean | void>) | undefined { return this.engine.beforeFillCallback }
 	set beforeFillCallback(value: ((ctx: FillContext<T>) => boolean | void | Promise<boolean | void>) | undefined) { this.engine.beforeFillCallback = value }
 

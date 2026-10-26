@@ -41,6 +41,7 @@ beforeActionCallback -> toolbar-actions.txt, callbacks-events.txt
 beforeContextMenuOpenCallback -> toolbar-actions.txt, callbacks-events.txt
 beforeFillCallback -> fill-handle.txt, callbacks-events.txt
 beforeHeaderMenuOpenCallback -> toolbar-actions.txt, callbacks-events.txt
+beforePageChangeCallback -> sorting-filtering-pagination.txt, callbacks-events.txt
 beforePasteCallback -> callbacks-events.txt
 Border -> styling-theming.txt
 Built-in actions (add, delete, move-up, sort-asc, ...) -> toolbar-actions.txt

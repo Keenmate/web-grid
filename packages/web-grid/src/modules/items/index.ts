@@ -34,6 +34,7 @@ import type {
 	RangeContext
 } from '../../interaction.js'
 import { parseKeyCombo, matchesKeyCombo } from '../keyboard/index.js'
+import { applySort } from '../events/sort.js'
 
 const ROW_ACTIONS: readonly GridRowAction[] = ['add', 'delete', 'duplicate', 'move-up', 'move-down']
 const TREE_ACTIONS: readonly string[] = ['expand-all', 'collapse-all', 'expand-tree', 'collapse-tree']
@@ -262,16 +263,14 @@ function runHeaderBuiltIn<T>(host: GridHost<T>, d: GridActionEventDetail<T>): vo
 				const i = next.findIndex(s => s.column === field)
 				if (i >= 0) next[i] = { column: field, direction }
 				else next.push({ column: field, direction })
-				engine.sort = next
+				applySort(host, next)
 			} else {
-				engine.sort = [{ column: field, direction }]
+				applySort(host, [{ column: field, direction }])
 			}
-			engine.fireDataRequest('sort')
 			return
 		}
 		case 'clear-sort':
-			engine.sort = engine.sort.filter(s => s.column !== field)
-			engine.fireDataRequest('sort')
+			applySort(host, engine.sort.filter(s => s.column !== field))
 			return
 		case 'hide-column': {
 			// Refuse to hide the tree column in tree mode — chevrons would be orphaned

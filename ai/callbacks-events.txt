@@ -136,6 +136,18 @@ beforePasteCallback
   targetColIndex, newRowsCount, skipCells }
   Add "rowIndex-colIndex" keys to ctx.skipCells to skip specific cells.
 
+beforePageChangeCallback
+  Signature: (ctx: BeforePageChangeContext<T>) => boolean | number | void | Promise<…>
+  Runs before a user action swaps the displayed rows: pager buttons, page-size
+  change, header sort and filter-row changes in server pagination.
+  ctx: { trigger: 'page' | 'pageSize' | 'sort' | 'filter', fromPage, toPage,
+  drafts }   (drafts = getDrafts(): every unsaved draft)
+  false → stay; nothing → continue; a number → go to that page instead.
+  Async OK: the pager is disabled (aria-busy) and further navigation ignored
+  while it is pending. Programmatic currentPage writes and infinite-scroll
+  loadMore skip it. Use: force "save before leaving the page", or allow
+  batch editing across pages.
+
 beforeFillCallback
   Signature: (ctx: FillContext<T>) => boolean | void | Promise<boolean | void>
   Runs when a fill-handle drag completes. Return false to cancel the fill.

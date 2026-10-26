@@ -30,7 +30,8 @@ import type {
 	GridShortcut,
 	GridRangeShortcut,
 	GridActionEventDetail,
-	GridEventMap
+	GridEventMap,
+	BeforePageChangeContext
 } from './interaction.js'
 
 // Editor type options
@@ -424,6 +425,8 @@ export type QuickGridProps<T> = {
 
 	// Fill handle (Excel-like autofill): `false` cancels the fill (async OK)
 	beforeFillCallback?: (ctx: FillContext<T>) => boolean | void | Promise<boolean | void>
+	// Before a user action swaps the rows (pager, page size, server-mode sort / filter row): false → stay, a number → that page (async OK)
+	beforePageChangeCallback?: (ctx: BeforePageChangeContext<T>) => boolean | number | void | Promise<boolean | number | void>
 
 	// Cell range selection
 	cellSelectionMode?: CellSelectionMode  // How to select cell ranges: 'disabled', 'click' (default), 'shift'
@@ -521,7 +524,7 @@ export type SortState = {
 }
 
 // What triggered the data request
-export type DataRequestTrigger = 'sort' | 'page' | 'pageSize' | 'init' | 'loadMore'
+export type DataRequestTrigger = 'sort' | 'page' | 'pageSize' | 'filter' | 'init' | 'loadMore'
 
 // How to handle the data response
 export type DataRequestMode = 'replace' | 'append'

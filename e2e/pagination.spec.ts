@@ -178,3 +178,119 @@ test.describe("paginationMode 'server'", () => {
 		expect(reqs[0]).toMatchObject({ trigger: 'sort', sort: [{ column: 'name', direction: 'asc' }] })
 	})
 })
+
+test.describe('beforePageChangeCallback', () => {
+	/** Installs a hook recording its ctx; `answer` is what it returns (a Promise for 'async'). */
+	async function hook(page: Page, id: string, answer: unknown) {
+		await onGrid(page, (el, ) => {
+			const w = window as any
+			w.__pc = []
+			el.beforePageChangeCallback = (ctx: any) => {
+				w.__pc.push({ trigger: ctx.trigger, fromPage: ctx.fromPage, toPage: ctx.toPage, drafts: ctx.drafts.length, hasController: !!ctx.controller })
+				const a = w.__pcAnswer
+				if (a === 'async') return new Promise(r => { w.__pcResolve = r })
+				return a
+			}
+		}, id)
+		await page.evaluate(a => { (window as any).__pcAnswer = a }, answer as any)
+	}
+	const calls = (page: Page) => page.evaluate(() => (window as any).__pc)
+
+	test('pager buttons: ctx { trigger: page, fromPage, toPage, drafts }; nothing returned → continue', async ({ page }) => {
+		await hook(page, 'grid', undefined)
+		await btn(page, 'next').click()
+		await expect(info(page)).toContainText('Page 2 of 5')
+		expect(await calls(page)).toEqual([{ trigger: 'page', fromPage: 1, toPage: 2, drafts: 0, hasController: true }])
+		await btn(page, 'prev').click()
+		expect((await calls(page))[1]).toMatchObject({ fromPage: 2, toPage: 1 })
+	})
+
+	test('false → stay on the page (no data-request)', async ({ page }) => {
+		await hook(page, 'grid', false)
+		await clearEvents(page, 'pagination')
+		await btn(page, 'next').click()
+		await expect(info(page)).toContainText('Page 1 of 5')
+		expect(await domEvents(page, 'data-request', 'grid')).toEqual([])
+	})
+
+	test('a number → go to that page instead', async ({ page }) => {
+		await hook(page, 'grid', 4)
+		await btn(page, 'next').click()
+		await expect(info(page)).toContainText('Page 4 of 5')
+	})
+
+	test('page-size change: trigger pageSize, toPage 1; false keeps the size and the select', async ({ page }) => {
+		await hook(page, 'grid', false)
+		const select = pag(page).locator('.wg__pagination-select')
+		await select.selectOption('10')
+		expect(await calls(page)).toEqual([expect.objectContaining({ trigger: 'pageSize', fromPage: 1, toPage: 1 })])
+		expect(await onGrid(page, el => el.pageSize)).toBe(5)
+		await expect(select).toHaveValue('5')
+	})
+
+	test('async: the pager is disabled while pending, a second click is ignored, then it continues', async ({ page }) => {
+		await hook(page, 'grid', 'async')
+		await btn(page, 'next').click()
+		await expect(btn(page, 'next')).toBeDisabled()
+		await expect(pag(page).locator('.wg__pagination-select')).toBeDisabled()
+		await expect(pag(page)).toHaveAttribute('aria-busy', 'true')
+		// even a forced click (disabled attribute removed) is ignored while pending
+		await onGrid(page, el => { const b = el.shadowRoot.querySelector('.wg__pagination-btn[data-action="next"]'); b.disabled = false; b.click() })
+		expect(await calls(page)).toHaveLength(1)
+		await page.evaluate(() => (window as any).__pcResolve())
+		await expect(info(page)).toContainText('Page 2 of 5')
+		await expect(btn(page, 'next')).toBeEnabled()
+		await expect(pag(page)).not.toHaveAttribute('aria-busy', 'true')
+	})
+
+	test('async false → stays and re-enables the pager', async ({ page }) => {
+		await hook(page, 'grid', 'async')
+		await btn(page, 'next').click()
+		await page.evaluate(() => (window as any).__pcResolve(false))
+		await expect(btn(page, 'next')).toBeEnabled()
+		await expect(info(page)).toContainText('Page 1 of 5')
+	})
+
+	test('programmatic currentPage writes skip it; a client-mode sort skips it', async ({ page }) => {
+		await hook(page, 'grid', false)
+		await onGrid(page, el => { el.currentPage = 3; el.sortMode = 'single' })
+		await expect(info(page)).toContainText('Page 3 of 5')
+		await gridLocator(page).locator('thead th.wg__header[data-field="name"] .wg__sort-indicator').click()
+		expect(await calls(page)).toEqual([])
+	})
+
+	test('server mode: a header sort runs it (trigger sort, toPage 1); false keeps the sort', async ({ page }) => {
+		await hook(page, 'server', false)
+		await onGrid(page, el => { el.sortMode = 'single' }, 'server')
+		await btn(page, 'next', 'server').click()   // hook says false → stays on 1
+		await page.evaluate(() => { (window as any).__pc = []; })
+		await clearEvents(page, 'pagination')
+		await gridLocator(page, 'server').locator('thead th.wg__header[data-field="name"] .wg__sort-indicator').click()
+		expect(await calls(page)).toEqual([expect.objectContaining({ trigger: 'sort', fromPage: 1, toPage: 1 })])
+		expect(await onGrid(page, el => el.sort, 'server')).toEqual([])
+		expect(await domEvents(page, 'data-request', 'server')).toEqual([])
+		// allowed → sorted + data-request
+		await page.evaluate(() => { (window as any).__pcAnswer = undefined })
+		await gridLocator(page, 'server').locator('thead th.wg__header[data-field="name"] .wg__sort-indicator').click()
+		expect(await onGrid(page, el => el.sort, 'server')).toEqual([{ column: 'name', direction: 'asc' }])
+		expect(await domEvents(page, 'data-request', 'server')).toEqual([expect.objectContaining({ trigger: 'sort' })])
+	})
+
+	test('ctx.drafts lists unsaved drafts (force "save before leaving the page")', async ({ page }) => {
+		await onGrid(page, el => { el.isEditable = true; el.columns = el.columns.map((c: any) => c.field === 'name' ? { ...c, editor: 'text' } : c) })
+		await hook(page, 'grid', undefined)
+		await page.evaluate(() => {
+			const el = document.getElementById('grid') as any
+			el.beforePageChangeCallback = (ctx: any) => ctx.drafts.length === 0
+		})
+		await cell(page, 0, 1).dblclick()
+		await page.keyboard.type('!')
+		await page.keyboard.press('Enter')
+		await expect.poll(() => onGrid(page, el => el.getDrafts().length)).toBe(1)
+		await btn(page, 'next').click()
+		await expect(info(page)).toContainText('Page 1 of 5')
+		await onGrid(page, el => el.discardAllDrafts())
+		await btn(page, 'next').click()
+		await expect(info(page)).toContainText('Page 2 of 5')
+	})
+})

@@ -134,6 +134,13 @@ handlers: `onpaste`, `onbeforepaste`, `onselect`).
   Drafts are never pruned when `items` is set (server paging: a missing row is another page) —
   they leave via `replaceRowById`, `discardDraft`, `discardRowDraft`, `discardAllDrafts`. Server
   paging + editing without a usable row id logs a warning once.
+- **`beforePageChangeCallback(ctx)`** — runs before a user action swaps the rows: pager buttons,
+  page-size change, header sort (and filter-row changes) in server pagination. ctx = the grid ctx +
+  `{ trigger: 'page' | 'pageSize' | 'sort' | 'filter', fromPage, toPage, drafts }`. `false` stays,
+  a number goes to that page instead; async OK — the pager is disabled (`aria-busy`) and a second
+  navigation ignored while pending. Programmatic `currentPage` writes and `loadMore` skip it. Use it
+  to force "save before leaving the page" (`ctx.drafts`) or to allow batch editing across pages.
+  `DataRequestTrigger` gains `'filter'`.
 - `el.controller` (`GridController`) incl. `insertRow`, `removeRows`, `duplicateRow`,
   `moveRow`, `expandSubtree` / `collapseSubtree`, `selectColumn*`, `closeContextMenu`,
   `closeToolbar`; `createDuplicateRowCallback`; `labels.actions` (built-in texts);
@@ -168,8 +175,10 @@ handlers: `onpaste`, `onbeforepaste`, `onselect`).
   (`getTooltipCallback` / `tooltipMember`) or a cell value could close `data-tooltip="…"` /
   `value="…"` and inject attributes. `"` and `'` are escaped everywhere now (a quoted value also
   reached the text editor truncated).
-- A filter (or a shorter `items`) on a later client page rendered an empty grid with "Page 3 of 1";
-  `currentPage` is clamped to the last page now.
+- A filter (or a shorter `items`) on a later client page rendered an empty grid with "Page 3 of 1".
+  A filter change (`setFilter` / `filters`) now goes back to page 1 — a page set in the same task
+  (a restored page + filter) is kept; a shorter `items` clamps `currentPage` to the last page.
+  A header-menu sort resets to page 1 like a header click.
 - Opening an editor and cancelling (or committing the unchanged value) left a phantom draft —
   `isRowDirty` / `hasRowDraft` / `getDraftRowIndices()` reported the clean row as dirty; `isRowDirty` is
   value-based now. The row-number dirty marker updates right after a commit (it waited for an

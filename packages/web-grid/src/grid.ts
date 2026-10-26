@@ -54,7 +54,8 @@ import type {
 	GridActionEventDetail,
 	GridEventMap,
 	GridEventName,
-	DraftInfo
+	DraftInfo,
+	BeforePageChangeContext
 } from './interaction.js'
 
 // Internal tree index — built from items when treePathMember is set
@@ -247,6 +248,9 @@ export class GridEngine<T = unknown> {
 	// Fill handle
 	protected _fillDirection: FillDirection = 'vertical'
 	protected _beforeFillCallback: ((ctx: FillContext<T>) => boolean | void | Promise<boolean | void>) | undefined = undefined
+	protected _beforePageChangeCallback: ((ctx: BeforePageChangeContext<T>) => boolean | number | void | Promise<boolean | number | void>) | undefined = undefined
+	/** A `beforePageChangeCallback` is pending — the pager is disabled, further navigation ignored. */
+	isPageChangePending: boolean = false
 
 	// ==========================================================================
 	// Callbacks
@@ -271,6 +275,7 @@ export class GridEngine<T = unknown> {
 
 	// Pagination
 	protected _currentPage: number = 1
+	protected _isPageSetInTask: boolean = false
 	protected _totalItems: number | null = null  // null = use items.length (client-side)
 	protected _isPaginationVisible: boolean | 'auto' = true
 	protected _paginationPosition: string = 'bottom-center'
@@ -862,6 +867,10 @@ export class GridEngine<T = unknown> {
 	set currentPage(value: number) {
 		dataLogger.debug('page changed:', value)
 		this._currentPage = value
+		// A page set in the same task as a filter change wins over the filter's
+		// page-1 reset (a restored page + filter at init survive together).
+		this._isPageSetInTask = true
+		queueMicrotask(() => { this._isPageSetInTask = false })
 		this.requestUpdate()
 	}
 
@@ -1098,6 +1107,11 @@ export class GridEngine<T = unknown> {
 	get fillDirection(): FillDirection { return this._fillDirection }
 	set fillDirection(value: FillDirection) {
 		this._fillDirection = value
+	}
+
+	get beforePageChangeCallback(): ((ctx: BeforePageChangeContext<T>) => boolean | number | void | Promise<boolean | number | void>) | undefined { return this._beforePageChangeCallback }
+	set beforePageChangeCallback(value: ((ctx: BeforePageChangeContext<T>) => boolean | number | void | Promise<boolean | number | void>) | undefined) {
+		this._beforePageChangeCallback = value
 	}
 
 	get beforeFillCallback(): ((ctx: FillContext<T>) => boolean | void | Promise<boolean | void>) | undefined { return this._beforeFillCallback }
@@ -2161,20 +2175,38 @@ export class GridEngine<T = unknown> {
 
 	get filters(): Record<string, string> { return { ...this._filters } }
 	set filters(value: Record<string, string>) {
+		const prev = this._filters
 		this._filters = { ...value }
+		this.resetPageAfterFilterChange(prev)
 		this.notify('filter-change', { filters: { ...this._filters } })
 		this.requestUpdate()
 	}
 
 	setFilter(field: string, value: string): void {
+		const prev = this._filters
 		if (value) this._filters = { ...this._filters, [field]: value }
 		else {
 			const next = { ...this._filters }
 			delete next[field]
 			this._filters = next
 		}
+		this.resetPageAfterFilterChange(prev)
 		this.notify('filter-change', { filters: { ...this._filters } })
 		this.requestUpdate()
+	}
+
+	/**
+	 * A filter change shows a different row set → back to page 1 — unless the page
+	 * was set in the same task (a page + filter restored together keep the page).
+	 */
+	private resetPageAfterFilterChange(prev: Record<string, string>): void {
+		const isSame = (a: Record<string, string>, b: Record<string, string>) => {
+			const norm = (o: Record<string, string>) => Object.entries(o).filter(([, v]) => !!v)
+			const ea = norm(a), eb = norm(b)
+			return ea.length === eb.length && ea.every(([k, v]) => b[k] === v)
+		}
+		if (isSame(prev, this._filters) || this._isPageSetInTask) return
+		this._currentPage = 1
 	}
 
 	get sortedItems(): T[] {

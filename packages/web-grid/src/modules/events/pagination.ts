@@ -3,10 +3,12 @@
 // =============================================================================
 
 import type { GridHost } from '../grid-context.js'
+import { guardPageChange } from './page-change.js'
 
 /**
- * Handle pagination button click (first, prev, next, last).
- * Returns true if page changed (caller should re-render).
+ * Handle pagination button click (first, prev, next, last) — through
+ * `beforePageChangeCallback` (trigger 'page'). Returns true if the page changed
+ * synchronously (caller should re-render); an async hook applies + renders itself.
  */
 export function handlePaginationClick<T>(ctx: GridHost<T>, e: Event): boolean {
 	const target = e.target as HTMLElement
@@ -14,43 +16,35 @@ export function handlePaginationClick<T>(ctx: GridHost<T>, e: Event): boolean {
 	if (!btn || btn.hasAttribute('disabled')) return false
 
 	const action = btn.dataset.action
-	let pageChanged = false
+	const engine = ctx.engine
+	const current = engine.currentPage
+	let toPage = current
 
-	if (action === 'first' && ctx.engine.currentPage !== 1) {
-		ctx.engine.currentPage = 1
-		pageChanged = true
-	} else if (action === 'prev' && ctx.engine.currentPage > 1) {
-		ctx.engine.currentPage--
-		pageChanged = true
-	} else if (action === 'next' && ctx.engine.currentPage < ctx.engine.totalPages) {
-		ctx.engine.currentPage++
-		pageChanged = true
-	} else if (action === 'last' && ctx.engine.currentPage !== ctx.engine.totalPages) {
-		ctx.engine.currentPage = ctx.engine.totalPages
-		pageChanged = true
-	}
+	if (action === 'first') toPage = 1
+	else if (action === 'prev') toPage = Math.max(1, current - 1)
+	else if (action === 'next') toPage = Math.min(engine.totalPages, current + 1)
+	else if (action === 'last') toPage = engine.totalPages
 
-	if (pageChanged) {
-		ctx.engine.fireDataRequest('page')
-	}
+	if (toPage === current) return false
 
-	return pageChanged
+	return guardPageChange(ctx, 'page', toPage, page => {
+		engine.currentPage = page
+		engine.fireDataRequest('page')
+	})
 }
 
 /**
- * Handle page size select change.
- * Returns true if page size changed (caller should re-render).
+ * Handle page size select change — through `beforePageChangeCallback` (trigger
+ * 'pageSize', toPage 1). Returns true if the page size changed synchronously.
  */
 export function handlePageSizeChange<T>(ctx: GridHost<T>, select: HTMLSelectElement): boolean {
 	const newPageSize = parseInt(select.value, 10)
-	if (newPageSize !== ctx.engine.pageSize) {
+	if (newPageSize === ctx.engine.pageSize) return false
+	return guardPageChange(ctx, 'pageSize', 1, page => {
 		ctx.setAttributes({ pageSize: newPageSize })
-		// Reset to page 1 when page size changes
-		ctx.engine.currentPage = 1
+		ctx.engine.currentPage = page
 		ctx.engine.fireDataRequest('pageSize')
-		return true
-	}
-	return false
+	})
 }
 
 /**

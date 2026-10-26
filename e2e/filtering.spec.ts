@@ -78,10 +78,30 @@ test.describe('client filtering', () => {
 		await expect(gridLocator(page).locator('.wg__pagination-info')).toContainText('Page 1 of 1')
 	})
 
-	test('a filter that still leaves the current page keeps it (clamp, not reset)', async ({ page }) => {
+	test('a later filter change goes back to page 1 even when the current page still exists', async ({ page }) => {
 		await onGrid(page, el => { el.isPageable = true; el.pageSize = 1; el.currentPage = 2 })
 		await onGrid(page, el => el.setFilter('city', 'brno'))  // 2 matches → 2 pages
 		await expect(rowCount(page)).toHaveCount(1)
+		expect(await onGrid(page, el => el.currentPage)).toBe(1)
+		// the same filter again is no change → the page stays
+		await onGrid(page, el => { el.currentPage = 2 })
+		await onGrid(page, el => { el.filters = { city: 'brno' } })
+		expect(await onGrid(page, el => el.currentPage)).toBe(2)
+	})
+
+	test('a page + filter restored together keep the page (either order)', async ({ page }) => {
+		await onGrid(page, el => { el.isPageable = true; el.pageSize = 1; el.filters = { city: 'brno' }; el.currentPage = 2 })
+		await expect(cell(page, 0, 1)).toHaveText('Eva Martinez')
+		expect(await onGrid(page, el => el.currentPage)).toBe(2)
+		await onGrid(page, el => { el.filters = {}; el.currentPage = 1 })
+		await onGrid(page, el => { el.currentPage = 3; el.setFilter('city', 'prague') })
+		expect(await onGrid(page, el => el.currentPage)).toBe(3)
+	})
+
+	test('items shrinking clamps the page (no reset)', async ({ page }) => {
+		await onGrid(page, el => { el.isPageable = true; el.pageSize = 2; el.currentPage = 3 })
+		await onGrid(page, el => { el.items = el.items.slice(0, 4) })
+		await expect(rowCount(page)).toHaveCount(2)
 		expect(await onGrid(page, el => el.currentPage)).toBe(2)
 	})
 })

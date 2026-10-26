@@ -3,6 +3,8 @@
 // =============================================================================
 
 import type { GridHost } from '../grid-context.js'
+import type { SortState } from '../../types.js'
+import { guardPageChange } from './page-change.js'
 
 /**
  * Handle header click for sorting.
@@ -56,14 +58,24 @@ export function handleSortClick<T>(ctx: GridHost<T>, e: MouseEvent, field?: stri
 		}
 	}
 
-	// Update sort state
-	ctx.engine.sort = currentSort
+	applySort(ctx, currentSort)
+}
 
-	// Reset to page 1 on sort change
-	if (ctx.engine.isPageable) {
-		ctx.engine.currentPage = 1
+/**
+ * Apply a user sort: page 1 (when pageable) + `data-request` (trigger 'sort'). In
+ * server pagination the rows are swapped, so it runs through
+ * `beforePageChangeCallback` first (trigger 'sort'; `false` keeps the old sort).
+ */
+export function applySort<T>(ctx: GridHost<T>, nextSort: SortState[]): void {
+	const engine = ctx.engine
+	const apply = (page: number) => {
+		engine.sort = nextSort
+		if (engine.isPageable) engine.currentPage = page
+		engine.fireDataRequest('sort')
 	}
-
-	// Fire data request event if handler exists
-	ctx.engine.fireDataRequest('sort')
+	if (engine.paginationMode === 'server' && engine.isPageable) {
+		guardPageChange(ctx, 'sort', 1, apply)
+	} else {
+		apply(1)
+	}
 }

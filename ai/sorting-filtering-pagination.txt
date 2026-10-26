@@ -234,15 +234,21 @@ DataRequestDetail type:
     skip: number                // Items to skip (offset for server query)
   }
 
-  DataRequestTrigger: 'sort' | 'page' | 'pageSize' | 'init' | 'loadMore'
+  DataRequestTrigger: 'sort' | 'page' | 'pageSize' | 'filter' | 'init' | 'loadMore'
   DataRequestMode: 'replace' | 'append'
 
 The trigger field tells you what changed:
   'sort'     -- user clicked a sortable header or used a header-menu sort
   'page'     -- user navigated to a different page
   'pageSize' -- user changed the page size selector
+  'filter'   -- user changed a filter-row input (server pagination; page 1)
   'init'     -- initial data load (if triggered programmatically)
   'loadMore' -- infinite scroll requested more items
+
+Before a user page change (pager, page size, server-mode sort / filter row)
+beforePageChangeCallback(ctx) runs: false stays, a number goes to that page
+(see callbacks-events.txt). A filter change resets currentPage to 1 (a page
+set in the same task wins — restored page + filter); a shorter items clamps.
 
 The mode field tells you how to apply the response:
   'replace'  -- replace grid.items with the response (normal case)

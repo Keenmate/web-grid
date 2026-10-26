@@ -296,6 +296,24 @@ export interface PaginationLabelsContext<T = any> extends GridContext<T> {
 	pageSize: number
 }
 
+/** What swapped the rows — `beforePageChangeCallback` ctx `trigger`. */
+export type PageChangeTrigger = 'page' | 'pageSize' | 'sort' | 'filter'
+
+/**
+ * ctx of `beforePageChangeCallback` — a user action is about to swap the displayed rows
+ * (pager button, page-size change, header sort / filter-row change in server mode).
+ * Return `false` to stay, a page number to go there instead; may be async (the pager is
+ * disabled while it is pending).
+ */
+export interface BeforePageChangeContext<T = any> extends GridContext<T> {
+	trigger: PageChangeTrigger
+	fromPage: number
+	/** The page the action leads to (1 for page-size / sort / filter changes). */
+	toPage: number
+	/** Every unsaved draft (`getDrafts()`) — e.g. force "save before leaving the page". */
+	drafts: DraftInfo<T>[]
+}
+
 /** One unsaved draft — `getDrafts()`, `ctx.drafts` of the summary / `beforePageChangeCallback`. */
 export interface DraftInfo<T = any> {
 	/** The row: the current `items` row with that identity, else the row the draft was made from. */

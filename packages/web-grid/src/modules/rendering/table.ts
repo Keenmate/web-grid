@@ -648,6 +648,8 @@ export function renderPagination<T>(ctx: GridHost<T>, position: string = 'bottom
 	const currentPage = ctx.engine.currentPage
 	const totalPages = ctx.engine.totalPages
 	const currentPageSize = ctx.engine.pageSize
+	// A pending beforePageChangeCallback disables the whole pager
+	const isPending = ctx.engine.isPageChangePending
 	const pageSizes = ctx.engine.pageSizes
 	// Use totalItems if provided (server-side), otherwise use local item count
 	const totalItems = ctx.engine.totalItems !== null
@@ -689,22 +691,22 @@ export function renderPagination<T>(ctx: GridHost<T>, position: string = 'bottom
 	// Build element HTML fragments
 	const elements: Record<string, string> = {
 		first: `
-			<button class="wg__pagination-btn" data-action="first" ${currentPage === 1 ? 'disabled' : ''}>
+			<button class="wg__pagination-btn" data-action="first" ${currentPage === 1 || isPending ? 'disabled' : ''}>
 				${labels.first}
 			</button>
 		`,
 		previous: `
-			<button class="wg__pagination-btn" data-action="prev" ${currentPage === 1 ? 'disabled' : ''}>
+			<button class="wg__pagination-btn" data-action="prev" ${currentPage === 1 || isPending ? 'disabled' : ''}>
 				${labels.previous}
 			</button>
 		`,
 		next: `
-			<button class="wg__pagination-btn" data-action="next" ${currentPage === totalPages ? 'disabled' : ''}>
+			<button class="wg__pagination-btn" data-action="next" ${currentPage === totalPages || isPending ? 'disabled' : ''}>
 				${labels.next}
 			</button>
 		`,
 		last: `
-			<button class="wg__pagination-btn" data-action="last" ${currentPage === totalPages ? 'disabled' : ''}>
+			<button class="wg__pagination-btn" data-action="last" ${currentPage === totalPages || isPending ? 'disabled' : ''}>
 				${labels.last}
 			</button>
 		`,
@@ -716,7 +718,7 @@ export function renderPagination<T>(ctx: GridHost<T>, position: string = 'bottom
 		`,
 		pageSize: pageSizes.length > 0 ? `
 			<div class="wg__pagination-pagesize">
-				<select class="wg__pagination-select" data-action="pagesize">
+				<select class="wg__pagination-select" data-action="pagesize" ${isPending ? 'disabled' : ''}>
 					${pageSizes.map(size =>
 						`<option value="${size}" ${size === currentPageSize ? 'selected' : ''}>${size}</option>`
 					).join('')}
@@ -730,7 +732,7 @@ export function renderPagination<T>(ctx: GridHost<T>, position: string = 'bottom
 	const layout = ctx.engine.paginationLayout.split('|').map(s => s.trim())
 	const content = layout.map(part => elements[part] || '').join('')
 
-	return `<div class="${classes.join(' ')}">${content}</div>`
+	return `<div class="${classes.join(' ')}"${isPending ? ' aria-busy="true"' : ''}>${content}</div>`
 }
 
 /**

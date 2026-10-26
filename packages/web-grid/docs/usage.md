@@ -116,7 +116,8 @@ The `QuickGridProps<T>` type defined in `src/types.ts` is the canonical source o
 | `pageSize` | `number` | `10` | Rows per page |
 | `pageSizes` | `number[]` | — | Available page sizes for the page-size selector |
 | `paginationMode` | `'client' \| 'server'` | `'client'` | Client slices `items`; server treats `items` as the current page |
-| `currentPage` | `number` | `1` | Current page (1-based) |
+| `currentPage` | `number` | `1` | Current page (1-based). A filter change resets it to 1 (unless set in the same task — a restored page + filter keep the page); a shorter `items` clamps it |
+| `beforePageChangeCallback` | `(ctx: { trigger, fromPage, toPage, drafts }) => boolean \| number \| void \| Promise<…>` | — | Runs before a user action swaps the rows — pager buttons, page-size change, header sort / filter-row change in server mode (`trigger`: `'page'` / `'pageSize'` / `'sort'` / `'filter'`). `false` → stay, a number → go to that page instead; async OK (the pager is disabled meanwhile). Programmatic `currentPage` writes and `loadMore` skip it |
 | `totalItems` | `number \| null` | `null` | Total item count for server-side pagination |
 | `isPaginationVisible` | `boolean \| 'auto'` | `'auto'` | `'auto'` hides the pager when there is ≤ 1 page |
 | `paginationPosition` | `string` | `'bottom-center'` | Position(s): e.g. `'top-right\|bottom-right'` for multiple |
@@ -644,6 +645,7 @@ grid.getRowClassCallback = ({ row, controller }) =>
 | `beforeActionCallback` | the `action` detail | `false` cancels the item (async OK) |
 | `beforeContextMenuOpenCallback` / `beforeHeaderMenuOpenCallback` | cell ctx / `HeaderMenuContext` | `false` → no grid menu; an entries array → shown instead (sync) |
 | `beforeFillCallback` | `{ sourceCell, targetCells, direction }` | `false` cancels the fill (async OK) |
+| `beforePageChangeCallback` | `{ trigger, fromPage, toPage, drafts }` | `false` stays, a number goes to that page instead (async OK) |
 | `beforePasteCallback` | `{ rawText, parsedRows, hasHeaders, headerMapping, targetRowIndex, targetColIndex, newRowsCount, skipCells }` | `false` cancels the paste (async OK); add `"rowIndex-colIndex"` keys to `skipCells` to skip cells |
 
 ### Events

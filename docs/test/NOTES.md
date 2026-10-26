@@ -86,6 +86,8 @@ API-only? `filtering.spec.ts` covers the API path only.
 
 ## 5. A filter change does not reset / clamp `currentPage` — FIXED
 
+**Follow-up (decided):** a filter change (`setFilter` / `filters`) goes to page 1; `items` shrinking still clamps. A page set in the same task as the filter keeps the page (restored page + filter at init).
+
 **Fixed:** client pagination clamps `currentPage` to the last page when the view shrinks (a filter, or a shorter `items`) — clamp rather than reset, so a page that still exists is kept and a restored page + filter set at init survives until the items arrive.
 
 **Where:** `grid.ts:2087` (`setFilter`) and `:2081` (`filters` setter) — neither
