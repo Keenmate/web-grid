@@ -1,103 +1,64 @@
 /**
- * Logging configuration using loglevel with categorized loggers
+ * Categorized loggers for @keenmate/web-grid — a thin shim over the core logging
+ * module (`@keenmate/web-components-core`, SPEC §12.1). Core owns the vendored
+ * `loglevel` engine and the colour-coded `%c` prefix; the grid's private copy
+ * under `src/vendor/loglevel` is gone.
  *
- * Categories:
- * - GRID:INIT: Component initialization and configuration
- * - GRID:DATA: Data loading, sorting, filtering, pagination
- * - GRID:UI: UI updates, rendering, scroll, resize operations
- * - GRID:INTERACTION: User interactions, clicks, selections, keyboard events
+ * Categories (`GRID:*`):
+ * - INIT        — component initialization and configuration
+ * - DATA        — data loading, sorting, filtering, pagination, persistence
+ * - UI          — rendering, scroll, resize
+ * - INTERACTION — clicks, selections, keyboard
+ * - PERF        — render / tree-toggle timings
  *
- * Usage:
- * - By default, all logging is disabled (silent mode) for production
- * - Enable logging in browser console:
- *   ```javascript
- *   // Enable all logging at debug level
- *   window.components['web-grid'].logging.enableLogging();
+ * Every category defaults to `warn` (core's `DEFAULT_LOG_LEVEL`; a persisted
+ * `km-log:*` level wins). Switch at runtime from the console:
  *
- *   // Or set a specific log level for all categories
- *   window.components['web-grid'].logging.setLogLevel('info');
- *
- *   // Or enable/disable specific categories
- *   window.components['web-grid'].logging.disableLogging();  // First disable all
- *   window.components['web-grid'].logging.setCategoryLevel('GRID:UI', 'debug');
- *   window.components['web-grid'].logging.setCategoryLevel('GRID:DATA', 'info');
- *   ```
+ * ```js
+ * window.components['web-grid'].logging.enableLogging()          // every category → debug
+ * window.components['web-grid'].logging.setLogLevel('info')      // every category → info
+ * window.components['web-grid'].logging.setCategoryLevel('DATA', 'debug')
+ * window.components.logging                                      // page-wide switch (all components)
+ * ```
  */
+import { createLoggers, type Logger, type LogLevelDesc } from '@keenmate/web-components-core'
 
-// Import vendored libraries via ES module wrappers
-// @ts-ignore - Vendored library without type definitions
-import log from './vendor/loglevel/index.js'
-// @ts-ignore - Vendored library without type definitions
-import prefix from './vendor/loglevel/prefix.js'
-
-// Register prefix plugin with the root logger
-prefix.reg(log)
-
-// Plain-text prefix. Console color-styling via %c was attempted earlier but the
-// CSS color args were never injected (the methodFactory check ran before the
-// plugin had prepended its %c-laden prefix), so the codes leaked through as
-// literal text. Plain prefix is reliable across browsers and easier to read.
-prefix.apply(log, {
-	format(level: string, name: string | undefined, timestamp: string) {
-		return `[${timestamp}] [${level}]${name ? ` [${name}]` : ''}`
-	},
-	timestampFormatter(date: Date) {
-		// Format: HH:MM:SS.mmm
-		return date.toTimeString().split(' ')[0] + '.' + date.getMilliseconds().toString().padStart(3, '0')
-	}
-})
-
-// Set default log level to silent (production mode)
-log.setLevel('silent')
-
-// Create category-specific loggers with hierarchical naming
-export const initLogger = log.getLogger('GRID:INIT')
-export const dataLogger = log.getLogger('GRID:DATA')
-export const uiLogger = log.getLogger('GRID:UI')
-export const interactionLogger = log.getLogger('GRID:INTERACTION')
-export const perfLogger = log.getLogger('GRID:PERF')
-
-// Export the default logger
-export default log
+const CATEGORIES = ['INIT', 'DATA', 'UI', 'INTERACTION', 'PERF'] as const
+type Category = (typeof CATEGORIES)[number]
 
 /**
- * List of all logging categories for introspection
+ * The grid's core logger bundle. Registered with `registerComponent` (which
+ * publishes it on `window.components['web-grid'].logging` and lets `BlissElement`
+ * build the per-instance `this.log`).
  */
-export const LOGGING_CATEGORIES = [
-	'GRID:INIT',
-	'GRID:DATA',
-	'GRID:UI',
-	'GRID:INTERACTION',
-	'GRID:PERF'
-]
+export const logging = createLoggers('GRID', CATEGORIES)
 
-/**
- * Enable all logging (set to debug level)
- */
-export function enableLogging() {
-	log.setLevel('debug')
+export const initLogger: Logger = logging.loggers.INIT
+export const dataLogger: Logger = logging.loggers.DATA
+export const uiLogger: Logger = logging.loggers.UI
+export const interactionLogger: Logger = logging.loggers.INTERACTION
+export const perfLogger: Logger = logging.loggers.PERF
+
+/** The category names (bare, as `setCategoryLevel` takes them). */
+export const LOGGING_CATEGORIES: readonly Category[] = CATEGORIES
+
+/** Enable every category (default level `debug`). */
+export function enableLogging(level?: LogLevelDesc): void {
+	logging.enableLogging(level)
 }
 
-/**
- * Disable all logging (set to silent level)
- */
-export function disableLogging() {
-	log.setLevel('silent')
+/** Silence every category. */
+export function disableLogging(): void {
+	logging.disableLogging()
 }
 
-/**
- * Set log level for all loggers
- * @param level Log level to set ('trace' | 'debug' | 'info' | 'warn' | 'error' | 'silent')
- */
-export function setLogLevel(level: string) {
-	log.setLevel(level)
+/** Set the same level on every category. */
+export function setLogLevel(level: LogLevelDesc): void {
+	logging.setLogLevel(level)
 }
 
-/**
- * Set log level for a specific category
- * @param category Category logger to configure (e.g., 'GRID:UI')
- * @param level Log level to set ('trace' | 'debug' | 'info' | 'warn' | 'error' | 'silent')
- */
-export function setCategoryLevel(category: string, level: string) {
-	log.getLogger(category).setLevel(level)
+/** Set the level of one category (`'DATA'`; the prefixed `'GRID:DATA'` is accepted too). */
+export function setCategoryLevel(category: string, level: LogLevelDesc = 'debug'): void {
+	const bare = (category.includes(':') ? category.split(':').pop()! : category) as Category
+	logging.setCategoryLevel(bare, level)
 }

@@ -1289,7 +1289,7 @@ export class GridEngine<T = unknown> {
 	get isNewRowEnabled(): boolean { return this._isNewRowEnabled }
 	set isNewRowEnabled(value: boolean) {
 		if (value && !this.isNavigateMode) {
-			console.warn('[WebGrid] Empty row requires navigate mode (editTrigger: "navigate"). Tab navigation will not work correctly without it.')
+			initLogger.warn('Empty row requires navigate mode (editTrigger: "navigate"). Tab navigation will not work correctly without it.')
 		}
 		this._isNewRowEnabled = value
 		this._emptyRowDraft = null  // Reset draft when feature is toggled
@@ -1354,8 +1354,8 @@ export class GridEngine<T = unknown> {
 		if (!this._isEditable) return
 		if (this._idMember || this._treePathMember) return
 		this._hasWarnedAboutMissingRowId = true
-		console.warn(
-			'[WebGrid] editable grid has no `idMember` (and no `treePathMember`). ' +
+		initLogger.warn(
+			'editable grid has no `idMember` (and no `treePathMember`). ' +
 			'Internal state (drafts, invalid-cell markers) will be keyed by displayed index, ' +
 			'so re-ordering (sort, filter, pagination) can move state to the wrong row. ' +
 			'Set `idMember` to the field that uniquely identifies each row.'
@@ -2260,7 +2260,7 @@ export class GridEngine<T = unknown> {
 					this._emptyRowDraft = row
 					this.requestUpdate()
 				}).catch(err => {
-					console.warn('WebGrid: createEmptyRowCallback failed', err)
+					dataLogger.warn('createEmptyRowCallback failed', err)
 				})
 				return {} as T
 			}
@@ -2379,8 +2379,8 @@ export class GridEngine<T = unknown> {
 	 */
 	protected checkSelectionConflicts(): void {
 		if (this._cellSelectionMode === 'click' && this._editTrigger === 'click') {
-			console.warn(
-				'WebGrid: cellSelectionMode="click" conflicts with editTrigger="click". ' +
+			initLogger.warn(
+				'cellSelectionMode="click" conflicts with editTrigger="click". ' +
 				'Cell range selection takes priority. Use Shift+click to enter edit mode, ' +
 				'or change to cellSelectionMode="shift" to avoid confusion.'
 			)
@@ -2392,8 +2392,8 @@ export class GridEngine<T = unknown> {
 	 */
 	protected checkEditTriggerConflicts(): void {
 		if (!this._isEditable && this._editTrigger === 'always') {
-			console.warn(
-				'%cWebGrid: editTrigger="always" is not supported in read-only mode (isEditable=false).\n' +
+			initLogger.warn(
+				'editTrigger="always" is not supported in read-only mode (isEditable=false).\n' +
 				'Supported editTrigger values in read-only mode: "navigate", "click", "dblclick".\n' +
 				'The grid may behave unexpectedly.',
 				'font-size: 14px; font-weight: bold;'
@@ -2408,59 +2408,52 @@ export class GridEngine<T = unknown> {
 		const pos = this._toolbarPosition
 		const isTopOrInline = pos === 'top' || pos === 'inline'
 		const isTop = pos === 'top'
-		const style = 'font-size: 14px; font-weight: bold;'
-
+		
 		// verticalAlign only matters for left/right/auto (side positions)
 		if (this._toolbarVerticalAlign !== 'bottom' && isTopOrInline) {
-			console.warn(
-				`%cWebGrid: toolbarVerticalAlign="${this._toolbarVerticalAlign}" has no effect with toolbarPosition="${pos}".\n` +
-				'verticalAlign only applies to side positions: "left", "right", or "auto".',
-				style
+			initLogger.warn(
+				`toolbarVerticalAlign="${this._toolbarVerticalAlign}" has no effect with toolbarPosition="${pos}".\n` +
+				'verticalAlign only applies to side positions: "left", "right", or "auto".'
 			)
 		}
 
 		// horizontalAlign only matters for top position
 		if (this._toolbarHorizontalAlign !== 'center' && !isTop) {
-			console.warn(
-				`%cWebGrid: toolbarHorizontalAlign="${this._toolbarHorizontalAlign}" has no effect with toolbarPosition="${pos}".\n` +
-				'horizontalAlign only applies to toolbarPosition="top".',
-				style
+			initLogger.warn(
+				`toolbarHorizontalAlign="${this._toolbarHorizontalAlign}" has no effect with toolbarPosition="${pos}".\n` +
+				'horizontalAlign only applies to toolbarPosition="top".'
 			)
 		}
 
 		// toolbarColumn only matters for top position
 		if (this._toolbarColumn !== undefined && !isTop) {
-			console.warn(
-				`%cWebGrid: toolbarColumn has no effect with toolbarPosition="${pos}".\n` +
-				'toolbarColumn only applies to toolbarPosition="top".',
-				style
+			initLogger.warn(
+				`toolbarColumn has no effect with toolbarPosition="${pos}".\n` +
+				'toolbarColumn only applies to toolbarPosition="top".'
 			)
 		}
 
 		// shouldToolbarFollowCursor only matters for top position
 		if (this._shouldToolbarFollowCursor && !isTop) {
-			console.warn(
-				`%cWebGrid: shouldToolbarFollowCursor has no effect with toolbarPosition="${pos}".\n` +
-				'shouldToolbarFollowCursor only applies to toolbarPosition="top".',
-				style
+			initLogger.warn(
+				`shouldToolbarFollowCursor has no effect with toolbarPosition="${pos}".\n` +
+				'shouldToolbarFollowCursor only applies to toolbarPosition="top".'
 			)
 		}
 
 		// getCellToolbarItemsCallback only matters for top position
 		if (this._getCellToolbarItemsCallback !== undefined && !isTop) {
-			console.warn(
-				`%cWebGrid: getCellToolbarItemsCallback has no effect with toolbarPosition="${pos}".\n` +
-				'getCellToolbarItemsCallback requires toolbarPosition="top".',
-				style
+			initLogger.warn(
+				`getCellToolbarItemsCallback has no effect with toolbarPosition="${pos}".\n` +
+				'getCellToolbarItemsCallback requires toolbarPosition="top".'
 			)
 		}
 
 		// toolbarColumn takes priority over followsCursor
 		if (this._shouldToolbarFollowCursor && this._toolbarColumn !== undefined) {
-			console.warn(
-				'%cWebGrid: toolbarColumn and shouldToolbarFollowCursor are both set.\n' +
-				'toolbarColumn takes priority — cursor following is disabled.',
-				style
+			initLogger.warn(
+				'toolbarColumn and shouldToolbarFollowCursor are both set.\n' +
+				'toolbarColumn takes priority — cursor following is disabled.'
 			)
 		}
 	}
@@ -3667,7 +3660,7 @@ export class GridEngine<T = unknown> {
 				this.savePersistedState()
 			}
 		} catch (e) {
-			console.warn('WebGrid: Failed to load persisted state', e)
+			dataLogger.warn('Failed to load persisted state', e)
 		}
 	}
 
@@ -3688,7 +3681,7 @@ export class GridEngine<T = unknown> {
 			}
 			localStorage.setItem(key, JSON.stringify(state))
 		} catch (e) {
-			console.warn('WebGrid: Failed to save persisted state', e)
+			dataLogger.warn('Failed to save persisted state', e)
 		}
 	}
 

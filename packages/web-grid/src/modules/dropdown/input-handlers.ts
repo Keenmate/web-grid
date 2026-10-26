@@ -6,6 +6,7 @@
 import type { Column } from '../../types.js'
 import type { GridHost } from '../grid-context.js'
 import { getOptionLabel } from './options.js'
+import { dataLogger } from '../../logger.js'
 import { renderDropdown } from './rendering.js'
 import { updateDropdownHighlight, updateLoadingIndicator, attachDropdownListeners } from './interaction.js'
 
@@ -196,7 +197,7 @@ export async function performAutocompleteSearch<T>(
 		if (error instanceof Error && error.name === 'AbortError') {
 			return // Expected - ignore
 		}
-		console.error('Autocomplete search failed:', error)
+		dataLogger.error('Autocomplete search failed:', error)
 
 		// Clear searching state BEFORE rendering
 		ctx.autocomplete.setIsSearching(false)

@@ -5,6 +5,7 @@
 
 import type { GridHost } from '../grid-context.js'
 import type { GridAction } from './types.js'
+import { interactionLogger } from '../../logger.js'
 
 /**
  * Context passed to executors, extends GridHost with dispatch capability
@@ -64,7 +65,7 @@ export class ActionPipeline<T = unknown> {
 			const executor = this.executors.get(current.type)
 
 			if (!executor) {
-				console.warn(`[ActionPipeline] No executor for action type: ${current.type}`)
+				interactionLogger.warn(`[ActionPipeline] No executor for action type: ${current.type}`)
 				continue
 			}
 

@@ -107,6 +107,17 @@ handlers: `onpaste`, `onbeforepaste`, `onselect`).
 | `onrowlockchange` | `row-lock-change` / `onRowLockChange` |
 | `onpaste` (shadowed `HTMLElement.onpaste`) | `paste-complete` / `onPasteComplete` |
 
+### Changed — BREAKING (logging, row identity, editing)
+
+- **Logging runs on core `/logging`.** The vendored `loglevel` copy is gone; the grid registers
+  with core's `registerComponent` (`window.components['web-grid']` gains `register()` /
+  `getInstances()`, and the page-wide `window.components.logging` switch covers the grid).
+  Every `GRID:*` category defaults to **`warn`** (was silent) and `enableLogging()` /
+  `setLogLevel()` now reach every category (they only moved the root logger).
+  `getCategories()` returns bare names (`['INIT', 'DATA', 'UI', 'INTERACTION', 'PERF']`) and
+  `setCategoryLevel()` on the registry takes them (`setCategoryLevel('DATA', 'debug')`). The
+  grid's configuration / persistence warnings go through the loggers (no direct `console.*`).
+
 ### Added
 
 - `el.controller` (`GridController`) incl. `insertRow`, `removeRows`, `duplicateRow`,

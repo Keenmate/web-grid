@@ -1,7 +1,7 @@
 import { test, expect, type Page, cell, header, onGrid, waitForRows } from './fixtures'
 
 /**
- * Logging — silent by default; `window.components['web-grid'].logging`
+ * Logging — core `/logging` bundle, default level `warn` (quiet while nothing is wrong); `window.components['web-grid'].logging`
  * (enableLogging / disableLogging / setLogLevel / setCategoryLevel /
  * getCategories) switches it at runtime.
  *
@@ -31,23 +31,22 @@ async function interact(page: Page) {
 
 test.beforeEach(async ({ page }) => {
 	await page.goto(PAGE)
-	await page.evaluate(() => localStorage.clear())  // loglevel persists levels in localStorage
+	await page.evaluate(() => localStorage.clear())  // core logging persists levels in localStorage (km-log:*)
 	await page.reload()
 	await waitForRows(page)
 })
 
-test('silent by default — no GRID:* console output while interacting', async ({ page }) => {
+test('quiet by default (warn) — no GRID:* console output while interacting', async ({ page }) => {
 	const lines = gridLogs(page)
 	await interact(page)
 	expect(lines).toEqual([])
 })
 
 test('the registry exposes the logging API and its categories', async ({ page }) => {
-	expect(await logging(page, 'getCategories')).toEqual(['GRID:INIT', 'GRID:DATA', 'GRID:UI', 'GRID:INTERACTION', 'GRID:PERF'])
+	expect(await logging(page, 'getCategories')).toEqual(['INIT', 'DATA', 'UI', 'INTERACTION', 'PERF'])
 })
 
 test('enableLogging turns output on at runtime; disableLogging silences it again', async ({ page }) => {
-	test.fail(true, 'NOTES.md #33')
 	const lines = gridLogs(page)
 	await logging(page, 'enableLogging')
 	await interact(page)
@@ -61,7 +60,6 @@ test('enableLogging turns output on at runtime; disableLogging silences it again
 })
 
 test('setLogLevel("debug") turns every category on at runtime', async ({ page }) => {
-	test.fail(true, 'NOTES.md #33')
 	const lines = gridLogs(page)
 	await logging(page, 'setLogLevel', 'debug')
 	await interact(page)
@@ -70,7 +68,7 @@ test('setLogLevel("debug") turns every category on at runtime', async ({ page })
 
 test('setCategoryLevel enables a single category', async ({ page }) => {
 	const lines = gridLogs(page)
-	await logging(page, 'setCategoryLevel', 'GRID:DATA', 'debug')
+	await logging(page, 'setCategoryLevel', 'DATA', 'debug')
 	await interact(page)
 	expect(lines.length).toBeGreaterThan(0)
 	expect(lines.every(l => l.includes('[GRID:DATA]'))).toBe(true)

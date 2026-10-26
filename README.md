@@ -1185,12 +1185,14 @@ window.components['web-grid'].version()  // "1.0.3"
 // Package info
 window.components['web-grid'].config  // { name, version, author, license, repository, homepage }
 
-// Logging (silent by default)
-window.components['web-grid'].logging.enableLogging()         // Enable all at debug level
+// Logging (core /logging — every GRID:* category defaults to 'warn')
+window.components['web-grid'].logging.enableLogging()         // Every category at debug level
 window.components['web-grid'].logging.setLogLevel('info')     // Set level: trace|debug|info|warn|error|silent
-window.components['web-grid'].logging.disableLogging()        // Back to silent
-window.components['web-grid'].logging.setCategoryLevel('GRID:UI', 'debug')  // Per-category
-window.components['web-grid'].logging.getCategories()         // ['GRID:INIT', 'GRID:DATA', 'GRID:UI', 'GRID:INTERACTION']
+window.components['web-grid'].logging.disableLogging()        // Silence every category
+window.components['web-grid'].logging.setCategoryLevel('UI', 'debug')  // Per-category
+window.components['web-grid'].logging.getCategories()         // ['INIT', 'DATA', 'UI', 'INTERACTION', 'PERF']
+window.components.logging                                     // Page-wide switch for all KeenMate components
+window.components['web-grid'].getInstances()                  // Live <web-grid> elements
 ```
 
 ## Browser Support

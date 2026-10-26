@@ -9,6 +9,7 @@ import type { GridAction, SelectRowAction, SelectColumnAction } from '../types.j
 import { removeRangeBorder } from '../../cell-selection/index.js'
 import { removeRowSelectionBorders, removeColumnSelectionBorders } from '../../selection-border/index.js'
 import { removeFillHandle } from '../../fill-handle/index.js'
+import { interactionLogger } from '../../../logger.js'
 
 /**
  * Selection executor - handles selection actions
@@ -99,7 +100,7 @@ function executeSelectColumn(ctx: ExecutorContext, action: SelectColumnAction): 
  * Clear all selections
  */
 function executeClearSelection(ctx: ExecutorContext): void {
-	console.log('[clearSelection] rows:', ctx.engine.selectedRows.length,
+	interactionLogger.debug('[clearSelection] rows:', ctx.engine.selectedRows.length,
 		'cols:', ctx.engine.selectedColumns.length,
 		'cellRange:', !!ctx.engine.selectedCellRange)
 	// Use _noRender variants to prevent requestUpdate() from triggering a full re-render
@@ -107,7 +108,7 @@ function executeClearSelection(ctx: ExecutorContext): void {
 
 	// Clear row selection
 	if (ctx.engine.selectedRows.length > 0) {
-		console.log('[clearSelection] clearing rows')
+		interactionLogger.debug('[clearSelection] clearing rows')
 		ctx.engine.clearSelection_noRender()
 		removeRowSelectionBorders()
 		updateRowSelectionVisual(ctx)
@@ -115,14 +116,14 @@ function executeClearSelection(ctx: ExecutorContext): void {
 
 	// Clear column selection
 	if (ctx.engine.selectedColumns.length > 0) {
-		console.log('[clearSelection] clearing columns, removing visual classes')
+		interactionLogger.debug('[clearSelection] clearing columns, removing visual classes')
 		ctx.engine.clearColumnSelection_noRender()
 		removeColumnSelectionBorders()
 		updateColumnSelectionVisual(ctx)
-		console.log('[clearSelection] after clear, selectedColumns:', ctx.engine.selectedColumns.length)
+		interactionLogger.debug('[clearSelection] after clear, selectedColumns:', ctx.engine.selectedColumns.length)
 		// Verify DOM was updated
 		const remaining = ctx.shadow.querySelectorAll('.wg__header--selected')
-		console.log('[clearSelection] remaining header--selected elements:', remaining.length)
+		interactionLogger.debug('[clearSelection] remaining header--selected elements:', remaining.length)
 	}
 
 	// Clear cell range selection

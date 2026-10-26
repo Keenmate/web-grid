@@ -104,14 +104,10 @@ export type {
 // Default export
 export { GridElement as default } from './web-component.js'
 
-// Import logging functions for global API
-import {
-	setLogLevel,
-	enableLogging,
-	disableLogging,
-	setCategoryLevel,
-	LOGGING_CATEGORIES
-} from './logger.js'
+// Logging bundle (core /logging) + global registration (core §12.3)
+import { registerComponent } from '@keenmate/web-components-core'
+import { logging } from './logger.js'
+import { GridElement as _GridElement } from './web-component.js'
 
 // Build-time constants (injected by Vite define)
 declare const __VERSION__: string
@@ -121,25 +117,17 @@ declare const __LICENSE__: string
 declare const __REPOSITORY__: string
 declare const __HOMEPAGE__: string
 
-// Register to window.components for runtime introspection
-if (typeof window !== 'undefined') {
-	(window as any).components = (window as any).components || {}
-	;(window as any).components['web-grid'] = {
-		version: () => __VERSION__,
-		config: {
-			name: __PACKAGE_NAME__,
-			version: __VERSION__,
-			author: __AUTHOR__,
-			license: __LICENSE__,
-			repository: __REPOSITORY__,
-			homepage: __HOMEPAGE__
-		},
-		logging: {
-			enableLogging,
-			disableLogging,
-			setLogLevel,
-			setCategoryLevel,
-			getCategories: () => [...LOGGING_CATEGORIES]
-		}
-	}
-}
+// Defines <web-grid> and publishes window.components['web-grid'] = { version, config,
+// logging, register, getInstances }. The logging controls reach every GRID:* category:
+//   window.components['web-grid'].logging.enableLogging()
+registerComponent('web-grid', _GridElement as unknown as CustomElementConstructor, {
+	config: {
+		name: typeof __PACKAGE_NAME__ !== 'undefined' ? __PACKAGE_NAME__ : '@keenmate/web-grid',
+		version: typeof __VERSION__ !== 'undefined' ? __VERSION__ : '0.0.0',
+		author: typeof __AUTHOR__ !== 'undefined' ? __AUTHOR__ : 'KeenMate',
+		license: typeof __LICENSE__ !== 'undefined' ? __LICENSE__ : 'MIT',
+		repository: typeof __REPOSITORY__ !== 'undefined' ? __REPOSITORY__ : '',
+		homepage: typeof __HOMEPAGE__ !== 'undefined' ? __HOMEPAGE__ : ''
+	},
+	logging
+})

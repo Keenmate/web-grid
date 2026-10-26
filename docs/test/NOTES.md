@@ -566,7 +566,9 @@ in the test are a suggestion.
 **Test:** `i18n.spec.ts` "the go-to-row dialog texts are translatable through
 labels" (`test.fail`).
 
-## 33. `enableLogging()` / `setLogLevel()` don't reach the category loggers
+## 33. `enableLogging()` / `setLogLevel()` don't reach the category loggers — FIXED
+
+**Fixed:** the grid logs through core `/logging` (`createLoggers('GRID', [INIT, DATA, UI, INTERACTION, PERF])`, registered with `registerComponent`); `enableLogging` / `setLogLevel` re-level every category, default level `warn`, the vendored loglevel is gone and the direct `console.*` calls go through the category loggers. Categories are bare names now (`setCategoryLevel('DATA', …)`).
 
 **Where:** `packages/web-grid/src/logger.ts` — a vendored `loglevel`
 (`src/vendor/loglevel`), not core's `/logging`. `enableLogging()` /

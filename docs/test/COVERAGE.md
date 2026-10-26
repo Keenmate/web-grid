@@ -164,8 +164,8 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Table-driven attribute → property → removal → property loop over all 63 inputs; enum inputs reject unknown values | ✓ | `inputs.spec.ts` | `inputs.html` |
 | `labels` across toolbar / header menu / pagination / shortcuts help / dropdown | ✓ | `i18n.spec.ts` | `i18n.html` |
 | Nested `labels` merge (#31 fixed), go-to-row + chevron texts (#32 fixed) | ✓ | `i18n.spec.ts` | `i18n.html` |
-| Logging silent by default, `getCategories`, `setCategoryLevel` | ✓ | `logging.spec.ts` | `logging.html` |
-| `enableLogging` / `setLogLevel` reach the categories (#33) | ✗ fail | `logging.spec.ts` | `logging.html` |
+| Logging quiet by default (`warn`), `getCategories`, `setCategoryLevel` | ✓ | `logging.spec.ts` | `logging.html` |
+| `enableLogging` / `setLogLevel` reach the categories (#33 fixed — core `/logging`) | ✓ | `logging.spec.ts` | `logging.html` |
 | Summary row (`renderSummaryCallback` ctx, `summaryPosition`, `isSummaryInline`, `summaryMetadata`, totalItems) | ✓ | `summary.spec.ts` | `summary.html` |
 | Summary refresh after an edit (#20 refresh fixed) | ✓ | `summary.spec.ts` | `summary.html` |
 | Summary sees draft values (#20, open question) | ✗ fail | `summary.spec.ts` | `summary.html` |

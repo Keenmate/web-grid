@@ -241,7 +241,6 @@ import type { GridHost } from './modules/grid-context.js'
 // scalar/enum config flags. See ../../CLAUDE.md and core SPEC §6.
 import {
 	BlissElement,
-	registerComponent,
 	toBool,
 	toInt,
 	toFloat,
@@ -1795,11 +1794,6 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	protected override createController(): GridController<T> {
 		return createGridController<T>(this)
 	}
-}
-
-// Register the custom element
-if (typeof customElements !== 'undefined' && !customElements.get('web-grid')) {
-	customElements.define('web-grid', GridElement)
 }
 
 export default GridElement
