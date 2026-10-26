@@ -134,6 +134,13 @@ handlers: `onpaste`, `onbeforepaste`, `onselect`).
   Drafts are never pruned when `items` is set (server paging: a missing row is another page) —
   they leave via `replaceRowById`, `discardDraft`, `discardRowDraft`, `discardAllDrafts`. Server
   paging + editing without a usable row id logs a warning once.
+- **Filter row.** `isFilterable` now renders a row under the header with a text input for every
+  column with `isFilterable: true` (it was API-only — the option, the `.wg__filter-*` CSS and the
+  `--wg-filter-*` variables were orphaned). Debounced typing (Enter applies, Escape clears) →
+  `setFilter` → page 1; a `filterCallback` returning `null` marks the input `.invalid`; in server
+  pagination a change runs `beforePageChangeCallback` and fires `data-request` (trigger `'filter'`).
+  Inputs are labelled by their column (`labels.filterColumn`, "Filter {column}"), sticky under the
+  header and frozen with their column. Demo: `docs/test/filter-row.html`.
 - **`beforePageChangeCallback(ctx)`** — runs before a user action swaps the rows: pager buttons,
   page-size change, header sort (and filter-row changes) in server pagination. ctx = the grid ctx +
   `{ trigger: 'page' | 'pageSize' | 'sort' | 'filter', fromPage, toPage, drafts }`. `false` stays,

@@ -60,6 +60,15 @@ export function renderHeaderRow<T>(ctx: GridHost<T>): string {
 	// Track cumulative offset for sticky positioning
 	let cumulativeOffset = 0
 
+	// Filter row (grid isFilterable): one cell per header cell, an input under each
+	// column with `column.isFilterable` (v1: text). Built in the same pass so the
+	// frozen offsets and widths match the header.
+	const isFilterRowVisible = ctx.engine.isFilterable && visualColumns.some(({ column }) => column.isFilterable)
+	const filters = isFilterRowVisible ? ctx.engine.filters : {}
+	const invalidFilterFields = isFilterRowVisible ? ctx.engine.getInvalidFilterFields() : new Set<string>()
+	let filterLeadHtml = ''
+	const filterCells: string[] = []
+
 	// Row number column (may be sticky)
 	let rowNumberColumnHtml = ''
 	if (ctx.engine.isRowNumbersVisible) {
@@ -69,6 +78,7 @@ export function renderHeaderRow<T>(ctx: GridHost<T>): string {
 			: ''
 		const frozenClass = isSticky ? ' wg__header--frozen' : ''
 		rowNumberColumnHtml = `<th class="wg__header wg__row-number-header${frozenClass}" style="${stickyStyle}">#</th>`
+		filterLeadHtml += `<th class="wg__filter-cell wg__filter-cell--row-number${isSticky ? ' wg__filter-cell--frozen' : ''}" style="${isSticky ? 'left: 0;' : ''}"></th>`
 		// Always include row number offset when visible (prevents frozen columns from overlapping)
 		cumulativeOffset += ROW_NUMBER_COLUMN_WIDTH
 	}
@@ -84,6 +94,7 @@ export function renderHeaderRow<T>(ctx: GridHost<T>): string {
 		// Using calc with CSS vars so it respects theming
 		const colWidth = `calc(${maxBtns} * var(--wg-toolbar-btn-min-width) + ${Math.max(0, maxBtns - 1)} * var(--wg-inline-actions-gap) + 2 * var(--wg-spacing-sm))`
 		inlineActionsHeaderHtml = `<th class="wg__header wg__inline-actions-header" style="width: ${colWidth}">${ctx.escapeHtml(ctx.engine.inlineActionsTitle ?? ctx.engine.labels.inlineActionsHeader)}</th>`
+		filterLeadHtml += '<th class="wg__filter-cell"></th>'
 	}
 
 	// Actions column for button trigger mode (floating toolbar trigger)
@@ -91,6 +102,7 @@ export function renderHeaderRow<T>(ctx: GridHost<T>): string {
 	const actionsColumnHtml = showActionsColumn
 		? '<th class="wg__header wg__actions-column"></th>'
 		: ''
+	if (showActionsColumn) filterLeadHtml += '<th class="wg__filter-cell wg__actions-column"></th>'
 
 	const headerCells = visualColumns.map(({ column, originalIndex }, visualIndex) => {
 		const field = String(column.field)
@@ -137,6 +149,23 @@ export function renderHeaderRow<T>(ctx: GridHost<T>): string {
 		].filter(Boolean).join('; ')
 		const styleAttr = `style="${styleProps}"`
 
+		if (isFilterRowVisible) {
+			const filterStyle = [
+				isFrozen ? `left: ${cumulativeOffset}px` : '',
+				colWidth ? `width: ${colWidth}` : '',
+				colWidth ? `max-width: ${colWidth}` : ''
+			].filter(Boolean).join('; ')
+			const frozenClass = isFrozen ? ' wg__filter-cell--frozen' : ''
+			if (column.isFilterable) {
+				const isInvalid = invalidFilterFields.has(field)
+				const value = ctx.filterInputText(field) ?? filters[field] ?? ''
+				const label = ctx.engine.labels.filterColumn.replace('{column}', column.title ?? field)
+				filterCells.push(`<th class="wg__filter-cell${frozenClass}" style="${filterStyle}" data-field="${ctx.escapeHtml(field)}"><input type="text" class="wg__filter-input${isInvalid ? ' invalid' : ''}" data-field="${ctx.escapeHtml(field)}" value="${ctx.escapeHtml(value)}" aria-label="${ctx.escapeHtml(label)}"${isInvalid ? ' aria-invalid="true"' : ''} autocomplete="off" spellcheck="false"></th>`)
+			} else {
+				filterCells.push(`<th class="wg__filter-cell${frozenClass}" style="${filterStyle}"></th>`)
+			}
+		}
+
 		// Increment offset for next frozen column
 		if (isFrozen) {
 			cumulativeOffset += parsedWidth
@@ -179,7 +208,9 @@ export function renderHeaderRow<T>(ctx: GridHost<T>): string {
 		`
 	}).join('')
 
-	return `<tr>${rowNumberColumnHtml}${inlineActionsHeaderHtml}${actionsColumnHtml}${headerCells}<th class="wg__filler">&nbsp;</th></tr>`
+	const headerRow = `<tr>${rowNumberColumnHtml}${inlineActionsHeaderHtml}${actionsColumnHtml}${headerCells}<th class="wg__filler">&nbsp;</th></tr>`
+	if (!isFilterRowVisible) return headerRow
+	return `${headerRow}<tr class="wg__filter-row">${filterLeadHtml}${filterCells.join('')}<th class="wg__filter-cell wg__filter-cell--filler"></th></tr>`
 }
 
 /**

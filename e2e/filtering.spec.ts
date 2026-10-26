@@ -7,8 +7,8 @@ import { test, expect, type Page, gridLocator, cell, onGrid, domEvents, eventsOf
  *
  * Fixture: docs/test/filtering.html — 6 rows (see the seed table there),
  * `is-filterable` set in markup, salary column has a `>N` / `<N` / `N`
- * filterCallback. There is no built-in filter-row UI (NOTES.md #4), so filters
- * are driven through the element API.
+ * filterCallback. The columns aren't `isFilterable`, so no filter row renders —
+ * filters are driven through the element API (the filter row: filter-row.spec.ts).
  */
 
 const PAGE = '/test/filtering.html'

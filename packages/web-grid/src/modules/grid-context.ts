@@ -12,6 +12,7 @@ import type { DropdownService } from './dropdown/dropdown-service.js'
 import type { TooltipService } from './tooltip/tooltip-service.js'
 import type { ToolbarService } from './toolbar/toolbar-service.js'
 import type { VirtualScrollService } from './scroll/virtual-scroll-service.js'
+import type { FilterRowService } from './filter-row/index.js'
 import type { ActionPipelineAdapter } from './actions/adapter.js'
 
 /**
@@ -59,6 +60,11 @@ export interface GridHost<T = unknown> {
 	// Floating-toolbar runtime state — owned by ToolbarService (hide-timeout,
 	// hover / move flags, hovered cell, cell-items JSON, document keydown handlers).
 	readonly toolbar: ToolbarService
+
+	// Filter row runtime state — typed-but-not-applied text + debounce timers.
+	readonly filterRow: FilterRowService
+	/** The filter-row text typed for `field` but not applied yet. */
+	filterInputText(field: string): string | undefined
 
 	// Re-render the whole grid (full table swap). Used by handlers that mutate
 	// items / columns and need an immediate DOM refresh.

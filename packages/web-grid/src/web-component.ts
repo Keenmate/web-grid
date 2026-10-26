@@ -171,6 +171,14 @@ import {
 } from './modules/scroll/index.js'
 
 import {
+	FilterRowService,
+	attachFilterRowListeners,
+	captureFilterFocus,
+	restoreFilterFocus,
+	positionFilterRow
+} from './modules/filter-row/index.js'
+
+import {
 	handleSortClick,
 	attachPaginationListeners,
 	handleTableMouseDown,
@@ -486,6 +494,14 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	// hover/move flags, hovered cell, cell-items JSON snapshot, document keydown handlers
 	// for both floating and inline modes).
 	toolbar = new ToolbarService()
+
+	// Filter row runtime state — typed text not applied yet + debounce timers.
+	filterRow = new FilterRowService()
+
+	/** The filter-row text typed for `field` but not applied yet (survives re-renders). */
+	filterInputText(field: string): string | undefined {
+		return this.filterRow.pendingText.get(field)
+	}
 
 	// Dropdown runtime state — owned by DropdownService (open flag, options, highlight,
 	// filter text, race-condition flags: isOpening / isClosingViaToggle / justSelected /
@@ -1468,6 +1484,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		const wgContainer = this.shadow.querySelector('.wg') as HTMLElement | null
 		if (wgContainer) {
 			attachPaginationListeners(this, wgContainer)
+			// Filter row (delegated too — the thead is rebuilt on every render)
+			attachFilterRowListeners(this, wgContainer)
 		}
 	}
 
@@ -1524,6 +1542,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		// Preserve scroll position before re-render
 		// When isTableBorderOnly is enabled, scroll container is .wg__table-container
 		const oldContainer = this.shadow.querySelector('.wg') as HTMLElement
+		// A focused filter-row input (+ caret) is restored after the thead is rebuilt
+		const filterFocus = captureFilterFocus(this)
 		const oldScrollContainer = this.engine.isTableBorderOnly
 			? (this.shadow.querySelector('.wg__table-container') as HTMLElement) || oldContainer
 			: oldContainer
@@ -1724,7 +1744,10 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 
 		// Post-render focus restore (editor focus + selection / focused-cell restore)
 		// Extracted to modules/navigation/post-render-focus.ts
-		restoreFocusAfterRender(this, container, focusedCell)
+		// (a focused filter-row input keeps the focus — the cell isn't re-focused)
+		restoreFocusAfterRender(this, container, filterFocus ? null : focusedCell)
+		restoreFilterFocus(this, filterFocus)
+		positionFilterRow(this)
 
 		// Fix wheel scroll after DOM replacement - force browser to recalculate element under cursor
 		// Without this, user has to move mouse for scroll to work after re-render

@@ -297,7 +297,7 @@ This architecture separates mode detection (the adapter decides *what* action a 
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `isFilterable` | `boolean` | `false` | Show per-column filter inputs |
+| `isFilterable` | `boolean` | `false` | Show the filter row (inputs for columns with `isFilterable: true`) and apply `filters` |
 | `isStriped` | `boolean` | `false` | Alternate row background colors |
 | `isHoverable` | `boolean` | `false` | Highlight row on hover |
 | `isRowNumbersVisible` | `boolean` | `false` | Show row number column |
@@ -481,6 +481,8 @@ This architecture separates mode detection (the adapter decides *what* action a 
 | `filters` | `Record<string, string>` | `{}` | Current filter value per field |
 | `filterMode` | `'client' \| 'server'` | `'client'` | `'server'`: the grid doesn't filter `items` — listen to `filter-change` (`{ filters }`) and load the rows. Attribute `filter-mode` |
 
+**Filter row.** With `isFilterable`, a row under the header gets a text input for every column with `isFilterable: true` (labelled "Filter &lt;column&gt;" via `labels.filterColumn`; Tab-reachable). Typing is debounced (300 ms; Enter applies at once, Escape clears) → `setFilter(field, text)` → page 1. A `filterCallback` returning `null` marks the input `.invalid` (red border, `aria-invalid`) and ignores that filter. In server pagination a filter change runs `beforePageChangeCallback` (trigger `'filter'`) and fires `data-request` (trigger `'filter'`). Styled by the `--wg-filter-*` variables. A filter change (UI or `setFilter` / `filters`) resets `currentPage` to 1.
+
 ### Styling
 
 | Property | Type | Default | Description |
@@ -592,7 +594,7 @@ Grid-level paste hooks: `beforePasteCallback(ctx)` runs before a multi-cell past
 | `isMovable` | `boolean` | Allow column to be reordered by dragging (default: `true`) |
 | `isHidden` | `boolean` | Column is not rendered but kept in array for visibility toggling |
 | `isSortable` | `boolean` | Enable sorting for this column (when grid has `sortMode` enabled) |
-| `isFilterable` | `boolean` | Enable filtering for this column |
+| `isFilterable` | `boolean` | This column gets a filter-row input (opt-in) |
 
 ### Fill
 
@@ -1157,6 +1159,7 @@ grid.labels = {
   goToRowCancel: 'Cancel',
   treeExpand: 'Expand',          // tree chevron aria-label
   treeCollapse: 'Collapse',
+  filterColumn: 'Filter {column}',           // aria-label of a filter-row input
   invalidNumber: 'Not a number',              // built-in value checks (number editor, paste)
   numberMin: 'Must be at least {min}',
   numberMax: 'Must be at most {max}',

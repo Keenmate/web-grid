@@ -591,6 +591,9 @@ export type GridLabels = {
 	treeExpand: string              // "Expand"
 	treeCollapse: string            // "Collapse"
 
+	// Filter row
+	filterColumn: string            // "Filter {column}" — aria-label of a filter-row input
+
 	// Built-in value checks (number editor, paste typing) — the cell's validation error
 	invalidNumber: string           // "Not a number"
 	numberMin: string               // "Must be at least {min}"

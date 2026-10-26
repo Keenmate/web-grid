@@ -119,6 +119,9 @@ const DEFAULT_LABELS: GridLabels = {
 	treeExpand: 'Expand',
 	treeCollapse: 'Collapse',
 
+	// Filter row
+	filterColumn: 'Filter {column}',
+
 	// Built-in value checks
 	invalidNumber: 'Not a number',
 	numberMin: 'Must be at least {min}',

@@ -67,7 +67,9 @@ shortcut accepts `ctrlKey || metaKey`.
 
 **Test:** `keyboard.spec.ts` "Meta+G opens the go-to-row dialog" (`test.fail`).
 
-## 4. No built-in filter UI — `isFilterable` is API-only (open question)
+## 4. No built-in filter UI — `isFilterable` is API-only — FIXED
+
+**Fixed:** built the filter row — grid `isFilterable` renders `.wg__filter-row` under the header with a text input (`.wg__filter-input`, aria-label `labels.filterColumn`) for each `column.isFilterable` column; debounced → `setFilter` → page 1 (Enter / Escape); `filterCallback` null → `.invalid` via `getInvalidFilterFields()`; server pagination → `beforePageChangeCallback` + `data-request` (trigger `'filter'`). Focus / caret / typed text survive re-renders; frozen + sticky. Demo + tests: `docs/test/filter-row.html`, `filter-row.spec.ts`.
 
 **Where:** `packages/web-grid/src/grid.ts:2034-2095` (`filteredItems`, `filters`,
 `setFilter`, `getInvalidFilterFields`); `src/css/header.css:146-160`

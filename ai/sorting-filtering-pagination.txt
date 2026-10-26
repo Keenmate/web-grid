@@ -66,16 +66,23 @@ Sort state type:
 
 FILTERING
 ---------
-Filtering adds a text input below each column header. Typing into it filters
-rows by that column using case-insensitive substring matching.
+The filter row sits under the header: columns with isFilterable: true get a
+text input (aria-label "Filter <column>", labels.filterColumn; Tab-reachable).
+Typing is debounced (300 ms; Enter applies at once, Escape clears) and calls
+setFilter(field, text), which resets currentPage to 1. Matching is a
+case-insensitive substring test unless the column has a filterCallback.
 
 Grid property:
-  isFilterable  Boolean. Default: false. Set to true to show filter row.
+  isFilterable  Boolean. Default: false. true = show the filter row and apply
+                filters (the row only renders when a column is filterable).
 
 Per-column flag:
-  isFilterable  Boolean on column definition. Set to false to hide the filter
-                input for a specific column while the grid-level filter row is
-                visible.
+  isFilterable  Boolean on column definition. Default: false (opt-in): this
+                column gets a filter-row input.
+
+Server pagination: a filter-row change runs beforePageChangeCallback (trigger
+'filter') and fires data-request (trigger 'filter', page 1).
+Styling: .wg__filter-row / .wg__filter-input (.invalid) + --wg-filter-* vars.
 
 Client-side filtering (default): the grid filters items before sorting and
 pagination. For each active filter, the cell value is converted to a string

@@ -144,6 +144,9 @@
    FILTER ROW
    ============================================================================== */
 .wg__filter-row th {
+  /* Sticks under the header row: `top` = the header row height, set after each render */
+  position: sticky;
+  z-index: var(--wg-z-header);
   padding: var(--wg-filter-padding);
   background: var(--wg-filter-bg);
   border-bottom: var(--wg-filter-border);
@@ -165,4 +168,19 @@
   outline: none;
   border: var(--wg-filter-input-border-focus);
   box-shadow: 0 0 0 1px var(--wg-accent-color);
+}
+
+/* Frozen filter cells stay above the scrolled ones (like frozen headers) */
+.wg__filter-row th.wg__filter-cell--frozen {
+  z-index: var(--wg-z-frozen-header);
+}
+
+/* filterCallback returned null — the typed filter is incomplete / not understood */
+.wg__filter-input.invalid {
+  border-color: var(--wg-danger-color);
+}
+
+.wg__filter-input.invalid:focus {
+  border-color: var(--wg-danger-color);
+  box-shadow: 0 0 0 1px var(--wg-danger-color);
 }

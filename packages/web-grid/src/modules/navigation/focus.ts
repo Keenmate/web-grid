@@ -80,7 +80,8 @@ export function focusCellElement<T>(
 	cell.scrollIntoView({ block: 'nearest', inline: 'nearest' })
 
 	// After scrollIntoView, adjust for sticky elements it doesn't account for
-	const header = ctx.shadow.querySelector('.wg__header') as HTMLElement
+	// The sticky band is the header row, plus the filter row under it when shown
+	const header = (ctx.shadow.querySelector('.wg__filter-row th') ?? ctx.shadow.querySelector('.wg__header')) as HTMLElement
 	const scrollContainer = ctx.shadow.querySelector('.wg') as HTMLElement
 
 	if (header && scrollContainer) {
@@ -134,7 +135,7 @@ function ensureRowVisibleMinimal<T>(ctx: GridHost<T>, rowIndex: number): void {
 	const viewportHeight = container.clientHeight
 
 	// Account for sticky header
-	const header = ctx.shadow.querySelector('.wg__header') as HTMLElement
+	const header = ctx.shadow.querySelector('thead') as HTMLElement
 	const headerHeight = header?.offsetHeight || 0
 
 	const rowTop = rowIndex * rowHeight

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — filter row</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>filter row</h1>
+	<p>Targeted by <code>e2e/filter-row.spec.ts</code> — and a demo of the built-in filter row (NOTES.md #4).
+	A grid with <code>is-filterable</code> shows a row under the header; columns with
+	<code>isFilterable: true</code> get a text input (labelled "Filter &lt;column&gt;"). Typing is debounced
+	(300&nbsp;ms; <kbd>Enter</kbd> applies at once, <kbd>Esc</kbd> clears) → <code>setFilter</code> → page 1.
+	The salary column has a <code>filterCallback</code> (<code>&gt;N</code> / <code>&lt;N</code> / <code>N</code>);
+	a lone <code>&gt;</code> is incomplete → <code>null</code> → red border, filter ignored.</p>
+
+	<h2>#grid — client filtering + pagination (13 rows, page-size 4)</h2>
+	<web-grid id="grid" is-filterable is-pageable page-size="4" sort-mode="single" freeze-columns="1"
+		is-row-numbers-visible style="max-width: 640px; max-height: 260px;"></web-grid>
+
+	<h2>#server — server pagination: a filter change runs <code>beforePageChangeCallback</code> (trigger 'filter') and fires <code>data-request</code> (trigger 'filter')</h2>
+	<label><input type="checkbox" id="block-server"> block leaving the page (beforePageChangeCallback → false)</label>
+	<web-grid id="server" is-filterable is-pageable pagination-mode="server" filter-mode="server" page-size="4"
+		style="max-width: 640px;"></web-grid>
+
+	<pre data-testid="filter-row-log"></pre>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+		import { installEventLog } from './event-log.js'
+
+		const NAMES = ['Alice Johnson', 'Bob Smith', 'Carol Williams', 'David Brown', 'Eva Martinez', 'Frank Lee',
+			'Gina Novak', 'Hugo Dvorak', 'Ivana Kral', 'Jan Svoboda', 'Karel Cerny', 'Lucie Vesela', 'Martin Pokorny']
+		const CITIES = ['Prague', 'Brno', 'Ostrava']
+		window.seed = () => NAMES.map((name, i) => ({ id: i + 1, name, city: CITIES[i % 3], salary: 60000 + i * 3000 }))
+
+		const salaryFilter = (ctx) => {
+			const m = /^\s*([<>]?)\s*(\d*)\s*$/.exec(ctx.filterValue)
+			if (!m) return false
+			const [, op, num] = m
+			if (!num) return null   // incomplete → ignored + red border
+			const n = Number(num)
+			if (op === '>') return ctx.row.salary > n
+			if (op === '<') return ctx.row.salary < n
+			return ctx.row.salary === n
+		}
+		const columns = [
+			{ field: 'id', title: 'ID', width: '60px' },
+			{ field: 'name', title: 'Name', width: '170px', isFilterable: true, isSortable: true },
+			{ field: 'city', title: 'City', width: '110px', isFilterable: true },
+			{ field: 'salary', title: 'Salary', width: '110px', isFilterable: true, filterCallback: salaryFilter }
+		]
+
+		const grid = document.getElementById('grid')
+		grid.columns = columns
+		grid.pageSizes = [4, 8]
+		grid.items = window.seed()
+		installEventLog(grid, 'filter-row', ['filter-change', 'data-request'])
+
+		// Server mode: the "server" filters + pages; the grid only gets one page.
+		const server = document.getElementById('server')
+		server.columns = columns.map(c => ({ ...c, filterCallback: undefined }))
+		server.pageSizes = [4, 8]
+		const query = (filters, page, pageSize) => {
+			const rows = window.seed().filter(r => Object.entries(filters).every(([f, v]) => String(r[f]).toLowerCase().includes(v.toLowerCase())))
+			return { total: rows.length, rows: rows.slice((page - 1) * pageSize, page * pageSize) }
+		}
+		const load = () => {
+			const { total, rows } = query(server.filters, server.currentPage, server.pageSize)
+			server.totalItems = total
+			server.items = rows
+		}
+		load()
+		server.addEventListener('data-request', load)
+		server.beforePageChangeCallback = (ctx) => {
+			window.lastPageChange = { trigger: ctx.trigger, fromPage: ctx.fromPage, toPage: ctx.toPage }
+			if (document.getElementById('block-server').checked) return false
+		}
+		installEventLog(server, 'filter-row', ['filter-change', 'data-request'])
+	</script>
+</body>
+</html>
