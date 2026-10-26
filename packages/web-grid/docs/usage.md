@@ -673,7 +673,7 @@ grid.getRowClassCallback = ({ row, controller }) =>
 
 ### The `action` event
 
-Every row-toolbar, inline, cell-toolbar, context-menu, header-menu and shortcut item fires `action` (and `onAction`). Order: `beforeActionCallback` (`false` cancels) → the item's `onClick(detail)` → `action` event → the built-in (if `action` names one).
+Every row-toolbar, inline, cell-toolbar, context-menu, header-menu and shortcut item fires `action` (and `onAction`). Order: `beforeActionCallback` (`false` cancels) → the item's `onClick(detail)` → the built-in (if `action` names one) → `action` event. The event is a notification after the fact: a listener sees `items` after the built-in (row added / removed / moved).
 
 | Detail field | Description |
 |---|---|

@@ -6,7 +6,7 @@ import { openToolbarOn as hoverToolbarTrigger } from './helpers'
  *   - toolbar / menu / shortcut entries are core action items: built-ins by name
  *     (`'delete'`, `'sort-asc'`, …), custom items by `id`, dividers, get*Callbacks
  *   - one `action` event (+ `onAction`) per activation, in the order
- *     beforeActionCallback → onClick → onAction → action event → built-in
+ *     beforeActionCallback → onClick → built-in → onAction → action event
  *   - the row built-ins do the work (add / delete / duplicate / move-up / move-down)
  *   - ctx / details carry `controller` / `element` (non-enumerable)
  *   - camelCase `on*` twins receive the detail
@@ -76,7 +76,7 @@ test.describe('row toolbar — core action items', () => {
 		expect(d.composed).toBe(false)
 	})
 
-	test('built-in delete removes the row after the event', async ({ page }) => {
+	test('built-in delete removes the row before the event', async ({ page }) => {
 		await openToolbarOn(page, row(page, 1))
 		await toolbar(page).locator('[data-action="delete"]').click()
 		await expect.poll(() => names(page)).toEqual(['Alpha', 'Gamma', 'Delta'])
@@ -165,7 +165,8 @@ test.describe('header context menu', () => {
 		expect(await log(page)).toEqual(['header-open:qty:2'])
 		await menu(page).locator('[data-action="sort-asc"]').click()
 		await expect.poll(() => log(page)).toContain('onDataRequest:sort:qty-asc')
-		expect(await log(page)).toEqual(['header-open:qty:2', 'before:sort-asc:header-menu', 'onAction:sort-asc', 'event:sort-asc', 'onDataRequest:sort:qty-asc'])
+		await expect.poll(() => log(page)).toContain('event:sort-asc')
+		expect(await log(page)).toEqual(['header-open:qty:2', 'before:sort-asc:header-menu', 'onDataRequest:sort:qty-asc', 'onAction:sort-asc', 'event:sort-asc'])
 	})
 
 	test('a custom item with a built-in name as id runs only its onClick', async ({ page }) => {
@@ -269,20 +270,6 @@ test.describe('open gaps (interaction-model-plan follow-ups)', () => {
 		await expect(cell(page, 3, 1)).toBeFocused({ timeout: 1500 })
 	})
 
-	test('current order: the action event fires before the built-in (listener sees the row still there)', async ({ page }) => {
-		// Pins today's documented order (event table: "Fires after the item's onClick,
-		// before the built-in"). Whether consumers need an after-built-in signal is
-		// NOTES.md #15 (open question).
-		await page.evaluate(() => {
-			const g = document.getElementById('grid') as any
-			g.addEventListener('action', () => { (window as any).__seenInAction = g.items.map((r: any) => r.name) })
-		})
-		await openToolbarOn(page, row(page, 1))
-		await toolbar(page).locator('[data-action="delete"]').click()
-		await expect.poll(() => names(page)).toEqual(['Alpha', 'Gamma', 'Delta'])
-		expect(await page.evaluate(() => (window as any).__seenInAction)).toEqual(['Alpha', 'Beta', 'Gamma', 'Delta'])
-	})
-
 	test('the shortcuts help lists the range shortcuts too', async ({ page }) => {
 		await page.evaluate(() => {
 			const g = document.getElementById('grid') as any
@@ -306,5 +293,47 @@ test.describe('open gaps (interaction-model-plan follow-ups)', () => {
 		const help = grid(page).locator('.wg__shortcuts-help')
 		await expect(help).toContainText('Sum selection')
 		await expect(help.locator('.wg__shortcuts-help-title')).toHaveCount(1)
+	})
+})
+
+// Core #15: runAction runs the built-in BEFORE the `action` event — the event is a
+// notification after the fact, so a listener sees the new `items`.
+test.describe('action event after the built-in (listener sees the result)', () => {
+	async function recordInAction(page: Page): Promise<void> {
+		await page.evaluate(() => {
+			const g = document.getElementById('grid') as any
+			;(window as any).__seenInAction = []
+			g.addEventListener('action', (e: CustomEvent) => {
+				;(window as any).__seenInAction.push({ action: e.detail.action, names: g.items.map((r: any) => r.name) })
+			})
+		})
+	}
+	const seen = (page: Page) => page.evaluate(() => (window as any).__seenInAction)
+
+	test('add: the new row is already in items', async ({ page }) => {
+		await recordInAction(page)
+		await openToolbarOn(page, row(page, 1))
+		await toolbar(page).locator('[data-action="add"]').click()
+		await expect.poll(() => seen(page)).toEqual([{ action: 'add', names: ['Alpha', 'Beta', 'New', 'Gamma', 'Delta'] }])
+	})
+
+	test('delete: items is already shorter', async ({ page }) => {
+		await recordInAction(page)
+		await openToolbarOn(page, row(page, 1))
+		await toolbar(page).locator('[data-action="delete"]').click()
+		await expect.poll(() => seen(page)).toEqual([{ action: 'delete', names: ['Alpha', 'Gamma', 'Delta'] }])
+	})
+
+	test('move-down / move-up: the new order is in place', async ({ page }) => {
+		await recordInAction(page)
+		await openToolbarOn(page, row(page, 1))
+		await toolbar(page).locator('[data-action="move-down"]').click()
+		await expect.poll(() => seen(page)).toEqual([{ action: 'move-down', names: ['Alpha', 'Gamma', 'Beta', 'Delta'] }])
+		await openToolbarOn(page, row(page, 2))
+		await toolbar(page).locator('[data-action="move-up"]').click()
+		await expect.poll(() => seen(page)).toEqual([
+			{ action: 'move-down', names: ['Alpha', 'Gamma', 'Beta', 'Delta'] },
+			{ action: 'move-up', names: ['Alpha', 'Beta', 'Gamma', 'Delta'] }
+		])
 	})
 })

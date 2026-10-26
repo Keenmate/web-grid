@@ -9,8 +9,9 @@ Every toolbar button, menu item and keyboard shortcut is an ACTION ITEM
 
     1. beforeActionCallback(detail)   -> return false to cancel (async OK)
     2. the item's onClick(detail)     -> awaited
-    3. the `action` DOM event + the onAction(detail) twin
-    4. the built-in (only when the item names a built-in `action`)
+    3. the built-in (only when the item names a built-in `action`)
+    4. the `action` DOM event + the onAction(detail) twin — a notification
+       after the fact (a throwing built-in is logged; the event still fires)
 
 `detail` is the same object at every step (see THE ACTION EVENT below).
 
@@ -474,9 +475,10 @@ Detail (GridActionEventDetail<T>):
       controller, element                    // non-enumerable
     }
 
-Order: beforeActionCallback -> item.onClick -> action event / onAction
--> built-in. So in onAction for 'add' the new row is not inserted yet;
-for 'delete' the row is still in items.
+Order: beforeActionCallback -> item.onClick -> built-in -> action event
+/ onAction. So in onAction for 'add' the new row is already in items;
+for 'delete' the row is gone; for 'move-up' / 'move-down' items has the
+new order. detail.row / rowIndex are the context captured before.
 
 Buttons and menu items carry data-action (built-in name or 'custom')
 and data-id attributes.

@@ -31,7 +31,7 @@ export type MenuSpec<Ctx> = {
 	defaults?: (item: MenuItem<Ctx, any>) => Partial<ResolvedActionItem<any>> | undefined
 	/** Fill in built-in submenus (e.g. `column-visibility`) before resolving. */
 	prepare?: (item: MenuItem<Ctx, any>) => MenuItem<Ctx, any>
-	/** Run an activated leaf (beforeActionCallback → onClick → `action` event → built-in). */
+	/** Run an activated leaf (beforeActionCallback → onClick → built-in → `action` event). */
 	activate: (item: MenuItem<Ctx, any>, triggerElement: HTMLElement, event: Event) => Promise<unknown> | void
 }
 

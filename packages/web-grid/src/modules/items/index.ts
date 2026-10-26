@@ -6,7 +6,7 @@
 // (web-components-core `/actions`). This module is the one place that:
 //   - knows each built-in's default text / icon / visibility / disabled state,
 //   - activates an item in the shared order (`runAction`: beforeActionCallback →
-//     onClick → `action` event → built-in), and
+//     onClick → built-in → `action` event), and
 //   - implements the built-ins.
 
 import {
@@ -157,14 +157,15 @@ export type ActivateOptions<T> = {
 	source: ActionSource
 	sourceEvent?: Event
 	triggerElement?: HTMLElement
-	/** Runs after the built-in (or after the event for a custom item) — surface follow-up (close the toolbar, …). */
+	/** Runs after the built-in and the `action` event — surface follow-up (close the toolbar, …). */
 	after?: (detail: GridActionEventDetail<T>) => void
 }
 
 /**
  * Activate an item: beforeActionCallback (`false` cancels) → item.onClick →
- * the `action` event (+ `onAction`) → the built-in. Resolves false when
- * cancelled (or ignored while the same item is still busy).
+ * the built-in → the `action` event (+ `onAction`) — a notification after the
+ * fact, so a listener sees the new `items` (row added / gone / moved). Resolves
+ * false when cancelled (or ignored while the same item is still busy).
  */
 export async function activateGridItem<T>(host: GridHost<T>, opts: ActivateOptions<T>): Promise<boolean> {
 	const engine = host.engine

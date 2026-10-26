@@ -308,7 +308,7 @@ function setActiveToolbarCell<T>(ctx: GridHost<T>, cell: Omit<CellContext<T>, 'c
 
 /**
  * Floating-toolbar click: activate the item (beforeActionCallback → onClick →
- * `action` event → built-in), then follow up — close when the row is gone
+ * built-in → `action` event), then follow up — close when the row is gone
  * (`delete`), keep open + re-render + redraw the connector after a move, re-render
  * after anything else. Clears active selections first.
  */

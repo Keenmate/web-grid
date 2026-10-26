@@ -59,7 +59,9 @@ action / onAction
   rowIndices (/ cellRange / cells) for range shortcuts.
   triggerElement is the clicked button (inside the shadow DOM) - usable as
   a Floating UI anchor for popovers.
-  Fires after the item's onClick and BEFORE the built-in runs. See
+  Fires after the item's onClick AND after the built-in has run (a
+  notification after the fact: after 'delete' the row is gone from items,
+  after 'add' the new row is present, after 'move-*' the new order). See
   toolbar-actions.txt.
 
 data-request / onDataRequest

@@ -276,7 +276,15 @@ the cell element when the source was the keyboard / the focused row.
 **Test:** `interaction-model.spec.ts` "a move-down built-in keeps keyboard focus on
 the moved row" (`test.fail`).
 
-## 15. `action` fires before the built-in — no "after" signal (open question)
+## 15. `action` fires before the built-in — no "after" signal — RESOLVED
+
+**Resolved (2026-10-26, core #15):** core `runAction` now runs the built-in BEFORE the
+`action` event (beforeActionCallback → onClick → built-in → event). An `action` listener
+sees `items` after the built-in: `delete` → the row is gone, `add` → the new row is
+present, `move-*` → the new order. A throwing built-in is logged and the event still
+fires. Pinned in `interaction-model.spec.ts` ("action event after the built-in").
+
+Original note:
 
 `activateGridItem` → core `runAction`: beforeActionCallback → onClick → `action`
 event → built-in. A listener on `action` for `delete` / `add` / `move-*` sees the

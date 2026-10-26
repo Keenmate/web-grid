@@ -62,7 +62,7 @@ both non-enumerable, so `JSON.stringify` / logs see only the data.
 | toolbar `{ id, icon, title, label, type, danger, disabled, hidden, tooltip: { description, shortcut }, tooltipCallback, onclick({ row, rowIndex }) }` | `{ action?, id?, icon, text, tooltip, shortcut, isDanger, isDisabled, isVisible, isActive, cssClass, get*Callback(ctx), onClick(detail), row, isTextVisible }` — `text` is the accessible name + tooltip heading (shown only without an icon or with `isTextVisible`), `tooltip` the description |
 | toolbar `group: n` / menu `dividerBefore: true` | a divider entry `{ divider: true, text? }` (or `menuDivider(text)`, exported) |
 | `minWidth` on a toolbar item (was dropped anyway) | `cssClass` / `--wg-toolbar-btn-min-width` |
-| built-ins `'add' \| 'delete' \| 'duplicate' \| 'moveUp' \| 'moveDown'` were icon presets — the consumer did the work in `ontoolbarclick` | `'add' \| 'delete' \| 'duplicate' \| 'move-up' \| 'move-down'` **do the work** (after the `action` event): add inserts `createEmptyRowCallback(ctx)`'s row (else a blank row) after the row; delete removes it; duplicate inserts `createDuplicateRowCallback({ row })`'s copy (else a shallow copy with `idMember` cleared); move swaps with the displayed neighbour. Veto with `beforeActionCallback` → `false`. **Remove your own add / delete / move code from the old `ontoolbarclick` or the row changes twice.** Built-in texts: `labels.actions` |
+| built-ins `'add' \| 'delete' \| 'duplicate' \| 'moveUp' \| 'moveDown'` were icon presets — the consumer did the work in `ontoolbarclick` | `'add' \| 'delete' \| 'duplicate' \| 'move-up' \| 'move-down'` **do the work** (before the `action` event, which then sees the result): add inserts `createEmptyRowCallback(ctx)`'s row (else a blank row) after the row; delete removes it; duplicate inserts `createDuplicateRowCallback({ row })`'s copy (else a shallow copy with `idMember` cleared); move swaps with the displayed neighbour. Veto with `beforeActionCallback` → `false`. **Remove your own add / delete / move code from the old `ontoolbarclick` or the row changes twice.** Built-in texts: `labels.actions` |
 | `cellToolbar(row, rowIndex, field, colIndex)` | `getCellToolbarItemsCallback(cellCtx)` — merged over `rowToolbar` by `id` / `action` |
 | menu `{ id, label \| (ctx) => …, icon \| fn, visible \| fn, disabled \| fn, danger, type, onclick(ctx) }` | `{ action?, id?, text, getTextCallback, icon, getIconCallback, isVisible, getIsVisibleCallback, isDisabled, getIsDisabledCallback, isDanger, isActive, shortcut, onClick(detail), children, getChildrenCallback, shouldCloseOnClick }` |
 | header `submenu(ctx)` / `children` (child `onclick` never ran) | `children` / `getChildrenCallback(ctx)` (sync or async — a loading row shows meanwhile); every child activates |
@@ -106,6 +106,14 @@ handlers: `onpaste`, `onbeforepaste`, `onselect`).
 | `onexpandedpathschange({ path, expanded })` (toggle only) | `expand-change` / `onExpandChange({ path, isExpanded, expandedPaths })` — also for expand / collapse all (`path: null`) and subtree |
 | `onrowlockchange` | `row-lock-change` / `onRowLockChange` |
 | `onpaste` (shadowed `HTMLElement.onpaste`) | `paste-complete` / `onPasteComplete` |
+
+**Activation order (web-components-core #15):** `beforeActionCallback` (`false` cancels) →
+item `onClick` → the built-in → the `action` event / `onAction`. The event is a notification
+after the fact: after `delete` the row is already gone from `items`, after `add` the new row is
+present, after `move-up` / `move-down` the new order is in place (the detail's `row` /
+`rowIndex` are the surface context captured before the built-in). A throwing built-in is
+logged and the event still fires. Prevent a built-in with `beforeActionCallback`, not in the
+event.
 
 ### Changed — BREAKING (logging, row identity, editing)
 

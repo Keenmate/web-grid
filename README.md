@@ -766,7 +766,7 @@ Callbacks, events and clickable items follow the shared KeenMate interaction mod
 
 A **divider** is an entry `{ divider: true, text? }` (a labelled one is a group heading), or `menuDivider(text)` exported from the package.
 
-`beforeActionCallback(detail)` runs before any item activates (toolbar, menu, shortcut, built-in or custom) — return `false` to cancel (async OK, e.g. a confirm dialog). Then the item's `onClick` runs, then the `action` event fires, then the built-in does its work.
+`beforeActionCallback(detail)` runs before any item activates (toolbar, menu, shortcut, built-in or custom) — return `false` to cancel (async OK, e.g. a confirm dialog). Then the item's `onClick` runs, then the built-in does its work, then the `action` event fires — so an `action` listener sees the result (the deleted row gone, the added row present, the new order).
 
 ## Row Toolbar
 
@@ -948,7 +948,7 @@ grid.onRowChange = (detail) => save(detail.draftRow)
 | `paste-complete` | `onPasteComplete` | A multi-cell paste finished: `{ totalCells, successfulCells, failedCells, skippedCells, newRowsCreated, cellResults, hadHeaders }` |
 | `action` | `onAction` | A toolbar / menu / shortcut item was activated: `{ action, id, item, source, sourceEvent, triggerElement, dataset }` + the surface fields (see below) |
 
-`action` detail: `action` is the built-in name or `'custom'`; `source` is `'row-toolbar'`, `'cell-toolbar'`, `'context-menu'`, `'header-menu'` or `'keyboard'`. Row surfaces add `row` / `rowIndex` (cell surfaces also `column` / `colIndex` / `field` / `value`), the header menu its `HeaderMenuContext` fields, range shortcuts `rows` / `rowIndices`. It fires after the item's `onClick`, before the built-in runs.
+`action` detail: `action` is the built-in name or `'custom'`; `source` is `'row-toolbar'`, `'cell-toolbar'`, `'context-menu'`, `'header-menu'` or `'keyboard'`. Row surfaces add `row` / `rowIndex` (cell surfaces also `column` / `colIndex` / `field` / `value`), the header menu its `HeaderMenuContext` fields, range shortcuts `rows` / `rowIndices`. It fires after the item's `onClick` and after the built-in has run — a notification after the fact: after `delete` the row is already gone from `items`, after `add` the new row is present, after `move-up` / `move-down` the new order is in place. To prevent a built-in, return `false` from `beforeActionCallback`.
 
 ## Controller
 
