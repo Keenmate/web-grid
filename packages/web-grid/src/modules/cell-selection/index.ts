@@ -10,8 +10,30 @@ import { updateFocusVisual, focusCellElement } from '../navigation/index.js'
 /** Minimum distance (px) mouse must move before drag starts */
 const DRAG_THRESHOLD = 5
 
+// Column convention: a range (and this module's drag state) spans VISUAL positions -
+// indices into `engine.visualColumns` (reordered, hidden columns skipped). The DOM,
+// focus and `lastClickedCell` use the column index (`data-col`, the index into
+// `columns`). Convert at the edges: `toVisual(colIndex)` in, `cellAt(row, pos)` out.
+
+/** Visual position of a column index (`data-col`); -1 when hidden. */
+function toVisual<T>(ctx: GridHost<T>, colIndex: number): number {
+	return ctx.engine.visualIndexOfColumn(colIndex)
+}
+
+/** Column index (`data-col`) at a visual position. */
+function toColumn<T>(ctx: GridHost<T>, pos: number): number | undefined {
+	return ctx.engine.visualColumns[pos]?.originalIndex
+}
+
+/** The cell element at (row, visual position). */
+function cellAt<T>(ctx: GridHost<T>, row: number, pos: number): HTMLElement | null {
+	const col = toColumn(ctx, pos)
+	if (col === undefined) return null
+	return ctx.shadow.querySelector(`[data-row="${row}"][data-col="${col}"]`) as HTMLElement | null
+}
+
 /**
- * State for tracking cell selection drag operation
+ * State for tracking cell selection drag operation (column fields are visual positions)
  */
 interface CellSelectionState {
 	isPending: boolean      // Mouse is down but threshold not yet exceeded
@@ -60,7 +82,7 @@ export function isCellSelectionPending(): boolean {
 }
 
 /**
- * Handle mousedown on a cell to start selection
+ * Handle mousedown on a cell to start selection. `colIndex` is the cell's `data-col`.
  */
 export function handleCellMouseDown<T>(ctx: GridHost<T>, rowIndex: number, colIndex: number, event: MouseEvent): void {
 	// DON'T preventDefault() immediately - let the cell get focus first
@@ -73,9 +95,8 @@ export function handleCellMouseDown<T>(ctx: GridHost<T>, rowIndex: number, colIn
 		removeRangeBorder()
 	}
 
-	const visualCols = ctx.engine.visualColumns
-	const column = visualCols[colIndex]?.column
-	if (!column) return
+	const pos = toVisual(ctx, colIndex)
+	if (pos < 0) return
 
 	// Set up pending state
 	selectionState = {
@@ -83,11 +104,11 @@ export function handleCellMouseDown<T>(ctx: GridHost<T>, rowIndex: number, colIn
 		isPending: true,
 		isDragging: false,
 		startRowIndex: rowIndex,
-		startColIndex: colIndex,
+		startColIndex: pos,
 		startX: event.clientX,
 		startY: event.clientY,
 		currentRowIndex: rowIndex,
-		currentColIndex: colIndex
+		currentColIndex: pos
 	}
 
 	activeContext = ctx as GridHost
@@ -99,7 +120,8 @@ export function handleCellMouseDown<T>(ctx: GridHost<T>, rowIndex: number, colIn
 }
 
 /**
- * Handle Shift+Click to extend/create range to clicked cell
+ * Handle Shift+Click to extend/create range to clicked cell. `colIndex` (and
+ * `lastClickedCell.colIndex`) are `data-col` values.
  */
 export function handleCellShiftClick<T>(ctx: GridHost<T>, rowIndex: number, colIndex: number): void {
 	// Clear existing border before creating new range
@@ -109,15 +131,17 @@ export function handleCellShiftClick<T>(ctx: GridHost<T>, rowIndex: number, colI
 	if (ctx.engine.lastClickedCell) {
 		const { rowIndex: startRow, colIndex: startCol } = ctx.engine.lastClickedCell
 		const visualCols = ctx.engine.visualColumns
-		const startColumn = visualCols[startCol]?.column
-		const endColumn = visualCols[colIndex]?.column
+		const startPos = toVisual(ctx, startCol)
+		const endPos = toVisual(ctx, colIndex)
+		const startColumn = visualCols[startPos]?.column
+		const endColumn = visualCols[endPos]?.column
 
 		if (startColumn && endColumn) {
 			const range: CellRange = {
 				startRowIndex: startRow,
-				startColIndex: startCol,
+				startColIndex: startPos,
 				endRowIndex: rowIndex,
-				endColIndex: colIndex,
+				endColIndex: endPos,
 				startField: String(startColumn.field),
 				endField: String(endColumn.field)
 			}
@@ -182,9 +206,10 @@ function processDragUpdate(): void {
 
 	// Find which cell the mouse is over
 	const cellInfo = findCellAtPoint(activeContext, e.clientX, e.clientY)
-	if (cellInfo && (cellInfo.rowIndex !== selectionState.currentRowIndex || cellInfo.colIndex !== selectionState.currentColIndex)) {
+	const pos = cellInfo ? toVisual(activeContext, cellInfo.colIndex) : -1
+	if (cellInfo && pos >= 0 && (cellInfo.rowIndex !== selectionState.currentRowIndex || pos !== selectionState.currentColIndex)) {
 		selectionState.currentRowIndex = cellInfo.rowIndex
-		selectionState.currentColIndex = cellInfo.colIndex
+		selectionState.currentColIndex = pos
 
 		// Read border positions BEFORE writing CSS classes (avoids forced reflow)
 		const borderPositions = computeRangeBorderPositions(activeContext)
@@ -246,12 +271,10 @@ function updateCellHighlighting<T>(ctx: GridHost<T>): void {
 	const allCells = ctx.shadow.querySelectorAll('.wg__cell--in-range')
 	allCells.forEach(cell => cell.classList.remove('wg__cell--in-range'))
 
-	// Add class to cells in current range
+	// Add class to cells in current range (visual positions -> data-col)
 	for (let row = minRow; row <= maxRow; row++) {
-		for (let col = minCol; col <= maxCol; col++) {
-			const cell = ctx.shadow.querySelector(
-				`[data-row="${row}"][data-col="${col}"]`
-			) as HTMLElement
+		for (let pos = minCol; pos <= maxCol; pos++) {
+			const cell = cellAt(ctx, row, pos)
 			if (cell) {
 				cell.classList.add('wg__cell--in-range')
 			}
@@ -271,14 +294,15 @@ function handleDocumentMouseUp(e: MouseEvent): void {
 	if (selectionState.isPending) {
 		const isShiftMode = e.shiftKey && ctx.engine.cellSelectionMode === 'shift'
 		
+		const startCol = toColumn(ctx, selectionState.startColIndex) ?? -1
 		if (isShiftMode && ctx.engine.lastClickedCell) {
 			// Shift+click without drag - create range from last clicked cell
-			handleCellShiftClick(ctx, selectionState.startRowIndex, selectionState.startColIndex)
+			handleCellShiftClick(ctx, selectionState.startRowIndex, startCol)
 		} else {
-			// Regular click - just remember the clicked cell for future shift+click
+			// Regular click - just remember the clicked cell (data-col) for future shift+click
 			ctx.engine.lastClickedCell = {
 				rowIndex: selectionState.startRowIndex,
-				colIndex: selectionState.startColIndex
+				colIndex: startCol
 			}
 		}
 		cleanup(ctx)
@@ -300,10 +324,7 @@ function handleDocumentMouseUp(e: MouseEvent): void {
 		removeRangeBorder()
 
 		// Restore focus on the start cell (was cleared when drag began)
-		const { startRowIndex, startColIndex } = selectionState
-		ctx.engine.setFocusedCell(startRowIndex, startColIndex)
-		updateFocusVisual(ctx, null, { rowIndex: startRowIndex, colIndex: startColIndex })
-		focusCellElement(ctx, startRowIndex, startColIndex)
+		restoreStartFocus(ctx)
 
 		cleanup(ctx)
 	} else {
@@ -322,6 +343,16 @@ function handleDocumentMouseUp(e: MouseEvent): void {
 	}
 }
 
+/** Put focus back on the drag's start cell (focus uses the column index, not the visual position). */
+function restoreStartFocus<T>(ctx: GridHost<T>): void {
+	const { startRowIndex } = selectionState
+	const col = toColumn(ctx, selectionState.startColIndex)
+	if (col === undefined) return
+	ctx.engine.setFocusedCell(startRowIndex, col)
+	updateFocusVisual(ctx, null, { rowIndex: startRowIndex, colIndex: col })
+	focusCellElement(ctx, startRowIndex, col)
+}
+
 /**
  * Handle keydown - Escape cancels selection operation
  */
@@ -336,10 +367,7 @@ function handleDocumentKeyDown(e: KeyboardEvent): void {
 			allCells.forEach(cell => cell.classList.remove('wg__cell--in-range'))
 			removeRangeBorder()
 
-			const { startRowIndex, startColIndex } = selectionState
-			ctx.engine.setFocusedCell(startRowIndex, startColIndex)
-			updateFocusVisual(ctx, null, { rowIndex: startRowIndex, colIndex: startColIndex })
-			focusCellElement(ctx, startRowIndex, startColIndex)
+			restoreStartFocus(ctx)
 		}
 
 		cleanup(ctx)
@@ -347,7 +375,8 @@ function handleDocumentKeyDown(e: KeyboardEvent): void {
 }
 
 /**
- * Find which cell is at a given point using elementFromPoint (O(1) hit-test)
+ * Find which cell is at a given point using elementFromPoint (O(1) hit-test).
+ * `colIndex` is the cell's `data-col`.
  */
 function findCellAtPoint<T>(ctx: GridHost<T>, x: number, y: number): { rowIndex: number; colIndex: number } | null {
 	const element = ctx.shadow.elementFromPoint(x, y) as HTMLElement
@@ -422,12 +451,8 @@ function computeRangeBorderPositions<T>(ctx: GridHost<T>): BorderPositions | nul
 	const minCol = Math.min(startColIndex, currentColIndex)
 	const maxCol = Math.max(startColIndex, currentColIndex)
 
-	const startCell = ctx.shadow.querySelector(
-		`[data-row="${minRow}"][data-col="${minCol}"]`
-	) as HTMLElement
-	const endCell = ctx.shadow.querySelector(
-		`[data-row="${maxRow}"][data-col="${maxCol}"]`
-	) as HTMLElement
+	const startCell = cellAt(ctx, minRow, minCol)
+	const endCell = cellAt(ctx, maxRow, maxCol)
 
 	if (!startCell || !endCell) return null
 
@@ -498,13 +523,9 @@ export function createRangeBorder<T>(ctx: GridHost<T>): void {
 	const minCol = Math.min(startColIndex, endColIndex)
 	const maxCol = Math.max(startColIndex, endColIndex)
 
-	// Find the bounding cells
-	const startCell = ctx.shadow.querySelector(
-		`[data-row="${minRow}"][data-col="${minCol}"]`
-	) as HTMLElement
-	const endCell = ctx.shadow.querySelector(
-		`[data-row="${maxRow}"][data-col="${maxCol}"]`
-	) as HTMLElement
+	// Find the bounding cells (visual positions -> data-col)
+	const startCell = cellAt(ctx, minRow, minCol)
+	const endCell = cellAt(ctx, maxRow, maxCol)
 
 	if (!startCell || !endCell) return
 
@@ -604,8 +625,8 @@ function cleanup<T>(ctx: GridHost<T>): void {
 // Ctrl+Shift+Arrow, and Shift+click in 'click' mode)
 // =============================================================================
 // The focused cell is the anchor: it keeps focus, the other corner moves.
-// Column indices are `data-col` values (like the drag path); moves step through
-// the *visual* column order.
+// Arguments / focus use `data-col` values; the stored range uses visual
+// positions (like the drag path); moves step through the visual column order.
 
 /**
  * Select the range from the focused cell (anchor) to (rowIndex, colIndex).
@@ -618,8 +639,10 @@ export function extendCellRangeTo<T>(ctx: GridHost<T>, rowIndex: number, colInde
 	const anchor = engine.focusedCell
 	if (!anchor) return false
 	const visualCols = engine.visualColumns
-	const startColumn = visualCols.find(v => v.originalIndex === anchor.colIndex)?.column
-	const endColumn = visualCols.find(v => v.originalIndex === colIndex)?.column
+	const startPos = engine.visualIndexOfColumn(anchor.colIndex)
+	const endPos = engine.visualIndexOfColumn(colIndex)
+	const startColumn = visualCols[startPos]?.column
+	const endColumn = visualCols[endPos]?.column
 	if (!startColumn || !endColumn) return false
 
 	if (rowIndex === anchor.rowIndex && colIndex === anchor.colIndex) {
@@ -633,9 +656,9 @@ export function extendCellRangeTo<T>(ctx: GridHost<T>, rowIndex: number, colInde
 	if (engine.selectedColumns.length > 0) engine.clearColumnSelection()
 	engine.selectCellRange({
 		startRowIndex: anchor.rowIndex,
-		startColIndex: anchor.colIndex,
+		startColIndex: startPos,
 		endRowIndex: rowIndex,
-		endColIndex: colIndex,
+		endColIndex: endPos,
 		startField: String(startColumn.field),
 		endField: String(endColumn.field)
 	})
@@ -662,13 +685,15 @@ export function extendCellRangeByKey<T>(ctx: GridHost<T>, e: KeyboardEvent): boo
 
 	// The free corner: the current range's end when it is anchored here, else the anchor
 	const range = engine.selectedCellRange
-	const isAnchoredHere = !!range && range.startRowIndex === anchor.rowIndex && range.startColIndex === anchor.colIndex
+	const anchorPos = engine.visualIndexOfColumn(anchor.colIndex)
+	if (anchorPos < 0) return false
+	const isAnchoredHere = !!range && range.startRowIndex === anchor.rowIndex && range.startColIndex === anchorPos
 	let row = isAnchoredHere ? range!.endRowIndex : anchor.rowIndex
-	const endCol = isAnchoredHere ? range!.endColIndex : anchor.colIndex
 
+	// Range columns are visual positions; `order` maps them back to data-col
 	const order = engine.visualColumns.map(v => v.originalIndex)
-	let pos = order.indexOf(endCol)
-	if (pos < 0) return false
+	let pos = isAnchoredHere ? range!.endColIndex : anchorPos
+	if (pos < 0 || pos >= order.length) return false
 	const lastPos = order.length - 1
 
 	// Data rows only (the new empty row is not part of a range)

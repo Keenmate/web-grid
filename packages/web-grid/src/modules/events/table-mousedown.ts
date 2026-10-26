@@ -111,7 +111,7 @@ export function handleTableMouseDown<T>(ctx: GridHost<T>, e: Event): void {
 	if (cell && !cell.classList.contains('wg__cell--editing') && !target.closest('.wg__row-number') && !isClickingToggle) {
 		const rowIndex = parseInt(cell.dataset.row || '0', 10)
 		const colIndex = parseInt(cell.dataset.col || '0', 10)
-		const column = ctx.engine.visualColumns[colIndex]?.column
+		const column = ctx.engine.visualColumns.find(v => v.originalIndex === colIndex)?.column  // colIndex is data-col
 
 		if (column) {
 			const selectionMode = ctx.engine.cellSelectionMode

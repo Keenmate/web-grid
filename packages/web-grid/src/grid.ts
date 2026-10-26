@@ -705,6 +705,14 @@ export class GridEngine<T = unknown> {
 	}
 
 	/**
+	 * Visual position (index into `visualColumns`) of a column index (`data-col`,
+	 * the index into `columns`). -1 when the column is hidden / unknown.
+	 */
+	visualIndexOfColumn(colIndex: number): number {
+		return this.visualColumns.findIndex(v => v.originalIndex === colIndex)
+	}
+
+	/**
 	 * Get the total number of frozen columns (from frozen: true + freezeColumns prop).
 	 */
 	get totalFrozenColumns(): number {
@@ -2018,19 +2026,22 @@ export class GridEngine<T = unknown> {
 		const minCol = Math.min(startColIndex, endColIndex)
 		const maxCol = Math.max(startColIndex, endColIndex)
 
+		// The range spans visual positions; each cell reports its column index
+		// (`data-col`, the index into `columns`) like every other cell context.
+		const visualCols = this.visualColumns
 		const cells = []
 		for (let row = minRow; row <= maxRow; row++) {
 			for (let col = minCol; col <= maxCol; col++) {
-				const column = this.visualColumns[col]?.column
-				if (!column) continue
+				const entry = visualCols[col]
+				if (!entry) continue
 
 				const rowData = this.displayItems[row]
 				if (!rowData) continue
 
-				const field = String(column.field)
+				const field = String(entry.column.field)
 				const value = (rowData as Record<string, unknown>)[field]
 
-				cells.push({ row: rowData, rowIndex: row, colIndex: col, field, value })
+				cells.push({ row: rowData, rowIndex: row, colIndex: entry.originalIndex, field, value })
 			}
 		}
 
@@ -2038,10 +2049,12 @@ export class GridEngine<T = unknown> {
 	}
 
 	/**
-	 * Check if a cell is in the selected cell range
+	 * Check if a cell is in the selected cell range. `visualIndex` is the cell's
+	 * visual position (index into `visualColumns`) — the range's convention.
 	 */
-	isCellInSelectedRange(rowIndex: number, colIndex: number): boolean {
+	isCellInSelectedRange(rowIndex: number, visualIndex: number): boolean {
 		if (!this._selectedCellRange) return false
+		const pos = visualIndex
 
 		const { startRowIndex, endRowIndex, startColIndex, endColIndex } = this._selectedCellRange
 		const minRow = Math.min(startRowIndex, endRowIndex)
@@ -2049,7 +2062,7 @@ export class GridEngine<T = unknown> {
 		const minCol = Math.min(startColIndex, endColIndex)
 		const maxCol = Math.max(startColIndex, endColIndex)
 
-		return rowIndex >= minRow && rowIndex <= maxRow && colIndex >= minCol && colIndex <= maxCol
+		return rowIndex >= minRow && rowIndex <= maxRow && pos >= minCol && pos <= maxCol
 	}
 
 	/**

@@ -89,7 +89,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 
 | Feature | Status | Spec | Fixture |
 | --- | :-: | --- | --- |
-| Row / column / cell-range selection, row focus | ✓ | `selection.spec.ts` | `selection.html` |
+| Row / column / cell-range selection, row focus; cell range with reordered + hidden columns (drag, Shift+Arrow — highlight, border, `getSelectedCells` agree) | ✓ | `selection.spec.ts` | `selection.html` |
 | `cellSelectionMode` click / disabled / shift; row + cell-range selection API | ✓ | `selection-api.spec.ts` | `selection-api.html` |
 | Arrow navigation in navigate mode | ✓ | `basic.spec.ts` | `basic.html` |
 | Home/End/PageUp/PageDown + Ctrl variants, Delete commits null, typing starts edit, Ctrl+G dialog | ✓ | `keyboard.spec.ts` | `keyboard.html` |

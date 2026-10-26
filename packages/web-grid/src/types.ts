@@ -273,7 +273,14 @@ export type NewRowPosition = 'top' | 'bottom'
 // Selection Types
 // =============================================================================
 
-// Selected cell range (rectangular region)
+/**
+ * Selected cell range (rectangular region). `startColIndex` / `endColIndex` are
+ * VISUAL positions — indices into the displayed column order (after reordering,
+ * with hidden columns skipped), so the rectangle is contiguous on screen. They are
+ * not the column index (`colIndex` / `data-col`) used by cell contexts; map with
+ * `visualColumns[pos].originalIndex` (`getSelectedCells()` reports the column
+ * index). `startField` / `endField` name the corner columns.
+ */
 export type CellRange = {
 	startRowIndex: number
 	startColIndex: number

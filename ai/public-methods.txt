@@ -200,7 +200,9 @@ clearCellSelection(): void
   Clear the current cell range selection.
 
 getSelectedCells(): Array<{ row: T, rowIndex: number, colIndex: number, field: string, value: unknown }>
-  Get data for all cells in the current selection.
+  Get data for all cells in the current selection, in on-screen order.
+  colIndex is the column index (data-col); the range itself
+  (selectedCellRange.startColIndex / endColIndex) uses visual positions.
 
 copyCellSelectionToClipboard(): Promise<boolean>
   Copy selected cells as TSV to clipboard. If shouldCopyWithHeaders is

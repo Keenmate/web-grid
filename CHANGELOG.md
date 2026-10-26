@@ -185,6 +185,14 @@ event.
 
 ### Fixed
 
+- **Cell ranges with reordered or hidden columns.** Range column indices mixed the
+  column index (`data-col`) and the visual position, so a drag selection, its highlight /
+  border and `getSelectedCells()` could disagree once columns were reordered or hidden
+  (e.g. a drag across the moved columns selected different cells than it highlighted). One
+  convention end-to-end now: a `CellRange`'s `startColIndex` / `endColIndex` are visual
+  positions (the on-screen rectangle; drag, Shift+click, Shift+Arrow, select-all), mapped to
+  the column index when reading — `getSelectedCells()` reports each cell's `colIndex` as the
+  column index (`data-col`, like every cell context), no longer the visual position.
 - The floating toolbar ignored hidden items; a cell toolbar's swapped-in items were looked up in the
   base list on click (custom cell items did nothing).
 - A row shortcut fired twice when a cell had focus and the hover toolbar was open on the same row.

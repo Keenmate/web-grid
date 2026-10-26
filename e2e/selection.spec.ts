@@ -177,3 +177,80 @@ test.describe('row focus (onRowFocus)', () => {
 		await expect(focusedRow(page)).toHaveText('5 — Frank')
 	})
 })
+
+// =============================================================================
+// Cell range with reordered + hidden columns — ranges span VISUAL positions
+// =============================================================================
+// Columns id(0) name(1) secret(2, hidden) dept(3) salary(4) (data-col in brackets),
+// reordered to salary | name | id | dept. A range must be the on-screen rectangle:
+// highlight, border and getSelectedCells agree; cells report their data-col.
+
+test.describe('cell range with reordered + hidden columns', () => {
+	async function setup(page: Page) {
+		await gotoSelection(page)
+		await gridLocator(page).evaluate(async (el: any) => {
+			el.columns = [
+				{ field: 'id', title: 'ID', width: '70px' },
+				{ field: 'name', title: 'Name', width: '160px' },
+				{ field: 'secret', title: 'Secret', width: '90px', isHidden: true },
+				{ field: 'dept', title: 'Dept', width: '120px' },
+				{ field: 'salary', title: 'Salary', width: '110px' }
+			]
+			el.setColumnOrder([
+				{ field: 'salary', order: 0 }, { field: 'name', order: 1 },
+				{ field: 'id', order: 2 }, { field: 'dept', order: 3 }
+			])
+			await el.whenSettled?.()
+		})
+		await expect(header(page, 'secret')).toHaveCount(0)
+		const order = await gridLocator(page).locator('tbody tr[data-row-index="0"] td.wg__cell[data-col]')
+			.evaluateAll(els => els.map(el => (el as HTMLElement).dataset.col))
+		expect(order).toEqual(['4', '1', '0', '3'])
+	}
+	const selected = (page: Page) => gridLocator(page).evaluate((el: any) =>
+		el.getSelectedCells().map((c: any) => `${c.rowIndex}:${c.colIndex}:${c.field}`))
+	const inRangeCols = (page: Page, row: number) => gridLocator(page)
+		.locator(`tbody tr[data-row-index="${row}"] td.wg__cell--in-range`)
+		.evaluateAll(els => els.map(el => (el as HTMLElement).dataset.col))
+
+	async function expectBorderSpans(page: Page, fromRow: number, fromCol: number, toRow: number, toCol: number) {
+		const border = await gridLocator(page).locator('.wg__cell-range-border').boundingBox()
+		const a = await cell(page, fromRow, fromCol).boundingBox()
+		const b = await cell(page, toRow, toCol).boundingBox()
+		if (!border || !a || !b) throw new Error('missing box')
+		expect(Math.abs(border.x - a.x)).toBeLessThan(3)
+		expect(Math.abs(border.x + border.width - (b.x + b.width))).toBeLessThan(3)
+	}
+
+	test('drag name → id (adjacent on screen, data-col 1 → 0)', async ({ page }) => {
+		await setup(page)
+		await dragSelect(page, 0, 1, 1, 0)
+		expect(await selected(page)).toEqual(['0:1:name', '0:0:id', '1:1:name', '1:0:id'])
+		expect(await inRangeCols(page, 0)).toEqual(['1', '0'])
+		expect(await inRangeCols(page, 1)).toEqual(['1', '0'])
+		await expectBorderSpans(page, 0, 1, 1, 0)
+	})
+
+	test('drag dept → salary spans every visible column in between', async ({ page }) => {
+		await setup(page)
+		await dragSelect(page, 0, 3, 1, 4)
+		expect(await selected(page)).toEqual([
+			'0:4:salary', '0:1:name', '0:0:id', '0:3:dept',
+			'1:4:salary', '1:1:name', '1:0:id', '1:3:dept'
+		])
+		expect(await inRangeCols(page, 0)).toEqual(['4', '1', '0', '3'])
+		expect(await inRangeCols(page, 2)).toEqual([])
+		await expectBorderSpans(page, 0, 4, 1, 3)
+	})
+
+	test('Shift+ArrowRight from name extends to id (the next column on screen)', async ({ page }) => {
+		await setup(page)
+		await cell(page, 0, 1).click()
+		await page.keyboard.press('Shift+ArrowRight')
+		await expect.poll(() => selected(page)).toEqual(['0:1:name', '0:0:id'])
+		await page.keyboard.press('Shift+ArrowDown')
+		await expect.poll(() => selected(page)).toEqual(['0:1:name', '0:0:id', '1:1:name', '1:0:id'])
+		await expect.poll(() => inRangeCols(page, 1)).toEqual(['1', '0'])
+		await expectBorderSpans(page, 0, 1, 1, 0)
+	})
+})

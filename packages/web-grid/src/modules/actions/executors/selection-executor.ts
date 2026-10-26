@@ -195,8 +195,12 @@ function updateCellRangeVisual(ctx: ExecutorContext): void {
 	const minCol = Math.min(startColIndex, endColIndex)
 	const maxCol = Math.max(startColIndex, endColIndex)
 
+	// The range spans visual positions; cells are addressed by column index (data-col)
+	const visualCols = ctx.engine.visualColumns
 	for (let row = minRow; row <= maxRow; row++) {
-		for (let col = minCol; col <= maxCol; col++) {
+		for (let pos = minCol; pos <= maxCol; pos++) {
+			const col = visualCols[pos]?.originalIndex
+			if (col === undefined) continue
 			const cell = ctx.shadow.querySelector(`.wg__cell[data-row="${row}"][data-col="${col}"]`)
 			if (cell) {
 				cell.classList.add('wg__cell--in-range')
