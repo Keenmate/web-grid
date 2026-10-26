@@ -134,6 +134,12 @@ handlers: `onpaste`, `onbeforepaste`, `onselect`).
   Drafts are never pruned when `items` is set (server paging: a missing row is another page) —
   they leave via `replaceRowById`, `discardDraft`, `discardRowDraft`, `discardAllDrafts`. Server
   paging + editing without a usable row id logs a warning once.
+- **Edit button** for `editTrigger: 'button'` (the value existed, nothing rendered it — cells couldn't
+  be edited with the mouse). Editable cells (not read-only / locked) show it on hover and in the
+  focused cell; a click starts editing, F2 / Enter as usual. New input **`editButtonIcon`** (HTML,
+  default `✎`, attribute `edit-button-icon`) — e.g. `'<span class="lucide-pencil"></span>'`;
+  accessible name `labels.editCell` ("Edit"). `column.isEditButtonVisible` (never read before) shows
+  the button in that column whatever the trigger.
 - **Keyboard range selection.** Shift+Arrow grows / shrinks a cell range from the focused cell (the
   anchor keeps focus), Shift+Home / End extend to the row start / end, Ctrl+Shift+Arrow to the data
   edge. In `cellSelectionMode: 'click'` (the default) Shift+click now extends the range from the

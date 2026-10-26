@@ -21,7 +21,13 @@ editTrigger (EditTrigger, default: 'dblclick')
   How editing starts. Values:
     'click'     -- Single click on a cell starts editing.
     'dblclick'  -- Double-click starts editing (default).
-    'button'    -- Only the edit button in the cell starts editing.
+    'button'    -- An edit button (✎) in editable cells (not read-only / locked),
+                   shown on hover and in the focused cell, starts editing; F2 /
+                   Enter work as usual, a plain click only focuses.
+                   editButtonIcon (string, HTML, default '✎', attribute
+                   edit-button-icon) sets its content, e.g.
+                   '<span class="lucide-pencil"></span>'; labels.editCell
+                   ("Edit") its aria-label / title.
     'always'    -- Cells are always rendered as editors (input-matrix style).
     'navigate'  -- Arrow-key navigation mode. Typing a character starts editing
                    the focused cell with that character as initial input. Similar
@@ -507,7 +513,8 @@ Column-level overrides:
                                  for this column: 'always' or 'on-focus'.
   shouldOpenDropdownOnEnter   -- Override Enter behavior for dropdown columns
                                  on this column.
-  isEditButtonVisible         -- Show an edit button (pencil icon) in the cell.
+  isEditButtonVisible         -- Show the edit button in this column's editable
+                                 cells whatever the editTrigger.
   editorOptions               -- Editor-specific options for this column.
   renderEditorCallback            -- Handler for custom editor type.
   validateCallback        -- Validation/transform for this column.

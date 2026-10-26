@@ -38,6 +38,7 @@ import {
 import { renderCell } from '../rendering/index.js'
 import { handleCellMouseDown, removeRangeBorder } from '../cell-selection/index.js'
 import { openDatePicker } from '../datepicker/index.js'
+import { handleEditButtonMouseDown } from '../editing/edit-button.js'
 
 /**
  * Handle the table-level mousedown. Returns nothing (drives DOM side effects);
@@ -48,6 +49,9 @@ export function handleTableMouseDown<T>(ctx: GridHost<T>, e: Event): void {
 	const target = e.target as HTMLElement
 	const mouseEvent = e as MouseEvent
 	uiLogger.debug('MOUSEDOWN fired | target:', target.tagName, target.className, '| connected:', target.isConnected, '| detail:', mouseEvent.detail, '| button:', mouseEvent.button)
+
+	// Edit button (editTrigger 'button') — starts editing its cell
+	if (handleEditButtonMouseDown(ctx, mouseEvent)) return
 
 	// Tree chevron — let click handler do its work; suppress focus/selection side effects
 	if (target.closest('.wg__tree-chevron[data-tree-toggle]')) {

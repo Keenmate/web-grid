@@ -121,11 +121,73 @@ test.describe('editTrigger', () => {
 	})
 
 	test("'button': an edit button in the cell starts editing", async ({ page }) => {
-		test.fail(true, 'NOTES.md #26')
 		await onGrid(page, el => { el.editTrigger = 'button' })
 		const btn = cell(page, 0, 0).locator('button')
 		await expect(btn).toHaveCount(1, { timeout: 1500 })
+		await cell(page, 0, 0).hover()   // the button shows on hover (or in the focused cell)
 		await btn.click()
+		await expect(editorIn(cell(page, 0, 0))).toBeVisible()
+	})
+
+	test("'button': only editable cells get it; visible on hover and in the focused cell; labelled", async ({ page }) => {
+		await onGrid(page, el => {
+			el.editTrigger = 'button'
+			el.columns = el.columns.map((c: any) => c.field === 'qty' ? { ...c, isEditable: false } : c)
+		})
+		const btn = cell(page, 0, 0).locator('.wg__edit-button')
+		await expect(btn).toHaveCount(1)
+		await expect(cell(page, 0, 1).locator('.wg__edit-button')).toHaveCount(0)   // read-only column
+		await expect(btn).toHaveAttribute('aria-label', 'Edit')
+		await expect(btn).toHaveAttribute('title', 'Edit')
+		await page.mouse.move(0, 0)
+		await expect(btn).toBeHidden()
+		await cell(page, 0, 0).hover()
+		await expect(btn).toBeVisible()
+		// focused cell: visible without hover; F2 / Enter edit as usual
+		await cell(page, 1, 0).click({ position: { x: 5, y: 5 } })
+		await page.mouse.move(0, 0)
+		await expect(cell(page, 1, 0)).toBeFocused()
+		await expect(cell(page, 1, 0).locator('.wg__edit-button')).toBeVisible()
+		await page.keyboard.press('F2')
+		await expect(editorIn(cell(page, 1, 0))).toBeVisible()
+		// the editing cell has no button
+		await expect(cell(page, 1, 0).locator('.wg__edit-button')).toHaveCount(0)
+	})
+
+	test("'button': a single click on the cell does not edit", async ({ page }) => {
+		await onGrid(page, el => { el.editTrigger = 'button' })
+		await cell(page, 0, 0).click({ position: { x: 5, y: 5 } })
+		await expect(editorIn(cell(page, 0, 0))).toHaveCount(0)
+	})
+
+	test("'button': locked rows get no button", async ({ page }) => {
+		await onGrid(page, el => { el.editTrigger = 'button'; el.rowLocking = { getIsLockedCallback: ({ row }: any) => row.id === 1 } })
+		await expect(cell(page, 0, 0).locator('.wg__edit-button')).toHaveCount(0)
+		await expect(cell(page, 1, 0).locator('.wg__edit-button')).toHaveCount(1)
+	})
+
+	test('editButtonIcon is HTML (icon fonts / sprites); labels.editCell names it', async ({ page }) => {
+		await onGrid(page, el => {
+			el.editTrigger = 'button'
+			el.editButtonIcon = '<span class="lucide-pencil" data-testid="pencil"></span>'
+			el.labels = { editCell: 'Upravit' }
+		})
+		const btn = cell(page, 0, 0).locator('.wg__edit-button')
+		await expect(btn.locator('span.lucide-pencil')).toHaveCount(1)
+		await expect(btn).toHaveAttribute('aria-label', 'Upravit')
+		// attribute form; removal → the default glyph
+		await onGrid(page, el => el.setAttribute('edit-button-icon', '<b>E</b>'))
+		await expect(btn.locator('b')).toHaveText('E')
+		await onGrid(page, el => el.removeAttribute('edit-button-icon'))
+		await expect(btn).toHaveText('✎')
+	})
+
+	test('column.isEditButtonVisible shows the button whatever the editTrigger', async ({ page }) => {
+		await onGrid(page, el => { el.columns = el.columns.map((c: any) => c.field === 'name' ? { ...c, isEditButtonVisible: true } : c) })
+		await expect(cell(page, 0, 0).locator('.wg__edit-button')).toHaveCount(1)
+		await expect(cell(page, 0, 3).locator('.wg__edit-button')).toHaveCount(0)
+		await cell(page, 0, 0).hover()
+		await cell(page, 0, 0).locator('.wg__edit-button').click()
 		await expect(editorIn(cell(page, 0, 0))).toBeVisible()
 	})
 })

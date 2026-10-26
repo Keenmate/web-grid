@@ -65,7 +65,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Date editor (open, select, keyboard, min/max, months) | ✓ | `datepicker.spec.ts` | `datepicker.html` |
 | `editTrigger` click / dblclick / navigate, `shouldCommitOnClickAway` | ✓ | `edit-trigger.spec.ts` | `edit-trigger.html` |
 | `editTrigger` 'always', column override, `editStartSelection` (grid + column, all 4 modes) | ✓ | `edit-modes.spec.ts` | `edit-modes.html` |
-| `editTrigger: 'button'` has no button (#26, question) | ✗ fail | `edit-modes.spec.ts` | `edit-modes.html` |
+| `editTrigger: 'button'` edit button: editable / locked cells, hover + focused visibility, click edits, F2, `editButtonIcon` HTML + attribute, `labels.editCell`, `column.isEditButtonVisible` (#26 fixed) | ✓ | `edit-modes.spec.ts` | `edit-modes.html` |
 | Number editor parsing (ints, decimals, padding, empty → null, negatives) | ✓ | `edit-modes.spec.ts` | `edit-modes.html` |
 | Number editor: strict parse, non-numbers / min / max / negatives invalid (no clamping), decimals round, min/max/step attributes, label i18n (#25 fixed) | ✓ | `edit-modes.spec.ts` | `edit-modes.html` |
 | `dropdownToggleVisibility`, `shouldShowDropdownOnFocus`, `shouldOpenDropdownOnEnter` (grid + column), checkbox Space toggle | ✓ | `dropdown-flags.spec.ts` | `dropdown-flags.html` |
@@ -165,7 +165,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Core theme context (page signal → `data-context-theme`), `--base-*` chain | ✓ | `theme-context.spec.ts` | `theme-context.html` |
 | Contrast in dark mode (3 theme depths) | ✓ | `dark-mode.spec.ts` | `dark-mode.html` |
 | Inputs: mode preset batch, sync property reads, invalid values rejected | ✓ | `inputs.spec.ts` | `inputs.html` |
-| Table-driven attribute → property → removal → property loop over all 63 inputs; enum inputs reject unknown values | ✓ | `inputs.spec.ts` | `inputs.html` |
+| Table-driven attribute → property → removal → property loop over all inputs; enum inputs reject unknown values | ✓ | `inputs.spec.ts` | `inputs.html` |
 | `labels` across toolbar / header menu / pagination / shortcuts help / dropdown | ✓ | `i18n.spec.ts` | `i18n.html` |
 | Nested `labels` merge (#31 fixed), go-to-row + chevron texts (#32 fixed) | ✓ | `i18n.spec.ts` | `i18n.html` |
 | Logging quiet by default (`warn`), `getCategories`, `setCategoryLevel` | ✓ | `logging.spec.ts` | `logging.html` |

@@ -559,6 +559,7 @@ GRIDLABELS
     dropdownSearching: string
     rowLocked / rowLockedBy / goToRow / goToRowGo / goToRowCancel /
     treeExpand / treeCollapse: string
+    editCell: string               "Edit" (edit button aria-label / title)
     filterColumn: string           "Filter {column}" (filter-row input aria-label)
     invalidNumber: string          "Not a number" (number editor / paste)
     numberMin / numberMax: string  "Must be at least {min}" / "Must be at most {max}"

@@ -92,7 +92,8 @@ The `QuickGridProps<T>` type defined in `src/types.ts` is the canonical source o
 | `isEditable` | `boolean` | `false` | Enable cell editing |
 | `isRowEditable` | `boolean` | — | Row-level editability gate; combined with grid- and column-level `isEditable` (all three must pass) |
 | `getIsRowEditableCallback` | `(ctx: { row }) => boolean` | — | Decides row editability per row (wins over `isRowEditable`) |
-| `editTrigger` | `EditTrigger` | `'dblclick'` | How editing starts: `'click'`, `'dblclick'`, `'button'`, `'always'`, `'navigate'` |
+| `editTrigger` | `EditTrigger` | `'dblclick'` | How editing starts: `'click'`, `'dblclick'`, `'button'` (an edit button in editable cells — on hover and in the focused cell; F2 / Enter too), `'always'`, `'navigate'` |
+| `editButtonIcon` | `string` (HTML) | `'✎'` | Content of the edit button (`editTrigger: 'button'` / `column.isEditButtonVisible`) — HTML, e.g. `'<span class="lucide-pencil"></span>'`. Attribute `edit-button-icon`. Accessible name: `labels.editCell` |
 | `editStartSelection` | `EditStartSelection` | `'selectAll'` | Cursor position when entering edit via navigate: `'mousePosition'`, `'selectAll'`, `'cursorAtStart'`, `'cursorAtEnd'` |
 | `shouldCommitOnClickAway` | `boolean` | `true` | Excel-like commit on click-away. `false` discards the in-progress value |
 | `dropdownToggleVisibility` | `ToggleVisibility` | `'on-focus'` | When to show dropdown toggle: `'always'`, `'on-focus'` |
@@ -462,7 +463,7 @@ Every column callback takes one `ctx`; the cell ctx (`CellContext<T>`) is `{ row
 | `dropdownToggleVisibility` | `ToggleVisibility` | Per-column override |
 | `shouldOpenDropdownOnEnter` | `boolean` | Per-column override |
 | `renderEditorCallback` | `(ctx: EditorContext<T>) => void` | Handler for `editor: 'custom'` — the cell ctx + `commit(value)` / `cancel()` |
-| `isEditButtonVisible` | `boolean` | Show an edit button in the cell |
+| `isEditButtonVisible` | `boolean` | Show the edit button in this column's editable cells whatever the `editTrigger` |
 
 ### Validation
 
@@ -846,6 +847,7 @@ grid.labels = {
   goToRow: 'Go to row (1-{max}):',  // Ctrl/Cmd+G dialog
   goToRowGo: 'Go',
   goToRowCancel: 'Cancel',
+  editCell: 'Edit',              // edit button aria-label / title (editTrigger: 'button')
   treeExpand: 'Expand',          // tree chevron aria-label
   treeCollapse: 'Collapse',
   filterColumn: 'Filter {column}',           // aria-label of a filter-row input

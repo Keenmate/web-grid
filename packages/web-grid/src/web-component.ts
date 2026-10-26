@@ -373,6 +373,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		// Editing
 		{ configKey: 'isEditable', attribute: 'is-editable', converter: toBool('default-false'), default: false, on: 'update' },
 		{ configKey: 'editTrigger', attribute: 'edit-trigger', converter: toEnum(EDIT_TRIGGERS, { default: 'dblclick' }), default: 'dblclick', on: 'update' },
+		// HTML of the edit button (editTrigger 'button'), e.g. '<span class="lucide-pencil"></span>'
+		{ configKey: 'editButtonIcon', attribute: 'edit-button-icon', converter: toText({ default: '✎' }), default: '✎', on: 'update' },
 		{ configKey: 'editStartSelection', attribute: 'edit-start-selection', converter: toEnum(EDIT_START_SELECTIONS, { default: 'mousePosition' }), default: 'mousePosition', on: 'update' },
 		{ configKey: 'shouldCommitOnClickAway', attribute: 'should-commit-on-click-away', converter: toBool('default-true'), default: true, on: 'update' },
 		// A preset: also sets isEditable / editTrigger / dropdown flags / cellSelectionMode in the
@@ -729,6 +731,15 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 
 	get editTrigger(): EditTrigger { return this.engine.editTrigger }
 	set editTrigger(value: EditTrigger) { this.engine.editTrigger = value }
+
+	/**
+	 * The edit button's content — an HTML string (default `✎`), e.g. an icon font /
+	 * sprite: `'<span class="lucide-pencil"></span>'`. Shown in editable cells with
+	 * `editTrigger: 'button'` (or `column.isEditButtonVisible`); its accessible name is
+	 * `labels.editCell`.
+	 */
+	get editButtonIcon(): string { return this.engine.editButtonIcon }
+	set editButtonIcon(value: string) { this.engine.editButtonIcon = value }
 
 	get editStartSelection(): EditStartSelection { return this.engine.editStartSelection }
 	set editStartSelection(value: EditStartSelection) { this.engine.editStartSelection = value }

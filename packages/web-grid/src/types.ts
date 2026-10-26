@@ -206,7 +206,8 @@ export type Column<T> = {
 	validateCallback?: (ctx: ValidateContext<T>) => ValidateResult | Promise<ValidateResult>
 	// Custom editor: render your editor and call ctx.commit(value) / ctx.cancel()
 	renderEditorCallback?: (ctx: EditorContext<T>) => void
-	// Show edit button in cell
+	// Show the edit button in this column's editable cells whatever the editTrigger
+	// (editTrigger: 'button' shows it anyway)
 	isEditButtonVisible?: boolean
 	// Tooltip - displayed on cell hover
 	tooltipMember?: string  // Property name in row data containing tooltip text
@@ -355,6 +356,7 @@ export type QuickGridProps<T> = {
 	isRowEditable?: boolean
 	getIsRowEditableCallback?: (ctx: RowDataContext<T>) => boolean
 	editTrigger?: EditTrigger
+	editButtonIcon?: string  // Edit button HTML for editTrigger 'button' (default '✎'; e.g. '<span class="lucide-pencil"></span>')
 	editStartSelection?: EditStartSelection  // Default cursor position when entering edit via navigate mode (default: selectAll)
 	shouldCommitOnClickAway?: boolean  // Commit the editor value (Excel-like) when clicking another cell; false discards. Default: true
 	mode?: GridMode  // Grid mode - sets sensible defaults (read-only, excel, input-matrix)
@@ -590,6 +592,9 @@ export type GridLabels = {
 	// Tree chevron aria-label
 	treeExpand: string              // "Expand"
 	treeCollapse: string            // "Collapse"
+
+	// Edit button (editTrigger: 'button') — aria-label / title
+	editCell: string                // "Edit"
 
 	// Filter row
 	filterColumn: string            // "Filter {column}" — aria-label of a filter-row input

@@ -103,3 +103,35 @@
 .wg--editable.wg--navigate-mode .wg__cell:not(.wg__cell--editable) {
   background: var(--wg-cell-readonly-bg);
 }
+
+/* ==============================================================================
+   EDIT BUTTON (editTrigger: 'button' / column.isEditButtonVisible)
+   Shown on hover and in the focused cell; reuses the row-toolbar trigger tokens.
+   ============================================================================== */
+.wg__edit-button {
+  position: absolute;
+  top: 50%;
+  right: var(--wg-spacing-xs);
+  transform: translateY(-50%);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--wg-spacing-xs);
+  border: none;
+  border-radius: var(--wg-border-radius-sm);
+  background: transparent;
+  color: var(--wg-toolbar-trigger-color);
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.wg__cell:hover .wg__edit-button,
+.wg__cell--focused .wg__edit-button {
+  display: inline-flex;
+}
+
+.wg__edit-button:hover {
+  color: var(--wg-toolbar-trigger-color-hover);
+  background: var(--wg-toolbar-trigger-bg-hover);
+}

@@ -7,6 +7,7 @@ import type { Column } from '../../types.js'
 import type { GridHost } from '../grid-context.js'
 import { getOptionDisplayValue } from '../dropdown/options.js'
 import { gridPerf } from '../../perf.js'
+import { hasEditButton, renderEditButton } from '../editing/edit-button.js'
 
 /**
  * Render a cell in display mode (not editing)
@@ -20,6 +21,19 @@ export function renderCellDisplay<T>(
 	value: string,
 	isFocused: boolean,
 	isEditable: boolean = true
+): string {
+	const html = renderCellDisplayContent(ctx, rowIndex, colIndex, column, value, isFocused, isEditable)
+	return hasEditButton(ctx, column, isEditable) ? html + renderEditButton(ctx, rowIndex, colIndex) : html
+}
+
+function renderCellDisplayContent<T>(
+	ctx: GridHost<T>,
+	rowIndex: number,
+	colIndex: number,
+	column: Column<T>,
+	value: string,
+	isFocused: boolean,
+	isEditable: boolean
 ): string {
 	const isDropdown = column.editor === 'select' || column.editor === 'combobox' || column.editor === 'autocomplete'
 	const isDate = column.editor === 'date'

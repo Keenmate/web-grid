@@ -349,8 +349,9 @@ DBLCLICK MODE (editTrigger: 'dblclick')
   - In navigate mode, double-click also starts editing
 
 BUTTON MODE (editTrigger: 'button')
-  Editing is only triggered by the edit button (isEditButtonVisible: true).
-  Keyboard navigation works but does not start editing.
+  An edit button in each editable cell (on hover / in the focused cell)
+  starts editing; a plain click only focuses. F2 / Enter start editing as in
+  the other modes.
 
 READ-ONLY (isEditable: false or mode: 'read-only')
   Navigation keys work normally (arrows, Tab, Home, End, PageUp, PageDown).

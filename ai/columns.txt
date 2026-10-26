@@ -196,8 +196,9 @@ renderEditorCallback ((ctx: EditorContext<T>) => void)
       }
 
 isEditButtonVisible (boolean)
-    Show an edit button inside the cell. Clicking it triggers editing.
-    Useful with editTrigger: 'button'.
+    Show the edit button in this column's editable cells whatever the
+    editTrigger (editTrigger: 'button' shows it anyway). Clicking it starts
+    editing; its content is the grid's editButtonIcon (HTML).
 
 
 5. VALIDATION

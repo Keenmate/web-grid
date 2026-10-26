@@ -466,7 +466,9 @@ or drop the options from the type.
 
 **Tests:** `edit-modes.spec.ts` — 3 number-editor tests (`test.fail`).
 
-## 26. `editTrigger: 'button'` has no button (open question)
+## 26. `editTrigger: 'button'` has no button — FIXED
+
+**Fixed:** built it — editable cells (not read-only / locked) in display mode get `.wg__edit-button` (shown on hover and in the focused cell); a click starts editing, F2 / Enter as usual. Content is the new `editButtonIcon` input (HTML, default `✎`, attribute `edit-button-icon`), accessible name `labels.editCell`; `column.isEditButtonVisible` (was dead) shows it whatever the trigger.
 
 **Where:** `types.ts:43` lists `'button'`; nothing renders an edit button —
 only `modules/editing/lifecycle.ts:216` treats it like `click`/`dblclick` for

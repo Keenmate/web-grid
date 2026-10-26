@@ -122,6 +122,9 @@ const DEFAULT_LABELS: GridLabels = {
 	// Filter row
 	filterColumn: 'Filter {column}',
 
+	// Edit button (editTrigger: 'button')
+	editCell: 'Edit',
+
 	// Built-in value checks
 	invalidNumber: 'Not a number',
 	numberMin: 'Must be at least {min}',
@@ -198,6 +201,7 @@ export class GridEngine<T = unknown> {
 	protected _isRowEditable: boolean | undefined = undefined
 	protected _getIsRowEditableCallback: ((ctx: RowDataContext<T>) => boolean) | undefined = undefined
 	protected _editTrigger: EditTrigger = "dblclick"
+	protected _editButtonIcon: string = '✎'
 	protected _editStartSelection: EditStartSelection = "mousePosition"
 	protected _shouldCommitOnClickAway: boolean = true
 	protected _mode: GridMode = "excel"
@@ -558,6 +562,13 @@ export class GridEngine<T = unknown> {
 		this._editTrigger = value
 		this.checkSelectionConflicts()
 		this.checkEditTriggerConflicts()
+		this.requestUpdate()
+	}
+
+	/** HTML of the edit button (`editTrigger: 'button'` / `column.isEditButtonVisible`). */
+	get editButtonIcon(): string { return this._editButtonIcon }
+	set editButtonIcon(value: string) {
+		this._editButtonIcon = value
 		this.requestUpdate()
 	}
 
