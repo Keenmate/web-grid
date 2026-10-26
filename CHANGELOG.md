@@ -195,7 +195,18 @@ handlers: `onpaste`, `onbeforepaste`, `onselect`).
 - The summary (`renderSummaryCallback`) was not refreshed after a cell edit (commits update the
   cell surgically); a `row-change` now re-renders the summary blocks.
 - Pasted values in `editor: 'number'` columns stayed strings (`"21"`) — in drafts and in rows
-  created by the paste; they are numbers now (blank → null; non-numeric text is kept for validation).
+  created by the paste; they are numbers now (blank → null). Checkbox columns type pasted text too
+  (`true` / `1` / `yes` / `x` / `✓` or the `trueValue` text → `trueValue`; `false` / `0` / `no` /
+  blank or the `falseValue` text → `falseValue`), and date columns (the column's `dateFormat`,
+  then ISO `YYYY-MM-DD`, stored per `outputFormat`). Text that doesn't parse is kept and the cell
+  marked invalid (`labels.invalidBoolean` / `invalidDate`). `getPasteValueCallback` still wins.
+- **Number editor validates.** `abc` was stored as the string `"abc"`, `12abc` silently became
+  `12`, and `editorOptions.min / max / decimalPlaces / allowNegative` were ignored. The parse is
+  strict now (`Number()` + `isFinite`; blank → null) for editor commits and pastes: a non-number,
+  a value outside `min` / `max`, or a negative with `allowNegative: false` marks the cell invalid
+  (`validation-error`, new `labels.invalidNumber` / `numberMin` / `numberMax` / `numberNegative`)
+  with the typed value kept in the draft — no clamping; `decimalPlaces` rounds (`1.239` → `1.24`).
+  The editor renders `min` / `max` / `step`; its value attribute is escaped.
 - `isCheckboxAlwaysEditable` had no effect; with it on, one click on a display checkbox toggles
   it in navigate / click modes (the same toggle as Space).
 

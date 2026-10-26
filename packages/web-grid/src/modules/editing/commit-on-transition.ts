@@ -13,8 +13,8 @@
 //    cell shouldn't flip the checkbox).
 //  - .wg__date-input: prefer the parsed dataset.dateValue, fall back to the
 //    raw input value.
-//  - .wg__editor--number: parseFloat (or null on empty), falling back to the
-//    raw string if parseFloat returns NaN.
+//  - .wg__editor--number: the text as-is — engine.commitEdit parses it strictly
+//    and applies the editorOptions (modules/editing/value-parse.ts).
 //  - any other HTMLInputElement: .value as-is.
 //  - HTMLSelectElement: .value.
 //  - anything else: dataset.value.
@@ -61,13 +61,7 @@ export function commitOrCancelEditOnTransition<T>(ctx: GridHost<T>): void {
 		} else if (editor.classList.contains('wg__date-input')) {
 			value = editor.dataset.dateValue || editor.value
 		} else if (editor.classList.contains('wg__editor--number')) {
-			const strValue = editor.value.trim()
-			if (strValue === '') {
-				value = null
-			} else {
-				const num = parseFloat(strValue)
-				value = isNaN(num) ? strValue : num
-			}
+			value = editor.value
 		} else {
 			value = editor.value
 		}

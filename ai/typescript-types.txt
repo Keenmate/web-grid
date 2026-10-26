@@ -555,6 +555,13 @@ GRIDLABELS
     paginationPerPage: string
     dropdownNoOptions: string
     dropdownSearching: string
+    rowLocked / rowLockedBy / goToRow / goToRowGo / goToRowCancel /
+    treeExpand / treeCollapse: string
+    invalidNumber: string          "Not a number" (number editor / paste)
+    numberMin / numberMax: string  "Must be at least {min}" / "Must be at most {max}"
+    numberNegative: string         "Must not be negative"
+    invalidBoolean: string         "Not a yes / no value" (paste into a checkbox column)
+    invalidDate: string            "Not a valid date" (paste into a date column)
     actions: {                     built-in row / tree action texts
       add: string
       delete: string

@@ -116,14 +116,19 @@ NUMBER EDITOR (editor: 'number')
 ---------------------------------
 
 Numeric input rendered as type="text" with inputmode="numeric" for full cursor
-control. Values are parsed to float on commit; empty string becomes null.
+control. The text is parsed strictly on commit (Number() + isFinite, trimmed;
+empty → null). Not a number ("abc", "12abc"), outside min / max, or negative
+with allowNegative: false → the cell is INVALID (labels.invalidNumber /
+numberMin / numberMax / numberNegative), the draft keeps what was typed,
+validation-error fires. No clamping. decimalPlaces rounds (1.239 → 1.24).
+Pasted text uses the same parse.
 
 Options (editorOptions):
   min            (number)  -- Minimum allowed value.
   max            (number)  -- Maximum allowed value.
   step           (number)  -- Step increment.
-  decimalPlaces  (number)  -- Fixed decimal places.
-  allowNegative  (boolean) -- Allow negative values.
+  decimalPlaces  (number)  -- Round to this many decimals.
+  allowNegative  (boolean) -- false: a negative value is invalid.
 
 Example:
   {

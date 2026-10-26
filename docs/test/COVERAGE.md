@@ -65,7 +65,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | `editTrigger` 'always', column override, `editStartSelection` (grid + column, all 4 modes) | ✓ | `edit-modes.spec.ts` | `edit-modes.html` |
 | `editTrigger: 'button'` has no button (#26, question) | ✗ fail | `edit-modes.spec.ts` | `edit-modes.html` |
 | Number editor parsing (ints, decimals, padding, empty → null, negatives) | ✓ | `edit-modes.spec.ts` | `edit-modes.html` |
-| Number editor rejects non-numbers / honours `editorOptions` min/max/decimals (#25) | ✗ fail | `edit-modes.spec.ts` | `edit-modes.html` |
+| Number editor: strict parse, non-numbers / min / max / negatives invalid (no clamping), decimals round, min/max/step attributes, label i18n (#25 fixed) | ✓ | `edit-modes.spec.ts` | `edit-modes.html` |
 | `dropdownToggleVisibility`, `shouldShowDropdownOnFocus`, `shouldOpenDropdownOnEnter` (grid + column), checkbox Space toggle | ✓ | `dropdown-flags.spec.ts` | `dropdown-flags.html` |
 | `isCheckboxAlwaysEditable` one-click toggle, off by default (#27 fixed) | ✓ | `dropdown-flags.spec.ts` | `dropdown-flags.html` |
 | `mode` preset (read-only / excel / input-matrix) | ✓ | `grid-modes.spec.ts`, `inputs.spec.ts` | `grid-modes.html`, `inputs.html` |
@@ -80,6 +80,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | New row: `isNewRowEnabled`, `newRowPosition`, `newRowIndicator`, empty-row draft, `createRowCallback` (paste) | ✓ | `new-row.spec.ts` | `new-row.html` |
 | New row committed by Enter / Tab (focus stays on the fresh empty row), `createEmptyRowCallback` row lands (#17 fixed) | ✓ | `new-row.spec.ts` | `new-row.html` |
 | Pasted numbers typed (#18 fixed) | ✓ | `new-row.spec.ts` | `new-row.html` |
+| Paste typing: number strict parse, checkbox texts / trueValue, date `dateFormat` → ISO → `outputFormat`, invalid text marked, `getPasteValueCallback` wins | ✓ | `paste.spec.ts` | `paste.html` |
 
 ## 4. Selection, copy, keyboard
 

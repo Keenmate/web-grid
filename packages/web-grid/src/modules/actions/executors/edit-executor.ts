@@ -109,14 +109,8 @@ async function executeCommitEdit(
 			// Date editor - use the stored date value
 			value = editor.dataset.dateValue || editor.value
 		} else if (editor.classList.contains('wg__editor--number')) {
-			// Number editor - parse to number
-			const strValue = editor.value.trim()
-			if (strValue === '') {
-				value = null
-			} else {
-				const num = parseFloat(strValue)
-				value = isNaN(num) ? strValue : num
-			}
+			// Number editor - the text is parsed (strictly) and checked by engine.commitEdit
+			value = editor.value
 		} else {
 			value = editor.value
 		}

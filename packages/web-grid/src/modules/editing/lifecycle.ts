@@ -62,8 +62,9 @@ export async function commitCurrentEditor<T>(
 			const falseValue = JSON.parse(editor.dataset.falseValue || 'false')
 			value = editor.checked ? trueValue : falseValue
 		} else if (editor.classList.contains('wg__editor--number')) {
-			// Number editor uses type="text" with inputmode="numeric" for cursor control
-			value = editor.value === '' ? null : parseFloat(editor.value)
+			// Number editor uses type="text" with inputmode="numeric" for cursor control;
+			// the text is parsed (strictly) and checked by engine.commitEdit
+			value = editor.value
 		} else if (editor.type === 'date') {
 			value = convertDateValue(editor.value, editor.dataset.outputFormat || 'iso')
 		} else {

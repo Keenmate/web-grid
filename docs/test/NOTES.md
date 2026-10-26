@@ -318,7 +318,7 @@ editable cell; then delete the dead editor-keydown branches.
 
 ## 18. Pasted values into `editor: 'number'` columns stay strings — FIXED
 
-**Fixed:** pasted text for an `editor: 'number'` column is typed (`typePastedText`: plain decimal → number, blank → null, anything else stays text for validation) on all three paths — existing cells, rows created past the end, single-cell paste — unless `getPasteValueCallback` takes over. Checkbox / date typing left as is (what text means true, which date format?) — see the report's questions.
+**Fixed:** pasted text for an `editor: 'number'` column is typed (`typePastedText`: plain decimal → number, blank → null, anything else stays text for validation) on all three paths — existing cells, rows created past the end, single-cell paste — unless `getPasteValueCallback` takes over. Follow-up: checkbox (`true/1/yes/x/✓` / trueValue text → trueValue, `false/0/no/''` / falseValue text → falseValue) and date (`dateFormat`, then ISO, stored per `outputFormat`) columns are typed too; unparseable text is kept and the cell marked invalid (`paste.spec.ts` "paste typing").
 
 **Where:** `modules/paste/index.ts` — pasted text is committed as-is; the number
 editor path converts (`drafts.spec.ts` shows a typed `15` stored as a number).
@@ -433,7 +433,9 @@ opened (`moveFocus(ctx, oldRow, colIndex)`).
 cell" (`test.fail`). Before this split the old combined test was flaky because it
 read `focusedCell` before the deferred clear.
 
-## 25. Number editor: no validation, documented options ignored
+## 25. Number editor: no validation, documented options ignored — FIXED
+
+**Fixed:** one strict parse in `modules/editing/value-parse.ts` (`Number()` + `isFinite`, trimmed, blank → null), applied by `engine.commitEdit` for every number commit (editor, click-away, paste): non-numbers and `min` / `max` / `allowNegative: false` violations run the normal invalid flow (draft keeps the typed value, `wg__cell--invalid`, `validation-error` with a `labels` text) — no clamping; `decimalPlaces` rounds. The editor renders `min` / `max` / `step`.
 
 **Where:** `modules/editing/renderers.ts:86-108` (`renderNumberEditor` reads
 `editorOptions` into `opts` and never uses it), parse in

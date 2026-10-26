@@ -578,6 +578,8 @@ An invalid value is not a veto: it stays as a draft, the cell is marked invalid 
 | `getCopyValueCallback` | `(ctx: CellContext<T>) => string` | Text copied for this cell |
 | `getPasteValueCallback` | `(ctx: CellContext<T> & { text }) => unknown` | Value stored for the pasted text |
 
+Without `getPasteValueCallback`, pasted text is typed for the column: **number** — the editor's strict parse; **checkbox** — `true` / `1` / `yes` / `x` / `✓` or the text of `trueValue` → `trueValue`, `false` / `0` / `no` / blank or the text of `falseValue` → `falseValue`; **date** — the column's `dateFormat`, then ISO `YYYY-MM-DD`, stored per `outputFormat`. Text that doesn't parse is kept and the cell marked invalid (`labels.invalidNumber` / `invalidBoolean` / `invalidDate`).
+
 Grid-level paste hooks: `beforePasteCallback(ctx)` runs before a multi-cell paste (`false` cancels, async OK; add `"rowIndex-colIndex"` keys to `ctx.skipCells` to skip cells) and `createRowCallback({ data, rowIndex })` builds rows for pasted data past the last row. `pasteMode` and `shouldValidateOnPaste` control what gets pasted; `paste-complete` reports the result.
 
 ### Layout
@@ -627,8 +629,10 @@ Grid-level paste hooks: `beforePasteCallback(ctx)` runs before a multi-cell past
 | `min` | `number` | — | Minimum value |
 | `max` | `number` | — | Maximum value |
 | `step` | `number` | — | Step increment |
-| `decimalPlaces` | `number` | — | Fixed decimal places |
-| `allowNegative` | `boolean` | — | Allow negative values |
+| `decimalPlaces` | `number` | — | Round the value to this many decimals |
+| `allowNegative` | `boolean` | — | `false` → a negative value is invalid |
+
+The typed text is parsed strictly (`Number()` + `isFinite`, trimmed; blank → `null`): `abc` or `12abc` mark the cell invalid (`labels.invalidNumber`, "Not a number"), as do values outside `min` / `max` or a negative with `allowNegative: false` — **no clamping**; the draft keeps what was typed and `validation-error` fires. `decimalPlaces` rounds (`1.239` → `1.24`). Pasted text goes through the same parse.
 
 ### Checkbox Options
 
@@ -1150,6 +1154,12 @@ grid.labels = {
   goToRowCancel: 'Cancel',
   treeExpand: 'Expand',          // tree chevron aria-label
   treeCollapse: 'Collapse',
+  invalidNumber: 'Not a number',              // built-in value checks (number editor, paste)
+  numberMin: 'Must be at least {min}',
+  numberMax: 'Must be at most {max}',
+  numberNegative: 'Must not be negative',
+  invalidBoolean: 'Not a yes / no value',     // text pasted into a checkbox column
+  invalidDate: 'Not a valid date',            // text pasted into a date column
   actions: {                       // built-in row / tree action texts
     add: 'Add row',
     delete: 'Delete row',

@@ -11,13 +11,14 @@
 //   - commitDateEditor       — convert the input's typed value into the
 //                              configured output format (ISO / Date / timestamp)
 //                              and write it through grid.commitEdit.
-//   - parseDateInput         — parse the format-shaped input value back to a
-//                              Date (helper, no DOM access).
+//   - parseDateInput         — re-exported from formatting.ts (pure helper).
 
 import type { GridHost } from '../grid-context.js'
 import { clearEditingVisual, restoreEditingCellToDisplayMode } from '../navigation/focus.js'
 import { DatePicker } from './datepicker.js'
-import { parseFormat, formatDate, toISODateString } from './formatting.js'
+import { parseFormat, formatDate, toISODateString, parseDateInput } from './formatting.js'
+
+export { parseDateInput }
 
 /**
  * Create + open the date picker for the given input. The picker reads its
@@ -153,41 +154,4 @@ export async function commitDateEditor<T>(
 	}
 
 	await ctx.engine.commitEdit(rowIndex, field, value, commitEmptyRow)
-}
-
-/**
- * Parse a format-shaped input string (separator + year/month/day segments)
- * back to a Date. Returns null when the input is empty, missing parts, or
- * doesn't round-trip through the JS Date constructor (overflow check).
- */
-export function parseDateInput(
-	value: string,
-	formatInfo: { separator: string; parts: { year?: { index: number }; month?: { index: number }; day?: { index: number } } }
-): Date | null {
-	if (!value) return null
-
-	const segments = value.split(formatInfo.separator)
-	let year: number | null = null
-	let month: number | null = null
-	let day: number | null = null
-
-	segments.forEach((segment, index) => {
-		if (!segment) return
-		const numValue = parseInt(segment, 10)
-
-		if (formatInfo.parts.year?.index === index) {
-			year = numValue < 100 ? numValue + 2000 : numValue
-		} else if (formatInfo.parts.month?.index === index) {
-			month = numValue
-		} else if (formatInfo.parts.day?.index === index) {
-			day = numValue
-		}
-	})
-
-	if (year === null || month === null || day === null) return null
-
-	const date = new Date(year, month - 1, day)
-	if (date.getMonth() !== month - 1 || date.getDate() !== day) return null
-
-	return date
 }

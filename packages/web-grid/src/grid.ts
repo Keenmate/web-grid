@@ -76,6 +76,7 @@ import { bindOptionContext } from './modules/dropdown/options.js'
 
 // Logging
 import { initLogger, dataLogger, interactionLogger, perfLogger } from './logger.js'
+import { typeNumberValue } from './modules/editing/value-parse.js'
 
 // Perf instrumentation (temporary — investigating tree-toggle slowness)
 import { gridPerf } from './perf.js'
@@ -115,6 +116,14 @@ const DEFAULT_LABELS: GridLabels = {
 	// Tree chevron
 	treeExpand: 'Expand',
 	treeCollapse: 'Collapse',
+
+	// Built-in value checks
+	invalidNumber: 'Not a number',
+	numberMin: 'Must be at least {min}',
+	numberMax: 'Must be at most {max}',
+	numberNegative: 'Must not be negative',
+	invalidBoolean: 'Not a yes / no value',
+	invalidDate: 'Not a valid date',
 
 	// Built-in row / tree actions
 	actions: {
@@ -2811,7 +2820,7 @@ export class GridEngine<T = unknown> {
 	 * Commit edit with validation
 	 * @param commitEmptyRow - If true and editing empty row, add it to items. If false, just update the draft.
 	 */
-	async commitEdit(rowIndex: number, field: string, newValue: unknown, commitEmptyRow: boolean = false, source: 'edit' | 'paste' = 'edit'): Promise<void> {
+	async commitEdit(rowIndex: number, field: string, newValue: unknown, commitEmptyRow: boolean = false, source: 'edit' | 'paste' = 'edit', parseError: string | null = null): Promise<void> {
 		dataLogger.debug('commitEdit:', { rowIndex, field, newValue })
 		const column = this._columns.find(c => String(c.field) === field)
 		if (!column) return
@@ -2821,14 +2830,27 @@ export class GridEngine<T = unknown> {
 
 		const isEmptyRow = this.isEmptyRowIndex(rowIndex)
 		const oldValue = (item as Record<string, unknown>)[field]
+
+		// Built-in value check first: a number column parses strictly and applies its
+		// editorOptions (decimalPlaces rounds; min / max / allowNegative reject — no
+		// clamping); `parseError` is a typing error the caller found (paste into a
+		// checkbox / date column). Invalid → the normal invalid flow below, the draft
+		// keeps what was typed, validateCallback is skipped.
+		let builtInError = parseError
+		if (!builtInError && column.editor === 'number') {
+			const typed = typeNumberValue(newValue, column.editorOptions || {}, this._labels)
+			newValue = typed.value
+			builtInError = typed.error
+		}
+
 		let finalValue = newValue
-		let validationError: string | null = null
-		let isValid = true
+		let validationError: string | null = builtInError
+		let isValid = !builtInError
 
 		this._isValidating = true
 
 		try {
-			if (column.validateCallback) {
+			if (column.validateCallback && isValid) {
 				const context: ValidateContext<T> = this.ctx({
 					row: item,
 					rowIndex,

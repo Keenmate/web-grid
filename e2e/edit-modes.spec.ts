@@ -53,25 +53,44 @@ test.describe('number editor', () => {
 		expect(await commitTyped(page, 0, 1, '-5')).toBe(-5)
 	})
 
-	test('non-numeric input is not stored as a string in a number column', async ({ page }) => {
-		test.fail(true, 'NOTES.md #25')
-		const v = await commitTyped(page, 0, 1, 'abc')
-		expect(typeof v === 'number' || v === null || v === 10).toBe(true)
+	test('non-numeric input marks the cell invalid ("Not a number"); the draft keeps the typed text', async ({ page }) => {
+		expect(await commitTyped(page, 0, 1, 'abc')).toBe('abc')
+		await expect(cell(page, 0, 1)).toHaveClass(/wg__cell--invalid/)
+		expect(await onGrid(page, el => el.isCellInvalid(0, 'qty'))).toBe(true)
+		expect(await domEvents(page, 'validation-error')).toEqual([expect.objectContaining({ field: 'qty', error: 'Not a number', source: 'edit' })])
+		// a valid number clears it
+		expect(await commitTyped(page, 0, 1, '11')).toBe(11)
+		await expect(cell(page, 0, 1)).not.toHaveClass(/wg__cell--invalid/)
 	})
 
-	test('trailing garbage is not silently truncated ("12abc" ≠ 12)', async ({ page }) => {
-		test.fail(true, 'NOTES.md #25')
-		expect(await commitTyped(page, 0, 1, '12abc')).not.toBe(12)
+	test('trailing garbage is not silently truncated ("12abc" is invalid, not 12)', async ({ page }) => {
+		expect(await commitTyped(page, 0, 1, '12abc')).toBe('12abc')
+		expect(await onGrid(page, el => el.isCellInvalid(0, 'qty'))).toBe(true)
 	})
 
-	test('editorOptions max / allowNegative / decimalPlaces are enforced', async ({ page }) => {
-		test.fail(true, 'NOTES.md #25')
-		const over = await commitTyped(page, 0, 2, '500')
-		const neg = await commitTyped(page, 0, 2, '-3')
-		const dec = await commitTyped(page, 0, 2, '1.239')
-		expect(over === 100 || over === 9.5).toBe(true)   // clamped or rejected
-		expect(neg === 0 || neg === 9.5 || neg === 1.24).toBe(true)
-		expect(dec).toBe(1.24)
+	test('editorOptions: max / allowNegative reject (no clamping), decimalPlaces rounds', async ({ page }) => {
+		expect(await commitTyped(page, 0, 2, '500')).toBe(500)
+		expect(await onGrid(page, el => el.isCellInvalid(0, 'price'))).toBe(true)
+		expect(await commitTyped(page, 0, 2, '-3')).toBe(-3)
+		expect(await onGrid(page, el => el.isCellInvalid(0, 'price'))).toBe(true)
+		expect(await commitTyped(page, 0, 2, '1.239')).toBe(1.24)
+		expect(await onGrid(page, el => el.isCellInvalid(0, 'price'))).toBe(false)
+		const errors = (await domEvents(page, 'validation-error')).map((d: any) => d.error)
+		expect(errors).toEqual(['Must be at most 100', 'Must not be negative'])
+	})
+
+	test('the editor carries the editorOptions as min / max / step', async ({ page }) => {
+		await cell(page, 0, 2).dblclick()
+		const ed = editorIn(cell(page, 0, 2))
+		await expect(ed).toHaveAttribute('min', '0')
+		await expect(ed).toHaveAttribute('max', '100')
+		await expect(ed).toHaveAttribute('step', '0.01')
+	})
+
+	test('the error messages are labels (i18n)', async ({ page }) => {
+		await onGrid(page, el => { el.labels = { invalidNumber: 'Není číslo' } })
+		await commitTyped(page, 0, 1, 'x')
+		expect((await domEvents(page, 'validation-error'))[0].error).toBe('Není číslo')
 	})
 })
 

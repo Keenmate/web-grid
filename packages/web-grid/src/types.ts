@@ -588,6 +588,14 @@ export type GridLabels = {
 	treeExpand: string              // "Expand"
 	treeCollapse: string            // "Collapse"
 
+	// Built-in value checks (number editor, paste typing) — the cell's validation error
+	invalidNumber: string           // "Not a number"
+	numberMin: string               // "Must be at least {min}"
+	numberMax: string               // "Must be at most {max}"
+	numberNegative: string          // "Must not be negative"
+	invalidBoolean: string          // "Not a yes / no value" (pasted into a checkbox column)
+	invalidDate: string             // "Not a valid date" (pasted into a date column)
+
 	// Built-in row / tree action texts (toolbar, cell context menu, shortcuts help)
 	actions: {
 		add: string                  // "Add row"

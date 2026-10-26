@@ -530,8 +530,10 @@ Per-editor configuration, set via `editorOptions` on the column.
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `min` / `max` / `step` | `number` | — | Standard numeric bounds |
-| `decimalPlaces` | `number` | — | Fixed decimal places |
-| `allowNegative` | `boolean` | — | Allow negative values |
+| `decimalPlaces` | `number` | — | Round the value to this many decimals |
+| `allowNegative` | `boolean` | — | `false` → a negative value is invalid |
+
+The typed text is parsed strictly (`Number()` + `isFinite`, trimmed; blank → `null`): `abc` or `12abc` mark the cell invalid (`labels.invalidNumber`, "Not a number"), as do values outside `min` / `max` or a negative with `allowNegative: false` — **no clamping**; the draft keeps what was typed and `validation-error` fires. `decimalPlaces` rounds (`1.239` → `1.24`). Pasted text goes through the same parse.
 
 ### Checkbox
 
@@ -729,7 +731,7 @@ Row shortcuts run on the focused / hovered row with the cell ctx; range shortcut
 | `beforePasteCallback` | `(ctx) => boolean \| void \| Promise<…>` | Return `false` to cancel; add `"rowIndex-colIndex"` keys to `ctx.skipCells` to skip cells |
 | `createRowCallback` | `(ctx: { data, rowIndex }) => T` | Builds a row for pasted data past the last row |
 
-After a paste, the `paste-complete` event (`onPasteComplete`) reports `{ totalCells, successfulCells, failedCells, skippedCells, newRowsCreated, cellResults, hadHeaders }`. Per-cell conversion is the column's `getPasteValueCallback({ …cell, text })`.
+After a paste, the `paste-complete` event (`onPasteComplete`) reports `{ totalCells, successfulCells, failedCells, skippedCells, newRowsCreated, cellResults, hadHeaders }`. Per-cell conversion is the column's `getPasteValueCallback({ …cell, text })`; without it, number / checkbox / date columns type the text (number: strict parse; checkbox: `true/1/yes/x/✓` or the `trueValue` text → `trueValue`, `false/0/no/''` or the `falseValue` text → `falseValue`; date: `dateFormat`, then ISO, stored per `outputFormat`) — unparseable text is kept and the cell marked invalid.
 
 
 ## Public methods
@@ -840,6 +842,12 @@ grid.labels = {
   goToRowCancel: 'Cancel',
   treeExpand: 'Expand',          // tree chevron aria-label
   treeCollapse: 'Collapse',
+  invalidNumber: 'Not a number',              // built-in value checks (number editor, paste)
+  numberMin: 'Must be at least {min}',
+  numberMax: 'Must be at most {max}',
+  numberNegative: 'Must not be negative',
+  invalidBoolean: 'Not a yes / no value',     // text pasted into a checkbox column
+  invalidDate: 'Not a valid date',            // text pasted into a date column
   actions: {                       // built-in row / tree action texts
     add: 'Add row', delete: 'Delete row', duplicate: 'Duplicate row',
     moveUp: 'Move up', moveDown: 'Move down',

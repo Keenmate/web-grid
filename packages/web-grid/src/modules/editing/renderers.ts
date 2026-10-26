@@ -96,14 +96,23 @@ export function renderNumberEditor<T>(
 	const numValue = initialQuery !== undefined ? initialQuery : (value != null ? String(value) : '')
 	const vAlignClass = getVerticalAlignClass(column)
 
+	// type="text" keeps caret control; min / max / step mirror the editorOptions for
+	// assistive tech and styling — the value itself is checked by engine.commitEdit
+	// (modules/editing/value-parse.ts: strict parse, decimalPlaces rounds, min / max /
+	// allowNegative reject).
+	const min = opts.min ?? (opts.allowNegative === false ? 0 : undefined)
+	const step = opts.step ?? (opts.decimalPlaces != null ? 10 ** -opts.decimalPlaces : undefined)
 	return `
 		<input
 			type="text"
 			inputmode="numeric"
 			class="wg__editor wg__editor--number ${vAlignClass}"
-			value="${numValue}"
+			value="${ctx.escapeHtml(numValue)}"
 			data-row="${rowIndex}"
 			data-field="${field}"
+			${min != null ? `min="${min}"` : ''}
+			${opts.max != null ? `max="${opts.max}"` : ''}
+			${step != null ? `step="${step}"` : ''}
 		/>
 	`
 }

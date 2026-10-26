@@ -317,7 +317,11 @@ getPasteValueCallback ((ctx: PasteValueContext<T>) => unknown)
     Convert a pasted value before applying it to the cell. ctx is the
     cell ctx + text (always a string, from clipboard TSV). Return the
     value in the type the data model expects. (To cancel a whole paste
-    use the grid-level beforePasteCallback.)
+    use the grid-level beforePasteCallback.) Without it, number / checkbox /
+    date columns type the text themselves: number = strict parse; checkbox =
+    true/1/yes/x/✓ or the trueValue text → trueValue, false/0/no/'' or the
+    falseValue text → falseValue; date = dateFormat, then ISO YYYY-MM-DD,
+    stored per outputFormat. Unparseable text is kept, the cell is invalid.
 
     Example:
       getPasteValueCallback: ({ text }) => parseFloat(text) || 0

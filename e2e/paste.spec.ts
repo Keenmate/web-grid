@@ -344,3 +344,84 @@ test.describe('web-component paste proxies', () => {
 		await expect(cell(page, 1, COL.id)).toContainText('888')
 	})
 })
+
+// =============================================================================
+// Paste typing (NOTES.md #18 / #25): number, checkbox, date columns
+// =============================================================================
+
+test.describe('paste typing', () => {
+	/** Adds a checkbox (`active`, col 5) and a date (`joined`, col 6, DD.MM.YYYY → ISO) column. */
+	async function addTypedColumns(page: Page, extra: Record<string, unknown> = {}) {
+		await gridLocator(page).evaluate((el: any, extra) => {
+			(window as any).__validationErrors = []
+			el.onValidationError = (d: any) => (window as any).__validationErrors.push({ field: d.field, error: d.error })
+			el.columns = [
+				...el.columns,
+				{ field: 'active', title: 'Active', width: '70px', editor: 'checkbox', editorOptions: (extra as any).checkbox },
+				{ field: 'joined', title: 'Joined', width: '110px', editor: 'date', editorOptions: { dateFormat: 'DD.MM.YYYY', ...(extra as any).date } }
+			]
+		}, extra)
+		await expect(cell(page, 0, 6)).toBeVisible()
+	}
+	const draft = (page: Page, r: number, f: string) =>
+		gridLocator(page).evaluate((el: any, { r, f }) => (el.getRowDraft(r) ?? el.items[r])[f], { r, f })
+	const errors = (page: Page) => page.evaluate(() => (window as any).__validationErrors)
+
+	test('number column: "12abc" is invalid (kept as text), "7" is a number', async ({ page }) => {
+		await gotoPaste(page)
+		await focusCell(page, 0, COL.age)
+		await pasteText(page, '12abc\n7')
+		expect(await draft(page, 0, 'age')).toBe('12abc')
+		expect(await draft(page, 1, 'age')).toBe(7)
+		await expect(cell(page, 0, COL.age)).toHaveClass(/wg__cell--invalid/)
+		await expect(summary(page)).toContainText('ok=1 fail=1')
+	})
+
+	test('checkbox column: yes / x / ✓ / 1 → true, no / 0 / "" → false, anything else invalid', async ({ page }) => {
+		await gotoPaste(page)
+		await addTypedColumns(page)
+		await focusCell(page, 0, 5)
+		await pasteText(page, 'yes\nx\n0\nmaybe')
+		expect([await draft(page, 0, 'active'), await draft(page, 1, 'active'), await draft(page, 2, 'active'), await draft(page, 3, 'active')])
+			.toEqual([true, true, false, 'maybe'])
+		expect(await errors(page)).toEqual([{ field: 'active', error: 'Not a yes / no value' }])
+	})
+
+	test('checkbox column: the text of trueValue / falseValue maps to them', async ({ page }) => {
+		await gotoPaste(page)
+		await addTypedColumns(page, { checkbox: { trueValue: 'Y', falseValue: 'N' } })
+		await focusCell(page, 0, 5)
+		await pasteText(page, 'Y\nN\n✓')
+		expect([await draft(page, 0, 'active'), await draft(page, 1, 'active'), await draft(page, 2, 'active')]).toEqual(['Y', 'N', 'Y'])
+	})
+
+	test('date column: the dateFormat first, then ISO; stored per outputFormat; else invalid', async ({ page }) => {
+		await gotoPaste(page)
+		await addTypedColumns(page)
+		await focusCell(page, 0, 6)
+		await pasteText(page, '05.03.2026\n2026-04-01\n31.02.2026\nsoon')
+		expect([await draft(page, 0, 'joined'), await draft(page, 1, 'joined'), await draft(page, 2, 'joined'), await draft(page, 3, 'joined')])
+			.toEqual(['2026-03-05', '2026-04-01', '31.02.2026', 'soon'])
+		expect((await errors(page)).map((e: any) => e.error)).toEqual(['Not a valid date', 'Not a valid date'])
+	})
+
+	test("date column: outputFormat 'timestamp' stores the time value", async ({ page }) => {
+		await gotoPaste(page)
+		await addTypedColumns(page, { date: { outputFormat: 'timestamp' } })
+		await focusCell(page, 0, 6)
+		await pasteText(page, '05.03.2026')
+		expect(await draft(page, 0, 'joined')).toBe(new Date(2026, 2, 5).getTime())
+	})
+
+	test('getPasteValueCallback still wins over the built-in typing', async ({ page }) => {
+		await gotoPaste(page)
+		await addTypedColumns(page)
+		await gridLocator(page).evaluate((el: any) => {
+			el.columns = el.columns.map((c: any) => c.field === 'active' ? { ...c, getPasteValueCallback: ({ text }: any) => text === 'ano' } : c)
+		})
+		await focusCell(page, 0, 5)
+		await pasteText(page, 'ano\nmaybe')
+		expect([await draft(page, 0, 'active'), await draft(page, 1, 'active')]).toEqual([true, false])
+		expect(await errors(page)).toEqual([])
+	})
+})
