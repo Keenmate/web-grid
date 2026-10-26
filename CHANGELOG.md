@@ -127,6 +127,13 @@ handlers: `onpaste`, `onbeforepaste`, `onselect`).
 
 ### Added
 
+- **Drafts list.** `getDrafts()` (element + controller) and `ctx.drafts` on `renderSummaryCallback`:
+  every unsaved draft `{ row, draftRow, changedFields, isValid }` — including rows on other pages,
+  filtered out, or not in the current `items`. The summary usually shows server aggregates
+  (`summaryMetadata`); adjust them by the draft deltas. `discardDraft(row)` drops one draft.
+  Drafts are never pruned when `items` is set (server paging: a missing row is another page) —
+  they leave via `replaceRowById`, `discardDraft`, `discardRowDraft`, `discardAllDrafts`. Server
+  paging + editing without a usable row id logs a warning once.
 - `el.controller` (`GridController`) incl. `insertRow`, `removeRows`, `duplicateRow`,
   `moveRow`, `expandSubtree` / `collapseSubtree`, `selectColumn*`, `closeContextMenu`,
   `closeToolbar`; `createDuplicateRowCallback`; `labels.actions` (built-in texts);

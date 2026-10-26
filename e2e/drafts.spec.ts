@@ -3,8 +3,8 @@ import { test, expect, type Page, gridLocator, cell, header, onGrid, domEvents, 
 /**
  * Drafts — an edit writes to a per-row draft (the `items` stay untouched);
  * dirty indicator (`isDirtyIndicatorVisible`), `isCellDirty` / `isRowDirty` /
- * `getRowDraft` / `hasRowDraft` / `getDraftRowIndices`, `discardRowDraft` /
- * `discardAllDrafts`, and the `row-change` detail.
+ * `getRowDraft` / `hasRowDraft` / `getDraftRowIndices`, `getDrafts`, `discardRowDraft` /
+ * `discardDraft` / `discardAllDrafts`, drafts never pruned by `items`, and the `row-change` detail.
  *
  * Fixture: docs/test/drafts.html — rows Alpha/Beta/Gamma/Delta (id 1-4), qty
  * 10..40; columns 0=id (read-only), 1=name (text, sortable), 2=qty (number).
@@ -181,5 +181,66 @@ test.describe('row-change', () => {
 	test('committing the unchanged value fires no row-change', async ({ page }) => {
 		await editCell(page, cell(page, 2, NAME), 'Gamma')
 		expect(await domEvents(page, 'row-change')).toEqual([])
+	})
+})
+
+test.describe('getDrafts / never pruned (NOTES.md #7, #20)', () => {
+	test('getDrafts lists { row, draftRow, changedFields, isValid } for every draft', async ({ page }) => {
+		await editCell(page, cell(page, 1, NAME), 'Beta 2')
+		await editCell(page, cell(page, 2, QTY), 'x')   // invalid number
+		expect(await onGrid(page, el => el.getDrafts())).toEqual([
+			{ row: { id: 2, name: 'Beta', qty: 20 }, draftRow: { id: 2, name: 'Beta 2', qty: 20 }, changedFields: ['name'], isValid: true },
+			{ row: { id: 3, name: 'Gamma', qty: 30 }, draftRow: { id: 3, name: 'Gamma', qty: 'x' }, changedFields: ['qty'], isValid: false }
+		])
+	})
+
+	test('setting items never drops drafts — also for rows that are no longer in items', async ({ page }) => {
+		await editCell(page, cell(page, 1, NAME), 'Beta 2')
+		// the row is gone (another server page) …
+		await onGrid(page, el => { el.items = [{ id: 7, name: 'Eta', qty: 70 }] })
+		expect(await onGrid(page, el => el.getDrafts().map((d: any) => d.draftRow.name))).toEqual(['Beta 2'])
+		// … and comes back with fresh data: the draft follows it (by id)
+		await onGrid(page, el => { el.items = (window as any).seed() })
+		await expect(cell(page, 1, NAME)).toHaveText('Beta 2')
+		expect(await onGrid(page, el => el.getDrafts()[0].row === el.items[1])).toBe(true)
+	})
+
+	test('discardDraft(row) drops one draft and its invalid markers (row or draft object)', async ({ page }) => {
+		await editCell(page, cell(page, 1, NAME), 'Beta 2')
+		await editCell(page, cell(page, 2, QTY), 'x')
+		await onGrid(page, el => el.discardDraft(el.items[2]))
+		await expect(cell(page, 2, QTY)).toHaveText('30')
+		expect(await onGrid(page, el => [el.isCellInvalid(2, 'qty'), el.getDrafts().length])).toEqual([false, 1])
+		await onGrid(page, el => el.discardDraft(el.getDrafts()[0].draftRow))
+		await expect(cell(page, 1, NAME)).toHaveText('Beta')
+		expect(await onGrid(page, el => el.getDrafts())).toEqual([])
+	})
+
+	test('replaceRowById and discardAllDrafts remove drafts', async ({ page }) => {
+		await editCell(page, cell(page, 0, NAME), 'Alpha 2')
+		await editCell(page, cell(page, 1, NAME), 'Beta 2')
+		await onGrid(page, el => el.replaceRowById(1, { id: 1, name: 'Alpha (saved)', qty: 10 }))
+		expect(await onGrid(page, el => el.getDrafts().map((d: any) => d.draftRow.name))).toEqual(['Beta 2'])
+		await onGrid(page, el => el.discardAllDrafts())
+		expect(await onGrid(page, el => el.getDrafts())).toEqual([])
+	})
+
+	test('server paging + editing without a usable id warns once', async ({ page }) => {
+		const warnings: string[] = []
+		page.on('console', m => { if (m.type() === 'warning' && m.text().includes('paginationMode="server"')) warnings.push(m.text()) })
+		await onGrid(page, el => { el.paginationMode = 'server'; el.idMember = 'code' })
+		await page.waitForTimeout(50)
+		await onGrid(page, el => { el.items = [{ id: 9, name: 'Iota', qty: 1 }] })
+		await page.waitForTimeout(50)
+		expect(warnings).toHaveLength(1)
+		expect(warnings[0]).toContain('[GRID:INIT]')
+	})
+
+	test('server paging with ids does not warn', async ({ page }) => {
+		const warnings: string[] = []
+		page.on('console', m => { if (m.type() === 'warning') warnings.push(m.text()) })
+		await onGrid(page, el => { el.paginationMode = 'server'; el.items = (window as any).seed() })
+		await page.waitForTimeout(50)
+		expect(warnings).toEqual([])
 	})
 })

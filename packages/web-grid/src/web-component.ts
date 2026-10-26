@@ -42,7 +42,8 @@ import type {
 	GridShortcut,
 	GridRangeShortcut,
 	GridActionEventDetail,
-	GridEventMap
+	GridEventMap,
+	DraftInfo
 } from './interaction.js'
 import { createGridController } from './controller.js'
 
@@ -1113,6 +1114,14 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	hasRowDraft(rowIndex: number): boolean { this.flush(); return this.engine.hasRowDraft(rowIndex) }
 	discardRowDraft(rowIndex: number): void { this.flush(); this.engine.discardRowDraft(rowIndex) }
 	getDraftRowIndices(): number[] { this.flush(); return this.engine.getDraftRowIndices() }
+	/**
+	 * Every unsaved draft `{ row, draftRow, changedFields, isValid }` — incl. rows on other
+	 * pages, filtered out, or not in the current `items` (drafts are never pruned; they
+	 * leave via `replaceRowById`, `discardDraft`, `discardRowDraft`, `discardAllDrafts`).
+	 */
+	getDrafts(): DraftInfo<T>[] { this.flush(); return this.engine.getDrafts() }
+	/** Drop the draft (and invalid-cell markers) of `row` — the row object, its id-equal copy, or the draft. */
+	discardDraft(row: T): void { this.flush(); this.engine.discardDraft(row) }
 	discardAllDrafts(): void { this.flush(); this.engine.discardAllDrafts() }
 
 	// Validation methods

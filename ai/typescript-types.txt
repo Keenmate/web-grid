@@ -52,6 +52,8 @@ el.controller, and `controller` on every ctx / detail.
     hasRowDraft(rowIndex: number): boolean
     discardRowDraft(rowIndex: number): void
     getDraftRowIndices(): number[]
+    getDrafts(): DraftInfo<T>[]    { row, draftRow, changedFields, isValid }
+    discardDraft(row: T): void
     discardAllDrafts(): void
     isCellDirty(rowIndex: number, field: string): boolean
     isRowDirty(rowIndex: number): boolean

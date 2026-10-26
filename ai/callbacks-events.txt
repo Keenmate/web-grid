@@ -152,7 +152,9 @@ getPaginationLabelsCallback
 
 renderSummaryCallback
   Signature: (ctx: SummaryContext<T>) => string
-  ctx: { items, allItems, totalItems, currentPage, pageSize, metadata }
+  ctx: { items, allItems, totalItems, currentPage, pageSize, metadata, drafts }
+  drafts: every unsaved draft { row, draftRow, changedFields, isValid } (also on
+  other pages) — adjust server aggregates (metadata) by the draft deltas.
   Returns HTML string for the summary bar content.
 
 getCustomStylesCallback

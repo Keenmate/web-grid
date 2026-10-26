@@ -469,9 +469,9 @@ This architecture separates mode detection (the adapter decides *what* action a 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
 | `summaryPosition` | `string` | — | Position(s): `'bottom-left'`, `'top-right\|bottom-right'`, etc. |
-| `renderSummaryCallback` | `(ctx: { items, allItems, totalItems, currentPage, pageSize, metadata }) => string` | — | Returns the summary bar HTML |
+| `renderSummaryCallback` | `(ctx: { items, allItems, totalItems, currentPage, pageSize, metadata, drafts }) => string` | — | Returns the summary bar HTML |
 | `isSummaryInline` | `boolean` | `true` | Share row with pagination when in same area |
-| `summaryMetadata` | `unknown` | — | Server-provided metadata passed to `renderSummaryCallback` as `ctx.metadata` |
+| `summaryMetadata` | `unknown` | — | Server-provided metadata passed to `renderSummaryCallback` as `ctx.metadata` (adjust server aggregates by `ctx.drafts` — every unsaved draft, also on other pages) |
 
 ### Filtering
 
@@ -967,7 +967,9 @@ grid.onRowChange = (detail) => save(detail.draftRow)
 | `getRowDraft(rowIndex)` | `T \| undefined` | Get the draft (uncommitted changes) for a row |
 | `hasRowDraft(rowIndex)` | `boolean` | Check if a row has uncommitted changes |
 | `discardRowDraft(rowIndex)` | `void` | Discard all draft changes for a row |
-| `getDraftRowIndices()` | `number[]` | Get indices of all rows with drafts |
+| `getDraftRowIndices()` | `number[]` | Get display indices of the displayed rows with drafts |
+| `getDrafts()` | `{ row, draftRow, changedFields, isValid }[]` | Every draft — incl. rows on other pages, filtered out, or not in `items` |
+| `discardDraft(row)` | `void` | Discard one row's draft (the row, its id-equal copy, or the draft object) |
 | `discardAllDrafts()` | `void` | Discard all draft changes across all rows |
 
 ### Validation

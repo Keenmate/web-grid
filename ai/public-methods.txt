@@ -52,7 +52,15 @@ discardRowDraft(rowIndex: number): void
   original values.
 
 getDraftRowIndices(): number[]
-  Get indices of all rows that have drafts (uncommitted changes).
+  Display indices of the displayed rows that have drafts.
+
+getDrafts(): { row, draftRow, changedFields, isValid }[]
+  Every draft — including rows on other pages, filtered out, or no longer in
+  items (drafts are never pruned by setting items).
+
+discardDraft(row: T): void
+  Discard one row's draft (the row, its id-equal copy, or the draft object)
+  and its invalid-cell markers.
 
 discardAllDrafts(): void
   Discard all draft changes across all rows. Reverts every edited cell

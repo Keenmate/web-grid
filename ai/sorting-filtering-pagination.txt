@@ -335,6 +335,8 @@ Grid properties:
                           currentPage: number
                           pageSize: number
                           metadata: unknown   // From summaryMetadata property
+                          drafts: DraftInfo<T>[]  // Every unsaved draft (also other pages):
+                                              // { row, draftRow, changedFields, isValid }
                         }
 
   isSummaryInline     Boolean. Default: true. When true, the summary shares

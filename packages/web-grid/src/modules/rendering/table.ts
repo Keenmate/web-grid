@@ -773,7 +773,8 @@ export function renderSummaryContent<T>(ctx: GridHost<T>): string {
 		totalItems,
 		currentPage,
 		pageSize,
-		metadata: ctx.engine.summaryMetadata
+		metadata: ctx.engine.summaryMetadata,
+		drafts: ctx.engine.getDrafts()
 	}))
 	return content ?? ''
 }

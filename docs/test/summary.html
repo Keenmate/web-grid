@@ -28,9 +28,14 @@
 		grid.renderSummaryCallback = (ctx) => {
 			window.summaryCalls++
 			window.lastSummaryCtx = { hasController: !!ctx.controller }
-			const sum = ctx.items.reduce((s, r) => s + Number(r.qty), 0)
+			// ctx.drafts: every unsaved draft (also on other pages) → sum what the user sees
+			const draftOf = new Map(ctx.drafts.map(d => [d.row, d.draftRow]))
+			const sum = ctx.items.reduce((s, r) => s + Number((draftOf.get(r) ?? r).qty), 0)
+			// all-pages delta: what a server aggregate would be adjusted by
+			const delta = ctx.drafts.reduce((s, d) => s + Number(d.draftRow.qty) - Number(d.row.qty), 0)
 			const meta = ctx.metadata ? JSON.stringify(ctx.metadata) : '-'
-			return `<span data-testid="sum">page=${ctx.currentPage} size=${ctx.pageSize} shown=${ctx.items.length} all=${ctx.allItems.length} total=${ctx.totalItems} sum=${sum} meta=${meta}</span>`
+			return `<span data-testid="sum">page=${ctx.currentPage} size=${ctx.pageSize} shown=${ctx.items.length} all=${ctx.allItems.length} total=${ctx.totalItems} sum=${sum} meta=${meta}</span>` +
+				` <span data-testid="drafts">drafts=${ctx.drafts.length} delta=${delta}</span>`
 		}
 	</script>
 </body>

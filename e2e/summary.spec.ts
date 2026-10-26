@@ -49,11 +49,23 @@ test('re-renders after an edit (the commit is surgical — no full render)', asy
 	await expect(text(page)).toHaveCount(1)
 })
 
-test('the sum sees the edited (draft) value', async ({ page }) => {
-	// Open question (NOTES.md #20): ctx.items are the original rows; drafts are not merged.
-	test.fail(true, 'NOTES.md #20')
+test('ctx.drafts lets the sum see the edited (draft) value', async ({ page }) => {
 	await editCell(page, cell(page, 0, 1), '10')
 	await expect(text(page)).toContainText('sum=15', { timeout: 2000 })  // 10 + 2 + 3
+	await expect(gridLocator(page).getByTestId('drafts')).toHaveText('drafts=1 delta=9')
+})
+
+test('ctx.drafts lists drafts on other pages too (server aggregates adjusted by the delta)', async ({ page }) => {
+	await editCell(page, cell(page, 0, 1), '10')
+	await nextBtn(page).click()
+	await expect(text(page)).toContainText('page=2')
+	await expect(gridLocator(page).getByTestId('drafts')).toHaveText('drafts=1 delta=9')
+	// server paging: page 2's rows replace items — the page-1 draft is still listed
+	await onGrid(page, el => { el.paginationMode = 'server'; el.totalItems = 7; el.items = [{ id: 4, qty: 4 }, { id: 5, qty: 5 }, { id: 6, qty: 6 }] })
+	await expect(gridLocator(page).getByTestId('drafts')).toHaveText('drafts=1 delta=9')
+	expect(await onGrid(page, el => el.getDrafts())).toEqual([
+		{ row: { id: 1, qty: 1 }, draftRow: { id: 1, qty: 10 }, changedFields: ['qty'], isValid: true }
+	])
 })
 
 test('summaryPosition: top-left goes to the top area; removal → no summary', async ({ page }) => {

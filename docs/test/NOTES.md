@@ -123,6 +123,8 @@ make `isRowDirty` value-based like `isCellDirty`.
 
 ## 7. Drafts are keyed by display index — they jump rows on sort / page / filter — FIXED
 
+**Follow-up:** drafts are never pruned by setting `items` (server paging: a missing row is another page); they leave via `replaceRowById`, `discardDraft(row)` (new), `discardRowDraft`, `discardAllDrafts`. `getDrafts()` lists them all. Server paging + editing without a usable id warns once (`GRID:INIT`).
+
 **Fixed:** drafts are keyed by row identity — the `idMember` / `treePathMember` value, else the row object itself (never the display index). The index-based API (`getRowDraft(i)`, `isRowDirty(i)`, …) resolves the displayed row first; `getDraftRowIndices()` lists the display indices of displayed rows with a draft. `updateRowById` / `replaceRowById` also looked drafts up by the `items` index — fixed with it. New tests: no-`idMember` sort, filter.
 
 **Where:** `grid.ts` `_draftRows: Map<number, T>` keyed by `rowIndex` (the
@@ -350,7 +352,10 @@ blur don't commit). Same for a locked row.
 
 **Test:** `row-api.spec.ts` "startEditing a read-only cell does nothing" (`test.fail`).
 
-## 20. Summary is not refreshed after a cell edit (and can't see drafts) — refresh FIXED, drafts open
+## 20. Summary is not refreshed after a cell edit (and can't see drafts) — FIXED
+
+**Fixed (drafts):** the summary ctx gains `drafts` — every unsaved draft `{ row, draftRow, changedFields, isValid }`, also rows on other pages / filtered out / not in `items` (same list as the new `getDrafts()`), so a callback sums what the user sees or adjusts server aggregates (`metadata`) by the draft deltas. `ctx.items` stay the original rows.
+
 
 **Partly fixed:** a `row-change` schedules a summary-only refresh (one per microtask burst; skipped when a full render is queued) — `summary.spec.ts` "re-renders after an edit". **Open question (draft-awareness):** today `ctx.items` / `ctx.allItems` are the original rows, so a sum ignores unsaved edits → propose either passing draft-merged copies in `items` / `allItems` (what the user sees; breaks row identity for consumers that compare references) or adding a `ctx.getCellValue(row, field)` helper (draft-aware, additive). `summary.spec.ts` "the sum sees the edited (draft) value" stays `test.fail`.
 

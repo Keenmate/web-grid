@@ -34,6 +34,8 @@ export function createGridController<T>(el: GridElement<T>): GridController<T> {
 		hasRowDraft: (rowIndex) => g().hasRowDraft(rowIndex),
 		discardRowDraft: (rowIndex) => g().discardRowDraft(rowIndex),
 		getDraftRowIndices: () => g().getDraftRowIndices(),
+		getDrafts: () => g().getDrafts(),
+		discardDraft: (row) => g().discardDraft(row),
 		discardAllDrafts: () => g().discardAllDrafts(),
 		isCellDirty: (rowIndex, field) => g().isCellDirty(rowIndex, field),
 		isRowDirty: (rowIndex) => g().isRowDirty(rowIndex),

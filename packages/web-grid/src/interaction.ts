@@ -70,6 +70,10 @@ export interface GridController<T = any> {
 	discardRowDraft(rowIndex: number): void
 	/** Display indices of the currently displayed rows that have a draft (drafts follow their row, see `idMember`). */
 	getDraftRowIndices(): number[]
+	/** Every draft — incl. rows on other pages / filtered out / not in `items` (drafts are never pruned). */
+	getDrafts(): DraftInfo<T>[]
+	/** Drop the draft (and invalid markers) of one row — the row object, its id-equal copy, or the draft. */
+	discardDraft(row: T): void
 	discardAllDrafts(): void
 	isCellDirty(rowIndex: number, field: string): boolean
 	isRowDirty(rowIndex: number): boolean
@@ -292,6 +296,18 @@ export interface PaginationLabelsContext<T = any> extends GridContext<T> {
 	pageSize: number
 }
 
+/** One unsaved draft — `getDrafts()`, `ctx.drafts` of the summary / `beforePageChangeCallback`. */
+export interface DraftInfo<T = any> {
+	/** The row: the current `items` row with that identity, else the row the draft was made from. */
+	row: T
+	/** The draft copy (what the user sees). */
+	draftRow: T
+	/** Fields whose draft value differs from `row`. */
+	changedFields: string[]
+	/** False while a cell of the draft is invalid. */
+	isValid: boolean
+}
+
 /** ctx of `renderSummaryCallback`. */
 export interface SummaryContext<T = any> extends GridContext<T> {
 	/** Displayed (paginated) rows. */
@@ -303,6 +319,11 @@ export interface SummaryContext<T = any> extends GridContext<T> {
 	pageSize: number
 	/** `summaryMetadata` (server-provided aggregates, …). */
 	metadata: unknown
+	/**
+	 * Every unsaved draft (`getDrafts()`) — incl. rows on other pages / filtered out /
+	 * not in `items`. Adjust server aggregates (`metadata`) by the draft deltas.
+	 */
+	drafts: DraftInfo<T>[]
 }
 
 /** ctx of `renderChevronCallback`. */

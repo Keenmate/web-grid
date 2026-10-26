@@ -53,7 +53,8 @@ import type {
 	GridRangeShortcut,
 	GridActionEventDetail,
 	GridEventMap,
-	GridEventName
+	GridEventName,
+	DraftInfo
 } from './interaction.js'
 
 // Internal tree index — built from items when treePathMember is set
@@ -312,6 +313,10 @@ export class GridEngine<T = unknown> {
 	protected _isValidating: boolean = false
 	/** Drafts keyed by row identity (see `draftKey`) — they follow their row through sort / page / filter. */
 	protected _draftRows: Map<unknown, T> = new Map()
+	/** The row each draft was made from (by the same key) — lists drafts of rows no longer in `items`. */
+	protected _draftOrigins: Map<unknown, T> = new Map()
+	protected _hasWarnedAboutServerDrafts: boolean = false
+	protected _isServerDraftsCheckPending: boolean = false
 	/** loadPersistedState() ran before any columns existed — retried when `columns` is set. */
 	protected _isPersistedStateLoadPending = false
 
@@ -434,7 +439,10 @@ export class GridEngine<T = unknown> {
 	get items(): T[] { return this._items }
 	set items(value: T[]) {
 		dataLogger.debug('items set:', value.length, 'rows')
+		// Drafts are never pruned here: with server paging a missing row is "another
+		// page". They leave via replaceRowById / discardDraft / discardAllDrafts.
 		this._items = value
+		this.maybeWarnAboutServerDrafts()
 		this.invalidateDisplayCache()
 		this._treeChevronCache = new WeakMap()  // rows replaced → drop cached glyphs
 		this.rebuildTreeState()
@@ -500,6 +508,7 @@ export class GridEngine<T = unknown> {
 	get paginationMode(): 'client' | 'server' { return this._paginationMode }
 	set paginationMode(value: 'client' | 'server') {
 		this._paginationMode = value
+		this.maybeWarnAboutServerDrafts()
 		this.requestUpdate()
 	}
 
@@ -520,6 +529,7 @@ export class GridEngine<T = unknown> {
 		this._isEditable = value
 		this.checkEditTriggerConflicts()
 		this.maybeWarnAboutRowIdentity()
+		this.maybeWarnAboutServerDrafts()
 		this.requestUpdate()
 	}
 
@@ -1354,6 +1364,33 @@ export class GridEngine<T = unknown> {
 	private hasStableIdentity(item: T): boolean {
 		if (this.getRowId(item) != null) return true
 		return !!this._treePathMember && (item as Record<string, unknown>)[this._treePathMember] != null
+	}
+
+	/**
+	 * Server paging + editing needs a row id: drafts are keyed by it, and without one a
+	 * draft can't find its row again after the page is swapped. Warn once.
+	 */
+	private maybeWarnAboutServerDrafts(): void {
+		// Deferred: the config usually arrives as several property writes in one task
+		// (items before idMember is fine).
+		if (this._hasWarnedAboutServerDrafts || this._isServerDraftsCheckPending) return
+		this._isServerDraftsCheckPending = true
+		queueMicrotask(() => {
+			this._isServerDraftsCheckPending = false
+			this.checkServerDrafts()
+		})
+	}
+
+	private checkServerDrafts(): void {
+		if (this._hasWarnedAboutServerDrafts) return
+		if (this._paginationMode !== 'server' || !this._isEditable || this._items.length === 0) return
+		if (this.getRowId(this._items[0]) != null) return
+		this._hasWarnedAboutServerDrafts = true
+		initLogger.warn(
+			'paginationMode="server" with editing, but the rows have no usable id ' +
+			`(idMember ${this._idMember ? `"${this._idMember}" is missing on the rows` : 'is null'}, no getIdCallback). ` +
+			'Drafts cannot follow their rows across pages — set idMember / getIdCallback.'
+		)
 	}
 
 	private maybeWarnAboutRowIdentity(): void {
@@ -2511,12 +2548,75 @@ export class GridEngine<T = unknown> {
 
 	private setDraftAt(rowIndex: number, draft: T): void {
 		const item = this.displayItems[rowIndex]
-		if (item) this._draftRows.set(this.draftKey(item), draft)
+		if (!item) return
+		const key = this.draftKey(item)
+		this._draftRows.set(key, draft)
+		this._draftOrigins.set(key, item)
 	}
 
 	private deleteDraftAt(rowIndex: number): void {
 		const item = this.displayItems[rowIndex]
-		if (item) this._draftRows.delete(this.draftKey(item))
+		if (item) this.deleteDraftByKey(this.draftKey(item))
+	}
+
+	private deleteDraftByKey(key: unknown): void {
+		this._draftRows.delete(key)
+		this._draftOrigins.delete(key)
+	}
+
+	/**
+	 * Every draft — including rows on other pages, filtered out, or no longer in
+	 * `items` (server paging: a missing row is "another page"; drafts are never
+	 * pruned). `row` is the current row with that identity when it is in `items`,
+	 * else the row the draft was made from. `changedFields` lists the fields whose
+	 * draft value differs from `row`; `isValid` is false while a cell of it is invalid.
+	 */
+	getDrafts(): DraftInfo<T>[] {
+		if (this._draftRows.size === 0) return []
+		const current = new Map<unknown, T>()
+		for (const item of this._items) {
+			const key = this.draftKey(item)
+			if (this._draftRows.has(key)) current.set(key, item)
+		}
+		const out: DraftInfo<T>[] = []
+		for (const [key, draftRow] of this._draftRows) {
+			const row = current.get(key) ?? this._draftOrigins.get(key) ?? (key as T)
+			const draft = draftRow as Record<string, unknown>
+			const orig = row as Record<string, unknown>
+			const changedFields = Object.keys(draft).filter(f => draft[f] !== orig[f])
+			const rowKey = this.invalidRowKeyOf(row)
+			const isValid = rowKey === null || !this._invalidCells.some(c => c.rowKey === rowKey)
+			out.push({ row, draftRow, changedFields, isValid })
+		}
+		return out
+	}
+
+	/** The invalid-cell rowKey of a row: its id / tree path, else its display index (null when not displayed). */
+	private invalidRowKeyOf(row: T): string | null {
+		if (this.hasStableIdentity(row)) return this.getStableRowKey(row, -1)
+		const i = this.displayItems.indexOf(row)
+		return i >= 0 ? this.getStableRowKey(row, i) : null
+	}
+
+	/**
+	 * Drop the draft of `row` (a row object — or its id-equal copy, or the draft
+	 * itself) and its invalid-cell markers. No-op when it has none.
+	 */
+	discardDraft(row: T): void {
+		if (row == null) return
+		let key: unknown = this.draftKey(row)
+		if (!this._draftRows.has(key)) {
+			key = undefined
+			for (const [k, d] of this._draftRows) {
+				if (d === row || this._draftOrigins.get(k) === row) { key = k; break }
+			}
+			if (key === undefined) return
+		}
+		const origin = this._draftOrigins.get(key) ?? row
+		const rowKey = this.invalidRowKeyOf(origin)
+		this.deleteDraftByKey(key)
+		if (rowKey !== null) this._invalidCells = this._invalidCells.filter(c => c.rowKey !== rowKey)
+		this.requestUpdate()
 	}
 
 	/** Display indices of the displayed rows that have a draft. */
@@ -2621,6 +2721,7 @@ export class GridEngine<T = unknown> {
 
 	discardAllDrafts(): void {
 		this._draftRows.clear()
+		this._draftOrigins.clear()
 		this._invalidCells = []
 		this.requestUpdate()
 	}
@@ -3480,7 +3581,7 @@ export class GridEngine<T = unknown> {
 		this._items[found.index] = newRow
 
 		// Clear draft for this row (data was replaced externally)
-		this._draftRows.delete(this.draftKey(found.row))
+		this.deleteDraftByKey(this.draftKey(found.row))
 
 		this.requestUpdate()
 		return true

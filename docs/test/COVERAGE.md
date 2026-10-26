@@ -75,6 +75,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Paste (single / multi-cell, modes, events, proxies) | ✓ | `paste.spec.ts` | `paste.html` |
 | Drafts: dirty marking, indicator, `isCellDirty/isRowDirty/getRowDraft` | ✓ | `drafts.spec.ts` | `drafts.html` |
 | Drafts follow their row through sort / filter, with and without `idMember` (#7 fixed) | ✓ | `drafts.spec.ts` | `drafts.html` |
+| `getDrafts()` (incl. rows not in `items`), never pruned by `items`, `discardDraft(row)`, `replaceRowById` / `discardAllDrafts`, server-paging-without-id warning | ✓ | `drafts.spec.ts` | `drafts.html` |
 | Cancel leaves no draft (#6 fixed), row-number marker right after the commit (#8 fixed) | ✓ | `drafts.spec.ts` | `drafts.html` |
 | `discardRowDraft` / `discardAllDrafts`, `row-change` detail + twin | ✓ | `drafts.spec.ts` | `drafts.html` |
 | New row: `isNewRowEnabled`, `newRowPosition`, `newRowIndicator`, empty-row draft, `createRowCallback` (paste) | ✓ | `new-row.spec.ts` | `new-row.html` |
@@ -169,7 +170,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | `enableLogging` / `setLogLevel` reach the categories (#33 fixed — core `/logging`) | ✓ | `logging.spec.ts` | `logging.html` |
 | Summary row (`renderSummaryCallback` ctx, `summaryPosition`, `isSummaryInline`, `summaryMetadata`, totalItems) | ✓ | `summary.spec.ts` | `summary.html` |
 | Summary refresh after an edit (#20 refresh fixed) | ✓ | `summary.spec.ts` | `summary.html` |
-| Summary sees draft values (#20, open question) | ✗ fail | `summary.spec.ts` | `summary.html` |
+| Summary `ctx.drafts` (draft values, other pages, server items swapped) (#20 fixed) | ✓ | `summary.spec.ts` | `summary.html` |
 | Tooltips: `getTooltipCallback`, `tooltipMember`, `isTooltipHtml`, `headerInfo`, validation tooltip (column / grid callback), `tooltipShowDelay` | ✓ | `tooltip.spec.ts` | `tooltip.html` |
 | Tooltip / editor attribute escaping, no attribute injection from row data (#21 fixed) | ✓ | `tooltip.spec.ts`, `editors.spec.ts` | `tooltip.html`, `editors.html` |
 | Validation tooltip right after the commit, cleared by a valid one (#22 fixed) | ✓ | `tooltip.spec.ts` | `tooltip.html` |

@@ -413,13 +413,21 @@ Methods:
   grid.hasRowDraft(rowIndex)      -- Returns true if the row has been edited.
   grid.discardRowDraft(rowIndex)  -- Discards all draft changes for a row.
                                      Also clears validation errors for that row.
-  grid.getDraftRowIndices()       -- Returns number[] of all row indices that
-                                     have drafts.
+  grid.getDraftRowIndices()       -- Returns number[] of the display indices of
+                                     the displayed rows that have drafts.
+  grid.getDrafts()                -- Every draft { row, draftRow, changedFields,
+                                     isValid } — incl. rows on other pages,
+                                     filtered out, or no longer in items.
+  grid.discardDraft(row)          -- Discards one row's draft (row object, its
+                                     id-equal copy, or the draft) + its errors.
   grid.discardAllDrafts()         -- Discards all drafts and clears all
                                      validation errors.
 
 Draft behavior:
-  - A draft is created the first time a cell in a row enters edit mode.
+  - Drafts are never pruned by setting items (server paging: a missing row is
+    "another page"); they leave via replaceRowById / discardDraft /
+    discardRowDraft / discardAllDrafts. Keyed by the row id (idMember).
+  - A draft is created by the first commit that changes a cell of the row.
   - The draft is a shallow clone of the original row ({ ...item }).
   - Subsequent edits to other cells in the same row reuse the existing draft.
   - Invalid values ARE stored in the draft (so the user's input is preserved).

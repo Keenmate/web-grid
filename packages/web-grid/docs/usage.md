@@ -379,7 +379,7 @@ For full-height mode, also set `isTableBorderOnly = true`.
 | Property | Type | Default | Description |
 |---|---|---|---|
 | `summaryPosition` | `string` | — | E.g. `'bottom-left'`, `'top-right\|bottom-right'` |
-| `renderSummaryCallback` | `(ctx: { items, allItems, totalItems, currentPage, pageSize, metadata }) => string` | — | Returns HTML content for the summary bar |
+| `renderSummaryCallback` | `(ctx: { items, allItems, totalItems, currentPage, pageSize, metadata, drafts }) => string` | — | Returns HTML content for the summary bar |
 | `isSummaryInline` | `boolean` | `true` | Share row with pagination in same area |
 | `summaryMetadata` | `unknown` | — | Server-provided metadata passed to `renderSummaryCallback` as `ctx.metadata` |
 
@@ -632,7 +632,7 @@ grid.getRowClassCallback = ({ row, controller }) =>
 | `getRowClassCallback` | `{ row, rowIndex }` | CSS class for the row, or `null` |
 | `getCustomStylesCallback` | `{}` | CSS injected into the shadow DOM |
 | `getPaginationLabelsCallback` | `{ currentPage, totalPages, totalItems, pageSize }` | `Partial<PaginationLabels>` |
-| `renderSummaryCallback` | `{ items, allItems, totalItems, currentPage, pageSize, metadata }` | Summary HTML |
+| `renderSummaryCallback` | `{ items, allItems, totalItems, currentPage, pageSize, metadata, drafts }` | Summary HTML |
 | `renderShortcutsHelpCallback` | `{}` | HTML shown with the shortcuts list |
 | `getValidationTooltipCallback` | cell ctx + `error` | Validation tooltip HTML (column-level wins) |
 | `getIsRowEditableCallback` | `{ row }` | `boolean` — per-row editability |
@@ -697,7 +697,7 @@ grid.onAction = ({ action, id, row }) => {
 |---|---|
 | Data | `getItems()`, `getDisplayItems()`, `getColumns()`, `getSort()`, `getFilters()`, `setFilter(field, value)` |
 | Rows | `insertRow(row, afterRow?)`, `removeRows(rows)`, `duplicateRow(row)`, `moveRow(row, -1 \| 1)`, `getRowId(row)`, `findRowById(id)`, `updateRowById(id, data)`, `replaceRowById(id, row)` |
-| Drafts / validation | `getRowDraft`, `hasRowDraft`, `discardRowDraft`, `getDraftRowIndices`, `discardAllDrafts`, `isCellDirty`, `isRowDirty`, `isCellInvalid`, `getCellValidationError`, `getInvalidCells`, `canEditCell` |
+| Drafts / validation | `getRowDraft`, `hasRowDraft`, `discardRowDraft`, `getDraftRowIndices`, `getDrafts`, `discardDraft`, `discardAllDrafts`, `isCellDirty`, `isRowDirty`, `isCellInvalid`, `getCellValidationError`, `getInvalidCells`, `canEditCell` |
 | Row locking | `isRowLocked`, `getRowLockInfo`, `lockRowById`, `unlockRowById`, `getExternalLocks`, `clearExternalLocks` |
 | Selection | `selectRow`, `selectRowRange`, `clearSelection`, `isRowSelected`, `getSelectedRows`, `getSelectedRowsData`, `copySelectedRowsToClipboard`, `selectCellRange`, `clearCellSelection`, `getSelectedCellRange`, `getSelectedCells`, `copyCellSelectionToClipboard`, `selectColumn`, `selectColumnRange`, `clearColumnSelection`, `selectAll` |
 | Tree | `isPathExpanded`, `toggleExpandedPath`, `expandAll`, `collapseAll`, `expandSubtree`, `collapseSubtree`, `getRowTreeInfo` |
@@ -751,7 +751,9 @@ After a paste, the `paste-complete` event (`onPasteComplete`) reports `{ totalCe
 | `getRowDraft(rowIndex)` | `T \| undefined` | Get the draft for a row |
 | `hasRowDraft(rowIndex)` | `boolean` | Check if a row has uncommitted changes |
 | `discardRowDraft(rowIndex)` | `void` | Discard all draft changes for a row |
-| `getDraftRowIndices()` | `number[]` | All row indices with drafts |
+| `getDraftRowIndices()` | `number[]` | Display indices of the displayed rows with drafts |
+| `getDrafts()` | `{ row, draftRow, changedFields, isValid }[]` | Every draft — incl. rows on other pages, filtered out, or not in `items` |
+| `discardDraft(row)` | `void` | Discard one row's draft (the row, its id-equal copy, or the draft object) |
 | `discardAllDrafts()` | `void` | Discard all draft changes across all rows |
 
 ### Validation
