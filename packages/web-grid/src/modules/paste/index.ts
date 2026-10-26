@@ -235,7 +235,8 @@ export async function executePaste<T>(
 				pastedRowData?.forEach((value, cellIndex) => {
 					const mapping = headerMapping[cellIndex]
 					if (mapping) {
-						pastedData[mapping.gridField] = value
+						const column = grid.columns.find(c => String(c.field) === mapping.gridField)
+						pastedData[mapping.gridField] = column ? typePastedText(column, value) : value
 					}
 				})
 			} else {
@@ -243,8 +244,8 @@ export async function executePaste<T>(
 				pastedRowData?.forEach((value, cellIndex) => {
 					const colIndex = targetColIndex + cellIndex
 					if (colIndex < visualCols.length) {
-						const field = String(visualCols[colIndex].column.field)
-						pastedData[field] = value
+						const column = visualCols[colIndex].column
+						pastedData[String(column.field)] = typePastedText(column, value)
 					}
 				})
 			}
@@ -395,7 +396,7 @@ export async function executePaste<T>(
 			}
 
 			// Convert the pasted text through the column's getPasteValueCallback
-			let processedValue: unknown = value
+			let processedValue: unknown = typePastedText(column, value)
 			if (column.getPasteValueCallback && rowData) {
 				processedValue = column.getPasteValueCallback(Object.assign(
 					grid.cellCtx(rowData, displayRowIndex, column),
@@ -544,7 +545,7 @@ export async function handlePasteEvent<T>(ctx: GridHost<T>, e: ClipboardEvent): 
 
 		e.preventDefault()
 
-		let processedText: unknown = text
+		let processedText: unknown = typePastedText(column, text)
 		if (column.getPasteValueCallback) {
 			processedText = column.getPasteValueCallback(Object.assign(ctx.engine.cellCtx(row, rowIndex, column, colIndex), { text }))
 		}
@@ -554,4 +555,19 @@ export async function handlePasteEvent<T>(ctx: GridHost<T>, e: ClipboardEvent): 
 		await ctx.engine.commitEdit(rowIndex, field, processedText, false, 'paste')
 		ctx.render()
 	}
+}
+
+/** A plain decimal number as typed / exported by a spreadsheet (no hex, no thousands separators). */
+const NUMBER_TEXT = /^[+-]?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?$/i
+
+/**
+ * Type a pasted text for its column (when no `getPasteValueCallback` takes over):
+ * an `editor: 'number'` column gets a number (blank → null); text that isn't a plain
+ * number stays a string, so validation can flag it. Other editors keep the text.
+ */
+export function typePastedText<T>(column: Column<T>, text: string): unknown {
+	if (column.editor !== 'number') return text
+	const trimmed = text.trim()
+	if (trimmed === '') return null
+	return NUMBER_TEXT.test(trimmed) ? Number(trimmed) : text
 }

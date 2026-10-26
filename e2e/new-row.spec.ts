@@ -133,10 +133,18 @@ test('createRowCallback shapes rows created by a paste past the last row', async
 })
 
 test('rows created by a paste get typed values (number column → number)', async ({ page }) => {
-	test.fail(true, 'NOTES.md #18')
 	await onGrid(page, el => { el.isNewRowEnabled = false })
 	await cell(page, 1, 1).click()
 	await pasteText(page, 'Beta2\t21\nGamma\t30')
 	await expect.poll(() => onGrid(page, el => el.items.length)).toBe(3)
 	expect(await onGrid(page, el => [typeof el.getRowDraft(1).qty, typeof el.items[2].qty])).toEqual(['number', 'number'])
+})
+
+test('a single-cell paste into a number column is typed; non-numbers stay text (NOTES.md #18)', async ({ page }) => {
+	await onGrid(page, el => { el.isNewRowEnabled = false })
+	await cell(page, 0, 2).click()
+	await pasteText(page, ' 42 ')
+	await expect.poll(() => onGrid(page, el => el.getRowDraft(0)?.qty)).toBe(42)
+	await pasteText(page, '1e3x')
+	await expect.poll(() => onGrid(page, el => el.getRowDraft(0)?.qty)).toBe('1e3x')
 })

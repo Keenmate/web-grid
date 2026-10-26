@@ -79,7 +79,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | `discardRowDraft` / `discardAllDrafts`, `row-change` detail + twin | ✓ | `drafts.spec.ts` | `drafts.html` |
 | New row: `isNewRowEnabled`, `newRowPosition`, `newRowIndicator`, empty-row draft, `createRowCallback` (paste) | ✓ | `new-row.spec.ts` | `new-row.html` |
 | New row committed by Enter / Tab (focus stays on the fresh empty row), `createEmptyRowCallback` row lands (#17 fixed) | ✓ | `new-row.spec.ts` | `new-row.html` |
-| Pasted numbers typed (#18) | ✗ fail | `new-row.spec.ts` | `new-row.html` |
+| Pasted numbers typed (#18 fixed) | ✓ | `new-row.spec.ts` | `new-row.html` |
 
 ## 4. Selection, copy, keyboard
 

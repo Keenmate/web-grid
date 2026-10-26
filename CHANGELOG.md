@@ -175,6 +175,8 @@ handlers: `onpaste`, `onbeforepaste`, `onselect`).
   hid every tooltip at once; it now hides only a toolbar-button tooltip.
 - The summary (`renderSummaryCallback`) was not refreshed after a cell edit (commits update the
   cell surgically); a `row-change` now re-renders the summary blocks.
+- Pasted values in `editor: 'number'` columns stayed strings (`"21"`) — in drafts and in rows
+  created by the paste; they are numbers now (blank → null; non-numeric text is kept for validation).
 
 ### Changed
 

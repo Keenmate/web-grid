@@ -314,7 +314,9 @@ editable cell; then delete the dead editor-keydown branches.
 
 **Tests:** `new-row.spec.ts` — 4 commit tests (`test.fail`).
 
-## 18. Pasted values into `editor: 'number'` columns stay strings
+## 18. Pasted values into `editor: 'number'` columns stay strings — FIXED
+
+**Fixed:** pasted text for an `editor: 'number'` column is typed (`typePastedText`: plain decimal → number, blank → null, anything else stays text for validation) on all three paths — existing cells, rows created past the end, single-cell paste — unless `getPasteValueCallback` takes over. Checkbox / date typing left as is (what text means true, which date format?) — see the report's questions.
 
 **Where:** `modules/paste/index.ts` — pasted text is committed as-is; the number
 editor path converts (`drafts.spec.ts` shows a typed `15` stored as a number).
