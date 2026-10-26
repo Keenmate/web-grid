@@ -377,7 +377,7 @@ export type QuickGridProps<T> = {
 	getCellToolbarItemsCallback?: (ctx: CellContext<T>) => GridToolbarEntry<T>[] | null | undefined  // Cell-specific toolbar items (merged over rowToolbar by id / action)
 	cellToolbarOffset?: number | string  // Horizontal offset: number 0-1 as fraction of cell width, or CSS length string (e.g. '2rem'). Default: 0.2
 	toolbarBtnMinWidth?: string  // Min-width for toolbar buttons (CSS value, e.g. '32px'). Overrides --wg-toolbar-btn-min-width
-	inlineActionsTitle?: string  // Header title for inline actions column (when toolbarPosition="inline")
+	inlineActionsTitle?: string | null  // Inline actions column header (toolbarPosition="inline"); absent → labels.inlineActionsHeader, '' → blank
 	// Context menu (row/cell): built-in names, menu items (submenus via children /
 	// getChildrenCallback), dividers.
 	contextMenu?: GridMenuEntry<T>[]

@@ -486,7 +486,7 @@ checkbox toggles it" (`test.fail`).
 
 ## 28. Inline actions header is blank by default — FIXED
 
-**Fixed:** `inlineActionsTitle || labels.inlineActionsHeader` (an empty title falls back to the label).
+**Fixed:** the `inline-actions-title` default is `undefined` → `inlineActionsTitle ?? labels.inlineActionsHeader`; an explicit `""` gives a blank header (one-action columns).
 
 **Where:** `modules/rendering/table.ts:85` —
 `inlineActionsTitle ?? labels.inlineActionsHeader`; the input default for

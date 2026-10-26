@@ -128,6 +128,17 @@ test('the inline actions header defaults to labels.inlineActionsHeader ("Actions
 	await expect(gridLocator(page).locator('thead th.wg__inline-actions-header')).toHaveText('Akce')
 })
 
+test('an explicit empty inline-actions-title blanks the header; removing it restores the label', async ({ page }) => {
+	await onGrid(page, el => { el.setAttribute('toolbar-position', 'inline'); el.setAttribute('inline-actions-title', '') })
+	const th = gridLocator(page).locator('thead th.wg__inline-actions-header')
+	await expect(th).toHaveCount(1)
+	await expect(th).toHaveText('')
+	await onGrid(page, el => { el.removeAttribute('inline-actions-title') })
+	await expect(th).toHaveText('Actions')
+	await onGrid(page, el => { el.inlineActionsTitle = '' })
+	await expect(th).toHaveText('')
+})
+
 test('an invalid toolbar-position is rejected (previous kept)', async ({ page }) => {
 	await onGrid(page, el => el.setAttribute('toolbar-position', 'diagonal'))
 	expect(await onGrid(page, el => el.toolbarPosition)).toBe('auto')

@@ -357,7 +357,7 @@ This architecture separates mode detection (the adapter decides *what* action a 
 | `getCellToolbarItemsCallback` | `(ctx: CellContext<T>) => GridToolbarEntry<T>[] \| null \| undefined` | — | Cell-specific toolbar items, merged over `rowToolbar` by `id` / `action` |
 | `cellToolbarOffset` | `number \| string` | `0.2` | Horizontal offset: `0`–`1` as fraction of cell width, or CSS length (e.g., `'2rem'`) |
 | `toolbarBtnMinWidth` | `string` | — | Min-width for toolbar buttons (CSS value). Overrides `--wg-toolbar-btn-min-width` |
-| `inlineActionsTitle` | `string` | `'Actions'` | Header title for inline actions column (when `toolbarPosition='inline'`). Set to `''` for no title |
+| `inlineActionsTitle` | `string \| null` | — (`labels.inlineActionsHeader`, "Actions") | Header title for inline actions column (when `toolbarPosition='inline'`). Set to `''` for no title (a narrow one-action column) |
 
 | `createEmptyRowCallback` | `(ctx) => T \| Promise<T>` | — | The row the `add` built-in inserts (default: a blank row) |
 | `createDuplicateRowCallback` | `(ctx: { row, rowIndex }) => T` | — | The copy the `duplicate` built-in inserts (default: shallow copy with `idMember` cleared) |

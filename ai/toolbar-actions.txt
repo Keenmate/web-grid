@@ -208,7 +208,8 @@ Behavior differences from floating toolbar:
 
 Column header title:
 
-    grid.inlineActionsTitle = 'Actions'   (default)
+    (absent)                              labels.inlineActionsHeader ("Actions")
+    grid.inlineActionsTitle = 'Ops'       custom header text
     grid.inlineActionsTitle = ''          no header text
 
 The column width auto-sizes based on the maximum number of buttons
