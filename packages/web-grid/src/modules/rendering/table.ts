@@ -114,7 +114,7 @@ export function renderHeaderRow<T>(ctx: GridHost<T>): string {
 		const isLastFrozen = isFrozen && visualIndex === ctx.engine.totalFrozenColumns - 1
 
 		// Check if column is selected
-		const isColumnSelected = ctx.engine.isColumnSelected(visualIndex)
+		const isColumnSelected = ctx.engine.isColumnPositionSelected(visualIndex)
 
 		const classes = ['wg__header']
 		if (isSortable) classes.push('wg__header--sortable')
@@ -327,7 +327,7 @@ export function renderDataRows<T>(ctx: GridHost<T>): string {
 				classes.push('wg__cell--dirty')
 			}
 			if (ctx.engine.isCellInSelectedRange(rowIndex, visualIndex)) classes.push('wg__cell--in-range')
-			if (ctx.engine.isColumnSelected(visualIndex)) classes.push('wg__cell--column-selected')
+			if (ctx.engine.isColumnPositionSelected(visualIndex)) classes.push('wg__cell--column-selected')
 			if (isFrozen) classes.push('wg__cell--frozen')
 			if (isLastFrozen) classes.push('wg__cell--frozen-last')
 			if (column.cellClass) classes.push(column.cellClass)
@@ -573,7 +573,7 @@ export function renderDataRowsVirtual<T>(ctx: GridHost<T>, params: VirtualScroll
 				classes.push('wg__cell--dirty')
 			}
 			if (ctx.engine.isCellInSelectedRange(rowIndex, visualIndex)) classes.push('wg__cell--in-range')
-			if (ctx.engine.isColumnSelected(visualIndex)) classes.push('wg__cell--column-selected')
+			if (ctx.engine.isColumnPositionSelected(visualIndex)) classes.push('wg__cell--column-selected')
 			if (isFrozen) classes.push('wg__cell--frozen')
 			if (isLastFrozen) classes.push('wg__cell--frozen-last')
 			if (column.cellClass) classes.push(column.cellClass)

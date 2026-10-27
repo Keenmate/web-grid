@@ -355,9 +355,11 @@ export class GridEngine<T = unknown> {
 	protected _lastClickedCell: { rowIndex: number, colIndex: number } | null = null
 	protected _shouldCopyWithHeaders: boolean = false
 
-	// Column selection state (like row selection, supports non-contiguous)
+	// Column selection state (like row selection, supports non-contiguous). VISUAL
+	// positions (indices into `visualColumns`), like a CellRange; the public API
+	// takes / returns column indices (index into `columns`) and converts.
 	protected _selectedColumns: Set<number> = new Set()
-	protected _lastSelectedColumnIndex: number = -1
+	protected _lastSelectedColumnIndex: number = -1  // visual position (range anchor)
 
 	// Paste configuration
 	protected _pasteMode: PasteMode = 'skip-non-editable'
@@ -1362,7 +1364,7 @@ export class GridEngine<T = unknown> {
 	 * @returns true if copy was successful, false if no selection or clipboard failed
 	 */
 	async copySelectedColumnsToClipboard(): Promise<boolean> {
-		const selectedColIndices = this.selectedColumns
+		const selectedColIndices = this.selectedColumnPositions  // visual positions
 		if (selectedColIndices.length === 0) return false
 
 		const rows: string[] = []
@@ -2026,13 +2028,20 @@ export class GridEngine<T = unknown> {
 
 	/**
 	 * Select column(s) - similar to selectRow but for columns
-	 * @param colIndex - Column index to select
-	 * @param mode - 'replace' (default), 'toggle', or 'range'
+	 * @param colIndex - Column index (index into `columns`); hidden columns are ignored
+	 * @param mode - 'replace' (default), 'toggle', or 'range' (the on-screen span from
+	 *   the last selected column)
 	 */
 	selectColumn(colIndex: number, mode: 'replace' | 'toggle' | 'range' = 'replace'): void {
-		const colCount = this.visualColumns.length
-		if (colIndex < 0 || colIndex >= colCount) return
-		this.trackSelection(() => this.selectColumnState(colIndex, mode))
+		const pos = this.visualIndexOfColumn(colIndex)
+		if (pos < 0) return
+		this.selectColumnAt(pos, mode)
+	}
+
+	/** Select by VISUAL position (index into `visualColumns`) — header clicks / drags. */
+	selectColumnAt(pos: number, mode: 'replace' | 'toggle' | 'range' = 'replace'): void {
+		if (pos < 0 || pos >= this.visualColumns.length) return
+		this.trackSelection(() => this.selectColumnState(pos, mode))
 		this.requestUpdate()
 	}
 
@@ -2081,9 +2090,18 @@ export class GridEngine<T = unknown> {
 	}
 
 	/**
-	 * Select a range of columns (for drag selection)
+	 * Select the on-screen span between two columns (column indices — index into
+	 * `columns`), inclusive. Hidden columns are ignored.
 	 */
 	selectColumnRange(fromIndex: number, toIndex: number): void {
+		const from = this.visualIndexOfColumn(fromIndex)
+		const to = this.visualIndexOfColumn(toIndex)
+		if (from < 0 || to < 0) return
+		this.selectColumnRangeAt(from, to)
+	}
+
+	/** Select a span of VISUAL positions (drag selection). */
+	selectColumnRangeAt(fromIndex: number, toIndex: number): void {
 		this.trackSelection(() => {
 			// Clear row selection and cell range when selecting columns
 			this._selectedRows.clear()
@@ -2100,18 +2118,31 @@ export class GridEngine<T = unknown> {
 		this.requestUpdate()
 	}
 
-	/**
-	 * Get selected column indices (sorted)
-	 */
+	/** Selected column indices (index into `columns`), ascending. */
 	get selectedColumns(): number[] {
+		const visualCols = this.visualColumns
+		const indices: number[] = []
+		for (const pos of this._selectedColumns) {
+			const entry = visualCols[pos]
+			if (entry) indices.push(entry.originalIndex)
+		}
+		return indices.sort((a, b) => a - b)
+	}
+
+	/** Selected VISUAL positions (index into `visualColumns`), ascending — rendering / borders / copy. */
+	get selectedColumnPositions(): number[] {
 		return Array.from(this._selectedColumns).sort((a, b) => a - b)
 	}
 
-	/**
-	 * Check if a column is selected
-	 */
+	/** Is the column (index into `columns`) selected? */
 	isColumnSelected(colIndex: number): boolean {
-		return this._selectedColumns.has(colIndex)
+		const pos = this.visualIndexOfColumn(colIndex)
+		return pos >= 0 && this._selectedColumns.has(pos)
+	}
+
+	/** Is the column at this VISUAL position selected? */
+	isColumnPositionSelected(pos: number): boolean {
+		return this._selectedColumns.has(pos)
 	}
 
 	/**

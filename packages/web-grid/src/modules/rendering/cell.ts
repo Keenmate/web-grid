@@ -75,7 +75,7 @@ export function renderCell<T>(
 		classes.push('wg__cell--dirty')
 	}
 	if (visualIndex >= 0 && ctx.engine.isCellInSelectedRange(rowIndex, visualIndex)) classes.push('wg__cell--in-range')
-	if (visualIndex >= 0 && ctx.engine.isColumnSelected(visualIndex)) classes.push('wg__cell--column-selected')
+	if (visualIndex >= 0 && ctx.engine.isColumnPositionSelected(visualIndex)) classes.push('wg__cell--column-selected')
 	if (isFrozen) classes.push('wg__cell--frozen')
 	if (isLastFrozen) classes.push('wg__cell--frozen-last')
 	if (column.cellClass) classes.push(column.cellClass)

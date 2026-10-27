@@ -199,3 +199,70 @@ test.describe('fill direction constraint — #gridHorizontal', () => {
 		}
 	})
 })
+
+// =============================================================================
+// #grid with reordered + hidden columns — the fill follows the on-screen columns
+// =============================================================================
+// startDate (3) hidden; on screen: salary(2) | department(4) | name(1) | id(0) | status(5)
+// (data-col in brackets). The handle, the source column and the targets must be
+// the column under the cursor — not whatever sits at that index on screen.
+
+test.describe('fill with reordered + hidden columns — #grid', () => {
+	async function setup(page: Page) {
+		await gridLocator(page, 'grid').evaluate(async (el: any) => {
+			el.columns = el.columns.map((c: any) => c.field === 'startDate' ? { ...c, isHidden: true } : c)
+			el.setColumnOrder([
+				{ field: 'salary', order: 0 }, { field: 'department', order: 1 },
+				{ field: 'name', order: 2 }, { field: 'id', order: 3 }, { field: 'status', order: 4 }
+			])
+			await el.whenSettled?.()
+			el.beforeFillCallback = (ctx: any) => { (window as any).__fill = { sourceCell: { ...ctx.sourceCell }, targetCells: ctx.targetCells.map((t: any) => ({ ...t })) } }
+		})
+		const order = await gridLocator(page, 'grid').locator('tbody tr[data-row-index="0"] td.wg__cell[data-col]')
+			.evaluateAll(els => els.map(el => (el as HTMLElement).dataset.col))
+		expect(order).toEqual(['2', '4', '1', '0', '5'])
+	}
+	const fillDetail = (page: Page) => page.evaluate(() => (window as any).__fill)
+
+	test('dragging down from name fills name (not the column at that screen slot)', async ({ page }) => {
+		await setup(page)
+		await focusCell(page, 'grid', 0, 1)
+		await dragFillTo(page, 'grid', 2, 1)
+		await expect(cell(page, 'grid', 1, 1)).toContainText('Alice')
+		await expect(cell(page, 'grid', 2, 1)).toContainText('Alice')
+		await expect(cell(page, 'grid', 1, 4)).toHaveText('Marketing')
+		expect(await fillDetail(page)).toEqual({
+			sourceCell: { rowIndex: 0, colIndex: 1, field: 'name', value: 'Alice' },
+			targetCells: [{ rowIndex: 1, colIndex: 1, field: 'name' }, { rowIndex: 2, colIndex: 1, field: 'name' }]
+		})
+	})
+
+	test('no fill handle on the read-only id column', async ({ page }) => {
+		await setup(page)
+		await focusCell(page, 'grid', 0, 1)  // handle shown on name
+		const target = cell(page, 'grid', 0, 0)
+		const box = await target.boundingBox()
+		if (!box) throw new Error('no box')
+		await page.mouse.click(box.x + 6, box.y + box.height / 2)
+		await expect(target).toHaveClass(/wg__cell--focused/)
+		await expect(fillHandle(page, 'grid')).toHaveCount(0)
+	})
+
+	test("column fillDirection 'all': a horizontal drag department → name fills the on-screen neighbour only", async ({ page }) => {
+		await setup(page)
+		// column-level fillDirection (the grid-level one is engine-only)
+		await gridLocator(page, 'grid').evaluate(async (el: any) => {
+			el.columns = el.columns.map((c: any) => c.field === 'department' ? { ...c, fillDirection: 'all' } : c)
+			await el.whenSettled?.()
+		})
+		await focusCell(page, 'grid', 0, 4)  // department 'Engineering'
+		await dragFillTo(page, 'grid', 0, 1)  // name — next column on screen
+		await expect(cell(page, 'grid', 0, 1)).toContainText('Engineering')
+		await expect(cell(page, 'grid', 0, 2)).toContainText('50')  // salary untouched
+		await expect(cell(page, 'grid', 0, 5)).toContainText('Active')  // status untouched
+		expect(await fillDetail(page)).toEqual({
+			sourceCell: { rowIndex: 0, colIndex: 4, field: 'department', value: 'Engineering' },
+			targetCells: [{ rowIndex: 0, colIndex: 1, field: 'name' }]
+		})
+	})
+})

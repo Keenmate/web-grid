@@ -73,7 +73,8 @@ export function isColumnSelectionPending(): boolean {
 }
 
 /**
- * Handle mousedown on a column header (when reorder is disabled)
+ * Handle mousedown on a column header (when reorder is disabled). `colIndex` and
+ * this module's drag state are VISUAL positions (index into `visualColumns`).
  */
 export function handleHeaderMouseDown<T>(ctx: GridHost<T>, colIndex: number, event: MouseEvent): void {
 	event.preventDefault()
@@ -94,7 +95,7 @@ export function handleHeaderMouseDown<T>(ctx: GridHost<T>, colIndex: number, eve
 	// Determine selection mode based on modifier keys
 	if (event.ctrlKey || event.metaKey) {
 		// Ctrl+Click: Toggle selection
-		ctx.engine.selectColumn(colIndex, 'toggle')
+		ctx.engine.selectColumnAt(colIndex, 'toggle')
 		ctx.engine.endSelectionGesture()
 		focusContainerForShortcuts(ctx)
 		return
@@ -114,10 +115,10 @@ export function handleHeaderMouseDown<T>(ctx: GridHost<T>, colIndex: number, eve
 
 	if (event.shiftKey) {
 		// Shift+Click: Range selection from last selected, but also allow drag to extend
-		ctx.engine.selectColumn(colIndex, 'range')
+		ctx.engine.selectColumnAt(colIndex, 'range')
 	} else {
 		// Plain click: Select single column (replace mode)
-		ctx.engine.selectColumn(colIndex, 'replace')
+		ctx.engine.selectColumnAt(colIndex, 'replace')
 	}
 
 	// Focus the container so keyboard shortcuts work
@@ -154,7 +155,7 @@ function handleDocumentMouseMove(e: MouseEvent): void {
 	if (colIndex !== null && colIndex !== selectionState.currentColIndex) {
 		selectionState.currentColIndex = colIndex
 		// Update selection range
-		activeContext.engine.selectColumnRange(selectionState.startColIndex, colIndex)
+		activeContext.engine.selectColumnRangeAt(selectionState.startColIndex, colIndex)
 	}
 }
 

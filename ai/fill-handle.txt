@@ -36,14 +36,14 @@ beforeFillCallback (property on grid element)
   FillContext structure (+ controller, element - non-enumerable):
     sourceCell: {
       rowIndex: number    Row index of the dragged-from cell
-      colIndex: number    Column index of the dragged-from cell
+      colIndex: number    Column index (index into columns) of the dragged-from cell
       field: string       Field name of the source column
       value: unknown      Current value of the source cell (uses draft if exists)
     }
     targetCells: [        Array of cells that will be filled
       {
         rowIndex: number
-        colIndex: number
+        colIndex: number  Column index (index into columns)
         field: string
       }
       ...

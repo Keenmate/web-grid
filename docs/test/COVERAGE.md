@@ -73,7 +73,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | `mode` preset (read-only / excel / input-matrix) | ✓ | `grid-modes.spec.ts`, `inputs.spec.ts` | `grid-modes.html`, `inputs.html` |
 | `validateCallback` (string / result / transform) | ✓ | `validation.spec.ts` | `validation.html` |
 | `invalidCells` (read + assign) + `isCellInvalid` / `getCellValidationError` | ✓ | `validation.spec.ts` | `validation.html` |
-| Fill handle (drag, cancel, direction constraint) | ✓ | `fill-handle.spec.ts` | `fill-handle.html` |
+| Fill handle (drag, cancel, direction constraint; reordered + hidden columns — handle editability, filled field, horizontal span, `sourceCell` / `targetCells` column indices) | ✓ | `fill-handle.spec.ts` | `fill-handle.html` |
 | Paste (single / multi-cell, modes, events, proxies) | ✓ | `paste.spec.ts` | `paste.html` |
 | Drafts: dirty marking, indicator, `isCellDirty/isRowDirty/getRowDraft` | ✓ | `drafts.spec.ts` | `drafts.html` |
 | Drafts follow their row through sort / filter, with and without `idMember` (#7 fixed) | ✓ | `drafts.spec.ts` | `drafts.html` |
@@ -89,7 +89,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 
 | Feature | Status | Spec | Fixture |
 | --- | :-: | --- | --- |
-| Row / column / cell-range selection, row focus; cell range with reordered + hidden columns (drag, Shift+Arrow — highlight, border, `getSelectedCells` agree) | ✓ | `selection.spec.ts` | `selection.html` |
+| Row / column / cell-range selection, row focus; cell range with reordered + hidden columns (drag, Shift+Arrow — highlight, border, `getSelectedCells` agree); column selection with reordered + hidden columns (controller API by column index, header Shift+click, `column-selection-change` fields) | ✓ | `selection.spec.ts` | `selection.html` |
 | `cellSelectionMode` click / disabled / shift; row + cell-range selection API | ✓ | `selection-api.spec.ts` | `selection-api.html` |
 | Arrow navigation in navigate mode | ✓ | `basic.spec.ts` | `basic.html` |
 | Home/End/PageUp/PageDown + Ctrl variants, Delete commits null, typing starts edit, Ctrl+G dialog | ✓ | `keyboard.spec.ts` | `keyboard.html` |

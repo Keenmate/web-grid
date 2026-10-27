@@ -87,12 +87,12 @@ interface FillState {
 	isPending: boolean      // Mouse is down but threshold not yet exceeded
 	isDragging: boolean     // Actually dragging (threshold exceeded)
 	startRowIndex: number
-	startColIndex: number
+	startColIndex: number   // visual position
 	startField: string
 	startX: number
 	startY: number
 	currentRowIndex: number
-	currentColIndex: number
+	currentColIndex: number // visual position
 	handleElement: HTMLElement | null
 	rangeElement: HTMLElement | null
 }
@@ -146,10 +146,10 @@ export function updateFillHandle<T>(ctx: GridHost<T>): void {
 		return
 	}
 
-	const { rowIndex, colIndex } = focusedCell
+	const { rowIndex, colIndex } = focusedCell  // colIndex = data-col (index into columns)
 
 	// Don't show fill handle if the focused cell's column is not editable
-	const column = ctx.engine.visualColumns[colIndex]?.column
+	const column = ctx.engine.visualIndexOfColumn(colIndex) >= 0 ? ctx.engine.columns[colIndex] : undefined
 	const focusedRow = ctx.engine.displayItems[rowIndex]
 	if (!column || !ctx.engine.isCellEditable(column, focusedRow)) {
 		removeFillHandle(hostElement)
@@ -224,6 +224,18 @@ export function removeFillHandle(forHost?: HTMLElement): void {
 	}
 }
 
+// Column convention (like cell ranges): fillState's start / current column fields
+// are VISUAL positions (index into `visualColumns`, hidden skipped), so the fill
+// rectangle is the on-screen one. The focused cell, the DOM (`data-col`) and the
+// FillContext's `colIndex` use the column index (index into `columns`).
+
+/** The cell element at (row, visual position). */
+function cellAt<T>(ctx: GridHost<T>, row: number, pos: number): HTMLElement | null {
+	const col = ctx.engine.visualColumns[pos]?.originalIndex
+	if (col === undefined) return null
+	return ctx.shadow.querySelector(`[data-row="${row}"][data-col="${col}"]`) as HTMLElement | null
+}
+
 /**
  * Handle mousedown on fill handle
  */
@@ -235,22 +247,22 @@ function handleFillStart<T>(ctx: GridHost<T>, e: MouseEvent): void {
 	if (!focusedCell) return
 
 	const { rowIndex, colIndex } = focusedCell
-	const visualCols = ctx.engine.visualColumns
-	const column = visualCols[colIndex]?.column
+	const pos = ctx.engine.visualIndexOfColumn(colIndex)
+	const column = ctx.engine.visualColumns[pos]?.column
 	if (!column) return
 
-	// Set up pending state
+	// Set up pending state (column fields are visual positions)
 	fillState = {
 		...fillState,
 		isPending: true,
 		isDragging: false,
 		startRowIndex: rowIndex,
-		startColIndex: colIndex,
+		startColIndex: pos,
 		startField: String(column.field),
 		startX: e.clientX,
 		startY: e.clientY,
 		currentRowIndex: rowIndex,
-		currentColIndex: colIndex
+		currentColIndex: pos
 	}
 
 	activeContext = ctx as GridHost
@@ -284,9 +296,10 @@ function handleDocumentMouseMove(e: MouseEvent): void {
 
 	// Find which cell the mouse is over
 	const cellInfo = findCellAtPoint(activeContext, e.clientX, e.clientY)
-	if (cellInfo && (cellInfo.rowIndex !== fillState.currentRowIndex || cellInfo.colIndex !== fillState.currentColIndex)) {
+	const pos = cellInfo ? activeContext.engine.visualIndexOfColumn(cellInfo.colIndex) : -1
+	if (cellInfo && pos >= 0 && (cellInfo.rowIndex !== fillState.currentRowIndex || pos !== fillState.currentColIndex)) {
 		fillState.currentRowIndex = cellInfo.rowIndex
-		fillState.currentColIndex = cellInfo.colIndex
+		fillState.currentColIndex = pos
 		updateRangeOverlay(activeContext)
 	}
 }
@@ -338,13 +351,9 @@ function updateRangeOverlay<T>(ctx: GridHost<T>): void {
 	const minCol = Math.min(startColIndex, currentColIndex)
 	const maxCol = Math.max(startColIndex, currentColIndex)
 
-	// Find the bounding cells
-	const startCell = ctx.shadow.querySelector(
-		`[data-row="${minRow}"][data-col="${minCol}"]`
-	) as HTMLElement
-	const endCell = ctx.shadow.querySelector(
-		`[data-row="${maxRow}"][data-col="${maxCol}"]`
-	) as HTMLElement
+	// Find the bounding cells (visual positions -> data-col)
+	const startCell = cellAt(ctx, minRow, minCol)
+	const endCell = cellAt(ctx, maxRow, maxCol)
 
 	if (!startCell || !endCell) return
 
@@ -480,12 +489,13 @@ async function applyFill<T>(ctx: GridHost<T>): Promise<void> {
 	const maxCol = fillDirection === 'vertical' ? startColIndex : Math.max(startColIndex, currentColIndex)
 
 	for (let row = minRow; row <= maxRow; row++) {
-		for (let col = minCol; col <= maxCol; col++) {
+		for (let pos = minCol; pos <= maxCol; pos++) {
 			// Skip source cell
-			if (row === startRowIndex && col === startColIndex) continue
+			if (row === startRowIndex && pos === startColIndex) continue
 
-			const column = visualCols[col]?.column
-			if (!column) continue
+			const entry = visualCols[pos]
+			if (!entry) continue
+			const column = entry.column
 
 			const field = String(column.field)
 
@@ -495,7 +505,7 @@ async function applyFill<T>(ctx: GridHost<T>): Promise<void> {
 			// Check if source value is compatible with target column's editor type
 			if (!isValueCompatible(sourceValue, column)) continue
 
-			targetCells.push({ rowIndex: row, colIndex: col, field })
+			targetCells.push({ rowIndex: row, colIndex: entry.originalIndex, field })
 		}
 	}
 
@@ -506,7 +516,7 @@ async function applyFill<T>(ctx: GridHost<T>): Promise<void> {
 	const detail = ctx.engine.ctx({
 		sourceCell: {
 			rowIndex: startRowIndex,
-			colIndex: startColIndex,
+			colIndex: visualCols[startColIndex].originalIndex,
 			field: startField,
 			value: sourceValue
 		},

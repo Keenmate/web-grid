@@ -82,9 +82,11 @@ el.controller, and `controller` on every ctx / detail.
     getSelectedCellRange(): CellRange | null
     getSelectedCells(): CellContext<T>[]
     copyCellSelectionToClipboard(): Promise<boolean>
-    selectColumn(colIndex: number, mode?: 'replace' | 'toggle' | 'range'): void
-    selectColumnRange(fromIndex: number, toIndex: number): void
+    selectColumn(colIndex: number, mode?: 'replace' | 'toggle' | 'range'): void   // colIndex = index in columns
+    selectColumnRange(fromIndex: number, toIndex: number): void                  // on-screen span between them
     clearColumnSelection(): void
+    getSelectedColumns(): number[]                                               // column indices, ascending
+    isColumnSelected(colIndex: number): boolean
     selectAll(): void
     // tree
     isPathExpanded(path: string): boolean

@@ -171,20 +171,20 @@ export function handleHeaderColumnSelectClick<T>(ctx: GridHost<T>, e: Event): vo
 		const field = header.dataset.field
 		if (!field) return
 
-		// Find visual column index
-		const colIndex = ctx.engine.visualColumns.findIndex(vc => String(vc.column.field) === field)
-		if (colIndex === -1) return
+		// Visual position of the clicked column (column selection works in visual positions)
+		const pos = ctx.engine.visualColumns.findIndex(vc => String(vc.column.field) === field)
+		if (pos === -1) return
 
 		// Remove any existing cell range border (column selection doesn't use border)
 		removeRangeBorder()
 
 		// Ctrl = toggle individual column, Shift = range, plain = replace
 		if (mouseEvent.ctrlKey || mouseEvent.metaKey) {
-			ctx.engine.selectColumn(colIndex, 'toggle')
+			ctx.engine.selectColumnAt(pos, 'toggle')
 		} else if (mouseEvent.shiftKey) {
-			ctx.engine.selectColumn(colIndex, 'range')
+			ctx.engine.selectColumnAt(pos, 'range')
 		} else {
-			ctx.engine.selectColumn(colIndex, 'replace')
+			ctx.engine.selectColumnAt(pos, 'replace')
 		}
 
 		ctx.render()

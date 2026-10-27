@@ -105,11 +105,14 @@ export interface GridController<T = any> {
 	/** The selected range's cells (row by row, on-screen column order); `colIndex` = index in `columns`. */
 	getSelectedCells(): CellContext<T>[]
 	copyCellSelectionToClipboard(): Promise<boolean>
+	/** `colIndex` = index in `columns` (not the on-screen position); `'range'` spans on screen from the last selected column. */
 	selectColumn(colIndex: number, mode?: 'replace' | 'toggle' | 'range'): void
+	/** Selects the on-screen span between two columns (indices in `columns`). */
 	selectColumnRange(fromIndex: number, toIndex: number): void
 	clearColumnSelection(): void
-	/** Selected column indices, ascending. */
+	/** Selected column indices (index in `columns`), ascending. */
 	getSelectedColumns(): number[]
+	/** `colIndex` = index in `columns`. */
 	isColumnSelected(colIndex: number): boolean
 	copySelectedColumnsToClipboard(): Promise<boolean>
 	selectAll(): void

@@ -165,12 +165,16 @@ function updateColumnSelectionVisual(ctx: ExecutorContext): void {
 	const selectedHeaders = ctx.shadow.querySelectorAll('.wg__header--selected')
 	selectedHeaders.forEach(header => header.classList.remove('wg__header--selected'))
 
-	// Add class to selected column cells and headers
-	for (const colIndex of ctx.engine.selectedColumns) {
-		const cells = ctx.shadow.querySelectorAll(`.wg__cell[data-col="${colIndex}"]`)
+	// Add class to selected column cells and headers (selection = visual positions;
+	// cells are addressed by column index / data-col, headers by field)
+	const visualCols = ctx.engine.visualColumns
+	for (const pos of ctx.engine.selectedColumnPositions) {
+		const entry = visualCols[pos]
+		if (!entry) continue
+		const cells = ctx.shadow.querySelectorAll(`.wg__cell[data-col="${entry.originalIndex}"]`)
 		cells.forEach(cell => cell.classList.add('wg__cell--column-selected'))
 
-		const header = ctx.shadow.querySelector(`.wg__header[data-col="${colIndex}"]`)
+		const header = ctx.shadow.querySelector(`.wg__header[data-field="${CSS.escape(String(entry.column.field))}"]`)
 		if (header) {
 			header.classList.add('wg__header--selected')
 		}

@@ -185,19 +185,25 @@ Event:
     Fires once per gesture / API call (a drag notifies on mouseup), only when
     the selected columns changed -- incl. columns cleared by another selection.
 
-Methods (on grid.controller - not on the element itself):
+Methods (on grid.controller - not on the element itself). Column arguments
+and results are column indices (index into columns, like a cell's colIndex),
+not on-screen positions; hidden columns are ignored:
   grid.controller.selectColumn(colIndex, mode?)
-    mode: 'replace' (default), 'toggle', 'range'
+    mode: 'replace' (default), 'toggle', 'range' (the on-screen span from the
+    last selected column)
 
   grid.controller.selectColumnRange(fromIndex, toIndex)
-    Selects all columns between fromIndex and toIndex (inclusive).
+    Selects the on-screen span between the two columns (inclusive) -- with
+    reordered columns that is not "every index between".
 
   grid.controller.clearColumnSelection()
     Clears all selected columns.
 
+  grid.controller.getSelectedColumns()   -> number[] column indices, ascending
+  grid.controller.isColumnSelected(colIndex) -> boolean
+
 Copying selected columns (all rows as TSV, respecting shouldCopyWithHeaders)
-is available through Ctrl+C. There is no public getter for the selected
-columns.
+is available through Ctrl+C.
 
 Visual feedback:
   Selected column headers get the CSS class: wg__header--selected
@@ -208,7 +214,8 @@ Example:
   grid.isColumnReorderAllowed = false
   // User clicks "Name" header -> column selected
   // User Shift+clicks "Email" header -> range from Name to Email selected
-  console.log(grid.selectedColumns)  // [1, 2, 3] (visual indices)
+  console.log(grid.controller.getSelectedColumns())  // [1, 2, 3] (column indices)
+  grid.onColumnSelectionChange = ({ fields }) => console.log(fields)  // ['name', ..., 'email']
 
 
 ROW FOCUS

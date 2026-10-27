@@ -133,6 +133,7 @@ export type SelectRowAction = {
  */
 export type SelectColumnAction = {
 	type: 'selectColumn'
+	/** Column index (index into `columns`) */
 	colIndex: number
 	/** Add to existing selection (Ctrl+click) */
 	addToSelection?: boolean

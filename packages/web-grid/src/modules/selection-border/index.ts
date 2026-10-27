@@ -120,7 +120,7 @@ export function createColumnSelectionBorders<T>(ctx: GridHost<T>): void {
 	// Remove existing borders first
 	removeColumnSelectionBorders()
 
-	const selectedColumns = ctx.engine.selectedColumns
+	const selectedColumns = ctx.engine.selectedColumnPositions  // visual positions
 	if (selectedColumns.length === 0) return
 
 	const container = ctx.shadow.querySelector('.wg') as HTMLElement

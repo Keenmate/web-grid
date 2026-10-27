@@ -125,6 +125,13 @@ event.
 
 ### Changed — BREAKING (logging, row identity, editing)
 
+- **Column selection API uses column indices.** `controller.selectColumn(colIndex)`,
+  `selectColumnRange(from, to)`, `isColumnSelected(colIndex)` take and
+  `getSelectedColumns()` returns the column index (index into `columns`, like a cell's
+  `colIndex`) — they used the on-screen position, so with reordered / hidden columns they
+  addressed the wrong column. `selectColumnRange` selects the on-screen span between the two
+  columns; hidden columns are ignored. Same results as before when no column is reordered or
+  hidden.
 - **`getSelectedCells()` returns full `CellContext` objects** — `{ row, rowIndex, column,
   colIndex, field, value }` + the non-enumerable `controller` / `element`, like every cell ctx
   (`column` is new; `value` is now draft-aware). Typed `CellContext<T>[]`.
@@ -206,6 +213,13 @@ event.
   positions (the on-screen rectangle; drag, Shift+click, Shift+Arrow, select-all), mapped to
   the column index when reading — `getSelectedCells()` reports each cell's `colIndex` as the
   column index (`data-col`, like every cell context), no longer the visual position.
+- **Fill handle and column selection with reordered or hidden columns.** The fill handle read
+  the focused cell's column index as an on-screen position: with a column moved or hidden it
+  checked the wrong column's editability (a handle on a read-only column), filled the wrong
+  field, and a horizontal drag spanned the wrong columns. The fill now uses on-screen positions
+  internally (like cell ranges) and reports column indices in `beforeFillCallback`'s
+  `sourceCell` / `targetCells`. The column-selection executor highlighted cells by position as
+  if it were `data-col`.
 - The floating toolbar ignored hidden items; a cell toolbar's swapped-in items were looked up in the
   base list on click (custom cell items did nothing).
 - A row shortcut fired twice when a cell had focus and the hover toolbar was open on the same row.

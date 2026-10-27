@@ -254,3 +254,70 @@ test.describe('cell range with reordered + hidden columns', () => {
 		await expectBorderSpans(page, 0, 1, 1, 0)
 	})
 })
+
+// =============================================================================
+// Column selection with reordered + hidden columns — same convention as ranges
+// =============================================================================
+// Same layout as above: on screen salary(4) | name(1) | id(0) | dept(3), secret(2)
+// hidden. The API takes / returns column indices (index into `columns`); the
+// selection itself is the on-screen set; events report fields in on-screen order.
+
+test.describe('column selection with reordered + hidden columns', () => {
+	async function setup(page: Page) {
+		await gotoSelection(page)
+		await gridLocator(page).evaluate(async (el: any) => {
+			el.columns = [
+				{ field: 'id', title: 'ID', width: '70px' },
+				{ field: 'name', title: 'Name', width: '160px' },
+				{ field: 'secret', title: 'Secret', width: '90px', isHidden: true },
+				{ field: 'dept', title: 'Dept', width: '120px' },
+				{ field: 'salary', title: 'Salary', width: '110px' }
+			]
+			el.setColumnOrder([
+				{ field: 'salary', order: 0 }, { field: 'name', order: 1 },
+				{ field: 'id', order: 2 }, { field: 'dept', order: 3 }
+			])
+			await el.whenSettled?.()
+			;(window as any).__colEvents = []
+			el.addEventListener('column-selection-change', (e: any) => (window as any).__colEvents.push(e.detail.fields))
+		})
+		await expect(header(page, 'secret')).toHaveCount(0)
+	}
+	const selectedHeaders = (page: Page) => gridLocator(page).locator('thead th.wg__header--selected')
+		.evaluateAll(els => els.map(el => (el as HTMLElement).dataset.field))
+	const selectedCellCols = (page: Page) => gridLocator(page)
+		.locator('tbody tr[data-row-index="0"] td.wg__cell--column-selected')
+		.evaluateAll(els => els.map(el => (el as HTMLElement).dataset.col))
+	const api = (page: Page) => gridLocator(page).evaluate((el: any) => ({
+		columns: el.controller.getSelectedColumns(),
+		isIdSelected: el.controller.isColumnSelected(0),
+		isSalarySelected: el.controller.isColumnSelected(4),
+		events: (window as any).__colEvents
+	}))
+
+	test('controller.selectColumn(colIndex) selects that column (index into columns), not the on-screen slot', async ({ page }) => {
+		await setup(page)
+		await gridLocator(page).evaluate((el: any) => el.controller.selectColumn(0))  // id — on screen third
+		await expect.poll(() => selectedHeaders(page)).toEqual(['id'])
+		expect(await selectedCellCols(page)).toEqual(['0'])
+		expect(await api(page)).toEqual({ columns: [0], isIdSelected: true, isSalarySelected: false, events: [['id']] })
+	})
+
+	test('controller.selectColumnRange(4, 1) spans the on-screen columns salary → name', async ({ page }) => {
+		await setup(page)
+		await gridLocator(page).evaluate((el: any) => el.controller.selectColumnRange(4, 1))
+		await expect.poll(() => selectedHeaders(page)).toEqual(['salary', 'name'])
+		expect(await selectedCellCols(page)).toEqual(['4', '1'])
+		expect((await api(page)).columns).toEqual([1, 4])
+		expect((await api(page)).events).toEqual([['salary', 'name']])
+	})
+
+	test('header click name, Shift+click id → the adjacent on-screen pair; API reports column indices', async ({ page }) => {
+		await setup(page)
+		await header(page, 'name').click()
+		await header(page, 'id').click({ modifiers: ['Shift'] })
+		await expect.poll(() => selectedHeaders(page)).toEqual(['name', 'id'])
+		expect(await selectedCellCols(page)).toEqual(['1', '0'])
+		expect(await api(page)).toEqual({ columns: [0, 1], isIdSelected: true, isSalarySelected: false, events: [['name'], ['name', 'id']] })
+	})
+})

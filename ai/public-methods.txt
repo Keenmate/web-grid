@@ -294,8 +294,12 @@ Validation
 Selection
   getSelectedRows(): number[]
   selectColumn(colIndex: number, mode?: 'replace' | 'toggle' | 'range'): void
+    colIndex = index into columns (not the on-screen position)
   selectColumnRange(fromIndex: number, toIndex: number): void
+    column indices; selects the on-screen span between them
   clearColumnSelection(): void
+  getSelectedColumns(): number[]        column indices, ascending
+  isColumnSelected(colIndex: number): boolean
   selectAll(): void
   getSelectedCellRange(): CellRange | null
 
