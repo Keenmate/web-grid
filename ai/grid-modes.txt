@@ -1,36 +1,41 @@
-GRID MODES IN @keenmate/web-grid
-=================================
+GRID PRESETS IN @keenmate/web-grid
+===================================
 
-The mode property configures the grid for common interaction patterns.
-Setting mode applies a set of defaults. Individual properties can be
-overridden after setting mode.
+The preset property configures the grid for common interaction patterns.
+Setting preset applies a set of defaults. Individual properties can be
+overridden after setting it. (Before v2 this property was called `mode`.)
 
 
-THE MODE PROPERTY
------------------
+THE PRESET PROPERTY
+-------------------
 
-Type: GridMode = "read-only" | "excel" | "input-matrix"
+Type: GridPreset = "read-only" | "excel" | "input-matrix"
 
 Set on the grid element:
 
-  grid.mode = "excel"
+  grid.preset = "excel"
 
 Or via HTML attribute:
 
-  <web-grid mode="excel"></web-grid>
+  <web-grid preset="excel"></web-grid>
 
-Setting mode calls applyModeDefaults() internally, which sets
-isEditable, editTrigger, cellSelectionMode, dropdownToggleVisibility,
-and shouldOpenDropdownOnFocus to mode-appropriate values.
+Setting preset calls applyPresetDefaults() internally, which sets
+isEditable, isReadonly, editTrigger, cellSelectionMode, dropdownToggleVisibility,
+and shouldOpenDropdownOnFocus to preset-appropriate values.
+
+readonly / disabled: the read-only preset sets isReadonly = true (the others
+set it back to false). isReadonly (attribute `readonly`) and isDisabled
+(attribute `disabled`) can also be set on their own, with any preset.
 
 
-READ-ONLY MODE
+READ-ONLY PRESET
 --------------
 
-  grid.mode = "read-only"
+  grid.preset = "read-only"
 
 Defaults applied:
   isEditable               = false
+  isReadonly               = true
   cellSelectionMode        = "click"
   dropdownToggleVisibility = "on-focus"
   shouldOpenDropdownOnFocus = false
@@ -49,16 +54,16 @@ Behavior:
 
 Common configuration:
 
-  grid.mode = "read-only"
+  grid.preset = "read-only"
   grid.sortMode = "multiple"
   grid.isFilterable = true
   grid.isHoverable = true
 
 
-EXCEL MODE
+EXCEL PRESET
 ----------
 
-  grid.mode = "excel"
+  grid.preset = "excel"
 
 Defaults applied:
   isEditable               = true
@@ -96,17 +101,17 @@ Behavior:
 
 Common configuration:
 
-  grid.mode = "excel"
+  grid.preset = "excel"
   grid.isRowToolbarShown = true
   grid.rowToolbar = ["add", "delete", "duplicate"]
   grid.beforeFillCallback = (ctx) => { /* return false to cancel the fill */ }
   grid.isCheckboxAlwaysEditable = true
 
 
-INPUT-MATRIX MODE
+INPUT-MATRIX PRESET
 -----------------
 
-  grid.mode = "input-matrix"
+  grid.preset = "input-matrix"
 
 Defaults applied:
   isEditable               = true
@@ -137,27 +142,27 @@ Behavior:
 
 Common configuration:
 
-  grid.mode = "input-matrix"
+  grid.preset = "input-matrix"
   grid.isRowToolbarShown = true
   grid.rowToolbar = ["add", "delete"]
   grid.shouldOpenDropdownOnEnter = true
 
 
-OVERRIDING MODE DEFAULTS
+OVERRIDING PRESET DEFAULTS
 -------------------------
 
-Setting mode applies defaults, but any property can be overridden
-afterward. The override persists until mode is set again.
+Setting preset applies defaults, but any property can be overridden
+afterward. The override persists until preset is set again.
 
-  grid.mode = "excel"
+  grid.preset = "excel"
   grid.cellSelectionMode = "shift"       // Override: use Shift+Click for selection
   grid.shouldOpenDropdownOnFocus = true   // Override: auto-open dropdowns
 
-  grid.mode = "read-only"
+  grid.preset = "read-only"
   grid.isEditable = true                  // Override: allow editing in "read-only" layout
   grid.editTrigger = "dblclick"           // Override: double-click to edit
 
-  grid.mode = "input-matrix"
+  grid.preset = "input-matrix"
   grid.shouldOpenDropdownOnFocus = false  // Override: don't auto-open dropdowns
 
 Per-column overrides also work. Column-level editTrigger and
@@ -170,10 +175,10 @@ dropdownToggleVisibility take precedence over grid-level values:
   ]
 
 
-KEYBOARD NAVIGATION BY MODE
+KEYBOARD NAVIGATION BY PRESET
 ----------------------------
 
-Read-only mode:
+Read-only preset:
   Arrow keys     Move focus between cells
   Tab            Move focus to next cell (wraps to next row)
   Shift+Tab      Move focus to previous cell
@@ -183,7 +188,7 @@ Read-only mode:
   Ctrl+C         Copy selected cell range to clipboard
   No editing keys are active
 
-Excel mode (navigate state, not editing):
+Excel preset (navigate state, not editing):
   Arrow keys     Move focus between cells
   Tab            Move to next editable cell (commits any edit)
   Shift+Tab      Move to previous editable cell
@@ -198,7 +203,7 @@ Excel mode (navigate state, not editing):
   Escape         (no effect when not editing)
   Ctrl+C         Copy selected range
 
-Excel mode (editing state):
+Excel preset (editing state):
   Escape         Cancel edit, return to navigate state
   Enter          Commit edit, move focus down
   Tab            Commit edit, move to next editable cell
@@ -207,7 +212,7 @@ Excel mode (editing state):
   Arrow Left/Right  Cursor movement in text input (native browser)
   Arrow Left/Right  Cancel edit and navigate (dropdown editors only)
 
-Input-matrix mode:
+Input-matrix preset:
   Tab            Move to next editor input (like form tabbing)
   Shift+Tab      Move to previous editor input
   Enter          Commit and move down (or open dropdown if configured)
@@ -217,7 +222,7 @@ Input-matrix mode:
   Printable chars  Typed directly into the active editor input
 
 
-CELL SELECTION BY MODE
+CELL SELECTION BY PRESET
 ----------------------
 
 cellSelectionMode = "click" (read-only, excel):
@@ -246,20 +251,21 @@ column headers are included when copying cell selections:
 PROPERTIES REFERENCE
 --------------------
 
-Properties set by mode (grid-level):
+Properties set by the preset (grid-level):
 
   Property                      read-only   excel       input-matrix
   ----------------------------  ----------  ----------  ------------
   isEditable                    false       true        true
+  isReadonly                    true        false       false
   editTrigger                   (unchanged) "navigate"  "always"
   cellSelectionMode             "click"     "click"     "shift"
   dropdownToggleVisibility      "on-focus"  "always"    "always"
   shouldOpenDropdownOnFocus     (unchanged) false       true
 
-Note: "unchanged" means the property is not set by the mode and retains
+Note: "unchanged" means the property is not set by the preset and retains
 its current value (or its default if never explicitly set).
 
-Related properties not set by mode but commonly configured alongside:
+Related properties not set by the preset but commonly configured alongside:
   isCheckboxAlwaysEditable   - Checkboxes clickable even in navigate state
   shouldOpenDropdownOnEnter  - Enter key opens dropdown vs moves down
   editStartSelection         - Cursor position on edit start: "select-all",

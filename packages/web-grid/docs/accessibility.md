@@ -29,7 +29,7 @@ Spreadsheet-like key bindings drive all navigation. Most are active in **navigat
 | **Escape** | Cancel the edit, restore the original value |
 | **Type any character** | Start editing the focused cell with that character as the first input (navigate mode) |
 
-The cursor position on edit-start is configurable via `editStartSelection`: `'selectAll'` (default), `'mousePosition'`, `'cursorAtStart'`, `'cursorAtEnd'`.
+The cursor position on cell-edit-start is configurable via `editStartSelection`: `'select-all'` (default), `'mouse-position'`, `'cursor-at-start'`, `'cursor-at-end'`.
 
 ### Selection
 
@@ -63,10 +63,10 @@ grid.rowShortcuts = [
     onClick: ({ row, rowIndex }) => saveRow(row)
   }
 ]
-grid.isShortcutsHelpVisible = true     // surfaces a ⓘ icon with the full key list
+grid.isShortcutsHelpShown = true     // surfaces a ⓘ icon with the full key list
 ```
 
-The help overlay surfaces the registered shortcuts to the user — set `isShortcutsHelpVisible` so the binding is discoverable, not buried in code.
+The help overlay surfaces the registered shortcuts to the user — set `isShortcutsHelpShown` so the binding is discoverable, not buried in code.
 
 ## ARIA roles & labels
 
@@ -112,6 +112,6 @@ If you need WCAG 2.2 AA compliance for a grid with explicit cell-selection or vi
 
 ## See also
 
-- [Usage / API reference](./usage.md) — `isShortcutsHelpVisible`, `rowShortcuts`, `editStartSelection`, the `row-delete` event.
+- [Usage / API reference](./usage.md) — `isShortcutsHelpShown`, `rowShortcuts`, `editStartSelection`, the `row-delete` event.
 - [Theming → color-scheme contract](./theming.md#color-scheme-contract) — contrast and dark-mode flips.
 - [`examples-shortcuts.html`](../../../docs/examples-shortcuts.html) — interactive demo of custom shortcuts + help overlay.

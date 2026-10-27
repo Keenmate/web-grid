@@ -42,7 +42,7 @@ make dev
 ### Sortable grid
 
 ```javascript
-grid.sortMode = 'multi'              // or 'single'; click headers to sort, Ctrl+click to add
+grid.sortMode = 'multiple'              // or 'single'; click headers to sort, Ctrl+click to add
 ```
 
 See [`examples-sorting-paging.html`](../../../docs/examples-sorting-paging.html).
@@ -58,7 +58,7 @@ grid.paginationPosition = 'top-center|bottom-center'
 ### Editable grid (Excel-like)
 
 ```javascript
-grid.mode = 'excel'                  // sets isEditable + editTrigger='navigate' + cellSelectionMode='click'
+grid.preset = 'excel'                // sets isEditable + editTrigger='navigate' + cellSelectionMode='click'
 ```
 
 Or opt in manually for finer control:
@@ -166,7 +166,7 @@ grid.columns = [...grid.columns]     // reassign to trigger re-render
 ### Floating row toolbar
 
 ```javascript
-grid.isRowToolbarVisible = true
+grid.isRowToolbarShown = true
 grid.rowToolbar = ['move-up', 'move-down', { divider: true }, 'add', 'duplicate', 'delete']
 grid.toolbarPosition = 'right'        // or 'left' / 'top' / 'inline' / 'auto'
 grid.toolbarTrigger = 'hover'
@@ -200,8 +200,8 @@ grid.getCellToolbarItemsCallback = ({ row, field }) => {
 ### Master / detail — react to row focus
 
 ```javascript
-grid.addEventListener('row-focus', (e) => showDetailsFor(e.detail.row))
-// or the camelCase twin: grid.onRowFocus = ({ row, rowIndex, previousRowIndex }) => …
+grid.addEventListener('focus-change', (e) => showDetailsFor(e.detail.row))
+// or the camelCase twin: grid.onFocusChange = ({ row, rowIndex, oldRowIndex }) => …
 ```
 
 ### Cell range selection + clipboard copy
@@ -234,7 +234,7 @@ See [`examples-fill-handle.html`](../../../docs/examples-fill-handle.html).
 
 ```javascript
 grid.rowLocking = {
-  lockedMember: 'isLocked',
+  isLockedMember: 'isLocked',
   lockInfoMember: 'lockInfo',
   lockedEditBehavior: 'callback',
   getCanEditLockedCallback: ({ row, lockInfo }) => lockInfo.lockedBy === currentUser
@@ -278,8 +278,8 @@ grid.columns = [
   { field: 'name', title: 'Name', isTree: true }
 ]
 
-grid.treePathMember = 'path'
-grid.defaultExpandDepth = 1           // show roots + first level on load
+grid.pathMember = 'path'
+grid.expandLevel = 1           // show roots + first level on load
 ```
 
 The `isTree: true` column renders the chevron + indent. See [`examples-tree.html`](../../../docs/examples-tree.html).
@@ -291,7 +291,7 @@ grid.paginationMode = 'server'
 grid.isPageable = true
 grid.pageSize = 25
 grid.totalItems = 0                   // unknown until first response
-grid.sortMode = 'multi'
+grid.sortMode = 'multiple'
 
 grid.onDataRequest = async ({ sort, page, pageSize }) => {   // or addEventListener('data-request', …)
   const r = await fetch('/api/rows', {
@@ -324,7 +324,7 @@ With `filterMode: 'server'` the grid bypasses internal client-side filtering —
 
 ```javascript
 grid.isVirtualScrollEnabled = true
-grid.virtualScrollRowHeight = 38      // must be fixed
+grid.virtualScrollItemHeight = 38      // must be fixed
 grid.virtualScrollThreshold = 1000    // auto-enable when items >= threshold
 ```
 
@@ -338,7 +338,7 @@ grid.infiniteScrollThreshold = 200    // px from bottom that triggers load
 grid.hasMoreItems = true
 
 grid.addEventListener('data-request', async (e) => {
-  if (e.detail.trigger !== 'loadMore') return       // mode: 'append', skip: rows already loaded
+  if (e.detail.trigger !== 'load-more') return       // mode: 'append', skip: rows already loaded
   const next = await fetch(`/api/rows?skip=${e.detail.skip}&take=${e.detail.pageSize}`)
   const { items, hasMore } = await next.json()
   grid.items = [...grid.items, ...items]
@@ -358,7 +358,7 @@ grid.rowShortcuts = [
   },
   { shortcut: 'Ctrl+D', action: 'duplicate' }    // a row built-in
 ]
-grid.isShortcutsHelpVisible = true    // shows help icon top-right
+grid.isShortcutsHelpShown = true    // shows help icon top-right
 ```
 
 See [`examples-shortcuts.html`](../../../docs/examples-shortcuts.html).

@@ -9,7 +9,7 @@ basic-setup.txt                  - Installation, imports, first grid, critical n
 columns.txt                      - Column definitions, field types, alignment, templates
 editing.txt                      - Inline editing, editor types, draft management, validation
 dropdown-editors.txt             - Select, combobox, autocomplete editors and EditorOptions
-grid-modes.txt                   - Mode property, presets (display, navigate, inline, etc.)
+grid-modes.txt                   - preset property (read-only, excel, input-matrix), readonly / disabled
 selection.txt                    - Row selection, cell ranges, column selection, row focus
 sorting-filtering-pagination.txt - Sorting, filtering, pagination, server-side data, summary
 keyboard-navigation.txt          - Navigation keys, editing keys, custom shortcuts, help overlay
@@ -60,6 +60,7 @@ Column definition -> columns.txt, typescript-types.txt
 Column order -> public-methods.txt, columns.txt
 Column resize -> columns.txt
 Column selection -> selection.txt
+column-selection-change / onColumnSelectionChange -> callbacks-events.txt, selection.txt
 Combobox -> dropdown-editors.txt
 commitDraft -> editing.txt, public-methods.txt
 Context menu -> toolbar-actions.txt
@@ -90,7 +91,6 @@ editTrigger -> editing.txt
 EditorOptions -> dropdown-editors.txt, typescript-types.txt
 Events -> callbacks-events.txt
 expanded-change / onExpandedChange -> callbacks-events.txt
-row-expand / row-collapse -> callbacks-events.txt
 Export -> keyboard-navigation.txt, selection.txt
 
 F
@@ -155,7 +155,8 @@ M
 -
 maxLines -> columns.txt
 Methods -> public-methods.txt
-Mode -> grid-modes.txt
+Preset (was mode) -> grid-modes.txt
+readonly / disabled (isReadonly / isDisabled) -> grid-modes.txt, basic-setup.txt
 Multiple sort -> sorting-filtering-pagination.txt
 
 N
@@ -191,10 +192,12 @@ renderCellCallback -> columns.txt, callbacks-events.txt
 renderEditorCallback -> columns.txt, callbacks-events.txt
 renderOptionCallback -> dropdown-editors.txt, callbacks-events.txt
 Resize -> columns.txt
-Row focus -> selection.txt
+Row focus (focus-change) -> selection.txt
 Row locking -> row-locking.txt
 Row numbers -> columns.txt, basic-setup.txt
 Row selection -> selection.txt
+row-expand / row-collapse -> callbacks-events.txt
+row-selection-change / onRowSelectionChange -> callbacks-events.txt, selection.txt
 Range shortcuts -> keyboard-navigation.txt
 Row shortcuts -> keyboard-navigation.txt
 Row toolbar -> toolbar-actions.txt

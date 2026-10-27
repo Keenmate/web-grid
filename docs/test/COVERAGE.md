@@ -70,7 +70,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Number editor: strict parse, non-numbers / min / max / negatives invalid (no clamping), decimals round, min/max/step attributes, label i18n (#25 fixed) | ✓ | `edit-modes.spec.ts` | `edit-modes.html` |
 | `dropdownToggleVisibility`, `shouldOpenDropdownOnFocus`, `shouldOpenDropdownOnEnter` (grid + column), checkbox Space toggle | ✓ | `dropdown-flags.spec.ts` | `dropdown-flags.html` |
 | `isCheckboxAlwaysEditable` one-click toggle, off by default (#27 fixed) | ✓ | `dropdown-flags.spec.ts` | `dropdown-flags.html` |
-| `mode` preset (read-only / excel / input-matrix) | ✓ | `grid-modes.spec.ts`, `inputs.spec.ts` | `grid-modes.html`, `inputs.html` |
+| `preset` (read-only / excel / input-matrix; read-only sets `isReadonly`) | ✓ | `grid-modes.spec.ts`, `inputs.spec.ts` | `grid-modes.html`, `inputs.html` |
 | `validateCallback` (string / result / transform) | ✓ | `validation.spec.ts` | `validation.html` |
 | `invalidCells` (read + assign) + `isCellInvalid` / `getCellValidationError` | ✓ | `validation.spec.ts` | `validation.html` |
 | Fill handle (drag, cancel, direction constraint, `fill-direction` input — attribute / property / invalid value / column override; reordered + hidden columns — handle editability, filled field, horizontal span, `sourceCell` / `targetCells` column indices) | ✓ | `fill-handle.spec.ts` | `fill-handle.html` |
@@ -107,6 +107,8 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 
 | Feature | Status | Spec | Fixture |
 | --- | :-: | --- | --- |
+| `insertRows` / `removeRow` (no `row-delete`), `scrollToRow(rowIndex)` → `Promise<boolean>` | ✓ | `row-api.spec.ts` | `row-api.html` |
+| `clearSelection()` (all kinds) / `clearRowSelection()`, `selectedRows` (objects) / `selectedRowIndices` on element + controller | ✓ | `selection-api.spec.ts` | `selection-api.html` |
 | Row locking sources (`getLockInfoCallback`, `getIsLockedCallback`, `isLockedMember`, `lockInfoMember`), marker + tooltip | ✓ | `row-locking.spec.ts`, `basic.spec.ts` | `row-locking.html`, `basic.html` |
 | Lock tooltip i18n (#10 fixed) | ✓ | `row-locking.spec.ts` | `row-locking.html` |
 | `lockRowById/unlockRowById/isRowLocked/getRowLockInfo/clearExternalLocks`, `row-lock-change` | ✓ | `row-locking.spec.ts` | `row-locking.html` |
@@ -148,15 +150,17 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Tree mode expand/collapse, Ctrl+Arrow, Tab nav, `isRowEditable`, tree column locked | ✓ | `tree.spec.ts` | `tree.html` |
 | Predefined tree context-menu items (incl. clicking through) | ✓ | `tree.spec.ts` | `tree.html` |
 | Tree + virtual / infinite scroll | ✓ | `tree-scroll.spec.ts` | `tree-scroll.html` |
+| Tree API `toggleRowExpanded` / `expandRows` / `collapseRows` / `expandAll(path?)` / `collapseAll(path?)`, `row-expand` / `row-collapse` / `expanded-change { paths }`, `controller.expandedPaths` | ✓ | `events.spec.ts`, `grid.tree.test.ts` (unit) | `events.html` |
 | `treeExpandedGlyph` / `treeCollapsedGlyph` / `renderChevronCallback` | ✓ | `display-options.spec.ts` | `display-options.html` |
 
 ## 9. Events
 
 | Feature | Status | Spec | Fixture |
 | --- | :-: | --- | --- |
-| Row focus event | ✓ | `basic.spec.ts`, `selection.spec.ts` | `basic.html`, `selection.html` |
+| Row focus event (`focus-change`) | ✓ | `basic.spec.ts`, `selection.spec.ts` | `basic.html`, `selection.html` |
 | Paste events | ✓ | `paste.spec.ts` | `paste.html` |
 | `cell-edit-start`, `cell-edit-cancel`, `cell-selection-change`, `row-delete`, `expanded-change` — once each, twin first, same detail | ✓ | `events.spec.ts` | `events.html` |
+| `row-delete` after the fact: Ctrl/Cmd+Delete runs the `delete` built-in `{ rows, rowIndices }`; `beforeActionCallback` veto | ✓ | `events.spec.ts`, `interaction-model.spec.ts` | `events.html`, `interaction-model.html` |
 | `cell-selection-change` `{ range, cellCount, fields, rows }`; `row-selection-change` `{ rows, rowIndices }` (row-number click / Ctrl / Shift / drag, API, cleared by a range); `column-selection-change` `{ fields }` (header click / Ctrl / Shift / drag, controller API, cleared by rows) — once per gesture (drag → on mouseup), silent on a no-op | ✓ | `events.spec.ts` | `events.html` |
 | `getSelectedCells()` returns full cell contexts (`column`, `colIndex`, controller / element) | ✓ | `selection-api.spec.ts` | `selection-api.html` |
 | `expanded-change` detail is a snapshot (#12 fixed) | ✓ | `events.spec.ts` | `events.html` |
@@ -165,6 +169,9 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 
 | Feature | Status | Spec | Fixture |
 | --- | :-: | --- | --- |
+| `readonly` (nothing editable, still focusable) / `disabled` (container inert) | ✓ | `inputs.spec.ts` | `inputs.html` |
+| Core `defer` / `release()` / `ready` event / `ready` attribute | ✓ | `inputs.spec.ts` | `inputs.html` |
+| `labels` JSON attribute, `labels.empty`, column `editorOptions.labels` | ✓ | `i18n.spec.ts` | `i18n.html` |
 | Dark-mode signals (per-instance, ancestor + theme-source, color-scheme, OS) | ✓ | `theming.spec.ts` | `theming.html` |
 | Core theme context (page signal → `data-context-theme`), `--base-*` chain | ✓ | `theme-context.spec.ts` | `theme-context.html` |
 | Contrast in dark mode (3 theme depths) | ✓ | `dark-mode.spec.ts` | `dark-mode.html` |

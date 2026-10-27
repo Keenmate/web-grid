@@ -397,7 +397,7 @@ grid.focusedRowIndex = null // Clear focus</code></pre>
         gridRowSelection.columns = columns
         gridRowSelection.isRowNumbersShown = true
         gridRowSelection.isHoverable = true
-        gridRowSelection.mode = 'navigate'
+        gridRowSelection.editTrigger = 'navigate'
         gridRowSelection.cellSelectionMode = 'none'  // No cell drag selection, only row/column selection
         gridRowSelection.sortMode = 'multiple'
         gridRowSelection.isColumnReorderAllowed = true
@@ -555,13 +555,13 @@ grid.focusedRowIndex = null // Clear focus</code></pre>
         // Wire up controls for Click Mode example
         document.getElementById('clickMode').addEventListener('change', (e) => {
             currentSettings.mode = e.target.value
-            gridCellRangeClick.mode = e.target.value  // This calls applyModeDefaults() internally
-            syncControlsWithGrid()  // Update UI to show what mode actually set
-            console.log('mode changed to:', e.target.value)
+            gridCellRangeClick.preset = e.target.value  // applies the preset's settings
+            syncControlsWithGrid()  // Update UI to show what the preset actually set
+            console.log('preset changed to:', e.target.value)
             console.log('  → grid.editTrigger:', gridCellRangeClick.editTrigger)
             console.log('  → grid.cellSelectionMode:', gridCellRangeClick.cellSelectionMode)
             console.log('  → grid.isEditable:', gridCellRangeClick.isEditable)
-            console.log('  → grid.mode:', gridCellRangeClick.mode)
+            console.log('  → grid.preset:', gridCellRangeClick.preset)
             console.log('  → columns[1].isEditable:', gridCellRangeClick.columns[1]?.isEditable)
         })
 
@@ -718,7 +718,7 @@ grid.focusedRowIndex = null // Clear focus</code></pre>
         gridRangeShortcuts.columns = columns
         gridRangeShortcuts.isRowNumbersShown = true
         gridRangeShortcuts.isHoverable = true
-        gridRangeShortcuts.mode = 'navigate'
+        gridRangeShortcuts.editTrigger = 'navigate'
         gridRangeShortcuts.cellSelectionMode = 'click'
         gridRangeShortcuts.sortMode = 'multiple'
         gridRangeShortcuts.isColumnReorderAllowed = true
@@ -825,7 +825,7 @@ grid.focusedRowIndex = null // Clear focus</code></pre>
         gridRowFocus.columns = columns
         gridRowFocus.isRowNumbersShown = true
         gridRowFocus.isHoverable = true
-        gridRowFocus.mode = 'navigate'
+        gridRowFocus.editTrigger = 'navigate'
         gridRowFocus.sortMode = 'multiple'
 
         const detailPanel = document.getElementById('rowFocusDetail')

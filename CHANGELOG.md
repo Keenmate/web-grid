@@ -10,6 +10,139 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Changed — BREAKING (v2 API naming unification)
+
+Names now follow the suite-wide naming rules (BlissFramework naming-conventions D-NC-13..27),
+the same in every KeenMate component. No aliases — rename on upgrade. The deprecated
+aliases kept from 1.x are gone too (`showPagination`, `tableBorderOnly`, `toolbarFollowsCursor`,
+`toolbarAlign`, `toolbarTopPosition`, types `EditorType`, `RowLockInfo`).
+
+**Attributes — every boolean in the short HTML form** (derived from the config key:
+`is*Shown` → `show-*`, `is*Enabled` → `enable-*`, `should*` → bare, `is*Allowed` → `allow-*`,
+other `is*` → without the prefix).
+
+| Old attribute | New attribute | Property |
+|---|---|---|
+| `is-filterable` | `filterable` | `isFilterable` |
+| `is-pageable` | `pageable` | `isPageable` |
+| `is-pagination-visible` | `show-pagination` | `isPaginationShown` (was `isPaginationVisible`) |
+| `is-striped` | `striped` | `isStriped` |
+| `is-hoverable` | `hoverable` | `isHoverable` |
+| `is-table-border-only` | `table-border-only` | `isTableBorderOnly` |
+| `is-scrollable` | `scrollable` | `isScrollable` |
+| `is-editable` | `editable` | `isEditable` |
+| `should-commit-on-click-away` | `commit-on-click-away` | `shouldCommitOnClickAway` |
+| `mode` | `preset` | `preset` (was `mode`) |
+| — | `readonly` (new) | `isReadonly` |
+| — | `disabled` (new) | `isDisabled` |
+| `should-show-dropdown-on-focus` | `open-dropdown-on-focus` | `shouldOpenDropdownOnFocus` (was `shouldShowDropdownOnFocus`) |
+| `should-open-dropdown-on-enter` | `open-dropdown-on-enter` | `shouldOpenDropdownOnEnter` |
+| `is-checkbox-always-editable` | `checkbox-always-editable` | `isCheckboxAlwaysEditable` |
+| `is-row-numbers-visible` | `show-row-numbers` | `isRowNumbersShown` (was `isRowNumbersVisible`) |
+| `is-dirty-indicator-visible` | `show-dirty-indicator` | `isDirtyIndicatorShown` (was `isDirtyIndicatorVisible`) |
+| `is-sticky-row-numbers` | `sticky-row-numbers` | `isStickyRowNumbers` |
+| `freeze-columns` | `frozen-column-count` | `frozenColumnCount` (was `freezeColumns`) |
+| `is-row-toolbar-visible` | `show-row-toolbar` | `isRowToolbarShown` (was `isRowToolbarVisible`) |
+| `should-toolbar-follow-cursor` | `toolbar-follow-cursor` | `shouldToolbarFollowCursor` |
+| `is-shortcuts-help-visible` | `show-shortcuts-help` | `isShortcutsHelpShown` (was `isShortcutsHelpVisible`) |
+| `is-column-reorder-allowed` | `allow-column-reorder` | `isColumnReorderAllowed` |
+| `is-summary-inline` | `summary-inline` | `isSummaryInline` |
+| `is-virtual-scroll-enabled` | `enable-virtual-scroll` | `isVirtualScrollEnabled` |
+| `virtual-scroll-row-height` | `virtual-scroll-item-height` | `virtualScrollItemHeight` (was `virtualScrollRowHeight`) |
+| `virtual-scroll-buffer` | `virtual-scroll-overscan` | `virtualScrollOverscan` (was `virtualScrollBuffer`) |
+| `is-infinite-scroll-enabled` | `enable-infinite-scroll` | `isInfiniteScrollEnabled` |
+| `is-new-row-enabled` | `enable-new-row` | `isNewRowEnabled` |
+| `tree-data-sorted` | `tree-data-sorted` | `isTreeDataSorted` (was `treeDataSorted`) |
+| `should-copy-with-headers` | `copy-with-headers` | `shouldCopyWithHeaders` |
+| `should-validate-on-paste` | `validate-on-paste` | `shouldValidateOnPaste` |
+| — | `labels` (new, JSON) | `labels` |
+
+Unchanged: `filter-mode`, `page-size`, `pagination-mode`, `pagination-position`, `pagination-layout`,
+`scroll-max-height`, `edit-trigger`, `edit-button-icon`, `edit-start-selection`, `cell-selection-mode`,
+`dropdown-toggle-visibility`, `toolbar-*-align`, `toolbar-trigger`, `toolbar-position`,
+`cell-toolbar-offset`, `inline-actions-title`, `context-menu-*-offset`, `shortcuts-help-position`,
+`column-min-width`, `sort-mode`, `summary-position`, `virtual-scroll-threshold`,
+`infinite-scroll-threshold`, `new-row-position`, `new-row-indicator`, `tree-double-click-behavior`,
+`tree-*-glyph`, `paste-mode`, `fill-direction`, `tooltip-*-delay`.
+
+**Enum values are kebab-case; "off" is `none`**
+
+| Old | New |
+|---|---|
+| `editStartSelection`: `'mousePosition'` / `'selectAll'` / `'cursorAtStart'` / `'cursorAtEnd'` | `'mouse-position'` / `'select-all'` / `'cursor-at-start'` / `'cursor-at-end'` |
+| `data-request` / `beforePageChangeCallback` `trigger`: `'pageSize'` / `'loadMore'` | `'page-size'` / `'load-more'` |
+| `paginationLayout` tokens `pageSize` / `pageInfo` | `page-size` / `page-info` (default `'page-size\|previous\|page-info\|next'`) |
+| `sortMode: 'multi'` | `'multiple'` |
+| `cellSelectionMode: 'disabled'` | `'none'` |
+
+**Presets, readonly, disabled, lifecycle**
+
+- `mode` → `preset` (type `GridMode` → `GridPreset`, `MODE_PRESETS` → `GRID_PRESETS`). The
+  `read-only` preset now also sets `isReadonly = true` (`excel` / `input-matrix` set it back to `false`).
+- NEW `isReadonly` / `readonly`: values can't change — no editing, paste, fill or row add / delete /
+  duplicate / move (those built-ins are disabled); the grid stays focusable, selectable and copyable.
+- NEW `isDisabled` / `disabled`: no interaction at all — the grid container is `inert` and dimmed.
+- Core lifecycle (web-components-core): `defer` attribute / `shouldDefer` holds the first render until
+  `release()`; then the `ready` event (+ `onReady`), the `ready` host attribute, `:state(ready)` and
+  `whenReady()`. `destroy()` comes from core (the grid owns nothing beyond what `disconnect()` releases).
+
+**Selection & state (the same names on the element and `el.controller`)**
+
+| Old | New |
+|---|---|
+| `clearSelection()` (rows only) | `clearSelection()` clears rows + cell range + columns; `clearRowSelection()` clears only rows |
+| `selectedRows: number[]` | `selectedRows: T[]` (the row objects) + `selectedRowIndices: number[]` |
+| element / controller `getSelectedRowsData()` | `selectedRows` |
+| controller `getSelectedRows()` | `selectedRowIndices` |
+| controller `getItems()` / `getDisplayItems()` / `getColumns()` / `getSort()` / `getFilters()` / `getInvalidCells()` / `getSelectedCellRange()` | read-only properties `items` / `displayItems` / `columns` / `sort` / `filters` / `invalidCells` / `selectedCellRange` (+ `expandedPaths`) |
+
+**Tree (web-treeview names)**
+
+| Old | New |
+|---|---|
+| `toggleExpandedPath(path)` | `toggleRowExpanded(path)` |
+| `expandSubtree(path)` / `collapseSubtree(path)` | `expandAll(path)` / `collapseAll(path)` (no path = the whole tree) |
+| — | `expandRows(paths)` / `collapseRows(paths)` (one level each) |
+| event `expand-change { path, isExpanded, expandedPaths }` (+ `onExpandChange`) | `row-expand` / `row-collapse` `{ row, path }` for single-row acts + `expanded-change { paths }` (whole set, string array) on every change (`onRowExpand` / `onRowCollapse` / `onExpandedChange`) |
+| cell-menu built-ins `expand-all` / `collapse-all` (row + subtree) | `expand` / `collapse` |
+| cell-menu built-ins `expand-tree` / `collapse-tree` (whole tree) | `expand-all` / `collapse-all` |
+| `labels.actions.expandAll` / `collapseAll` / `expandTree` / `collapseTree` | `expand` / `collapse` (row) / `expandAll` / `collapseAll` (whole tree) |
+| `treePathMember` / `treeLevelMember` / `treeParentMember` | `pathMember` / `levelMember` / `parentPathMember` |
+| `treeSeparator` | `treePathSeparator` |
+| `defaultExpandDepth` | `expandLevel` |
+
+**Events & details**
+
+| Old | New |
+|---|---|
+| `edit-start` / `edit-cancel` (`onEditStart` / `onEditCancel`) | `cell-edit-start` / `cell-edit-cancel` (`onCellEditStart` / `onCellEditCancel`) |
+| `paste-complete` (`onPasteComplete`, `PasteCompleteEventDetail`) | `cell-paste` (`onCellPaste`, `CellPasteEventDetail`) |
+| `row-focus { row, rowIndex, previousRowIndex }` (`onRowFocus`) | `focus-change { row, rowIndex, oldRowIndex }` (`onFocusChange`) |
+| `row-delete { row, rowIndex }` — a request on Ctrl+Delete, nothing was deleted | Ctrl/Cmd+Delete runs the `delete` built-in (veto with `beforeActionCallback`); `row-delete { rows, rowIndices }` reports the removal after the fact — for the menu / toolbar `delete` too. Programmatic `removeRows` / `removeRow` don't fire it |
+| `findRowById(id) → { row, index }` | `{ row, rowIndex }` (index into `items`) |
+| `renderOptionCallback` ctx `index` / `isHighlighted` | `optionIndex` / `isFocused` |
+
+**Methods & options**
+
+| Old | New |
+|---|---|
+| `showGoToRowDialog(colIndex)` | `openGoToRowDialog(colIndex)` |
+| `scrollToRowProgrammatically(targetRow)` | `scrollToRow(rowIndex): Promise<boolean>` — public, element + controller |
+| `discardRowDraft(rowIndex)` | removed — `discardDraft(row)` |
+| — | controller `insertRows(rows, afterRow?)`, `removeRow(row)` |
+| column `isMovable` | `isReorderable` |
+| column `isEditButtonVisible` | `isEditButtonShown` |
+| `rowLocking.lockedMember` | `rowLocking.isLockedMember` |
+
+**Labels (i18n)**
+
+- `labels` is also a JSON attribute; `el.labels` reads back what was assigned (the texts are resolved
+  per key over the English defaults).
+- NEW `labels.empty` — the empty-table text (was hard-coded "No items to display").
+- `labels.dropdownNoOptions` → `labels.dropdownEmpty`.
+- Column `editorOptions.noOptionsText` / `searchingText` → `editorOptions.labels: { dropdownEmpty, dropdownSearching }`
+  (per key over the grid labels); the unused `editorOptions.emptyLabel` is removed.
+
 ### Changed — BREAKING (interaction model, web-components-core rc15)
 
 Callbacks, events and every clickable item (row toolbar, cell / header context menu,

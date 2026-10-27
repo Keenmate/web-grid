@@ -2,6 +2,17 @@
 
 A feature-rich, framework-agnostic data grid web component built with TypeScript. Sorting, filtering, pagination, inline editing (8 editor types), cell range selection, clipboard support, row toolbar, context menus, frozen columns, column reorder/resize, fill handle, virtual scroll, dark mode, and full CSS variable theming — all in a Shadow DOM encapsulated `<web-grid>` element.
 
+## What's New in v2.0.0-rc01
+
+A major release — see the CHANGELOG for every rename (no aliases).
+
+- **Shared interaction model** (`@keenmate/web-components-core`): every callback takes one `ctx` (with `controller` + `element`), every event has an `on*` twin, the row toolbar / cell and header menus / shortcuts are core action items, and both menus run on core `openMenu()`.
+- **Suite-wide naming**: boolean attributes in the short HTML form (`filterable`, `editable`, `show-row-numbers`, `enable-virtual-scroll`, …), kebab-case enum values, `preset` (was `mode`), tree API with web-treeview names (`toggleRowExpanded`, `expandAll(path?)`, `row-expand` / `row-collapse` / `expanded-change`), `cell-edit-start` / `cell-paste` / `focus-change` events, state as same-named properties on the element and `el.controller` (`selectedRows`, `selectedRowIndices`, `items`, …).
+- **`readonly` and `disabled`**: `readonly` blocks edits, paste, fill and row add / delete / move but keeps selection and copy; `disabled` makes the grid inert. The `read-only` preset sets `readonly`.
+- **Ctrl+Delete deletes**: the `delete` built-in removes the row (veto with `beforeActionCallback`) and `row-delete` reports it after the fact.
+- **Core lifecycle**: `defer` / `release()` hold the first render, then `ready` / `:state(ready)` / `whenReady()`; `destroy()`.
+- **`labels`** is also a JSON attribute, with `labels.empty` for the empty table; `scrollToRow(rowIndex)` resolves when the row is in view.
+
 ## What's New in v1.2.0-rc02
 
 - **Excel-like commit-on-click-away** — new `shouldCommitOnClickAway` property (defaults to `true`). Clicking a different cell while editing now commits the in-progress value through `beforeCommitCallback` / `validateCallback` instead of silently discarding it. Set to `false` to keep the legacy discard behavior. Companion fix: row focus (`.wg__row--focused`) now applies on the first cell click — previously it only landed on the second.
@@ -12,14 +23,6 @@ A feature-rich, framework-agnostic data grid web component built with TypeScript
 - **`--base-active-bg` + `--base-inverse-bg`** — two new cross-component theming hooks. `--base-active-bg` distinguishes pressed from hover; `--base-inverse-bg` covers tooltip and future inverse UI surfaces. Both are optional and additive.
 - **Context menu was leaking through stale `--base-*` names** — was referencing `--base-layer-01` / `--base-stroke-default` / `--base-error-color` (all long-removed in pure-admin). Now uses the canonical names; consumers loading a pure-admin theme finally get themed context menus instead of silent fallbacks.
 - **WCAG contrast e2e suite** — 18 assertions check header / body / hover / focused / selected-row / editing-cell contrast against the 3:1 threshold (WCAG AA for non-text UI). Catches theme regressions invisible to visual smoke tests.
-
-## What's New in v1.2.0-rc01
-
-- **Tree mode polish**: The column marked `isTree: true` is now read-only by default (editing it conflicts with the toggle); Tab / Shift-Tab in heterogeneous trees skip rows where every cell is read-only, and the next editable cell auto-opens its editor after a Tab commit; `'expand-all'`, `'collapse-all'`, `'expand-tree'`, `'collapse-tree'` are now usable as predefined context-menu items via string shorthand or `{ type: ... }` object form. Tree chevron is a single rotating glyph (120 ms transition) on an inline-flex layout. CSS class `wg__tree-cell-content` renamed to `wg__tree-cell-body`.
-- **Tree-row expand is ~40× faster**: Memoized the data pipeline (`displayItems` / `paginatedItems`) and added a surgical render path that replaces only inner contents instead of rebuilding the table. Expanding a 700-row tree drops from ~700 ms to ~16 ms. Render timings surface via the new `GRID:PERF` logger category.
-- **Paste API is first-class on `<web-grid>`**: `onpaste`, `onbeforepaste`, `pasteMode`, and `shouldValidateOnPaste` are now reachable directly on the GridElement instead of requiring `el.grid.*`. `onpaste` shadows the native HTMLElement property and delivers a `PasteDetail`, not a raw `ClipboardEvent`. TypeScript consumers should cast on assignment or use `el.grid.onpaste = fn` for full type fidelity; JS consumers have no friction.
-- **Datepicker no longer closes when you click its own chrome**: previously, clicking the chevrons / month/year header / disabled days appeared as "outside the grid" to two internal listeners and silently tore the picker down. Now both listeners recognize our `document.body`-hosted popovers (datepicker + cell/header context menus) as part of the grid's logical scope. Same fix protects the cell and header context menus from the same class of bug.
-- **Datepicker `outputFormat` is honored from the action pipeline**: a column declaring `editorOptions.outputFormat: 'timestamp'` (or `'date'`) now actually emits a number (or `Date`) instead of an ISO string when commit goes through the modern pipeline executor (`editTrigger='always'` and keyboard-driven select).
 
 ## Installation
 
@@ -105,7 +108,8 @@ grid.editTrigger = 'navigate'    // Excel-like: type to edit the focused cell
 | `isPageable` + `pageSize` | `boolean` + `number` | Pagination |
 | `isEditable` + `editTrigger` | `boolean` + `EditTrigger` | Enable inline editing and how it starts |
 | `isFilterable` | `boolean` | Per-column filter row under the headers |
-| `mode` | `'read-only' \| 'excel' \| 'input-matrix'` | Presets that set several of the above together |
+| `preset` | `'read-only' \| 'excel' \| 'input-matrix'` | Presets that set several of the above together |
+| `isReadonly` / `isDisabled` | `boolean` | `readonly` (values can't change, still selectable / copyable) / `disabled` (no interaction) |
 
 ## Common Configurations
 
@@ -128,7 +132,7 @@ grid.paginationPosition = 'top-center|bottom-center'
 ### Editable grid (Excel-like navigation)
 
 ```javascript
-grid.mode = 'excel'   // isEditable + editTrigger='navigate' + cellSelectionMode='click'
+grid.preset = 'excel'   // isEditable + editTrigger='navigate' + cellSelectionMode='click'
 ```
 
 Or opt in manually for finer control:
@@ -303,7 +307,9 @@ This architecture separates mode detection (the adapter decides *what* action a 
 | `isRowNumbersShown` | `boolean` | `false` | Show row number column |
 | `isStickyRowNumbers` | `boolean` | `false` | Freeze row number column during horizontal scroll |
 | `frozenColumnCount` | `number` | `0` | Freeze first N columns (applied after visual reorder from `isFrozen`) |
-| `mode` | `GridMode` | — | Grid mode: `'read-only'`, `'excel'`, `'input-matrix'` (see [Grid Modes](#grid-modes)) |
+| `preset` | `GridPreset` | `'excel'` | Preset: `'read-only'`, `'excel'`, `'input-matrix'` (see [Presets](#presets)) |
+| `isReadonly` | `boolean` | `false` | Attribute `readonly`. Values can't change (no edit / paste / fill / row add-delete-move); still focusable, selectable, copyable. The `read-only` preset sets it |
+| `isDisabled` | `boolean` | `false` | Attribute `disabled`. No interaction at all (container `inert`, dimmed) |
 | `focusedRowIndex` | `number \| null` | `null` | Currently focused row index (readable/writable) |
 
 ### Editing
@@ -716,13 +722,13 @@ Set `editor: 'custom'` and provide a `renderEditorCallback` on the column:
 }
 ```
 
-## Grid Modes
+## Presets
 
-The `mode` property sets sensible defaults for common use cases:
+The `preset` property (attribute `preset`; `mode` before v2) sets sensible defaults for common use cases:
 
-| Mode | `isEditable` | `editTrigger` | `cellSelectionMode` | `dropdownToggleVisibility` | `shouldOpenDropdownOnFocus` |
+| Preset | `isEditable` | `editTrigger` | `cellSelectionMode` | `dropdownToggleVisibility` | `shouldOpenDropdownOnFocus` |
 |------|-------------|--------------|--------------------|--------------------------|-----------------------------|
-| `'read-only'` | `false` | — | `'click'` | `'on-focus'` | `false` |
+| `'read-only'` (+ `isReadonly = true`) | `false` | — | `'click'` | `'on-focus'` | `false` |
 | `'excel'` | `true` | `'navigate'` | `'click'` | `'always'` | `false` |
 | `'input-matrix'` | `true` | `'always'` | `'shift'` | `'always'` | `true` |
 
@@ -730,7 +736,7 @@ The `mode` property sets sensible defaults for common use cases:
 - **`excel`** — Navigate cells with arrows, type to start editing, Escape to cancel. Click+drag for cell selection.
 - **`input-matrix`** — All cells are always in edit mode. Shift+click for cell selection. Tab to navigate between fields.
 
-Setting `mode` applies these defaults, but you can override individual properties afterward.
+Setting `preset` applies these defaults, but you can override individual properties afterward. `isReadonly` (`readonly`) and `isDisabled` (`disabled`) also work on their own, with any preset.
 
 
 ## Interaction Model
@@ -975,7 +981,7 @@ grid.onRowChange = (detail) => save(detail.draftRow)
 | `cell-edit-start` | `onCellEditStart` | A cell editor opened: `{ row, rowIndex, field }` |
 | `cell-edit-cancel` | `onCellEditCancel` | A cell edit was cancelled: `{ row, rowIndex, field }` |
 | `validation-error` | `onValidationError` | `validateCallback` rejected a value: `{ row, rowIndex, field, error, source: 'edit' \| 'paste' }` |
-| `focus-change` | `onFocusChange` | A different row got focus: `{ row, rowIndex, oldRowIndex }` |
+| `focus-change` | `onFocusChange` | The focused row changed: `{ row, rowIndex, oldRowIndex }` |
 | `row-delete` | `onRowDelete` | The `delete` built-in removed rows (menu / toolbar / Ctrl+Delete) — after the fact; veto with `beforeActionCallback`: `{ rows, rowIndices }` |
 | `cell-selection-change` | `onCellSelectionChange` | The selected cell range changed: `{ range, cellCount, fields, rows }` — `range.startColIndex` / `endColIndex` are on-screen (visual) positions, not `columns` indices; `fields` = the range's columns in on-screen order; `rows` = the row objects in the range (display order). Cleared: `{ range: null, cellCount: 0, fields: [], rows: [] }` |
 | `row-selection-change` | `onRowSelectionChange` | The row selection changed (row-number click / Ctrl / Shift / drag, `selectRow` / `selectRowRange` / `clearSelection`, or cleared by a cell / column selection): `{ rows, rowIndices }` |
@@ -984,7 +990,8 @@ grid.onRowChange = (detail) => save(detail.draftRow)
 | `filter-change` | `onFilterChange` | A column filter changed: `{ filters }`. With `filterMode: 'server'` the consumer filters |
 | `column-resize` | `onColumnResize` | A column was resized: `{ field, oldWidth, newWidth, allWidths }` |
 | `column-reorder` | `onColumnReorder` | A column was moved: `{ field, fromIndex, toIndex, allOrder }` |
-| `expanded-change` | `onExpandedChange` | Tree rows expanded / collapsed (toggle, subtree, expand / collapse all): `{ path, isExpanded, expandedPaths }` (`path` is `null` for all) |
+| `row-expand` / `row-collapse` | `onRowExpand` / `onRowCollapse` | One tree row expanded / collapsed (chevron, keyboard, `toggleRowExpanded`, `expandRows` / `collapseRows`; not `expandAll` / `collapseAll`): `{ row, path }` |
+| `expanded-change` | `onExpandedChange` | The expanded set changed (every expand / collapse, incl. `expandAll` / `collapseAll`): `{ paths }` |
 | `row-lock-change` | `onRowLockChange` | A row was locked / unlocked by id: `{ rowId, row, rowIndex, lockInfo, source }` |
 | `cell-paste` | `onCellPaste` | A multi-cell paste finished: `{ totalCells, successfulCells, failedCells, skippedCells, newRowsCreated, cellResults, hadHeaders }` |
 | `action` | `onAction` | A toolbar / menu / shortcut item was activated: `{ action, id, item, source, sourceEvent, triggerElement, dataset }` + the surface fields (see below) |

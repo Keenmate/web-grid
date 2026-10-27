@@ -180,7 +180,7 @@ The grid follows the shared KeenMate interaction model (web-components-core `/ac
 ```typescript
 // Grid-level events                    // twin
 'row-change'                            // onRowChange       — "row changed" notification
-'cell-edit-start' / 'cell-edit-cancel'            // onCellEditStart / onCellEditCancel
+'cell-edit-start' / 'cell-edit-cancel'  // onCellEditStart / onCellEditCancel
 'validation-error'                      // onValidationError
 'action'                                // onAction          — any toolbar / menu / shortcut item activated
 // … focus-change, row-delete, cell-selection-change, row-selection-change,
@@ -213,7 +213,17 @@ searchCallback           // returns search results (async)
 renderOptionCallback     // returns HTML string for option
 ```
 
-Built-in item names are kebab-case (`'move-up'`, `'sort-asc'`, `'expand'`) and the row built-ins (`add`, `delete`, `duplicate`, `move-up`, `move-down`) do the work themselves after the `action` event. Do not add lowercase `on*` properties (they collide with native `HTMLElement` handlers like `onpaste` / `onselect`).
+Built-in item names are kebab-case (`'move-up'`, `'sort-asc'`, `'expand'`) and the row built-ins (`add`, `delete`, `duplicate`, `move-up`, `move-down`) do the work themselves BEFORE the `action` event (core order: beforeActionCallback → onClick → built-in → `action`); `delete` then fires `row-delete` (after the fact; Ctrl+Delete runs the same built-in). Do not add lowercase `on*` properties (they collide with native `HTMLElement` handlers like `onpaste` / `onselect`).
+
+### v2 naming rules (suite-wide, BlissFramework naming-conventions D-NC-13..27)
+
+- Boolean attributes are the short HTML form derived from the config key: `is*Shown` → `show-*`, `is*Enabled` → `enable-*`, `should*` → bare, `is*Allowed` → `allow-*`, other `is*` → without the prefix (`isFilterable` → `filterable`). `isReadonly` / `isDisabled` → `readonly` / `disabled`.
+- Enum values kebab-case; "off" is `'none'`; `multiple`, never `multi`. No bare `mode` (`preset`).
+- Events: `<state>-change` for set changes (whole new state: `expanded-change { paths }`, `focus-change`, `*-selection-change`), `<domain>-<verb>` for acts (`row-expand`, `row-delete`, `cell-paste`, `cell-edit-start`). Detail nouns: never a bare `index` (`rowIndex`, `optionIndex`), `old*` / `new*` pairs, `item` only for the core `ActionItem`.
+- State is a same-named property on the element AND `el.controller` (controller read-only): `selectedRows` (objects), `selectedRowIndices`, `items`, `displayItems`, `columns`, `sort`, `filters`, `invalidCells`, `selectedCellRange`, `expandedPaths`. `get*()` only for lookups with arguments / computed snapshots (`getDrafts`, `getSelectedCells`, `getSelectedColumns`).
+- Verbs: remove = programmatic (`removeRows`, `removeRow`), delete = user command (`delete` built-in + `row-delete`), clear = empty a set (`clearSelection` = all kinds), discard = drafts (`discardDraft(row)`), open/close = surfaces you work in (`openGoToRowDialog`), `scrollTo*` → `Promise<boolean>`.
+- UI strings only through `labels` (`labels.ts`: `resolveLabels` / `formatLabel`); empty-table key `empty`. No `*Text` options.
+- Lifecycle from core: `defer` / `release()` / `ready` / `whenReady()` / `destroy()`; engine setters don't render before the first build (`#isBuilt`).
 
 **Why this matters:**
 - Events can be safely ignored - component works without them

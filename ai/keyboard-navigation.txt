@@ -303,7 +303,7 @@ navigation interacts with editing. There are five modes: navigate, always,
 click, dblclick, and button.
 
 NAVIGATE MODE (editTrigger: 'navigate')
-  This is the mode set by mode: 'excel'. Cells display values. Arrow keys
+  This is the mode set by preset: 'excel'. Cells display values. Arrow keys
   move between cells. Typing starts editing with the typed character. F2
   starts editing. Enter/Tab commit edits and move focus.
 
@@ -325,7 +325,7 @@ NAVIGATE MODE (editTrigger: 'navigate')
     - Escape cancels edit (two-phase if dropdown is open)
 
 ALWAYS MODE (editTrigger: 'always')
-  This is the mode set by mode: 'input-matrix'. All cells render as editors
+  This is the mode set by preset: 'input-matrix'. All cells render as editors
   permanently. Focus moves between editor inputs directly.
 
   - Tab/Shift+Tab commit current cell and move to next/previous editor

@@ -4,8 +4,8 @@ CRITICAL NOTES
 - Shadow DOM encapsulated. External CSS does not reach internal styles.
 - Items and columns are set via JavaScript properties, NOT HTML attributes.
 - The import itself registers the custom element. No manual registration needed.
-- Setting the "mode" property applies sensible defaults for editing, selection,
-  and dropdown behavior. You can override individual properties after setting mode.
+- Setting the "preset" property applies sensible defaults for editing, selection,
+  and dropdown behavior. You can override individual properties after setting it.
 - Every callback takes ONE ctx object; ctx and event details carry non-enumerable
   `controller` (GridController, also grid.controller) and `element`.
 - Events are DOM events with kebab-case names (row-change, action, data-request, ...)
@@ -86,22 +86,25 @@ BASIC ATTRIBUTES AND PROPERTIES
 These are commonly used display and behavior properties. They can be set as
 HTML attributes (kebab-case) or JavaScript properties (camelCase).
 
-Attribute (HTML)        Property (JS)           Type       Default   Description
-----------------------  ----------------------  ---------  --------  -----------
-striped              isStriped               boolean    false     Alternate row backgrounds
-hoverable            isHoverable             boolean    false     Highlight row on hover
-sort-mode               sortMode                string     'none'    'none', 'single', or 'multiple'
-filterable           isFilterable            boolean    false     Show per-column filter inputs
-filter-mode             filterMode              string     'client'  'server': the consumer filters (filter-change event)
-pageable             isPageable              boolean    false     Enable pagination
-page-size               pageSize                number     10        Rows per page
-editable             isEditable              boolean    false     Enable cell editing
-edit-trigger            editTrigger             string     'dblclick' How editing starts (see below)
-show-row-numbers  isRowNumbersShown     boolean    false     Show row number column
-                        isDirtyIndicatorShown boolean    true      Show dirty indicator on edited cells
-mode                    mode                    string     (none)    Grid mode (see below)
-scrollable           isScrollable            boolean    false     Enable scroll container
-frozen-column-count          frozenColumnCount           number     0         Freeze first N columns
+Attribute (HTML)        Property (JS)           Type       Default     Description
+----------------------  ----------------------  ---------  ----------  -----------
+striped                 isStriped               boolean    true        Alternate row backgrounds
+hoverable               isHoverable             boolean    true        Highlight row on hover
+sort-mode               sortMode                string     'none'      'none', 'single', or 'multiple'
+filterable              isFilterable            boolean    false       Show per-column filter inputs
+filter-mode             filterMode              string     'client'    'server': the consumer filters (filter-change event)
+pageable                isPageable              boolean    false       Enable pagination
+page-size               pageSize                number     10          Rows per page
+editable                isEditable              boolean    false       Enable cell editing
+edit-trigger            editTrigger             string     'dblclick'  How editing starts (see below)
+readonly                isReadonly              boolean    false       Values can't change; still focusable / selectable / copyable
+disabled                isDisabled              boolean    false       No interaction at all (dimmed, not focusable)
+show-row-numbers        isRowNumbersShown       boolean    false       Show row number column
+show-dirty-indicator    isDirtyIndicatorShown   boolean    true        Show dirty indicator on edited cells
+preset                  preset                  string     'excel'     Preset (see below)
+scrollable              isScrollable            boolean    false       Enable scroll container
+frozen-column-count     frozenColumnCount       number     0           Freeze first N columns
+labels                  labels                  object     —           UI strings (partial, JSON attribute) — see i18n
 
 Edit trigger values: 'click', 'dblclick', 'button', 'always', 'navigate'
 
@@ -146,26 +149,26 @@ columns : Column<T>[]
 
 GRID MODES OVERVIEW
 -------------------
-The "mode" property sets sensible defaults for common use cases. Set it before
+The "preset" property sets sensible defaults for common use cases. Set it before
 overriding individual properties.
 
-  grid.mode = 'read-only'
+  grid.preset = 'read-only'
     No editing. Click to select cells. For display grids with copy support.
     Sets: isEditable=false, cellSelectionMode='click'
 
-  grid.mode = 'excel'
+  grid.preset = 'excel'
     Navigate cells with arrows, type to start editing, Escape to cancel.
     Click+drag for cell selection.
     Sets: isEditable=true, editTrigger='navigate', cellSelectionMode='click',
           dropdownToggleVisibility='always'
 
-  grid.mode = 'input-matrix'
+  grid.preset = 'input-matrix'
     All cells always in edit mode. Shift+click for cell selection. Tab to
     navigate between fields.
     Sets: isEditable=true, editTrigger='always', cellSelectionMode='shift',
           dropdownToggleVisibility='always', shouldOpenDropdownOnFocus=true
 
-For detailed grid mode documentation, see grid-modes.txt.
+For detailed preset documentation, see grid-modes.txt.
 
 
 BROWSER SUPPORT

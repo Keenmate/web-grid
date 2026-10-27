@@ -634,3 +634,17 @@ releases the custom cap" (`test.fail`).
 **Was:** no keyboard at all inside the menu (only Escape and item shortcut letters), no way to open the cell menu from the keyboard, `escapeText` didn't escape `'`, the menu lived in `document.body` (outside the grid's colour scheme / per-instance variables), and the grid's shadow scroll subscription was needed to close it on a grid scroll.
 
 **Tests:** `context-menu-keyboard.spec.ts` (Shift+F10 / ContextMenu key, arrows skip disabled, Home/End, Enter/Space, Escape returns focus, `menuitemcheckbox` toggles + submenu keyboard, dismiss on page / grid scroll), `context-menu-theming.spec.ts` (the `--wg-context-menu-*` → `--km-menu-*` → `--base-*` chain).
+
+## 36. Keyboard range selection tests are flaky — OPEN (pre-existing)
+
+**Where:** `keyboard.spec.ts` "range selection from the keyboard" — "Shift+Arrow grows and shrinks",
+"Shift+Home / Shift+End …", occasionally "Shift+Arrow extends a range".
+
+**Symptom:** under parallel load (and sometimes serially) `selectedCellRange` reads `null` / a stale
+range right after `keyboard.press` — the tests read synchronously, without polling.
+
+**Verified pre-existing** (2026-10-28, v2 naming pass): a worktree at `c8d0fd4` (before the pass)
+fails the same tests with `--repeat-each=6`. Not caused by the renames.
+
+**Suggested fix:** poll (`expect.poll(() => rangeOf(page))`) instead of a one-shot read, or find the
+async step in the Shift+Arrow path.

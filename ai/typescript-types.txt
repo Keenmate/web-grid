@@ -282,7 +282,7 @@ SIMPLE TYPE ALIASES
 
   type EditTrigger = 'click' | 'dblclick' | 'button' | 'always' | 'navigate'
 
-  type GridMode = 'read-only' | 'excel' | 'input-matrix'
+  type GridPreset = 'read-only' | 'excel' | 'input-matrix'
 
   type SortMode = 'none' | 'single' | 'multiple'
 

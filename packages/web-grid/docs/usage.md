@@ -2,7 +2,7 @@
 
 This document covers the public surface of `<web-grid>` — how to mount it, every attribute / property / event / method / column field, and the data shapes.
 
-For a quick mental model: the grid reads its configuration from **properties on the element** (scalar flags also have kebab-case attributes, e.g. `is-striped`, `page-size`, `filter-mode`). Drop the custom element into your markup, grab a reference, assign `items` and `columns`, and turn on what you need.
+For a quick mental model: the grid reads its configuration from **properties on the element** (scalar flags also have kebab-case attributes, e.g. `striped`, `page-size`, `filter-mode`). Drop the custom element into your markup, grab a reference, assign `items` and `columns`, and turn on what you need.
 
 ## Mounting the component
 
@@ -41,13 +41,13 @@ Then drop it into your markup and bind data:
 
 `max-height` (or `height`) on the host controls sizing — see [Height & scroll](#height--scroll).
 
-## Grid modes
+## Presets
 
-The `mode` property sets sensible defaults for common use cases:
+The `preset` property (attribute `preset`; `mode` before v2) sets sensible defaults for common use cases:
 
-| Mode | `isEditable` | `editTrigger` | `cellSelectionMode` | `dropdownToggleVisibility` | `shouldShowDropdownOnFocus` |
+| Preset | `isEditable` | `editTrigger` | `cellSelectionMode` | `dropdownToggleVisibility` | `shouldOpenDropdownOnFocus` |
 |------|-------------|--------------|--------------------|--------------------------|-----------------------------|
-| `'read-only'`    | `false` | —             | `'click'` | `'on-focus'` | `false` |
+| `'read-only'` (+ `isReadonly`) | `false` | —             | `'click'` | `'on-focus'` | `false` |
 | `'excel'`        | `true`  | `'navigate'`  | `'click'` | `'always'`   | `false` |
 | `'input-matrix'` | `true`  | `'always'`    | `'shift'` | `'always'`   | `true`  |
 
@@ -55,7 +55,9 @@ The `mode` property sets sensible defaults for common use cases:
 - **`excel`** — Arrow keys to move, type to start editing, Escape to cancel. Click+drag for cell selection.
 - **`input-matrix`** — All cells are always in edit mode. Shift+click for cell selection. Tab to navigate between fields.
 
-Setting `mode` applies these defaults; you can override individual properties afterward.
+Setting `preset` applies these defaults; you can override individual properties afterward.
+
+`isReadonly` (attribute `readonly`) — values can't change (no edit / paste / fill / row add-delete-move), the grid stays focusable, selectable and copyable; the `read-only` preset sets it. `isDisabled` (attribute `disabled`) — no interaction at all (the container is `inert`, dimmed).
 
 ## Properties
 
@@ -67,7 +69,7 @@ The `QuickGridProps<T>` type defined in `src/types.ts` is the canonical source o
 |---|---|---|---|
 | `items` | `T[]` | `[]` | Row data — the only required "content" property |
 | `columns` | `Column<T>[]` | `[]` | Column definitions (see [Column definition](#column-definition)) |
-| `idMember` | `keyof T \| string \| null` | `'id'` | Field that uniquely identifies a row — the only row-id member (`getRowId`, `findRowById`, `updateRowById`, `replaceRowById`, row locking; `getIdCallback` wins). Internal state (drafts, invalid-cell markers) is keyed by this value; falls back to `treePathMember` or displayed-row index |
+| `idMember` | `keyof T \| string \| null` | `'id'` | Field that uniquely identifies a row — the only row-id member (`getRowId`, `findRowById`, `updateRowById`, `replaceRowById`, row locking; `getIdCallback` wins). Internal state (drafts, invalid-cell markers) is keyed by this value; falls back to `pathMember` or displayed-row index |
 
 ### Display
 
@@ -76,11 +78,13 @@ The `QuickGridProps<T>` type defined in `src/types.ts` is the canonical source o
 | `isFilterable` | `boolean` | `false` | Show the filter row (inputs for columns with `isFilterable: true`) and apply `filters` |
 | `isStriped` | `boolean` | `false` | Alternate row backgrounds |
 | `isHoverable` | `boolean` | `false` | Highlight row on hover |
-| `isRowNumbersVisible` | `boolean` | `false` | Show leftmost row-number column |
+| `isRowNumbersShown` | `boolean` | `false` | Show leftmost row-number column |
 | `isStickyRowNumbers` | `boolean` | `false` | Freeze row-number column during horizontal scroll |
-| `isDirtyIndicatorVisible` | `boolean` | `true` | Visual indicator on cells with unsaved changes |
-| `freezeColumns` | `number` | `0` | Freeze first N columns (applied after visual reorder from `isFrozen`) |
-| `mode` | `GridMode` | — | `'read-only'`, `'excel'`, or `'input-matrix'` (see [Grid modes](#grid-modes)) |
+| `isDirtyIndicatorShown` | `boolean` | `true` | Visual indicator on cells with unsaved changes |
+| `frozenColumnCount` | `number` | `0` | Freeze first N columns (applied after visual reorder from `isFrozen`) |
+| `preset` | `GridPreset` | `'excel'` | `'read-only'`, `'excel'`, or `'input-matrix'` (see [Presets](#presets)) |
+| `isReadonly` | `boolean` | `false` | Attribute `readonly` — values can't change; still focusable / selectable / copyable |
+| `isDisabled` | `boolean` | `false` | Attribute `disabled` — no interaction |
 | `columnMinWidth` | `string` | — | Default min-width applied to every column header that doesn't set its own `minWidth` |
 | `focusedRowIndex` | `number \| null` | `null` | Currently focused row index (readable/writable) |
 | `class` / `style` | `string` | — | Pass-through host element class and inline style |
@@ -93,11 +97,11 @@ The `QuickGridProps<T>` type defined in `src/types.ts` is the canonical source o
 | `isRowEditable` | `boolean` | — | Row-level editability gate; combined with grid- and column-level `isEditable` (all three must pass) |
 | `getIsRowEditableCallback` | `(ctx: { row }) => boolean` | — | Decides row editability per row (wins over `isRowEditable`) |
 | `editTrigger` | `EditTrigger` | `'dblclick'` | How editing starts: `'click'`, `'dblclick'`, `'button'` (an edit button in editable cells — on hover and in the focused cell; F2 / Enter too), `'always'`, `'navigate'` |
-| `editButtonIcon` | `string` (HTML) | `'✎'` | Content of the edit button (`editTrigger: 'button'` / `column.isEditButtonVisible`) — HTML, e.g. `'<span class="lucide-pencil"></span>'`. Attribute `edit-button-icon`. Accessible name: `labels.editCell` |
-| `editStartSelection` | `EditStartSelection` | `'selectAll'` | Cursor position when entering edit via navigate: `'mousePosition'`, `'selectAll'`, `'cursorAtStart'`, `'cursorAtEnd'` |
+| `editButtonIcon` | `string` (HTML) | `'✎'` | Content of the edit button (`editTrigger: 'button'` / `column.isEditButtonShown`) — HTML, e.g. `'<span class="lucide-pencil"></span>'`. Attribute `edit-button-icon`. Accessible name: `labels.editCell` |
+| `editStartSelection` | `EditStartSelection` | `'select-all'` | Cursor position when entering edit via navigate: `'mouse-position'`, `'select-all'`, `'cursor-at-start'`, `'cursor-at-end'` |
 | `shouldCommitOnClickAway` | `boolean` | `true` | Excel-like commit on click-away. `false` discards the in-progress value |
 | `dropdownToggleVisibility` | `ToggleVisibility` | `'on-focus'` | When to show dropdown toggle: `'always'`, `'on-focus'` |
-| `shouldShowDropdownOnFocus` | `boolean` | `false` | Auto-open dropdown when cell is focused |
+| `shouldOpenDropdownOnFocus` | `boolean` | `false` | Auto-open dropdown when cell is focused |
 | `shouldOpenDropdownOnEnter` | `boolean` | `false` | Enter opens dropdown (`true`) or moves down (`false`) |
 | `isCheckboxAlwaysEditable` | `boolean` | `false` | Checkboxes stay clickable, even in navigate mode |
 | `invalidCells` | `CellValidationState[]` | `[]` | External validation state for cells |
@@ -107,20 +111,20 @@ The `QuickGridProps<T>` type defined in `src/types.ts` is the canonical source o
 | Property | Type | Default | Description |
 |---|---|---|---|
 | `sort` | `SortState[]` | `[]` | Current sort state (set for initial / server-side sort) |
-| `sortMode` | `SortMode` | `'none'` | `'none'` (disabled), `'single'`, `'multi'` |
+| `sortMode` | `SortMode` | `'none'` | `'none'` (disabled), `'single'`, `'multiple'` |
 
 ### Pagination
 
 | Property | Type | Default | Description |
 |---|---|---|---|
 | `isPageable` | `boolean` | `false` | Enable pagination |
-| `pageSize` | `number` | `10` | Rows per page |
+| `page-size` | `number` | `10` | Rows per page |
 | `pageSizes` | `number[]` | — | Available page sizes for the page-size selector |
 | `paginationMode` | `'client' \| 'server'` | `'client'` | Client slices `items`; server treats `items` as the current page |
 | `currentPage` | `number` | `1` | Current page (1-based). A filter change resets it to 1 (unless set in the same task — a restored page + filter keep the page); a shorter `items` clamps it |
-| `beforePageChangeCallback` | `(ctx: { trigger, fromPage, toPage, drafts }) => boolean \| number \| void \| Promise<…>` | — | Runs before a user action swaps the rows — pager buttons, page-size change, header sort / filter-row change in server mode (`trigger`: `'page'` / `'pageSize'` / `'sort'` / `'filter'`). `false` → stay, a number → go to that page instead; async OK (the pager is disabled meanwhile). Programmatic `currentPage` writes and `loadMore` skip it |
+| `beforePageChangeCallback` | `(ctx: { trigger, fromPage, toPage, drafts }) => boolean \| number \| void \| Promise<…>` | — | Runs before a user action swaps the rows — pager buttons, page-size change, header sort / filter-row change in server mode (`trigger`: `'page'` / `'page-size'` / `'sort'` / `'filter'`). `false` → stay, a number → go to that page instead; async OK (the pager is disabled meanwhile). Programmatic `currentPage` writes and `load-more` skip it |
 | `totalItems` | `number \| null` | `null` | Total item count for server-side pagination |
-| `isPaginationVisible` | `boolean \| 'auto'` | `'auto'` | `'auto'` hides the pager when there is ≤ 1 page |
+| `isPaginationShown` | `boolean \| 'auto'` | `'auto'` | `'auto'` hides the pager when there is ≤ 1 page |
 | `paginationPosition` | `string` | `'bottom-center'` | Position(s): e.g. `'top-right\|bottom-right'` for multiple |
 | `getPaginationLabelsCallback` | `(ctx: { currentPage, totalPages, totalItems, pageSize }) => Partial<PaginationLabels>` | — | Customize/translate pagination text |
 | `paginationLayout` | `string` | — | Element order: `'pageSize\|previous\|pageInfo\|next'` or `'first\|previous\|pageInfo\|next\|last'` |
@@ -129,7 +133,7 @@ The `QuickGridProps<T>` type defined in `src/types.ts` is the canonical source o
 
 | Property | Type | Default | Description |
 |---|---|---|---|
-| `isRowToolbarVisible` | `boolean` | `false` | Show row action toolbar |
+| `isRowToolbarShown` | `boolean` | `false` | Show row action toolbar |
 | `rowToolbar` | `GridToolbarEntry<T>[]` | `['add', 'delete', 'duplicate']` | Built-in names, action items, dividers (see [Action items](#action-items)) |
 | `toolbarTrigger` | `'hover' \| 'click' \| 'button'` | `'hover'` | How to show the toolbar |
 | `toolbarPosition` | `ToolbarPosition` | `'auto'` | Preferred position: `'auto'`, `'left'`, `'right'`, `'top'`, `'inline'` |
@@ -232,8 +236,8 @@ grid.rowToolbar = [
 | `action` | What it does |
 |---|---|
 | `'add'`, `'delete'`, `'duplicate'`, `'move-up'`, `'move-down'` | The row built-ins (above) |
-| `'expand-all'` / `'collapse-all'` | Expand / collapse every tree node |
-| `'expand-tree'` / `'collapse-tree'` | Expand / collapse the current subtree |
+| `'expand'` / `'collapse'` | Expand / collapse every tree node |
+| `'expand-all'` / `'collapse-all'` | Expand / collapse the current subtree |
 
 #### Menu item shape
 
@@ -286,7 +290,7 @@ Both menus are the shared KeenMate menu (core `openMenu()`, `@keenmate/web-compo
 |---|---|---|---|
 | `rowShortcuts` | `GridShortcut<T>[]` | — | Action items bound to a key on the focused / hovered row (see [Keyboard shortcuts](#keyboard-shortcuts-1)) |
 | `rangeShortcuts` | `GridRangeShortcut<T>[]` | — | Action items bound to a key on the selected rows / cell range |
-| `isShortcutsHelpVisible` | `boolean` | `false` | Show keyboard-shortcuts help icon |
+| `isShortcutsHelpShown` | `boolean` | `false` | Show keyboard-shortcuts help icon |
 | `shortcutsHelpPosition` | `'top-right' \| 'top-left'` | `'top-right'` | Help icon position |
 | `renderShortcutsHelpCallback` | `(ctx) => string` | — | Custom HTML alongside the shortcuts list |
 
@@ -316,7 +320,7 @@ Both menus are the shared KeenMate menu (core `openMenu()`, `@keenmate/web-compo
 
 | Field | Type | Description |
 |---|---|---|
-| `lockedMember` | `keyof T` | Property with boolean lock state |
+| `isLockedMember` | `keyof T` | Property with boolean lock state |
 | `lockInfoMember` | `keyof T` | Property with `RowLock` info object |
 | `getIsLockedCallback` | `(ctx: { row, rowIndex }) => boolean` | Callback-based lock check |
 | `getLockInfoCallback` | `(ctx: { row, rowIndex }) => RowLock \| null` | Callback-based lock info |
@@ -329,18 +333,18 @@ Path-string driven (ltree-style: `"1.2.3"`, `"/dept/eng/team"`, `"C:\\a\\b"`).
 
 | Property | Type | Default | Description |
 |---|---|---|---|
-| `treePathMember` | `keyof T \| string` | — | **Required** to enable tree mode; field holding the path |
-| `treeLevelMember` | `keyof T \| string` | — | Pre-computed depth (0-based) |
-| `treeParentMember` | `keyof T \| string` | — | Pre-computed parent path |
-| `treeSeparator` | `string` | auto | Auto-detected from first row when omitted |
-| `treeDataSorted` | `boolean` | `false` | `true` = grid never re-sorts (pair with the `data-request` event); `false` = grid sorts siblings depth-first |
+| `pathMember` | `keyof T \| string` | — | **Required** to enable tree mode; field holding the path |
+| `levelMember` | `keyof T \| string` | — | Pre-computed depth (0-based) |
+| `parentPathMember` | `keyof T \| string` | — | Pre-computed parent path |
+| `treePathSeparator` | `string` | auto | Auto-detected from first row when omitted |
+| `isTreeDataSorted` | `boolean` | `false` | `true` = grid never re-sorts (pair with the `data-request` event); `false` = grid sorts siblings depth-first |
 | `expandedPaths` | `Set<string>` | — | Bindable set of expanded paths; mutated by grid |
-| `defaultExpandDepth` | `number` | all | `0` = roots only; `1` = roots + children; etc. |
+| `expandLevel` | `number` | all | `0` = roots only; `1` = roots + children; etc. |
 | `treeDoubleClickBehavior` | `TreeDoubleClickBehavior` | `'none'` | Action when double-clicking a tree-column cell |
 | `treeExpandedGlyph` / `treeCollapsedGlyph` | `string` | `'▶'` | Static glyphs. When equal, CSS rotates 90°; when different, glyph swaps |
 | `renderChevronCallback` | `(ctx: { row, isExpanded, hasChildren, level, path }) => string` | — | Per-row chevron HTML; cached per `(row, expanded)` |
 
-Expanding / collapsing fires `expand-change` (`onExpandChange`) with `{ path, isExpanded, expandedPaths }`.
+Methods: `toggleRowExpanded(path)`, `expandRows(paths)` / `collapseRows(paths)` (one level each), `expandAll(path?)` / `collapseAll(path?)` (whole tree, or a row and everything under it), `isPathExpanded(path)`. A single-row expand / collapse fires `row-expand` / `row-collapse` `{ row, path }`; every change fires `expanded-change` `{ paths }` (the whole set). Cell-menu built-ins: `expand` / `collapse` (the row + subtree), `expand-all` / `collapse-all` (whole tree).
 
 ### Height & scroll
 
@@ -368,8 +372,8 @@ For full-height mode, also set `isTableBorderOnly = true`.
 |---|---|---|---|
 | `isVirtualScrollEnabled` | `boolean` | `false` | Enable virtual scroll |
 | `virtualScrollThreshold` | `number` | `100` | Auto-enable when `items.length >= threshold` |
-| `virtualScrollRowHeight` | `number` | `38` | Fixed row height in pixels |
-| `virtualScrollBuffer` | `number` | `10` | Extra rows rendered above/below the viewport |
+| `virtualScrollItemHeight` | `number` | `38` | Fixed row height in pixels |
+| `virtualScrollOverscan` | `number` | `10` | Extra rows rendered above/below the viewport |
 
 ### Infinite scroll
 
@@ -473,7 +477,7 @@ Every column callback takes one `ctx`; the cell ctx (`CellContext<T>`) is `{ row
 | `dropdownToggleVisibility` | `ToggleVisibility` | Per-column override |
 | `shouldOpenDropdownOnEnter` | `boolean` | Per-column override |
 | `renderEditorCallback` | `(ctx: EditorContext<T>) => void` | Handler for `editor: 'custom'` — the cell ctx + `commit(value)` / `cancel()` |
-| `isEditButtonVisible` | `boolean` | Show the edit button in this column's editable cells whatever the `editTrigger` |
+| `isEditButtonShown` | `boolean` | Show the edit button in this column's editable cells whatever the `editTrigger` |
 
 ### Validation
 
@@ -513,7 +517,7 @@ Not a veto: an invalid value is kept as a draft, the cell is marked invalid and 
 |---|---|---|
 | `isFrozen` | `boolean` | Column sticks to the left during horizontal scroll |
 | `isResizable` | `boolean` | Allow column-width drag (default: `true`) |
-| `isMovable` | `boolean` | Allow drag-reorder (default: `true`) |
+| `isReorderable` | `boolean` | Allow drag-reorder (default: `true`) |
 | `isHidden` | `boolean` | Not rendered but kept in array for visibility toggling |
 | `isSortable` | `boolean` | Enable sorting for this column (when grid has `sortMode`) |
 | `isFilterable` | `boolean` | This column gets a filter-row input (opt-in) |
@@ -537,7 +541,7 @@ Per-editor configuration, set via `editorOptions` on the column.
 | `placeholder` | `string` | — | Placeholder text |
 | `pattern` | `string` | — | `input` pattern attribute |
 | `inputMode` | `'text' \| 'numeric' \| 'email' \| 'tel' \| 'url'` | — | Virtual-keyboard hint |
-| `editStartSelection` | `EditStartSelection` | `'selectAll'` | Cursor position when entering edit |
+| `editStartSelection` | `EditStartSelection` | `'select-all'` | Cursor position when entering edit |
 
 ### Number
 
@@ -589,12 +593,10 @@ Used by `select`, `combobox`, and `autocomplete`.
 
 | Option | Type | Description |
 |---|---|---|
-| `renderOptionCallback` | `(ctx: { option, index, isHighlighted, isSelected, isDisabled }) => string` | Custom HTML per option |
+| `renderOptionCallback` | `(ctx: { option, optionIndex, isFocused, isSelected, isDisabled }) => string` | Custom HTML per option |
 | `onSelect` | `(ctx: { option, row, rowIndex, column, field, … }) => void` | Notification when an option is selected |
 | `allowEmpty` | `boolean` | Allow null / empty selection |
-| `emptyLabel` | `string` | Default: `'-- Select --'` |
-| `noOptionsText` | `string` | Override "No options" |
-| `searchingText` | `string` | Override "Searching…" |
+| `labels` | `{ dropdownEmpty?, dropdownSearching? }` | This column's dropdown texts, per key over the grid `labels` |
 | `dropdownMinWidth` | `string` | Minimum dropdown width (e.g. `'300px'`) |
 | `placeholder` | `string` | Combobox / autocomplete placeholder |
 
@@ -634,7 +636,7 @@ The grid follows the shared KeenMate interaction model (`@keenmate/web-component
 
 ```javascript
 grid.addEventListener('row-change', (e) => save(e.detail.draftRow))
-grid.onRowFocus = ({ row }) => showDetails(row)          // property twin
+grid.onFocusChange = ({ row }) => showDetails(row)          // property twin
 grid.getRowClassCallback = ({ row, controller }) =>
   controller.isRowDirty(row) ? 'is-dirty' : null
 ```
@@ -666,11 +668,11 @@ grid.getRowClassCallback = ({ row, controller }) =>
 | Event | Twin | Fires when / detail |
 |---|---|---|
 | `row-change` | `onRowChange` | A cell value was committed (editor, checkbox, paste, new row). `{ row, draftRow, rowIndex, field, oldValue, newValue, isValid, validationError }` |
-| `edit-start` | `onEditStart` | A cell editor opened. `{ row, rowIndex, field }` |
-| `edit-cancel` | `onEditCancel` | A cell edit was cancelled. `{ row, rowIndex, field }` |
+| `cell-edit-start` | `onCellEditStart` | A cell editor opened. `{ row, rowIndex, field }` |
+| `cell-edit-cancel` | `onCellEditCancel` | A cell edit was cancelled. `{ row, rowIndex, field }` |
 | `validation-error` | `onValidationError` | `validateCallback` rejected a value. `{ row, rowIndex, field, error, source: 'edit' \| 'paste' }` |
-| `row-focus` | `onRowFocus` | A different row got focus. `{ row, rowIndex, previousRowIndex }` |
-| `row-delete` | `onRowDelete` | Ctrl+Delete on a row — a request; the grid does not delete. `{ row, rowIndex }` |
+| `focus-change` | `onFocusChange` | The focused row changed. `{ row, rowIndex, oldRowIndex }` |
+| `row-delete` | `onRowDelete` | The `delete` built-in removed rows (menu / toolbar / Ctrl+Delete) — after the fact; veto with `beforeActionCallback`. `{ rows, rowIndices }` |
 | `cell-selection-change` | `onCellSelectionChange` | The selected cell range changed. `{ range, cellCount, fields, rows }` — `range.startColIndex` / `endColIndex` are on-screen (visual) positions, not `columns` indices; `fields` = the range's columns in on-screen order; `rows` = the row objects in the range. Cleared: `{ range: null, cellCount: 0, fields: [], rows: [] }` |
 | `row-selection-change` | `onRowSelectionChange` | The row selection changed (row numbers, `selectRow` / `selectRowRange` / `clearSelection`, or cleared by another selection). `{ rows, rowIndices }` |
 | `column-selection-change` | `onColumnSelectionChange` | The column selection changed (headers, `controller.selectColumn` / `selectColumnRange` / `clearColumnSelection`, or cleared by another selection). `{ fields }` (on-screen order) |
@@ -678,9 +680,10 @@ grid.getRowClassCallback = ({ row, controller }) =>
 | `filter-change` | `onFilterChange` | A column filter changed. `{ filters }`. With `filterMode: 'server'` (attribute `filter-mode`) the grid doesn't filter — replace `items` yourself |
 | `column-resize` | `onColumnResize` | A column was resized. `{ field, oldWidth, newWidth, allWidths }` |
 | `column-reorder` | `onColumnReorder` | A column was moved. `{ field, fromIndex, toIndex, allOrder }` |
-| `expand-change` | `onExpandChange` | Tree rows expanded / collapsed (toggle, subtree, expand / collapse all). `{ path, isExpanded, expandedPaths }` (`path` is `null` for all) |
+| `row-expand` / `row-collapse` | `onRowExpand` / `onRowCollapse` | One tree row expanded / collapsed (not `expandAll` / `collapseAll`). `{ row, path }` |
+| `expanded-change` | `onExpandedChange` | The expanded set changed (every change). `{ paths }` |
 | `row-lock-change` | `onRowLockChange` | A row was locked / unlocked by id. `{ rowId, row, rowIndex, lockInfo, source }` |
-| `paste-complete` | `onPasteComplete` | A multi-cell paste finished. `{ totalCells, successfulCells, failedCells, skippedCells, newRowsCreated, cellResults, hadHeaders }` |
+| `cell-paste` | `onCellPaste` | A multi-cell paste finished. `{ totalCells, successfulCells, failedCells, skippedCells, newRowsCreated, cellResults, hadHeaders }` |
 | `action` | `onAction` | A toolbar / menu / shortcut item was activated (see below) |
 
 ### The `action` event
@@ -712,16 +715,16 @@ grid.onAction = ({ action, id, row }) => {
 
 | Area | Methods |
 |---|---|
-| Data | `getItems()`, `getDisplayItems()`, `getColumns()`, `getSort()`, `getFilters()`, `setFilter(field, value)` |
-| Rows | `insertRow(row, afterRow?)`, `removeRows(rows)`, `duplicateRow(row)`, `moveRow(row, -1 \| 1)`, `getRowId(row)`, `findRowById(id)`, `updateRowById(id, data)`, `replaceRowById(id, row)` |
-| Drafts / validation | `getRowDraft`, `hasRowDraft`, `discardRowDraft`, `getDraftRowIndices`, `getDrafts`, `discardDraft`, `discardAllDrafts`, `isCellDirty`, `isRowDirty`, `isCellInvalid`, `getCellValidationError`, `getInvalidCells`, `canEditCell` |
+| State (read-only, same names as the element) | `items`, `displayItems`, `columns`, `sort`, `filters`, `invalidCells`, `selectedRows`, `selectedRowIndices`, `selectedCellRange`, `expandedPaths`; `setFilter(field, value)` |
+| Rows | `insertRow(row, afterRow?)`, `insertRows(rows, afterRow?)`, `removeRow(row)`, `removeRows(rows)`, `duplicateRow(row)`, `moveRow(row, -1 \| 1)`, `getRowId(row)`, `findRowById(id)`, `updateRowById(id, data)`, `replaceRowById(id, row)` |
+| Drafts / validation | `getRowDraft`, `hasRowDraft`, `getDraftRowIndices`, `getDrafts`, `discardDraft`, `discardAllDrafts`, `isCellDirty`, `isRowDirty`, `isCellInvalid`, `getCellValidationError`, `canEditCell` |
 | Row locking | `isRowLocked`, `getRowLockInfo`, `lockRowById`, `unlockRowById`, `getExternalLocks`, `clearExternalLocks` |
-| Selection | `selectRow`, `selectRowRange`, `clearSelection`, `isRowSelected`, `getSelectedRows`, `getSelectedRowsData`, `copySelectedRowsToClipboard`, `selectCellRange`, `clearCellSelection`, `getSelectedCellRange`, `getSelectedCells`, `copyCellSelectionToClipboard`, `selectColumn`, `selectColumnRange`, `clearColumnSelection`, `getSelectedColumns`, `isColumnSelected`, `selectAll` |
+| Selection | `selectRow`, `selectRowRange`, `clearSelection` (all kinds), `clearRowSelection`, `isRowSelected`, `copySelectedRowsToClipboard`, `selectCellRange`, `clearCellSelection`, `getSelectedCells`, `copyCellSelectionToClipboard`, `selectColumn`, `selectColumnRange`, `clearColumnSelection`, `getSelectedColumns`, `isColumnSelected`, `select-all` |
 
 Every selection output lists entries in **on-screen order** and identifies a column by its index in `columns` (`colIndex`) + `field`: `getSelectedCells()` → `CellContext[]`, `getSelectedColumns()` → `[{ colIndex, field, column }]`. Column selection inputs (`selectColumn(colIndex)`, `selectColumnRange`, `isColumnSelected`) take the index in `columns`.
-| Tree | `isPathExpanded`, `toggleExpandedPath`, `expandAll`, `collapseAll`, `expandSubtree`, `collapseSubtree`, `getRowTreeInfo` |
+| Tree | `isPathExpanded`, `toggleRowExpanded`, `expandRows`, `collapseRows`, `expandAll(path?)`, `collapseAll(path?)`, `getRowTreeInfo` |
 | Columns | `setColumnWidth`, `setColumnWidths`, `getColumnWidthsState`, `setColumnOrder`, `getColumnOrderState` |
-| Focus / editing | `focusCell`, `startEditing` |
+| Focus / editing | `focusCell`, `startEditing`, `scrollToRow(rowIndex)` → `Promise<boolean>` |
 | Menus | `closeContextMenu`, `closeToolbar` |
 
 ## Keyboard shortcuts
@@ -750,7 +753,7 @@ Row shortcuts run on the focused / hovered row with the cell ctx; range shortcut
 | `beforePasteCallback` | `(ctx) => boolean \| void \| Promise<…>` | Return `false` to cancel; add `"rowIndex-colIndex"` keys to `ctx.skipCells` to skip cells |
 | `createRowCallback` | `(ctx: { data, rowIndex }) => T` | Builds a row for pasted data past the last row |
 
-After a paste, the `paste-complete` event (`onPasteComplete`) reports `{ totalCells, successfulCells, failedCells, skippedCells, newRowsCreated, cellResults, hadHeaders }`. Per-cell conversion is the column's `getPasteValueCallback({ …cell, text })`; without it, number / checkbox / date columns type the text (number: strict parse; checkbox: `true/1/yes/x/✓` or the `trueValue` text → `trueValue`, `false/0/no/''` or the `falseValue` text → `falseValue`; date: `dateFormat`, then ISO, stored per `outputFormat`) — unparseable text is kept and the cell marked invalid.
+After a paste, the `cell-paste` event (`onCellPaste`) reports `{ totalCells, successfulCells, failedCells, skippedCells, newRowsCreated, cellResults, hadHeaders }`. Per-cell conversion is the column's `getPasteValueCallback({ …cell, text })`; without it, number / checkbox / date columns type the text (number: strict parse; checkbox: `true/1/yes/x/✓` or the `trueValue` text → `trueValue`, `false/0/no/''` or the `falseValue` text → `falseValue`; date: `dateFormat`, then ISO, stored per `outputFormat`) — unparseable text is kept and the cell marked invalid.
 
 
 ## Public methods
@@ -769,7 +772,6 @@ After a paste, the `paste-complete` event (`onPasteComplete`) reports `{ totalCe
 |---|---|---|
 | `getRowDraft(rowIndex)` | `T \| undefined` | Get the draft for a row |
 | `hasRowDraft(rowIndex)` | `boolean` | Check if a row has uncommitted changes |
-| `discardRowDraft(rowIndex)` | `void` | Discard all draft changes for a row |
 | `getDraftRowIndices()` | `number[]` | Display indices of the displayed rows with drafts |
 | `getDrafts()` | `{ row, draftRow, changedFields, isValid }[]` | Every draft — incl. rows on other pages, filtered out, or not in `items` |
 | `discardDraft(row)` | `void` | Discard one row's draft (the row, its id-equal copy, or the draft object) |
@@ -788,7 +790,7 @@ After a paste, the `paste-complete` event (`onPasteComplete`) reports `{ totalCe
 | Method | Returns | Description |
 |---|---|---|
 | `getRowId(row)` | `unknown \| undefined` | Get the ID using `getIdCallback` / `idMember` (default `'id'`) |
-| `findRowById(id)` | `{ row, index } \| null` | Find a row by its ID |
+| `findRowById(id)` | `{ row, rowIndex } \| null` (index into `items`) | Find a row by its ID |
 
 ### Row updates
 
@@ -814,9 +816,11 @@ After a paste, the `paste-complete` event (`onPasteComplete`) reports `{ totalCe
 |---|---|---|
 | `selectRow(rowIndex, mode?)` | `void` | Select a row. Mode: `'replace'` (default), `'toggle'`, `'range'` |
 | `selectRowRange(fromIndex, toIndex)` | `void` | Select a range |
-| `clearSelection()` | `void` | Clear row selection |
+| `clearSelection()` | `void` | Clear every selection kind (rows, cell range, columns) |
+| `clearRowSelection()` | `void` | Clear only the row selection |
 | `isRowSelected(rowIndex)` | `boolean` | Selection check |
-| `getSelectedRowsData()` | `T[]` | Data for all selected rows |
+| `selectedRows` | `T[]` | Property: the selected row objects |
+| `selectedRowIndices` | `number[]` | Property: their display indices |
 | `copySelectedRowsToClipboard()` | `Promise<boolean>` | Copy selected rows as TSV |
 
 ### Cell selection
@@ -840,7 +844,7 @@ After a paste, the `paste-complete` event (`onPasteComplete`) reports `{ totalCe
 
 ## Labels / i18n
 
-All UI labels are customizable via the `labels` property:
+All UI strings are customizable via `labels` — a partial object (also a JSON attribute) merged per key over the English defaults; a column can override its dropdown texts with `editorOptions.labels`:
 
 ```javascript
 grid.labels = {
@@ -854,7 +858,8 @@ grid.labels = {
   paginationPageInfo: 'Page {current} of {total}',
   paginationItemCount: '{count} items',
   paginationPerPage: 'per page',
-  dropdownNoOptions: 'No options',
+  empty: 'No items to display',  // empty table
+  dropdownEmpty: 'No options',
   dropdownSearching: 'Searching...',
   rowLocked: 'This row is locked',
   rowLockedBy: 'Locked by {lockedBy}',
@@ -874,8 +879,8 @@ grid.labels = {
   actions: {                       // built-in row / tree action texts
     add: 'Add row', delete: 'Delete row', duplicate: 'Duplicate row',
     moveUp: 'Move up', moveDown: 'Move down',
-    expandAll: 'Expand all', collapseAll: 'Collapse all',
-    expandTree: 'Expand entire tree', collapseTree: 'Collapse entire tree'
+    expand: 'Expand', collapse: 'Collapse',          // row + subtree
+    expandAll: 'Expand all', collapseAll: 'Collapse all'  // whole tree
   },
   contextMenu: {                   // header-menu built-in texts
     sortAsc: 'Sort Ascending',
