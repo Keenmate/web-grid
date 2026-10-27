@@ -347,14 +347,14 @@ test.describe('feature toggles', () => {
 })
 
 test.describe('row focus event', () => {
-	test('keyboard navigation updates the focused-row hook via onRowFocus', async ({ page }) => {
+	test('keyboard navigation updates the focused-row hook via onFocusChange', async ({ page }) => {
 		await gotoBasic(page)
 
 		// Initially "none".
 		await expect(page.locator('[data-testid="focused-row"]')).toHaveText('none')
 
 		// Click to land focus, then arrow-down twice to row 2 (Carol). Arrow keys
-		// fire onRowFocus reliably; a plain click can race with the grid's pending
+		// fire onFocusChange reliably; a plain click can race with the grid's pending
 		// cell-selection state.
 		await cell(page, 0, COL.name).click()
 		await page.keyboard.press('ArrowDown')

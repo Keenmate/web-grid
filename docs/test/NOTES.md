@@ -357,7 +357,7 @@ before `commitEdit` / `createRowCallback`.
 silently returns for read-only / locked cells, `grid.ts:2653`) and then
 unconditionally swaps the cell's DOM to `renderCellEditor(...)`.
 
-**Symptom:** `startEditing(0, 3)` on a read-only column: no `edit-start`, the
+**Symptom:** `startEditing(0, 3)` on a read-only column: no `cell-edit-start`, the
 engine is not editing, but an `<input>` appears in the cell (orphaned — Enter /
 blur don't commit). Same for a locked row.
 

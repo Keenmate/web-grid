@@ -257,7 +257,7 @@ grid.replaceRowById(123, {
 // Find row by ID
 const result = grid.findRowById(123)
 if (result) {
-    console.log('Found row:', result.row, 'at index:', result.index)
+    console.log('Found row:', result.row, 'at index:', result.rowIndex)
 }</pre>
             </div>
         </div>
@@ -273,7 +273,7 @@ if (result) {
                 </thead>
                 <tbody>
                     <tr><td style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0;"><code>getRowId(row)</code></td><td style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0;">Get the unique ID for a row</td></tr>
-                    <tr><td style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0;"><code>findRowById(id)</code></td><td style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0;">Find row by ID, returns { row, index } or null</td></tr>
+                    <tr><td style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0;"><code>findRowById(id)</code></td><td style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0;">Find row by ID, returns { row, rowIndex } or null</td></tr>
                     <tr><td style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0;"><code>isRowLocked(rowOrId)</code></td><td style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0;">Check if a row is locked</td></tr>
                     <tr><td style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0;"><code>getRowLockInfo(rowOrId)</code></td><td style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0;">Get full lock info for a row</td></tr>
                     <tr><td style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0;"><code>lockRowById(id, info)</code></td><td style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0;">Lock a row externally</td></tr>

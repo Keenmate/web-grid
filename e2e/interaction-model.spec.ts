@@ -81,7 +81,7 @@ test.describe('row toolbar — core action items', () => {
 		await openToolbarOn(page, row(page, 1))
 		await toolbar(page).locator('[data-action="delete"]').click()
 		await expect.poll(() => names(page)).toEqual(['Alpha', 'Gamma', 'Delta'])
-		expect(await log(page)).toEqual(['before:delete:row-toolbar', 'onAction:delete', 'event:delete'])
+		expect(await log(page)).toEqual(['before:delete:row-toolbar', 'onRowDelete:Beta:false', 'row-delete:Beta', 'onAction:delete', 'event:delete'])
 	})
 
 	test('built-in duplicate / add / move-down change items', async ({ page }) => {
@@ -209,12 +209,12 @@ test.describe('shortcuts', () => {
 		await expect(grid(page).locator('.wg__cell--editing')).toHaveCount(0)
 	})
 
-	test('Ctrl+Delete fires row-delete (a request — the row stays)', async ({ page }) => {
+	test('Ctrl+Delete runs the delete built-in: row-delete after the removal', async ({ page }) => {
 		await cell(page, 0, 1).click()
 		await clearLog(page)
 		await page.keyboard.press('Control+Delete')
-		await expect.poll(() => log(page)).toEqual(['onRowDelete:Alpha:false', 'row-delete:Alpha'])
-		expect(await names(page)).toEqual(['Alpha', 'Beta', 'Gamma', 'Delta'])
+		await expect.poll(() => log(page)).toEqual(expect.arrayContaining(['onRowDelete:Alpha:false', 'row-delete:Alpha']))
+		expect(await names(page)).toEqual(['Beta', 'Gamma', 'Delta'])
 	})
 })
 

@@ -180,12 +180,12 @@ The grid follows the shared KeenMate interaction model (web-components-core `/ac
 ```typescript
 // Grid-level events                    // twin
 'row-change'                            // onRowChange       — "row changed" notification
-'edit-start' / 'edit-cancel'            // onEditStart / onEditCancel
+'cell-edit-start' / 'cell-edit-cancel'            // onCellEditStart / onCellEditCancel
 'validation-error'                      // onValidationError
 'action'                                // onAction          — any toolbar / menu / shortcut item activated
-// … row-focus, row-delete, cell-selection-change, row-selection-change,
+// … focus-change, row-delete, cell-selection-change, row-selection-change,
 //   column-selection-change, data-request, filter-change,
-//   column-resize, column-reorder, row-expand, row-collapse, expanded-change, row-lock-change, paste-complete
+//   column-resize, column-reorder, row-expand, row-collapse, expanded-change, row-lock-change, cell-paste
 
 // EditorOptions notification
 onSelect(ctx)                           // "option was selected"

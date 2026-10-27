@@ -14,7 +14,7 @@
 //  5. Select all — left-click on the row-number header (the `#` cell).
 //  6. Row focus — clicking any data cell sets the focused row + surgically
 //     paints `wg__row--focused`. Skipped during cell-selection drag so the
-//     drag doesn't fire spurious row-focus events.
+//     drag doesn't fire spurious focus-change events.
 //  7. Clear row / column selection — clicking a data cell while a row or
 //     column selection is active drops it (full render).
 //  8. Clear all selections — clicking empty padding (outside any interactive
@@ -115,7 +115,7 @@ export function handleHeaderRowMouseDown<T>(ctx: GridHost<T>, e: Event): void {
 	}
 
 	// Set row focus when clicking on data cells (not row numbers or headers)
-	// Skip during cell range selection to avoid spurious row-focus events
+	// Skip during cell range selection to avoid spurious focus-change events
 	const clickedCell = target.closest('.wg__cell:not(.wg__row-number):not(.wg__inline-actions-cell)') as HTMLElement
 	if (clickedCell && !target.closest('.wg__header') && !isCellSelectionPending() && !isCellSelecting()) {
 		const cellRowIndex = parseInt(clickedCell.dataset.row || '-1', 10)

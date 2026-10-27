@@ -234,32 +234,32 @@ Property:
     Set to null to clear focus.
 
 Event:
-  row-focus / onRowFocus   - detail: RowFocusDetail<T> (+ controller / element)
+  focus-change / onFocusChange   - detail: FocusChangeDetail<T> (+ controller / element)
     Fires when a different row is focused.
 
-  RowFocusDetail type:
+  FocusChangeDetail type:
     {
       rowIndex: number
       row: T
-      previousRowIndex: number | null
+      oldRowIndex: number | null
     }
 
 Master/detail pattern:
-  Use onRowFocus to update a detail panel when the user clicks different rows.
+  Use onFocusChange to update a detail panel when the user clicks different rows.
 
-  grid.onRowFocus = (detail) => {
+  grid.onFocusChange = (detail) => {
     detailPanel.innerHTML = renderDetail(detail.row)
-    console.log('Moved from row', detail.previousRowIndex, 'to', detail.rowIndex)
+    console.log('Moved from row', detail.oldRowIndex, 'to', detail.rowIndex)
   }
 
 Behavior:
-  - Click on data cell -> fires row-focus on mouseup (click), NOT on mousedown
-  - Keyboard navigation (Tab, arrows) -> fires row-focus immediately on focus
-  - Click on row number -> selects row but does NOT change focus or fire row-focus
-  - Cell range selection (drag/shift+click) -> does NOT fire row-focus
+  - Click on data cell -> fires focus-change on mouseup (click), NOT on mousedown
+  - Keyboard navigation (Tab, arrows) -> fires focus-change immediately on focus
+  - Click on row number -> selects row but does NOT change focus or fire focus-change
+  - Cell range selection (drag/shift+click) -> does NOT fire focus-change
   - Click outside grid -> clears focus (focusedRowIndex becomes null)
   - Starting cell range drag -> clears focus
-  - Programmatic: grid.focusedRowIndex = 3 (focuses row 3, fires row-focus)
+  - Programmatic: grid.focusedRowIndex = 3 (focuses row 3, fires focus-change)
   - Programmatic: grid.focusedRowIndex = null (clears focus)
 
 The focused row gets CSS class: wg__row--focused
@@ -314,8 +314,8 @@ Per-column getPasteValueCallback:
     { field: 'price', getPasteValueCallback: ({ text }) => parseFloat(text) }
 
 To cancel a whole multi-cell paste (or skip cells), use the grid-level
-beforePasteCallback(ctx) -> false; after a paste the paste-complete event
-(onPasteComplete) fires. See callbacks-events.txt.
+beforePasteCallback(ctx) -> false; after a paste the cell-paste event
+(onCellPaste) fires. See callbacks-events.txt.
 
 
 RANGE SHORTCUTS

@@ -146,10 +146,10 @@ test.describe('external locks', () => {
 })
 
 test.describe('editing a locked row', () => {
-	test("default 'block': F2 does not open an editor, no edit-start; canEditCell is false", async ({ page }) => {
+	test("default 'block': F2 does not open an editor, no cell-edit-start; canEditCell is false", async ({ page }) => {
 		await pressF2On(page, 1, NAME)
 		await expect(editorIn(cell(page, 1, NAME))).toHaveCount(0)
-		expect(await domEvents(page, 'edit-start')).toEqual([])
+		expect(await domEvents(page, 'cell-edit-start')).toEqual([])
 		expect(await onGrid(page, el => [el.canEditCell(1, 'name'), el.canEditCell(0, 'name')])).toEqual([false, true])
 	})
 
@@ -165,7 +165,7 @@ test.describe('editing a locked row', () => {
 		await expect(cell(page, 0, NAME)).toHaveText('A2')
 		await expect(cell(page, 1, NAME)).toHaveText('Beta')
 		await expect(cell(page, 2, NAME)).toHaveText('G2')
-		const done = await domEvents(page, 'paste-complete')
+		const done = await domEvents(page, 'cell-paste')
 		expect(done).toHaveLength(1)
 		expect(done[0].skippedCells).toBe(1)
 		expect(done[0].cellResults.find((c: any) => c.rowIndex === 1)).toMatchObject({ wasSkipped: true, skipReason: 'locked' })

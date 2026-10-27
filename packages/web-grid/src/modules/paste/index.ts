@@ -519,7 +519,7 @@ export async function executePaste<T>(
 		hadHeaders: hasHeaders
 	}
 
-	grid.notify('paste-complete', pasteDetail)
+	grid.notify('cell-paste', pasteDetail)
 
 	return pasteDetail
 }

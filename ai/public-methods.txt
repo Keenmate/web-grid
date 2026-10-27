@@ -10,7 +10,7 @@ All methods are called on the <web-grid> DOM element:
 The same operations (plus a few more - see CONTROLLER below) are on
 grid.controller, the public GridController facade that every callback ctx
 and event detail also carries as `controller`:
-  grid.onRowFocus = ({ rowIndex, controller }) => controller.focusCell(rowIndex, 0)
+  grid.onFocusChange = ({ rowIndex, controller }) => controller.focusCell(rowIndex, 0)
 
 
 ----------------------------------------------------------------------
@@ -101,7 +101,7 @@ getRowId(row: T): unknown | undefined
   Get the unique ID of a row: getIdCallback({ row }) when set, else
   row[idMember].
 
-findRowById(id: unknown): { row: T, index: number } | null
+findRowById(id: unknown): { row: T, rowIndex: number } | null
   Find a row by its unique ID. Returns the row object and its current
   index, or null if not found.
 

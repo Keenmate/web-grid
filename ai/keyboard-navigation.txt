@@ -90,13 +90,13 @@ ROW OPERATION KEYS
 ------------------
 These built-in keys operate on the currently focused row.
 
-  Ctrl+Delete     Fire the row-delete event (twin: onRowDelete). A REQUEST:
-                  it does NOT delete the row. The consumer handles deletion.
+  Ctrl+Delete     Run the `delete` built-in on the focused row: the row is
+                  removed, then row-delete (twin: onRowDelete) reports it,
+                  then the action event. Veto with beforeActionCallback:
 
-                  grid.onRowDelete = ({ row }) => {
-                    grid.items = grid.items.filter((r) => r !== row)
-                  }
-                  // or grid.addEventListener('row-delete', (e) => ...)
+                  grid.beforeActionCallback = ({ action, row }) =>
+                    action !== 'delete' || confirm('Delete ' + row.name + '?')
+                  grid.onRowDelete = ({ rows }) => save(rows)
 
 Row move operations are available as the built-in actions 'move-up' /
 'move-down' (toolbar, context menu), not as built-in keys. To bind them to

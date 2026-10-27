@@ -10,9 +10,9 @@
  * the raw detail objects stay in `window.__events` for identity checks.
  */
 const ALL_EVENTS = [
-	'row-change', 'edit-start', 'edit-cancel', 'validation-error', 'row-focus', 'row-delete',
+	'row-change', 'cell-edit-start', 'cell-edit-cancel', 'validation-error', 'focus-change', 'row-delete',
 	'cell-selection-change', 'row-selection-change', 'column-selection-change', 'data-request', 'filter-change', 'column-resize', 'column-reorder',
-	'row-expand', 'row-collapse', 'expanded-change', 'row-lock-change', 'paste-complete', 'action'
+	'row-expand', 'row-collapse', 'expanded-change', 'row-lock-change', 'cell-paste', 'action'
 ]
 
 const camel = (name) => 'on' + name.replace(/(^|-)([a-z])/g, (_, __, c) => c.toUpperCase())

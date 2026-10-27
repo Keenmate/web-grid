@@ -95,7 +95,7 @@ describe('single-ctx column callbacks', () => {
 })
 
 describe('notifications', () => {
-	it('commitEdit notifies edit-start / row-change; validateCallback gets source', async () => {
+	it('commitEdit notifies cell-edit-start / row-change; validateCallback gets source', async () => {
 		const { grid, events } = makeGrid()
 		let source: unknown
 		grid.isEditable = true
@@ -103,7 +103,7 @@ describe('notifications', () => {
 		grid.startEdit(0, 'qty')
 		await grid.commitEdit(0, 'qty', 5)
 		expect(source).toBe('edit')
-		expect(events.map(e => e.name)).toEqual(['edit-start', 'row-change'])
+		expect(events.map(e => e.name)).toEqual(['cell-edit-start', 'row-change'])
 		expect(events[1].detail).toMatchObject({ field: 'qty', oldValue: 1, newValue: 5, isValid: true })
 
 		await grid.commitEdit(1, 'qty', 99, false, 'paste')

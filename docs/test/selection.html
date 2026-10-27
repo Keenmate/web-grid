@@ -89,7 +89,7 @@
 				: '0'
 		}
 
-		grid.onRowFocus = ({ rowIndex, row }) => {
+		grid.onFocusChange = ({ rowIndex, row }) => {
 			focusedRowEl.textContent = `${rowIndex} — ${row.name}`
 		}
 	</script>

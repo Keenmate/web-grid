@@ -218,9 +218,15 @@ async function runRowBuiltIn<T>(host: GridHost<T>, d: GridActionEventDetail<T>):
 			engine.insertRow(created, row ?? null)
 			return
 		}
-		case 'delete':
-			engine.removeRows(d.rows?.length ? d.rows : row !== undefined ? [row] : [])
+		case 'delete': {
+			const rows = d.rows?.length ? d.rows : row !== undefined ? [row] : []
+			if (rows.length === 0) return
+			const display = engine.displayItems
+			const rowIndices = rows.map(r => display.indexOf(r))
+			engine.removeRows(rows)
+			engine.notify('row-delete', { rows, rowIndices })
 			return
+		}
 		case 'duplicate':
 			if (row !== undefined) engine.duplicateRow(row)
 			return

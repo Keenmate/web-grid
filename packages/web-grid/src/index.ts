@@ -31,7 +31,7 @@ export type {
 	// Column & rendering
 	Column,
 	RowChangeDetail,
-	RowFocusDetail,
+	FocusChangeDetail,
 
 	// Toolbar types
 	ToolbarPosition,

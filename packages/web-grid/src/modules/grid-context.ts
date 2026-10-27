@@ -126,7 +126,7 @@ export interface GridHost<T = unknown> {
 
 	// True between table-level mousedown and document-level mouseup. Focus
 	// handlers consult this to distinguish keyboard-triggered focus (fire
-	// row-focus immediately) from mouse-triggered focus (defer row-focus to
+	// focus-change immediately) from mouse-triggered focus (defer focus-change to
 	// the click handler so it fires on mouseup, not mousedown).
 	isMouseDown: boolean
 

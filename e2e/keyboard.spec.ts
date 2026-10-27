@@ -105,7 +105,7 @@ test.describe('editing keys', () => {
 		await page.keyboard.press('a')
 		await page.waitForTimeout(150)
 		await expect(editorIn(cell(page, 0, 2))).toHaveCount(0)
-		expect(await domEvents(page, 'edit-start')).toEqual([])
+		expect(await domEvents(page, 'cell-edit-start')).toEqual([])
 	})
 })
 

@@ -60,7 +60,7 @@ function executeFocusCell(ctx: ExecutorContext, action: FocusCellAction): GridAc
 	// this, but the pipeline marks cell selection as "pending" on every cell
 	// mousedown, which suppressed that update — so row focus only ever
 	// landed after a second click on an already-focused cell. Doing it here
-	// keeps row-focus tied to the focusCell action and fires regardless of
+	// keeps focus-change tied to the focusCell action and fires regardless of
 	// keyboard/mouse input. shift+click extends a selection without
 	// dispatching focusCell, so row focus correctly stays put there.
 	const prevRowIndex = ctx.engine.focusedRowIndex

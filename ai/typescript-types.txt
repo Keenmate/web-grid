@@ -44,7 +44,7 @@ el.controller, and `controller` on every ctx / detail.
     duplicateRow(row: T): T
     moveRow(row: T, delta: -1 | 1): void
     getRowId(row: T): unknown | undefined
-    findRowById(id: unknown): { row: T; index: number } | null
+    findRowById(id: unknown): { row: T; rowIndex: number } | null
     updateRowById(id: unknown, newData: Partial<T>): boolean
     replaceRowById(id: unknown, newRow: T): boolean
     // drafts / validation
@@ -134,7 +134,7 @@ All extend GridContext<T> (controller + element, non-enumerable).
                                                   getValidationTooltipCallback
   RowLockContext<T>    RowContext + { lockInfo }  rowLocking.getCanEditLockedCallback
   OptionContext<T>     { option }                 editorOptions.get*Callback
-  OptionRenderContext<T>  { option, index, isHighlighted, isSelected, isDisabled }
+  OptionRenderContext<T>  { option, optionIndex, isFocused, isSelected, isDisabled }
                                                   editorOptions.renderOptionCallback
   OptionSearchContext<T>  CellContext + { term, signal }
                                                   editorOptions.searchCallback
@@ -398,10 +398,10 @@ twins called with the detail. Every detail extends GridContext<T>.
 
   type GridEventMap<T> = {
     'row-change':            RowChangeEventDetail<T>            onRowChange
-    'edit-start':            EditEventDetail<T>                 onEditStart
-    'edit-cancel':           EditEventDetail<T>                 onEditCancel
+    'cell-edit-start':            EditEventDetail<T>                 onCellEditStart
+    'cell-edit-cancel':           EditEventDetail<T>                 onCellEditCancel
     'validation-error':      ValidationErrorEventDetail<T>      onValidationError
-    'row-focus':             RowFocusEventDetail<T>             onRowFocus
+    'focus-change':             FocusChangeEventDetail<T>             onFocusChange
     'row-delete':            RowDeleteEventDetail<T>            onRowDelete
     'cell-selection-change': CellSelectionChangeEventDetail<T>  onCellSelectionChange
     'row-selection-change':  RowSelectionChangeEventDetail<T>   onRowSelectionChange
@@ -412,7 +412,7 @@ twins called with the detail. Every detail extends GridContext<T>.
     'column-reorder':        ColumnReorderEventDetail<T>        onColumnReorder
     'expanded-change':         ExpandedChangeEventDetail<T>         onExpandedChange
     'row-lock-change':       RowLockChangeEventDetail<T>        onRowLockChange
-    'paste-complete':        PasteCompleteEventDetail<T>        onPasteComplete
+    'cell-paste':        CellPasteEventDetail<T>        onCellPaste
     'action':                GridActionEventDetail<T>           onAction
   }
   type GridEventName = keyof GridEventMap
@@ -422,14 +422,14 @@ twins called with the detail. Every detail extends GridContext<T>.
   RowDeleteEventDetail<T>       { row, rowIndex }      (a request; the grid does not delete)
   FilterChangeEventDetail<T>    { filters: Record<string, string> }
   RowChangeEventDetail<T>       = RowChangeDetail<T> & GridContext<T>
-  RowFocusEventDetail<T>        = RowFocusDetail<T> & GridContext<T>
+  FocusChangeEventDetail<T>        = FocusChangeDetail<T> & GridContext<T>
   CellSelectionChangeEventDetail<T> = CellSelectionChangeDetail & GridContext<T>
   DataRequestEventDetail<T>     = DataRequestDetail & GridContext<T>
   ColumnResizeEventDetail<T>    = ColumnResizeDetail & GridContext<T>
   ColumnReorderEventDetail<T>   = ColumnReorderDetail & GridContext<T>
   ExpandedChangeEventDetail<T>    = TreeExpandedChangeDetail & GridContext<T>
   RowLockChangeEventDetail<T>   = RowLockChangeDetail<T> & GridContext<T>
-  PasteCompleteEventDetail<T>   = PasteDetail<T> & GridContext<T>
+  CellPasteEventDetail<T>   = PasteDetail<T> & GridContext<T>
 
   // the `action` event (also each item's onClick and beforeActionCallback)
   type GridActionEventDetail<T> = surface fields & {
@@ -613,7 +613,7 @@ CELLRANGE
 ADDITIONAL EXPORTED TYPES
 ----------------------------------------------------------------------
 
-  type RowFocusDetail<T> = { rowIndex: number, row: T, previousRowIndex: number | null }
+  type FocusChangeDetail<T> = { rowIndex: number, row: T, oldRowIndex: number | null }
   type CellSelectionChangeDetail<T> = { range: CellRange | null, cellCount: number, fields: string[], rows: T[] }
     // range.startColIndex / endColIndex = on-screen (visual) positions, not columns indices
   type RowSelectionChangeDetail<T> = { rows: T[], rowIndices: number[] }

@@ -57,10 +57,10 @@
                 <pre>editorOptions: {
     renderOptionCallback: ({ option: opt, ...ctx }) => {
         const classes = ['wg__dropdown-option']
-        if (ctx.isHighlighted) classes.push('wg__dropdown-option--highlighted')
+        if (ctx.isFocused) classes.push('wg__dropdown-option--highlighted')
         if (ctx.isSelected) classes.push('wg__dropdown-option--selected')
         if (ctx.isDisabled) classes.push('wg__dropdown-option--disabled')
-        return `&lt;div class="${classes.join(' ')}" data-index="${ctx.index}"&gt;
+        return `&lt;div class="${classes.join(' ')}" data-index="${ctx.optionIndex}"&gt;
             &lt;span style="background: ${opt.color}; ..."&gt;&lt;/span&gt;
             ${opt.label}
         &lt;/div&gt;`
@@ -73,8 +73,8 @@
                 <p>The ctx object provides:</p>
                 <ul>
                     <li><code>option</code> - The option being rendered</li>
-                    <li><code>index</code> - Option index in the list</li>
-                    <li><code>isHighlighted</code> - Currently highlighted by keyboard</li>
+                    <li><code>optionIndex</code> - Option index in the list</li>
+                    <li><code>isFocused</code> - The keyboard / mouse cursor is on it</li>
                     <li><code>isSelected</code> - Currently selected value</li>
                     <li><code>isDisabled</code> - Option is disabled</li>
                 </ul>
@@ -176,10 +176,10 @@ grid.getCustomStylesCallback = () =&gt; `
                     // Custom render with colored dot
                     renderOptionCallback: ({ option: opt, ...ctx }) => {
                         const classes = ['wg__dropdown-option']
-                        if (ctx.isHighlighted) classes.push('wg__dropdown-option--highlighted')
+                        if (ctx.isFocused) classes.push('wg__dropdown-option--highlighted')
                         if (ctx.isSelected) classes.push('wg__dropdown-option--selected')
                         if (ctx.isDisabled) classes.push('wg__dropdown-option--disabled')
-                        return `<div class="${classes.join(' ')}" data-index="${ctx.index}" ${ctx.isDisabled ? 'data-disabled="true"' : ''}>
+                        return `<div class="${classes.join(' ')}" data-index="${ctx.optionIndex}" ${ctx.isDisabled ? 'data-disabled="true"' : ''}>
                             <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: ${opt.color}; margin-right: 8px;"></span>
                             ${opt.label}
                         </div>`

@@ -198,7 +198,7 @@ test.describe('paste modes', () => {
 // =============================================================================
 
 test.describe('events', () => {
-	test('paste-complete fires with an accurate summary', async ({ page }) => {
+	test('cell-paste fires with an accurate summary', async ({ page }) => {
 		await gotoPaste(page)
 		await focusCell(page, 0, COL.name)
 
@@ -216,7 +216,7 @@ test.describe('events', () => {
 		await pasteText(page, 'Wont\tStick\nNo\tWay')
 
 		// beforePasteCallback still fires (beforepaste-info gets populated). When cancel
-		// is set, executePaste returns early and never fires paste-complete — so the
+		// is set, executePaste returns early and never fires cell-paste — so the
 		// summary stays at its initial "none" value.
 		await expect(beforePasteInfo(page)).toContainText('rows=2')
 		await expect(summary(page)).toHaveText('none')
@@ -228,7 +228,7 @@ test.describe('events', () => {
 })
 
 // =============================================================================
-// Web-component proxies (regression — paste-complete / beforePasteCallback / pasteMode /
+// Web-component proxies (regression — cell-paste / beforePasteCallback / pasteMode /
 // shouldValidateOnPaste must route through the GridElement, not just the core)
 // =============================================================================
 
@@ -259,12 +259,12 @@ test.describe('web-component paste proxies', () => {
 		expect(result.coreRead).toBe(false)
 	})
 
-	test('el.onPasteComplete (the paste-complete twin) receives the PasteDetail', async ({ page }) => {
+	test('el.onCellPaste (the cell-paste twin) receives the PasteDetail', async ({ page }) => {
 		await gotoPaste(page)
 
 		await gridLocator(page).evaluate((el: any) => {
 			(window as any).__pasteDetails = []
-			el.onPasteComplete = (detail: any) => {
+			el.onCellPaste = (detail: any) => {
 				(window as any).__pasteDetails.push({
 					totalCells: detail.totalCells,
 					successfulCells: detail.successfulCells,

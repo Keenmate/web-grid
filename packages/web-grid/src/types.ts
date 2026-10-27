@@ -242,11 +242,11 @@ export type RowChangeDetail<T> = {
 	validationError?: string | null
 }
 
-// Detail of the row-focus event
-export type RowFocusDetail<T> = {
+// Detail of the focus-change event
+export type FocusChangeDetail<T> = {
 	rowIndex: number
 	row: T
-	previousRowIndex: number | null
+	oldRowIndex: number | null
 }
 
 /**
@@ -475,10 +475,10 @@ export type QuickGridProps<T> = {
 
 	// Event twins (each receives the event detail — see GridEventMap)
 	onRowChange?: (detail: GridEventMap<T>['row-change']) => void
-	onEditStart?: (detail: GridEventMap<T>['edit-start']) => void
-	onEditCancel?: (detail: GridEventMap<T>['edit-cancel']) => void
+	onCellEditStart?: (detail: GridEventMap<T>['cell-edit-start']) => void
+	onCellEditCancel?: (detail: GridEventMap<T>['cell-edit-cancel']) => void
 	onValidationError?: (detail: GridEventMap<T>['validation-error']) => void
-	onRowFocus?: (detail: GridEventMap<T>['row-focus']) => void
+	onFocusChange?: (detail: GridEventMap<T>['focus-change']) => void
 	onRowDelete?: (detail: GridEventMap<T>['row-delete']) => void
 	onCellSelectionChange?: (detail: GridEventMap<T>['cell-selection-change']) => void
 	onRowSelectionChange?: (detail: GridEventMap<T>['row-selection-change']) => void
@@ -491,7 +491,7 @@ export type QuickGridProps<T> = {
 	onRowCollapse?: (detail: GridEventMap<T>['row-collapse']) => void
 	onExpandedChange?: (detail: GridEventMap<T>['expanded-change']) => void
 	onRowLockChange?: (detail: GridEventMap<T>['row-lock-change']) => void
-	onPasteComplete?: (detail: GridEventMap<T>['paste-complete']) => void
+	onCellPaste?: (detail: GridEventMap<T>['cell-paste']) => void
 	onAction?: (detail: GridEventMap<T>['action']) => void
 	// Tree / hierarchy (ltree-style path strings: "1.2.3", "/dept/eng/team", "C:\\a\\b")
 	pathMember?: keyof T | string                  // Required to enable tree mode: field holding the path

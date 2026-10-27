@@ -25,7 +25,7 @@ import type {
 	PasteColumnMapping,
 	PasteDetail,
 	RowChangeDetail,
-	RowFocusDetail,
+	FocusChangeDetail,
 	RowLock,
 	RowLockChangeDetail,
 	SortState,
@@ -64,7 +64,8 @@ export interface GridController<T = any> {
 	/** Move `row` one displayed position up (`-1`) or down (`1`). */
 	moveRow(row: T, delta: -1 | 1): void
 	getRowId(row: T): unknown | undefined
-	findRowById(id: unknown): { row: T; index: number } | null
+	/** `rowIndex` = index into `items` (not the display index). */
+	findRowById(id: unknown): { row: T; rowIndex: number } | null
 	updateRowById(id: unknown, newData: Partial<T>): boolean
 	replaceRowById(id: unknown, newRow: T): boolean
 	// drafts / validation
@@ -236,8 +237,10 @@ export interface OptionContext<T = any> extends GridContext<T> {
 
 /** ctx of `editorOptions.renderOptionCallback`. */
 export interface OptionRenderContext<T = any> extends OptionContext<T> {
-	index: number
-	isHighlighted: boolean
+	/** Position in the option list. */
+	optionIndex: number
+	/** The keyboard / mouse cursor is on this option. */
+	isFocused: boolean
 	isSelected: boolean
 	isDisabled: boolean
 }
@@ -484,12 +487,14 @@ export interface ValidationErrorEventDetail<T = any> extends EditEventDetail<T> 
 	source: 'edit' | 'paste'
 }
 
-export type RowFocusEventDetail<T = any> = RowFocusDetail<T> & GridContext<T>
+export type FocusChangeEventDetail<T = any> = FocusChangeDetail<T> & GridContext<T>
 
-/** `row-delete`: Ctrl+Delete on a row — a request; the grid does not delete. */
+/** `row-delete`: the `delete` built-in removed rows (menu / toolbar / Ctrl+Delete) — after the fact. */
 export interface RowDeleteEventDetail<T = any> extends GridContext<T> {
-	row: T
-	rowIndex: number
+	/** The removed rows. */
+	rows: T[]
+	/** Their display indices before the removal. */
+	rowIndices: number[]
 }
 
 /** `range` columns are on-screen positions; `fields` / `rows` name what the range covers. */
@@ -508,15 +513,15 @@ export type ColumnReorderEventDetail<T = any> = ColumnReorderDetail & GridContex
 export type ExpandedChangeEventDetail<T = any> = TreeExpandedChangeDetail & GridContext<T>
 export type RowExpandEventDetail<T = any> = TreeRowExpandDetail<T> & GridContext<T>
 export type RowLockChangeEventDetail<T = any> = RowLockChangeDetail<T> & GridContext<T>
-export type PasteCompleteEventDetail<T = any> = PasteDetail<T> & GridContext<T>
+export type CellPasteEventDetail<T = any> = PasteDetail<T> & GridContext<T>
 
 /** Event name → detail. */
 export type GridEventMap<T = any> = {
 	'row-change': RowChangeEventDetail<T>
-	'edit-start': EditEventDetail<T>
-	'edit-cancel': EditEventDetail<T>
+	'cell-edit-start': EditEventDetail<T>
+	'cell-edit-cancel': EditEventDetail<T>
 	'validation-error': ValidationErrorEventDetail<T>
-	'row-focus': RowFocusEventDetail<T>
+	'focus-change': FocusChangeEventDetail<T>
 	'row-delete': RowDeleteEventDetail<T>
 	'cell-selection-change': CellSelectionChangeEventDetail<T>
 	'row-selection-change': RowSelectionChangeEventDetail<T>
@@ -529,7 +534,7 @@ export type GridEventMap<T = any> = {
 	'row-collapse': RowExpandEventDetail<T>
 	'expanded-change': ExpandedChangeEventDetail<T>
 	'row-lock-change': RowLockChangeEventDetail<T>
-	'paste-complete': PasteCompleteEventDetail<T>
+	'cell-paste': CellPasteEventDetail<T>
 	'action': GridActionEventDetail<T>
 }
 

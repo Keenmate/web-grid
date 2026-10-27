@@ -100,12 +100,12 @@
 		const summaryEl = document.querySelector('[data-testid="paste-summary"]')
 		const beforeEl = document.querySelector('[data-testid="beforepaste-info"]')
 
-		// beforePasteCallback: `false` cancels the paste; paste-complete reports the result.
+		// beforePasteCallback: `false` cancels the paste; cell-paste reports the result.
 		grid.beforePasteCallback = (ctx) => {
 			beforeEl.textContent = `rows=${ctx.parsedRows.length} headers=${ctx.hasHeaders} newRows=${ctx.newRowsCount}`
 			if (document.getElementById('cancel-next').checked) return false
 		}
-		grid.onPasteComplete = (detail) => {
+		grid.onCellPaste = (detail) => {
 			summaryEl.textContent =
 				`total=${detail.totalCells} ok=${detail.successfulCells} fail=${detail.failedCells} ` +
 				`skip=${detail.skippedCells} newRows=${detail.newRowsCreated} headers=${detail.hadHeaders}`

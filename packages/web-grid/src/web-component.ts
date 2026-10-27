@@ -290,11 +290,11 @@ const FILL_DIRECTIONS = ['vertical', 'all'] as const
  */
 const EVENTS: readonly EventDef[] = [
 	{ name: 'row-change', description: 'A cell value was committed (editor, checkbox, paste, new row). `detail`: `{ row, draftRow, rowIndex, field, oldValue, newValue, isValid, validationError }`. Twin: `onRowChange(detail)`.' },
-	{ name: 'edit-start', description: 'A cell editor opened. `detail`: `{ row, rowIndex, field }`. Twin: `onEditStart(detail)`.' },
-	{ name: 'edit-cancel', description: 'A cell edit was cancelled. `detail`: `{ row, rowIndex, field }`. Twin: `onEditCancel(detail)`.' },
+	{ name: 'cell-edit-start', description: 'A cell editor opened. `detail`: `{ row, rowIndex, field }`. Twin: `onCellEditStart(detail)`.' },
+	{ name: 'cell-edit-cancel', description: 'A cell edit was cancelled. `detail`: `{ row, rowIndex, field }`. Twin: `onCellEditCancel(detail)`.' },
 	{ name: 'validation-error', description: '`validateCallback` rejected a value. `detail`: `{ row, rowIndex, field, error, source: "edit" | "paste" }`. Twin: `onValidationError(detail)`.' },
-	{ name: 'row-focus', description: 'A different row got focus. `detail`: `{ row, rowIndex, previousRowIndex }`. Twin: `onRowFocus(detail)`.' },
-	{ name: 'row-delete', description: 'Ctrl+Delete on a row — a request; the grid does not delete. `detail`: `{ row, rowIndex }`. Twin: `onRowDelete(detail)`.' },
+	{ name: 'focus-change', description: 'The focused row changed. `detail`: `{ row, rowIndex, oldRowIndex }`. Twin: `onFocusChange(detail)`.' },
+	{ name: 'row-delete', description: 'The `delete` built-in removed rows (cell menu / row toolbar / Ctrl+Delete) — after the fact; veto it with `beforeActionCallback`. Programmatic `removeRows` / `removeRow` do not fire it. `detail`: `{ rows, rowIndices }` (indices before the removal). Twin: `onRowDelete(detail)`.' },
 	{ name: 'cell-selection-change', description: 'The selected cell range changed (once per gesture / API call, only on a real change). `detail`: `{ range, cellCount, fields, rows }` — `range.startColIndex` / `endColIndex` are on-screen (visual) positions, not `columns` indices; `fields` = the range’s columns in on-screen order; `rows` = the row objects in the range. Cleared: `{ range: null, cellCount: 0, fields: [], rows: [] }`. Twin: `onCellSelectionChange(detail)`.' },
 	{ name: 'row-selection-change', description: 'The row selection changed (row-number click / Ctrl / Shift / drag, `selectRow` / `selectRowRange` / `clearSelection`, or cleared by another selection) — once per gesture / API call, only on a real change. `detail`: `{ rows, rowIndices }` (display order). Twin: `onRowSelectionChange(detail)`.' },
 	{ name: 'column-selection-change', description: 'The column selection changed (header click / Ctrl / Shift / drag, `selectColumn` / `selectColumnRange` / `clearColumnSelection`, or cleared by another selection) — once per gesture / API call, only on a real change. `detail`: `{ fields }` (on-screen order). Twin: `onColumnSelectionChange(detail)`.' },
@@ -306,7 +306,7 @@ const EVENTS: readonly EventDef[] = [
 	{ name: 'row-collapse', description: 'A tree row was collapsed (chevron, keyboard, `toggleRowExpanded`, `collapseRows`; NOT `collapseAll`). `detail`: `{ row, path }`. Twin: `onRowCollapse(detail)`.' },
 	{ name: 'expanded-change', description: 'The expanded set changed (any expand / collapse, incl. `expandAll` / `collapseAll`) — one event per change, after the row events. `detail`: `{ paths }` = every expanded path (same as `expandedPaths`). Twin: `onExpandedChange(detail)`.' },
 	{ name: 'row-lock-change', description: 'A row was locked / unlocked by id. `detail`: `{ rowId, row, rowIndex, lockInfo, source }`. Twin: `onRowLockChange(detail)`.' },
-	{ name: 'paste-complete', description: 'A multi-cell paste finished. `detail`: `{ totalCells, successfulCells, failedCells, skippedCells, newRowsCreated, cellResults, hadHeaders }`. Twin: `onPasteComplete(detail)`.' },
+	{ name: 'cell-paste', description: 'A multi-cell paste finished. `detail`: `{ totalCells, successfulCells, failedCells, skippedCells, newRowsCreated, cellResults, hadHeaders }`. Twin: `onCellPaste(detail)`.' },
 	{ name: 'action', description: 'A toolbar / menu / shortcut item was activated. `detail`: `action` (built-in name or `custom`), `id`, `item`, `source` (`row-toolbar` | `cell-toolbar` | `context-menu` | `header-menu` | `keyboard`), `sourceEvent`, `triggerElement`, `dataset`, plus the surface fields (`row` / `rowIndex` / `column` / `field` / `value`, header-menu fields, or range `rows` / `rowIndices`). Fires after the item’s `onClick` and the built-in — a notification after the fact (after `delete` the row is already gone from `items`, after `add` the new row is present, after `move-*` the new order is in place); a throwing built-in is logged and the event still fires. Cancel with `beforeActionCallback`. Twin: `onAction(detail)`.' },
 ]
 
@@ -459,10 +459,10 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	// Type-only: core installs the `on<Name>` twins at runtime (§12.5); each is
 	// called with the event detail (not the CustomEvent), right before the event.
 	declare onRowChange: ((detail: GridEventMap<T>['row-change']) => void) | null
-	declare onEditStart: ((detail: GridEventMap<T>['edit-start']) => void) | null
-	declare onEditCancel: ((detail: GridEventMap<T>['edit-cancel']) => void) | null
+	declare onCellEditStart: ((detail: GridEventMap<T>['cell-edit-start']) => void) | null
+	declare onCellEditCancel: ((detail: GridEventMap<T>['cell-edit-cancel']) => void) | null
 	declare onValidationError: ((detail: GridEventMap<T>['validation-error']) => void) | null
-	declare onRowFocus: ((detail: GridEventMap<T>['row-focus']) => void) | null
+	declare onFocusChange: ((detail: GridEventMap<T>['focus-change']) => void) | null
 	declare onRowDelete: ((detail: GridEventMap<T>['row-delete']) => void) | null
 	declare onCellSelectionChange: ((detail: GridEventMap<T>['cell-selection-change']) => void) | null
 	declare onRowSelectionChange: ((detail: GridEventMap<T>['row-selection-change']) => void) | null
@@ -475,7 +475,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	declare onRowCollapse: ((detail: GridEventMap<T>['row-collapse']) => void) | null
 	declare onExpandedChange: ((detail: GridEventMap<T>['expanded-change']) => void) | null
 	declare onRowLockChange: ((detail: GridEventMap<T>['row-lock-change']) => void) | null
-	declare onPasteComplete: ((detail: GridEventMap<T>['paste-complete']) => void) | null
+	declare onCellPaste: ((detail: GridEventMap<T>['cell-paste']) => void) | null
 	declare onAction: ((detail: GridEventMap<T>['action']) => void) | null
 
 	/**
@@ -1196,7 +1196,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 
 	// Row identification methods
 	getRowId(row: T): unknown | undefined { this.flush(); return this.engine.getRowId(row) }
-	findRowById(id: unknown): { row: T; index: number } | null { this.flush(); return this.engine.findRowById(id) }
+	/** `rowIndex` = index into `items` (not the display index). */
+	findRowById(id: unknown): { row: T; rowIndex: number } | null { this.flush(); return this.engine.findRowById(id) }
 
 	// Row locking methods
 	isRowLocked(rowOrId: T | unknown): boolean { this.flush(); return this.engine.isRowLocked(rowOrId) }
@@ -1383,7 +1384,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		table.addEventListener('mousedown', () => { this.isMouseDown = true }, true)
 		document.addEventListener('mouseup', () => { this.isMouseDown = false }, true)
 
-		// Focus — capture-phase, drives handleCellFocus + always-edit-mode swap + row-focus (keyboard only)
+		// Focus — capture-phase, drives handleCellFocus + always-edit-mode swap + focus-change (keyboard only)
 		// Extracted to modules/events/table-focus.ts
 		table.addEventListener('focus', (e: Event) => handleTableFocus(this, e), true)
 

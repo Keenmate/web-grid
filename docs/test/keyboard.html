@@ -48,7 +48,7 @@
 			},
 			{ id: 'off', text: 'Off', shortcut: 'Ctrl+Shift+X', getIsDisabledCallback: () => true, onClick: () => window.__shortcuts.push({ id: 'off' }) }
 		]
-		installEventLog(grid, 'keyboard', ['row-change', 'edit-start', 'action', 'cell-selection-change'])
+		installEventLog(grid, 'keyboard', ['row-change', 'cell-edit-start', 'action', 'cell-selection-change'])
 	</script>
 </body>
 </html>

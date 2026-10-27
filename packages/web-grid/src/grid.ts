@@ -3110,7 +3110,7 @@ export class GridEngine<T = unknown> {
 		this._currentCellError = null
 		// NOTE: No requestUpdate() - caller (tryStartEdit) handles surgical DOM update
 
-		this.notify('edit-start', { row: item, rowIndex, field })
+		this.notify('cell-edit-start', { row: item, rowIndex, field })
 	}
 
 	/**
@@ -3122,7 +3122,7 @@ export class GridEngine<T = unknown> {
 			const { rowIndex, field } = prev
 			const item = this.displayItems[rowIndex]
 			if (item) {
-				this.notify('edit-cancel', { row: item, rowIndex, field })
+				this.notify('cell-edit-cancel', { row: item, rowIndex, field })
 			}
 			this._editingCell = null
 			this._onInteractionChange?.('editingCell', { prev, current: null })
@@ -3614,12 +3614,12 @@ export class GridEngine<T = unknown> {
 	setFocusedRow(rowIndex: number): void {
 		if (this._focusedRowIndex === rowIndex) return
 		interactionLogger.debug('setFocusedRow:', rowIndex, '(prev:', this._focusedRowIndex, ')')
-		const previousRowIndex = this._focusedRowIndex
+		const oldRowIndex = this._focusedRowIndex
 		this._focusedRowIndex = rowIndex
-		this._onInteractionChange?.('focusedRow', { prev: previousRowIndex, current: rowIndex })
+		this._onInteractionChange?.('focusedRow', { prev: oldRowIndex, current: rowIndex })
 
 		const row = this.displayItems[rowIndex]
-		if (row) this.notify('row-focus', { rowIndex, row, previousRowIndex })
+		if (row) this.notify('focus-change', { rowIndex, row, oldRowIndex })
 	}
 
 	// ==========================================================================
@@ -3641,12 +3641,12 @@ export class GridEngine<T = unknown> {
 	}
 
 	/**
-	 * Find a row by its ID
+	 * Find a row by its ID. `rowIndex` is the index into `items` (not the display index).
 	 */
-	findRowById(id: unknown): { row: T; index: number } | null {
-		const index = this._items.findIndex(row => this.getRowId(row) === id)
-		if (index === -1) return null
-		return { row: this._items[index], index }
+	findRowById(id: unknown): { row: T; rowIndex: number } | null {
+		const rowIndex = this._items.findIndex(row => this.getRowId(row) === id)
+		if (rowIndex === -1) return null
+		return { row: this._items[rowIndex], rowIndex }
 	}
 
 	// ==========================================================================
@@ -3675,7 +3675,7 @@ export class GridEngine<T = unknown> {
 			const found = this.findRowById(id)
 			if (found) {
 				row = found.row
-				rowIndex = found.index
+				rowIndex = found.rowIndex
 			}
 		}
 
@@ -3737,7 +3737,7 @@ export class GridEngine<T = unknown> {
 
 		// Cancel editing if the locked row is currently being edited
 		const found = this.findRowById(id)
-		if (found && this._editingCell && this._editingCell.rowIndex === found.index) {
+		if (found && this._editingCell && this._editingCell.rowIndex === found.rowIndex) {
 			this.cancelEdit()
 		}
 
@@ -3746,7 +3746,7 @@ export class GridEngine<T = unknown> {
 		this.notify('row-lock-change', {
 			rowId: id,
 			row: found?.row ?? null,
-			rowIndex: found?.index ?? -1,
+			rowIndex: found?.rowIndex ?? -1,
 			lockInfo,
 			source: 'external'
 		})
@@ -3767,7 +3767,7 @@ export class GridEngine<T = unknown> {
 			this.notify('row-lock-change', {
 				rowId: id,
 				row: found?.row ?? null,
-				rowIndex: found?.index ?? -1,
+				rowIndex: found?.rowIndex ?? -1,
 				lockInfo: null,
 				source: 'external'
 			})
@@ -3802,7 +3802,7 @@ export class GridEngine<T = unknown> {
 		if (!found) return false
 
 		// Update original data
-		Object.assign(this._items[found.index], newData)
+		Object.assign(this._items[found.rowIndex], newData)
 
 		// Update draft if exists
 		const draft = this._draftRows.get(this.draftKey(found.row))
@@ -3821,7 +3821,7 @@ export class GridEngine<T = unknown> {
 		const found = this.findRowById(id)
 		if (!found) return false
 
-		this._items[found.index] = newRow
+		this._items[found.rowIndex] = newRow
 
 		// Clear draft for this row (data was replaced externally)
 		this.deleteDraftByKey(this.draftKey(found.row))

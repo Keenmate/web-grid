@@ -1,7 +1,7 @@
 import { test, expect, type Page, gridLocator, cell, header, onGrid, eventsOf, domEvents, clearEvents, waitForRows, editorIn, dragSelect } from './fixtures'
 
 /**
- * Events — `edit-start`, `edit-cancel`, `cell-selection-change`,
+ * Events — `cell-edit-start`, `cell-edit-cancel`, `cell-selection-change`,
  * `row-selection-change`, `column-selection-change`, `row-delete` (Ctrl+Delete),
  * `row-expand` / `row-collapse` / `expanded-change`. Each fires exactly once per happening, the
  * camelCase `on*` twin runs first with the very same detail object, and the
@@ -41,20 +41,20 @@ test.beforeEach(async ({ page }) => {
 	await clearEvents(page, 'events')
 })
 
-test('edit-start: F2 on a cell → { row, rowIndex, field }', async ({ page }) => {
+test('cell-edit-start: F2 on a cell → { row, rowIndex, field }', async ({ page }) => {
 	await cell(page, 1, 1).click()
 	await page.keyboard.press('F2')
 	await expect(editorIn(cell(page, 1, 1))).toBeVisible()
-	expect(await onceWithTwin(page, 'edit-start')).toEqual({ row: { id: 2, name: 'Beta', qty: 20 }, rowIndex: 1, field: 'name' })
+	expect(await onceWithTwin(page, 'cell-edit-start')).toEqual({ row: { id: 2, name: 'Beta', qty: 20 }, rowIndex: 1, field: 'name' })
 })
 
-test('edit-cancel: Escape → { row, rowIndex, field }, no row-change', async ({ page }) => {
+test('cell-edit-cancel: Escape → { row, rowIndex, field }, no row-change', async ({ page }) => {
 	await cell(page, 2, 2).click()
 	await page.keyboard.press('F2')
 	await editorIn(cell(page, 2, 2)).fill('99')
 	await page.keyboard.press('Escape')
 	await expect(editorIn(cell(page, 2, 2))).toHaveCount(0)
-	expect(await onceWithTwin(page, 'edit-cancel')).toEqual({ row: { id: 3, name: 'Gamma', qty: 30 }, rowIndex: 2, field: 'qty' })
+	expect(await onceWithTwin(page, 'cell-edit-cancel')).toEqual({ row: { id: 3, name: 'Gamma', qty: 30 }, rowIndex: 2, field: 'qty' })
 	expect(await domEvents(page, 'row-change')).toEqual([])
 })
 
@@ -208,19 +208,28 @@ test.describe('column-selection-change', () => {
 	})
 })
 
-test('row-delete: Ctrl+Delete on a cell is a request — { row, rowIndex }, the row stays', async ({ page }) => {
+test('row-delete: Ctrl+Delete removes the row, then reports it — { rows, rowIndices }', async ({ page }) => {
 	await cell(page, 1, 1).click()
 	await page.keyboard.press('Control+Delete')
-	expect(await onceWithTwin(page, 'row-delete')).toEqual({ row: { id: 2, name: 'Beta', qty: 20 }, rowIndex: 1 })
-	await expect(gridLocator(page).locator('tbody tr.wg__row')).toHaveCount(3)
-	await expect(cell(page, 1, 1)).toHaveText('Beta')
+	await expect(gridLocator(page).locator('tbody tr.wg__row')).toHaveCount(2)
+	expect(await onceWithTwin(page, 'row-delete')).toEqual({ rows: [{ id: 2, name: 'Beta', qty: 20 }], rowIndices: [1] })
+	expect(await onGrid(page, el => el.items.map((r: any) => r.name))).not.toContain('Beta')
 })
 
-test('row-delete: Cmd+Delete (macOS) is the same request', async ({ page }) => {
+test('row-delete: Cmd+Delete (macOS) does the same', async ({ page }) => {
 	await cell(page, 1, 1).click()
 	await page.keyboard.press('Meta+Delete')
-	expect(await onceWithTwin(page, 'row-delete')).toEqual({ row: { id: 2, name: 'Beta', qty: 20 }, rowIndex: 1 })
-	await expect(cell(page, 1, 1)).toHaveText('Beta')
+	await expect(gridLocator(page).locator('tbody tr.wg__row')).toHaveCount(2)
+	expect(await onceWithTwin(page, 'row-delete')).toEqual({ rows: [{ id: 2, name: 'Beta', qty: 20 }], rowIndices: [1] })
+})
+
+test('row-delete: beforeActionCallback returning false vetoes Ctrl+Delete (no removal, no event)', async ({ page }) => {
+	await onGrid(page, el => { el.beforeActionCallback = (d: any) => d.action !== 'delete' })
+	await cell(page, 1, 1).click()
+	await page.keyboard.press('Control+Delete')
+	await page.waitForTimeout(100)
+	await expect(gridLocator(page).locator('tbody tr.wg__row')).toHaveCount(3)
+	expect(await domEvents(page, 'row-delete')).toEqual([])
 })
 
 test('plain Delete clears the cell (row-change to null), no row-delete', async ({ page }) => {

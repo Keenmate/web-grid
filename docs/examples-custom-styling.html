@@ -449,11 +449,11 @@
                     // Custom dropdown rendering with group colors
                     renderOptionCallback: ({ option: opt, ...ctx }) => {
                         const classes = ['wg__dropdown-option']
-                        if (ctx.isHighlighted) classes.push('wg__dropdown-option--highlighted')
+                        if (ctx.isFocused) classes.push('wg__dropdown-option--highlighted')
                         if (ctx.isSelected) classes.push('wg__dropdown-option--selected')
                         const groupClass = `product-${opt.group.toLowerCase()}`
                         return `
-                            <div class="${classes.join(' ')} ${groupClass}" data-index="${ctx.index}" style="display: flex; align-items: center;">
+                            <div class="${classes.join(' ')} ${groupClass}" data-index="${ctx.optionIndex}" style="display: flex; align-items: center;">
                                 <span style="margin-right: 8px; font-size: 1.2em;">${opt.icon}</span>
                                 <div style="flex: 1; min-width: 0;">
                                     <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${opt.name}</div>

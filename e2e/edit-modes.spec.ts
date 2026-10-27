@@ -105,7 +105,7 @@ test.describe('editTrigger', () => {
 	test("column editTrigger 'click' overrides the grid's 'dblclick'", async ({ page }) => {
 		await cell(page, 0, 3).click()
 		await expect(editorIn(cell(page, 0, 3))).toBeVisible()
-		expect(await domEvents(page, 'edit-start')).toEqual([expect.objectContaining({ field: 'note', rowIndex: 0 })])
+		expect(await domEvents(page, 'cell-edit-start')).toEqual([expect.objectContaining({ field: 'note', rowIndex: 0 })])
 	})
 
 	test("'always': every editable cell renders its editor; typing commits on blur / Tab", async ({ page }) => {

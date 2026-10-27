@@ -321,7 +321,7 @@ The editing flow is: Start -> Edit -> Commit or Cancel.
    - The grid starts the edit internally (programmatically: grid.startEditing(rowIndex, colIndex)).
    - A draft copy of the row is created (if not already drafted).
    - The cell DOM is replaced with the appropriate editor.
-   - The edit-start event (onEditStart) fires.
+   - The cell-edit-start event (onCellEditStart) fires.
    - For editTrigger='navigate', typing a printable character starts editing
      with that character pre-filled.
 
@@ -352,7 +352,7 @@ The editing flow is: Start -> Edit -> Commit or Cancel.
    - Triggered by: Escape key.
    - The editor is removed; cell returns to display mode showing the draft
      value (or original if no prior edits).
-   - The edit-cancel event (onEditCancel) fires.
+   - The cell-edit-cancel event (onCellEditCancel) fires.
    - Focus returns to the cell in navigate mode.
 
 Note: The original items array is NEVER mutated. All changes live in draft
@@ -472,11 +472,11 @@ property called with the same detail. Return values are ignored.
     grid.addEventListener('row-change', (e) => save(e.detail))
     grid.onRowChange = (detail) => save(detail)
 
-edit-start / onEditStart
+cell-edit-start / onCellEditStart
   Fires when editing starts on a cell.
   Detail: { row, rowIndex, field }
 
-edit-cancel / onEditCancel
+cell-edit-cancel / onCellEditCancel
   Fires when editing is cancelled (Escape key).
   Detail: { row, rowIndex, field }
 

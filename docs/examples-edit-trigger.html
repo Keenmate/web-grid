@@ -607,7 +607,7 @@
 
         // Update status when grid changes
         gridEmptyRow.addEventListener('row-change', updateStatusPanel)
-        gridEmptyRow.addEventListener('paste-complete', updateStatusPanel)
+        gridEmptyRow.addEventListener('cell-paste', updateStatusPanel)
 
         // Initial status update
         setTimeout(updateStatusPanel, 100)

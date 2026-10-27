@@ -110,10 +110,10 @@
 					options: priorityOptions,
 					renderOptionCallback: ({ option: opt, ...ctx }) => {
 						const classes = ['wg__dropdown-option']
-						if (ctx.isHighlighted) classes.push('wg__dropdown-option--highlighted')
+						if (ctx.isFocused) classes.push('wg__dropdown-option--highlighted')
 						if (ctx.isSelected) classes.push('wg__dropdown-option--selected')
 						if (ctx.isDisabled) classes.push('wg__dropdown-option--disabled')
-						return `<div class="${classes.join(' ')}" data-index="${ctx.index}">
+						return `<div class="${classes.join(' ')}" data-index="${ctx.optionIndex}">
 							<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${opt.color};margin-right:6px;"></span>${opt.label}
 						</div>`
 					}

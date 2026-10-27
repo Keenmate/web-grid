@@ -44,7 +44,7 @@
 			getLockInfoCallback: ({ row }) => row.lock ? { isLocked: true, ...row.lock } : null
 		}
 		grid.items = window.seed()
-		installEventLog(grid, 'row-locking', ['row-lock-change', 'edit-start', 'paste-complete'])
+		installEventLog(grid, 'row-locking', ['row-lock-change', 'cell-edit-start', 'cell-paste'])
 	</script>
 </body>
 </html>

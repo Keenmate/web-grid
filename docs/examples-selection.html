@@ -201,7 +201,7 @@ cellSelectionMode: 'shift'  // Avoids conflict</code></pre>
         <!-- EXAMPLE 5: Row Focus (Master/Detail) -->
         <div class="card">
             <h2>Row Focus (Master/Detail Pattern)</h2>
-            <p>Click any data cell to focus its row. The <code>row-focus</code> event (and its <code>onRowFocus</code> twin) fires with the focused row's data — perfect for master/detail layouts. Row number clicks do <strong>not</strong> trigger focus (they handle row selection). Clicking outside the grid clears focus.</p>
+            <p>Click any data cell to focus its row. The <code>focus-change</code> event (and its <code>onFocusChange</code> twin) fires with the focused row's data — perfect for master/detail layouts. Row number clicks do <strong>not</strong> trigger focus (they handle row selection). Clicking outside the grid clears focus.</p>
 
             <div style="display: flex; gap: 1.5rem; flex-wrap: wrap;">
                 <div style="flex: 1; min-width: 400px;">
@@ -225,14 +225,14 @@ cellSelectionMode: 'shift'  // Avoids conflict</code></pre>
             <div class="note" style="margin-top: 1rem;">
                 <div class="note-title">Row Focus API</div>
                 <ul>
-                    <li><strong>Click cell</strong> — Focuses that row, fires <code>row-focus</code> / <code>onRowFocus</code></li>
+                    <li><strong>Click cell</strong> — Focuses that row, fires <code>focus-change</code> / <code>onFocusChange</code></li>
                     <li><strong>Click row number</strong> — Selects row (does NOT focus)</li>
                     <li><strong>Click outside</strong> — Clears row focus</li>
                     <li><strong>grid.focusedRowIndex</strong> — Get/set focused row programmatically</li>
                 </ul>
-                <pre style="background: #f8fafc; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.85rem; margin-top: 0.5rem;"><code>grid.onRowFocus = ({ rowIndex, row, previousRowIndex }) => {
+                <pre style="background: #f8fafc; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.85rem; margin-top: 0.5rem;"><code>grid.onFocusChange = ({ rowIndex, row, oldRowIndex }) => {
     detailPanel.innerHTML = renderDetail(row)
-    console.log(`Row ${rowIndex} focused (was: ${previousRowIndex})`)
+    console.log(`Row ${rowIndex} focused (was: ${oldRowIndex})`)
 }
 
 // Programmatic control
@@ -308,8 +308,8 @@ grid.focusedRowIndex = null // Clear focus</code></pre>
                     <td>Get/set the focused row index (null if none)</td>
                 </tr>
                 <tr>
-                    <td><code>row-focus</code> / <code>onRowFocus</code></td>
-                    <td>Event (and twin) fired when focused row changes: <code>{ rowIndex, row, previousRowIndex }</code></td>
+                    <td><code>focus-change</code> / <code>onFocusChange</code></td>
+                    <td>Event (and twin) fired when focused row changes: <code>{ rowIndex, row, oldRowIndex }</code></td>
                 </tr>
             </table>
 
@@ -613,8 +613,8 @@ grid.focusedRowIndex = null // Clear focus</code></pre>
         })
 
         // Wire up all events for logging
-        gridCellRangeClick.onRowFocus = (detail) => {
-            logEvent('onRowFocus', `row ${detail.rowIndex}` + (detail.previousRowIndex != null ? ` (prev: ${detail.previousRowIndex})` : ''))
+        gridCellRangeClick.onFocusChange = (detail) => {
+            logEvent('onFocusChange', `row ${detail.rowIndex}` + (detail.oldRowIndex != null ? ` (prev: ${detail.oldRowIndex})` : ''))
         }
         gridCellRangeClick.onRowChange = (detail) => {
             logEvent('onRowChange', `row ${detail.rowIndex}, field: ${detail.field}, ${JSON.stringify(detail.oldValue)} → ${JSON.stringify(detail.newValue)}`)
@@ -626,11 +626,11 @@ grid.focusedRowIndex = null // Clear focus</code></pre>
                 logEvent('onCellSelectionChange', 'cleared')
             }
         }
-        gridCellRangeClick.onEditStart = (detail) => {
-            logEvent('onEditStart', `row ${detail.rowIndex}, field: ${detail.field}`)
+        gridCellRangeClick.onCellEditStart = (detail) => {
+            logEvent('onCellEditStart', `row ${detail.rowIndex}, field: ${detail.field}`)
         }
-        gridCellRangeClick.onEditCancel = (detail) => {
-            logEvent('onEditCancel', `row ${detail.rowIndex}, field: ${detail.field}`)
+        gridCellRangeClick.onCellEditCancel = (detail) => {
+            logEvent('onCellEditCancel', `row ${detail.rowIndex}, field: ${detail.field}`)
         }
 
         // Selection status (polled)
@@ -844,9 +844,9 @@ grid.focusedRowIndex = null // Clear focus</code></pre>
             `
         }
 
-        gridRowFocus.onRowFocus = ({ rowIndex, row, previousRowIndex }) => {
+        gridRowFocus.onFocusChange = ({ rowIndex, row, oldRowIndex }) => {
             detailPanel.innerHTML = renderDetail(row)
-            const prevLabel = previousRowIndex !== null ? `row ${previousRowIndex}` : 'none'
+            const prevLabel = oldRowIndex !== null ? `row ${oldRowIndex}` : 'none'
             focusLog.innerHTML = `<strong>Focused:</strong> row ${rowIndex} (${row.name}) — <span style="color: #94a3b8;">previous: ${prevLabel}</span>`
         }
 

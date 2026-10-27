@@ -59,7 +59,7 @@ export function renderDropdown<T>(
 
 			// Custom render callback
 			if (opts.renderOptionCallback) {
-				return opts.renderOptionCallback(optionCtx(opts, { option: opt, index: i, isHighlighted, isSelected, isDisabled: disabled }))
+				return opts.renderOptionCallback(optionCtx(opts, { option: opt, optionIndex: i, isFocused: isHighlighted, isSelected, isDisabled: disabled }))
 			}
 
 			// Default rendering with icon/subtitle support

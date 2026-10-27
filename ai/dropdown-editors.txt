@@ -145,8 +145,8 @@ renderOptionCallback(ctx)
   completely replaces the default option rendering. The ctx object has:
 
     option        EditorOption  The option being rendered.
-    index         number    Zero-based position in filtered list.
-    isHighlighted boolean   True if this option has keyboard/mouse highlight.
+    optionIndex   number    Zero-based position in filtered list.
+    isFocused     boolean   True if the keyboard / mouse cursor is on this option.
     isSelected    boolean   True if this option matches the cell's current value.
     isDisabled    boolean   True if the option is disabled.
 
@@ -154,10 +154,10 @@ renderOptionCallback(ctx)
 
     renderOptionCallback: ({ option, ...ctx }) => {
       const classes = ['wg__dropdown-option']
-      if (ctx.isHighlighted) classes.push('wg__dropdown-option--highlighted')
+      if (ctx.isFocused) classes.push('wg__dropdown-option--highlighted')
       if (ctx.isSelected) classes.push('wg__dropdown-option--selected')
       if (ctx.isDisabled) classes.push('wg__dropdown-option--disabled')
-      return '<div class="' + classes.join(' ') + '" data-index="' + ctx.index + '">' +
+      return '<div class="' + classes.join(' ') + '" data-index="' + ctx.optionIndex + '">' +
         '<strong>' + option.label + '</strong>' +
         '<small style="margin-left:8px;opacity:0.6">' + option.code + '</small>' +
       '</div>'
@@ -296,10 +296,10 @@ Full custom rendering example:
     displayMember: 'name',
     renderOptionCallback: ({ option, ...ctx }) => {
       const cls = ['wg__dropdown-option']
-      if (ctx.isHighlighted) cls.push('wg__dropdown-option--highlighted')
+      if (ctx.isFocused) cls.push('wg__dropdown-option--highlighted')
       if (ctx.isSelected) cls.push('wg__dropdown-option--selected')
       if (ctx.isDisabled) cls.push('wg__dropdown-option--disabled')
-      return '<div class="' + cls.join(' ') + '" data-index="' + ctx.index + '"' +
+      return '<div class="' + cls.join(' ') + '" data-index="' + ctx.optionIndex + '"' +
         (ctx.isDisabled ? ' data-disabled="true"' : '') + '>' +
         '<span class="wg__dropdown-option-icon">' + option.flag + '</span>' +
         '<div class="wg__dropdown-option-content">' +
@@ -471,8 +471,8 @@ OptionContext = { option: EditorOption }           (get*Callback on editorOption
 
 OptionRenderContext = {
   option: EditorOption
-  index: number
-  isHighlighted: boolean
+  optionIndex: number
+  isFocused: boolean
   isSelected: boolean
   isDisabled: boolean
 }

@@ -283,7 +283,7 @@ export class ActionPipelineAdapter<T = unknown> {
 			return true
 		}
 
-		// Not editing (navigate mode): handle navigation and edit-start keys
+		// Not editing (navigate mode): handle navigation and cell-edit-start keys
 		// Navigation keys move focus between cells
 		const navKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab', 'Home', 'End', 'PageUp', 'PageDown']
 		if (navKeys.includes(e.key)) {
@@ -370,7 +370,7 @@ export class ActionPipelineAdapter<T = unknown> {
 			}
 		}
 
-		// Delete clears cell content (Ctrl/Cmd+Delete is the row-delete request — cell keydown)
+		// Delete clears cell content (Ctrl/Cmd+Delete runs the `delete` built-in — cell keydown)
 		if (e.key === 'Delete' && !e.ctrlKey && !e.metaKey) {
 			e.preventDefault()
 			e.stopPropagation()

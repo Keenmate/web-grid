@@ -6,14 +6,14 @@
 //  1. Focus landed on a `.wg__cell` — drive handleCellFocus (the navigation
 //     module's focus-into-cell entry point), refresh the fill-handle, and
 //     (only for KEYBOARD-triggered focus) set + paint focused row. Mouse-
-//     triggered focus skips the row-focus call so row-focus fires from the
+//     triggered focus skips the focus-change call so focus-change fires from the
 //     click handler on mouseup, not on mousedown.
 //  2. Focus landed on an editor input in 'always' editTrigger mode — surgically
 //     swap `wg__cell--always-edit-focused` between old and new cells without
 //     re-rendering, and update row focus on the same keyboard-only rule.
 //
 // Skipped during cell-selection drag (isCellSelectionPending / isCellSelecting)
-// to avoid spurious row-focus while the user is dragging out a range.
+// to avoid spurious focus-change while the user is dragging out a range.
 
 import type { GridHost } from '../grid-context.js'
 import { handleCellFocus, ensureCellNotBehindFrozen } from '../navigation/index.js'
@@ -31,8 +31,8 @@ export function handleTableFocus<T>(ctx: GridHost<T>, e: Event): void {
 		const colIndex = parseInt(target.dataset.col || '0', 10)
 		handleCellFocus(ctx, rowIndex, colIndex)
 		updateFillHandle(ctx)
-		// Only fire row-focus for keyboard-triggered focus (Tab, arrows).
-		// For mouse interactions, defer to click handler so row-focus fires on mouseup, not mousedown.
+		// Only fire focus-change for keyboard-triggered focus (Tab, arrows).
+		// For mouse interactions, defer to click handler so focus-change fires on mouseup, not mousedown.
 		if (!ctx.isMouseDown && !isCellSelectionPending() && !isCellSelecting()) {
 			const prevFocusedRow = ctx.engine.focusedRowIndex
 			ctx.engine.setFocusedRow(rowIndex)

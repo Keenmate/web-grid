@@ -201,9 +201,9 @@ grid.rowToolbar = ['add', 'delete', 'duplicate', 'move-up', 'move-down']   // th
 ### Master/detail — react to row focus
 
 ```javascript
-grid.addEventListener('row-focus', (e) => showDetailsFor(e.detail.row))
+grid.addEventListener('focus-change', (e) => showDetailsFor(e.detail.row))
 // or the camelCase property twin:
-grid.onRowFocus = ({ row }) => showDetailsFor(row)
+grid.onFocusChange = ({ row }) => showDetailsFor(row)
 ```
 
 ### Validate a cell before commit
@@ -269,7 +269,7 @@ const columns: Column<Employee>[] = [
 - **Shadow DOM** — Encapsulated styles, no CSS leakage
 - **Summary Bar** — Configurable summary content at any corner position
 - **Validation** — `validateCallback` (editor commits and paste) with tooltip display (custom HTML supported)
-- **Row Focus Tracking** — the `row-focus` event for master/detail patterns
+- **Row Focus Tracking** — the `focus-change` event for master/detail patterns
 - **Events** — real DOM events (`row-change`, `action`, …) plus camelCase `on*` twin properties
 - **i18n** — All UI labels customizable via `labels` property
 - **TypeScript** — Full type definitions exported
@@ -585,7 +585,7 @@ An invalid value is not a veto: it stays as a draft, the cell is marked invalid 
 
 Without `getPasteValueCallback`, pasted text is typed for the column: **number** — the editor's strict parse; **checkbox** — `true` / `1` / `yes` / `x` / `✓` or the text of `trueValue` → `trueValue`, `false` / `0` / `no` / blank or the text of `falseValue` → `falseValue`; **date** — the column's `dateFormat`, then ISO `YYYY-MM-DD`, stored per `outputFormat`. Text that doesn't parse is kept and the cell marked invalid (`labels.invalidNumber` / `invalidBoolean` / `invalidDate`).
 
-Grid-level paste hooks: `beforePasteCallback(ctx)` runs before a multi-cell paste (`false` cancels, async OK; add `"rowIndex-colIndex"` keys to `ctx.skipCells` to skip cells) and `createRowCallback({ data, rowIndex })` builds rows for pasted data past the last row. `pasteMode` and `shouldValidateOnPaste` control what gets pasted; `paste-complete` reports the result.
+Grid-level paste hooks: `beforePasteCallback(ctx)` runs before a multi-cell paste (`false` cancels, async OK; add `"rowIndex-colIndex"` keys to `ctx.skipCells` to skip cells) and `createRowCallback({ data, rowIndex })` builds rows for pasted data past the last row. `pasteMode` and `shouldValidateOnPaste` control what gets pasted; `cell-paste` reports the result.
 
 ### Layout
 
@@ -683,7 +683,7 @@ By default, options use `value` and `label` properties. Override with member str
 
 | Option | Type | Description |
 |--------|------|-------------|
-| `renderOptionCallback` | `(ctx: { option, index, isHighlighted, isSelected, isDisabled }) => string` | Custom HTML for each option |
+| `renderOptionCallback` | `(ctx: { option, optionIndex, isFocused, isSelected, isDisabled }) => string` | Custom HTML for each option |
 | `onSelect` | `(ctx: { option, row, rowIndex, column, field, … }) => void` | Fires when an option is selected |
 | `allowEmpty` | `boolean` | Allow null/empty selection |
 | `emptyLabel` | `string` | Label for empty option (default: `'-- Select --'`) |
@@ -974,11 +974,11 @@ grid.onRowChange = (detail) => save(detail.draftRow)
 | Event | Twin | Detail |
 |-------|------|--------|
 | `row-change` | `onRowChange` | A cell value was committed (editor, checkbox, paste, new row): `{ row, draftRow, rowIndex, field, oldValue, newValue, isValid, validationError }` |
-| `edit-start` | `onEditStart` | A cell editor opened: `{ row, rowIndex, field }` |
-| `edit-cancel` | `onEditCancel` | A cell edit was cancelled: `{ row, rowIndex, field }` |
+| `cell-edit-start` | `onCellEditStart` | A cell editor opened: `{ row, rowIndex, field }` |
+| `cell-edit-cancel` | `onCellEditCancel` | A cell edit was cancelled: `{ row, rowIndex, field }` |
 | `validation-error` | `onValidationError` | `validateCallback` rejected a value: `{ row, rowIndex, field, error, source: 'edit' \| 'paste' }` |
-| `row-focus` | `onRowFocus` | A different row got focus: `{ row, rowIndex, previousRowIndex }` |
-| `row-delete` | `onRowDelete` | Ctrl+Delete on a row — a request; the grid does not delete: `{ row, rowIndex }` |
+| `focus-change` | `onFocusChange` | A different row got focus: `{ row, rowIndex, oldRowIndex }` |
+| `row-delete` | `onRowDelete` | The `delete` built-in removed rows (menu / toolbar / Ctrl+Delete) — after the fact; veto with `beforeActionCallback`: `{ rows, rowIndices }` |
 | `cell-selection-change` | `onCellSelectionChange` | The selected cell range changed: `{ range, cellCount, fields, rows }` — `range.startColIndex` / `endColIndex` are on-screen (visual) positions, not `columns` indices; `fields` = the range's columns in on-screen order; `rows` = the row objects in the range (display order). Cleared: `{ range: null, cellCount: 0, fields: [], rows: [] }` |
 | `row-selection-change` | `onRowSelectionChange` | The row selection changed (row-number click / Ctrl / Shift / drag, `selectRow` / `selectRowRange` / `clearSelection`, or cleared by a cell / column selection): `{ rows, rowIndices }` |
 | `column-selection-change` | `onColumnSelectionChange` | The column selection changed (header click / Ctrl / Shift / drag, `controller.selectColumn` / `selectColumnRange` / `clearColumnSelection`, or cleared by another selection): `{ fields }` (on-screen order) |
@@ -988,7 +988,7 @@ grid.onRowChange = (detail) => save(detail.draftRow)
 | `column-reorder` | `onColumnReorder` | A column was moved: `{ field, fromIndex, toIndex, allOrder }` |
 | `expanded-change` | `onExpandedChange` | Tree rows expanded / collapsed (toggle, subtree, expand / collapse all): `{ path, isExpanded, expandedPaths }` (`path` is `null` for all) |
 | `row-lock-change` | `onRowLockChange` | A row was locked / unlocked by id: `{ rowId, row, rowIndex, lockInfo, source }` |
-| `paste-complete` | `onPasteComplete` | A multi-cell paste finished: `{ totalCells, successfulCells, failedCells, skippedCells, newRowsCreated, cellResults, hadHeaders }` |
+| `cell-paste` | `onCellPaste` | A multi-cell paste finished: `{ totalCells, successfulCells, failedCells, skippedCells, newRowsCreated, cellResults, hadHeaders }` |
 | `action` | `onAction` | A toolbar / menu / shortcut item was activated: `{ action, id, item, source, sourceEvent, triggerElement, dataset }` + the surface fields (see below) |
 
 `action` detail: `action` is the built-in name or `'custom'`; `source` is `'row-toolbar'`, `'cell-toolbar'`, `'context-menu'`, `'header-menu'` or `'keyboard'`. Row surfaces add `row` / `rowIndex` (cell surfaces also `column` / `colIndex` / `field` / `value`), the header menu its `HeaderMenuContext` fields, range shortcuts `rows` / `rowIndices`. It fires after the item's `onClick` and after the built-in has run — a notification after the fact: after `delete` the row is already gone from `items`, after `add` the new row is present, after `move-up` / `move-down` the new order is in place. To prevent a built-in, return `false` from `beforeActionCallback`.
@@ -1032,7 +1032,7 @@ grid.onRowChange = (detail) => save(detail.draftRow)
 | Method | Returns | Description |
 |--------|---------|-------------|
 | `getRowId(row)` | `unknown \| undefined` | Get the ID of a row using `getIdCallback` / `idMember` |
-| `findRowById(id)` | `{ row, index } \| null` | Find a row by its ID |
+| `findRowById(id)` | `{ row, rowIndex } \| null` | Find a row by its ID |
 
 ### Row Updates
 

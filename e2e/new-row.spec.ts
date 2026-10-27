@@ -129,7 +129,7 @@ test('createRowCallback shapes rows created by a paste past the last row', async
 	// the existing row is edited through its draft; the new rows come from createRowCallback
 	expect(state.draft).toMatchObject({ id: 2, name: 'Beta2' })
 	expect(state.created).toEqual([{ id: 902, name: 'Gamma', via: true }, { id: 903, name: 'Delta', via: true }])
-	expect((await domEvents(page, 'paste-complete'))[0]).toMatchObject({ newRowsCreated: 2 })
+	expect((await domEvents(page, 'cell-paste'))[0]).toMatchObject({ newRowsCreated: 2 })
 })
 
 test('rows created by a paste get typed values (number column → number)', async ({ page }) => {

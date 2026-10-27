@@ -133,9 +133,9 @@
 
 		// twins + events
 		grid.onDataRequest = (d) => log('onDataRequest:' + d.trigger + ':' + d.sort.map(s => s.column + '-' + s.direction).join(','))
-		grid.onRowDelete = (d) => log('onRowDelete:' + d.row.name + ':' + (d instanceof Event))
-		grid.addEventListener('row-delete', (e) => log('row-delete:' + e.detail.row.name))
-		grid.onRowFocus = (d) => log('onRowFocus:' + d.rowIndex)
+		grid.onRowDelete = (d) => log('onRowDelete:' + d.rows[0].name + ':' + (d instanceof Event))
+		grid.addEventListener('row-delete', (e) => log('row-delete:' + e.detail.rows[0].name))
+		grid.onFocusChange = (d) => log('onFocusChange:' + d.rowIndex)
 
 		// #tree
 		const tree = document.getElementById('tree')

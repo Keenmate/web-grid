@@ -304,17 +304,13 @@
             return null
         }
 
-        // Handle Ctrl+Delete to delete rows
-        grid.onRowDelete = ({ rowIndex, row }) => {
-            if (confirm(`Delete row ${rowIndex + 1} (${row.name})?`)) {
-                sampleData.splice(rowIndex, 1)
-                grid.items = [...sampleData]
-            }
-        }
+        // Ctrl+Delete runs the `delete` built-in: confirm first (veto), the grid removes the row
+        grid.beforeActionCallback = ({ action, row }) => action !== 'delete' || confirm(`Delete ${row.name}?`)
+        grid.onRowDelete = ({ rows }) => console.log('deleted', rows.map(r => r.name))
 
         // Display focused row
         const focusedRowEl = document.getElementById('focusedRowState')
-        grid.onRowFocus = ({ rowIndex, row }) => {
+        grid.onFocusChange = ({ rowIndex, row }) => {
             focusedRowEl.innerHTML = `Row ${rowIndex} — <strong>${row.name}</strong> (${row.department}, $${row.salary?.toLocaleString()})`
         }
 

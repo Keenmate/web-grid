@@ -36,11 +36,11 @@ row-change / onRowChange
   The row is the original (unchanged). draftRow contains the user's edits
   including invalid values.
 
-edit-start / onEditStart
+cell-edit-start / onCellEditStart
   Detail: { row, rowIndex, field }
   Fires when a cell editor opens.
 
-edit-cancel / onEditCancel
+cell-edit-cancel / onCellEditCancel
   Detail: { row, rowIndex, field }
   Fires when the user cancels an edit (Escape key).
 
@@ -78,12 +78,13 @@ filter-change / onFilterChange
   the consumer filters and sets items.
 
 row-delete / onRowDelete
-  Detail: { row, rowIndex }
-  Fires when Ctrl+Delete is pressed on a row. A REQUEST - the grid does
-  not delete; remove the row yourself.
+  Detail: { rows, rowIndices }  (rowIndices = display indices before the removal)
+  Fires AFTER the `delete` built-in removed rows (cell menu, row toolbar,
+  Ctrl+Delete). Veto with beforeActionCallback (return false for
+  action 'delete'). Programmatic removeRows / removeRow don't fire it.
 
-row-focus / onRowFocus
-  Detail: { rowIndex, row, previousRowIndex }
+focus-change / onFocusChange
+  Detail: { rowIndex, row, oldRowIndex }
   Fires when a different row is focused (useful for master/detail patterns).
 
 row-lock-change / onRowLockChange
@@ -133,7 +134,7 @@ expanded-change / onExpandedChange
   The expanded set changed - any expand / collapse, incl. expandAll /
   collapseAll. One event per change, after the row events.
 
-paste-complete / onPasteComplete
+cell-paste / onCellPaste
   Detail: { totalCells, successfulCells, failedCells, skippedCells,
   newRowsCreated, cellResults, hadHeaders }
   Fires after a multi-cell paste is applied.
@@ -348,7 +349,7 @@ getGroupCallback
 
 renderOptionCallback
   Signature: (ctx: OptionRenderContext<T>) => string
-  ctx: { option, index, isHighlighted, isSelected, isDisabled }
+  ctx: { option, optionIndex, isFocused, isSelected, isDisabled }
   Returns custom HTML for rendering an option in the dropdown.
 
 onSelect

@@ -19,21 +19,21 @@ test.beforeEach(async ({ page }) => {
 test.describe('identity', () => {
 	test('idMember (default id): getRowId / findRowById (index into items); unknown id → null', async ({ page }) => {
 		expect(await onGrid(page, el => [el.getRowId(el.items[1]), el.findRowById(3), el.findRowById(99)])).toEqual([
-			2, { row: { id: 3, name: 'Gamma', qty: 30, code: 'G-3' }, index: 2 }, null
+			2, { row: { id: 3, name: 'Gamma', qty: 30, code: 'G-3' }, rowIndex: 2 }, null
 		])
 	})
 
 	test('getIdCallback wins over idMember and gets { row } + context', async ({ page }) => {
 		const r = await onGrid(page, el => {
 			el.getIdCallback = (ctx: any) => { (window as any).__idCtx = !!ctx.controller; return ctx.row.code }
-			return [el.getRowId(el.items[0]), el.findRowById('B-2')?.index, el.findRowById(2), (window as any).__idCtx]
+			return [el.getRowId(el.items[0]), el.findRowById('B-2')?.rowIndex, el.findRowById(2), (window as any).__idCtx]
 		})
 		expect(r).toEqual(['A-1', 1, null, true])
 	})
 
 	test('idMember defaults to id; another member re-keys the id APIs; null turns them off', async ({ page }) => {
 		expect(await onGrid(page, el => el.idMember)).toBe('id')
-		expect(await onGrid(page, el => { el.idMember = 'code'; return [el.findRowById('B-2')?.index, el.findRowById(2)] })).toEqual([1, null])
+		expect(await onGrid(page, el => { el.idMember = 'code'; return [el.findRowById('B-2')?.rowIndex, el.findRowById(2)] })).toEqual([1, null])
 		expect(await onGrid(page, el => { el.idMember = null; return [el.getRowId(el.items[0]), el.findRowById(1)] })).toEqual([undefined, null])
 	})
 
@@ -80,11 +80,11 @@ test.describe('focusCell / startEditing', () => {
 		await expect(cell(page, 1, 1)).toBeFocused()
 	})
 
-	test('startEditing opens the editor (edit-start), Enter commits', async ({ page }) => {
+	test('startEditing opens the editor (cell-edit-start), Enter commits', async ({ page }) => {
 		await onGrid(page, el => el.startEditing(1, 2))
 		const ed = editorIn(cell(page, 1, 2))
 		await expect(ed).toBeVisible()
-		expect(await domEvents(page, 'edit-start')).toEqual([{ row: { id: 2, name: 'Beta', qty: 20, code: 'B-2' }, rowIndex: 1, field: 'qty' }])
+		expect(await domEvents(page, 'cell-edit-start')).toEqual([{ row: { id: 2, name: 'Beta', qty: 20, code: 'B-2' }, rowIndex: 1, field: 'qty' }])
 		await ed.focus()
 		await ed.fill('25')
 		await page.keyboard.press('Enter')
@@ -94,7 +94,7 @@ test.describe('focusCell / startEditing', () => {
 	test('startEditing a read-only cell does nothing', async ({ page }) => {
 		await onGrid(page, el => el.startEditing(0, 3))
 		await page.waitForTimeout(100)
-		expect(await domEvents(page, 'edit-start')).toEqual([])
+		expect(await domEvents(page, 'cell-edit-start')).toEqual([])
 		await expect(editorIn(cell(page, 0, 3))).toHaveCount(0)
 	})
 })

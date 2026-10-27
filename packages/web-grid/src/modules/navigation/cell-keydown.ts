@@ -11,13 +11,13 @@
 //  - Enter on a text-like column — start editing the empty (new) row, or move
 //    down (Excel-like: back to the column where a Tab run started);
 //  - Escape — clear row selection, then the focused cell;
-//  - Ctrl/Cmd+Delete — the `row-delete` request (the grid doesn't delete).
+//  - Ctrl/Cmd+Delete — the `delete` built-in (removes the row; `row-delete` after the fact).
 //
 // `tryCellShortcuts` (user range / row shortcuts) runs before the adapter so a
 // configured chord wins over the built-in keys.
 
 import type { GridHost } from '../grid-context.js'
-import { handleRowShortcut, handleRangeShortcut } from '../items/index.js'
+import { handleRowShortcut, handleRangeShortcut, activateGridItem } from '../items/index.js'
 import { moveFocus, updateFocusVisual, clearEditingVisual, tryStartEdit } from './focus.js'
 
 /**
@@ -100,12 +100,14 @@ export function handleCellKeyDown<T>(
 			break
 
 		case 'Delete':
-			// Ctrl/Cmd+Delete: request row deletion (`row-delete`; the grid doesn't delete).
-			// A plain Delete (clear the cell) is the pipeline's `deleteCell`.
+			// Ctrl/Cmd+Delete: the `delete` built-in (beforeActionCallback can veto; `row-delete`
+			// reports the removal, then `action`). A plain Delete (clear the cell) is the pipeline's `deleteCell`.
 			if (e.ctrlKey || e.metaKey) {
 				e.preventDefault()
 				const row = displayItems[rowIndex]
-				if (row) ctx.engine.notify('row-delete', { rowIndex, row })
+				if (row && !ctx.engine.isReadonly && !ctx.engine.isDisabled) {
+					void activateGridItem(ctx, { item: { action: 'delete' }, fields: { row, rowIndex }, source: 'keyboard', sourceEvent: e })
+				}
 			}
 			break
 	}

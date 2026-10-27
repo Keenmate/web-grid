@@ -39,7 +39,7 @@
 			{ field: 'qty', title: 'Qty', width: '80px', editor: 'number' }
 		]
 		grid.items = window.seed()
-		installEventLog(grid, 'drafts', ['row-change', 'edit-start', 'edit-cancel'])
+		installEventLog(grid, 'drafts', ['row-change', 'cell-edit-start', 'cell-edit-cancel'])
 	</script>
 </body>
 </html>

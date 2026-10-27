@@ -263,7 +263,7 @@ Categories in componentVariables:
   sizing, accent, text, surface, border, input, danger, state, typography,
   radius, spacing, table, header, cell, row, filter, sort, pagination, empty,
   error, editor, dropdown, toolbar, inline-actions, overlay, tooltip,
-  context-menu, focus, selection, row-focus, cell-selection, row-locking,
+  context-menu, focus, selection, focus-change, cell-selection, row-locking,
   freeze, resize, fill-handle, transition, z-index
 
 The manifest follows the component-variables schema:

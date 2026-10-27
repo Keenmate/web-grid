@@ -172,9 +172,9 @@ onCellSelectionChange -> callbacks-events.txt, selection.txt
 onColumnSelectionChange -> callbacks-events.txt, selection.txt
 onClick (items) -> toolbar-actions.txt
 onDataRequest -> callbacks-events.txt, sorting-filtering-pagination.txt
-onEditStart -> callbacks-events.txt, editing.txt
+onCellEditStart -> callbacks-events.txt, editing.txt
 onFilterChange -> callbacks-events.txt, sorting-filtering-pagination.txt
-onPasteComplete -> callbacks-events.txt
+onCellPaste -> callbacks-events.txt
 onRowChange -> callbacks-events.txt, editing.txt
 onRowLockChange -> callbacks-events.txt, row-locking.txt
 onRowSelectionChange -> callbacks-events.txt, selection.txt
@@ -315,7 +315,7 @@ Q: How do I add custom keyboard shortcuts?
 A: -> keyboard-navigation.txt (CUSTOM SHORTCUTS section)
 
 Q: How do I handle paste events?
-A: -> callbacks-events.txt (beforePasteCallback, paste-complete)
+A: -> callbacks-events.txt (beforePasteCallback, cell-paste)
 
 Q: How do I add a new-row entry row?
 A: -> editing.txt (NEW ROW ENTRY section)

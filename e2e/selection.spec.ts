@@ -9,7 +9,7 @@ import { test, expect, Page, gridLocator, cell, header, dragSelect } from './fix
  *    Shift-range)
  *  - column selection via Shift+click on a header
  *  - cell range selection via click+drag across data cells
- *  - row focus via a plain cell click (onRowFocus)
+ *  - row focus via a plain cell click (onFocusChange)
  *
  * State is read from three data-testid nodes — see selection.html for the seed
  * table. selectedRowIndices is polled (no change event), so a couple of assertions
@@ -157,15 +157,15 @@ test.describe('cell range selection (click+drag)', () => {
 // Row focus
 // =============================================================================
 
-test.describe('row focus (onRowFocus)', () => {
-	test('keyboard navigation moves row focus and fires onRowFocus', async ({ page }) => {
+test.describe('row focus (onFocusChange)', () => {
+	test('keyboard navigation moves row focus and fires onFocusChange', async ({ page }) => {
 		await gotoSelection(page)
 
 		await expect(focusedRow(page)).toHaveText('none')
 
 		// A plain click can race with the cell-selection pending state (see the
 		// note in basic.spec) — it establishes a focused cell, but arrow-key
-		// navigation is what fires onRowFocus reliably.
+		// navigation is what fires onFocusChange reliably.
 		await cell(page, 0, 1).click()
 		await page.keyboard.press('ArrowDown')
 		await page.keyboard.press('ArrowDown')
