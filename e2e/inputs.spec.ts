@@ -235,13 +235,16 @@ test.describe('defer / release / ready (core)', () => {
 		await mount(page, 'defer')
 		expect(await read(page, el => [el.isReady, !!el.shadowRoot.querySelector('.wg__table'), el.hasAttribute('ready')]))
 			.toEqual([false, false, false])
-		const result = await read(page, el => {
+		const result = await read(page, async el => {
 			let readyCount = 0
 			el.addEventListener('ready', () => { readyCount++ })
 			el.items = el.items.slice(0, 5)
 			el.release()
-			return [readyCount, el.isReady, el.shadowRoot.querySelectorAll('tbody tr').length, el.hasAttribute('ready')]
+			// core announces ready on the microtask after the build
+			const before = [readyCount, el.isReady]
+			await el.whenReady()
+			return [...before, readyCount, el.isReady, el.shadowRoot.querySelectorAll('tbody tr').length, el.hasAttribute('ready')]
 		})
-		expect(result).toEqual([1, true, 5, true])
+		expect(result).toEqual([0, false, 1, true, 5, true])
 	})
 })
