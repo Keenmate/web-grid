@@ -71,9 +71,10 @@
 		const resolvedEl = document.querySelector('[data-testid="resolved"]')
 
 		function renderResolved() {
-			modeEl.textContent = grid.mode
+			modeEl.textContent = grid.preset
 			resolvedEl.textContent = [
 				`isEditable=${grid.isEditable}`,
+				`isReadonly=${grid.isReadonly}`,
 				`editTrigger=${grid.editTrigger}`,
 				`cellSelectionMode=${grid.cellSelectionMode}`,
 				`dropdownToggleVisibility=${grid.dropdownToggleVisibility}`,
@@ -82,7 +83,7 @@
 		}
 
 		function applyMode(mode) {
-			grid.mode = mode
+			grid.preset = mode
 			renderResolved()
 		}
 

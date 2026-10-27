@@ -20,6 +20,11 @@
   background: var(--wg-row-bg-hover);
 }
 
+/* Disabled grid (`disabled`): the container is `inert`, dimmed */
+.wg--disabled {
+  opacity: 0.6;
+}
+
 /* ==============================================================================
    EMPTY STATE
    ============================================================================== */

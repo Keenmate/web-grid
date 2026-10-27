@@ -1,8 +1,8 @@
 import { test, expect, Page, gridLocator, cell } from './fixtures'
 
 /**
- * E2E coverage for the `mode` preset (docs/test/grid-modes.html). One grid +
- * three mode buttons. `mode` is a convenience setter that applies a bundle of
+ * E2E coverage for the `preset` input (docs/test/grid-modes.html). One grid +
+ * three preset buttons. `preset` is a convenience setter that applies a bundle of
  * property defaults; the fixture reads the resolved properties back into
  * [data-testid="resolved"] after each switch.
  *
@@ -51,6 +51,7 @@ test.describe('mode preset applies the right property bundle', () => {
 
 		await expect(modeLabel(page)).toHaveText('read-only')
 		await expect(resolved(page)).toContainText('isEditable=false')
+		await expect(resolved(page)).toContainText('isReadonly=true')
 		await expect(resolved(page)).toContainText('dropdownToggleVisibility=on-focus')
 		await expect(resolved(page)).toContainText('cellSelectionMode=click')
 	})
@@ -61,6 +62,7 @@ test.describe('mode preset applies the right property bundle', () => {
 
 		await expect(modeLabel(page)).toHaveText('input-matrix')
 		await expect(resolved(page)).toContainText('isEditable=true')
+		await expect(resolved(page)).toContainText('isReadonly=false')
 		await expect(resolved(page)).toContainText('editTrigger=always')
 		await expect(resolved(page)).toContainText('cellSelectionMode=shift')
 		await expect(resolved(page)).toContainText('shouldShowDropdownOnFocus=true')

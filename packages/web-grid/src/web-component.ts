@@ -2,14 +2,14 @@
 // GridElement - Web Component Registration
 // =============================================================================
 
-import { GridEngine, MODE_PRESETS } from './grid.js'
+import { GridEngine, GRID_PRESETS } from './grid.js'
 import type {
 	Column,
 	CellValidationState,
 	EditTrigger,
 	EditStartSelection,
 	EditorOptions,
-	GridMode,
+	GridPreset,
 	ToggleVisibility,
 	SortState,
 	SortMode,
@@ -268,7 +268,7 @@ import type { MenuHandle } from '@keenmate/web-components-core/menu'
 const PAGINATION_MODES = ['client', 'server'] as const
 const EDIT_TRIGGERS = ['click', 'dblclick', 'button', 'always', 'navigate'] as const
 const EDIT_START_SELECTIONS = ['mousePosition', 'selectAll', 'cursorAtStart', 'cursorAtEnd'] as const
-const GRID_MODES = ['read-only', 'excel', 'input-matrix'] as const
+const GRID_PRESETS_LIST = ['read-only', 'excel', 'input-matrix'] as const
 const CELL_SELECTION_MODES = ['disabled', 'click', 'shift'] as const
 const TOGGLE_VISIBILITIES = ['always', 'on-focus'] as const
 const TOOLBAR_VERTICAL_ALIGNS = ['top', 'center', 'bottom'] as const
@@ -382,10 +382,14 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		{ configKey: 'editButtonIcon', attribute: 'edit-button-icon', converter: toText({ default: '✎' }), default: '✎', on: 'update' },
 		{ configKey: 'editStartSelection', attribute: 'edit-start-selection', converter: toEnum(EDIT_START_SELECTIONS, { default: 'mousePosition' }), default: 'mousePosition', on: 'update' },
 		{ configKey: 'shouldCommitOnClickAway', attribute: 'should-commit-on-click-away', converter: toBool('default-true'), default: true, on: 'update' },
-		// A preset: also sets isEditable / editTrigger / dropdown flags / cellSelectionMode in the
-		// same batch; inputs set explicitly in that batch win (core getBatchValuesCallback).
-		{ configKey: 'mode', attribute: 'mode', converter: toEnum(GRID_MODES, { default: 'excel' }), default: 'excel', on: 'update',
-			getBatchValuesCallback: (mode) => MODE_PRESETS[mode as GridMode] ?? null },
+		// A preset: also sets isEditable / isReadonly / editTrigger / dropdown flags / cellSelectionMode
+		// in the same batch; inputs set explicitly in that batch win (core getBatchValuesCallback).
+		{ configKey: 'preset', attribute: 'preset', converter: toEnum(GRID_PRESETS_LIST, { default: 'excel' }), default: 'excel', on: 'update',
+			getBatchValuesCallback: (preset) => GRID_PRESETS[preset as GridPreset] ?? null },
+		// Values can't change; still focusable / selectable / copyable (the read-only preset sets it)
+		{ configKey: 'isReadonly', attribute: 'readonly', converter: toBool('default-false'), default: false, on: 'update' },
+		// No interaction at all (applied via core disabledChanged(), not update())
+		{ configKey: 'isDisabled', attribute: 'disabled', converter: toBool('default-false'), default: false, on: 'update' },
 		{ configKey: 'cellSelectionMode', attribute: 'cell-selection-mode', converter: toEnum(CELL_SELECTION_MODES, { default: 'click' }), default: 'click', on: 'update' },
 		// Dropdown editor
 		{ configKey: 'dropdownToggleVisibility', attribute: 'dropdown-toggle-visibility', converter: toEnum(TOGGLE_VISIBILITIES, { default: 'always' }), default: 'always', on: 'update' },
@@ -617,20 +621,34 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 
 	/** Copy the given input-config keys into the composed GridEngine. Grid setters
 	 * call requestUpdate() → a coalesced render. The `in` guard skips element-local
-	 * inputs (tooltip delays) whose readers use the config getter. `mode` goes
-	 * first: the engine's own mode setter applies its preset, and the batch's
-	 * values (core already resolved preset vs explicit) must land after it. */
+	 * inputs (tooltip delays) whose readers use the config getter. `preset` goes
+	 * first: the engine's own preset setter applies its settings, and the batch's
+	 * values (core already resolved preset vs explicit) must land after it.
+	 * `isDisabled` is applied by `disabledChanged()` / `reinit()` (core SPEC §6.4). */
 	#applyConfig(cfg: Record<string, unknown>): void {
 		const target = this.engine as unknown as Record<string, unknown>
-		if ('mode' in cfg) target.mode = cfg.mode
+		if ('preset' in cfg) target.preset = cfg.preset
 		for (const key of Object.keys(cfg)) {
-			if (key !== 'mode' && key in target) target[key] = cfg[key]
+			if (key !== 'preset' && key !== 'isDisabled' && key in target) target[key] = cfg[key]
 		}
 	}
+
+	/** First build done — before it, engine setters don't render (`defer` holds the first render). */
+	#isBuilt = false
 
 	protected reinit(): void {
 		// First connect: seed the grid from the merged input config.
 		this.#applyConfig(this.config as Record<string, unknown>)
+		this.engine.isDisabled = this.isEffectivelyDisabled
+		this.#isBuilt = true
+	}
+
+	protected override disabledChanged(isDisabled: boolean): void {
+		this.engine.isDisabled = isDisabled
+		if (isDisabled) {
+			closeGridMenu(this)
+			closeToolbar()
+		}
 	}
 
 	protected update(partial: Record<string, unknown>): void {
@@ -748,8 +766,16 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	get shouldCommitOnClickAway(): boolean { return this.engine.shouldCommitOnClickAway }
 	set shouldCommitOnClickAway(value: boolean) { this.engine.shouldCommitOnClickAway = value }
 
-	get mode(): GridMode { return this.engine.mode }
-	set mode(value: GridMode) { this.engine.mode = value }
+	/** Preset (`'read-only'` | `'excel'` | `'input-matrix'`): sets editing / selection defaults; `read-only` also sets `isReadonly`. */
+	get preset(): GridPreset { return this.engine.preset }
+	set preset(value: GridPreset) { this.engine.preset = value }
+
+	/** Values can't change (no edit / paste / fill / row add-delete-move); the grid stays focusable, selectable and copyable. Attribute `readonly`. */
+	get isReadonly(): boolean { return this.engine.isReadonly }
+	set isReadonly(value: boolean) { this.engine.isReadonly = value }
+
+	/** No interaction at all (not focusable, dimmed). Attribute `disabled`. */
+	declare isDisabled: boolean
 
 	get dropdownToggleVisibility(): ToggleVisibility { return this.engine.dropdownToggleVisibility }
 	set dropdownToggleVisibility(value: ToggleVisibility) { this.engine.dropdownToggleVisibility = value }
@@ -1305,6 +1331,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	}
 
 	private requestUpdate(): void {
+		// Nothing renders before the first build (core `defer` / first connect) — connect() renders.
+		if (!this.#isBuilt) return
 		if (this.updatePending) return
 		uiLogger.debug('requestUpdate: scheduling render')
 		this.updatePending = true
@@ -1689,6 +1717,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 			container = oldContainer!
 			container.className = getContainerClasses(this)
 			if (useVirtualScroll) container.classList.add('wg--virtual-scroll')
+			container.toggleAttribute('inert', this.engine.isDisabled)
 
 			if (this.engine.isScrollable && this.engine.scrollMaxHeight !== '100vh') {
 				container.style.setProperty('--wg-scroll-max-height', this.engine.scrollMaxHeight)
@@ -1716,6 +1745,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 			container = document.createElement('div')
 			container.className = getContainerClasses(this)
 			if (useVirtualScroll) container.classList.add('wg--virtual-scroll')
+			container.toggleAttribute('inert', this.engine.isDisabled)
 
 			if (this.engine.isScrollable && this.engine.scrollMaxHeight !== '100vh') {
 				container.style.setProperty('--wg-scroll-max-height', this.engine.scrollMaxHeight)

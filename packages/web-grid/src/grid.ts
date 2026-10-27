@@ -15,7 +15,7 @@ import type {
 	DataRequestDetail,
 	DataRequestTrigger,
 	ValidateResult,
-	GridMode,
+	GridPreset,
 	ToggleVisibility,
 	PaginationLabelsCallback,
 	SummaryCallback,
@@ -161,21 +161,22 @@ const DEFAULT_LABELS: GridLabels = {
 	}
 }
 
-/** The settings a `mode` also sets (a preset). Shared by the engine's `mode`
- * setter and the element's `mode` input (`getBatchValuesCallback`). */
-export const MODE_PRESETS: Record<GridMode, {
+/** The settings a `preset` also sets. Shared by the engine's `preset`
+ * setter and the element's `preset` input (`getBatchValuesCallback`). */
+export const GRID_PRESETS: Record<GridPreset, {
 	isEditable?: boolean
+	isReadonly?: boolean
 	editTrigger?: EditTrigger
 	dropdownToggleVisibility?: ToggleVisibility
 	shouldShowDropdownOnFocus?: boolean
 	cellSelectionMode?: CellSelectionMode
 }> = {
 	// No editing, click to select cells
-	'read-only': { isEditable: false, dropdownToggleVisibility: 'on-focus', cellSelectionMode: 'click' },
+	'read-only': { isEditable: false, isReadonly: true, dropdownToggleVisibility: 'on-focus', cellSelectionMode: 'click' },
 	// Excel-like: click+drag to select
-	'excel': { isEditable: true, editTrigger: 'navigate', dropdownToggleVisibility: 'always', shouldShowDropdownOnFocus: false, cellSelectionMode: 'click' },
+	'excel': { isEditable: true, isReadonly: false, editTrigger: 'navigate', dropdownToggleVisibility: 'always', shouldShowDropdownOnFocus: false, cellSelectionMode: 'click' },
 	// Avoid conflict with always-editing cells
-	'input-matrix': { isEditable: true, editTrigger: 'always', dropdownToggleVisibility: 'always', shouldShowDropdownOnFocus: true, cellSelectionMode: 'shift' },
+	'input-matrix': { isEditable: true, isReadonly: false, editTrigger: 'always', dropdownToggleVisibility: 'always', shouldShowDropdownOnFocus: true, cellSelectionMode: 'shift' },
 }
 
 /**
@@ -206,7 +207,9 @@ export class GridEngine<T = unknown> {
 	protected _editButtonIcon: string = '✎'
 	protected _editStartSelection: EditStartSelection = "mousePosition"
 	protected _shouldCommitOnClickAway: boolean = true
-	protected _mode: GridMode = "excel"
+	protected _preset: GridPreset = "excel"
+	protected _isReadonly: boolean = false
+	protected _isDisabled: boolean = false
 	protected _dropdownToggleVisibility: ToggleVisibility = "always"
 	protected _shouldShowDropdownOnFocus: boolean = true
 	protected _shouldOpenDropdownOnEnter: boolean = false
@@ -549,6 +552,25 @@ export class GridEngine<T = unknown> {
 		this.requestUpdate()
 	}
 
+	/** Values can't change (no editing, paste, fill, row add / delete / move); still focusable, selectable, copyable. */
+	get isReadonly(): boolean { return this._isReadonly }
+	set isReadonly(value: boolean) {
+		this._isReadonly = !!value
+		if (this._isReadonly) this.cancelEdit()
+		this.requestUpdate()
+	}
+
+	/** No interaction at all (not focusable). */
+	get isDisabled(): boolean { return this._isDisabled }
+	set isDisabled(value: boolean) {
+		this._isDisabled = !!value
+		if (this._isDisabled) this.cancelEdit()
+		this.requestUpdate()
+	}
+
+	/** Grid-level editing is on and neither `isReadonly` nor `isDisabled` blocks it. */
+	get isEffectivelyEditable(): boolean { return this._isEditable && !this._isReadonly && !this._isDisabled }
+
 	get isRowEditable(): boolean | undefined { return this._isRowEditable }
 	set isRowEditable(value: boolean | undefined) {
 		this._isRowEditable = value
@@ -586,10 +608,10 @@ export class GridEngine<T = unknown> {
 		this._shouldCommitOnClickAway = value
 	}
 
-	get mode(): GridMode { return this._mode }
-	set mode(value: GridMode) {
-		this._mode = value
-		this.applyModeDefaults()
+	get preset(): GridPreset { return this._preset }
+	set preset(value: GridPreset) {
+		this._preset = value
+		this.applyPresetDefaults()
 		this.checkEditTriggerConflicts()
 		this.requestUpdate()
 	}
@@ -2603,17 +2625,18 @@ export class GridEngine<T = unknown> {
 	}
 
 	// ==========================================================================
-	// Mode Defaults
+	// Preset Defaults
 	// ==========================================================================
 
 	/**
-	 * Apply sensible defaults based on the current mode.
-	 * Called when mode is set.
+	 * Apply the settings of the current preset.
+	 * Called when `preset` is set.
 	 */
-	protected applyModeDefaults(): void {
-		const preset = MODE_PRESETS[this._mode]
+	protected applyPresetDefaults(): void {
+		const preset = GRID_PRESETS[this._preset]
 		if (!preset) return
 		if (preset.isEditable !== undefined) this._isEditable = preset.isEditable
+		if (preset.isReadonly !== undefined) this._isReadonly = preset.isReadonly
 		if (preset.editTrigger !== undefined) this._editTrigger = preset.editTrigger
 		if (preset.dropdownToggleVisibility !== undefined) this._dropdownToggleVisibility = preset.dropdownToggleVisibility
 		if (preset.shouldShowDropdownOnFocus !== undefined) this._shouldShowDropdownOnFocus = preset.shouldShowDropdownOnFocus
@@ -3392,6 +3415,9 @@ export class GridEngine<T = unknown> {
 		// indent + chevron and (typically) the row's display name; editing it inline
 		// conflicts with the toggle interaction and rarely matches user intent.
 		if (this.isTreeMode && column.isTree) return false
+
+		// 0b. A read-only / disabled grid edits nothing (wins over every column / row opt-in)
+		if (this._isReadonly || this._isDisabled) return false
 
 		// 1. Hard veto from column
 		if (column.isEditable === false) return false

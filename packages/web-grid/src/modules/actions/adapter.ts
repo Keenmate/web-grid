@@ -72,7 +72,7 @@ export class ActionPipelineAdapter<T = unknown> {
 	 */
 	private isAlwaysMode(colIndex: number): boolean {
 		// Not "always" mode if grid isn't editable
-		if (!this.ctx.engine.isEditable) {
+		if (!this.ctx.engine.isEffectivelyEditable) {
 			return false
 		}
 		return this.getEditTrigger(colIndex) === 'always'

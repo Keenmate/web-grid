@@ -68,12 +68,14 @@ export function rowActionDefaults<T>(host: GridHost<T>, action: string | undefin
 	const labels = host.engine.labels.actions
 	const display = host.engine.displayItems
 	const pos = ctx.row === undefined ? -1 : display.indexOf(ctx.row)
+	// A read-only grid changes no rows: every row built-in is disabled
+	const isLocked = host.engine.isReadonly || host.engine.isDisabled
 	switch (action) {
-		case 'add': return { text: labels.add, icon: ROW_ICONS.add }
-		case 'delete': return { text: labels.delete, icon: ROW_ICONS.delete, isDanger: true }
-		case 'duplicate': return { text: labels.duplicate, icon: ROW_ICONS.duplicate }
-		case 'move-up': return { text: labels.moveUp, icon: ROW_ICONS['move-up'], isDisabled: pos <= 0 }
-		case 'move-down': return { text: labels.moveDown, icon: ROW_ICONS['move-down'], isDisabled: pos === -1 || pos >= display.length - 1 }
+		case 'add': return { text: labels.add, icon: ROW_ICONS.add, isDisabled: isLocked }
+		case 'delete': return { text: labels.delete, icon: ROW_ICONS.delete, isDanger: true, isDisabled: isLocked }
+		case 'duplicate': return { text: labels.duplicate, icon: ROW_ICONS.duplicate, isDisabled: isLocked }
+		case 'move-up': return { text: labels.moveUp, icon: ROW_ICONS['move-up'], isDisabled: isLocked || pos <= 0 }
+		case 'move-down': return { text: labels.moveDown, icon: ROW_ICONS['move-down'], isDisabled: isLocked || pos === -1 || pos >= display.length - 1 }
 	}
 }
 
@@ -205,6 +207,7 @@ async function runBuiltIn<T>(host: GridHost<T>, d: GridActionEventDetail<T>): Pr
 /** add / delete / duplicate / move-up / move-down on `d.row` (delete: `d.rows` when given). */
 async function runRowBuiltIn<T>(host: GridHost<T>, d: GridActionEventDetail<T>): Promise<void> {
 	const engine = host.engine
+	if (engine.isReadonly || engine.isDisabled) return  // a read-only grid changes no rows
 	const row = d.row as T | undefined
 	switch (d.action) {
 		case 'add': {

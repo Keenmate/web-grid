@@ -538,6 +538,8 @@ export async function executePaste<T>(
 export async function handlePasteEvent<T>(ctx: GridHost<T>, e: ClipboardEvent): Promise<void> {
 	// Only in navigate mode with focused cell, not while editing
 	if (!ctx.engine.isNavigateMode || ctx.engine.editingCell || !ctx.engine.focusedCell) return
+	// A read-only / disabled grid takes no paste
+	if (ctx.engine.isReadonly || ctx.engine.isDisabled) return
 
 	const { rowIndex, colIndex } = ctx.engine.focusedCell
 	const text = e.clipboardData?.getData('text') || ''

@@ -2,7 +2,7 @@ import { test, expect, type Page } from './fixtures'
 
 /**
  * Inputs go through core's property path (no grid-side proxies):
- *   - `mode` is a preset via core `getBatchValuesCallback` — it also sets the
+ *   - `preset` is a preset via core `getBatchValuesCallback` — it also sets the
  *     editing flags + cellSelectionMode in the same batch; inputs set explicitly
  *     in that batch win, whatever the order
  *   - property reads are synchronous; engine-derived getters / methods /
@@ -41,16 +41,16 @@ test.beforeEach(async ({ page }) => {
 	await page.waitForFunction(() => !!customElements.get('web-grid'))
 })
 
-test.describe('mode preset (core getBatchValuesCallback)', () => {
+test.describe('preset (core getBatchValuesCallback)', () => {
 	test('markup: an explicit attribute wins over the preset, the rest of the preset applies', async ({ page }) => {
-		await mount(page, 'mode="input-matrix" edit-trigger="click"')
+		await mount(page, 'preset="input-matrix" edit-trigger="click"')
 		expect(await read(page, el => [el.editTrigger, el.isEditable, el.cellSelectionMode, el.shouldShowDropdownOnFocus]))
 			.toEqual(['click', true, 'shift', true])
 		expect(await read(page, el => [el.engine.editTrigger, el.engine.cellSelectionMode])).toEqual(['click', 'shift'])
 	})
 
 	test('markup: the same result with the attributes in reverse order', async ({ page }) => {
-		await mount(page, 'edit-trigger="click" mode="input-matrix"')
+		await mount(page, 'edit-trigger="click" preset="input-matrix"')
 		expect(await read(page, el => [el.editTrigger, el.isEditable, el.cellSelectionMode]))
 			.toEqual(['click', true, 'shift'])
 		expect(await read(page, el => [el.engine.editTrigger, el.engine.cellSelectionMode])).toEqual(['click', 'shift'])
@@ -59,7 +59,7 @@ test.describe('mode preset (core getBatchValuesCallback)', () => {
 	test('property: the preset is readable synchronously, on the element and the engine', async ({ page }) => {
 		await mount(page, '')
 		expect(await read(page, el => {
-			el.mode = 'input-matrix'
+			el.preset = 'input-matrix'
 			const sync = [el.editTrigger, el.cellSelectionMode]
 			el.flush() // the engine (internal) is fed on the flush
 			return [...sync, el.engine.editTrigger, el.engine.cellSelectionMode]
@@ -70,7 +70,7 @@ test.describe('mode preset (core getBatchValuesCallback)', () => {
 		await mount(page, '')
 		expect(await read(page, el => {
 			el.editTrigger = 'click'
-			el.mode = 'excel'
+			el.preset = 'excel'
 			el.flush()
 			return [el.editTrigger, el.engine.editTrigger, el.engine.isEditable]
 		})).toEqual(['click', 'click', true])
@@ -79,7 +79,7 @@ test.describe('mode preset (core getBatchValuesCallback)', () => {
 	test('across ticks the last write wins', async ({ page }) => {
 		await mount(page, 'edit-trigger="click"')
 		expect(await read(page, el => {
-			el.mode = 'excel'
+			el.preset = 'excel'
 			el.flush()
 			return [el.editTrigger, el.engine.editTrigger]
 		})).toEqual(['navigate', 'navigate'])
@@ -103,8 +103,8 @@ test.describe('property path', () => {
 			el.pageSize = 34
 			el.pageSize = null
 			el.pageSize = 0
-			el.mode = 'bogus'
-			return [el.pageSize, el.totalPages, el.engine.pageSize, el.mode]
+			el.preset = 'bogus'
+			return [el.pageSize, el.totalPages, el.engine.pageSize, el.preset]
 		})).toEqual([34, 3, 34, 'excel'])
 		expect(warnings.filter(w => w.includes('rejected invalid value'))).toHaveLength(3)
 	})
@@ -200,5 +200,47 @@ test.describe('every input (table-driven)', () => {
 				})
 		})
 		for (const r of results) expect.soft(r.v, `${r.key}: invalid attribute`).toEqual(r.def)
+	})
+})
+
+test.describe('readonly / disabled (C5)', () => {
+	test('readonly: nothing is editable, the grid stays focusable', async ({ page }) => {
+		await mount(page, 'is-editable')
+		expect(await read(page, el => el.canEditCell(0, 'name'))).toBe(true)
+		await page.evaluate(() => { (document.getElementById('t') as any).setAttribute('readonly', '') })
+		expect(await read(page, el => [el.isReadonly, el.canEditCell(0, 'name')])).toEqual([true, false])
+		const cell = page.locator('web-grid#t .wg__cell[data-row="0"][data-col="1"]')
+		await cell.click()
+		await expect(cell).toHaveClass(/wg__cell--focused/)
+		await page.keyboard.press('F2')
+		await expect(cell.locator('input')).toHaveCount(0)
+		await page.evaluate(() => { (document.getElementById('t') as any).removeAttribute('readonly') })
+		expect(await read(page, el => [el.isReadonly, el.canEditCell(0, 'name')])).toEqual([false, true])
+	})
+
+	test('disabled: the container is inert and dimmed; removing it restores interaction', async ({ page }) => {
+		await mount(page, 'disabled')
+		const container = page.locator('web-grid#t .wg')
+		await expect(container).toHaveAttribute('inert', '')
+		await expect(container).toHaveClass(/wg--disabled/)
+		await page.evaluate(() => { (document.getElementById('t') as any).isDisabled = false })
+		await expect(container).not.toHaveAttribute('inert', '')
+		await expect(container).not.toHaveClass(/wg--disabled/)
+	})
+})
+
+test.describe('defer / release / ready (core)', () => {
+	test('defer holds the first render until release(); then ready fires once', async ({ page }) => {
+		await mount(page, 'defer')
+		expect(await read(page, el => [el.isReady, !!el.shadowRoot.querySelector('.wg__table'), el.hasAttribute('ready')]))
+			.toEqual([false, false, false])
+		const result = await read(page, el => {
+			let readyCount = 0
+			el.addEventListener('ready', () => { readyCount++ })
+			el.items = el.items.slice(0, 5)
+			el.release()
+			return [readyCount, el.isReady, el.shadowRoot.querySelectorAll('tbody tr').length, el.hasAttribute('ready')]
+		})
+		expect(result).toEqual([1, true, 5, true])
 	})
 })

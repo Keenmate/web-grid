@@ -42,7 +42,9 @@ export function getContainerClasses<T>(ctx: GridHost<T>): string {
 	const classes = ['wg']
 	if (ctx.engine.isStriped) classes.push('wg--striped')
 	if (ctx.engine.isHoverable) classes.push('wg--hoverable')
-	if (ctx.engine.isEditable) classes.push('wg--editable')
+	if (ctx.engine.isEffectivelyEditable) classes.push('wg--editable')
+	if (ctx.engine.isReadonly) classes.push('wg--readonly')
+	if (ctx.engine.isDisabled) classes.push('wg--disabled')
 	if (ctx.engine.isNavigateMode) classes.push('wg--navigate-mode')
 	if (ctx.engine.isColumnReorderAllowed) classes.push('wg--reorderable')
 	if (ctx.engine.isScrollable) classes.push('wg--scrollable')

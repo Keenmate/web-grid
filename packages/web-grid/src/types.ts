@@ -43,8 +43,8 @@ export type EditorType = Editor
 // How editing is triggered
 export type EditTrigger = "click" | "dblclick" | "button" | "always" | "navigate"
 
-// Grid mode - sets sensible defaults for common use cases
-export type GridMode = "read-only" | "excel" | "input-matrix"
+// Grid preset - sets sensible defaults for common use cases
+export type GridPreset = "read-only" | "excel" | "input-matrix"
 
 // When to show dropdown toggle (▼)
 export type ToggleVisibility = "always" | "on-focus"
@@ -392,7 +392,9 @@ export type QuickGridProps<T> = {
 	editButtonIcon?: string  // Edit button HTML for editTrigger 'button' (default '✎'; e.g. '<span class="lucide-pencil"></span>')
 	editStartSelection?: EditStartSelection  // Default cursor position when entering edit via navigate mode (default: selectAll)
 	shouldCommitOnClickAway?: boolean  // Commit the editor value (Excel-like) when clicking another cell; false discards. Default: true
-	mode?: GridMode  // Grid mode - sets sensible defaults (read-only, excel, input-matrix)
+	preset?: GridPreset  // Preset - sets sensible defaults (read-only, excel, input-matrix); read-only also sets isReadonly
+	isReadonly?: boolean  // Values can't change (no edit / paste / fill / row add-delete-move); still focusable, selectable, copyable
+	isDisabled?: boolean  // No interaction at all
 	dropdownToggleVisibility?: ToggleVisibility  // When to show dropdown toggle (always, on-focus)
 	shouldShowDropdownOnFocus?: boolean  // Auto-open dropdown when cell is focused
 	shouldOpenDropdownOnEnter?: boolean  // Enter opens dropdown (true) or moves down (false, default)
