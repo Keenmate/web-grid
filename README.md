@@ -686,9 +686,7 @@ By default, options use `value` and `label` properties. Override with member str
 | `renderOptionCallback` | `(ctx: { option, optionIndex, isFocused, isSelected, isDisabled }) => string` | Custom HTML for each option |
 | `onSelect` | `(ctx: { option, row, rowIndex, column, field, … }) => void` | Fires when an option is selected |
 | `allowEmpty` | `boolean` | Allow null/empty selection |
-| `emptyLabel` | `string` | Label for empty option (default: `'-- Select --'`) |
-| `noOptionsText` | `string` | Override "No options" message |
-| `searchingText` | `string` | Override "Searching..." message |
+| `labels` | `{ dropdownEmpty?, dropdownSearching? }` | This column's dropdown texts, per key over the grid `labels` |
 | `dropdownMinWidth` | `string` | Minimum width for dropdown (e.g., `'300px'`) |
 | `placeholder` | `string` | Placeholder text (combobox/autocomplete) |
 
@@ -1192,7 +1190,7 @@ grid.getCustomStylesCallback = () => `
 
 ### i18n
 
-All UI labels can be customized via the `labels` property:
+All UI strings are customized via `labels` — a partial object (also a JSON attribute: `labels='{"empty":"Nothing here"}'`) merged per key over the built-in English texts; nested groups (`actions`, `contextMenu`) merge per key too. `{name}` placeholders are filled in. A column can override its dropdown texts with `editorOptions.labels`.
 
 ```javascript
 grid.labels = {
@@ -1206,7 +1204,8 @@ grid.labels = {
   paginationPageInfo: 'Page {current} of {total}',
   paginationItemCount: '{count} items',
   paginationPerPage: 'per page',
-  dropdownNoOptions: 'No options',
+  empty: 'No items to display',
+  dropdownEmpty: 'No options',
   dropdownSearching: 'Searching...',
   rowLocked: 'This row is locked',
   rowLockedBy: 'Locked by {lockedBy}',

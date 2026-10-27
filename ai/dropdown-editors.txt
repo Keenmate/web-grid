@@ -182,16 +182,11 @@ allowEmpty (boolean)
   When true, adds an empty/null option at the top of the dropdown.
   Selecting it commits null/empty to the cell.
 
-emptyLabel (string)
-  Label for the empty option. Default: "-- Select --"
-
-noOptionsText (string)
-  Message shown when filter returns no matches.
-  Falls back to grid.labels.dropdownNoOptions (default: "No options").
-
-searchingText (string)
-  Message shown during async search.
-  Falls back to grid.labels.dropdownSearching (default: "Searching...").
+labels ({ dropdownEmpty?, dropdownSearching? })
+  This column's dropdown texts, per key over the grid's labels:
+  dropdownEmpty - shown when the filter returns no matches (grid default
+  labels.dropdownEmpty, "No options"); dropdownSearching - shown during an
+  async search (labels.dropdownSearching, "Searching...").
 
 dropdownMinWidth (string)
   CSS minimum width for the dropdown popup. Useful when the cell is narrow
@@ -330,8 +325,7 @@ Example 1: Select with custom value/display members
       valueMember: 'code',
       displayMember: 'name',
       groupMember: 'region',
-      allowEmpty: true,
-      emptyLabel: '(none)'
+      allowEmpty: true
     }
   }
 

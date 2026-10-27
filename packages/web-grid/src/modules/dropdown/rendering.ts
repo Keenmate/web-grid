@@ -38,8 +38,8 @@ export function renderDropdown<T>(
 	// Render options
 	if (options.length === 0) {
 		const message = ctx.autocomplete.isSearching
-			? (opts.searchingText || ctx.engine.labels.dropdownSearching)
-			: (opts.noOptionsText || ctx.engine.labels.dropdownNoOptions)
+			? (opts.labels?.dropdownSearching ?? ctx.engine.labels.dropdownSearching)
+			: (opts.labels?.dropdownEmpty ?? ctx.engine.labels.dropdownEmpty)
 		dropdown.innerHTML = `<div class="wg__dropdown-empty">${ctx.escapeHtml(message)}</div>`
 	} else {
 		// Get current value for isSelected check

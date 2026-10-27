@@ -15,6 +15,7 @@
 
 import type { GridHost } from '../grid-context.js'
 import { updateFocusVisual, moveFocus } from './focus.js'
+import { formatLabel } from '../../labels.js'
 
 /**
  * Render and open the Ctrl+G dialog. `colIndex` is the column the user was
@@ -31,7 +32,7 @@ export function openGoToRowDialog<T>(ctx: GridHost<T>, colIndex: number): void {
 	const labels = ctx.engine.labels
 	overlay.innerHTML = `
 		<div class="wg__goto-dialog">
-			<label class="wg__goto-label">${ctx.escapeHtml(labels.goToRow.replace('{max}', String(displayItems.length)))}</label>
+			<label class="wg__goto-label">${ctx.escapeHtml(formatLabel(labels.goToRow, { max: displayItems.length }))}</label>
 			<input type="number" class="wg__goto-input" min="1" max="${displayItems.length}" value="1" />
 			<div class="wg__goto-buttons">
 				<button type="button" class="wg__goto-btn wg__goto-btn--cancel">${ctx.escapeHtml(labels.goToRowCancel)}</button>

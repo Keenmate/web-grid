@@ -163,7 +163,7 @@ editorOptions (EditorOptions<T>)
       getValueCallback, getDisplayValueCallback, getSearchValueCallback,
       getIconCallback, getSubtitleCallback, getIsDisabledCallback,
       getGroupCallback, renderOptionCallback, onSelect,
-      allowEmpty, emptyLabel, noOptionsText, searchingText,
+      allowEmpty, labels ({ dropdownEmpty, dropdownSearching }),
       dropdownMinWidth, placeholder
     Autocomplete-specific:
       searchCallback, initialOptions, minSearchLength, debounceMs,
@@ -460,7 +460,6 @@ Here is a dropdown column example with editorOptions:
           { value: 'hr', label: 'Human Resources' }
         ],
         allowEmpty: true,
-        emptyLabel: '-- None --',
         placeholder: 'Search departments...',
         dropdownMinWidth: '250px',
         onSelect: ({ option, row }) => {

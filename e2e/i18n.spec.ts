@@ -17,7 +17,7 @@ const CS = {
 	paginationPageInfo: 'Strana {current} z {total}',
 	paginationItemCount: '{count} položek',
 	paginationPerPage: 'na stránku',
-	dropdownNoOptions: 'Žádné možnosti',
+	dropdownEmpty: 'Žádné možnosti',
 	actions: {
 		add: 'Přidat řádek', delete: 'Smazat řádek', duplicate: 'Duplikovat řádek', moveUp: 'Nahoru', moveDown: 'Dolů',
 		expand: 'Rozbalit', collapse: 'Sbalit', expandAll: 'Rozbalit vše', collapseAll: 'Sbalit vše'
@@ -100,6 +100,30 @@ test('the go-to-row dialog texts are translatable through labels', async ({ page
 test('a partial nested labels.contextMenu keeps the other header-menu labels', async ({ page }) => {
 	expect(await onGrid(page, el => {
 		el.labels = { contextMenu: { hideColumn: 'Skrýt' } }
-		return [el.labels.contextMenu.hideColumn, el.labels.contextMenu.sortAsc, el.labels.actions.add, el.labels.paginationNext]
-	})).toEqual(['Skrýt', 'Sort Ascending', 'Add row', '▶'])
+		el.flush()
+		const l = el.engine.labels  // the resolved (merged) texts; el.labels reads back what was assigned
+		return [l.contextMenu.hideColumn, l.contextMenu.sortAsc, l.actions.add, l.paginationNext, el.labels]
+	})).toEqual(['Skrýt', 'Sort Ascending', 'Add row', '▶', { contextMenu: { hideColumn: 'Skrýt' } }])
+})
+
+test('labels is also a JSON attribute', async ({ page }) => {
+	await onGrid(page, el => el.setAttribute('labels', '{"paginationNext":"Dál"}'))
+	await expect(pag(page).locator('[data-action="next"]')).toHaveText('Dál')
+})
+
+test('labels.empty is the empty-table text', async ({ page }) => {
+	await onGrid(page, el => { el.items = [] })
+	await expect(gridLocator(page).locator('.wg__empty')).toHaveText('No items to display')
+	await onGrid(page, el => { el.labels = { empty: 'Žádná data' } })
+	await expect(gridLocator(page).locator('.wg__empty')).toHaveText('Žádná data')
+})
+
+test('a column editorOptions.labels overrides the grid dropdown texts for that column', async ({ page }) => {
+	await onGrid(page, el => {
+		el.labels = { dropdownEmpty: 'Grid-level' }
+		el.columns = el.columns.map((c: any) => c.field === 'kind' ? { ...c, editorOptions: { ...c.editorOptions, labels: { dropdownEmpty: 'Column-level' } } } : c)
+	})
+	await cell(page, 0, 2).click()
+	await page.keyboard.type('zzz')
+	await expect(gridLocator(page).locator('.wg__dropdown')).toContainText('Column-level')
 })

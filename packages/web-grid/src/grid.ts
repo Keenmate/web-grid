@@ -81,85 +81,11 @@ import { bindOptionContext } from './modules/dropdown/options.js'
 // Logging
 import { initLogger, dataLogger, interactionLogger, perfLogger } from './logger.js'
 import { typeNumberValue } from './modules/editing/value-parse.js'
+import { resolveLabels, formatLabel } from './labels.js'
 
 // Perf instrumentation (temporary — investigating tree-toggle slowness)
 import { gridPerf } from './perf.js'
 
-// Default labels (English)
-const DEFAULT_LABELS: GridLabels = {
-	// Toolbar
-	rowActions: 'Row actions',
-	inlineActionsHeader: 'Actions',
-
-	// Shortcuts help
-	keyboardShortcuts: 'Keyboard shortcuts',
-	rangeShortcuts: 'Selection shortcuts',
-
-	// Pagination
-	paginationFirst: '⏮',
-	paginationPrevious: '◀',
-	paginationNext: '▶',
-	paginationLast: '⏭',
-	paginationPageInfo: 'Page {current} of {total}',
-	paginationItemCount: '{count} items',
-	paginationPerPage: 'per page',
-
-	// Dropdown
-	dropdownNoOptions: 'No options',
-	dropdownSearching: 'Searching...',
-
-	// Row locking
-	rowLocked: 'This row is locked',
-	rowLockedBy: 'Locked by {lockedBy}',
-
-	// Go-to-row dialog
-	goToRow: 'Go to row (1-{max}):',
-	goToRowGo: 'Go',
-	goToRowCancel: 'Cancel',
-
-	// Tree chevron
-	treeExpand: 'Expand',
-	treeCollapse: 'Collapse',
-
-	// Filter row
-	filterColumn: 'Filter {column}',
-
-	// Edit button (editTrigger: 'button')
-	editCell: 'Edit',
-
-	// Built-in value checks
-	invalidNumber: 'Not a number',
-	numberMin: 'Must be at least {min}',
-	numberMax: 'Must be at most {max}',
-	numberNegative: 'Must not be negative',
-	invalidBoolean: 'Not a yes / no value',
-	invalidDate: 'Not a valid date',
-
-	// Built-in row / tree actions
-	actions: {
-		add: 'Add row',
-		delete: 'Delete row',
-		duplicate: 'Duplicate row',
-		moveUp: 'Move up',
-		moveDown: 'Move down',
-		expand: 'Expand',
-		collapse: 'Collapse',
-		expandAll: 'Expand all',
-		collapseAll: 'Collapse all'
-	},
-
-	// Header context menu
-	contextMenu: {
-		sortAsc: 'Sort Ascending',
-		sortDesc: 'Sort Descending',
-		clearSort: 'Clear Sort',
-		hideColumn: 'Hide Column',
-		freezeColumn: 'Freeze Column',
-		unfreezeColumn: 'Unfreeze Column',
-		columnVisibility: 'Column Visibility',
-		showAll: 'Show all'
-	}
-}
 
 /** The settings a `preset` also sets. Shared by the engine's `preset`
  * setter and the element's `preset` input (`getBatchValuesCallback`). */
@@ -305,7 +231,7 @@ export class GridEngine<T = unknown> {
 	protected _getRowClassCallback?: (ctx: RowContext<T>) => string | null
 
 	// Labels/i18n
-	protected _labels: GridLabels = { ...DEFAULT_LABELS }
+	protected _labels: GridLabels = resolveLabels(null)
 
 	// Scroll behavior
 	protected _isScrollable: boolean = false
@@ -983,18 +909,13 @@ export class GridEngine<T = unknown> {
 	/** Tooltip text for a locked row (`labels.rowLockedBy` / `labels.rowLocked`). */
 	getLockTooltip(lockInfo: RowLock | null | undefined): string {
 		return lockInfo?.lockedBy
-			? this._labels.rowLockedBy.replace('{lockedBy}', String(lockInfo.lockedBy))
+			? formatLabel(this._labels.rowLockedBy, { lockedBy: String(lockInfo.lockedBy) })
 			: this._labels.rowLocked
 	}
 
-	set labels(value: GridLabelsInput) {
-		// The nested groups merge too — a partial `actions` / `contextMenu` keeps the other texts
-		this._labels = {
-			...DEFAULT_LABELS,
-			...value,
-			actions: { ...DEFAULT_LABELS.actions, ...value?.actions },
-			contextMenu: { ...DEFAULT_LABELS.contextMenu, ...value?.contextMenu }
-		}
+	set labels(value: GridLabelsInput | null | undefined) {
+		// Per key over the English defaults (nested groups too) — see labels.ts
+		this._labels = resolveLabels(value)
 		this.requestUpdate()
 	}
 

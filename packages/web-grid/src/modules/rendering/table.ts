@@ -5,6 +5,7 @@
 
 import type { GridHost } from '../grid-context.js'
 import type { Column } from '../../types.js'
+import { formatLabel } from '../../labels.js'
 import { renderCellEditor } from '../editing/index.js'
 import { renderCellDisplay } from './display.js'
 import { wrapTreeCell } from './tree-render.js'
@@ -161,7 +162,7 @@ export function renderHeaderRow<T>(ctx: GridHost<T>): string {
 			if (column.isFilterable) {
 				const isInvalid = invalidFilterFields.has(field)
 				const value = ctx.filterInputText(field) ?? filters[field] ?? ''
-				const label = ctx.engine.labels.filterColumn.replace('{column}', column.title ?? field)
+				const label = formatLabel(ctx.engine.labels.filterColumn, { column: column.title ?? field })
 				filterCells.push(`<th class="wg__filter-cell${frozenClass}" style="${filterStyle}" data-field="${ctx.escapeHtml(field)}"><input type="text" class="wg__filter-input${isInvalid ? ' invalid' : ''}" data-field="${ctx.escapeHtml(field)}" value="${ctx.escapeHtml(value)}" aria-label="${ctx.escapeHtml(label)}"${isInvalid ? ' aria-invalid="true"' : ''} autocomplete="off" spellcheck="false"></th>`)
 			} else {
 				filterCells.push(`<th class="wg__filter-cell${frozenClass}" style="${filterStyle}"></th>`)
@@ -237,7 +238,7 @@ export function renderDataRows<T>(ctx: GridHost<T>): string {
 		return `
 			<tr>
 				<td class="wg__empty" colspan="${colspanWithExtras}">
-					No items to display
+					${ctx.escapeHtml(ctx.engine.labels.empty)}
 				</td>
 			</tr>
 		`
@@ -469,7 +470,7 @@ export function renderDataRowsVirtual<T>(ctx: GridHost<T>, params: VirtualScroll
 		return `
 			<tr>
 				<td class="wg__empty" colspan="${colspanWithExtras}">
-					No items to display
+					${ctx.escapeHtml(ctx.engine.labels.empty)}
 				</td>
 			</tr>
 		`
@@ -696,11 +697,8 @@ export function renderPagination<T>(ctx: GridHost<T>, position: string = 'bottom
 		previous: gridLabels.paginationPrevious,
 		next: gridLabels.paginationNext,
 		last: gridLabels.paginationLast,
-		pageInfo: gridLabels.paginationPageInfo
-			.replace('{current}', String(currentPage))
-			.replace('{total}', String(totalPages)),
-		itemCount: gridLabels.paginationItemCount
-			.replace('{count}', String(totalItems)),
+		pageInfo: formatLabel(gridLabels.paginationPageInfo, { current: currentPage, total: totalPages }),
+		itemCount: formatLabel(gridLabels.paginationItemCount, { count: totalItems }),
 		perPage: gridLabels.paginationPerPage
 	}
 

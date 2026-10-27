@@ -205,7 +205,7 @@ Key options (editorOptions):
   displayMember         -- Property name for display text (default: 'label').
   renderOptionCallback  -- Custom HTML for each option.
   allowEmpty            -- Allow null/empty selection.
-  emptyLabel            -- Label for empty option (default: '-- Select --').
+  labels                -- { dropdownEmpty, dropdownSearching } texts for this column.
 
 Example:
   {

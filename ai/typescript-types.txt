@@ -239,9 +239,7 @@ Configuration for all editor types. Properties are grouped by editor type.
     renderOptionCallback?: (ctx: OptionRenderContext<T>) => string
     onSelect?: (ctx: OptionSelectContext<T>) => void
     allowEmpty?: boolean
-    emptyLabel?: string
-    noOptionsText?: string
-    searchingText?: string
+    labels?: { dropdownEmpty?: string; dropdownSearching?: string }   per-column, over the grid labels
     dropdownMinWidth?: string
     placeholder?: string
     // Text
@@ -561,7 +559,8 @@ GRIDLABELS
     paginationPageInfo: string
     paginationItemCount: string
     paginationPerPage: string
-    dropdownNoOptions: string
+    empty: string                 empty-table text ("No items to display")
+    dropdownEmpty: string
     dropdownSearching: string
     rowLocked / rowLockedBy / goToRow / goToRowGo / goToRowCancel /
     treeExpand / treeCollapse: string

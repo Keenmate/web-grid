@@ -258,6 +258,7 @@ import {
 	toText,
 	toEnum,
 	toCustom,
+	toObject,
 	type InputDef,
 	type EventDef,
 } from '@keenmate/web-components-core'
@@ -448,6 +449,9 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		{ configKey: 'shouldValidateOnPaste', attribute: 'validate-on-paste', converter: toBool('default-true'), default: true, on: 'update' },
 		// Fill handle — grid-wide drag direction; a column's own `fillDirection` wins
 		{ configKey: 'fillDirection', attribute: 'fill-direction', converter: toEnum(FILL_DIRECTIONS, { default: 'vertical' }), default: 'vertical', on: 'update' },
+		// UI strings (i18n): a partial object (also a JSON attribute) merged per key over the
+		// English defaults — `empty`, `dropdownEmpty`, pagination / go-to-row / menu texts, … (see labels.ts)
+		{ configKey: 'labels', attribute: 'labels', converter: toObject(), on: 'update', type: 'GridLabelsInput' },
 		// Tooltip timing (element-local, not on grid — the bridge's `in this.engine`
 		// guard skips them; readers use the config-backed getter)
 		{ configKey: 'tooltipShowDelay', attribute: 'tooltip-show-delay', converter: toInt({ min: 0, default: 200 }), default: 200, on: 'update' },
@@ -1044,8 +1048,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	get getRowClassCallback(): ((ctx: RowContext<T>) => string | null) | undefined { return this.engine.getRowClassCallback }
 	set getRowClassCallback(value: ((ctx: RowContext<T>) => string | null) | undefined) { this.engine.getRowClassCallback = value }
 
-	get labels(): GridLabels { return this.engine.labels }
-	set labels(value: GridLabelsInput) { this.engine.labels = value }
+	/** UI strings — a partial object (JSON attribute `labels`) merged per key over the English defaults. Reads back what was assigned. */
+	declare labels: GridLabelsInput | undefined
 
 	get summaryMetadata(): unknown { return this.engine.summaryMetadata }
 	set summaryMetadata(value: unknown) { this.engine.summaryMetadata = value }

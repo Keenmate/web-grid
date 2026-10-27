@@ -139,7 +139,8 @@ test.describe('every input (table-driven)', () => {
 				editButtonIcon: ['<b>E</b>', '<b>E</b>'],
 				newRowIndicator: ['*', '*'],
 				treeExpandedGlyph: ['-', '-'],
-				treeCollapsedGlyph: ['+', '+']
+				treeCollapsedGlyph: ['+', '+'],
+				labels: ['{"empty":"Nic"}', { empty: 'Nic' }]
 			}
 			const sample = (d: any): [string, unknown] | null => {
 				if (SPECIAL[d.configKey]) return SPECIAL[d.configKey]

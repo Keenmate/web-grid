@@ -15,6 +15,7 @@
 
 import type { Column, EditorOptions, GridLabels } from '../../types.js'
 import { parseFormat, parseDateInput, toISODateString } from '../datepicker/formatting.js'
+import { formatLabel } from '../../labels.js'
 
 export interface TypedValue {
 	/** The typed value — or, when `error` is set, what to keep in the draft (the typed text / number). */
@@ -45,8 +46,8 @@ function roundTo(n: number, decimalPlaces: number): number {
 export function checkNumber(n: number, opts: EditorOptions<any>, labels: ValueLabels): TypedValue {
 	const value = opts.decimalPlaces != null && opts.decimalPlaces >= 0 ? roundTo(n, opts.decimalPlaces) : n
 	if (opts.allowNegative === false && value < 0) return { value, error: labels.numberNegative }
-	if (opts.min != null && value < opts.min) return { value, error: labels.numberMin.replace('{min}', String(opts.min)) }
-	if (opts.max != null && value > opts.max) return { value, error: labels.numberMax.replace('{max}', String(opts.max)) }
+	if (opts.min != null && value < opts.min) return { value, error: formatLabel(labels.numberMin, { min: opts.min }) }
+	if (opts.max != null && value > opts.max) return { value, error: formatLabel(labels.numberMax, { max: opts.max }) }
 	return { value, error: null }
 }
 

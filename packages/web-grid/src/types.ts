@@ -96,9 +96,7 @@ export type EditorOptions<T = unknown> = {
 
 	// Other shared options
 	allowEmpty?: boolean    // Allow null/empty selection
-	emptyLabel?: string     // Label for empty option (default: "-- Select --")
-	noOptionsText?: string  // Override "No options" message (falls back to grid.labels.dropdownNoOptions)
-	searchingText?: string  // Override "Searching..." message (falls back to grid.labels.dropdownSearching)
+	labels?: Partial<Pick<GridLabels, 'dropdownEmpty' | 'dropdownSearching'>>  // This column's dropdown texts (per key over the grid's `labels`)
 	dropdownMinWidth?: string  // Minimum width for dropdown (e.g., "300px") - useful when cell is narrow
 
 	// === TEXT ===
@@ -606,8 +604,11 @@ export type GridLabels = {
 	paginationItemCount: string     // e.g., "{count} items"
 	paginationPerPage: string       // e.g., "per page"
 
+	// Empty table
+	empty: string                   // "No items to display"
+
 	// Dropdown
-	dropdownNoOptions: string       // "No options" - shown when filter returns empty
+	dropdownEmpty: string           // "No options" - shown when filter returns empty
 	dropdownSearching: string       // "Searching..." - shown during async search
 
 	// Row locking (row-number / row tooltip)
