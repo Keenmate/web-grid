@@ -15,7 +15,7 @@ external lock methods.
 CONFIGURATION
 -------------
 grid.rowLocking = {
-  lockedMember: 'isLocked',
+  isLockedMember: 'isLocked',
   lockInfoMember: 'lockInfo',
   lockedEditBehavior: 'block'
 }
@@ -26,10 +26,10 @@ getCanEditLockedCallback, + non-enumerable controller / element).
 
 LOCK SOURCE 1: PROPERTY-BASED
 ------------------------------
-lockedMember (keyof T)
+isLockedMember (keyof T)
   Property name on the row object containing a boolean lock state.
 
-  grid.rowLocking = { lockedMember: 'isLocked' }
+  grid.rowLocking = { isLockedMember: 'isLocked' }
   // Row: { id: 1, name: 'Alice', isLocked: true }
 
 lockInfoMember (keyof T)

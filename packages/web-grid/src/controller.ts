@@ -22,6 +22,8 @@ export function createGridController<T>(el: GridElement<T>): GridController<T> {
 		setFilter: (field, value) => g().setFilter(field, value),
 		// rows
 		insertRow: (row, afterRow) => g().insertRow(row, afterRow),
+		insertRows: (rows, afterRow) => g().insertRows(rows, afterRow),
+		removeRow: (row) => g().removeRow(row),
 		removeRows: (rows) => g().removeRows(rows),
 		duplicateRow: (row) => g().duplicateRow(row),
 		moveRow: (row, delta) => g().moveRow(row, delta),
@@ -32,7 +34,6 @@ export function createGridController<T>(el: GridElement<T>): GridController<T> {
 		// drafts / validation
 		getRowDraft: (rowIndex) => g().getRowDraft(rowIndex),
 		hasRowDraft: (rowIndex) => g().hasRowDraft(rowIndex),
-		discardRowDraft: (rowIndex) => g().discardRowDraft(rowIndex),
 		getDraftRowIndices: () => g().getDraftRowIndices(),
 		getDrafts: () => g().getDrafts(),
 		discardDraft: (row) => g().discardDraft(row),
@@ -90,6 +91,7 @@ export function createGridController<T>(el: GridElement<T>): GridController<T> {
 		// focus / editing
 		focusCell: (rowIndex, colIndex) => el.focusCell(rowIndex, colIndex),
 		startEditing: (rowIndex, colIndex) => el.startEditing(rowIndex, colIndex),
+		scrollToRow: (rowIndex) => el.scrollToRow(rowIndex),
 		// menus / toolbar
 		closeContextMenu: () => closeGridMenu(el),
 		closeToolbar: () => closeToolbarAndReset(el)

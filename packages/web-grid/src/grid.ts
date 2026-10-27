@@ -2906,15 +2906,6 @@ export class GridEngine<T = unknown> {
 		return Object.keys(draft).some(key => draft[key] !== orig[key])
 	}
 
-	discardRowDraft(rowIndex: number): void {
-		this.deleteDraftAt(rowIndex)
-		const rowKey = this.rowKeyForIndex(rowIndex)
-		if (rowKey !== null) {
-			this._invalidCells = this._invalidCells.filter(c => c.rowKey !== rowKey)
-		}
-		this.requestUpdate()
-	}
-
 	/**
 	 * Discard draft value for a single cell (field)
 	 * Removes the field from the draft row, or deletes the draft row if it becomes empty
@@ -3706,8 +3697,8 @@ export class GridEngine<T = unknown> {
 			const info = (row as Record<string, unknown>)[String(opts.lockInfoMember)] as RowLock | undefined
 			if (info?.isLocked) return info
 		}
-		if (opts.lockedMember) {
-			const locked = (row as Record<string, unknown>)[String(opts.lockedMember)]
+		if (opts.isLockedMember) {
+			const locked = (row as Record<string, unknown>)[String(opts.isLockedMember)]
 			if (locked) return { isLocked: true }
 		}
 
@@ -3840,6 +3831,20 @@ export class GridEngine<T = unknown> {
 		const next = [...this._items]
 		next.splice(at === -1 ? next.length : at + 1, 0, row)
 		this.items = next
+	}
+
+	/** Insert `rows` (in order) after `afterRow` (in `items` order), or at the end. */
+	insertRows(rows: T[], afterRow?: T | null): void {
+		if (!rows.length) return
+		const at = afterRow == null ? -1 : this._items.indexOf(afterRow)
+		const next = [...this._items]
+		next.splice(at === -1 ? next.length : at + 1, 0, ...rows)
+		this.items = next
+	}
+
+	/** Remove `row` from `items`. */
+	removeRow(row: T): void {
+		this.removeRows([row])
 	}
 
 	/** Remove the given rows from `items`. */

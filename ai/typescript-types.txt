@@ -40,6 +40,8 @@ el.controller, and `controller` on every ctx / detail.
     setFilter(field: string, value: string): void
     // rows (used by the add / delete / duplicate / move-up / move-down built-ins)
     insertRow(row: T, afterRow?: T | null): void
+    insertRows(rows: T[], afterRow?: T | null): void
+    removeRow(row: T): void
     removeRows(rows: T[]): void
     duplicateRow(row: T): T
     moveRow(row: T, delta: -1 | 1): void
@@ -50,7 +52,6 @@ el.controller, and `controller` on every ctx / detail.
     // drafts / validation
     getRowDraft(rowIndex: number): T | undefined
     hasRowDraft(rowIndex: number): boolean
-    discardRowDraft(rowIndex: number): void
     getDraftRowIndices(): number[]
     getDrafts(): DraftInfo<T>[]    { row, draftRow, changedFields, isValid }
     discardDraft(row: T): void
@@ -451,7 +452,7 @@ ROWLOCKINGOPTIONS<T> AND ROWLOCK
 ----------------------------------------------------------------------
 
   type RowLockingOptions<T> = {
-    lockedMember?: keyof T
+    isLockedMember?: keyof T
     lockInfoMember?: keyof T
     getIsLockedCallback?: (ctx: RowContext<T>) => boolean
     getLockInfoCallback?: (ctx: RowContext<T>) => RowLock | null

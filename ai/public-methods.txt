@@ -22,6 +22,10 @@ focusCell(rowIndex: number, colIndex: number): void
   this sets the blue focus border on the specified cell. Does not start
   editing.
 
+scrollToRow(rowIndex: number): Promise<boolean>
+  Scroll the displayed row into view (virtual scroll aware). Resolves true
+  once it is in view, false when the index is out of range / not rendered.
+
 startEditing(rowIndex: number, colIndex: number): void
   Programmatically start editing a cell. The cell must be editable
   (column.isEditable = true, row not locked). Opens the appropriate
@@ -46,10 +50,6 @@ getRowDraft(rowIndex: number): T | undefined
 
 hasRowDraft(rowIndex: number): boolean
   Check if a row has any uncommitted changes.
-
-discardRowDraft(rowIndex: number): void
-  Discard all draft changes for a specific row. Reverts cells to their
-  original values.
 
 getDraftRowIndices(): number[]
   Display indices of the displayed rows that have drafts.
@@ -292,6 +292,8 @@ Data
 
 Rows (what the add / delete / duplicate / move-up / move-down built-ins use)
   insertRow(row: T, afterRow?: T | null): void    insert after afterRow (items order), or at the end
+  insertRows(rows: T[], afterRow?: T | null): void  same, several rows in order
+  removeRow(row: T): void                         programmatic: no row-delete event
   removeRows(rows: T[]): void
   duplicateRow(row: T): T                         createDuplicateRowCallback, else a shallow copy
                                                   with idMember cleared; returns the copy
@@ -326,5 +328,5 @@ Example (a custom toolbar item that archives the row):
 
   grid.rowToolbar = ['add', 'delete', {
     id: 'archive', icon: '📦', text: 'Archive',
-    onClick: ({ row, controller }) => controller.removeRows([row])
+    onClick: ({ row, controller }) => controller.removeRow(row)
   }]

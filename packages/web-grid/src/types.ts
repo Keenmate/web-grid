@@ -695,7 +695,7 @@ export type LockedRowEditBehavior =
 // Row locking configuration
 export type RowLockingOptions<T> = {
 	// Property-based sources
-	lockedMember?: keyof T                    // Field with boolean
+	isLockedMember?: keyof T                    // Field with boolean
 	lockInfoMember?: keyof T                  // Field with RowLock
 
 	// Callback-based sources

@@ -101,7 +101,7 @@ import {
 	scrollToRowPosition,
 	handleCellKeyDown,
 	restoreFocusAfterRender,
-	showGoToRowDialog as showGoToRowDialogModule
+	openGoToRowDialog as openGoToRowDialogModule
 } from './modules/navigation/index.js'
 
 import {
@@ -1178,12 +1178,11 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	// Draft row methods
 	getRowDraft(rowIndex: number): T | undefined { this.flush(); return this.engine.getRowDraft(rowIndex) }
 	hasRowDraft(rowIndex: number): boolean { this.flush(); return this.engine.hasRowDraft(rowIndex) }
-	discardRowDraft(rowIndex: number): void { this.flush(); this.engine.discardRowDraft(rowIndex) }
 	getDraftRowIndices(): number[] { this.flush(); return this.engine.getDraftRowIndices() }
 	/**
 	 * Every unsaved draft `{ row, draftRow, changedFields, isValid }` — incl. rows on other
 	 * pages, filtered out, or not in the current `items` (drafts are never pruned; they
-	 * leave via `replaceRowById`, `discardDraft`, `discardRowDraft`, `discardAllDrafts`).
+	 * leave via `replaceRowById`, `discardDraft`, `discardAllDrafts`).
 	 */
 	getDrafts(): DraftInfo<T>[] { this.flush(); return this.engine.getDrafts() }
 	/** Drop the draft (and invalid-cell markers) of `row` — the row object, its id-equal copy, or the draft. */
@@ -1534,16 +1533,27 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	// ==========================================================================
 
 	/**
-	 * Scroll to a row position programmatically (keyboard navigation).
-	 * Pre-renders the target row range ONCE, then scrolls. Flag prevents
-	 * the scroll event from redundantly calling handleVirtualScroll.
+	 * Scroll the displayed row `rowIndex` into view. Resolves `true` once it is
+	 * in view (after a frame), `false` when the index is out of range or the row
+	 * isn't rendered (not built yet). With virtual scroll it pre-renders the
+	 * target range once, then scrolls (a flag stops the scroll handler from
+	 * rendering again).
 	 */
-	scrollToRowProgrammatically(targetRow: number): void {
+	scrollToRow(rowIndex: number): Promise<boolean> {
+		this.flush()
+		if (!Number.isInteger(rowIndex) || rowIndex < 0 || rowIndex >= this.engine.displayItems.length) return Promise.resolve(false)
 		const container = this.shadow.querySelector('.wg') as HTMLElement
-		if (!container) return
+		if (!container) return Promise.resolve(false)
+
+		if (!this.engine.shouldUseVirtualScroll()) {
+			const tr = this.shadow.querySelector(`tr[data-row-index="${rowIndex}"]`)
+			if (!tr) return Promise.resolve(false)
+			tr.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+			return new Promise(resolve => requestAnimationFrame(() => resolve(true)))
+		}
 
 		const { scrollTop, startIndex, endIndex } = calculateScrollToRow({
-			targetRow,
+			targetRow: rowIndex,
 			rowHeight: this.engine.virtualScrollItemHeight,
 			buffer: this.engine.virtualScrollOverscan,
 			totalItems: this.engine.displayItems.length,
@@ -1561,6 +1571,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		this.virtualScroll.beginProgrammaticScroll()
 		container.scrollTop = scrollTop
 		queueMicrotask(() => { this.virtualScroll.endProgrammaticScroll() })
+		return new Promise(resolve => requestAnimationFrame(() => resolve(true)))
 	}
 
 	// ==========================================================================
@@ -1864,8 +1875,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	}
 
 	/** "Go to row" dialog (Ctrl+G) — see modules/navigation/go-to-row-dialog.ts */
-	showGoToRowDialog(colIndex: number): void {
-		showGoToRowDialogModule(this, colIndex)
+	openGoToRowDialog(colIndex: number): void {
+		openGoToRowDialogModule(this, colIndex)
 	}
 
 	/** Custom editor lifecycle — see modules/editing/custom-editor.ts */

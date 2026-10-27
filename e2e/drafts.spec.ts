@@ -3,7 +3,7 @@ import { test, expect, type Page, gridLocator, cell, header, onGrid, domEvents, 
 /**
  * Drafts — an edit writes to a per-row draft (the `items` stay untouched);
  * dirty indicator (`isDirtyIndicatorShown`), `isCellDirty` / `isRowDirty` /
- * `getRowDraft` / `hasRowDraft` / `getDraftRowIndices`, `getDrafts`, `discardRowDraft` /
+ * `getRowDraft` / `hasRowDraft` / `getDraftRowIndices`, `getDrafts`,
  * `discardDraft` / `discardAllDrafts`, drafts never pruned by `items`, and the `row-change` detail.
  *
  * Fixture: docs/test/drafts.html — rows Alpha/Beta/Gamma/Delta (id 1-4), qty
@@ -120,10 +120,10 @@ test.describe('dirty state', () => {
 })
 
 test.describe('discarding', () => {
-	test('discardRowDraft restores one row, keeps the others', async ({ page }) => {
+	test('discardDraft(row) restores one row, keeps the others', async ({ page }) => {
 		await editCell(page, cell(page, 0, NAME), 'A1')
 		await editCell(page, cell(page, 3, NAME), 'D1')
-		await onGrid(page, el => el.discardRowDraft(0))
+		await onGrid(page, el => el.discardDraft(el.displayItems[0]))
 		await expect(cell(page, 0, NAME)).toHaveText('Alpha')
 		await expect(cell(page, 0, NAME)).not.toHaveClass(/wg__cell--dirty/)
 		await expect(cell(page, 3, NAME)).toHaveText('D1')

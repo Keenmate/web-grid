@@ -57,7 +57,11 @@ export interface GridController<T = any> {
 	// rows (the `add` / `delete` / `duplicate` / `move-up` / `move-down` built-ins use these)
 	/** Insert `row` after `afterRow` (in `items` order), or at the end. */
 	insertRow(row: T, afterRow?: T | null): void
-	/** Remove the given rows from `items`. */
+	/** Insert `rows` (in order) after `afterRow` (in `items` order), or at the end. */
+	insertRows(rows: T[], afterRow?: T | null): void
+	/** Remove `row` from `items` (programmatic: no `row-delete`). */
+	removeRow(row: T): void
+	/** Remove the given rows from `items` (programmatic: no `row-delete`). */
 	removeRows(rows: T[]): void
 	/** Insert a copy of `row` after it (`createDuplicateRowCallback`, else a shallow copy with `idMember` cleared); returns it. */
 	duplicateRow(row: T): T
@@ -71,7 +75,6 @@ export interface GridController<T = any> {
 	// drafts / validation
 	getRowDraft(rowIndex: number): T | undefined
 	hasRowDraft(rowIndex: number): boolean
-	discardRowDraft(rowIndex: number): void
 	/** Display indices of the currently displayed rows that have a draft (drafts follow their row, see `idMember`). */
 	getDraftRowIndices(): number[]
 	/** Every draft — incl. rows on other pages / filtered out / not in `items` (drafts are never pruned). */
@@ -147,6 +150,8 @@ export interface GridController<T = any> {
 	// focus / editing
 	focusCell(rowIndex: number, colIndex: number): void
 	startEditing(rowIndex: number, colIndex: number): void
+	/** Scroll the displayed row into view; `false` when out of range / not rendered. */
+	scrollToRow(rowIndex: number): Promise<boolean>
 	// menus / toolbar
 	closeContextMenu(): void
 	closeToolbar(): void

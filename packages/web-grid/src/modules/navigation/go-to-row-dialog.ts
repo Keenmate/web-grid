@@ -21,7 +21,7 @@ import { updateFocusVisual, moveFocus } from './focus.js'
  * in when they invoked the dialog — focus returns to the same column on
  * the target row.
  */
-export function showGoToRowDialog<T>(ctx: GridHost<T>, colIndex: number): void {
+export function openGoToRowDialog<T>(ctx: GridHost<T>, colIndex: number): void {
 	const displayItems = ctx.engine.displayItems
 	if (displayItems.length === 0) return
 
@@ -73,7 +73,7 @@ export function showGoToRowDialog<T>(ctx: GridHost<T>, colIndex: number): void {
 
 		if (ctx.engine.shouldUseVirtualScroll()) {
 			// Virtual scroll: scroll to position (programmatic flag prevents redundant handleVirtualScroll)
-			ctx.scrollToRowProgrammatically(targetRow)
+			void ctx.scrollToRow(targetRow)
 			// After scroll settles, focus the cell
 			requestAnimationFrame(() => {
 				requestAnimationFrame(() => {

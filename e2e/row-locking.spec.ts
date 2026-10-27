@@ -2,7 +2,7 @@ import { test, expect, type Page, gridLocator, cell, onGrid, domEvents, eventsOf
 
 /**
  * Row locking — `rowLocking` sources (`getLockInfoCallback`, `getIsLockedCallback`,
- * `lockedMember`, `lockInfoMember`), external locks (`lockRowById` /
+ * `isLockedMember`, `lockInfoMember`), external locks (`lockRowById` /
  * `unlockRowById` / `isRowLocked` / `getRowLockInfo` / `clearExternalLocks`),
  * `row-lock-change`, `lockedEditBehavior` + `getCanEditLockedCallback`, F2 / paste
  * blocked, the lock marker + tooltip.
@@ -50,15 +50,15 @@ test.describe('lock sources', () => {
 			.toEqual([true, false, { isLocked: true, lockedBy: 'Carol', reason: 'review' }])
 	})
 
-	test('getIsLockedCallback / lockedMember / lockInfoMember are honoured', async ({ page }) => {
+	test('getIsLockedCallback / isLockedMember / lockInfoMember are honoured', async ({ page }) => {
 		const locked = await onGrid(page, el => {
 			const out: Record<string, boolean[]> = {}
 			const items = el.items
 			el.rowLocking = { getIsLockedCallback: ({ row }: any) => row.qty >= 30 }
 			out.isLockedCallback = items.map((r: any) => el.isRowLocked(r))
 			el.items = items.map((r: any) => ({ ...r, flag: r.id === 4 }))
-			el.rowLocking = { lockedMember: 'flag' }
-			out.lockedMember = el.items.map((r: any) => el.isRowLocked(r))
+			el.rowLocking = { isLockedMember: 'flag' }
+			out.isLockedMember = el.items.map((r: any) => el.isRowLocked(r))
 			el.items = el.items.map((r: any) => ({ ...r, info: r.id === 1 ? { isLocked: true, lockedBy: 'Dan' } : { isLocked: false } }))
 			el.rowLocking = { lockInfoMember: 'info' }
 			out.lockInfoMember = el.items.map((r: any) => el.isRowLocked(r))
@@ -66,7 +66,7 @@ test.describe('lock sources', () => {
 		})
 		expect(locked).toEqual({
 			isLockedCallback: [false, false, true, true],
-			lockedMember: [false, false, false, true],
+			isLockedMember: [false, false, false, true],
 			lockInfoMember: [true, false, false, false]
 		})
 		await expect(rowNumber(page, 0)).toHaveAttribute('data-tooltip', 'Locked by Dan')

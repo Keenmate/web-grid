@@ -19,4 +19,4 @@ export {
 
 export { handleCellKeyDown } from './cell-keydown.js'
 export { restoreFocusAfterRender } from './post-render-focus.js'
-export { showGoToRowDialog } from './go-to-row-dialog.js'
+export { openGoToRowDialog } from './go-to-row-dialog.js'

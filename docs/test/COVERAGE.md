@@ -79,7 +79,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Drafts follow their row through sort / filter, with and without `idMember` (#7 fixed) | ✓ | `drafts.spec.ts` | `drafts.html` |
 | `getDrafts()` (incl. rows not in `items`), never pruned by `items`, `discardDraft(row)`, `replaceRowById` / `discardAllDrafts`, server-paging-without-id warning | ✓ | `drafts.spec.ts` | `drafts.html` |
 | Cancel leaves no draft (#6 fixed), row-number marker right after the commit (#8 fixed) | ✓ | `drafts.spec.ts` | `drafts.html` |
-| `discardRowDraft` / `discardAllDrafts`, `row-change` detail + twin | ✓ | `drafts.spec.ts` | `drafts.html` |
+| `discardDraft(row)` / `discardAllDrafts`, `row-change` detail + twin | ✓ | `drafts.spec.ts` | `drafts.html` |
 | New row: `isNewRowEnabled`, `newRowPosition`, `newRowIndicator`, empty-row draft, `createRowCallback` (paste) | ✓ | `new-row.spec.ts` | `new-row.html` |
 | New row committed by Enter / Tab (focus stays on the fresh empty row), `createEmptyRowCallback` row lands (#17 fixed) | ✓ | `new-row.spec.ts` | `new-row.html` |
 | Pasted numbers typed (#18 fixed) | ✓ | `new-row.spec.ts` | `new-row.html` |
@@ -107,7 +107,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 
 | Feature | Status | Spec | Fixture |
 | --- | :-: | --- | --- |
-| Row locking sources (`getLockInfoCallback`, `getIsLockedCallback`, `lockedMember`, `lockInfoMember`), marker + tooltip | ✓ | `row-locking.spec.ts`, `basic.spec.ts` | `row-locking.html`, `basic.html` |
+| Row locking sources (`getLockInfoCallback`, `getIsLockedCallback`, `isLockedMember`, `lockInfoMember`), marker + tooltip | ✓ | `row-locking.spec.ts`, `basic.spec.ts` | `row-locking.html`, `basic.html` |
 | Lock tooltip i18n (#10 fixed) | ✓ | `row-locking.spec.ts` | `row-locking.html` |
 | `lockRowById/unlockRowById/isRowLocked/getRowLockInfo/clearExternalLocks`, `row-lock-change` | ✓ | `row-locking.spec.ts` | `row-locking.html` |
 | Lock blocks F2 / typing / paste; `lockedEditBehavior` allow / callback + `getCanEditLockedCallback` | ✓ | `row-locking.spec.ts` | `row-locking.html` |

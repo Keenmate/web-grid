@@ -428,7 +428,7 @@ This architecture separates mode detection (the adapter decides *what* action a 
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `lockedMember` | `keyof T` | Property with boolean lock state |
+| `isLockedMember` | `keyof T` | Property with boolean lock state |
 | `lockInfoMember` | `keyof T` | Property with `RowLock` object |
 | `getIsLockedCallback` | `(ctx: { row, rowIndex }) => boolean` | Callback-based lock check |
 | `getLockInfoCallback` | `(ctx: { row, rowIndex }) => RowLock \| null` | Callback-based lock info |
@@ -995,7 +995,7 @@ grid.onRowChange = (detail) => save(detail.draftRow)
 
 ## Controller
 
-`el.controller` is the public `GridController` facade — the same object every ctx / detail carries as `controller`. It covers state as read-only properties named like the element's (`items`, `displayItems`, `columns`, `sort`, `filters`, `invalidCells`, `selectedRows`, `selectedRowIndices`, `selectedCellRange`, `expandedPaths`), rows (`insertRow`, `removeRows`, `duplicateRow`, `moveRow`, `findRowById`, `updateRowById`, …), drafts and validation, row locking, row / cell / column selection, tree (`expandRows`, `collapseRows`, `expandAll(path?)`, `collapseAll(path?)`, `toggleRowExpanded`, …), columns (widths, order), focus / editing (`focusCell`, `startEditing`) and menus (`closeContextMenu`, `closeToolbar`). Most of these are also methods on the element itself (below).
+`el.controller` is the public `GridController` facade — the same object every ctx / detail carries as `controller`. It covers state as read-only properties named like the element's (`items`, `displayItems`, `columns`, `sort`, `filters`, `invalidCells`, `selectedRows`, `selectedRowIndices`, `selectedCellRange`, `expandedPaths`), rows (`insertRow`, `insertRows`, `removeRow`, `removeRows`, `duplicateRow`, `moveRow`, `findRowById`, `updateRowById`, …), drafts and validation, row locking, row / cell / column selection, tree (`expandRows`, `collapseRows`, `expandAll(path?)`, `collapseAll(path?)`, `toggleRowExpanded`, …), columns (widths, order), focus / editing (`focusCell`, `startEditing`) and menus (`closeContextMenu`, `closeToolbar`). Most of these are also methods on the element itself (below).
 
 ## Public Methods
 
@@ -1004,6 +1004,7 @@ grid.onRowChange = (detail) => save(detail.draftRow)
 | Method | Description |
 |--------|-------------|
 | `focusCell(rowIndex, colIndex)` | Programmatically focus a cell |
+| `scrollToRow(rowIndex)` | Scroll a displayed row into view; `Promise<boolean>` (`false` when out of range) |
 | `startEditing(rowIndex, colIndex)` | Programmatically start editing a cell |
 | `openCustomEditor(rowIndex, colIndex)` | Open the custom editor for a cell with `editor: 'custom'` |
 
@@ -1013,7 +1014,6 @@ grid.onRowChange = (detail) => save(detail.draftRow)
 |--------|---------|-------------|
 | `getRowDraft(rowIndex)` | `T \| undefined` | Get the draft (uncommitted changes) for a row |
 | `hasRowDraft(rowIndex)` | `boolean` | Check if a row has uncommitted changes |
-| `discardRowDraft(rowIndex)` | `void` | Discard all draft changes for a row |
 | `getDraftRowIndices()` | `number[]` | Get display indices of the displayed rows with drafts |
 | `getDrafts()` | `{ row, draftRow, changedFields, isValid }[]` | Every draft — incl. rows on other pages, filtered out, or not in `items` |
 | `discardDraft(row)` | `void` | Discard one row's draft (the row, its id-equal copy, or the draft object) |

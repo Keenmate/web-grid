@@ -94,11 +94,11 @@ export interface GridHost<T = unknown> {
 	// Programmatic scroll-to-row used by keyboard navigation (Home/End/PageUp/PageDown
 	// with Ctrl). Wraps virtual-scroll range update + scrollTop change behind a flag
 	// so the scroll event listener doesn't double-render.
-	scrollToRowProgrammatically(targetRow: number): void
+	scrollToRow(rowIndex: number): Promise<boolean>
 
 	// Render the "Go to row" dialog. Triggered by Ctrl+G at the cell level —
 	// the dialog handles its own focus return back to the originating column.
-	showGoToRowDialog(colIndex: number): void
+	openGoToRowDialog(colIndex: number): void
 
 	// Dispatch a CustomEvent on the grid element. Handlers use this to fire
 	// public events (row-delete, etc.) from module code without holding a

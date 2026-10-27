@@ -132,7 +132,7 @@
                 <p>Lock status comes directly from row data:</p>
                 <div class="code-block">
                     <pre>grid.rowLocking = {
-    lockedMember: 'isLocked'  // Boolean field
+    isLockedMember: 'isLocked'  // Boolean field
 }
 
 // Or with full lock info:
@@ -179,7 +179,7 @@ grid.idMember = 'id'
 // Configure row locking
 grid.rowLocking = {
     // Property sources
-    lockedMember: 'isLocked',
+    isLockedMember: 'isLocked',
     lockInfoMember: 'lockInfo',
 
     // Callback sources
@@ -356,7 +356,7 @@ if (result) {
         // Configure row locking
         grid.rowLocking = {
             // Property-based: check these fields on row data
-            lockedMember: 'isLocked',
+            isLockedMember: 'isLocked',
             lockInfoMember: 'lockInfo',
 
             // Edit behavior

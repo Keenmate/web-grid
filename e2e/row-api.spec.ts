@@ -98,3 +98,25 @@ test.describe('focusCell / startEditing', () => {
 		await expect(editorIn(cell(page, 0, 3))).toHaveCount(0)
 	})
 })
+
+test.describe('insertRows / removeRow / scrollToRow', () => {
+	test('insertRows inserts in order after the anchor; removeRow removes one row (no row-delete)', async ({ page }) => {
+		const names = await onGrid(page, el => {
+			let deleted = 0
+			el.addEventListener('row-delete', () => { deleted++ })
+			el.controller.insertRows([{ id: 10, name: 'X' }, { id: 11, name: 'Y' }], el.items[0])
+			const afterInsert = el.items.map((r: any) => r.name)
+			el.controller.removeRow(el.items[1])
+			return [afterInsert, el.items.map((r: any) => r.name), deleted]
+		})
+		expect(names[0].slice(0, 3)).toEqual([names[0][0], 'X', 'Y'])
+		expect(names[1]).not.toContain('X')
+		expect(names[1]).toContain('Y')
+		expect(names[2]).toBe(0)
+	})
+
+	test('scrollToRow resolves true for a displayed row, false out of range', async ({ page }) => {
+		expect(await onGrid(page, async el => [await el.scrollToRow(0), await el.controller.scrollToRow(el.displayItems.length - 1), await el.scrollToRow(9999), await el.scrollToRow(-1)]))
+			.toEqual([true, true, false, false])
+	})
+})

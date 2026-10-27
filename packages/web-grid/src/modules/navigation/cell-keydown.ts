@@ -65,7 +65,7 @@ export function handleCellKeyDown<T>(
 		case 'G':
 			if (e.ctrlKey || e.metaKey) {
 				e.preventDefault()
-				ctx.showGoToRowDialog(colIndex)
+				ctx.openGoToRowDialog(colIndex)
 			}
 			break
 
