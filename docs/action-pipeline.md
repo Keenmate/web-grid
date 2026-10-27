@@ -123,7 +123,7 @@ Returning an array of `GridAction` produces child actions. Returning `void` or `
 | `selectionExecutor` | `selectRow`, `selectColumn`, `clearSelection` | Row/column/cell selection state and visual updates (surgical DOM, no re-render) |
 | `cellSelectionExecutor` | `startCellSelection` | Initiate cell range selection drag tracking |
 | `clipboardExecutor` | `copy`, `paste`, `deleteCell` | Clipboard operations and cell clearing |
-| `contextMenuExecutor` | `openContextMenu`, `closeContextMenu` | Context menu lifecycle |
+| `contextMenuExecutor` | `closeContextMenu` | Closes the cell / header menus (opening runs on core `openMenu()`, not the pipeline) |
 | `fillHandleExecutor` | `startFillDrag`, `updateFillDrag`, `completeFillDrag` | Fill handle drag operations |
 | `macroExecutor` | `resetState` | Expands into multiple primitive actions (cancel edit, clear selections, close overlays) |
 | `noopExecutor` | `noop` | Consumes the event, does nothing (prevents propagation) |

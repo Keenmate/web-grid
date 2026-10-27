@@ -164,6 +164,10 @@ The cell and column-header menus are the shared KeenMate menu, core `openMenu()`
   window blur and when another KeenMate overlay opens. Items are focusable `div`s with
   `role="menuitem"` / `menuitemcheckbox` + `aria-checked`, submenu owners `aria-haspopup` /
   `aria-expanded`.
+- **Internal:** the action pipeline's no-op `openContextMenu` action (and its
+  `OpenContextMenuAction` type) is removed; `contextMenuExecutor` now only handles
+  `closeContextMenu`. Not part of the public API — opening a menu is `openMenu()` via the
+  `contextmenu` event / Shift+F10.
 
 ### Changed — BREAKING (logging, row identity, editing)
 

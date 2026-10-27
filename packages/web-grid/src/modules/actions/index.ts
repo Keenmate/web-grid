@@ -30,7 +30,6 @@ export type {
 	CloseDatePickerAction,
 	ToggleDatePickerAction,
 	RenderCellAction,
-	OpenContextMenuAction,
 	CloseContextMenuAction,
 	StartFillDragAction,
 	UpdateFillDragAction,

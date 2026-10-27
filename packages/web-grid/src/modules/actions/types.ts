@@ -164,15 +164,6 @@ export type PasteAction = {
 }
 
 /**
- * Open context menu
- */
-export type OpenContextMenuAction = {
-	type: 'openContextMenu'
-	position: { x: number; y: number }
-	target?: CellCoordinates
-}
-
-/**
  * Close context menu
  */
 export type CloseContextMenuAction = {
@@ -396,7 +387,6 @@ export type GridAction =
 	| ToggleDatePickerAction
 	| OpenCustomEditorAction
 	| RenderCellAction
-	| OpenContextMenuAction
 	| CloseContextMenuAction
 	| StartFillDragAction
 	| UpdateFillDragAction
