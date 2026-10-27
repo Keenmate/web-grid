@@ -293,10 +293,37 @@
   --wg-tooltip-arrow-size: 8px;
 
   /* ==========================================================================
-     CONTEXT MENU
+     CONTEXT MENU (cell + column header)
+     Rendered by core's openMenu() into the shadow root. The public
+     --wg-context-menu-* variables are inputs, UNSET by default: each maps onto
+     core's PRIVATE --_km-menu-* with NO fallback, so a value resolves
+     --wg-context-menu-* (this grid) -> --km-menu-* (every menu on the page, set
+     on :root) -> --base-* -> core's default. Never set --km-menu-* here: a
+     host-level value would shadow the page-wide one.
      ========================================================================== */
-  --wg-context-menu-z-index: var(--wg-z-context-menu);
-  --wg-context-menu-min-width: calc(16 * var(--wg-rem));
+  --_km-menu-z-index: var(--wg-context-menu-z-index);
+  --_km-menu-bg: var(--wg-context-menu-bg);
+  --_km-menu-hover-bg: var(--wg-context-menu-bg-hover);
+  --_km-menu-hover-color: var(--wg-context-menu-hover-color);
+  --_km-menu-text-color: var(--wg-context-menu-text-color);
+  --_km-menu-border: var(--wg-context-menu-border);
+  --_km-menu-border-radius: var(--wg-context-menu-border-radius);
+  --_km-menu-shadow: var(--wg-context-menu-shadow);
+  --_km-menu-min-width: var(--wg-context-menu-min-width);
+  --_km-menu-padding: var(--wg-context-menu-padding);
+  --_km-menu-font-size: var(--wg-context-menu-font-size);
+  --_km-menu-item-padding: var(--wg-context-menu-item-padding);
+  --_km-menu-item-gap: var(--wg-context-menu-item-gap);
+  --_km-menu-toggled-color: var(--wg-context-menu-toggled-color);
+  --_km-menu-icon-size: var(--wg-context-menu-icon-width);
+  --_km-menu-icon-font-size: var(--wg-context-menu-icon-font-size);
+  --_km-menu-arrow-font-size: var(--wg-context-menu-arrow-font-size);
+  --_km-menu-shortcut-color: var(--wg-context-menu-shortcut-color);
+  --_km-menu-danger-color: var(--wg-context-menu-danger-color);
+  --_km-menu-danger-hover-bg: var(--wg-context-menu-danger-bg-hover);
+  --_km-menu-divider-color: var(--wg-context-menu-divider-color);
+  --_km-menu-divider-margin: var(--wg-context-menu-divider-margin);
+  --_km-menu-disabled-opacity: var(--wg-context-menu-disabled-opacity);
 
   /* ==========================================================================
      NAVIGATE MODE
@@ -330,7 +357,6 @@
   /* Popover layers (above grid content): */
   --wg-z-reorder-indicator: 100;     /* Column reorder drop indicator */
   --wg-z-toolbar: 1000;
-  --wg-z-context-menu: 1001;
   --wg-z-dropdown: 9999;
   --wg-z-reorder-ghost: 10000;       /* Column reorder drag ghost */
   --wg-z-tooltip: 10000;

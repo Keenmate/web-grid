@@ -122,6 +122,8 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | --- | :-: | --- | --- |
 | Cell context menu (labels, visible/disabled/danger/divider/shortcut, offsets) | ✓ | `contextmenu.spec.ts`, `editors.spec.ts` | `contextmenu.html`, `editors.html` |
 | Header context menu (predefined + custom) | ✓ | `contextmenu.spec.ts`, `resize-reorder.spec.ts` | `contextmenu.html`, `resize-reorder.html` |
+| Menu keyboard on core `openMenu()` (Shift+F10 / ContextMenu key on the focused cell, arrows skip disabled, Home/End, Enter/Space, Escape returns focus, submenu → / ←), `menuitemcheckbox` + `aria-checked` column toggles, `wg-context-menu` / `wg-header-menu` hooks, dismiss on page / grid scroll | ✓ | `context-menu-keyboard.spec.ts` | `contextmenu.html`, `column-visibility.html` |
+| Menu CSS-variable chain (`--wg-context-menu-*` → `--km-menu-*` → `--base-*` → default; per instance, both menus; hover colour; z-index) | ✓ | `context-menu-theming.spec.ts` | `contextmenu.html` |
 | Row toolbar (floating / multi-row / inline / cell-aware) | ✓ | `toolbar.spec.ts` | `toolbar.html` |
 | `toolbarTrigger` click / button, `toolbarPosition` left / right / top / inline, `toolbarHorizontalAlign`, `toolbarColumn`, `inlineActionsTitle` | ✓ | `toolbar-options.spec.ts` | `toolbar-options.html` |
 | Inline actions header default label (#28 fixed), explicit `""` → blank header | ✓ | `toolbar-options.spec.ts` | `toolbar-options.html` |

@@ -28,7 +28,7 @@ These are floating elements positioned outside the normal table flow.
 |-------|----------|---------|----------|
 | Reorder indicator | `--wg-z-reorder-indicator` | 100 | `.wg__drop-indicator` |
 | Toolbar | `--wg-z-toolbar` | 1000 | `.wg__toolbar-container` |
-| Context menu | `--wg-z-context-menu` | 1001 | Context menu |
+| Context menu | `--wg-context-menu-z-index` (unset → `--km-menu-z-index`) | 10000 | `.km-menu` (core `openMenu()`) |
 | Dropdown | `--wg-z-dropdown` | 9999 | Dropdown popover |
 | Reorder ghost | `--wg-z-reorder-ghost` | 10000 | `.wg__reorder-ghost` |
 | Tooltip | `--wg-z-tooltip` | 10000 | `.wg__tooltip` |

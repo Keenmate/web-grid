@@ -34,7 +34,7 @@ function executeResetState(ctx: ExecutorContext, action: ResetStateAction): Grid
 
 	// 1. Close overlays (dropdown is closed by cancelEdit, but context menu and datepicker need explicit close)
 	if (overlays) {
-		if (ctx.contextMenuElement || ctx.headerContextMenuElement) {
+		if (ctx.menu) {
 			actions.push({ type: 'closeContextMenu' })
 		}
 		if (ctx.datepicker) {

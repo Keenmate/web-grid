@@ -626,3 +626,11 @@ only *set* when `scrollMaxHeight !== '100vh'`; nothing removes it.
 
 **Test:** `display-options.spec.ts` "resetting scrollMaxHeight to its default
 releases the custom cap" (`test.fail`).
+
+## 35. Grid menus had their own renderer — no keyboard, partial escaping — FIXED
+
+**Fixed:** the cell and header menus run on core `openMenu()` (`@keenmate/web-components-core/menu`), like web-treeview and web-editor. The grid's ~450-line renderer in `modules/contextmenu/index.ts` (own markup, `computePosition`, dismiss listeners, `escapeText`) is gone; the grid keeps only the entry building (built-in defaults, the `column-visibility` submenu via `prepareItem`) and activation.
+
+**Was:** no keyboard at all inside the menu (only Escape and item shortcut letters), no way to open the cell menu from the keyboard, `escapeText` didn't escape `'`, the menu lived in `document.body` (outside the grid's colour scheme / per-instance variables), and the grid's shadow scroll subscription was needed to close it on a grid scroll.
+
+**Tests:** `context-menu-keyboard.spec.ts` (Shift+F10 / ContextMenu key, arrows skip disabled, Home/End, Enter/Space, Escape returns focus, `menuitemcheckbox` toggles + submenu keyboard, dismiss on page / grid scroll), `context-menu-theming.spec.ts` (the `--wg-context-menu-*` → `--km-menu-*` → `--base-*` chain).

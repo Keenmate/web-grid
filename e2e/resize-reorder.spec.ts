@@ -277,27 +277,22 @@ test.describe('header context menu — #gridHeaderMenu', () => {
 	}
 
 	/**
-	 * Click a context-menu item by its label text. Uses evaluate to bypass
-	 * Playwright's viewport check, then dispatch a real click — the memory note
-	 * for Floating UI menus warns built-in click probes are flaky here.
+	 * Click a context-menu item by its label text. The menu (core `openMenu()`)
+	 * is in the grid's shadow root — the locator pierces it; the click is
+	 * dispatched via JS to bypass Playwright's viewport check.
 	 */
 	async function clickMenuItem(page: Page, label: string) {
-		await page.evaluate((text) => {
-			const menu = document.querySelector('.wg-context-menu')
-			if (!menu) throw new Error('No context menu')
-			const items = Array.from(menu.querySelectorAll('.wg-context-menu__item')) as HTMLElement[]
-			const item = items.find(it => it.textContent?.includes(text))
-			if (!item) throw new Error(`Menu item not found: ${text}`)
-			item.click()
-		}, label)
+		const item = page.locator('.km-menu .km-menu__item', { hasText: label }).first()
+		await expect(item).toHaveCount(1)
+		await item.evaluate((el: HTMLElement) => el.click())
 	}
 
 	test('right-clicking the name header opens the menu with sort + freeze + hide items', async ({ page }) => {
 		await rightClickHeader(page, 'gridHeaderMenu', 'name')
 
-		// Context menu renders in document body (not the grid's shadow) when using
-		// Floating UI; assert against page locator.
-		const menu = page.locator('.wg-context-menu')
+		// The menu (core openMenu()) renders in the grid's shadow root; the page
+		// locator pierces it.
+		const menu = page.locator('.km-menu')
 		await expect(menu).toBeVisible()
 		await expect(menu).toContainText('Sort Ascending')
 		await expect(menu).toContainText('Sort Descending')
@@ -315,7 +310,7 @@ test.describe('header context menu — #gridHeaderMenu', () => {
 
 	test('clicking "Hide Column" removes the column from the visible header row', async ({ page }) => {
 		await rightClickHeader(page, 'gridHeaderMenu', 'email')
-		await expect(page.locator('.wg-context-menu')).toBeVisible()
+		await expect(page.locator('.km-menu')).toBeVisible()
 		await clickMenuItem(page, 'Hide Column')
 
 		await expect(header(page, 'gridHeaderMenu', 'email')).toHaveCount(0)

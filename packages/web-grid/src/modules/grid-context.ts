@@ -7,6 +7,7 @@ import type { Column, EditorOptions } from '../types.js'
 import type { ScrollEventManager } from './scroll-events/index.js'
 import type { FocusEventManager } from './focus-events/index.js'
 import type { DatePicker } from './datepicker/datepicker.js'
+import type { MenuHandle } from '@keenmate/web-components-core/menu'
 import type { AutocompleteService } from './dropdown/autocomplete-service.js'
 import type { DropdownService } from './dropdown/dropdown-service.js'
 import type { TooltipService } from './tooltip/tooltip-service.js'
@@ -37,9 +38,8 @@ export interface GridHost<T = unknown> {
 	isCommittingFromKeyboard: boolean
 	isTransitioningCells: boolean
 
-	// Context menu state (rendered to document.body)
-	contextMenuElement: HTMLElement | null
-	headerContextMenuElement: HTMLElement | null
+	// The open cell / header menu (core openMenu(), in the shadow root) — one at a time
+	menu: MenuHandle | null
 
 	// Datepicker state
 	datepicker: DatePicker | null

@@ -109,7 +109,7 @@ handlers: `onpaste`, `onbeforepaste`, `onselect`).
 
 **Toggle state is `isToggled`** (web-components-core rename, no alias): item `isActive` /
 `getIsActiveCallback` → `isToggled` / `getIsToggledCallback`; classes `wg__toolbar-btn--active` /
-`wg__inline-action-btn--active` / `wg-context-menu__item--active` → `…--toggled`; CSS variable
+`wg__inline-action-btn--active` → `…--toggled` (menu items: see the core `/menu` entry below); CSS variable
 `--wg-toolbar-btn-active-color` → `--wg-toolbar-btn-toggled-color`. Toolbar buttons keep
 `aria-pressed`; a context-menu item that defines its toggle state (e.g. the column-visibility
 toggles) is `role="menuitemcheckbox"` + `aria-checked="true|false"` (was `menuitem` +
@@ -122,6 +122,48 @@ present, after `move-up` / `move-down` the new order is in place (the detail's `
 `rowIndex` are the surface context captured before the built-in). A throwing built-in is
 logged and the event still fires. Prevent a built-in with `beforeActionCallback`, not in the
 event.
+
+### Changed — BREAKING (context menus on core `/menu`)
+
+The cell and column-header menus are the shared KeenMate menu, core `openMenu()`
+(web-components-core `/menu`) — the grid's own renderer / positioning / dismiss code is gone.
+
+- **Rendered in the grid's shadow root**, not `document.body`. Selectors that reached the menu
+  through `document.querySelector` must go through `el.shadowRoot` (Playwright locators pierce it).
+- **Classes:** `.wg-context-menu-container` is gone; `.wg-context-menu` / `--submenu` /
+  `__item` (`--disabled` / `--danger` / `--toggled` / `--has-submenu`) / `__icon` / `__label` /
+  `__shortcut` / `__divider` → `.km-menu` / `.km-menu--submenu` / `.km-menu__item…` /
+  `__icon` / `__label` / `__shortcut` / `__divider`; `__divider-label` → the text inside
+  `.km-menu__divider--named`; `__loading` → `.km-menu__loading`. Submenus are sibling levels,
+  not children of their parent item. Scoping hooks on every level: `wg-context-menu` (cell menu),
+  `wg-header-menu` (header menu). The column-visibility toggles' `wg-context-menu__item--toggle`
+  → `wg-header-menu__column-toggle`.
+- **CSS variables:** the `--wg-cm-*` set (on the body-level container) and the dead
+  `--wg-context-menu-min-width` / `--wg-context-menu-z-index` defaults and `--wg-z-context-menu`
+  are removed. One public set `--wg-context-menu-*` on `web-grid` themes both menus — `bg`,
+  `bg-hover`, `hover-color`, `text-color`, `border`, `border-radius`, `shadow`, `min-width`,
+  `padding`, `font-size`, `item-padding`, `item-gap`, `toggled-color`, `icon-width`,
+  `icon-font-size`, `arrow-font-size`, `shortcut-color`, `danger-color`, `danger-bg-hover`,
+  `divider-color`, `divider-margin`, `disabled-opacity`, `z-index` — **unset by default**: a value
+  resolves `--wg-context-menu-*` (this grid) → `--km-menu-*` (page-wide on `:root`, every
+  KeenMate menu) → `--base-*` → core default. Old → new: `--wg-cm-background` → `-bg`,
+  `--wg-cm-hover-bg` → `-bg-hover`, `--wg-cm-text-danger` → `-danger-color`,
+  `--wg-cm-text-secondary` → `-shortcut-color`, `--wg-cm-border-color` → `-border` (shorthand)
+  / `-divider-color`, `--wg-cm-icon-size` → `-icon-width`, `--wg-cm-icon-gap` → `-item-gap`,
+  `--wg-cm-toggled-color` → `-toggled-color`, the rest by the same name.
+- **Look (core defaults):** 14px font (was 13px), item padding 6px 12px (was 8px 12px), shadow
+  `0 8px 16px` (was `0 4px 16px`), submenu arrow ▸ (was ▶), a focus / hover highlight on the
+  keyboard-focused item; a toggled-on column toggle is in the accent colour (was the text colour
+  with a dimmed ☐ glyph when off); the menu follows the grid's colour scheme (`data-theme`) since
+  it lives in its shadow root. A menu whose items are all hidden is not shown and the browser's
+  menu appears (the grid used to swallow the right-click).
+- **Keyboard (new):** Shift+F10 / the ContextMenu key on the focused cell opens the cell menu
+  below it, first item focused. In a menu: ↑ / ↓ (skip disabled, wrap), Home / End, → / Enter /
+  Space open a submenu, ← / Escape close it, Enter / Space activate, Escape closes and returns
+  focus to where it was, Tab closes; item `shortcut` letters still activate. It also closes on
+  window blur and when another KeenMate overlay opens. Items are focusable `div`s with
+  `role="menuitem"` / `menuitemcheckbox` + `aria-checked`, submenu owners `aria-haspopup` /
+  `aria-expanded`.
 
 ### Changed — BREAKING (logging, row identity, editing)
 

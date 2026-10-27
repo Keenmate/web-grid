@@ -21,7 +21,7 @@ const tree = (page: Page) => page.locator('web-grid#tree')
 const row = (page: Page, i: number) => grid(page).locator(`tr[data-row-index="${i}"]`)
 const cell = (page: Page, r: number, c: number, g = grid(page)) => g.locator(`.wg__cell[data-row="${r}"][data-col="${c}"]`)
 const toolbar = (page: Page) => grid(page).locator('.wg__toolbar-container .wg__toolbar')
-const menu = (page: Page) => page.locator('.wg-context-menu:not(.wg-context-menu--submenu)')
+const menu = (page: Page) => page.locator('.km-menu:not(.km-menu--submenu)')
 const log = (page: Page) => page.evaluate(() => (window as any).__log as string[])
 const clearLog = (page: Page) => page.evaluate(() => { (window as any).__log = []; (window as any).__details = [] })
 const names = (page: Page) => grid(page).evaluate((el: any) => el.items.map((r: any) => r.name))
@@ -124,7 +124,7 @@ test.describe('cell context menu', () => {
 
 	test('labelled divider, built-in delete acts on the row', async ({ page }) => {
 		await contextMenuOn(page, cell(page, 0, 1))
-		await expect(menu(page).locator('.wg-context-menu__divider-label')).toHaveText('Rows')
+		await expect(menu(page).locator('.km-menu__divider--named')).toHaveText('Rows')
 		await menu(page).locator('[data-action="delete"]').click()
 		await expect.poll(() => names(page)).toEqual(['Beta', 'Gamma', 'Delta'])
 	})
@@ -139,7 +139,7 @@ test.describe('cell context menu', () => {
 	test('getChildrenCallback loads a submenu lazily with the cell ctx', async ({ page }) => {
 		await contextMenuOn(page, cell(page, 2, 1))
 		await menu(page).locator('[data-id="more"]').hover()
-		const sub = page.locator('.wg-context-menu--submenu')
+		const sub = page.locator('.km-menu--submenu')
 		await expect(sub.locator('[data-id="lazy"]')).toHaveText('Lazy Gamma')
 		await sub.locator('[data-id="lazy"]').click()
 		await expect.poll(() => log(page)).toContain('onClick:lazy')
@@ -153,7 +153,7 @@ test.describe('cell context menu', () => {
 
 		await page.evaluate(() => { (window as any).__menuMode = 'replace' })
 		await contextMenuOn(page, cell(page, 0, 1))
-		await expect(menu(page).locator('.wg-context-menu__item')).toHaveCount(1)
+		await expect(menu(page).locator('.km-menu__item')).toHaveCount(1)
 		await expect(menu(page)).toContainText('Only item')
 	})
 })
@@ -180,7 +180,7 @@ test.describe('header context menu', () => {
 	test("a static submenu child's onClick runs", async ({ page }) => {
 		await contextMenuOn(page, header(page, 'name'))
 		await menu(page).locator('[data-id="sub"]').hover()
-		await page.locator('.wg-context-menu--submenu [data-id="child"]').click()
+		await page.locator('.km-menu--submenu [data-id="child"]').click()
 		await expect.poll(() => log(page)).toContain('onClick:child')
 	})
 })

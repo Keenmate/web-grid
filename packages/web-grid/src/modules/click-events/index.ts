@@ -45,7 +45,7 @@ export interface ClickEventManager {
 	 * @param hostElement - The custom element host (<web-grid>) for outside detection
 	 * @param isPathInOwnedScope - Optional predicate; when it returns true for a
 	 *   click's composed path, the click is treated as inside the grid (used for
-	 *   document.body-hosted popovers like the datepicker and context menus
+	 *   document.body-hosted popovers like the datepicker
 	 *   that need to extend the grid's "inside" scope beyond the host element).
 	 */
 	init(

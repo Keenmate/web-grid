@@ -48,49 +48,24 @@ async function rightClickHeader(page: Page, field: string) {
 }
 
 /**
- * Hover the "Column Visibility" parent item to reveal its submenu, then click
- * the submenu row by label. The submenu shows on parent-item mouseenter
- * (Floating UI positioned, display:none → block).
+ * Hover the "Column Visibility" parent item to open its submenu (core
+ * `openMenu()`: a sibling `.km-menu--submenu` level in the grid's shadow root),
+ * then click the submenu row by label.
  */
+async function openSubmenu(page: Page, parentLabel: string): Promise<Locator> {
+	const parent = page.locator('.km-menu:not(.km-menu--submenu) .km-menu__item--has-submenu', { hasText: parentLabel })
+	await expect(parent).toHaveCount(1)
+	await parent.dispatchEvent('mouseenter')
+	const submenu = page.locator('.km-menu--submenu')
+	await expect(submenu).toBeVisible()
+	return submenu
+}
+
 async function clickSubmenuItem(page: Page, parentLabel: string, childLabel: string) {
-	await page.evaluate(({ parent, child }) => {
-		const menu = document.querySelector('.wg-context-menu')
-		if (!menu) throw new Error('No context menu')
-		const items = Array.from(menu.querySelectorAll('.wg-context-menu__item')) as HTMLElement[]
-		const parentItem = items.find(it =>
-			it.textContent?.includes(parent) &&
-			it.classList.contains('wg-context-menu__item--has-submenu')
-		)
-		if (!parentItem) throw new Error(`Parent submenu item not found: ${parent}`)
-		// Trigger the mouseenter handler that displays the submenu.
-		parentItem.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
-	}, { parent: parentLabel, child: childLabel })
-
-	// Floating UI uses computePosition().then(...) to place the submenu — give
-	// it a microtask flush before clicking the child.
-	await page.waitForFunction((parent) => {
-		const items = Array.from(document.querySelectorAll('.wg-context-menu__item')) as HTMLElement[]
-		const parentItem = items.find(it =>
-			it.textContent?.includes(parent) &&
-			it.classList.contains('wg-context-menu__item--has-submenu')
-		)
-		const sub = parentItem?.querySelector(':scope > .wg-context-menu--submenu') as HTMLElement | null
-		return !!sub && sub.style.display === 'block'
-	}, parentLabel)
-
-	await page.evaluate(({ parent, child }) => {
-		const items = Array.from(document.querySelectorAll('.wg-context-menu__item')) as HTMLElement[]
-		const parentItem = items.find(it =>
-			it.textContent?.includes(parent) &&
-			it.classList.contains('wg-context-menu__item--has-submenu')
-		)
-		const submenu = parentItem?.querySelector(':scope > .wg-context-menu--submenu')
-		if (!submenu) throw new Error(`No submenu under ${parent}`)
-		const childItems = Array.from(submenu.querySelectorAll('.wg-context-menu__item')) as HTMLElement[]
-		const target = childItems.find(it => it.textContent?.includes(child))
-		if (!target) throw new Error(`Submenu item not found: ${child}`)
-		target.click()
-	}, { parent: parentLabel, child: childLabel })
+	const submenu = await openSubmenu(page, parentLabel)
+	const target = submenu.locator('.km-menu__item', { hasText: childLabel }).first()
+	await expect(target).toHaveCount(1)
+	await target.evaluate((el: HTMLElement) => el.click())
 }
 
 test.beforeEach(async ({ page }) => {
@@ -162,9 +137,9 @@ test.describe("'hide-column' header context menu item", () => {
 	test('appears in the menu and hides the right-clicked column when clicked', async ({ page }) => {
 		await rightClickHeader(page, 'salary')
 
-		// `.wg-context-menu` matches both the top-level menu and its child
-		// submenu (the submenu carries both classes). Scope to just the parent.
-		const menu = page.locator('.wg-context-menu:not(.wg-context-menu--submenu)')
+		// `.km-menu` matches both the top-level menu and its submenu levels
+		// (`.km-menu--submenu`). Scope to just the root.
+		const menu = page.locator('.km-menu:not(.km-menu--submenu)')
 		await expect(menu).toBeVisible()
 		await expect(menu).toContainText('Hide Column')
 
@@ -194,34 +169,23 @@ test.describe("'hide-column' header context menu item", () => {
 test.describe("'column-visibility' submenu", () => {
 	test('top-level submenu entry exists and is marked as having a submenu', async ({ page }) => {
 		await rightClickHeader(page, 'name')
-		const menu = page.locator('.wg-context-menu:not(.wg-context-menu--submenu)')
+		const menu = page.locator('.km-menu:not(.km-menu--submenu)')
 		await expect(menu).toBeVisible()
 
-		const parent = menu.locator('.wg-context-menu__item--has-submenu', { hasText: 'Column Visibility' })
+		const parent = menu.locator('.km-menu__item--has-submenu', { hasText: 'Column Visibility' })
 		await expect(parent).toHaveCount(1)
 	})
 
 	test('submenu lists "Show all" + one toggle per column, each marked ☑ when visible', async ({ page }) => {
 		await rightClickHeader(page, 'id')
 
-		// Reveal the submenu via mouseenter on the parent.
-		await page.evaluate(() => {
-			const items = Array.from(document.querySelectorAll('.wg-context-menu__item')) as HTMLElement[]
-			const parent = items.find(it =>
-				it.textContent?.includes('Column Visibility') &&
-				it.classList.contains('wg-context-menu__item--has-submenu')
-			)
-			parent?.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
-		})
-
-		const submenu = page.locator('.wg-context-menu--submenu').first()
-		await expect(submenu).toBeVisible()
+		const submenu = await openSubmenu(page, 'Column Visibility')
 
 		// Seven rows: "Show all" + six column toggles.
-		await expect(submenu.locator('.wg-context-menu__item')).toHaveCount(7)
+		await expect(submenu.locator('.km-menu__item')).toHaveCount(7)
 		// Every per-column toggle is toggled on initially (all columns visible): a
 		// menuitemcheckbox with aria-checked="true". The icon character for checked is ☑.
-		const checkedToggles = submenu.locator('.wg-context-menu__item--toggle.wg-context-menu__item--toggled[role="menuitemcheckbox"][data-action="toggle-column"][aria-checked="true"]')
+		const checkedToggles = submenu.locator('.wg-header-menu__column-toggle.km-menu__item--toggled[role="menuitemcheckbox"][data-action="toggle-column"][aria-checked="true"]')
 		await expect(checkedToggles).toHaveCount(6)
 		await expect(submenu.locator('[data-action="show-all-columns"]')).toHaveAttribute('role', 'menuitemcheckbox')
 	})
@@ -243,7 +207,7 @@ test.describe("'column-visibility' submenu", () => {
 		// The header menu stays open after a toggle click; close it before
 		// the next right-click so the helper opens a fresh one.
 		await page.keyboard.press('Escape')
-		await expect(page.locator('.wg-context-menu:not(.wg-context-menu--submenu)')).toHaveCount(0)
+		await expect(page.locator('.km-menu:not(.km-menu--submenu)')).toHaveCount(0)
 
 		// Second click — show phone.
 		await rightClickHeader(page, 'id')

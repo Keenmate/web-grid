@@ -6,7 +6,7 @@
 
 import type { GridController } from './interaction.js'
 import type { GridElement } from './web-component.js'
-import { closeContextMenu } from './modules/contextmenu/index.js'
+import { closeGridMenu } from './modules/contextmenu/index.js'
 import { closeToolbarAndReset } from './modules/toolbar/index.js'
 
 export function createGridController<T>(el: GridElement<T>): GridController<T> {
@@ -89,16 +89,7 @@ export function createGridController<T>(el: GridElement<T>): GridController<T> {
 		focusCell: (rowIndex, colIndex) => el.focusCell(rowIndex, colIndex),
 		startEditing: (rowIndex, colIndex) => el.startEditing(rowIndex, colIndex),
 		// menus / toolbar
-		closeContextMenu: () => {
-			if (el.contextMenuElement) {
-				closeContextMenu(el.contextMenuElement)
-				el.contextMenuElement = null
-			}
-			if (el.headerContextMenuElement) {
-				closeContextMenu(el.headerContextMenuElement)
-				el.headerContextMenuElement = null
-			}
-		},
+		closeContextMenu: () => closeGridMenu(el),
 		closeToolbar: () => closeToolbarAndReset(el)
 	}
 }

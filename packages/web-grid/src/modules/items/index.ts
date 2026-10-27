@@ -119,10 +119,14 @@ export function headerMenuDefaults<T>(action: string | undefined, ctx: HeaderMen
 	return undefined
 }
 
+/** Class of the column-visibility toggles (menuitemcheckbox items) — a styling hook. */
+const COLUMN_TOGGLE_CLASS = 'wg-header-menu__column-toggle'
+
 /**
  * The header-menu entries with the `column-visibility` built-in's submenu filled in:
  * "Show all" + one toggle per column (the tree column stays visible in tree mode).
- * Toggles keep the menu open and re-render with the new state.
+ * Toggles keep the menu open and re-render with the new state (core `/menu` refreshes
+ * the level after a keep-open item). Applied through `openMenu`'s `prepareItem`.
  */
 export function withHeaderBuiltInChildren<T>(item: MenuItem<HeaderMenuContext<T>, GridHeaderAction>): MenuItem<HeaderMenuContext<T>, GridHeaderAction> {
 	if (item.action !== 'column-visibility' || item.children || item.getChildrenCallback) return item
@@ -132,14 +136,15 @@ export function withHeaderBuiltInChildren<T>(item: MenuItem<HeaderMenuContext<T>
 			const togglable = ctx.allColumns.filter((col: Column<T>) => !(ctx.isTreeMode && col.isTree))
 			const allVisible = togglable.every(col => !col.isHidden)
 			return [
-				{ action: 'show-all-columns', icon: allVisible ? '☑' : '☐', isToggled: allVisible, shouldCloseOnClick: false },
+				{ action: 'show-all-columns', icon: allVisible ? '☑' : '☐', isToggled: allVisible, shouldCloseOnClick: false, cssClass: COLUMN_TOGGLE_CLASS },
 				...togglable.map(col => ({
 					action: 'toggle-column' as const,
 					id: String(col.field),
 					text: col.title || String(col.field),
 					icon: col.isHidden ? '☐' : '☑',
 					isToggled: !col.isHidden,
-					shouldCloseOnClick: false
+					shouldCloseOnClick: false,
+					cssClass: COLUMN_TOGGLE_CLASS
 				}))
 			]
 		}

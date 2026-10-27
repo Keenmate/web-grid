@@ -53,20 +53,15 @@ export async function waitForRows(page: Page, gridId = 'grid'): Promise<void> {
 // =============================================================================
 
 /**
- * Click a top-level context-menu item by (partial) label. Dispatched via JS —
- * Floating-UI menus can trip Playwright's "outside of viewport" check.
+ * Click a top-level context-menu item by (partial) label. The menu (core
+ * `openMenu()`) lives in the grid's shadow root; the locator pierces it, and the
+ * click is dispatched via JS — a menu flipped near the viewport edge can trip
+ * Playwright's "outside of viewport" check.
  */
 export async function clickMenuItem(page: Page, label: string): Promise<void> {
-	await page.evaluate((text) => {
-		const menu = document.querySelector('.wg-context-menu:not(.wg-context-menu--submenu)')
-		if (!menu) throw new Error('No context menu')
-		const items = Array.from(menu.querySelectorAll('.wg-context-menu__item')) as HTMLElement[]
-		const item = items.find(it =>
-			it.textContent?.includes(text) && !it.closest('.wg-context-menu--submenu')
-		)
-		if (!item) throw new Error(`Menu item not found: ${text}`)
-		item.click()
-	}, label)
+	const item = menuRoot(page).locator('.km-menu__item', { hasText: label }).first()
+	await expect(item).toHaveCount(1)
+	await item.evaluate((el: HTMLElement) => el.click())
 }
 
 /**
@@ -229,9 +224,9 @@ export async function readClipboard(page: Page): Promise<string> {
 	return (await page.evaluate(() => navigator.clipboard.readText())).replace(/\r\n/g, '\n')
 }
 
-/** The top-level context menu (`.wg-context-menu` also matches submenus). */
+/** The top-level context menu (core `openMenu()`, in a grid's shadow root; `.km-menu` also matches submenus). */
 export function menuRoot(page: Page): Locator {
-	return page.locator('.wg-context-menu:not(.wg-context-menu--submenu)')
+	return page.locator('.km-menu:not(.km-menu--submenu)')
 }
 
 /**

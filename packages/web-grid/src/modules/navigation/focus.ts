@@ -8,6 +8,7 @@ import type { GridHost } from '../grid-context.js'
 import { renderCell } from '../rendering/index.js'
 import { removeDropdown } from '../dropdown/rendering.js'
 import { removeFillHandle } from '../fill-handle/index.js'
+import { isInGridMenu } from '../contextmenu/index.js'
 
 /**
  * Focus the appropriate element within a cell.
@@ -497,9 +498,9 @@ export function handleTableFocusOut<T>(ctx: GridHost<T>, e: FocusEvent): void {
 		return
 	}
 
-	// If focus is moving into one of our document.body-hosted popovers (date
-	// picker, context menu, header context menu), treat it as staying inside
-	// the component — otherwise the cleanup below would re-render the cell,
+	// If focus is moving into one of our popovers (the document.body-hosted
+	// date picker, or the cell / header menu in the shadow root but outside the
+	// table), treat it as staying inside the component — otherwise the cleanup below would re-render the cell,
 	// detach the popover's anchor, and Floating UI's autoUpdate would silently
 	// close the popover.
 	if (relatedTarget && isInsideOwnedPopover(ctx, relatedTarget)) {
@@ -548,14 +549,14 @@ export function handleTableFocusOut<T>(ctx: GridHost<T>, e: FocusEvent): void {
 }
 
 /**
- * Returns true if `node` is inside any of this grid's document.body-hosted
- * popovers (datepicker, cell context menu, header context menu).
+ * Returns true if `node` is inside one of this grid's popovers: the
+ * document.body-hosted datepicker, or the cell / header menu (core openMenu(),
+ * in the shadow root but outside the table).
  */
 function isInsideOwnedPopover<T>(ctx: GridHost<T>, node: Node | null): boolean {
 	if (!node) return false
 	const dpEl = ctx.datepicker?.getElement() ?? null
 	if (dpEl && dpEl.contains(node)) return true
-	if (ctx.contextMenuElement && ctx.contextMenuElement.contains(node)) return true
-	if (ctx.headerContextMenuElement && ctx.headerContextMenuElement.contains(node)) return true
+	if (isInGridMenu(ctx, node)) return true
 	return false
 }

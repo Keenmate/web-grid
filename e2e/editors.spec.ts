@@ -251,15 +251,15 @@ test.describe('contextMenu — custom items', () => {
 
 		await openContextMenuOn(cell(page, 0, 1), page)
 
-		const menu = page.locator('.wg-context-menu')
+		const menu = page.locator('.km-menu')
 		await expect(menu).toBeVisible()
 
 		// All five items configured in the fixture.
-		await expect(menu.locator('.wg-context-menu__item', { hasText: 'Copy value' })).toBeVisible()
-		await expect(menu.locator('.wg-context-menu__item', { hasText: 'Edit name' })).toBeVisible()       // label callback uses ctx.column.field
-		await expect(menu.locator('.wg-context-menu__item', { hasText: 'View row details' })).toBeVisible()
-		await expect(menu.locator('.wg-context-menu__item', { hasText: 'Protect row' })).toBeVisible()      // Alice (row 0) is unprotected
-		await expect(menu.locator('.wg-context-menu__item', { hasText: 'Delete row' })).toBeVisible()
+		await expect(menu.locator('.km-menu__item', { hasText: 'Copy value' })).toBeVisible()
+		await expect(menu.locator('.km-menu__item', { hasText: 'Edit name' })).toBeVisible()       // label callback uses ctx.column.field
+		await expect(menu.locator('.km-menu__item', { hasText: 'View row details' })).toBeVisible()
+		await expect(menu.locator('.km-menu__item', { hasText: 'Protect row' })).toBeVisible()      // Alice (row 0) is unprotected
+		await expect(menu.locator('.km-menu__item', { hasText: 'Delete row' })).toBeVisible()
 	})
 
 	test('label callback reflects per-cell context (column.field)', async ({ page }) => {
@@ -267,7 +267,7 @@ test.describe('contextMenu — custom items', () => {
 
 		// Right-click on the Department cell → 'Edit department'.
 		await openContextMenuOn(cell(page, 0, 2), page)
-		await expect(page.locator('.wg-context-menu__item', { hasText: 'Edit department' })).toBeVisible()
+		await expect(page.locator('.km-menu__item', { hasText: 'Edit department' })).toBeVisible()
 	})
 
 	test('protected row: Protect/Unprotect label flips and Delete is disabled', async ({ page }) => {
@@ -276,15 +276,15 @@ test.describe('contextMenu — custom items', () => {
 		// Eva (row 4) is protected:true in the seed.
 		await openContextMenuOn(cell(page, 4, 1), page)
 
-		const menu = page.locator('.wg-context-menu')
+		const menu = page.locator('.km-menu')
 		await expect(menu).toBeVisible()
 
 		// Label uses the callback form — for a protected row it flips to "Unprotect row".
-		await expect(menu.locator('.wg-context-menu__item', { hasText: 'Unprotect row' })).toBeVisible()
+		await expect(menu.locator('.km-menu__item', { hasText: 'Unprotect row' })).toBeVisible()
 
 		// Delete is disabled when the row is protected.
-		const deleteItem = menu.locator('.wg-context-menu__item', { hasText: 'Delete row' })
-		await expect(deleteItem).toHaveClass(/wg-context-menu__item--disabled/)
+		const deleteItem = menu.locator('.km-menu__item', { hasText: 'Delete row' })
+		await expect(deleteItem).toHaveClass(/km-menu__item--disabled/)
 	})
 
 	test('clicking "Copy value" fires onClick (event log captures the action)', async ({ page }) => {
@@ -292,12 +292,12 @@ test.describe('contextMenu — custom items', () => {
 
 		// Bob Smith's name cell.
 		await openContextMenuOn(cell(page, 1, 1), page)
-		await expect(page.locator('.wg-context-menu')).toBeVisible()
+		await expect(page.locator('.km-menu')).toBeVisible()
 
 		// Playwright's `{ force: true }` still trips on "Element outside of viewport"
 		// for Floating UI popovers in some chromium builds. Dispatch the click via
 		// JS directly to bypass all actionability checks.
-		await page.locator('.wg-context-menu__item', { hasText: 'Copy value' })
+		await page.locator('.km-menu__item', { hasText: 'Copy value' })
 			.evaluate((el) => (el as HTMLElement).click())
 
 		// The handler writes to clipboard AND logs to the event log.
@@ -308,7 +308,7 @@ test.describe('contextMenu — custom items', () => {
 		await gotoDemo(page)
 
 		await openContextMenuOn(cell(page, 0, 2), page)  // department cell
-		await expect(page.locator('.wg-context-menu')).toBeVisible()
+		await expect(page.locator('.km-menu')).toBeVisible()
 
 		// Fixture wires beforeContextMenuOpenCallback to log:
 		//   'opened at row N, column "<field>"'
@@ -319,8 +319,8 @@ test.describe('contextMenu — custom items', () => {
 		await gotoDemo(page)
 		await openContextMenuOn(cell(page, 0, 1), page)
 
-		const deleteItem = page.locator('.wg-context-menu__item', { hasText: 'Delete row' })
-		await expect(deleteItem).toHaveClass(/wg-context-menu__item--danger/)
+		const deleteItem = page.locator('.km-menu__item', { hasText: 'Delete row' })
+		await expect(deleteItem).toHaveClass(/km-menu__item--danger/)
 	})
 
 	test('a divider is rendered before the divider-flagged items', async ({ page }) => {
@@ -328,8 +328,8 @@ test.describe('contextMenu — custom items', () => {
 		await openContextMenuOn(cell(page, 0, 1), page)
 
 		// Divider entries precede 'view-row' and 'delete' → expect two
-		// .wg-context-menu__divider elements inside the open menu.
-		const dividers = page.locator('.wg-context-menu .wg-context-menu__divider')
+		// .km-menu__divider elements inside the open menu.
+		const dividers = page.locator('.km-menu .km-menu__divider')
 		await expect(dividers).toHaveCount(2)
 	})
 })

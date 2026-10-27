@@ -138,7 +138,7 @@ import {
 	commitDateEditor
 } from './modules/datepicker/index.js'
 import {
-	closeContextMenu,
+	closeGridMenu,
 	handleContextMenu,
 	handleHeaderContextMenu,
 	handleFillerContextMenu
@@ -261,6 +261,7 @@ import {
 	type InputDef,
 	type EventDef,
 } from '@keenmate/web-components-core'
+import type { MenuHandle } from '@keenmate/web-components-core/menu'
 
 // Enum member lists for the input table (hoisted `as const` so the CEM
 // extractor and toEnum both read the same literal source of truth).
@@ -538,9 +539,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	// DatePicker instance (for date editor) - exposed via GridHost for pipeline access
 	datepicker: DatePicker | null = null
 
-	// Context menu element (rendered to document.body) - exposed via GridHost for pipeline access
-	contextMenuElement: HTMLElement | null = null
-	headerContextMenuElement: HTMLElement | null = null
+	// The open cell / header menu (core openMenu(), in the shadow root) - exposed via GridHost for pipeline access
+	menu: MenuHandle | null = null
 
 	// Virtual scroll state — owned by VirtualScrollService (visible-range, load-more flag, programmatic-scroll guard).
 	virtualScroll = new VirtualScrollService()
@@ -666,14 +666,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 			this.datepicker.destroy()
 			this.datepicker = null
 		}
-		if (this.contextMenuElement) {
-			closeContextMenu(this.contextMenuElement)
-			this.contextMenuElement = null
-		}
-		if (this.headerContextMenuElement) {
-			closeContextMenu(this.headerContextMenuElement)
-			this.headerContextMenuElement = null
-		}
+		closeGridMenu(this)
 		// Close any open toolbar
 		closeToolbar()
 		// Cleanup inline shortcuts
@@ -1481,8 +1474,6 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 					const dpEl = this.datepicker?.getElement() ?? null
 					for (const node of path) {
 						if (dpEl && dpEl === node) return true
-						if (this.contextMenuElement && this.contextMenuElement === node) return true
-						if (this.headerContextMenuElement && this.headerContextMenuElement === node) return true
 					}
 					return false
 				}

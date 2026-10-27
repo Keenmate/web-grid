@@ -12,8 +12,8 @@ import { test, expect, Page, Locator, gridLocator, cell, header, clickMenuItem }
  *                  (sort-asc / sort-desc / clear-sort), custom item with dynamic
  *                  text, beforeHeaderMenuOpenCallback callback.
  *
- * Both menu types render into document.body (not the grid's shadow root) via
- * Floating UI, so all assertions use page-level locators with `.wg-context-menu`.
+ * Both menus are core `openMenu()` (web-components-core `/menu`), rendered in
+ * the grid's shadow root; page-level `.km-menu` locators pierce it.
  *
  * Seed (#grid) — see fixture for row→stock/active mapping. Key cases the spec
  * relies on:
@@ -26,9 +26,9 @@ const PAGE = '/test/contextmenu.html'
 
 const COL = { id: 0, name: 1, category: 2, price: 3, stock: 4, active: 5 } as const
 
-/** Top-level menu only — `.wg-context-menu` also matches the submenu element. */
+/** Top-level menu only — `.km-menu` also matches the submenu element. */
 function menuRoot(page: Page) {
-	return page.locator('.wg-context-menu:not(.wg-context-menu--submenu)')
+	return page.locator('.km-menu:not(.km-menu--submenu)')
 }
 
 async function dispatchContextMenu(page: Page, locator: Locator) {
@@ -104,29 +104,29 @@ test.describe('cell context menu — #grid', () => {
 
 	test('"Delete" carries the --danger class', async ({ page }) => {
 		await dispatchContextMenu(page, cell(page, 'grid', 3, COL.name))
-		const del = menuRoot(page).locator('.wg-context-menu__item', { hasText: 'Delete' })
-		await expect(del).toHaveClass(/wg-context-menu__item--danger/)
+		const del = menuRoot(page).locator('.km-menu__item', { hasText: 'Delete' })
+		await expect(del).toHaveClass(/km-menu__item--danger/)
 	})
 
 	test('"Delete" is disabled for active rows and enabled for inactive ones', async ({ page }) => {
 		// Row 0 active=true → disabled.
 		await dispatchContextMenu(page, cell(page, 'grid', 0, COL.name))
-		await expect(menuRoot(page).locator('.wg-context-menu__item', { hasText: 'Delete' }))
-			.toHaveClass(/wg-context-menu__item--disabled/)
+		await expect(menuRoot(page).locator('.km-menu__item', { hasText: 'Delete' }))
+			.toHaveClass(/km-menu__item--disabled/)
 
 		await page.keyboard.press('Escape')
 		await expect(menuRoot(page)).toHaveCount(0)
 
 		// Row 3 active=false → enabled (no --disabled modifier).
 		await dispatchContextMenu(page, cell(page, 'grid', 3, COL.name))
-		await expect(menuRoot(page).locator('.wg-context-menu__item', { hasText: 'Delete' }))
-			.not.toHaveClass(/wg-context-menu__item--disabled/)
+		await expect(menuRoot(page).locator('.km-menu__item', { hasText: 'Delete' }))
+			.not.toHaveClass(/km-menu__item--disabled/)
 	})
 
 	test('a divider entry before "Delete" renders a divider element above it', async ({ page }) => {
 		await dispatchContextMenu(page, cell(page, 'grid', 0, COL.name))
 		// The cell menu uses one divider — before the Delete item.
-		await expect(menuRoot(page).locator('.wg-context-menu__divider')).toHaveCount(1)
+		await expect(menuRoot(page).locator('.km-menu__divider')).toHaveCount(1)
 	})
 
 	test('clicking an enabled item invokes its onClick handler', async ({ page }) => {
@@ -293,6 +293,6 @@ test.describe('header context menu — #gridHeader', () => {
 	test('a divider entry between built-in items and the custom export renders a divider', async ({ page }) => {
 		await dispatchContextMenu(page, header(page, 'gridHeader', 'name'))
 		// With name unsorted: Sort Asc, Sort Desc (Clear Sort hidden), divider, Export.
-		await expect(menuRoot(page).locator('.wg-context-menu__divider')).toHaveCount(1)
+		await expect(menuRoot(page).locator('.km-menu__divider')).toHaveCount(1)
 	})
 })

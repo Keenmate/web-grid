@@ -186,7 +186,7 @@ test.describe('cellContextMenu — predefined tree items', () => {
 
 		// Row 0 = Acme (parent). Right-click any cell on it.
 		await openCellContextMenu(page, GRID, 0, 0)
-		const menu = page.locator('.wg-context-menu').first()
+		const menu = page.locator('.km-menu').first()
 		await expect(menu).toBeVisible()
 		await expect(menu.locator('text=Expand all')).toBeVisible()
 		await expect(menu.locator('text=Collapse all')).toBeVisible()
@@ -205,7 +205,7 @@ test.describe('cellContextMenu — predefined tree items', () => {
 		const leafCell = leafRow.locator('.wg__cell').first()
 		await openCellContextMenuOn(leafCell, page)
 
-		const menu = page.locator('.wg-context-menu').first()
+		const menu = page.locator('.km-menu').first()
 		await expect(menu).toBeVisible()
 		await expect(menu.locator('text=Expand all')).toHaveCount(0)
 		await expect(menu.locator('text=Collapse all')).toHaveCount(0)
@@ -219,7 +219,7 @@ test.describe('cellContextMenu — predefined tree items', () => {
 		const before = await visibleRowCount(page)
 
 		await openCellContextMenu(page, GRID, 0, 0)
-		const menu = page.locator('.wg-context-menu').first()
+		const menu = page.locator('.km-menu').first()
 		await expect(menu).toBeVisible()
 		await clickMenuItem(page, 'Expand entire tree')
 
@@ -230,7 +230,7 @@ test.describe('cellContextMenu — predefined tree items', () => {
 		await gotoTreeDemo(page)
 
 		await openCellContextMenu(page, GRID, 0, 0)
-		const menu = page.locator('.wg-context-menu').first()
+		const menu = page.locator('.km-menu').first()
 		await expect(menu).toBeVisible()
 		await clickMenuItem(page, 'Collapse entire tree')
 
@@ -341,7 +341,7 @@ test.describe('column visibility — tree column locked (#cvGrid)', () => {
 
 		await rightClickHeader(page, CV_GRID, 0)  // tree column "Organization"
 
-		const menu = page.locator('.wg-context-menu').first()
+		const menu = page.locator('.km-menu').first()
 		await expect(menu).toBeVisible()
 		await expect(menu.locator('text=Hide column')).toHaveCount(0)
 	})
@@ -352,7 +352,7 @@ test.describe('column visibility — tree column locked (#cvGrid)', () => {
 
 		await rightClickHeader(page, CV_GRID, 1)  // Headcount — not the tree column
 
-		const menu = page.locator('.wg-context-menu').first()
+		const menu = page.locator('.km-menu').first()
 		await expect(menu).toBeVisible()
 		await expect(menu.locator('text=Hide column')).toBeVisible()
 	})

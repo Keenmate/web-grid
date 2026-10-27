@@ -3,6 +3,8 @@
 // =============================================================================
 // Top-of-chain dispatcher for every keydown that bubbles out to the <table>:
 //
+//  0. Shift+F10 / the ContextMenu key on a focused (not editing) cell open the
+//     cell context menu below it, first item focused (core /menu keyboard).
 //  1. Tree expand / collapse via Ctrl/Cmd + ArrowLeft / ArrowRight.
 //     Runs BEFORE the pipeline because the pipeline swallows plain arrow
 //     keys for cell-focus navigation regardless of editTrigger, which would
@@ -25,6 +27,7 @@ import type { GridHost } from '../grid-context.js'
 import { moveFocus, handleCellKeyDown } from '../navigation/index.js'
 import { tryCellShortcuts } from '../navigation/cell-keydown.js'
 import { handleEditorKeyDown } from '../editing/index.js'
+import { openCellMenuFromKeyboard } from '../contextmenu/index.js'
 
 /**
  * Top-level keydown router on the table. Sits in front of the cell + editor
@@ -34,6 +37,18 @@ import { handleEditorKeyDown } from '../editing/index.js'
 export function handleTableKeyDown<T>(ctx: GridHost<T>, e: Event): void {
 	const target = e.target as HTMLElement
 	const ke = e as KeyboardEvent
+
+	// Shift+F10 / the ContextMenu key → the focused cell's context menu
+	if (
+		(ke.key === 'ContextMenu' || (ke.key === 'F10' && ke.shiftKey && !ke.ctrlKey && !ke.metaKey && !ke.altKey)) &&
+		target.closest('.wg__cell') && !target.matches('input, textarea, select, [contenteditable="true"]')
+	) {
+		if (openCellMenuFromKeyboard(ctx)) {
+			e.preventDefault()
+			e.stopPropagation()
+		}
+		return
+	}
 
 	// Tree shortcuts (Ctrl/Cmd + ArrowLeft/Right) run BEFORE pipelineAdapter
 	// because the pipeline consumes plain arrow keys for cell-focus navigation

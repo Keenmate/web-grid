@@ -36,6 +36,10 @@ Arrow keys move one cell at a time. Other keys jump farther.
 
   Ctrl+G          Open "Go To Row" dialog for jumping to a specific row number
 
+  Shift+F10 / ContextMenu key
+                  Open the cell context menu (contextMenu) on the focused
+                  cell, first item focused; Escape returns focus to the cell.
+
   Shift+Arrow     Grow / shrink a cell range from the focused cell (anchor
                   keeps focus). Shift+Home / Shift+End: to the row start / end.
                   Ctrl+Shift+Arrow: to the data edge. Not in cellSelectionMode

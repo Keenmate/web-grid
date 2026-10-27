@@ -2,9 +2,10 @@
 // Context-menu element-handlers
 // =============================================================================
 // Extracted from GridElement. Wires the host's `contextmenu` event to the three
-// menu surfaces the grid supports — cell, column-header, and header-filler — and
-// owns the open/close lifecycle for the menu element tracked on
-// `ctx.contextMenuElement` / `ctx.headerContextMenuElement`.
+// menu surfaces the grid supports — cell, column-header, and header-filler. The
+// menu itself is core `openMenu()` (see ./index.ts); the open one is `ctx.menu`.
+// Shift+F10 / the ContextMenu key open the cell menu on the focused cell
+// (`openCellMenuFromKeyboard`).
 
 import { runBeforeCallbackSync } from '@keenmate/web-components-core'
 import type { MenuItem } from '@keenmate/web-components-core/actions'
@@ -16,7 +17,7 @@ import type {
 	GridMenuEntry,
 	HeaderMenuContext
 } from '../../interaction.js'
-import { closeContextMenu, openContextMenu } from './index.js'
+import { openGridMenu } from './index.js'
 import {
 	activateGridItem,
 	cellMenuDefaults,
@@ -47,21 +48,47 @@ export function handleContextMenu<T>(ctx: GridHost<T>, e: MouseEvent): void {
 		return
 	}
 
-	// Cell context menu
-	const engine = ctx.engine
-	if (!engine.contextMenu?.length && !engine.beforeContextMenuOpenCallback) {
-		return // No context menu defined, use browser default
+	// The browser's keyboard-initiated `contextmenu` (Shift+F10 / ContextMenu key,
+	// not a right button) after ours already opened from the keydown: don't show
+	// the native one too. A pointer press closes our menu before a right-click's
+	// `contextmenu` arrives.
+	if (ctx.menu?.isOpen && e.button !== 2) {
+		e.preventDefault()
+		return
 	}
 
 	const cell = target.closest('.wg__cell') as HTMLElement
 	if (!cell) return // Right-click not on a cell
+	if (openCellMenu(ctx, cell, { x: e.clientX, y: e.clientY }, false)) e.preventDefault()
+}
+
+/**
+ * Shift+F10 / the ContextMenu key: open the cell menu on the focused cell, below
+ * it, with the first item focused. Returns `false` when there is no menu to open.
+ */
+export function openCellMenuFromKeyboard<T>(ctx: GridHost<T>): boolean {
+	const focused = ctx.engine.focusedCell
+	if (!focused || ctx.engine.editingCell) return false
+	const cell = ctx.shadow.querySelector(
+		`.wg__cell[data-row="${focused.rowIndex}"][data-col="${focused.colIndex}"]`
+	) as HTMLElement | null
+	if (!cell) return false
+	return openCellMenu(ctx, cell, cell, true)
+}
+
+/** Open the cell menu for `cell` at `at` (the pointer, or the cell itself from the keyboard). */
+function openCellMenu<T>(ctx: GridHost<T>, cell: HTMLElement, at: { x: number; y: number } | HTMLElement, isFromKeyboard: boolean): boolean {
+	const engine = ctx.engine
+	if (!engine.contextMenu?.length && !engine.beforeContextMenuOpenCallback) {
+		return false // No context menu defined, use browser default
+	}
 
 	const rowIndex = parseInt(cell.dataset.row || '0', 10)
 	const colIndex = parseInt(cell.dataset.col || '0', 10)
 	const column = engine.columns[colIndex]
-	if (!column) return
+	if (!column) return false
 	const row = engine.displayItems[rowIndex]
-	if (!row) return
+	if (!row) return false
 
 	const fields = {
 		row,
@@ -75,58 +102,26 @@ export function handleContextMenu<T>(ctx: GridHost<T>, e: MouseEvent): void {
 
 	// beforeContextMenuOpenCallback: false → no grid menu (the browser's shows); entries → shown instead
 	const gate = runBeforeCallbackSync<CellContext<T>, GridMenuEntry<T>[]>(engine.beforeContextMenuOpenCallback, menuCtx, 'beforeContextMenuOpenCallback')
-	if (gate.isCancelled) return
+	if (gate.isCancelled) return false
 	const entries = 'value' in gate && Array.isArray(gate.value) ? gate.value : engine.contextMenu ?? []
-	if (!entries.length) return
+	if (!entries.length) return false
 
-	e.preventDefault()
-
-	// Close any existing context menu
-	if (ctx.contextMenuElement) {
-		closeContextMenu(ctx.contextMenuElement)
-		ctx.contextMenuElement = null
-	}
-
-	// Sync any shadowed own properties to grid (workaround for property shadowing)
-	const ownXOffset = Object.getOwnPropertyDescriptor(ctx, 'contextMenuXOffset')
-	const ownYOffset = Object.getOwnPropertyDescriptor(ctx, 'contextMenuYOffset')
-	if (ownXOffset && 'value' in ownXOffset) {
-		engine.contextMenuXOffset = ownXOffset.value
-		delete (ctx as any).contextMenuXOffset // Remove shadow
-	}
-	if (ownYOffset && 'value' in ownYOffset) {
-		engine.contextMenuYOffset = ownYOffset.value
-		delete (ctx as any).contextMenuYOffset // Remove shadow
-	}
-
-	ctx.contextMenuElement = openContextMenu(
-		ctx,
-		e.clientX,
-		e.clientY,
-		engine.contextMenuXOffset,
-		engine.contextMenuYOffset,
-		{
-			entries,
-			ctx: menuCtx,
-			defaults: (item) => cellMenuDefaults(ctx, item.action, menuCtx),
-			activate: (item, triggerElement, event) => activateGridItem(ctx, {
-				item, fields, source: 'context-menu', sourceEvent: event, triggerElement
-			})
-		},
-		() => { ctx.contextMenuElement = null }
-	)
-}
-
-/** Close both menus (a new one is opening). */
-function closeMenus<T>(ctx: GridHost<T>): void {
-	if (ctx.contextMenuElement) {
-		closeContextMenu(ctx.contextMenuElement)
-		ctx.contextMenuElement = null
-	}
-	if (ctx.headerContextMenuElement) {
-		closeContextMenu(ctx.headerContextMenuElement)
-		ctx.headerContextMenuElement = null
-	}
+	// From the keyboard the menu drops below the cell; the pointer offsets apply to a right-click.
+	return openGridMenu(ctx, {
+		kind: 'cell',
+		entries,
+		ctx: menuCtx,
+		at,
+		offset: isFromKeyboard ? undefined : { x: engine.contextMenuXOffset, y: engine.contextMenuYOffset },
+		defaults: (item) => cellMenuDefaults(ctx, item.action, menuCtx),
+		activate: (item, triggerElement, event) => activateGridItem(ctx, {
+			item, fields, source: 'context-menu', sourceEvent: event, triggerElement
+		}),
+		// Back to what had focus (the cell, when opened from the keyboard) — never
+		// focus a cell that wasn't focused (that would move the grid's focus).
+		returnFocusTo: (ctx.shadow.activeElement as HTMLElement | null) ?? null,
+		shouldFocusFirst: isFromKeyboard
+	})
 }
 
 /** Open the header menu for `fields` (a column, or the filler with `column: null`). */
@@ -145,26 +140,20 @@ function openHeaderMenu<T>(
 	const entries = 'value' in gate && Array.isArray(gate.value) ? gate.value : baseEntries
 	if (!entries.length) return
 
-	e.preventDefault()
-	closeMenus(ctx)
-
-	ctx.headerContextMenuElement = openContextMenu(
-		ctx,
-		e.clientX,
-		e.clientY,
-		0,
-		0,
-		{
-			entries,
-			ctx: menuCtx,
-			defaults: (item) => headerMenuDefaults(item.action, menuCtx),
-			prepare: (item) => withHeaderBuiltInChildren(item as MenuItem<HeaderMenuContext<T>, GridHeaderAction>),
-			activate: (item, triggerElement, event) => activateGridItem(ctx, {
-				item, fields, source: 'header-menu', sourceEvent: event, triggerElement
-			})
-		},
-		() => { ctx.headerContextMenuElement = null }
-	)
+	const opened = openGridMenu(ctx, {
+		kind: 'header',
+		entries,
+		ctx: menuCtx,
+		at: { x: e.clientX, y: e.clientY },
+		defaults: (item) => headerMenuDefaults(item.action, menuCtx),
+		prepareItem: (item) => withHeaderBuiltInChildren(item as MenuItem<HeaderMenuContext<T>, GridHeaderAction>),
+		activate: (item, triggerElement, event) => activateGridItem(ctx, {
+			item, fields, source: 'header-menu', sourceEvent: event, triggerElement
+		}),
+		// Headers aren't focusable — focus goes back to where it was (the focused cell)
+		returnFocusTo: (ctx.shadow.activeElement as HTMLElement | null) ?? null
+	})
+	if (opened) e.preventDefault()
 }
 
 /**

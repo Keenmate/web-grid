@@ -347,13 +347,16 @@ Positioning offsets:
     grid.contextMenuXOffset = 8    (default) horizontal offset from click
     grid.contextMenuYOffset = 0    (default) vertical offset from click
 
-The context menu renders in the document body (outside Shadow DOM) and
-uses @floating-ui/dom for viewport-aware positioning with flip/shift.
+Both menus are the shared KeenMate menu (core openMenu(),
+@keenmate/web-components-core/menu), rendered in the grid's shadow root
+(.km-menu, plus .wg-context-menu on cell menu levels / .wg-header-menu on
+header menu levels), positioned viewport-aware (flip / shift). Keyboard: see
+CSS VARIABLES below (Shift+F10 / ContextMenu key opens the cell menu).
 
 Closing behavior:
 - Click outside the menu
-- Press Escape
-- Scroll the page or grid
+- Press Escape (focus returns to where it was) or Tab
+- Scroll the page or grid, window blur, another KeenMate overlay opening
 - Activating an item (unless shouldCloseOnClick: false)
 - el.controller.closeContextMenu()
 
@@ -527,24 +530,46 @@ Toolbar:
     --wg-inline-actions-gap       gap between inline action buttons
     --wg-spacing-sm               used for inline actions cell padding
 
-Context menu (set on .wg-context-menu-container):
-    --wg-cm-z-index               z-index (default: 10000)
-    --wg-cm-background            menu background
-    --wg-cm-border-color          menu border color
-    --wg-cm-text-color            text color
-    --wg-cm-text-secondary        shortcut text color
-    --wg-cm-text-danger           danger item text color
-    --wg-cm-hover-bg              item hover background
-    --wg-cm-disabled-opacity      opacity for disabled items
-    --wg-cm-font-family           font family
-    --wg-cm-font-size             font size
-    --wg-cm-padding               menu padding
-    --wg-cm-item-padding          item padding
-    --wg-cm-min-width             menu minimum width
-    --wg-cm-border-radius         border radius
-    --wg-cm-icon-size             icon size
-    --wg-cm-icon-gap              gap between icon and label
-    --wg-cm-shadow                box shadow
+Context menus (cell + header) — core openMenu() in the grid's shadow root.
+One public set on web-grid, UNSET by default; each resolves
+--wg-context-menu-X (this grid) -> --km-menu-X (page-wide, :root)
+-> --base-* -> core default:
+    --wg-context-menu-bg              menu background
+    --wg-context-menu-bg-hover        item hover / focus background
+    --wg-context-menu-hover-color     item text color on hover (default unchanged)
+    --wg-context-menu-text-color      text color
+    --wg-context-menu-border          menu border
+    --wg-context-menu-border-radius   border radius
+    --wg-context-menu-shadow          box shadow
+    --wg-context-menu-min-width       menu minimum width
+    --wg-context-menu-padding         menu padding
+    --wg-context-menu-font-size       font size
+    --wg-context-menu-item-padding    item padding
+    --wg-context-menu-item-gap        gap between icon, label, shortcut
+    --wg-context-menu-toggled-color   toggled-on item color
+    --wg-context-menu-icon-width      icon column width
+    --wg-context-menu-icon-font-size  icon font size
+    --wg-context-menu-arrow-font-size submenu arrow font size
+    --wg-context-menu-shortcut-color  shortcut hint color
+    --wg-context-menu-danger-color    danger item text color
+    --wg-context-menu-danger-bg-hover danger item hover background
+    --wg-context-menu-divider-color   divider color
+    --wg-context-menu-divider-margin  divider margin
+    --wg-context-menu-disabled-opacity disabled item opacity
+    --wg-context-menu-z-index         z-index (default 10000)
 
-Context menu variables fall back to --base-* theme variables from
-@keenmate/theme-designer when available.
+  :root { --km-menu-bg: #fafafa; }                 every KeenMate menu
+  web-grid.orders { --wg-context-menu-bg: #eef; }  just this grid's menus
+
+Menu markup: .km-menu (.km-menu--submenu) > .km-menu__item
+(--disabled / --danger / --toggled / --has-submenu), __icon, __label,
+__shortcut, __divider. Cell menu levels also carry .wg-context-menu, header
+menu levels .wg-header-menu. Toggle items (isToggled / getIsToggledCallback;
+column-visibility toggles, class wg-header-menu__column-toggle) are
+role="menuitemcheckbox" + aria-checked.
+
+Menu keyboard: Shift+F10 / ContextMenu key on the focused cell opens the cell
+menu below it (first item focused). Up / Down (disabled skipped), Home / End,
+Right / Enter / Space open a submenu, Left / Escape close it, Enter / Space
+activate, Escape closes and returns focus to the cell, Tab closes, an item's
+shortcut letter activates it.

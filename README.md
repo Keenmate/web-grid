@@ -905,6 +905,46 @@ grid.headerContextMenu = [
 
 Column-visibility toggles report `action: 'toggle-column'` (with `id` = the field) and `'show-all-columns'`. On the filler area right of the last column, `ctx.column` is `null` and `colIndex` is `-1`. `beforeHeaderMenuOpenCallback(ctx)` works like `beforeContextMenuOpenCallback`.
 
+### Menu keyboard, markup and theming
+
+Both menus are the shared KeenMate menu (`@keenmate/web-components-core/menu`), rendered in the grid's shadow root:
+
+- **Keyboard:** Shift+F10 or the ContextMenu key on the focused cell opens the cell menu below it with the first item focused. In the menu: ↑ / ↓ (disabled items are skipped), Home / End, → / Enter / Space open a submenu, ← / Escape close it, Enter / Space activate, Escape closes and returns focus to the cell, Tab closes. An item's `shortcut` letter activates it while the menu is open.
+- **Dismiss:** outside press, scroll (page or grid), window blur, another KeenMate overlay opening.
+- **Markup:** `.km-menu` levels (`.km-menu--submenu` for submenus) with `.km-menu__item` (`--disabled`, `--danger`, `--toggled`, `--has-submenu`), `__icon`, `__label`, `__shortcut`, `__divider`. The cell menu's levels also carry `wg-context-menu`, the header menu's `wg-header-menu`. Items are `role="menuitem"`; an item that defines its toggle state (`isToggled` / `getIsToggledCallback`, e.g. the column-visibility toggles, class `wg-header-menu__column-toggle`) is `role="menuitemcheckbox"` + `aria-checked`.
+- **Theming:** `--wg-context-menu-*` on `web-grid` themes both menus of that grid; unset (the default), the page-wide `--km-menu-*` on `:root` applies (every KeenMate menu), then `--base-*`, then the core default:
+
+```css
+:root { --km-menu-bg: #fafafa; }                 /* every menu on the page */
+web-grid.orders { --wg-context-menu-bg: #eef; }  /* just this grid's menus */
+```
+
+| Variable | Falls back to | Description |
+|---|---|---|
+| `--wg-context-menu-bg` | `--km-menu-bg` | Menu background |
+| `--wg-context-menu-bg-hover` | `--km-menu-hover-bg` | Item hover / focus background |
+| `--wg-context-menu-hover-color` | `--km-menu-hover-color` | Item text color on hover (default unchanged) |
+| `--wg-context-menu-text-color` | `--km-menu-text-color` | Menu text color |
+| `--wg-context-menu-border` | `--km-menu-border` | Menu border |
+| `--wg-context-menu-border-radius` | `--km-menu-border-radius` | Menu border radius |
+| `--wg-context-menu-shadow` | `--km-menu-shadow` | Menu shadow |
+| `--wg-context-menu-min-width` | `--km-menu-min-width` | Menu min width |
+| `--wg-context-menu-padding` | `--km-menu-padding` | Menu padding |
+| `--wg-context-menu-font-size` | `--km-menu-font-size` | Menu font size |
+| `--wg-context-menu-item-padding` | `--km-menu-item-padding` | Item padding |
+| `--wg-context-menu-item-gap` | `--km-menu-item-gap` | Gap between icon, label, shortcut |
+| `--wg-context-menu-toggled-color` | `--km-menu-toggled-color` | Toggled-on item color |
+| `--wg-context-menu-icon-width` | `--km-menu-icon-size` | Icon column width |
+| `--wg-context-menu-icon-font-size` | `--km-menu-icon-font-size` | Icon font size |
+| `--wg-context-menu-arrow-font-size` | `--km-menu-arrow-font-size` | Submenu arrow font size |
+| `--wg-context-menu-shortcut-color` | `--km-menu-shortcut-color` | Shortcut hint color |
+| `--wg-context-menu-danger-color` | `--km-menu-danger-color` | Danger item text color |
+| `--wg-context-menu-danger-bg-hover` | `--km-menu-danger-hover-bg` | Danger item hover background |
+| `--wg-context-menu-divider-color` | `--km-menu-divider-color` | Divider line color |
+| `--wg-context-menu-divider-margin` | `--km-menu-divider-margin` | Divider margin |
+| `--wg-context-menu-disabled-opacity` | `--km-menu-disabled-opacity` | Disabled item opacity |
+| `--wg-context-menu-z-index` | `--km-menu-z-index` (10000) | Menu stacking order |
+
 ## Keyboard Shortcuts
 
 ```javascript
@@ -1099,7 +1139,7 @@ This means:
 | `--wg-main-bg` | Background color (table body, cells) |
 | `--wg-elevated-bg` | Alternate row/header background |
 | `--wg-hover-bg` | Hover background (rows, buttons) |
-| `--wg-dropdown-bg` | Floating surfaces (toolbar, context menu, dropdowns) |
+| `--wg-dropdown-bg` | Floating surfaces (toolbar, dropdowns); the context menus use `--wg-context-menu-*` ([Context Menu](#menu-keyboard-markup-and-theming)) |
 | `--wg-border-color` | Border color |
 
 ### Component Variables Manifest
@@ -1110,8 +1150,8 @@ A machine-readable manifest documenting all CSS variables is included in the pac
 import manifest from '@keenmate/web-grid/manifest'
 
 console.log(manifest.prefix)              // "wg"
-console.log(manifest.baseVariables)       // 37 --base-* variables consumed
-console.log(manifest.componentVariables)  // 178 --wg-* variables exposed
+console.log(manifest.baseVariables)       // 38 --base-* variables consumed
+console.log(manifest.componentVariables)  // 208 --wg-* variables exposed
 ```
 
 The manifest follows the [component-variables schema](https://raw.githubusercontent.com/keenmate/schemas/main/component-variables.schema.json) and contains:

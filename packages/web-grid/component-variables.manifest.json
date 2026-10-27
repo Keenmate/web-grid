@@ -216,8 +216,29 @@
     { "name": "wg-tooltip-padding", "category": "tooltip", "usage": "Tooltip content padding" },
     { "name": "wg-tooltip-shadow", "category": "tooltip", "usage": "Tooltip box shadow" },
 
-    { "name": "wg-context-menu-z-index", "category": "context-menu", "usage": "Context menu stacking order (1001)" },
-    { "name": "wg-context-menu-min-width", "category": "context-menu", "usage": "Context menu minimum width (160px)" },
+    { "name": "wg-context-menu-bg", "category": "context-menu", "usage": "Cell / header menu background (unset → --km-menu-bg → --base-dropdown-bg)" },
+    { "name": "wg-context-menu-bg-hover", "category": "context-menu", "usage": "Menu item hover / focus background (unset → --km-menu-hover-bg → --base-hover-bg)" },
+    { "name": "wg-context-menu-hover-color", "category": "context-menu", "usage": "Menu item text color on hover / focus (unset → --km-menu-hover-color; default unchanged)" },
+    { "name": "wg-context-menu-text-color", "category": "context-menu", "usage": "Menu text color (unset → --km-menu-text-color → --base-text-color-1)" },
+    { "name": "wg-context-menu-shortcut-color", "category": "context-menu", "usage": "Shortcut hint color (unset → --km-menu-shortcut-color → --base-text-color-3)" },
+    { "name": "wg-context-menu-border", "category": "context-menu", "usage": "Menu border (unset → --km-menu-border → --base-dropdown-border)" },
+    { "name": "wg-context-menu-border-radius", "category": "context-menu", "usage": "Menu border radius (unset → --km-menu-border-radius, 4px)" },
+    { "name": "wg-context-menu-shadow", "category": "context-menu", "usage": "Menu box shadow (unset → --km-menu-shadow → --base-dropdown-box-shadow)" },
+    { "name": "wg-context-menu-min-width", "category": "context-menu", "usage": "Menu minimum width (unset → --km-menu-min-width, 160px)" },
+    { "name": "wg-context-menu-padding", "category": "context-menu", "usage": "Menu padding (unset → --km-menu-padding, 4px 0)" },
+    { "name": "wg-context-menu-font-size", "category": "context-menu", "usage": "Menu font size (unset → --km-menu-font-size, 14px)" },
+    { "name": "wg-context-menu-item-padding", "category": "context-menu", "usage": "Menu item padding (unset → --km-menu-item-padding, 6px 12px)" },
+    { "name": "wg-context-menu-item-gap", "category": "context-menu", "usage": "Gap between icon, label, shortcut (unset → --km-menu-item-gap, 8px)" },
+    { "name": "wg-context-menu-toggled-color", "category": "context-menu", "usage": "Toggled-on item color, e.g. a visible column in Column Visibility (unset → --km-menu-toggled-color → --base-accent-color)" },
+    { "name": "wg-context-menu-icon-width", "category": "context-menu", "usage": "Icon column width (unset → --km-menu-icon-size, 16px)" },
+    { "name": "wg-context-menu-icon-font-size", "category": "context-menu", "usage": "Icon font size (unset → --km-menu-icon-font-size, inherit)" },
+    { "name": "wg-context-menu-arrow-font-size", "category": "context-menu", "usage": "Submenu arrow font size (unset → --km-menu-arrow-font-size, 0.8em)" },
+    { "name": "wg-context-menu-danger-color", "category": "context-menu", "usage": "Danger item text color (unset → --km-menu-danger-color → --base-danger-color)" },
+    { "name": "wg-context-menu-danger-bg-hover", "category": "context-menu", "usage": "Danger item hover background (unset → --km-menu-danger-hover-bg → --base-danger-bg-subtle)" },
+    { "name": "wg-context-menu-divider-color", "category": "context-menu", "usage": "Divider line color (unset → --km-menu-divider-color → --base-border-color)" },
+    { "name": "wg-context-menu-divider-margin", "category": "context-menu", "usage": "Divider margin (unset → --km-menu-divider-margin, 4px 0)" },
+    { "name": "wg-context-menu-disabled-opacity", "category": "context-menu", "usage": "Disabled item opacity (unset → --km-menu-disabled-opacity → --base-disabled-opacity, 0.5)" },
+    { "name": "wg-context-menu-z-index", "category": "context-menu", "usage": "Menu stacking order (unset → --km-menu-z-index, 10000)" },
 
     { "name": "wg-focus-outline", "category": "focus", "usage": "Navigate mode focused cell outline (2px solid accent)" },
     { "name": "wg-focus-outline-offset", "category": "focus", "usage": "Focused cell outline offset (-2px inset)" },
@@ -265,7 +286,6 @@
 
     { "name": "wg-z-dropdown", "category": "z-index", "usage": "Dropdown/combobox popup stacking (9999)" },
     { "name": "wg-z-toolbar", "category": "z-index", "usage": "Floating row toolbar stacking (1000)" },
-    { "name": "wg-z-context-menu", "category": "z-index", "usage": "Context menu stacking (1001)" },
     { "name": "wg-z-tooltip", "category": "z-index", "usage": "Tooltip stacking - highest layer (10000)" }
   ]
 }
