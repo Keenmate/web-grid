@@ -65,8 +65,13 @@ test.describe('cell range API', () => {
 	test('selectCellRange marks the cells, getSelectedCells lists them, clearCellSelection clears', async ({ page }) => {
 		await onGrid(page, el => el.selectCellRange({ startRowIndex: 1, startColIndex: 1, endRowIndex: 2, endColIndex: 2 }))
 		await expect(inRange(page)).toHaveCount(4)
-		const cells = await onGrid(page, el => el.getSelectedCells().map((c: any) => [c.rowIndex, c.colIndex, c.field, c.value]))
-		expect(cells).toEqual([[1, 1, 'name', 'B'], [1, 2, 'qty', 20], [2, 1, 'name', 'C'], [2, 2, 'qty', 30]])
+		const cells = await onGrid(page, el => el.getSelectedCells().map((c: any) => [c.rowIndex, c.colIndex, c.field, c.value, c.column.field, c.row.name]))
+		expect(cells).toEqual([[1, 1, 'name', 'B', 'name', 'B'], [1, 2, 'qty', 20, 'qty', 'B'], [2, 1, 'name', 'C', 'name', 'C'], [2, 2, 'qty', 30, 'qty', 'C']])
+		// full cell contexts: `column` is the column object, plus the non-enumerable component context
+		expect(await onGrid(page, el => {
+			const c = el.getSelectedCells()[0]
+			return [c.column === el.columns[1], c.element === el, typeof c.controller?.getItems, Object.keys(c).sort()]
+		})).toEqual([true, true, 'function', ['colIndex', 'column', 'field', 'row', 'rowIndex', 'value']])
 		await onGrid(page, el => el.clearCellSelection())
 		await expect(inRange(page)).toHaveCount(0)
 		expect(await onGrid(page, el => [el.selectedCellRange, el.getSelectedCells()])).toEqual([null, []])

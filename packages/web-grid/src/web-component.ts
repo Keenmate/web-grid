@@ -292,7 +292,9 @@ const EVENTS: readonly EventDef[] = [
 	{ name: 'validation-error', description: '`validateCallback` rejected a value. `detail`: `{ row, rowIndex, field, error, source: "edit" | "paste" }`. Twin: `onValidationError(detail)`.' },
 	{ name: 'row-focus', description: 'A different row got focus. `detail`: `{ row, rowIndex, previousRowIndex }`. Twin: `onRowFocus(detail)`.' },
 	{ name: 'row-delete', description: 'Ctrl+Delete on a row — a request; the grid does not delete. `detail`: `{ row, rowIndex }`. Twin: `onRowDelete(detail)`.' },
-	{ name: 'cell-selection-change', description: 'The selected cell range changed. `detail`: `{ range, cellCount }`. Twin: `onCellSelectionChange(detail)`.' },
+	{ name: 'cell-selection-change', description: 'The selected cell range changed (once per gesture / API call, only on a real change). `detail`: `{ range, cellCount, fields, rows }` — `range.startColIndex` / `endColIndex` are on-screen (visual) positions, not `columns` indices; `fields` = the range’s columns in on-screen order; `rows` = the row objects in the range. Cleared: `{ range: null, cellCount: 0, fields: [], rows: [] }`. Twin: `onCellSelectionChange(detail)`.' },
+	{ name: 'row-selection-change', description: 'The row selection changed (row-number click / Ctrl / Shift / drag, `selectRow` / `selectRowRange` / `clearSelection`, or cleared by another selection) — once per gesture / API call, only on a real change. `detail`: `{ rows, rowIndices }` (display order). Twin: `onRowSelectionChange(detail)`.' },
+	{ name: 'column-selection-change', description: 'The column selection changed (header click / Ctrl / Shift / drag, `selectColumn` / `selectColumnRange` / `clearColumnSelection`, or cleared by another selection) — once per gesture / API call, only on a real change. `detail`: `{ fields }` (on-screen order). Twin: `onColumnSelectionChange(detail)`.' },
 	{ name: 'data-request', description: 'Sort / page / page size changed or more rows are needed (server-side data). `detail`: `{ sort, page, pageSize, trigger, mode, skip }`. Twin: `onDataRequest(detail)`.' },
 	{ name: 'filter-change', description: 'A column filter changed. `detail`: `{ filters }`. With `filter-mode="server"` the consumer filters. Twin: `onFilterChange(detail)`.' },
 	{ name: 'column-resize', description: 'A column was resized. `detail`: `{ field, oldWidth, newWidth, allWidths }`. Twin: `onColumnResize(detail)`.' },
@@ -452,6 +454,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	declare onRowFocus: ((detail: GridEventMap<T>['row-focus']) => void) | null
 	declare onRowDelete: ((detail: GridEventMap<T>['row-delete']) => void) | null
 	declare onCellSelectionChange: ((detail: GridEventMap<T>['cell-selection-change']) => void) | null
+	declare onRowSelectionChange: ((detail: GridEventMap<T>['row-selection-change']) => void) | null
+	declare onColumnSelectionChange: ((detail: GridEventMap<T>['column-selection-change']) => void) | null
 	declare onDataRequest: ((detail: GridEventMap<T>['data-request']) => void) | null
 	declare onFilterChange: ((detail: GridEventMap<T>['filter-change']) => void) | null
 	declare onColumnResize: ((detail: GridEventMap<T>['column-resize']) => void) | null

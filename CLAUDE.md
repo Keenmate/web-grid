@@ -183,7 +183,8 @@ The grid follows the shared KeenMate interaction model (web-components-core `/ac
 'edit-start' / 'edit-cancel'            // onEditStart / onEditCancel
 'validation-error'                      // onValidationError
 'action'                                // onAction          — any toolbar / menu / shortcut item activated
-// … row-focus, row-delete, cell-selection-change, data-request, filter-change,
+// … row-focus, row-delete, cell-selection-change, row-selection-change,
+//   column-selection-change, data-request, filter-change,
 //   column-resize, column-reorder, expand-change, row-lock-change, paste-complete
 
 // EditorOptions notification

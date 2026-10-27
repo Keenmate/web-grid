@@ -30,6 +30,8 @@ import type {
 	RowLockChangeDetail,
 	SortState,
 	CellSelectionChangeDetail,
+	RowSelectionChangeDetail,
+	ColumnSelectionChangeDetail,
 	TreeExpandedChangeDetail,
 	EditorOption
 } from './types.js'
@@ -100,7 +102,8 @@ export interface GridController<T = any> {
 	selectCellRange(range: CellRange): void
 	clearCellSelection(): void
 	getSelectedCellRange(): CellRange | null
-	getSelectedCells(): Array<{ row: T; rowIndex: number; colIndex: number; field: string; value: unknown }>
+	/** The selected range's cells (row by row, on-screen column order); `colIndex` = index in `columns`. */
+	getSelectedCells(): CellContext<T>[]
 	copyCellSelectionToClipboard(): Promise<boolean>
 	selectColumn(colIndex: number, mode?: 'replace' | 'toggle' | 'range'): void
 	selectColumnRange(fromIndex: number, toIndex: number): void
@@ -467,7 +470,10 @@ export interface RowDeleteEventDetail<T = any> extends GridContext<T> {
 	rowIndex: number
 }
 
-export type CellSelectionChangeEventDetail<T = any> = CellSelectionChangeDetail & GridContext<T>
+/** `range` columns are on-screen positions; `fields` / `rows` name what the range covers. */
+export type CellSelectionChangeEventDetail<T = any> = CellSelectionChangeDetail<T> & GridContext<T>
+export type RowSelectionChangeEventDetail<T = any> = RowSelectionChangeDetail<T> & GridContext<T>
+export type ColumnSelectionChangeEventDetail<T = any> = ColumnSelectionChangeDetail & GridContext<T>
 export type DataRequestEventDetail<T = any> = DataRequestDetail & GridContext<T>
 
 export interface FilterChangeEventDetail<T = any> extends GridContext<T> {
@@ -490,6 +496,8 @@ export type GridEventMap<T = any> = {
 	'row-focus': RowFocusEventDetail<T>
 	'row-delete': RowDeleteEventDetail<T>
 	'cell-selection-change': CellSelectionChangeEventDetail<T>
+	'row-selection-change': RowSelectionChangeEventDetail<T>
+	'column-selection-change': ColumnSelectionChangeEventDetail<T>
 	'data-request': DataRequestEventDetail<T>
 	'filter-change': FilterChangeEventDetail<T>
 	'column-resize': ColumnResizeEventDetail<T>

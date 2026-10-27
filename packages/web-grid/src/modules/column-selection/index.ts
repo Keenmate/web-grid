@@ -82,6 +82,9 @@ export function handleHeaderMouseDown<T>(ctx: GridHost<T>, colIndex: number, eve
 	// Close any open dropdown/edit state before selecting columns
 	cleanupEditState(ctx)
 
+	// One selection-change notification per gesture (ends on mouseup, or below for Ctrl)
+	ctx.engine.beginSelectionGesture()
+
 	// Clear cell range selection when selecting columns
 	if (ctx.engine.selectedCellRange) {
 		ctx.engine.clearCellSelection()
@@ -92,6 +95,7 @@ export function handleHeaderMouseDown<T>(ctx: GridHost<T>, colIndex: number, eve
 	if (event.ctrlKey || event.metaKey) {
 		// Ctrl+Click: Toggle selection
 		ctx.engine.selectColumn(colIndex, 'toggle')
+		ctx.engine.endSelectionGesture()
 		focusContainerForShortcuts(ctx)
 		return
 	}
@@ -173,6 +177,9 @@ function handleDocumentMouseUp(): void {
 	if (!activeContext) return
 
 	const ctx = activeContext
+
+	// The drag is over: notify the column selection once
+	ctx.engine.endSelectionGesture()
 
 	// Remove selecting class
 	const container = ctx.shadow.querySelector('.wg') as HTMLElement | null

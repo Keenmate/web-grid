@@ -125,6 +125,10 @@ event.
 
 ### Changed — BREAKING (logging, row identity, editing)
 
+- **`getSelectedCells()` returns full `CellContext` objects** — `{ row, rowIndex, column,
+  colIndex, field, value }` + the non-enumerable `controller` / `element`, like every cell ctx
+  (`column` is new; `value` is now draft-aware). Typed `CellContext<T>[]`.
+
 - **Logging runs on core `/logging`.** The vendored `loglevel` copy is gone; the grid registers
   with core's `registerComponent` (`window.components['web-grid']` gains `register()` /
   `getInstances()`, and the page-wide `window.components.logging` switch covers the grid).
@@ -182,6 +186,15 @@ event.
   item and event detail (`GridContext`, `RowContext`, `CellContext`, `HeaderMenuContext`,
   `GridToolbarItem`, `GridMenuEntry`, `GridShortcut`, `GridActionEventDetail`, `GridEventMap`, …).
 - Menus: labelled dividers, `isToggled` (`role="menuitemcheckbox"` + `aria-checked`, `--toggled`), lazy submenus, item `tooltip`.
+- **Selection events.** New `row-selection-change` (`onRowSelectionChange`) `{ rows, rowIndices }`
+  and `column-selection-change` (`onColumnSelectionChange`) `{ fields }` (on-screen order) — for
+  row-number / header clicks (plain, Ctrl, Shift, drag), the selection API, and a selection
+  cleared by another kind. `cell-selection-change` gains `fields` (the range's columns,
+  on-screen order) and `rows` (the row objects in the range); cleared →
+  `{ range: null, cellCount: 0, fields: [], rows: [] }`. All three fire once per gesture / API
+  call (a drag notifies on mouseup) and only when that selection actually changed — re-selecting
+  the same range / rows / columns or clearing an empty selection is silent (a cell range used to
+  re-fire on every `selectCellRange`).
 
 ### Fixed
 

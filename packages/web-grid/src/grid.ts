@@ -30,6 +30,7 @@ import type {
 	GridPersistenceState,
 	CellSelectionMode,
 	CellRange,
+	CellSelectionChangeDetail,
 	PasteMode,
 	CreateRowCallback,
 	NewRowPosition,
@@ -1158,6 +1159,11 @@ export class GridEngine<T = unknown> {
 
 	selectRow(rowIndex: number, mode: 'replace' | 'toggle' | 'range' = 'replace'): void {
 		interactionLogger.debug('selectRow:', { rowIndex, mode })
+		this.trackSelection(() => this.selectRowState(rowIndex, mode))
+		this.requestUpdate()
+	}
+
+	private selectRowState(rowIndex: number, mode: 'replace' | 'toggle' | 'range'): void {
 		// Clear cell and column selection when selecting rows
 		if (this._selectedCellRange) {
 			this._selectedCellRange = null
@@ -1191,36 +1197,125 @@ export class GridEngine<T = unknown> {
 				}
 				break
 		}
-		this.requestUpdate()
 	}
 
 	selectRowRange(fromIndex: number, toIndex: number): void {
-		// Clear column selection when selecting rows
-		this._selectedColumns.clear()
-		this._selectedCellRange = null
+		this.trackSelection(() => {
+			// Clear column selection when selecting rows
+			this._selectedColumns.clear()
+			this._selectedCellRange = null
 
-		this._selectedRows.clear()
-		const start = Math.min(fromIndex, toIndex)
-		const end = Math.max(fromIndex, toIndex)
-		for (let i = start; i <= end; i++) {
-			this._selectedRows.add(i)
-		}
-		this._lastSelectedRowIndex = toIndex
+			this._selectedRows.clear()
+			const start = Math.min(fromIndex, toIndex)
+			const end = Math.max(fromIndex, toIndex)
+			for (let i = start; i <= end; i++) {
+				this._selectedRows.add(i)
+			}
+			this._lastSelectedRowIndex = toIndex
+		})
 		this.requestUpdate()
 	}
 
 	clearSelection(): void {
 		if (this._selectedRows.size > 0) {
-			this._selectedRows.clear()
-			this._lastSelectedRowIndex = null
+			this.clearSelection_noRender()
 			this.requestUpdate()
 		}
 	}
 
 	/** Clear row selection state without triggering re-render (caller handles visuals) */
 	clearSelection_noRender(): void {
-		this._selectedRows.clear()
-		this._lastSelectedRowIndex = null
+		this.trackSelection(() => {
+			this._selectedRows.clear()
+			this._lastSelectedRowIndex = null
+		})
+	}
+
+	// --------------------------------------------------------------------------
+	// Selection-change notifications (`cell-selection-change`, `row-selection-change`,
+	// `column-selection-change`): every mutation runs inside `trackSelection`, which
+	// snapshots before / after and notifies only the kinds that actually changed —
+	// once, at the outermost level. A pointer gesture (row / column drag) holds one
+	// more level via `beginSelectionGesture()` … `endSelectionGesture()`, so a drag
+	// notifies once on mouseup, not per mousemove.
+	// --------------------------------------------------------------------------
+
+	private _selectionDepth = 0
+	private _selectionBefore: { range: string; rows: string; cols: string } | null = null
+	private _isSelectionGestureOpen = false
+
+	private selectionSnapshot(): { range: string; rows: string; cols: string } {
+		const r = this._selectedCellRange
+		return {
+			range: r ? `${r.startRowIndex},${r.startColIndex},${r.endRowIndex},${r.endColIndex}` : '',
+			rows: this.selectedRows.join(','),
+			cols: JSON.stringify(this.selectedColumnFields())
+		}
+	}
+
+	/** Run a selection mutation; notifies the selection kinds it changed (outermost level only). */
+	protected trackSelection(fn: () => void): void {
+		if (this._selectionDepth++ === 0) this._selectionBefore = this.selectionSnapshot()
+		try {
+			fn()
+		} finally {
+			this.endSelectionLevel()
+		}
+	}
+
+	private endSelectionLevel(): void {
+		if (this._selectionDepth === 0 || --this._selectionDepth > 0) return
+		const before = this._selectionBefore
+		this._selectionBefore = null
+		if (!before) return
+		const after = this.selectionSnapshot()
+		if (before.range !== after.range) this.notify('cell-selection-change', this.cellSelectionDetail())
+		if (before.rows !== after.rows) {
+			const rowIndices = this.selectedRows
+			this.notify('row-selection-change', { rows: rowIndices.map(i => this.displayItems[i]).filter(Boolean), rowIndices })
+		}
+		if (before.cols !== after.cols) this.notify('column-selection-change', { fields: this.selectedColumnFields() })
+	}
+
+	/**
+	 * Hold selection-change notifications for a pointer gesture (row / column drag):
+	 * they fire once, at `endSelectionGesture()`, when the selection changed overall.
+	 * Opening a gesture while one is open closes the previous one first.
+	 */
+	beginSelectionGesture(): void {
+		if (this._isSelectionGestureOpen) this.endSelectionGesture()
+		this._isSelectionGestureOpen = true
+		if (this._selectionDepth++ === 0) this._selectionBefore = this.selectionSnapshot()
+	}
+
+	endSelectionGesture(): void {
+		if (!this._isSelectionGestureOpen) return
+		this._isSelectionGestureOpen = false
+		this.endSelectionLevel()
+	}
+
+	/** `cell-selection-change` detail for the current range. */
+	private cellSelectionDetail(): CellSelectionChangeDetail<T> {
+		const range = this._selectedCellRange
+		if (!range) return { range: null, cellCount: 0, fields: [], rows: [] }
+		const minRow = Math.min(range.startRowIndex, range.endRowIndex)
+		const maxRow = Math.max(range.startRowIndex, range.endRowIndex)
+		const minCol = Math.min(range.startColIndex, range.endColIndex)
+		const maxCol = Math.max(range.startColIndex, range.endColIndex)
+		const fields = this.visualColumns.slice(minCol, maxCol + 1).map(v => String(v.column.field))
+		const rows = this.displayItems.slice(minRow, maxRow + 1)
+		return { range, cellCount: fields.length * rows.length, fields, rows }
+	}
+
+	/** Fields of the selected columns, in on-screen order. */
+	selectedColumnFields(): string[] {
+		const visualCols = this.visualColumns
+		const fields: string[] = []
+		for (const pos of [...this._selectedColumns].sort((a, b) => a - b)) {
+			const column = visualCols[pos]?.column
+			if (column) fields.push(String(column.field))
+		}
+		return fields
 	}
 
 	getSelectedRowsData(): T[] {
@@ -1878,33 +1973,30 @@ export class GridEngine<T = unknown> {
 
 	selectCellRange(range: CellRange): void {
 		interactionLogger.debug('selectCellRange:', { startRow: range.startRowIndex, startCol: range.startColIndex, endRow: range.endRowIndex, endCol: range.endColIndex })
-		// Clear row and column selection when selecting cells
-		if (this._selectedRows.size > 0) {
-			this._selectedRows.clear()
-			this._lastSelectedRowIndex = null
-		}
-		this._selectedColumns.clear()
+		this.trackSelection(() => {
+			// Clear row and column selection when selecting cells
+			if (this._selectedRows.size > 0) {
+				this._selectedRows.clear()
+				this._lastSelectedRowIndex = null
+			}
+			this._selectedColumns.clear()
 
-		this._selectedCellRange = range
+			this._selectedCellRange = range
+		})
 		this.requestUpdate()
-
-		this.notify('cell-selection-change', { range, cellCount: this.getSelectedCells().length })
 	}
 
 	clearCellSelection(): void {
 		if (this._selectedCellRange) {
-			this._selectedCellRange = null
+			this.clearCellSelection_noRender()
 			this.requestUpdate()
-
-			this.notify('cell-selection-change', { range: null, cellCount: 0 })
 		}
 	}
 
 	/** Clear cell selection state without triggering re-render (caller handles visuals) */
 	clearCellSelection_noRender(): void {
 		if (this._selectedCellRange) {
-			this._selectedCellRange = null
-			this.notify('cell-selection-change', { range: null, cellCount: 0 })
+			this.trackSelection(() => { this._selectedCellRange = null })
 		}
 	}
 
@@ -1940,7 +2032,11 @@ export class GridEngine<T = unknown> {
 	selectColumn(colIndex: number, mode: 'replace' | 'toggle' | 'range' = 'replace'): void {
 		const colCount = this.visualColumns.length
 		if (colIndex < 0 || colIndex >= colCount) return
+		this.trackSelection(() => this.selectColumnState(colIndex, mode))
+		this.requestUpdate()
+	}
 
+	private selectColumnState(colIndex: number, mode: 'replace' | 'toggle' | 'range'): void {
 		// Clear row selection and cell range when selecting columns
 		this._selectedRows.clear()
 		this._selectedCellRange = null
@@ -1966,40 +2062,41 @@ export class GridEngine<T = unknown> {
 			}
 			// Don't update lastSelectedColumnIndex for range - keep the anchor
 		}
-
-		this.requestUpdate()
 	}
 
 	/**
 	 * Clear column selection
 	 */
 	clearColumnSelection(): void {
-		this._selectedColumns.clear()
-		this._lastSelectedColumnIndex = -1
+		this.clearColumnSelection_noRender()
 		this.requestUpdate()
 	}
 
 	/** Clear column selection state without triggering re-render (caller handles visuals) */
 	clearColumnSelection_noRender(): void {
-		this._selectedColumns.clear()
-		this._lastSelectedColumnIndex = -1
+		this.trackSelection(() => {
+			this._selectedColumns.clear()
+			this._lastSelectedColumnIndex = -1
+		})
 	}
 
 	/**
 	 * Select a range of columns (for drag selection)
 	 */
 	selectColumnRange(fromIndex: number, toIndex: number): void {
-		// Clear row selection and cell range when selecting columns
-		this._selectedRows.clear()
-		this._selectedCellRange = null
+		this.trackSelection(() => {
+			// Clear row selection and cell range when selecting columns
+			this._selectedRows.clear()
+			this._selectedCellRange = null
 
-		this._selectedColumns.clear()
-		const start = Math.min(fromIndex, toIndex)
-		const end = Math.max(fromIndex, toIndex)
-		for (let i = start; i <= end; i++) {
-			this._selectedColumns.add(i)
-		}
-		this._lastSelectedColumnIndex = toIndex
+			this._selectedColumns.clear()
+			const start = Math.min(fromIndex, toIndex)
+			const end = Math.max(fromIndex, toIndex)
+			for (let i = start; i <= end; i++) {
+				this._selectedColumns.add(i)
+			}
+			this._lastSelectedColumnIndex = toIndex
+		})
 		this.requestUpdate()
 	}
 
@@ -2017,7 +2114,12 @@ export class GridEngine<T = unknown> {
 		return this._selectedColumns.has(colIndex)
 	}
 
-	getSelectedCells(): Array<{ row: T, rowIndex: number, colIndex: number, field: string, value: unknown }> {
+	/**
+	 * The cells of the selected range as cell contexts (row by row, columns in
+	 * on-screen order). `colIndex` is the index in `columns` (not the range's
+	 * visual position); `value` is the raw, draft-aware value.
+	 */
+	getSelectedCells(): CellContext<T>[] {
 		if (!this._selectedCellRange) return []
 
 		const { startRowIndex, endRowIndex, startColIndex, endColIndex } = this._selectedCellRange
@@ -2029,19 +2131,14 @@ export class GridEngine<T = unknown> {
 		// The range spans visual positions; each cell reports its column index
 		// (`data-col`, the index into `columns`) like every other cell context.
 		const visualCols = this.visualColumns
-		const cells = []
+		const cells: CellContext<T>[] = []
 		for (let row = minRow; row <= maxRow; row++) {
+			const rowData = this.displayItems[row]
+			if (!rowData) continue
 			for (let col = minCol; col <= maxCol; col++) {
 				const entry = visualCols[col]
 				if (!entry) continue
-
-				const rowData = this.displayItems[row]
-				if (!rowData) continue
-
-				const field = String(entry.column.field)
-				const value = (rowData as Record<string, unknown>)[field]
-
-				cells.push({ row: rowData, rowIndex: row, colIndex: entry.originalIndex, field, value })
+				cells.push(this.cellCtx(rowData, row, entry.column, entry.originalIndex))
 			}
 		}
 

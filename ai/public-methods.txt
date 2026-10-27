@@ -199,8 +199,9 @@ selectCellRange(range: CellRange): void
 clearCellSelection(): void
   Clear the current cell range selection.
 
-getSelectedCells(): Array<{ row: T, rowIndex: number, colIndex: number, field: string, value: unknown }>
-  Get data for all cells in the current selection, in on-screen order.
+getSelectedCells(): CellContext<T>[]
+  The cells of the current selection as cell contexts { row, rowIndex,
+  column, colIndex, field, value }, row by row in on-screen column order.
   colIndex is the column index (data-col); the range itself
   (selectedCellRange.startColIndex / endColIndex) uses visual positions.
 

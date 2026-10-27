@@ -74,6 +74,8 @@ export type {
 	CellSelectionMode,
 	CellRange,
 	CellSelectionChangeDetail,
+	RowSelectionChangeDetail,
+	ColumnSelectionChangeDetail,
 
 	// Paste types
 	PasteMode,

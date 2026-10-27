@@ -661,7 +661,9 @@ grid.getRowClassCallback = ({ row, controller }) =>
 | `validation-error` | `onValidationError` | `validateCallback` rejected a value. `{ row, rowIndex, field, error, source: 'edit' \| 'paste' }` |
 | `row-focus` | `onRowFocus` | A different row got focus. `{ row, rowIndex, previousRowIndex }` |
 | `row-delete` | `onRowDelete` | Ctrl+Delete on a row — a request; the grid does not delete. `{ row, rowIndex }` |
-| `cell-selection-change` | `onCellSelectionChange` | The selected cell range changed. `{ range, cellCount }` |
+| `cell-selection-change` | `onCellSelectionChange` | The selected cell range changed. `{ range, cellCount, fields, rows }` — `range.startColIndex` / `endColIndex` are on-screen (visual) positions, not `columns` indices; `fields` = the range's columns in on-screen order; `rows` = the row objects in the range. Cleared: `{ range: null, cellCount: 0, fields: [], rows: [] }` |
+| `row-selection-change` | `onRowSelectionChange` | The row selection changed (row numbers, `selectRow` / `selectRowRange` / `clearSelection`, or cleared by another selection). `{ rows, rowIndices }` |
+| `column-selection-change` | `onColumnSelectionChange` | The column selection changed (headers, `controller.selectColumn` / `selectColumnRange` / `clearColumnSelection`, or cleared by another selection). `{ fields }` (on-screen order) |
 | `data-request` | `onDataRequest` | Sort / page / page size changed or more rows are needed (server-side data, incl. header-menu sorts). `{ sort, page, pageSize, trigger, mode, skip }` |
 | `filter-change` | `onFilterChange` | A column filter changed. `{ filters }`. With `filterMode: 'server'` (attribute `filter-mode`) the grid doesn't filter — replace `items` yourself |
 | `column-resize` | `onColumnResize` | A column was resized. `{ field, oldWidth, newWidth, allWidths }` |
@@ -811,7 +813,7 @@ After a paste, the `paste-complete` event (`onPasteComplete`) reports `{ totalCe
 |---|---|---|
 | `selectCellRange(range)` | `void` | Select a cell range programmatically |
 | `clearCellSelection()` | `void` | Clear cell selection |
-| `getSelectedCells()` | `Array<{ row, rowIndex, colIndex, field, value }>` | Data for all selected cells |
+| `getSelectedCells()` | `CellContext<T>[]` | The selected cells `{ row, rowIndex, column, colIndex, field, value }` (`colIndex` = index in `columns`), on-screen column order |
 | `copyCellSelectionToClipboard()` | `Promise<boolean>` | Copy selected cells as TSV |
 
 ### Column width & order

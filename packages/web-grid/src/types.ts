@@ -252,10 +252,36 @@ export type RowFocusDetail<T> = {
 	previousRowIndex: number | null
 }
 
-// Detail of the cell-selection-change event
-export type CellSelectionChangeDetail = {
+/**
+ * Detail of the `cell-selection-change` event. Cleared selection:
+ * `{ range: null, cellCount: 0, fields: [], rows: [] }`.
+ */
+export type CellSelectionChangeDetail<T = any> = {
+	/**
+	 * The selected rectangle. Its `startColIndex` / `endColIndex` are ON-SCREEN
+	 * (visual) positions — not indices into `columns` (see {@link CellRange}).
+	 */
 	range: CellRange | null
+	/** Number of cells in the range. */
 	cellCount: number
+	/** Fields of the range's columns, in on-screen order. */
+	fields: string[]
+	/** The row objects in the range, each once, in display order. */
+	rows: T[]
+}
+
+/** Detail of the `row-selection-change` event (row-number clicks / drag, row selection API). */
+export type RowSelectionChangeDetail<T = any> = {
+	/** The selected row objects, in display order. */
+	rows: T[]
+	/** Their display row indices, ascending. */
+	rowIndices: number[]
+}
+
+/** Detail of the `column-selection-change` event (header clicks / drag, column selection API). */
+export type ColumnSelectionChangeDetail = {
+	/** Fields of the selected columns, in on-screen order. */
+	fields: string[]
 }
 
 // =============================================================================
@@ -462,6 +488,8 @@ export type QuickGridProps<T> = {
 	onRowFocus?: (detail: GridEventMap<T>['row-focus']) => void
 	onRowDelete?: (detail: GridEventMap<T>['row-delete']) => void
 	onCellSelectionChange?: (detail: GridEventMap<T>['cell-selection-change']) => void
+	onRowSelectionChange?: (detail: GridEventMap<T>['row-selection-change']) => void
+	onColumnSelectionChange?: (detail: GridEventMap<T>['column-selection-change']) => void
 	onDataRequest?: (detail: GridEventMap<T>['data-request']) => void
 	onFilterChange?: (detail: GridEventMap<T>['filter-change']) => void
 	onColumnResize?: (detail: GridEventMap<T>['column-resize']) => void

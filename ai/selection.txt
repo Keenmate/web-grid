@@ -49,8 +49,15 @@ Methods:
     Returns Promise<boolean>. Copies selected rows as TSV (tab-separated).
     Respects shouldCopyWithHeaders. Uses raw values (no getCopyValueCallback).
 
+Event:
+  row-selection-change / onRowSelectionChange
+    Detail: { rows: T[], rowIndices: number[] } (display order)
+    Fires once per gesture / API call (a drag notifies on mouseup), only when
+    the selected set changed -- incl. rows cleared by a cell / column selection.
+
 Example:
   grid.isRowNumbersVisible = true
+  grid.onRowSelectionChange = ({ rows }) => console.log(rows.length, 'rows')
   grid.selectRow(0, 'replace')
   grid.selectRow(2, 'toggle')
   grid.selectRow(5, 'range')
@@ -104,14 +111,16 @@ Interaction patterns (cellSelectionMode = 'shift'):
 Methods:
   selectCellRange(range)
     Programmatically select a CellRange. Clears row/column selection.
-    Fires the cell-selection-change event (onCellSelectionChange).
+    Fires the cell-selection-change event (onCellSelectionChange) when the
+    range changed.
 
   clearCellSelection()
     Clears cell range selection. Fires cell-selection-change with a null range.
 
   getSelectedCells()
-    Returns Array<{ row: T, rowIndex: number, colIndex: number, field: string, value: unknown }>
-    Iterates through all cells in the rectangular range.
+    Returns CellContext<T>[] -- { row, rowIndex, column, colIndex, field, value }
+    per cell, row by row, columns in on-screen order. colIndex is the index
+    in columns (not the range's visual position); value is draft-aware.
 
   copyCellSelectionToClipboard()
     Returns Promise<boolean>. Copies cells as TSV. Respects shouldCopyWithHeaders.
@@ -122,8 +131,12 @@ Methods:
 
 Event:
   cell-selection-change / onCellSelectionChange
-    Detail: { range: CellRange | null, cellCount: number }
-    Fires when cell selection changes (created or cleared).
+    Detail: { range: CellRange | null, cellCount: number, fields: string[], rows: T[] }
+    Fires when cell selection changes (created or cleared), once per gesture /
+    API call, only on a real change. range.startColIndex / endColIndex are
+    on-screen positions; fields = the range's columns (on-screen order);
+    rows = the row objects in the range. Cleared: { range: null,
+    cellCount: 0, fields: [], rows: [] }.
 
 Example:
   grid.cellSelectionMode = 'click'
@@ -135,11 +148,11 @@ Example:
   })
 
   grid.onCellSelectionChange = (detail) => {
-    console.log('Selected', detail.cellCount, 'cells')
+    console.log('Selected', detail.cellCount, 'cells', detail.fields, detail.rows)
   }
 
   const cells = grid.getSelectedCells()
-  // [{ row: {...}, rowIndex: 0, colIndex: 1, field: 'name', value: 'Alice' }, ...]
+  // [{ row: {...}, rowIndex: 0, column: {...}, colIndex: 1, field: 'name', value: 'Alice' }, ...]
 
 Grid mode defaults for cellSelectionMode:
   mode: 'read-only'      -> cellSelectionMode: 'click'
@@ -165,6 +178,12 @@ When isColumnReorderAllowed is false:
   Click+Drag on header     - Drag to select range of columns
 
 Selecting columns clears row selection and cell range selection.
+
+Event:
+  column-selection-change / onColumnSelectionChange
+    Detail: { fields: string[] } (on-screen order)
+    Fires once per gesture / API call (a drag notifies on mouseup), only when
+    the selected columns changed -- incl. columns cleared by another selection.
 
 Methods (on grid.controller - not on the element itself):
   grid.controller.selectColumn(colIndex, mode?)

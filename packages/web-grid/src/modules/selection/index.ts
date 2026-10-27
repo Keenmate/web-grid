@@ -81,6 +81,9 @@ export function handleRowNumberMouseDown<T>(ctx: GridHost<T>, rowIndex: number, 
 	// Close any open dropdown/edit state before selecting rows
 	cleanupEditState(ctx)
 
+	// One selection-change notification per gesture (ends on mouseup, or below for Ctrl / Shift)
+	ctx.engine.beginSelectionGesture()
+
 	// Clear cell range selection when selecting rows
 	if (ctx.engine.selectedCellRange) {
 		ctx.engine.clearCellSelection()
@@ -101,6 +104,7 @@ export function handleRowNumberMouseDown<T>(ctx: GridHost<T>, rowIndex: number, 
 	if (event.ctrlKey || event.metaKey) {
 		// Ctrl+Click: Toggle selection
 		ctx.engine.selectRow(rowIndex, 'toggle')
+		ctx.engine.endSelectionGesture()
 		focusContainerForShortcuts(ctx)
 		return
 	}
@@ -108,6 +112,7 @@ export function handleRowNumberMouseDown<T>(ctx: GridHost<T>, rowIndex: number, 
 	if (event.shiftKey) {
 		// Shift+Click: Range selection from last selected
 		ctx.engine.selectRow(rowIndex, 'range')
+		ctx.engine.endSelectionGesture()
 		focusContainerForShortcuts(ctx)
 		return
 	}
@@ -184,6 +189,9 @@ function handleDocumentMouseUp(): void {
 	if (!activeContext) return
 
 	const ctx = activeContext
+
+	// The drag is over: notify the row selection once
+	ctx.engine.endSelectionGesture()
 
 	// Remove selecting class
 	const container = ctx.shadow.querySelector('.wg') as HTMLElement | null

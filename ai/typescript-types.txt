@@ -80,7 +80,7 @@ el.controller, and `controller` on every ctx / detail.
     selectCellRange(range: CellRange): void
     clearCellSelection(): void
     getSelectedCellRange(): CellRange | null
-    getSelectedCells(): Array<{ row: T; rowIndex: number; colIndex: number; field: string; value: unknown }>
+    getSelectedCells(): CellContext<T>[]
     copyCellSelectionToClipboard(): Promise<boolean>
     selectColumn(colIndex: number, mode?: 'replace' | 'toggle' | 'range'): void
     selectColumnRange(fromIndex: number, toIndex: number): void
@@ -401,6 +401,8 @@ twins called with the detail. Every detail extends GridContext<T>.
     'row-focus':             RowFocusEventDetail<T>             onRowFocus
     'row-delete':            RowDeleteEventDetail<T>            onRowDelete
     'cell-selection-change': CellSelectionChangeEventDetail<T>  onCellSelectionChange
+    'row-selection-change':  RowSelectionChangeEventDetail<T>   onRowSelectionChange
+    'column-selection-change': ColumnSelectionChangeEventDetail<T>  onColumnSelectionChange
     'data-request':          DataRequestEventDetail<T>          onDataRequest
     'filter-change':         FilterChangeEventDetail<T>         onFilterChange
     'column-resize':         ColumnResizeEventDetail<T>         onColumnResize
@@ -609,7 +611,10 @@ ADDITIONAL EXPORTED TYPES
 ----------------------------------------------------------------------
 
   type RowFocusDetail<T> = { rowIndex: number, row: T, previousRowIndex: number | null }
-  type CellSelectionChangeDetail = { range: CellRange | null, cellCount: number }
+  type CellSelectionChangeDetail<T> = { range: CellRange | null, cellCount: number, fields: string[], rows: T[] }
+    // range.startColIndex / endColIndex = on-screen (visual) positions, not columns indices
+  type RowSelectionChangeDetail<T> = { rows: T[], rowIndices: number[] }
+  type ColumnSelectionChangeDetail = { fields: string[] }
   type ColumnWidthState = { field: string, width: string }
   type ColumnOrderState = { field: string, order: number }
   type ColumnResizeDetail = { field: string, oldWidth: string, newWidth: string, allWidths: ColumnWidthState[] }

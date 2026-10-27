@@ -100,8 +100,27 @@ column-reorder / onColumnReorder
   Fires when a column is reordered by dragging.
 
 cell-selection-change / onCellSelectionChange
-  Detail: { range: CellRange | null, cellCount: number }
-  Fires when the cell range selection changes.
+  Detail: { range: CellRange | null, cellCount: number, fields: string[], rows: T[] }
+  Fires when the cell range selection changes. range.startColIndex /
+  endColIndex are ON-SCREEN (visual) positions, not indices into columns;
+  fields = the range's columns in on-screen order; rows = the row objects in
+  the range (each once, display order). Cleared: { range: null, cellCount: 0,
+  fields: [], rows: [] }.
+
+row-selection-change / onRowSelectionChange
+  Detail: { rows: T[], rowIndices: number[] }
+  Fires when the row selection changes: row-number click / Ctrl / Shift /
+  drag, selectRow / selectRowRange / clearSelection, or rows cleared by a
+  cell / column selection.
+
+column-selection-change / onColumnSelectionChange
+  Detail: { fields: string[] }   (on-screen order)
+  Fires when the column selection changes: header click / Ctrl / Shift /
+  drag, controller.selectColumn / selectColumnRange / clearColumnSelection,
+  or columns cleared by another selection.
+
+  The three selection events fire once per gesture / API call (a drag
+  notifies on mouseup) and only when that selection actually changed.
 
 expand-change / onExpandChange
   Detail: { path, isExpanded, expandedPaths }

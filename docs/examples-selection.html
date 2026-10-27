@@ -285,11 +285,19 @@ grid.focusedRowIndex = null // Clear focus</code></pre>
                 </tr>
                 <tr>
                     <td><code>getSelectedCells()</code></td>
-                    <td>Get array of {row, rowIndex, colIndex, field, value} objects</td>
+                    <td>Get array of cell contexts {row, rowIndex, column, colIndex, field, value}</td>
                 </tr>
                 <tr>
                     <td><code>cell-selection-change</code> / <code>onCellSelectionChange</code></td>
-                    <td>Event (and twin) fired when cell selection changes: <code>{ range, cellCount }</code></td>
+                    <td>Event (and twin) fired when cell selection changes: <code>{ range, cellCount, fields, rows }</code></td>
+                </tr>
+                <tr>
+                    <td><code>row-selection-change</code> / <code>onRowSelectionChange</code></td>
+                    <td>Event (and twin) fired when row selection changes: <code>{ rows, rowIndices }</code></td>
+                </tr>
+                <tr>
+                    <td><code>column-selection-change</code> / <code>onColumnSelectionChange</code></td>
+                    <td>Event (and twin) fired when column selection changes: <code>{ fields }</code></td>
                 </tr>
             </table>
 

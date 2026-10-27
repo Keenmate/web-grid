@@ -168,6 +168,7 @@ O
 -
 onAction -> toolbar-actions.txt, callbacks-events.txt
 onCellSelectionChange -> callbacks-events.txt, selection.txt
+onColumnSelectionChange -> callbacks-events.txt, selection.txt
 onClick (items) -> toolbar-actions.txt
 onDataRequest -> callbacks-events.txt, sorting-filtering-pagination.txt
 onEditStart -> callbacks-events.txt, editing.txt
@@ -175,6 +176,7 @@ onFilterChange -> callbacks-events.txt, sorting-filtering-pagination.txt
 onPasteComplete -> callbacks-events.txt
 onRowChange -> callbacks-events.txt, editing.txt
 onRowLockChange -> callbacks-events.txt, row-locking.txt
+onRowSelectionChange -> callbacks-events.txt, selection.txt
 
 P
 -
