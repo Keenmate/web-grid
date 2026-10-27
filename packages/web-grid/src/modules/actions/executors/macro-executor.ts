@@ -49,7 +49,7 @@ function executeResetState(ctx: ExecutorContext, action: ResetStateAction): Grid
 
 	// 3. Clear selections
 	if (selections) {
-		const hasSelections = ctx.engine.selectedRows.length > 0 ||
+		const hasSelections = ctx.engine.selectedRowIndices.length > 0 ||
 			ctx.engine.selectedColumns.length > 0 ||
 			ctx.engine.selectedCellRange
 		if (hasSelections) {

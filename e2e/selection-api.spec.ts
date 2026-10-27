@@ -2,7 +2,7 @@ import { test, expect, type Page, gridLocator, cell, onGrid, domEvents, clearEve
 
 /**
  * Selection API + `cellSelectionMode` — `selectRow` (replace / toggle / range),
- * `selectRowRange`, `isRowSelected`, `getSelectedRowsData`, `clearSelection`,
+ * `selectRowRange`, `isRowSelected`, `selectedRows`, `clearSelection`, `clearRowSelection`,
  * `selectCellRange` / `getSelectedCells` / `clearCellSelection`, and the
  * 'none' / 'shift' cell-selection modes.
  *
@@ -35,14 +35,14 @@ test.beforeEach(async ({ page }) => {
 })
 
 test.describe('row selection API', () => {
-	test('selectRow replace / toggle / range, isRowSelected, selectedRows sorted', async ({ page }) => {
+	test('selectRow replace / toggle / range, isRowSelected, selectedRowIndices sorted', async ({ page }) => {
 		const r = await onGrid(page, el => {
 			const out: any[] = []
-			el.selectRow(1); out.push([...el.selectedRows])
-			el.selectRow(3, 'toggle'); out.push([...el.selectedRows])
-			el.selectRow(1, 'toggle'); out.push([...el.selectedRows])
-			el.selectRow(5, 'range'); out.push([...el.selectedRows])
-			el.selectRow(0); out.push([...el.selectedRows])
+			el.selectRow(1); out.push([...el.selectedRowIndices])
+			el.selectRow(3, 'toggle'); out.push([...el.selectedRowIndices])
+			el.selectRow(1, 'toggle'); out.push([...el.selectedRowIndices])
+			el.selectRow(5, 'range'); out.push([...el.selectedRowIndices])
+			el.selectRow(0); out.push([...el.selectedRowIndices])
 			out.push([el.isRowSelected(0), el.isRowSelected(1)])
 			return out
 		})
@@ -51,13 +51,32 @@ test.describe('row selection API', () => {
 		await expect(selectedRowEls(page)).toHaveCount(1)
 	})
 
-	test('selectRowRange + getSelectedRowsData + clearSelection', async ({ page }) => {
-		const data = await onGrid(page, el => { el.selectRowRange(4, 2); return el.getSelectedRowsData().map((r: any) => r.name) })
+	test('selectRowRange + selectedRows (objects) + clearSelection', async ({ page }) => {
+		const data = await onGrid(page, el => { el.selectRowRange(4, 2); return el.selectedRows.map((r: any) => r.name) })
 		expect(data).toEqual(['C', 'D', 'E'])
 		await expect(selectedRowEls(page)).toHaveCount(3)
 		await onGrid(page, el => el.clearSelection())
 		await expect(selectedRowEls(page)).toHaveCount(0)
-		expect(await onGrid(page, el => el.selectedRows)).toEqual([])
+		expect(await onGrid(page, el => el.selectedRowIndices)).toEqual([])
+	})
+
+	test('element and controller expose the same selectedRows / selectedRowIndices', async ({ page }) => {
+		const r = await onGrid(page, el => {
+			el.selectRowRange(1, 2)
+			return [el.selectedRowIndices, el.controller.selectedRowIndices, el.selectedRows.map((x: any) => x.name), el.controller.selectedRows.map((x: any) => x.name)]
+		})
+		expect(r).toEqual([[1, 2], [1, 2], ['B', 'C'], ['B', 'C']])
+	})
+
+	test('clearSelection clears rows + cells + columns; clearRowSelection only rows', async ({ page }) => {
+		// clearRowSelection leaves a cell range alone
+		expect(await onGrid(page, el => { el.selectCellRange({ startRowIndex: 0, startColIndex: 0, endRowIndex: 1, endColIndex: 1 }); el.clearRowSelection(); return el.selectedCellRange !== null })).toBe(true)
+		// clearSelection clears each kind
+		expect(await onGrid(page, el => { el.clearSelection(); return el.selectedCellRange })).toBe(null)
+		expect(await onGrid(page, el => { el.controller.selectColumn(1); const n = el.controller.getSelectedColumns().length; el.clearSelection(); return [n, el.controller.getSelectedColumns().length] })).toEqual([1, 0])
+		expect(await onGrid(page, el => { el.selectRowRange(0, 2); el.clearSelection(); return el.selectedRowIndices })).toEqual([])
+		await expect(inRange(page)).toHaveCount(0)
+		await expect(selectedRowEls(page)).toHaveCount(0)
 	})
 })
 
@@ -70,8 +89,8 @@ test.describe('cell range API', () => {
 		// full cell contexts: `column` is the column object, plus the non-enumerable component context
 		expect(await onGrid(page, el => {
 			const c = el.getSelectedCells()[0]
-			return [c.column === el.columns[1], c.element === el, typeof c.controller?.getItems, Object.keys(c).sort()]
-		})).toEqual([true, true, 'function', ['colIndex', 'column', 'field', 'row', 'rowIndex', 'value']])
+			return [c.column === el.columns[1], c.element === el, Array.isArray(c.controller?.items), Object.keys(c).sort()]
+		})).toEqual([true, true, true, ['colIndex', 'column', 'field', 'row', 'rowIndex', 'value']])
 		await onGrid(page, el => el.clearCellSelection())
 		await expect(inRange(page)).toHaveCount(0)
 		expect(await onGrid(page, el => [el.selectedCellRange, el.getSelectedCells()])).toEqual([null, []])

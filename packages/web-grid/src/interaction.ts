@@ -47,12 +47,12 @@ import type {
  */
 export interface GridController<T = any> {
 	// data
-	getItems(): T[]
+	readonly items: T[]
 	/** The rows as displayed (filtered, sorted, paginated, tree-collapsed). */
-	getDisplayItems(): T[]
-	getColumns(): Column<T>[]
-	getSort(): SortState[]
-	getFilters(): Record<string, string>
+	readonly displayItems: T[]
+	readonly columns: Column<T>[]
+	readonly sort: SortState[]
+	readonly filters: Record<string, string>
 	setFilter(field: string, value: string): void
 	// rows (the `add` / `delete` / `duplicate` / `move-up` / `move-down` built-ins use these)
 	/** Insert `row` after `afterRow` (in `items` order), or at the end. */
@@ -82,7 +82,7 @@ export interface GridController<T = any> {
 	isRowDirty(rowIndex: number): boolean
 	isCellInvalid(rowIndex: number, field: string): boolean
 	getCellValidationError(rowIndex: number, field: string): string | null
-	getInvalidCells(): CellValidationState[]
+	readonly invalidCells: CellValidationState[]
 	canEditCell(rowIndex: number, field: string): boolean
 	// row locking
 	isRowLocked(rowOrId: T | unknown): boolean
@@ -94,15 +94,20 @@ export interface GridController<T = any> {
 	// row selection
 	selectRow(rowIndex: number, mode?: 'replace' | 'toggle' | 'range'): void
 	selectRowRange(fromIndex: number, toIndex: number): void
+	/** Clear every selection kind: rows, the cell range and columns. */
 	clearSelection(): void
+	/** Clear only the row selection. */
+	clearRowSelection(): void
 	isRowSelected(rowIndex: number): boolean
-	getSelectedRows(): number[]
-	getSelectedRowsData(): T[]
+	/** The selected row objects, in display order. */
+	readonly selectedRows: T[]
+	/** Display indices of the selected rows, ascending. */
+	readonly selectedRowIndices: number[]
 	copySelectedRowsToClipboard(): Promise<boolean>
 	// cell / column selection
 	selectCellRange(range: CellRange): void
 	clearCellSelection(): void
-	getSelectedCellRange(): CellRange | null
+	readonly selectedCellRange: CellRange | null
 	/** The selected range's cells (row by row, on-screen column order); `colIndex` = index in `columns`. */
 	getSelectedCells(): CellContext<T>[]
 	copyCellSelectionToClipboard(): Promise<boolean>

@@ -70,13 +70,13 @@ export function createRowSelectionBorders<T>(ctx: GridHost<T>): void {
 	// Remove existing borders first
 	removeRowSelectionBorders()
 
-	const selectedRows = ctx.engine.selectedRows
-	if (selectedRows.length === 0) return
+	const selectedRowIndices = ctx.engine.selectedRowIndices
+	if (selectedRowIndices.length === 0) return
 
 	const container = ctx.shadow.querySelector('.wg') as HTMLElement
 	if (!container) return
 
-	const segments = findContiguousSegments(selectedRows)
+	const segments = findContiguousSegments(selectedRowIndices)
 	const visualColumns = ctx.engine.visualColumns
 
 	if (visualColumns.length === 0) return

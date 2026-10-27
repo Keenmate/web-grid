@@ -51,7 +51,7 @@
 					if (ctx.rowIndex === 0 && !window.__cellCtx) {
 						window.__cellCtx = {
 							keys: Object.keys(ctx),
-							hasController: typeof ctx.controller?.getItems === 'function',
+							hasController: Array.isArray(ctx.controller?.items),
 							elementIsHost: ctx.element === grid
 						}
 					}
@@ -116,7 +116,7 @@
 			window.__details.push({
 				json: JSON.parse(JSON.stringify(e.detail, (k, v) => (['item', 'sourceEvent', 'triggerElement', 'row', 'column'].includes(k) ? undefined : v))),
 				rowName: e.detail.row?.name,
-				hasController: typeof e.detail.controller?.getItems === 'function',
+				hasController: Array.isArray(e.detail.controller?.items),
 				elementIsHost: e.detail.element === grid,
 				composed: e.composed
 			})

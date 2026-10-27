@@ -995,7 +995,7 @@ grid.onRowChange = (detail) => save(detail.draftRow)
 
 ## Controller
 
-`el.controller` is the public `GridController` facade — the same object every ctx / detail carries as `controller`. It covers rows (`getItems`, `getDisplayItems`, `insertRow`, `removeRows`, `duplicateRow`, `moveRow`, `findRowById`, `updateRowById`, …), drafts and validation, row locking, row / cell / column selection, tree (`expandAll`, `collapseAll`, `expandAll`, `collapseAll`, `toggleRowExpanded`, …), columns (widths, order), focus / editing (`focusCell`, `startEditing`) and menus (`closeContextMenu`, `closeToolbar`). Most of these are also methods on the element itself (below).
+`el.controller` is the public `GridController` facade — the same object every ctx / detail carries as `controller`. It covers state as read-only properties named like the element's (`items`, `displayItems`, `columns`, `sort`, `filters`, `invalidCells`, `selectedRows`, `selectedRowIndices`, `selectedCellRange`, `expandedPaths`), rows (`insertRow`, `removeRows`, `duplicateRow`, `moveRow`, `findRowById`, `updateRowById`, …), drafts and validation, row locking, row / cell / column selection, tree (`expandRows`, `collapseRows`, `expandAll(path?)`, `collapseAll(path?)`, `toggleRowExpanded`, …), columns (widths, order), focus / editing (`focusCell`, `startEditing`) and menus (`closeContextMenu`, `closeToolbar`). Most of these are also methods on the element itself (below).
 
 ## Public Methods
 
@@ -1058,9 +1058,11 @@ grid.onRowChange = (detail) => save(detail.draftRow)
 |--------|---------|-------------|
 | `selectRow(rowIndex, mode?)` | `void` | Select a row. Mode: `'replace'` (default), `'toggle'`, `'range'` |
 | `selectRowRange(fromIndex, toIndex)` | `void` | Select a range of rows |
-| `clearSelection()` | `void` | Clear row selection |
+| `clearSelection()` | `void` | Clear every selection kind (rows, cell range, columns) |
+| `clearRowSelection()` | `void` | Clear only the row selection |
 | `isRowSelected(rowIndex)` | `boolean` | Check if a row is selected |
-| `getSelectedRowsData()` | `T[]` | Get data for all selected rows |
+| `selectedRows` | `T[]` | Property: the selected row objects (display order) |
+| `selectedRowIndices` | `number[]` | Property: display indices of the selected rows |
 | `copySelectedRowsToClipboard()` | `Promise<boolean>` | Copy selected rows as TSV to clipboard |
 
 ### Cell Selection

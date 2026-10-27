@@ -9,7 +9,7 @@ Row focus is a separate concept that tracks which row the user last clicked.
 ROW SELECTION
 -------------
 Rows are selected by clicking row number cells (requires isRowNumbersShown).
-Selected row indices are tracked in a Set internally. The selectedRows property
+Selected row indices are tracked in a Set internally. The selectedRowIndices property
 returns them as a sorted array.
 
 Prerequisite:
@@ -25,7 +25,8 @@ Interaction patterns:
   Click row number header  - Select all cells (selectAll, creates cell range)
 
 Properties (on grid element):
-  selectedRows             - number[] (read-only, sorted ascending)
+  selectedRows                   - T[] (read-only, the row objects, display order)
+  selectedRowIndices             - number[] (read-only, sorted ascending)
 
 Methods:
   selectRow(rowIndex, mode?)
@@ -37,13 +38,13 @@ Methods:
     Selects all rows between fromIndex and toIndex (inclusive, order agnostic).
 
   clearSelection()
-    Clears all selected rows.
+    Clears every selection kind: rows, the cell range and columns.
+
+  clearRowSelection()
+    Clears only the selected rows.
 
   isRowSelected(rowIndex)
     Returns boolean.
-
-  getSelectedRowsData()
-    Returns T[] - the actual data objects for selected rows.
 
   copySelectedRowsToClipboard()
     Returns Promise<boolean>. Copies selected rows as TSV (tab-separated).
@@ -61,8 +62,8 @@ Example:
   grid.selectRow(0, 'replace')
   grid.selectRow(2, 'toggle')
   grid.selectRow(5, 'range')
-  console.log(grid.selectedRows)         // [0, 2, 3, 4, 5]
-  console.log(grid.getSelectedRowsData()) // array of row objects
+  console.log(grid.selectedRowIndices)         // [0, 2, 3, 4, 5]
+  console.log(grid.selectedRows) // array of row objects
 
 
 CELL RANGE SELECTION

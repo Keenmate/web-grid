@@ -27,9 +27,9 @@ import { moveFocus, updateFocusVisual, clearEditingVisual, tryStartEdit } from '
  * Returns true when one ran (the key is consumed).
  */
 export function tryCellShortcuts<T>(ctx: GridHost<T>, e: KeyboardEvent, rowIndex: number, colIndex: number): boolean {
-	const selectedRowIndices = ctx.engine.selectedRows
+	const selectedRowIndices = ctx.engine.selectedRowIndices
 	if (selectedRowIndices.length > 0 && handleRangeShortcut(ctx, e, {
-		rows: ctx.engine.getSelectedRowsData(),
+		rows: ctx.engine.selectedRows,
 		rowIndices: selectedRowIndices
 	})) {
 		return true
@@ -88,9 +88,9 @@ export function handleCellKeyDown<T>(
 			if (ctx.engine.editingCell) {
 				clearEditingVisual(ctx)
 				ctx.engine.cancelEdit()
-			} else if (ctx.engine.selectedRows.length > 0) {
+			} else if (ctx.engine.selectedRowIndices.length > 0) {
 				// Clear row selection first
-				ctx.engine.clearSelection()
+				ctx.engine.clearRowSelection()
 			} else {
 				const oldFocus = ctx.engine.focusedCell
 				ctx.engine.clearFocusedCell()

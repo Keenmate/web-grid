@@ -32,11 +32,11 @@ el.controller, and `controller` on every ctx / detail.
 
   interface GridController<T> {
     // data
-    getItems(): T[]
-    getDisplayItems(): T[]                       filtered, sorted, paginated, tree-collapsed
-    getColumns(): Column<T>[]
-    getSort(): SortState[]
-    getFilters(): Record<string, string>
+    items: T[]
+    displayItems: T[]                       filtered, sorted, paginated, tree-collapsed
+    columns: Column<T>[]
+    sort: SortState[]
+    filters: Record<string, string>
     setFilter(field: string, value: string): void
     // rows (used by the add / delete / duplicate / move-up / move-down built-ins)
     insertRow(row: T, afterRow?: T | null): void
@@ -59,7 +59,7 @@ el.controller, and `controller` on every ctx / detail.
     isRowDirty(rowIndex: number): boolean
     isCellInvalid(rowIndex: number, field: string): boolean
     getCellValidationError(rowIndex: number, field: string): string | null
-    getInvalidCells(): CellValidationState[]
+    invalidCells: CellValidationState[]
     canEditCell(rowIndex: number, field: string): boolean
     // row locking
     isRowLocked(rowOrId: T | unknown): boolean
@@ -71,15 +71,16 @@ el.controller, and `controller` on every ctx / detail.
     // row selection
     selectRow(rowIndex: number, mode?: 'replace' | 'toggle' | 'range'): void
     selectRowRange(fromIndex: number, toIndex: number): void
-    clearSelection(): void
+    clearSelection(): void                       rows + cell range + columns
+    clearRowSelection(): void
     isRowSelected(rowIndex: number): boolean
-    getSelectedRows(): number[]
-    getSelectedRowsData(): T[]
+    readonly selectedRows: T[]                   row objects, display order
+    readonly selectedRowIndices: number[]
     copySelectedRowsToClipboard(): Promise<boolean>
     // cell / column selection
     selectCellRange(range: CellRange): void
     clearCellSelection(): void
-    getSelectedCellRange(): CellRange | null
+    selectedCellRange: CellRange | null
     getSelectedCells(): CellContext<T>[]
     copyCellSelectionToClipboard(): Promise<boolean>
     selectColumn(colIndex: number, mode?: 'replace' | 'toggle' | 'range'): void   // colIndex = index in columns
@@ -494,7 +495,7 @@ VALIDATION
   }
 
 CellValidationState is used by the invalidCells grid property and
-controller.getInvalidCells().
+controller.invalidCells.
 
 
 ----------------------------------------------------------------------

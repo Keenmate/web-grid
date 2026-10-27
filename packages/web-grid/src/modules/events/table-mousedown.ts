@@ -138,8 +138,8 @@ export function handleTableMouseDown<T>(ctx: GridHost<T>, e: Event): void {
 					}
 				}
 				// Clear row/column selection when starting cell selection
-				if (ctx.engine.selectedRows.length > 0) {
-					ctx.engine.clearSelection()
+				if (ctx.engine.selectedRowIndices.length > 0) {
+					ctx.engine.clearRowSelection()
 				}
 				if (ctx.engine.selectedColumns.length > 0) {
 					ctx.engine.clearColumnSelection()

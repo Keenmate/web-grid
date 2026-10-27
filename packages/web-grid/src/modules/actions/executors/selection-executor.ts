@@ -49,7 +49,7 @@ function executeSelectRow(ctx: ExecutorContext, action: SelectRowAction): void {
 		updateCellRangeVisual(ctx)
 	}
 
-	if (extendSelection && ctx.engine.selectedRows.length > 0) {
+	if (extendSelection && ctx.engine.selectedRowIndices.length > 0) {
 		// Extend selection from last selected row to this row
 		ctx.engine.selectRow(rowIndex, 'range')
 	} else if (addToSelection) {
@@ -71,8 +71,8 @@ function executeSelectColumn(ctx: ExecutorContext, action: SelectColumnAction): 
 	const { colIndex, addToSelection, extendSelection } = action
 
 	// Clear other selection types
-	if (ctx.engine.selectedRows.length > 0) {
-		ctx.engine.clearSelection()
+	if (ctx.engine.selectedRowIndices.length > 0) {
+		ctx.engine.clearRowSelection()
 	}
 	if (ctx.engine.selectedCellRange) {
 		ctx.engine.clearCellSelection()
@@ -100,16 +100,16 @@ function executeSelectColumn(ctx: ExecutorContext, action: SelectColumnAction): 
  * Clear all selections
  */
 function executeClearSelection(ctx: ExecutorContext): void {
-	interactionLogger.debug('[clearSelection] rows:', ctx.engine.selectedRows.length,
+	interactionLogger.debug('[clearSelection] rows:', ctx.engine.selectedRowIndices.length,
 		'cols:', ctx.engine.selectedColumns.length,
 		'cellRange:', !!ctx.engine.selectedCellRange)
 	// Use _noRender variants to prevent requestUpdate() from triggering a full re-render
 	// which would replace DOM elements and lose focus (we handle visuals surgically below)
 
 	// Clear row selection
-	if (ctx.engine.selectedRows.length > 0) {
+	if (ctx.engine.selectedRowIndices.length > 0) {
 		interactionLogger.debug('[clearSelection] clearing rows')
-		ctx.engine.clearSelection_noRender()
+		ctx.engine.clearRowSelection_noRender()
 		removeRowSelectionBorders()
 		updateRowSelectionVisual(ctx)
 	}
@@ -142,11 +142,11 @@ function executeClearSelection(ctx: ExecutorContext): void {
  */
 function updateRowSelectionVisual(ctx: ExecutorContext): void {
 	// Remove all row-selected classes
-	const selectedRows = ctx.shadow.querySelectorAll('.wg__row--selected')
-	selectedRows.forEach(row => row.classList.remove('wg__row--selected'))
+	const selectedRowIndices = ctx.shadow.querySelectorAll('.wg__row--selected')
+	selectedRowIndices.forEach(row => row.classList.remove('wg__row--selected'))
 
 	// Add class to selected rows
-	for (const rowIndex of ctx.engine.selectedRows) {
+	for (const rowIndex of ctx.engine.selectedRowIndices) {
 		const row = ctx.shadow.querySelector(`tr[data-row="${rowIndex}"]`)
 		if (row) {
 			row.classList.add('wg__row--selected')

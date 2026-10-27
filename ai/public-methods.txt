@@ -174,13 +174,20 @@ selectRowRange(fromIndex: number, toIndex: number): void
   Select a contiguous range of rows (inclusive).
 
 clearSelection(): void
-  Clear all row selections.
+  Clear every selection kind: rows, the cell range and columns.
+
+clearRowSelection(): void
+  Clear only the row selection (clearCellSelection / clearColumnSelection
+  clear the other kinds).
 
 isRowSelected(rowIndex: number): boolean
   Check if a specific row is selected.
 
-getSelectedRowsData(): T[]
-  Get the data objects for all selected rows.
+selectedRows: T[]                (property, read-only)
+  The selected row objects, in display order.
+
+selectedRowIndices: number[]     (property, read-only)
+  Display indices of the selected rows, ascending.
 
 copySelectedRowsToClipboard(): Promise<boolean>
   Copy selected rows as TSV (tab-separated values) to the clipboard.
@@ -276,11 +283,11 @@ It has the methods above (drafts, validation, row identification and
 updates, locking, selection, columns, focusCell, startEditing, tree) plus:
 
 Data
-  getItems(): T[]
-  getDisplayItems(): T[]            rows as displayed (filtered, sorted, paginated, tree-collapsed)
-  getColumns(): Column<T>[]
-  getSort(): SortState[]
-  getFilters(): Record<string, string>
+  items: T[]
+  displayItems: T[]            rows as displayed (filtered, sorted, paginated, tree-collapsed)
+  columns: Column<T>[]
+  sort: SortState[]
+  filters: Record<string, string>
   setFilter(field: string, value: string): void
 
 Rows (what the add / delete / duplicate / move-up / move-down built-ins use)
@@ -291,10 +298,10 @@ Rows (what the add / delete / duplicate / move-up / move-down built-ins use)
   moveRow(row: T, delta: -1 | 1): void            one displayed position up / down
 
 Validation
-  getInvalidCells(): CellValidationState[]
+  invalidCells: CellValidationState[]
 
-Selection
-  getSelectedRows(): number[]
+Selection (same names as on the element)
+  selectedRows: T[] / selectedRowIndices: number[]   read-only properties
   selectColumn(colIndex: number, mode?: 'replace' | 'toggle' | 'range'): void
     colIndex = index into columns (not the on-screen position)
   selectColumnRange(fromIndex: number, toIndex: number): void
@@ -304,7 +311,7 @@ Selection
     [{ colIndex, field, column }] in on-screen order (colIndex = index in columns)
   isColumnSelected(colIndex: number): boolean
   selectAll(): void
-  getSelectedCellRange(): CellRange | null
+  selectedCellRange: CellRange | null
 
 Tree
   expandAll(path: string): void               expand path and every descendant

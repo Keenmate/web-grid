@@ -242,7 +242,7 @@ test.describe('contexts, twins, controller', () => {
 		const r = await grid(page).evaluate((el: any) => {
 			el.controller.moveRow(el.items[0], 1)
 			return {
-				order: el.controller.getItems().map((x: any) => x.name),
+				order: el.controller.items.map((x: any) => x.name),
 				noGrid: typeof el.grid,
 				sameController: el.controller === el.controller
 			}

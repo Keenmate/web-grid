@@ -887,12 +887,17 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	set rangeShortcuts(value: GridRangeShortcut<T>[]) { this.engine.rangeShortcuts = value }
 
 	// Row selection
-	get selectedRows(): number[] { this.flush(); return this.engine.selectedRows }
+	/** The selected row objects, in display order. */
+	get selectedRows(): T[] { this.flush(); return this.engine.selectedRows }
+	/** Display indices of the selected rows, ascending. */
+	get selectedRowIndices(): number[] { this.flush(); return this.engine.selectedRowIndices }
 	selectRow(rowIndex: number, mode: 'replace' | 'toggle' | 'range' = 'replace'): void { this.flush(); this.engine.selectRow(rowIndex, mode) }
 	selectRowRange(fromIndex: number, toIndex: number): void { this.flush(); this.engine.selectRowRange(fromIndex, toIndex) }
+	/** Clear every selection kind: rows, the cell range and columns. */
 	clearSelection(): void { this.flush(); this.engine.clearSelection() }
+	/** Clear only the row selection. */
+	clearRowSelection(): void { this.flush(); this.engine.clearRowSelection() }
 	isRowSelected(rowIndex: number): boolean { this.flush(); return this.engine.isRowSelected(rowIndex) }
-	getSelectedRowsData(): T[] { this.flush(); return this.engine.getSelectedRowsData() }
 	copySelectedRowsToClipboard(): Promise<boolean> { this.flush(); return this.engine.copySelectedRowsToClipboard() }
 
 	// Cell range selection
@@ -1809,7 +1814,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		}
 
 		// Update row selection borders after render
-		if (this.engine.selectedRows.length > 0) {
+		if (this.engine.selectedRowIndices.length > 0) {
 			createRowSelectionBorders(this)
 		} else {
 			removeRowSelectionBorders()

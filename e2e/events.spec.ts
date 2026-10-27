@@ -24,7 +24,7 @@ async function onceWithTwin(page: Page, type: string, gridId = 'grid') {
 		return {
 			same: ev[0].detail === d,
 			isHost: d.element === document.getElementById(g),
-			hasController: typeof d.controller?.getItems === 'function',
+			hasController: Array.isArray(d.controller?.items),
 			enumerable: Object.keys(d).includes('controller') || Object.keys(d).includes('element')
 		}
 	}, { t: type, g: gridId })

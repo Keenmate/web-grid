@@ -29,12 +29,12 @@ export function clearAllSelections<T>(ctx: GridHost<T>): void {
 		const inRange = ctx.shadow.querySelectorAll('.wg__cell--in-range')
 		inRange.forEach(c => c.classList.remove('wg__cell--in-range'))
 	}
-	if (ctx.engine.selectedRows.length > 0) {
-		ctx.engine.clearSelection_noRender()
+	if (ctx.engine.selectedRowIndices.length > 0) {
+		ctx.engine.clearRowSelection_noRender()
 		removeRowSelectionBorders()
 		// Remove row selection highlighting
-		const selectedRows = ctx.shadow.querySelectorAll('.wg__row--selected')
-		selectedRows.forEach(r => r.classList.remove('wg__row--selected'))
+		const selectedRowIndices = ctx.shadow.querySelectorAll('.wg__row--selected')
+		selectedRowIndices.forEach(r => r.classList.remove('wg__row--selected'))
 	}
 	if (ctx.engine.selectedColumns.length > 0) {
 		ctx.engine.clearColumnSelection_noRender()

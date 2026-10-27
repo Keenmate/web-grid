@@ -38,7 +38,7 @@ async function executeCopy(ctx: ExecutorContext): Promise<void> {
 		await engine.copyCellSelectionToClipboard()
 	} else if (engine.selectedColumns.length > 0) {
 		await engine.copySelectedColumnsToClipboard()
-	} else if (engine.selectedRows.length > 0) {
+	} else if (engine.selectedRowIndices.length > 0) {
 		await engine.copySelectedRowsToClipboard()
 	} else if (engine.focusedCell) {
 		await engine.copyFocusedCellToClipboard()

@@ -26,7 +26,7 @@ import { removeRangeBorder } from '../cell-selection/index.js'
  * shape or the cell-range shape based on which selection is active.
  */
 export function handleContainerKeyDown<T>(ctx: GridHost<T>, e: KeyboardEvent): void {
-	const selectedRowIndices = ctx.engine.selectedRows
+	const selectedRowIndices = ctx.engine.selectedRowIndices
 	const selectedColIndices = ctx.engine.selectedColumns
 	const hasCellRange = !!ctx.engine.selectedCellRange
 	if (selectedRowIndices.length === 0 && selectedColIndices.length === 0 && !hasCellRange) return
@@ -46,7 +46,7 @@ export function handleContainerKeyDown<T>(ctx: GridHost<T>, e: KeyboardEvent): v
 		} else if (selectedColIndices.length > 0) {
 			ctx.engine.clearColumnSelection()
 		} else {
-			ctx.engine.clearSelection()
+			ctx.engine.clearRowSelection()
 		}
 		return
 	}
@@ -75,7 +75,7 @@ export function handleContainerKeyDown<T>(ctx: GridHost<T>, e: KeyboardEvent): v
 		cells: ctx.engine.getSelectedCells()
 	} : {
 		// Row selection mode
-		rows: ctx.engine.getSelectedRowsData(),
+		rows: ctx.engine.selectedRows,
 		rowIndices: selectedRowIndices
 	})
 }

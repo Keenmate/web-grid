@@ -588,7 +588,7 @@ export class ActionPipelineAdapter<T = unknown> {
 			const hadCellRangeSelection = isCellClick && this.ctx.engine.selectedCellRange
 			const hadAnySelection = isCellClick && (
 				hadCellRangeSelection ||
-				this.ctx.engine.selectedRows.length > 0 ||
+				this.ctx.engine.selectedRowIndices.length > 0 ||
 				this.ctx.engine.selectedColumns.length > 0
 			)
 			if (hadAnySelection) {
@@ -710,7 +710,7 @@ export class ActionPipelineAdapter<T = unknown> {
 			}
 
 			// Clear row/column/cell selections when clicking on a cell
-			if (this.ctx.engine.selectedRows.length > 0 ||
+			if (this.ctx.engine.selectedRowIndices.length > 0 ||
 				this.ctx.engine.selectedColumns.length > 0 ||
 				this.ctx.engine.selectedCellRange) {
 				this.pipeline.dispatch({ type: 'clearSelection' })

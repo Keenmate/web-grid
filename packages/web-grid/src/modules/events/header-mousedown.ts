@@ -130,8 +130,8 @@ export function handleHeaderRowMouseDown<T>(ctx: GridHost<T>, e: Event): void {
 	// But NOT if cell selection is pending (would interfere with shift+drag)
 	if (target.closest('.wg__cell') && !target.closest('.wg__row-number, .wg__header') && !isCellSelectionPending()) {
 		let needsRender = false
-		if (ctx.engine.selectedRows.length > 0) {
-			ctx.engine.clearSelection()
+		if (ctx.engine.selectedRowIndices.length > 0) {
+			ctx.engine.clearRowSelection()
 			needsRender = true
 		}
 		if (ctx.engine.selectedColumns.length > 0) {
@@ -151,8 +151,8 @@ export function handleHeaderRowMouseDown<T>(ctx: GridHost<T>, e: Event): void {
 			removeRangeBorder()
 			needsRender = true
 		}
-		if (ctx.engine.selectedRows.length > 0) {
-			ctx.engine.clearSelection()
+		if (ctx.engine.selectedRowIndices.length > 0) {
+			ctx.engine.clearRowSelection()
 			needsRender = true
 		}
 		if (ctx.engine.selectedColumns.length > 0) {

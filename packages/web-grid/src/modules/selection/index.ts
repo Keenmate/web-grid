@@ -267,15 +267,15 @@ export function handleContainerClick<T>(ctx: GridHost<T>, event: MouseEvent): vo
 	}
 
 	// Clear selection
-	ctx.engine.clearSelection()
+	ctx.engine.clearRowSelection()
 }
 
 /**
  * Handle Escape key to clear selection
  */
 export function handleEscapeKey<T>(ctx: GridHost<T>): boolean {
-	if (ctx.engine.selectedRows.length > 0) {
-		ctx.engine.clearSelection()
+	if (ctx.engine.selectedRowIndices.length > 0) {
+		ctx.engine.clearRowSelection()
 		return true // Handled
 	}
 	return false // Not handled

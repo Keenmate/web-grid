@@ -44,7 +44,7 @@
 		 *  - cell range selection via click+drag across data cells
 		 *  - row focus via a plain cell click (onrowfocus)
 		 *
-		 * State is surfaced through three data-testid nodes. selectedRows has no
+		 * State is surfaced through three data-testid nodes. selectedRowIndices has no
 		 * dedicated change event, so it is polled; cell selection and row focus use
 		 * their events.
 		 */
@@ -77,9 +77,9 @@
 		const selectedCellsEl = document.querySelector('[data-testid="selected-cells"]')
 		const focusedRowEl = document.querySelector('[data-testid="focused-row"]')
 
-		// No dedicated row-selection event — poll the selectedRows getter.
+		// No dedicated row-selection event — poll the selectedRowIndices getter.
 		setInterval(() => {
-			const rows = grid.selectedRows
+			const rows = grid.selectedRowIndices
 			selectedRowsEl.textContent = rows.length === 0 ? 'none' : rows.join(', ')
 		}, 100)
 

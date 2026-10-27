@@ -349,7 +349,7 @@ export class GridEngine<T = unknown> {
 	protected _onInteractionChange: ((type: 'hoveredRow' | 'focusedCell' | 'editingCell' | 'focusedRow', detail: { prev: any, current: any }) => void) | null = null
 
 	// Row selection state
-	protected _selectedRows: Set<number> = new Set()
+	protected _selectedRowIndices: Set<number> = new Set()
 	protected _lastSelectedRowIndex: number | null = null  // For Shift+Click range selection
 	protected _rangeShortcuts: GridRangeShortcut<T>[] = []
 
@@ -1149,8 +1149,14 @@ export class GridEngine<T = unknown> {
 	}
 
 	// Row selection
-	get selectedRows(): number[] {
-		return Array.from(this._selectedRows).sort((a, b) => a - b)
+	/** Display indices of the selected rows, ascending. */
+	get selectedRowIndices(): number[] {
+		return Array.from(this._selectedRowIndices).sort((a, b) => a - b)
+	}
+
+	/** The selected row objects, in display order. */
+	get selectedRows(): T[] {
+		return this.selectedRowIndices.map(idx => this.displayItems[idx]).filter(Boolean)
 	}
 
 	get rangeShortcuts(): GridRangeShortcut<T>[] { return this._rangeShortcuts }
@@ -1160,7 +1166,7 @@ export class GridEngine<T = unknown> {
 	}
 
 	isRowSelected(rowIndex: number): boolean {
-		return this._selectedRows.has(rowIndex)
+		return this._selectedRowIndices.has(rowIndex)
 	}
 
 	selectRow(rowIndex: number, mode: 'replace' | 'toggle' | 'range' = 'replace'): void {
@@ -1178,15 +1184,15 @@ export class GridEngine<T = unknown> {
 
 		switch (mode) {
 			case 'replace':
-				this._selectedRows.clear()
-				this._selectedRows.add(rowIndex)
+				this._selectedRowIndices.clear()
+				this._selectedRowIndices.add(rowIndex)
 				this._lastSelectedRowIndex = rowIndex
 				break
 			case 'toggle':
-				if (this._selectedRows.has(rowIndex)) {
-					this._selectedRows.delete(rowIndex)
+				if (this._selectedRowIndices.has(rowIndex)) {
+					this._selectedRowIndices.delete(rowIndex)
 				} else {
-					this._selectedRows.add(rowIndex)
+					this._selectedRowIndices.add(rowIndex)
 				}
 				this._lastSelectedRowIndex = rowIndex
 				break
@@ -1195,10 +1201,10 @@ export class GridEngine<T = unknown> {
 					const start = Math.min(this._lastSelectedRowIndex, rowIndex)
 					const end = Math.max(this._lastSelectedRowIndex, rowIndex)
 					for (let i = start; i <= end; i++) {
-						this._selectedRows.add(i)
+						this._selectedRowIndices.add(i)
 					}
 				} else {
-					this._selectedRows.add(rowIndex)
+					this._selectedRowIndices.add(rowIndex)
 					this._lastSelectedRowIndex = rowIndex
 				}
 				break
@@ -1211,28 +1217,40 @@ export class GridEngine<T = unknown> {
 			this._selectedColumns.clear()
 			this._selectedCellRange = null
 
-			this._selectedRows.clear()
+			this._selectedRowIndices.clear()
 			const start = Math.min(fromIndex, toIndex)
 			const end = Math.max(fromIndex, toIndex)
 			for (let i = start; i <= end; i++) {
-				this._selectedRows.add(i)
+				this._selectedRowIndices.add(i)
 			}
 			this._lastSelectedRowIndex = toIndex
 		})
 		this.requestUpdate()
 	}
 
+	/** Clear every selection kind — rows, the cell range and columns (one notification per kind that changed). */
 	clearSelection(): void {
-		if (this._selectedRows.size > 0) {
-			this.clearSelection_noRender()
+		if (this._selectedRowIndices.size === 0 && !this._selectedCellRange && this._selectedColumns.size === 0) return
+		this.trackSelection(() => {
+			this.clearRowSelection_noRender()
+			this.clearCellSelection_noRender()
+			this.clearColumnSelection_noRender()
+		})
+		this.requestUpdate()
+	}
+
+	/** Clear only the row selection. */
+	clearRowSelection(): void {
+		if (this._selectedRowIndices.size > 0) {
+			this.clearRowSelection_noRender()
 			this.requestUpdate()
 		}
 	}
 
 	/** Clear row selection state without triggering re-render (caller handles visuals) */
-	clearSelection_noRender(): void {
+	clearRowSelection_noRender(): void {
 		this.trackSelection(() => {
-			this._selectedRows.clear()
+			this._selectedRowIndices.clear()
 			this._lastSelectedRowIndex = null
 		})
 	}
@@ -1254,7 +1272,7 @@ export class GridEngine<T = unknown> {
 		const r = this._selectedCellRange
 		return {
 			range: r ? `${r.startRowIndex},${r.startColIndex},${r.endRowIndex},${r.endColIndex}` : '',
-			rows: this.selectedRows.join(','),
+			rows: this.selectedRowIndices.join(','),
 			cols: JSON.stringify(this.selectedColumnFields())
 		}
 	}
@@ -1277,7 +1295,7 @@ export class GridEngine<T = unknown> {
 		const after = this.selectionSnapshot()
 		if (before.range !== after.range) this.notify('cell-selection-change', this.cellSelectionDetail())
 		if (before.rows !== after.rows) {
-			const rowIndices = this.selectedRows
+			const rowIndices = this.selectedRowIndices
 			this.notify('row-selection-change', { rows: rowIndices.map(i => this.displayItems[i]).filter(Boolean), rowIndices })
 		}
 		if (before.cols !== after.cols) this.notify('column-selection-change', { fields: this.selectedColumnFields() })
@@ -1324,16 +1342,12 @@ export class GridEngine<T = unknown> {
 		return fields
 	}
 
-	getSelectedRowsData(): T[] {
-		return this.selectedRows.map(idx => this.displayItems[idx]).filter(Boolean)
-	}
-
 	/**
 	 * Copy selected rows to clipboard in TSV format (Excel-compatible)
 	 * @returns true if copy was successful, false if no selection or clipboard failed
 	 */
 	async copySelectedRowsToClipboard(): Promise<boolean> {
-		const selectedIndices = this.selectedRows
+		const selectedIndices = this.selectedRowIndices
 		if (selectedIndices.length === 0) return false
 
 		const rows: string[] = []
@@ -2001,8 +2015,8 @@ export class GridEngine<T = unknown> {
 		interactionLogger.debug('selectCellRange:', { startRow: range.startRowIndex, startCol: range.startColIndex, endRow: range.endRowIndex, endCol: range.endColIndex })
 		this.trackSelection(() => {
 			// Clear row and column selection when selecting cells
-			if (this._selectedRows.size > 0) {
-				this._selectedRows.clear()
+			if (this._selectedRowIndices.size > 0) {
+				this._selectedRowIndices.clear()
 				this._lastSelectedRowIndex = null
 			}
 			this._selectedColumns.clear()
@@ -2071,7 +2085,7 @@ export class GridEngine<T = unknown> {
 
 	private selectColumnState(colIndex: number, mode: 'replace' | 'toggle' | 'range'): void {
 		// Clear row selection and cell range when selecting columns
-		this._selectedRows.clear()
+		this._selectedRowIndices.clear()
 		this._selectedCellRange = null
 
 		if (mode === 'replace') {
@@ -2128,7 +2142,7 @@ export class GridEngine<T = unknown> {
 	selectColumnRangeAt(fromIndex: number, toIndex: number): void {
 		this.trackSelection(() => {
 			// Clear row selection and cell range when selecting columns
-			this._selectedRows.clear()
+			this._selectedRowIndices.clear()
 			this._selectedCellRange = null
 
 			this._selectedColumns.clear()

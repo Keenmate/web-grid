@@ -129,7 +129,7 @@ test.describe('filter-change event', () => {
 			return {
 				keys: Object.keys(d),
 				isHost: d.element === document.getElementById('grid'),
-				filters: typeof d.controller?.getFilters === 'function' ? d.controller.getFilters() : null
+				filters: d.controller?.filters ?? null
 			}
 		})
 		expect(info).toEqual({ keys: ['filters'], isHost: true, filters: { city: 'brno' } })

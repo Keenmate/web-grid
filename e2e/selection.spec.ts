@@ -12,7 +12,7 @@ import { test, expect, Page, gridLocator, cell, header, dragSelect } from './fix
  *  - row focus via a plain cell click (onRowFocus)
  *
  * State is read from three data-testid nodes — see selection.html for the seed
- * table. selectedRows is polled (no change event), so a couple of assertions
+ * table. selectedRowIndices is polled (no change event), so a couple of assertions
  * use expect.poll / a tolerant matcher.
  */
 
@@ -23,7 +23,7 @@ function rowNumber(page: Page, rowIndex: number) {
 	return gridLocator(page).locator(`.wg__row-number[data-row-number="${rowIndex}"]`)
 }
 
-const selectedRows = (page: Page) => page.locator('[data-testid="selected-rows"]')
+const selectedRowIndices = (page: Page) => page.locator('[data-testid="selected-rows"]')
 const selectedCells = (page: Page) => page.locator('[data-testid="selected-cells"]')
 const focusedRow = (page: Page) => page.locator('[data-testid="focused-row"]')
 
@@ -41,17 +41,17 @@ test.describe('row selection (via row-number clicks)', () => {
 		await gotoSelection(page)
 
 		await rowNumber(page, 0).click()
-		await expect(selectedRows(page)).toHaveText('0')
+		await expect(selectedRowIndices(page)).toHaveText('0')
 	})
 
 	test('clicking a different row number replaces the selection', async ({ page }) => {
 		await gotoSelection(page)
 
 		await rowNumber(page, 0).click()
-		await expect(selectedRows(page)).toHaveText('0')
+		await expect(selectedRowIndices(page)).toHaveText('0')
 
 		await rowNumber(page, 3).click()
-		await expect(selectedRows(page)).toHaveText('3')
+		await expect(selectedRowIndices(page)).toHaveText('3')
 	})
 
 	test('Ctrl+click toggles a row into / out of the selection', async ({ page }) => {
@@ -59,12 +59,12 @@ test.describe('row selection (via row-number clicks)', () => {
 
 		await rowNumber(page, 0).click()
 		await rowNumber(page, 2).click({ modifiers: ['Control'] })
-		// selectedRows is reported sorted ascending.
-		await expect(selectedRows(page)).toHaveText('0, 2')
+		// selectedRowIndices is reported sorted ascending.
+		await expect(selectedRowIndices(page)).toHaveText('0, 2')
 
 		// Ctrl+click row 2 again removes it.
 		await rowNumber(page, 2).click({ modifiers: ['Control'] })
-		await expect(selectedRows(page)).toHaveText('0')
+		await expect(selectedRowIndices(page)).toHaveText('0')
 	})
 
 	test('Shift+click selects a contiguous range from the last selected row', async ({ page }) => {
@@ -73,17 +73,17 @@ test.describe('row selection (via row-number clicks)', () => {
 		await rowNumber(page, 1).click()
 		await rowNumber(page, 4).click({ modifiers: ['Shift'] })
 
-		await expect(selectedRows(page)).toHaveText('1, 2, 3, 4')
+		await expect(selectedRowIndices(page)).toHaveText('1, 2, 3, 4')
 	})
 
 	test('Escape clears the row selection', async ({ page }) => {
 		await gotoSelection(page)
 
 		await rowNumber(page, 0).click()
-		await expect(selectedRows(page)).toHaveText('0')
+		await expect(selectedRowIndices(page)).toHaveText('0')
 
 		await page.keyboard.press('Escape')
-		await expect(selectedRows(page)).toHaveText('none')
+		await expect(selectedRowIndices(page)).toHaveText('none')
 	})
 })
 

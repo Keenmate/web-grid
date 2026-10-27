@@ -14,11 +14,11 @@ export function createGridController<T>(el: GridElement<T>): GridController<T> {
 	const g = () => { el.flush(); return el.engine }
 	return {
 		// data
-		getItems: () => g().items,
-		getDisplayItems: () => g().displayItems,
-		getColumns: () => g().columns,
-		getSort: () => g().sort,
-		getFilters: () => g().filters,
+		get items() { return g().items },
+		get displayItems() { return g().displayItems },
+		get columns() { return g().columns },
+		get sort() { return g().sort },
+		get filters() { return g().filters },
 		setFilter: (field, value) => g().setFilter(field, value),
 		// rows
 		insertRow: (row, afterRow) => g().insertRow(row, afterRow),
@@ -41,7 +41,7 @@ export function createGridController<T>(el: GridElement<T>): GridController<T> {
 		isRowDirty: (rowIndex) => g().isRowDirty(rowIndex),
 		isCellInvalid: (rowIndex, field) => g().isCellInvalid(rowIndex, field),
 		getCellValidationError: (rowIndex, field) => g().getCellValidationError(rowIndex, field),
-		getInvalidCells: () => g().invalidCells,
+		get invalidCells() { return g().invalidCells },
 		canEditCell: (rowIndex, field) => g().canEditCell(rowIndex, field),
 		// row locking
 		isRowLocked: (rowOrId) => g().isRowLocked(rowOrId),
@@ -54,14 +54,15 @@ export function createGridController<T>(el: GridElement<T>): GridController<T> {
 		selectRow: (rowIndex, mode) => g().selectRow(rowIndex, mode),
 		selectRowRange: (fromIndex, toIndex) => g().selectRowRange(fromIndex, toIndex),
 		clearSelection: () => g().clearSelection(),
+		clearRowSelection: () => g().clearRowSelection(),
 		isRowSelected: (rowIndex) => g().isRowSelected(rowIndex),
-		getSelectedRows: () => g().selectedRows,
-		getSelectedRowsData: () => g().getSelectedRowsData(),
+		get selectedRows() { return g().selectedRows },
+		get selectedRowIndices() { return g().selectedRowIndices },
 		copySelectedRowsToClipboard: () => g().copySelectedRowsToClipboard(),
 		// cell / column selection
 		selectCellRange: (range) => g().selectCellRange(range),
 		clearCellSelection: () => g().clearCellSelection(),
-		getSelectedCellRange: () => g().selectedCellRange,
+		get selectedCellRange() { return g().selectedCellRange },
 		getSelectedCells: () => g().getSelectedCells(),
 		copyCellSelectionToClipboard: () => g().copyCellSelectionToClipboard(),
 		selectColumn: (colIndex, mode) => g().selectColumn(colIndex, mode),

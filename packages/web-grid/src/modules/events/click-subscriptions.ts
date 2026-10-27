@@ -68,8 +68,8 @@ export function handleOutsideClick<T>(ctx: GridHost<T>): void {
 		removeRangeBorder()
 		needsRender = true
 	}
-	if (ctx.engine.selectedRows.length > 0) {
-		ctx.engine.clearSelection()
+	if (ctx.engine.selectedRowIndices.length > 0) {
+		ctx.engine.clearRowSelection()
 		needsRender = true
 	}
 	if (ctx.engine.selectedColumns.length > 0) {
@@ -97,8 +97,8 @@ export function handleSortClickSubscription<T>(
 		ctx.engine.clearCellSelection()
 		removeRangeBorder()
 	}
-	if (ctx.engine.selectedRows.length > 0) {
-		ctx.engine.clearSelection()
+	if (ctx.engine.selectedRowIndices.length > 0) {
+		ctx.engine.clearRowSelection()
 		removeRowSelectionBorders()
 	}
 	if (ctx.engine.selectedColumns.length > 0) {

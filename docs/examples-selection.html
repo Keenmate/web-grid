@@ -248,7 +248,7 @@ grid.focusedRowIndex = null // Clear focus</code></pre>
             <h3 style="margin-top: 0; color: #667eea;">Row Selection API</h3>
             <table class="props-table">
                 <tr>
-                    <td><code>selectedRows</code></td>
+                    <td><code>selectedRowIndices</code></td>
                     <td>Array of selected row indices (read-only, sorted ascending)</td>
                 </tr>
                 <tr>
@@ -260,7 +260,7 @@ grid.focusedRowIndex = null // Clear focus</code></pre>
                     <td>Clear all selected rows</td>
                 </tr>
                 <tr>
-                    <td><code>getSelectedRowsData()</code></td>
+                    <td><code>selectedRows</code></td>
                     <td>Get the data objects for selected rows</td>
                 </tr>
             </table>
@@ -435,7 +435,7 @@ grid.focusedRowIndex = null // Clear focus</code></pre>
 
         setInterval(() => {
             const log = document.getElementById('rowSelectionLog')
-            const selected = gridRowSelection.selectedRows
+            const selected = gridRowSelection.selectedRowIndices
             if (selected.length === 0) {
                 log.textContent = 'No rows selected'
             } else {
@@ -804,14 +804,14 @@ grid.focusedRowIndex = null // Clear focus</code></pre>
         setInterval(() => {
             const log = document.getElementById('rangeShortcutsLog')
             const cellRange = gridRangeShortcuts.selectedCellRange
-            const selectedRows = gridRangeShortcuts.selectedRows
+            const selectedRowIndices = gridRangeShortcuts.selectedRowIndices
 
             if (cellRange) {
                 const cells = gridRangeShortcuts.getSelectedCells()
                 log.innerHTML = `<strong>Cell Range:</strong> ${cells.length} cell(s) selected - Try Ctrl+C, Delete, Ctrl+Alt+E, or Ctrl+Alt+S`
-            } else if (selectedRows.length > 0) {
-                const names = selectedRows.map(idx => gridRangeShortcuts.items[idx]?.name).filter(Boolean)
-                log.innerHTML = `<strong>Row Selection:</strong> ${selectedRows.length} row(s) - Try Ctrl+C, Delete, or Ctrl+Alt+E`
+            } else if (selectedRowIndices.length > 0) {
+                const names = selectedRowIndices.map(idx => gridRangeShortcuts.items[idx]?.name).filter(Boolean)
+                log.innerHTML = `<strong>Row Selection:</strong> ${selectedRowIndices.length} row(s) - Try Ctrl+C, Delete, or Ctrl+Alt+E`
             } else {
                 log.textContent = 'Select rows (click row numbers) or cells (click+drag on cells)...'
             }

@@ -270,7 +270,7 @@ test.describe('web-component paste proxies', () => {
 					successfulCells: detail.successfulCells,
 					hadHeaders: detail.hadHeaders,
 					isClipboardEvent: detail instanceof Event,
-					hasController: typeof detail.controller?.getItems === 'function'
+					hasController: Array.isArray(detail.controller?.items)
 				})
 			}
 		})
