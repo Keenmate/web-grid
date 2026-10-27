@@ -706,7 +706,9 @@ grid.onAction = ({ action, id, row }) => {
 | Rows | `insertRow(row, afterRow?)`, `removeRows(rows)`, `duplicateRow(row)`, `moveRow(row, -1 \| 1)`, `getRowId(row)`, `findRowById(id)`, `updateRowById(id, data)`, `replaceRowById(id, row)` |
 | Drafts / validation | `getRowDraft`, `hasRowDraft`, `discardRowDraft`, `getDraftRowIndices`, `getDrafts`, `discardDraft`, `discardAllDrafts`, `isCellDirty`, `isRowDirty`, `isCellInvalid`, `getCellValidationError`, `getInvalidCells`, `canEditCell` |
 | Row locking | `isRowLocked`, `getRowLockInfo`, `lockRowById`, `unlockRowById`, `getExternalLocks`, `clearExternalLocks` |
-| Selection | `selectRow`, `selectRowRange`, `clearSelection`, `isRowSelected`, `getSelectedRows`, `getSelectedRowsData`, `copySelectedRowsToClipboard`, `selectCellRange`, `clearCellSelection`, `getSelectedCellRange`, `getSelectedCells`, `copyCellSelectionToClipboard`, `selectColumn`, `selectColumnRange`, `clearColumnSelection`, `selectAll` |
+| Selection | `selectRow`, `selectRowRange`, `clearSelection`, `isRowSelected`, `getSelectedRows`, `getSelectedRowsData`, `copySelectedRowsToClipboard`, `selectCellRange`, `clearCellSelection`, `getSelectedCellRange`, `getSelectedCells`, `copyCellSelectionToClipboard`, `selectColumn`, `selectColumnRange`, `clearColumnSelection`, `getSelectedColumns`, `isColumnSelected`, `selectAll` |
+
+Every selection output lists entries in **on-screen order** and identifies a column by its index in `columns` (`colIndex`) + `field`: `getSelectedCells()` → `CellContext[]`, `getSelectedColumns()` → `[{ colIndex, field, column }]`. Column selection inputs (`selectColumn(colIndex)`, `selectColumnRange`, `isColumnSelected`) take the index in `columns`.
 | Tree | `isPathExpanded`, `toggleExpandedPath`, `expandAll`, `collapseAll`, `expandSubtree`, `collapseSubtree`, `getRowTreeInfo` |
 | Columns | `setColumnWidth`, `setColumnWidths`, `getColumnWidthsState`, `setColumnOrder`, `getColumnOrderState` |
 | Focus / editing | `focusCell`, `startEditing` |

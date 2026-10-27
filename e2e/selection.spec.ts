@@ -289,7 +289,7 @@ test.describe('column selection with reordered + hidden columns', () => {
 		.locator('tbody tr[data-row-index="0"] td.wg__cell--column-selected')
 		.evaluateAll(els => els.map(el => (el as HTMLElement).dataset.col))
 	const api = (page: Page) => gridLocator(page).evaluate((el: any) => ({
-		columns: el.controller.getSelectedColumns(),
+		columns: el.controller.getSelectedColumns().map((c: any) => `${c.colIndex}:${c.field}:${c.column === el.columns[c.colIndex]}`),
 		isIdSelected: el.controller.isColumnSelected(0),
 		isSalarySelected: el.controller.isColumnSelected(4),
 		events: (window as any).__colEvents
@@ -300,7 +300,7 @@ test.describe('column selection with reordered + hidden columns', () => {
 		await gridLocator(page).evaluate((el: any) => el.controller.selectColumn(0))  // id — on screen third
 		await expect.poll(() => selectedHeaders(page)).toEqual(['id'])
 		expect(await selectedCellCols(page)).toEqual(['0'])
-		expect(await api(page)).toEqual({ columns: [0], isIdSelected: true, isSalarySelected: false, events: [['id']] })
+		expect(await api(page)).toEqual({ columns: ['0:id:true'], isIdSelected: true, isSalarySelected: false, events: [['id']] })
 	})
 
 	test('controller.selectColumnRange(4, 1) spans the on-screen columns salary → name', async ({ page }) => {
@@ -308,16 +308,16 @@ test.describe('column selection with reordered + hidden columns', () => {
 		await gridLocator(page).evaluate((el: any) => el.controller.selectColumnRange(4, 1))
 		await expect.poll(() => selectedHeaders(page)).toEqual(['salary', 'name'])
 		expect(await selectedCellCols(page)).toEqual(['4', '1'])
-		expect((await api(page)).columns).toEqual([1, 4])
+		expect((await api(page)).columns).toEqual(['4:salary:true', '1:name:true'])  // on-screen order
 		expect((await api(page)).events).toEqual([['salary', 'name']])
 	})
 
-	test('header click name, Shift+click id → the adjacent on-screen pair; API reports column indices', async ({ page }) => {
+	test('header click name, Shift+click id → the adjacent on-screen pair; API reports { colIndex, field, column } in on-screen order', async ({ page }) => {
 		await setup(page)
 		await header(page, 'name').click()
 		await header(page, 'id').click({ modifiers: ['Shift'] })
 		await expect.poll(() => selectedHeaders(page)).toEqual(['name', 'id'])
 		expect(await selectedCellCols(page)).toEqual(['1', '0'])
-		expect(await api(page)).toEqual({ columns: [0, 1], isIdSelected: true, isSalarySelected: false, events: [['name'], ['name', 'id']] })
+		expect(await api(page)).toEqual({ columns: ['1:name:true', '0:id:true'], isIdSelected: true, isSalarySelected: false, events: [['name'], ['name', 'id']] })
 	})
 })

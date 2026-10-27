@@ -1031,6 +1031,16 @@ grid.onRowChange = (detail) => save(detail.draftRow)
 | `getSelectedCells()` | `CellContext<T>[]` | The selected cells (`{ row, rowIndex, column, colIndex, field, value }`, `colIndex` = index in `columns`), row by row in on-screen column order |
 | `copyCellSelectionToClipboard()` | `Promise<boolean>` | Copy selected cells as TSV to clipboard |
 
+### Column Selection (`el.controller`)
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `selectColumn(colIndex, mode?)` | `void` | Select a column (`colIndex` = index in `columns`); `mode`: `'replace'` / `'toggle'` / `'range'` |
+| `selectColumnRange(from, to)` | `void` | Select the on-screen span between two columns (indices in `columns`) |
+| `getSelectedColumns()` | `{ colIndex, field, column }[]` | The selected columns in on-screen order (`colIndex` = index in `columns`, like a selected cell's) |
+| `isColumnSelected(colIndex)` | `boolean` | Is the column selected |
+| `clearColumnSelection()` | `void` | Clear the column selection |
+
 ### Column Width
 
 | Method | Returns | Description |

@@ -85,7 +85,7 @@ el.controller, and `controller` on every ctx / detail.
     selectColumn(colIndex: number, mode?: 'replace' | 'toggle' | 'range'): void   // colIndex = index in columns
     selectColumnRange(fromIndex: number, toIndex: number): void                  // on-screen span between them
     clearColumnSelection(): void
-    getSelectedColumns(): number[]                                               // column indices, ascending
+    getSelectedColumns(): Array<{ colIndex: number; field: string; column: Column<T> }>  // on-screen order; colIndex = index in columns
     isColumnSelected(colIndex: number): boolean
     selectAll(): void
     // tree

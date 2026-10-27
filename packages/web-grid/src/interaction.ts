@@ -110,8 +110,8 @@ export interface GridController<T = any> {
 	/** Selects the on-screen span between two columns (indices in `columns`). */
 	selectColumnRange(fromIndex: number, toIndex: number): void
 	clearColumnSelection(): void
-	/** Selected column indices (index in `columns`), ascending. */
-	getSelectedColumns(): number[]
+	/** The selected columns in on-screen order; `colIndex` = index in `columns` (same fields as a selected cell). */
+	getSelectedColumns(): SelectedColumn<T>[]
 	/** `colIndex` = index in `columns`. */
 	isColumnSelected(colIndex: number): boolean
 	copySelectedColumnsToClipboard(): Promise<boolean>
@@ -166,6 +166,14 @@ export interface CellContext<T = any> extends RowContext<T> {
 	field: string
 	/** The cell's raw value (the pending draft value when the row has one). */
 	value: unknown
+}
+
+/** A selected column (`getSelectedColumns()`) — the column fields of a `CellContext`. */
+export interface SelectedColumn<T = any> {
+	/** Index in `columns`. */
+	colIndex: number
+	field: string
+	column: Column<T>
 }
 
 /** ctx of `column.filterCallback`. Runs before sorting / pagination, so there is no row index. */

@@ -298,7 +298,8 @@ Selection
   selectColumnRange(fromIndex: number, toIndex: number): void
     column indices; selects the on-screen span between them
   clearColumnSelection(): void
-  getSelectedColumns(): number[]        column indices, ascending
+  getSelectedColumns(): SelectedColumn<T>[]
+    [{ colIndex, field, column }] in on-screen order (colIndex = index in columns)
   isColumnSelected(colIndex: number): boolean
   selectAll(): void
   getSelectedCellRange(): CellRange | null

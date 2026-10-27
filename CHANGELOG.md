@@ -127,11 +127,15 @@ event.
 
 - **Column selection API uses column indices.** `controller.selectColumn(colIndex)`,
   `selectColumnRange(from, to)`, `isColumnSelected(colIndex)` take and
-  `getSelectedColumns()` returns the column index (index into `columns`, like a cell's
+  `getSelectedColumns()` reports the column index (index into `columns`, like a cell's
   `colIndex`) — they used the on-screen position, so with reordered / hidden columns they
   addressed the wrong column. `selectColumnRange` selects the on-screen span between the two
   columns; hidden columns are ignored. Same results as before when no column is reordered or
   hidden.
+- **`controller.getSelectedColumns()` returns `{ colIndex, field, column }[]` in on-screen
+  order** (was `number[]` of visual positions, ascending) — the same column fields a
+  `getSelectedCells()` cell carries. Every selection output follows one rule: on-screen order,
+  columns identified by index in `columns` + `field`. `.map(c => c.colIndex)` for the old indices.
 - **`getSelectedCells()` returns full `CellContext` objects** — `{ row, rowIndex, column,
   colIndex, field, value }` + the non-enumerable `controller` / `element`, like every cell ctx
   (`column` is new; `value` is now draft-aware). Typed `CellContext<T>[]`.

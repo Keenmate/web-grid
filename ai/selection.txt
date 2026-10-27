@@ -199,7 +199,8 @@ not on-screen positions; hidden columns are ignored:
   grid.controller.clearColumnSelection()
     Clears all selected columns.
 
-  grid.controller.getSelectedColumns()   -> number[] column indices, ascending
+  grid.controller.getSelectedColumns()   -> [{ colIndex, field, column }], on-screen order
+    (colIndex = index in columns — the same column fields a selected cell reports)
   grid.controller.isColumnSelected(colIndex) -> boolean
 
 Copying selected columns (all rows as TSV, respecting shouldCopyWithHeaders)
@@ -214,7 +215,7 @@ Example:
   grid.isColumnReorderAllowed = false
   // User clicks "Name" header -> column selected
   // User Shift+clicks "Email" header -> range from Name to Email selected
-  console.log(grid.controller.getSelectedColumns())  // [1, 2, 3] (column indices)
+  console.log(grid.controller.getSelectedColumns().map(c => c.field))  // ['name', ..., 'email'] (on-screen order)
   grid.onColumnSelectionChange = ({ fields }) => console.log(fields)  // ['name', ..., 'email']
 
 

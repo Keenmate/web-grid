@@ -43,6 +43,7 @@ import type {
 	RowContext,
 	RowDataContext,
 	CellContext,
+	SelectedColumn,
 	ValidateContext,
 	ValidationTooltipContext,
 	FillContext,
@@ -2127,6 +2128,20 @@ export class GridEngine<T = unknown> {
 			if (entry) indices.push(entry.originalIndex)
 		}
 		return indices.sort((a, b) => a - b)
+	}
+
+	/**
+	 * The selected columns in on-screen order, as `{ colIndex, field, column }`
+	 * (`colIndex` = index in `columns`) — the same column fields a selected cell reports.
+	 */
+	getSelectedColumns(): SelectedColumn<T>[] {
+		const visualCols = this.visualColumns
+		const result: SelectedColumn<T>[] = []
+		for (const pos of this.selectedColumnPositions) {
+			const entry = visualCols[pos]
+			if (entry) result.push({ colIndex: entry.originalIndex, field: String(entry.column.field), column: entry.column })
+		}
+		return result
 	}
 
 	/** Selected VISUAL positions (index into `visualColumns`), ascending — rendering / borders / copy. */
