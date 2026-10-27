@@ -23,6 +23,7 @@ import type {
 	ColumnWidthState,
 	ColumnOrderState,
 	PasteMode,
+	FillDirection,
 	CreateRowCallback,
 	ChevronCallback
 } from './types.js'
@@ -279,6 +280,7 @@ const NEW_ROW_POSITIONS = ['top', 'bottom'] as const
 const TREE_DOUBLE_CLICK_BEHAVIORS = ['none', 'toggle'] as const
 const PASTE_MODES = ['skip-non-editable', 'all-columns', 'editable-only'] as const
 const FILTER_MODES = ['client', 'server'] as const
+const FILL_DIRECTIONS = ['vertical', 'all'] as const
 
 /**
  * Event table (core SPEC §12.5): every happening is one DOM event (bubbles, not
@@ -437,6 +439,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		{ configKey: 'shouldCopyWithHeaders', attribute: 'should-copy-with-headers', converter: toBool('default-false'), default: false, on: 'update' },
 		{ configKey: 'pasteMode', attribute: 'paste-mode', converter: toEnum(PASTE_MODES, { default: 'skip-non-editable' }), default: 'skip-non-editable', on: 'update' },
 		{ configKey: 'shouldValidateOnPaste', attribute: 'should-validate-on-paste', converter: toBool('default-true'), default: true, on: 'update' },
+		// Fill handle — grid-wide drag direction; a column's own `fillDirection` wins
+		{ configKey: 'fillDirection', attribute: 'fill-direction', converter: toEnum(FILL_DIRECTIONS, { default: 'vertical' }), default: 'vertical', on: 'update' },
 		// Tooltip timing (element-local, not on grid — the bridge's `in this.engine`
 		// guard skips them; readers use the config-backed getter)
 		{ configKey: 'tooltipShowDelay', attribute: 'tooltip-show-delay', converter: toInt({ min: 0, default: 200 }), default: 200, on: 'update' },
@@ -1145,6 +1149,10 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 
 	get shouldValidateOnPaste(): boolean { return this.engine.shouldValidateOnPaste }
 	set shouldValidateOnPaste(value: boolean) { this.engine.shouldValidateOnPaste = value }
+
+	/** Fill-handle drag direction for the whole grid (`'vertical'` | `'all'`); a column's `fillDirection` wins. */
+	get fillDirection(): FillDirection { return this.engine.fillDirection }
+	set fillDirection(value: FillDirection) { this.engine.fillDirection = value }
 
 	// Computed properties
 	get displayItems(): T[] { this.flush(); return this.engine.displayItems }

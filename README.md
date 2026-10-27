@@ -408,6 +408,7 @@ This architecture separates mode detection (the adapter decides *what* action a 
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
+| `fillDirection` (`fill-direction`) | `'vertical' \| 'all'` | `'vertical'` | Grid-wide fill-handle direction: `'vertical'` fills the source column only, `'all'` also across columns. A column's own `fillDirection` wins |
 | `beforeFillCallback` | `(ctx: { sourceCell, targetCells, direction }) => boolean \| void \| Promise<…>` | — | Runs before a fill-handle drag applies. Return `false` to cancel (async OK) |
 
 ### Row Identification
@@ -601,7 +602,7 @@ Grid-level paste hooks: `beforePasteCallback(ctx)` runs before a multi-cell past
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `fillDirection` | `FillDirection` | Override grid-level fill direction for this column: `'vertical'` or `'all'` |
+| `fillDirection` | `FillDirection` | Override the grid-level `fillDirection` (`fill-direction`) for this column: `'vertical'` or `'all'` |
 
 ## Editor Types
 

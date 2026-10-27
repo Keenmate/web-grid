@@ -61,6 +61,19 @@ Example:
   }
 
 
+GRID-WIDE FILL DIRECTION
+------------------------
+fillDirection on <web-grid> (attribute fill-direction)
+  Type: 'vertical' | 'all'
+  Default: 'vertical'
+
+  <web-grid fill-direction="all"></web-grid>
+  grid.fillDirection = 'all'
+
+  An invalid value warns and keeps the previous one; removing the attribute
+  resets to 'vertical'. A column's own fillDirection wins.
+
+
 PER-COLUMN FILL DIRECTION
 --------------------------
 fillDirection on Column<T>

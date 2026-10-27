@@ -198,6 +198,43 @@ test.describe('fill direction constraint — #gridHorizontal', () => {
 			await expect(cell(page, 'gridHorizontal', 0, c)).toHaveText('')
 		}
 	})
+
+	test('fill-direction="all" attribute: a horizontal drag fills the columns to the right', async ({ page }) => {
+		await gridLocator(page, 'gridHorizontal').evaluate(async (el: any) => {
+			el.setAttribute('fill-direction', 'all')
+			await el.whenSettled?.()
+		})
+		expect(await gridLocator(page, 'gridHorizontal').evaluate((el: any) => el.fillDirection)).toBe('all')
+		await focusCell(page, 'gridHorizontal', 0, 1)
+		await dragFillTo(page, 'gridHorizontal', 0, 4)
+		for (const c of [2, 3, 4]) {
+			await expect(cell(page, 'gridHorizontal', 0, c)).toContainText('Hello')
+		}
+	})
+
+	test("fillDirection property 'all' + a column's own fillDirection 'vertical' → the column wins", async ({ page }) => {
+		await gridLocator(page, 'gridHorizontal').evaluate(async (el: any) => {
+			el.fillDirection = 'all'
+			el.columns = el.columns.map((c: any) => c.field === 'col1' ? { ...c, fillDirection: 'vertical' } : c)
+			await el.whenSettled?.()
+		})
+		await focusCell(page, 'gridHorizontal', 0, 1)
+		await dragFillTo(page, 'gridHorizontal', 0, 4)
+		for (const c of [2, 3, 4]) {
+			await expect(cell(page, 'gridHorizontal', 0, c)).toHaveText('')
+		}
+	})
+
+	test('an invalid fill-direction warns and keeps the previous value; removing the attribute resets to vertical', async ({ page }) => {
+		const values = await gridLocator(page, 'gridHorizontal').evaluate(async (el: any) => {
+			const out: string[] = []
+			el.setAttribute('fill-direction', 'all'); await el.whenSettled?.(); out.push(el.fillDirection)
+			el.setAttribute('fill-direction', 'diagonal'); await el.whenSettled?.(); out.push(el.fillDirection)
+			el.removeAttribute('fill-direction'); await el.whenSettled?.(); out.push(el.fillDirection)
+			return out
+		})
+		expect(values).toEqual(['all', 'all', 'vertical'])
+	})
 })
 
 // =============================================================================
@@ -250,7 +287,7 @@ test.describe('fill with reordered + hidden columns — #grid', () => {
 
 	test("column fillDirection 'all': a horizontal drag department → name fills the on-screen neighbour only", async ({ page }) => {
 		await setup(page)
-		// column-level fillDirection (the grid-level one is engine-only)
+		// column-level fillDirection
 		await gridLocator(page, 'grid').evaluate(async (el: any) => {
 			el.columns = el.columns.map((c: any) => c.field === 'department' ? { ...c, fillDirection: 'all' } : c)
 			await el.whenSettled?.()

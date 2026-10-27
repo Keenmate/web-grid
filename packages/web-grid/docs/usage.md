@@ -294,6 +294,7 @@ Cell menu items get the cell ctx `{ row, rowIndex, column, colIndex, field, valu
 
 | Property | Type | Default | Description |
 |---|---|---|---|
+| `fillDirection` (`fill-direction`) | `'vertical' \| 'all'` | `'vertical'` | Grid-wide fill-handle direction: `'vertical'` fills the source column only, `'all'` also across columns. A column's own `fillDirection` wins |
 | `beforeFillCallback` | `(ctx: { sourceCell, targetCells, direction }) => boolean \| void \| Promise<…>` | — | Runs before a fill-handle drag applies. Return `false` to cancel (async OK) |
 
 ### Row locking
@@ -513,7 +514,7 @@ Not a veto: an invalid value is kept as a draft, the cell is marked invalid and 
 
 | Field | Type | Description |
 |---|---|---|
-| `fillDirection` | `FillDirection` | Override grid-level fill direction: `'vertical'` or `'all'` |
+| `fillDirection` | `FillDirection` | Override the grid-level `fillDirection` (`fill-direction`): `'vertical'` or `'all'` |
 
 ## Editor options
 

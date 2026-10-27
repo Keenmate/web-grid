@@ -73,7 +73,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | `mode` preset (read-only / excel / input-matrix) | ✓ | `grid-modes.spec.ts`, `inputs.spec.ts` | `grid-modes.html`, `inputs.html` |
 | `validateCallback` (string / result / transform) | ✓ | `validation.spec.ts` | `validation.html` |
 | `invalidCells` (read + assign) + `isCellInvalid` / `getCellValidationError` | ✓ | `validation.spec.ts` | `validation.html` |
-| Fill handle (drag, cancel, direction constraint; reordered + hidden columns — handle editability, filled field, horizontal span, `sourceCell` / `targetCells` column indices) | ✓ | `fill-handle.spec.ts` | `fill-handle.html` |
+| Fill handle (drag, cancel, direction constraint, `fill-direction` input — attribute / property / invalid value / column override; reordered + hidden columns — handle editability, filled field, horizontal span, `sourceCell` / `targetCells` column indices) | ✓ | `fill-handle.spec.ts` | `fill-handle.html` |
 | Paste (single / multi-cell, modes, events, proxies) | ✓ | `paste.spec.ts` | `paste.html` |
 | Drafts: dirty marking, indicator, `isCellDirty/isRowDirty/getRowDraft` | ✓ | `drafts.spec.ts` | `drafts.html` |
 | Drafts follow their row through sort / filter, with and without `idMember` (#7 fixed) | ✓ | `drafts.spec.ts` | `drafts.html` |

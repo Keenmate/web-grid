@@ -158,6 +158,9 @@ event.
 
 ### Added
 
+- **`fill-direction` input** (`fillDirection` property): the grid-wide fill-handle direction,
+  `'vertical'` (default) or `'all'` — the engine setting was not reachable from the element. A
+  column's own `fillDirection` still wins.
 - **Drafts list.** `getDrafts()` (element + controller) and `ctx.drafts` on `renderSummaryCallback`:
   every unsaved draft `{ row, draftRow, changedFields, isValid }` — including rows on other pages,
   filtered out, or not in the current `items`. The summary usually shows server aggregates
