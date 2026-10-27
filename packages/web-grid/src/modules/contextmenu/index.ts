@@ -61,7 +61,7 @@ export function openGridMenu<T, Ctx>(host: GridHost<T>, spec: GridMenuSpec<Ctx>)
 		runAction: (item, { triggerElement, sourceEvent }) => spec.activate(item, triggerElement, sourceEvent),
 		returnFocusTo: spec.returnFocusTo ?? null,
 		shouldFocusFirst: spec.shouldFocusFirst,
-		onClose: () => {
+		closeCallback: () => {
 			if (host.menu === menu) host.menu = null
 		}
 	})

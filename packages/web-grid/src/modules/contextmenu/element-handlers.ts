@@ -102,7 +102,7 @@ function openCellMenu<T>(ctx: GridHost<T>, cell: HTMLElement, at: { x: number; y
 
 	// beforeContextMenuOpenCallback: false → no grid menu (the browser's shows); entries → shown instead
 	const gate = runBeforeCallbackSync<CellContext<T>, GridMenuEntry<T>[]>(engine.beforeContextMenuOpenCallback, menuCtx, 'beforeContextMenuOpenCallback')
-	if (gate.isCancelled) return false
+	if (gate.isRejected) return false
 	const entries = 'value' in gate && Array.isArray(gate.value) ? gate.value : engine.contextMenu ?? []
 	if (!entries.length) return false
 
@@ -136,7 +136,7 @@ function openHeaderMenu<T>(
 
 	// beforeHeaderMenuOpenCallback: false → no grid menu; entries → shown instead
 	const gate = runBeforeCallbackSync<HeaderMenuContext<T>, GridHeaderMenuEntry<T>[]>(engine.beforeHeaderMenuOpenCallback, menuCtx, 'beforeHeaderMenuOpenCallback')
-	if (gate.isCancelled) return
+	if (gate.isRejected) return
 	const entries = 'value' in gate && Array.isArray(gate.value) ? gate.value : baseEntries
 	if (!entries.length) return
 

@@ -526,7 +526,7 @@ async function applyFill<T>(ctx: GridHost<T>): Promise<void> {
 
 	// beforeFillCallback: `false` cancels (async OK)
 	const gate = await runBeforeCallback(ctx.engine.beforeFillCallback, detail, 'beforeFillCallback')
-	if (gate.isCancelled) return
+	if (gate.isRejected) return
 
 	// Apply the fill to each target cell
 	for (const target of targetCells) {

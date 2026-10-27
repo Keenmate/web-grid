@@ -53,8 +53,8 @@ export function guardPageChange<T>(
 		drafts: engine.getDrafts()
 	})
 	const clamp = (page: number) => Math.max(1, Math.min(Math.trunc(page), Math.max(1, engine.totalPages)))
-	const finish = (result: { isCancelled: boolean; hasValue?: boolean; value?: unknown }): boolean => {
-		if (result.isCancelled) return false
+	const finish = (result: { isRejected: boolean; hasValue?: boolean; value?: unknown }): boolean => {
+		if (result.isRejected) return false
 		const page = result.hasValue && typeof result.value === 'number' && Number.isFinite(result.value)
 			? clamp(result.value)
 			: toPage

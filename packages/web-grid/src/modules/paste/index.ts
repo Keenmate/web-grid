@@ -199,7 +199,7 @@ export async function executePaste<T>(
 
 	{
 		const gate = await runBeforeCallback(grid.beforePasteCallback, beforeDetail, 'beforePasteCallback')
-		if (gate.isCancelled) {
+		if (gate.isRejected) {
 			return {
 				totalCells: dataRows.reduce((sum, row) => sum + row.length, 0),
 				successfulCells: 0,
