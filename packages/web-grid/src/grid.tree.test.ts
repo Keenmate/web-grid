@@ -24,18 +24,18 @@ function makeOrgGrid(): GridEngine<OrgRow> {
 	const grid = new GridEngine<OrgRow>()
 	grid.items = orgRows
 	grid.columns = [{ field: 'name', isTree: true } as Column<OrgRow>]
-	grid.treePathMember = 'path'
+	grid.pathMember = 'path'
 	return grid
 }
 
 describe('isTreeMode', () => {
-	it('is true only when treePathMember is set AND items produce a tree index', () => {
+	it('is true only when pathMember is set AND items produce a tree index', () => {
 		const grid = new GridEngine<OrgRow>()
 		expect(grid.isTreeMode).toBe(false)
 		grid.items = orgRows
 		grid.columns = [{ field: 'name', isTree: true } as Column<OrgRow>]
-		expect(grid.isTreeMode).toBe(false)  // no treePathMember yet
-		grid.treePathMember = 'path'
+		expect(grid.isTreeMode).toBe(false)  // no pathMember yet
+		grid.pathMember = 'path'
 		expect(grid.isTreeMode).toBe(true)
 	})
 })
@@ -86,13 +86,13 @@ describe('separator auto-detection', () => {
 			{ path: '/src/index.ts', kind: 'file' }
 		]
 		grid.columns = [{ field: 'path', isTree: true } as Column<FsRow>]
-		grid.treePathMember = 'path'
+		grid.pathMember = 'path'
 		const info = grid.getRowTreeInfo(grid.items[1])
 		expect(info!.level).toBe(1)              // '/src/components' is one level under '/src'
 		expect(info!.hasChildren).toBe(false)    // '/src/components' has no children in this dataset
 	})
 
-	it('honors explicit treeSeparator when provided', () => {
+	it('honors explicit treePathSeparator when provided', () => {
 		const grid = new GridEngine<{ path: string }>()
 		grid.items = [
 			{ path: 'a' },
@@ -100,8 +100,8 @@ describe('separator auto-detection', () => {
 			{ path: 'a|b|c' }
 		]
 		grid.columns = [{ field: 'path', isTree: true } as Column<{ path: string }>]
-		grid.treePathMember = 'path'
-		grid.treeSeparator = '|'
+		grid.pathMember = 'path'
+		grid.treePathSeparator = '|'
 		expect(grid.getRowTreeInfo(grid.items[2])!.level).toBe(2)
 		expect(grid.getRowTreeInfo(grid.items[2])!.path).toBe('a|b|c')
 	})
@@ -116,57 +116,70 @@ describe('expandedPaths state', () => {
 	})
 
 	it('isPathExpanded reflects the current set', () => {
-		grid.toggleExpandedPath('1')
+		grid.toggleRowExpanded('1')
 		expect(grid.isPathExpanded('1')).toBe(true)
 		expect(grid.isPathExpanded('1.1')).toBe(false)
 	})
 
-	it('toggleExpandedPath flips the state', () => {
-		grid.toggleExpandedPath('1.1')
+	it('toggleRowExpanded flips the state', () => {
+		grid.toggleRowExpanded('1.1')
 		expect(grid.isPathExpanded('1.1')).toBe(true)
-		grid.toggleExpandedPath('1.1')
+		grid.toggleRowExpanded('1.1')
 		expect(grid.isPathExpanded('1.1')).toBe(false)
 	})
 
-	function captureExpandChanges(): { path: string | null; isExpanded: boolean }[] {
-		const events: { path: string | null; isExpanded: boolean }[] = []
+	function captureEvents(): string[] {
+		const events: string[] = []
 		grid.attachHost(document.createElement('div'), () => ({}) as never, (name, d) => {
-			if (name === 'expand-change') {
-				const { path, isExpanded } = d as { path: string | null; isExpanded: boolean }
-				events.push({ path, isExpanded })
+			if (name === 'row-expand' || name === 'row-collapse') {
+				events.push(`${name} ${(d as { path: string }).path}`)
+			} else if (name === 'expanded-change') {
+				events.push(`${name} [${[...(d as { paths: string[] }).paths].sort().join(',')}]`)
 			}
 		})
 		return events
 	}
 
-	it('toggleExpandedPath fires expand-change with the path and new state', () => {
-		const events = captureExpandChanges()
+	it('toggleRowExpanded fires row-expand / row-collapse, then expanded-change with the whole set', () => {
+		const events = captureEvents()
 
-		grid.toggleExpandedPath('1.1')
-		grid.toggleExpandedPath('1.1.1')
-		grid.toggleExpandedPath('1.1')
+		grid.toggleRowExpanded('1.1')
+		grid.toggleRowExpanded('1.1.1')
+		grid.toggleRowExpanded('1.1')
 
 		expect(events).toEqual([
-			{ path: '1.1',   isExpanded: true },
-			{ path: '1.1.1', isExpanded: true },
-			{ path: '1.1',   isExpanded: false }
+			'row-expand 1.1', 'expanded-change [1.1]',
+			'row-expand 1.1.1', 'expanded-change [1.1,1.1.1]',
+			'row-collapse 1.1', 'expanded-change [1.1.1]'
 		])
 	})
 
-	it('expand / collapse all and subtree also fire expand-change', () => {
-		const events = captureExpandChanges()
+	it('expandRows / collapseRows: one level, one row event per changed path', () => {
+		const events = captureEvents()
 
-		grid.expandSubtree('1.1')
-		grid.collapseSubtree('1.1')
+		grid.expandRows(['1', '1.1'])
+		grid.expandRows('1')          // already expanded → nothing
+		grid.collapseRows(['1.1', '1.2'])  // 1.2 not expanded → only 1.1
+
+		expect(events).toEqual([
+			'row-expand 1', 'row-expand 1.1', 'expanded-change [1,1.1]',
+			'row-collapse 1.1', 'expanded-change [1]'
+		])
+		expect(grid.isPathExpanded('1.1.1')).toBe(false)
+	})
+
+	it('expandAll / collapseAll (with or without a path) fire only expanded-change', () => {
+		const events = captureEvents()
+
+		grid.expandAll('1.1')
+		grid.collapseAll('1.1')
 		grid.expandAll()
 		grid.collapseAll()
 
-		expect(events).toEqual([
-			{ path: '1.1', isExpanded: true },
-			{ path: '1.1', isExpanded: false },
-			{ path: null,  isExpanded: true },
-			{ path: null,  isExpanded: false }
-		])
+		expect(events.every(e => e.startsWith('expanded-change'))).toBe(true)
+		expect(events).toHaveLength(4)
+		expect(events[0]).toBe('expanded-change [1.1,1.1.1,1.1.1.1,1.1.1.2,1.1.2]')
+		expect(events[3]).toBe('expanded-change []')
 	})
 
 	it('expandAll expands every parent in the tree', () => {
@@ -196,25 +209,25 @@ describe('findNearestExpandedAncestor', () => {
 	})
 
 	it('returns the deepest expanded ancestor', () => {
-		grid.toggleExpandedPath('1')
-		grid.toggleExpandedPath('1.1')
+		grid.toggleRowExpanded('1')
+		grid.toggleRowExpanded('1.1')
 		expect(grid.findNearestExpandedAncestor('1.1.1.1')).toBe('1.1')
 	})
 
 	it('returns the only expanded ancestor when there is just one', () => {
-		grid.toggleExpandedPath('1')
+		grid.toggleRowExpanded('1')
 		expect(grid.findNearestExpandedAncestor('1.1.1.1')).toBe('1')
 	})
 
 	it('does not return the input path itself even when expanded', () => {
-		grid.toggleExpandedPath('1.1.1')
+		grid.toggleRowExpanded('1.1.1')
 		// '1.1.1' is expanded, but we ask about '1.1.1' — the function walks ancestors,
 		// not self. With no expanded ancestor, returns null.
 		expect(grid.findNearestExpandedAncestor('1.1.1')).toBeNull()
 	})
 })
 
-describe('expandSubtree / collapseSubtree (per-row variants)', () => {
+describe('expandAll / collapseAll (per-row variants)', () => {
 	let grid: GridEngine<OrgRow>
 
 	beforeEach(() => {
@@ -222,8 +235,8 @@ describe('expandSubtree / collapseSubtree (per-row variants)', () => {
 		grid.expandedPaths = new Set()
 	})
 
-	it('expandSubtree expands the path and all its descendants that have children', () => {
-		grid.expandSubtree('1.1')
+	it('expandAll expands the path and all its descendants that have children', () => {
+		grid.expandAll('1.1')
 		// '1.1' is the root we asked to expand, and '1.1.1' is a descendant with children.
 		expect(grid.isPathExpanded('1.1')).toBe(true)
 		expect(grid.isPathExpanded('1.1.1')).toBe(true)
@@ -232,9 +245,9 @@ describe('expandSubtree / collapseSubtree (per-row variants)', () => {
 		expect(grid.isPathExpanded('1.2')).toBe(false)
 	})
 
-	it('collapseSubtree collapses the path and all descendants', () => {
+	it('collapseAll collapses the path and all descendants', () => {
 		grid.expandAll()
-		grid.collapseSubtree('1.1')
+		grid.collapseAll('1.1')
 		expect(grid.isPathExpanded('1.1')).toBe(false)
 		expect(grid.isPathExpanded('1.1.1')).toBe(false)
 		// Other branches stay expanded.

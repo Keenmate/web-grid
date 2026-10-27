@@ -4,7 +4,7 @@ import { test, expect, Page } from './fixtures'
  * E2E coverage for tree-mode combined with virtual + infinite scroll
  * (docs/test/tree-scroll.html).
  *
- * #vsGrid: 850-row tree (50 roots × 4 subs × 3 teams), defaultExpandDepth=1,
+ * #vsGrid: 850-row tree (50 roots × 4 subs × 3 teams), expandLevel=1,
  * virtual scroll on. Initial render shows roots + their subs (550 visible items)
  * but only a window (~22 rows) is in the DOM.
  *
@@ -55,7 +55,7 @@ test.describe('tree + virtual scroll (#vsGrid)', () => {
 		expect(rendered).toBeLessThan(50)
 	})
 
-	test('defaultExpandDepth=1 expands all roots', async ({ page }) => {
+	test('expandLevel=1 expands all roots', async ({ page }) => {
 		await gotoTreeScroll(page)
 
 		// 50 roots are expanded on initial paint.
@@ -70,14 +70,14 @@ test.describe('tree + virtual scroll (#vsGrid)', () => {
 	test('expand all reveals leaf rows; collapse all leaves only roots', async ({ page }) => {
 		await gotoTreeScroll(page)
 
-		await page.locator('#expand-all').click()
+		await page.locator('#expand').click()
 		// expandAll() adds every path (including leaves) to expandedPaths — 850.
 		await expect(page.locator('[data-testid="vs-expanded-count"]')).toHaveText('850')
 
 		// Leaf-level team rows now render in the DOM (Team 1.1.1 right after roots' subs).
 		await expect(vsGrid(page).locator('tbody').getByText('Team 1.1.1')).toBeVisible()
 
-		await page.locator('#collapse-all').click()
+		await page.locator('#collapse').click()
 		// All expanded paths cleared.
 		await expect(page.locator('[data-testid="vs-expanded-count"]')).toHaveText('0')
 

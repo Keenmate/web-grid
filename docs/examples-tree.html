@@ -45,7 +45,7 @@
 
         <div class="card">
             <h2>Organizations</h2>
-            <p>Each row carries a <code>path</code> like <code>"1.2.3"</code>. Levels and parent paths are derived automatically; provide <code>treeLevelMember</code> / <code>treeParentMember</code> if your DB already computes them.</p>
+            <p>Each row carries a <code>path</code> like <code>"1.2.3"</code>. Levels and parent paths are derived automatically; provide <code>levelMember</code> / <code>parentPathMember</code> if your DB already computes them.</p>
             <p><strong>Sorting in tree mode</strong> is sibling-aware: clicking a header sorts each parent's children among themselves (e.g., "sort each department's sub-teams by Annual Budget"). The hierarchy stays intact — parents always appear above their children.</p>
             <p>For <strong>custom sort logic</strong> (e.g., sort departments by total budget aggregated over all descendants), set <code>isTreeDataSorted: true</code>, listen to the <code>data-request</code> event (<code>onDataRequest</code>), sort the items yourself, and push them back via <code>grid.items = …</code>. The grid will trust your order completely and skip its internal sibling sort.</p>
             <p><strong>Keyboard:</strong> click a cell, then arrows move focus, <strong>Ctrl/Cmd + ←</strong> collapses the focused parent (or walks up to the nearest expanded ancestor), <strong>Ctrl/Cmd + →</strong> expands. Right-click for tree context-menu items. (This grid is in <code>editTrigger: 'navigate'</code>.)</p>
@@ -95,7 +95,7 @@
                 <li><strong>Ctrl/Cmd + ←</strong>: collapse the focused parent row, or walk up to the nearest expanded ancestor and collapse that (refocuses the ancestor).</li>
                 <li><strong>Ctrl/Cmd + →</strong>: expand the focused row when it has children and is collapsed.</li>
                 <li><strong>Tab / Shift-Tab</strong>: jumps to the next/previous <em>editable</em> cell. In this grid <strong>only leaf rows are editable</strong> — Tab skips Acme / Engineering / Platform Team and walks straight from leaf to leaf. The tree column itself is always read-only (since v1.2.0), so Tab skips it too.</li>
-                <li><strong>Right-click any row</strong>: tree context-menu items (<code>'expand-all'</code>, <code>'collapse-all'</code>, <code>'expand-tree'</code>, <code>'collapse-tree'</code>) plus a custom "Show row data" action. The first two only show on parent rows.</li>
+                <li><strong>Right-click any row</strong>: tree context-menu items (<code>'expand'</code>, <code>'collapse'</code>, <code>'expand-all'</code>, <code>'collapse-all'</code>) plus a custom "Show row data" action. The first two only show on parent rows.</li>
             </ul>
 
             <web-grid id="navGrid" style="max-width: 100%; max-height: 500px; border: 1px solid #e2e8f0;"></web-grid>
@@ -114,9 +114,9 @@ navGrid.columns = [
 ]
 
 navGrid.contextMenu = [
-    'expand-all', 'collapse-all',
+    'expand', 'collapse',
     { divider: true },
-    'expand-tree', 'collapse-tree',
+    'expand-all', 'collapse-all',
     { divider: true },
     { id: 'show-data',
       text: 'Show row data',
@@ -329,8 +329,8 @@ files.renderChevronCallback = ({ isExpanded, hasChildren }) =&gt; {
         const grid = document.getElementById('grid')
         grid.items = orgData
         grid.columns = orgColumns
-        grid.treePathMember = 'path'
-        grid.defaultExpandDepth = 2
+        grid.pathMember = 'path'
+        grid.expandLevel = 2
         grid.isTreeDataSorted = true
         grid.treeDoubleClickBehavior = 'toggle'
         grid.editTrigger = 'navigate'   // cells focusable; arrows nav; Ctrl+Arrow toggles tree
@@ -345,13 +345,13 @@ files.renderChevronCallback = ({ isExpanded, hasChildren }) =&gt; {
 
         // Tree context menu — predefined items expand/collapse the right-clicked subtree
         // (per-row variants) or the entire tree (*-tree variants). Visibility predicates
-        // are baked in: 'expand-all'/'collapse-all' only show on rows with children.
+        // are baked in: 'expand'/'collapse' only show on rows with children.
         grid.contextMenu = [
-            'expand-all',
-            'collapse-all',
+            'expand',
+            'collapse',
             { divider: true },
-            'expand-tree',
-            'collapse-tree'
+            'expand-all',
+            'collapse-all'
         ]
 
         const expandedEl = document.getElementById('expanded')
@@ -359,7 +359,7 @@ files.renderChevronCallback = ({ isExpanded, hasChildren }) =&gt; {
             const paths = [...grid.expandedPaths].sort()
             expandedEl.textContent = paths.length === 0 ? '(none — all collapsed)' : paths.join(', ')
         }
-        grid.onExpandChange = renderExpanded
+        grid.onExpandedChange = renderExpanded
         renderExpanded()
 
         // Controls
@@ -374,7 +374,7 @@ files.renderChevronCallback = ({ isExpanded, hasChildren }) =&gt; {
         })
         document.getElementById('depth').addEventListener('change', e => {
             const v = e.target.value
-            grid.defaultExpandDepth = v === '' ? null : parseInt(v, 10)
+            grid.expandLevel = v === '' ? null : parseInt(v, 10)
             renderExpanded()
         })
         document.getElementById('expandAll').addEventListener('click', () => {
@@ -414,8 +414,8 @@ files.renderChevronCallback = ({ isExpanded, hasChildren }) =&gt; {
                 isEditable: true, getIsEditableCallback: isLeafRow, isSortable: true,
                 getCellClassCallback: ({ value: v }) => v === 'Active' ? null : 'status-warn' }
         ]
-        navGrid.treePathMember = 'path'
-        navGrid.defaultExpandDepth = 99       // start fully expanded so all rows are reachable
+        navGrid.pathMember = 'path'
+        navGrid.expandLevel = 99       // start fully expanded so all rows are reachable
         navGrid.isTreeDataSorted = true
         navGrid.treeDoubleClickBehavior = 'toggle'
         navGrid.editTrigger = 'navigate'      // enables cell focus + Ctrl+arrow keys
@@ -428,11 +428,11 @@ files.renderChevronCallback = ({ isExpanded, hasChildren }) =&gt; {
         `
 
         navGrid.contextMenu = [
+            'expand',
+            'collapse',
+            { divider: true },
             'expand-all',
             'collapse-all',
-            { divider: true },
-            'expand-tree',
-            'collapse-tree',
             { divider: true },
             {
                 id: 'show-data',
@@ -462,8 +462,8 @@ files.renderChevronCallback = ({ isExpanded, hasChildren }) =&gt; {
             { field: 'status', title: 'Status', width: '140px', isSortable: true,
                 getCellClassCallback: ({ value: v }) => v === 'Active' ? null : 'status-warn' }
         ]
-        rowGateGrid.treePathMember = 'path'
-        rowGateGrid.defaultExpandDepth = 99
+        rowGateGrid.pathMember = 'path'
+        rowGateGrid.expandLevel = 99
         rowGateGrid.isTreeDataSorted = true
         rowGateGrid.treeDoubleClickBehavior = 'toggle'
         rowGateGrid.editTrigger = 'navigate'
@@ -477,11 +477,11 @@ files.renderChevronCallback = ({ isExpanded, hasChildren }) =&gt; {
         `
 
         rowGateGrid.contextMenu = [
-            'expand-all',
-            'collapse-all',
+            'expand',
+            'collapse',
             { divider: true },
-            'expand-tree',
-            'collapse-tree'
+            'expand-all',
+            'collapse-all'
         ]
 
         // -----------------------------------------------------------------
@@ -545,7 +545,7 @@ files.renderChevronCallback = ({ isExpanded, hasChildren }) =&gt; {
 
         aggGrid.items = orgData
         aggGrid.columns = aggColumns
-        aggGrid.treePathMember = 'path'
+        aggGrid.pathMember = 'path'
         aggGrid.isTreeDataSorted = true
         aggGrid.sortMode = 'single'
         aggGrid.isHoverable = true
@@ -582,8 +582,8 @@ files.renderChevronCallback = ({ isExpanded, hasChildren }) =&gt; {
         ]
         cvGrid.items = orgData
         cvGrid.columns = cvColumns
-        cvGrid.treePathMember = 'path'
-        cvGrid.defaultExpandDepth = 2
+        cvGrid.pathMember = 'path'
+        cvGrid.expandLevel = 2
         cvGrid.isTreeDataSorted = true
         cvGrid.treeDoubleClickBehavior = 'toggle'
         cvGrid.isHoverable = true
@@ -683,9 +683,9 @@ files.renderChevronCallback = ({ isExpanded, hasChildren }) =&gt; {
         const files = document.getElementById('files')
         files.items = fileData
         files.columns = fileColumns
-        files.treePathMember = 'path'
+        files.pathMember = 'path'
         files.isTreeDataSorted = true
-        files.defaultExpandDepth = 0
+        files.expandLevel = 0
         files.isHoverable = true
 
         // Font Awesome's stylesheet doesn't reach into the shadow DOM, but the

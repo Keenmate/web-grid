@@ -25,7 +25,7 @@ function makeGrid(opts?: { tree?: boolean }): GridEngine<Row> {
 		{ field: 'name',   isTree: !!opts?.tree },
 		{ field: 'status' }
 	] as Column<Row>[]
-	if (opts?.tree) grid.treePathMember = 'path'
+	if (opts?.tree) grid.pathMember = 'path'
 	return grid
 }
 
@@ -114,7 +114,7 @@ describe('isCellEditable — tree column hard veto (v1.2.0)', () => {
 	})
 
 	it('tree column outside tree mode is editable like any other column', () => {
-		// isTree: true on a column but the grid has no treePathMember → not tree mode
+		// isTree: true on a column but the grid has no pathMember → not tree mode
 		const grid = makeGrid()
 		grid.isEditable = true
 		grid.columns = [

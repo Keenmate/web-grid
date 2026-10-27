@@ -227,13 +227,15 @@ test.describe('contexts, twins, controller', () => {
 		await expect(cell(page, 2, 2)).toHaveClass(/qty-high/)
 	})
 
-	test('tree built-ins + expand-change on bulk operations', async ({ page }) => {
+	test('tree built-ins + expanded-change on bulk operations', async ({ page }) => {
 		await contextMenuOn(page, cell(page, 0, 0, tree(page)))
-		await menu(page).locator('[data-action="collapse-tree"]').click()
-		await expect.poll(() => log(page)).toContain('expand:null:false')
+		await menu(page).locator('[data-action="collapse-all"]').click()
+		await expect.poll(() => log(page)).toContain('expanded:0')
 		await contextMenuOn(page, cell(page, 0, 0, tree(page)))
-		await menu(page).locator('[data-action="expand-all"]').click()
-		await expect.poll(() => log(page)).toContain('expand:1:true')
+		// `expand` on a row = the row and everything under it
+		await menu(page).locator('[data-action="expand"]').click()
+		await expect.poll(async () => (await log(page)).join('|')).toMatch(/expanded:[1-9]/)
+		expect(await tree(page).evaluate((el: any) => el.isPathExpanded('1'))).toBe(true)
 	})
 
 	test('el.controller is the public facade; the engine is not el.grid', async ({ page }) => {

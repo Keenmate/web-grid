@@ -89,7 +89,8 @@ Editor types -> editing.txt, dropdown-editors.txt
 editTrigger -> editing.txt
 EditorOptions -> dropdown-editors.txt, typescript-types.txt
 Events -> callbacks-events.txt
-expand-change / onExpandChange -> callbacks-events.txt
+expanded-change / onExpandedChange -> callbacks-events.txt
+row-expand / row-collapse -> callbacks-events.txt
 Export -> keyboard-navigation.txt, selection.txt
 
 F

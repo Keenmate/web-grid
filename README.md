@@ -876,7 +876,7 @@ grid.contextMenu = [
 ]
 ```
 
-Cell menu built-ins (by `action` or string): the row built-ins (`add`, `delete`, `duplicate`, `move-up`, `move-down`) and, in tree mode, `expand-all`, `collapse-all`, `expand-tree`, `collapse-tree`.
+Cell menu built-ins (by `action` or string): the row built-ins (`add`, `delete`, `duplicate`, `move-up`, `move-down`) and, in tree mode, `expand`, `collapse`, `expand-all`, `collapse-all`.
 
 `beforeContextMenuOpenCallback(ctx)` runs (sync) before the menu opens with the cell ctx: return `false` to show no grid menu (the browser's own menu shows), or an entries array to show instead of `contextMenu`.
 
@@ -986,7 +986,7 @@ grid.onRowChange = (detail) => save(detail.draftRow)
 | `filter-change` | `onFilterChange` | A column filter changed: `{ filters }`. With `filterMode: 'server'` the consumer filters |
 | `column-resize` | `onColumnResize` | A column was resized: `{ field, oldWidth, newWidth, allWidths }` |
 | `column-reorder` | `onColumnReorder` | A column was moved: `{ field, fromIndex, toIndex, allOrder }` |
-| `expand-change` | `onExpandChange` | Tree rows expanded / collapsed (toggle, subtree, expand / collapse all): `{ path, isExpanded, expandedPaths }` (`path` is `null` for all) |
+| `expanded-change` | `onExpandedChange` | Tree rows expanded / collapsed (toggle, subtree, expand / collapse all): `{ path, isExpanded, expandedPaths }` (`path` is `null` for all) |
 | `row-lock-change` | `onRowLockChange` | A row was locked / unlocked by id: `{ rowId, row, rowIndex, lockInfo, source }` |
 | `paste-complete` | `onPasteComplete` | A multi-cell paste finished: `{ totalCells, successfulCells, failedCells, skippedCells, newRowsCreated, cellResults, hadHeaders }` |
 | `action` | `onAction` | A toolbar / menu / shortcut item was activated: `{ action, id, item, source, sourceEvent, triggerElement, dataset }` + the surface fields (see below) |
@@ -995,7 +995,7 @@ grid.onRowChange = (detail) => save(detail.draftRow)
 
 ## Controller
 
-`el.controller` is the public `GridController` facade — the same object every ctx / detail carries as `controller`. It covers rows (`getItems`, `getDisplayItems`, `insertRow`, `removeRows`, `duplicateRow`, `moveRow`, `findRowById`, `updateRowById`, …), drafts and validation, row locking, row / cell / column selection, tree (`expandAll`, `collapseAll`, `expandSubtree`, `collapseSubtree`, `toggleExpandedPath`, …), columns (widths, order), focus / editing (`focusCell`, `startEditing`) and menus (`closeContextMenu`, `closeToolbar`). Most of these are also methods on the element itself (below).
+`el.controller` is the public `GridController` facade — the same object every ctx / detail carries as `controller`. It covers rows (`getItems`, `getDisplayItems`, `insertRow`, `removeRows`, `duplicateRow`, `moveRow`, `findRowById`, `updateRowById`, …), drafts and validation, row locking, row / cell / column selection, tree (`expandAll`, `collapseAll`, `expandAll`, `collapseAll`, `toggleRowExpanded`, …), columns (widths, order), focus / editing (`focusCell`, `startEditing`) and menus (`closeContextMenu`, `closeToolbar`). Most of these are also methods on the element itself (below).
 
 ## Public Methods
 
@@ -1227,10 +1227,10 @@ grid.labels = {
     duplicate: 'Duplicate row',
     moveUp: 'Move up',
     moveDown: 'Move down',
+    expand: 'Expand',
+    collapse: 'Collapse',
     expandAll: 'Expand all',
-    collapseAll: 'Collapse all',
-    expandTree: 'Expand entire tree',
-    collapseTree: 'Collapse entire tree'
+    collapseAll: 'Collapse all'
   },
   contextMenu: {                   // header-menu built-in texts
     sortAsc: 'Sort Ascending',

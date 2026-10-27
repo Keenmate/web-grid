@@ -302,7 +302,9 @@ const EVENTS: readonly EventDef[] = [
 	{ name: 'filter-change', description: 'A column filter changed. `detail`: `{ filters }`. With `filter-mode="server"` the consumer filters. Twin: `onFilterChange(detail)`.' },
 	{ name: 'column-resize', description: 'A column was resized. `detail`: `{ field, oldWidth, newWidth, allWidths }`. Twin: `onColumnResize(detail)`.' },
 	{ name: 'column-reorder', description: 'A column was moved. `detail`: `{ field, fromIndex, toIndex, allOrder }`. Twin: `onColumnReorder(detail)`.' },
-	{ name: 'expand-change', description: 'Tree rows expanded / collapsed (toggle, subtree, expand / collapse all). `detail`: `{ path, isExpanded, expandedPaths }` (`path` null for all). Twin: `onExpandChange(detail)`.' },
+	{ name: 'row-expand', description: 'A tree row was expanded (chevron, keyboard, double-click, `toggleRowExpanded`, `expandRows`; NOT `expandAll` — that fires only `expanded-change`). `detail`: `{ row, path }`. Twin: `onRowExpand(detail)`.' },
+	{ name: 'row-collapse', description: 'A tree row was collapsed (chevron, keyboard, `toggleRowExpanded`, `collapseRows`; NOT `collapseAll`). `detail`: `{ row, path }`. Twin: `onRowCollapse(detail)`.' },
+	{ name: 'expanded-change', description: 'The expanded set changed (any expand / collapse, incl. `expandAll` / `collapseAll`) — one event per change, after the row events. `detail`: `{ paths }` = every expanded path (same as `expandedPaths`). Twin: `onExpandedChange(detail)`.' },
 	{ name: 'row-lock-change', description: 'A row was locked / unlocked by id. `detail`: `{ rowId, row, rowIndex, lockInfo, source }`. Twin: `onRowLockChange(detail)`.' },
 	{ name: 'paste-complete', description: 'A multi-cell paste finished. `detail`: `{ totalCells, successfulCells, failedCells, skippedCells, newRowsCreated, cellResults, hadHeaders }`. Twin: `onPasteComplete(detail)`.' },
 	{ name: 'action', description: 'A toolbar / menu / shortcut item was activated. `detail`: `action` (built-in name or `custom`), `id`, `item`, `source` (`row-toolbar` | `cell-toolbar` | `context-menu` | `header-menu` | `keyboard`), `sourceEvent`, `triggerElement`, `dataset`, plus the surface fields (`row` / `rowIndex` / `column` / `field` / `value`, header-menu fields, or range `rows` / `rowIndices`). Fires after the item’s `onClick` and the built-in — a notification after the fact (after `delete` the row is already gone from `items`, after `add` the new row is present, after `move-*` the new order is in place); a throwing built-in is logged and the event still fires. Cancel with `beforeActionCallback`. Twin: `onAction(detail)`.' },
@@ -469,7 +471,9 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	declare onFilterChange: ((detail: GridEventMap<T>['filter-change']) => void) | null
 	declare onColumnResize: ((detail: GridEventMap<T>['column-resize']) => void) | null
 	declare onColumnReorder: ((detail: GridEventMap<T>['column-reorder']) => void) | null
-	declare onExpandChange: ((detail: GridEventMap<T>['expand-change']) => void) | null
+	declare onRowExpand: ((detail: GridEventMap<T>['row-expand']) => void) | null
+	declare onRowCollapse: ((detail: GridEventMap<T>['row-collapse']) => void) | null
+	declare onExpandedChange: ((detail: GridEventMap<T>['expanded-change']) => void) | null
 	declare onRowLockChange: ((detail: GridEventMap<T>['row-lock-change']) => void) | null
 	declare onPasteComplete: ((detail: GridEventMap<T>['paste-complete']) => void) | null
 	declare onAction: ((detail: GridEventMap<T>['action']) => void) | null
@@ -930,17 +934,17 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	set idMember(value: string | null) { this.engine.idMember = value }
 
 	// Tree / hierarchy
-	get treePathMember(): string | null { return this.engine.treePathMember }
-	set treePathMember(value: string | null) { this.engine.treePathMember = value }
+	get pathMember(): string | null { return this.engine.pathMember }
+	set pathMember(value: string | null) { this.engine.pathMember = value }
 
-	get treeLevelMember(): string | null { return this.engine.treeLevelMember }
-	set treeLevelMember(value: string | null) { this.engine.treeLevelMember = value }
+	get levelMember(): string | null { return this.engine.levelMember }
+	set levelMember(value: string | null) { this.engine.levelMember = value }
 
-	get treeParentMember(): string | null { return this.engine.treeParentMember }
-	set treeParentMember(value: string | null) { this.engine.treeParentMember = value }
+	get parentPathMember(): string | null { return this.engine.parentPathMember }
+	set parentPathMember(value: string | null) { this.engine.parentPathMember = value }
 
-	get treeSeparator(): string | null { return this.engine.treeSeparator }
-	set treeSeparator(value: string | null) { this.engine.treeSeparator = value }
+	get treePathSeparator(): string | null { return this.engine.treePathSeparator }
+	set treePathSeparator(value: string | null) { this.engine.treePathSeparator = value }
 
 	get isTreeDataSorted(): boolean { return this.engine.isTreeDataSorted }
 	set isTreeDataSorted(value: boolean) { this.engine.isTreeDataSorted = value }
@@ -948,13 +952,20 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	get expandedPaths(): Set<string> { return this.engine.expandedPaths }
 	set expandedPaths(value: Set<string> | null | undefined) { this.engine.expandedPaths = value as Set<string> }
 
-	get defaultExpandDepth(): number | null { return this.engine.defaultExpandDepth }
-	set defaultExpandDepth(value: number | null) { this.engine.defaultExpandDepth = value }
+	get expandLevel(): number | null { return this.engine.expandLevel }
+	set expandLevel(value: number | null) { this.engine.expandLevel = value }
 
 	isPathExpanded(path: string): boolean { this.flush(); return this.engine.isPathExpanded(path) }
-	toggleExpandedPath(path: string): void { this.flush(); this.engine.toggleExpandedPath(path) }
-	expandAll(): void { this.flush(); this.engine.expandAll() }
-	collapseAll(): void { this.flush(); this.engine.collapseAll() }
+	/** Expand / collapse one tree row (`row-expand` / `row-collapse` + `expanded-change`). */
+	toggleRowExpanded(path: string): void { this.flush(); this.engine.toggleRowExpanded(path) }
+	/** Expand the given tree rows, one level each (`row-expand` per row + `expanded-change`). */
+	expandRows(paths: string | string[]): void { this.flush(); this.engine.expandRows(paths) }
+	/** Collapse the given tree rows (`row-collapse` per row + `expanded-change`). */
+	collapseRows(paths: string | string[]): void { this.flush(); this.engine.collapseRows(paths) }
+	/** Expand the whole tree — or, with `path`, that row and everything under it (`expanded-change` only). */
+	expandAll(path?: string | null): void { this.flush(); this.engine.expandAll(path) }
+	/** Collapse the whole tree — or, with `path`, that row and everything under it (`expanded-change` only). */
+	collapseAll(path?: string | null): void { this.flush(); this.engine.collapseAll(path) }
 
 	get treeDoubleClickBehavior(): import('./types.js').TreeDoubleClickBehavior { return this.engine.treeDoubleClickBehavior }
 	set treeDoubleClickBehavior(value: import('./types.js').TreeDoubleClickBehavior) { this.engine.treeDoubleClickBehavior = value }

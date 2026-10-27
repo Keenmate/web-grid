@@ -66,15 +66,15 @@
 		 *  22  | 1.4.4    | IT             | leaf   | Frozen
 		 *
 		 * Spec dependencies:
-		 *  #grid        — defaultExpandDepth=2, treeDoubleClickBehavior='toggle',
+		 *  #grid        — expandLevel=2, treeDoubleClickBehavior='toggle',
 		 *                 editTrigger='navigate'. Acme (path '1') is row 0. The cell
 		 *                 context menu carries the predefined tree items.
-		 *  #navGrid     — defaultExpandDepth=99 (all visible). Only leaf rows are
+		 *  #navGrid     — expandLevel=99 (all visible). Only leaf rows are
 		 *                 editable (per-column getIsEditableCallback). Tab from row 9
 		 *                 (Data Science, leaf) skips row 10 (Sales, parent/read-only)
 		 *                 and lands on row 11 (Enterprise, leaf). Tree column (col 0)
 		 *                 is never a Tab target.
-		 *  #rowGateGrid — defaultExpandDepth=99. getIsRowEditableCallback gates on status==='Active',
+		 *  #rowGateGrid — expandLevel=99. getIsRowEditableCallback gates on status==='Active',
 		 *                 so Channel (row 13, Reorganizing) and IT (row 22, Frozen) are
 		 *                 read-only. Tab from row 12 (SMB) skips row 13 → row 14.
 		 *  #cvGrid      — tree mode + headerContextMenu. The tree column header omits
@@ -107,11 +107,11 @@
 		]
 
 		const treeContextMenu = [
-			'expand-all',
-			'collapse-all',
+			'expand',
+			'collapse',
 			{ dividerBefore: true },
-			'expand-tree',
-			'collapse-tree'
+			'expand-all',
+			'collapse-all'
 		]
 
 		// Set of paths that are someone's parent — a row is a leaf iff its path is
@@ -133,8 +133,8 @@
 			{ field: 'location', title: 'Location', width: '150px', isSortable: true },
 			{ field: 'status', title: 'Status', width: '130px', isSortable: true }
 		]
-		grid.treePathMember = 'path'
-		grid.defaultExpandDepth = 2
+		grid.pathMember = 'path'
+		grid.expandLevel = 2
 		grid.isTreeDataSorted = true
 		grid.treeDoubleClickBehavior = 'toggle'
 		grid.editTrigger = 'navigate'
@@ -145,7 +145,7 @@
 			const paths = [...grid.expandedPaths].sort()
 			expandedEl.textContent = paths.length === 0 ? '(none)' : paths.join(', ')
 		}
-		grid.onExpandChange = renderExpanded
+		grid.onExpandedChange = renderExpanded
 		renderExpanded()
 
 		// #navGrid — heterogeneous tree; only leaf rows editable, fully expanded.
@@ -158,8 +158,8 @@
 			{ field: 'location', title: 'Location', width: '150px', getIsEditableCallback: ({ row }) => isLeafRow(row), isSortable: true },
 			{ field: 'status', title: 'Status', width: '130px', getIsEditableCallback: ({ row }) => isLeafRow(row), isSortable: true }
 		]
-		navGrid.treePathMember = 'path'
-		navGrid.defaultExpandDepth = 99
+		navGrid.pathMember = 'path'
+		navGrid.expandLevel = 99
 		navGrid.isTreeDataSorted = true
 		navGrid.treeDoubleClickBehavior = 'toggle'
 		navGrid.editTrigger = 'navigate'
@@ -176,8 +176,8 @@
 			{ field: 'location', title: 'Location', width: '150px', isSortable: true },
 			{ field: 'status', title: 'Status', width: '130px', isSortable: true }
 		]
-		rowGateGrid.treePathMember = 'path'
-		rowGateGrid.defaultExpandDepth = 99
+		rowGateGrid.pathMember = 'path'
+		rowGateGrid.expandLevel = 99
 		rowGateGrid.isTreeDataSorted = true
 		rowGateGrid.treeDoubleClickBehavior = 'toggle'
 		rowGateGrid.editTrigger = 'navigate'
@@ -196,8 +196,8 @@
 			{ field: 'founded', title: 'Founded', width: '100px', horizontalAlign: 'center', isSortable: true },
 			{ field: 'status', title: 'Status', width: '130px', isSortable: true }
 		]
-		cvGrid.treePathMember = 'path'
-		cvGrid.defaultExpandDepth = 2
+		cvGrid.pathMember = 'path'
+		cvGrid.expandLevel = 2
 		cvGrid.isTreeDataSorted = true
 		cvGrid.treeDoubleClickBehavior = 'toggle'
 		cvGrid.headerContextMenu = [

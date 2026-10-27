@@ -4,7 +4,7 @@ import { test, expect, Page, Locator, gridLocator, clickMenuItem } from './fixtu
  * Smoke tests for tree mode against the tree fixture (docs/test/tree.html).
  * The page hosts four grids:
  *   #grid        — editTrigger:'navigate', treeDoubleClickBehavior:'toggle',
- *                  defaultExpandDepth:2. Exercises chevron toggle, dblclick
+ *                  expandLevel:2. Exercises chevron toggle, dblclick
  *                  toggle, Ctrl+Arrow shortcuts, and focus state.
  *   #navGrid     — heterogeneous tree, fully expanded; only leaf rows editable.
  *   #rowGateGrid — grid-level isRowEditable gate (status === 'Active').
@@ -181,21 +181,21 @@ test.describe('cellContextMenu — predefined tree items', () => {
 		})
 	}
 
-	test('"Expand all" appears on parent rows with children', async ({ page }) => {
+	test('"Expand" / "Collapse" (row + subtree) appear on parent rows with children', async ({ page }) => {
 		await gotoTreeDemo(page)
 
 		// Row 0 = Acme (parent). Right-click any cell on it.
 		await openCellContextMenu(page, GRID, 0, 0)
 		const menu = page.locator('.km-menu').first()
 		await expect(menu).toBeVisible()
-		await expect(menu.locator('text=Expand all')).toBeVisible()
-		await expect(menu.locator('text=Collapse all')).toBeVisible()
+		await expect(menu.locator('[data-action="expand"]')).toHaveText(/Expand/)
+		await expect(menu.locator('[data-action="collapse"]')).toHaveText(/Collapse/)
 	})
 
 	// Menu items are clicked via `clickMenuItem` (a JS click): the Floating-UI menu is
 	// `position: fixed`, and Playwright's viewport actionability check rejected it
 	// even with `force` — these three were skipped for that reason.
-	test('"Expand all" / "Collapse all" do NOT appear on leaf rows', async ({ page }) => {
+	test('"Expand" / "Collapse" do NOT appear on leaf rows', async ({ page }) => {
 		await gotoTreeDemo(page)
 
 		const leafRow = gridLocator(page)
@@ -207,13 +207,13 @@ test.describe('cellContextMenu — predefined tree items', () => {
 
 		const menu = page.locator('.km-menu').first()
 		await expect(menu).toBeVisible()
-		await expect(menu.locator('text=Expand all')).toHaveCount(0)
-		await expect(menu.locator('text=Collapse all')).toHaveCount(0)
+		await expect(menu.locator('[data-action="expand"]')).toHaveCount(0)
+		await expect(menu.locator('[data-action="collapse"]')).toHaveCount(0)
 		// Tree-wide items still show
-		await expect(menu.locator('text=Expand entire tree')).toBeVisible()
+		await expect(menu.locator('[data-action="expand-all"]')).toContainText('Expand all')
 	})
 
-	test('"Expand entire tree" expands everything', async ({ page }) => {
+	test('"Expand all" expands the whole tree', async ({ page }) => {
 		await gotoTreeDemo(page)
 
 		const before = await visibleRowCount(page)
@@ -221,18 +221,18 @@ test.describe('cellContextMenu — predefined tree items', () => {
 		await openCellContextMenu(page, GRID, 0, 0)
 		const menu = page.locator('.km-menu').first()
 		await expect(menu).toBeVisible()
-		await clickMenuItem(page, 'Expand entire tree')
+		await clickMenuItem(page, 'Expand all')
 
 		await expect.poll(() => visibleRowCount(page)).toBeGreaterThan(before)
 	})
 
-	test('"Collapse entire tree" hides everything except roots', async ({ page }) => {
+	test('"Collapse all" hides everything except roots', async ({ page }) => {
 		await gotoTreeDemo(page)
 
 		await openCellContextMenu(page, GRID, 0, 0)
 		const menu = page.locator('.km-menu').first()
 		await expect(menu).toBeVisible()
-		await clickMenuItem(page, 'Collapse entire tree')
+		await clickMenuItem(page, 'Collapse all')
 
 		// Only the root row(s) remain. orgData has one root (Acme).
 		await expect.poll(() => visibleRowCount(page)).toBe(1)
@@ -252,7 +252,7 @@ test.describe('Tab navigation — heterogeneous tree (#navGrid)', () => {
 	})
 
 	test('Tab from last leaf in a subtree skips the parent row of the next subtree', async ({ page }) => {
-		// navGrid (defaultExpandDepth=99) — only leaf rows are editable.
+		// navGrid (expandLevel=99) — only leaf rows are editable.
 		// Row 9 = Data Science (leaf, last leaf of Engineering subtree). Row 10 = Sales
 		// (parent, all read-only). Row 11 = Enterprise (first leaf of Sales subtree).
 		// Tab from row 9 col 4 should skip row 10 → row 11 col 1.

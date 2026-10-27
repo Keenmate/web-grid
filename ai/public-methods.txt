@@ -257,12 +257,14 @@ getColumnOrderState(): ColumnOrderState[]
 TREE
 ----------------------------------------------------------------------
 
+expandedPaths: Set<string>                 property (element: read / assign; controller: read-only)
 isPathExpanded(path: string): boolean
-toggleExpandedPath(path: string): void
-expandAll(): void
-collapseAll(): void
-  Tree mode (treePathMember). Each change fires the expand-change event
-  (onExpandChange) with { path, isExpanded, expandedPaths }.
+toggleRowExpanded(path: string): void      one row; row-expand / row-collapse + expanded-change
+expandRows(paths: string | string[]): void   one level each; row-expand per row + expanded-change
+collapseRows(paths: string | string[]): void row-collapse per row + expanded-change
+expandAll(path?: string | null): void      whole tree, or that row + everything under it
+collapseAll(path?: string | null): void    (expandAll / collapseAll fire only expanded-change)
+  Tree mode (pathMember). expanded-change detail: { paths }.
 
 
 ----------------------------------------------------------------------
@@ -305,8 +307,8 @@ Selection
   getSelectedCellRange(): CellRange | null
 
 Tree
-  expandSubtree(path: string): void               expand path and every descendant
-  collapseSubtree(path: string): void
+  expandAll(path: string): void               expand path and every descendant
+  collapseAll(path: string): void
   getRowTreeInfo(row: T): { path, level, hasChildren } | null
 
 Menus / toolbar

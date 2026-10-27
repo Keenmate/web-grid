@@ -156,10 +156,10 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | --- | :-: | --- | --- |
 | Row focus event | ✓ | `basic.spec.ts`, `selection.spec.ts` | `basic.html`, `selection.html` |
 | Paste events | ✓ | `paste.spec.ts` | `paste.html` |
-| `edit-start`, `edit-cancel`, `cell-selection-change`, `row-delete`, `expand-change` — once each, twin first, same detail | ✓ | `events.spec.ts` | `events.html` |
+| `edit-start`, `edit-cancel`, `cell-selection-change`, `row-delete`, `expanded-change` — once each, twin first, same detail | ✓ | `events.spec.ts` | `events.html` |
 | `cell-selection-change` `{ range, cellCount, fields, rows }`; `row-selection-change` `{ rows, rowIndices }` (row-number click / Ctrl / Shift / drag, API, cleared by a range); `column-selection-change` `{ fields }` (header click / Ctrl / Shift / drag, controller API, cleared by rows) — once per gesture (drag → on mouseup), silent on a no-op | ✓ | `events.spec.ts` | `events.html` |
 | `getSelectedCells()` returns full cell contexts (`column`, `colIndex`, controller / element) | ✓ | `selection-api.spec.ts` | `selection-api.html` |
-| `expand-change` detail is a snapshot (#12 fixed) | ✓ | `events.spec.ts` | `events.html` |
+| `expanded-change` detail is a snapshot (#12 fixed) | ✓ | `events.spec.ts` | `events.html` |
 
 ## 10. Theming, inputs, i18n, logging
 
@@ -189,4 +189,4 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 - `shouldToolbarFollowCursor` positioning (only via the existing cell-aware toolbar tests).
 - DOM move (disconnect → connect) state preservation — not in the grid WP; D1 applies to drp / dropzone / editor / cp.
 - Async `createEmptyRowCallback` (Promise) and `beforeFillCallback` vetoes beyond `fill-handle.spec.ts`.
-- `treeDoubleClickBehavior` / `defaultExpandDepth` are only exercised through `tree.spec.ts`.
+- `treeDoubleClickBehavior` / `expandLevel` are only exercised through `tree.spec.ts`.

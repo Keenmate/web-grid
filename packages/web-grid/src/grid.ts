@@ -60,7 +60,7 @@ import type {
 	BeforePageChangeContext
 } from './interaction.js'
 
-// Internal tree index — built from items when treePathMember is set
+// Internal tree index — built from items when pathMember is set
 type TreeNode = {
 	path: string
 	parent: string | null
@@ -142,10 +142,10 @@ const DEFAULT_LABELS: GridLabels = {
 		duplicate: 'Duplicate row',
 		moveUp: 'Move up',
 		moveDown: 'Move down',
+		expand: 'Expand',
+		collapse: 'Collapse',
 		expandAll: 'Expand all',
-		collapseAll: 'Collapse all',
-		expandTree: 'Expand entire tree',
-		collapseTree: 'Collapse entire tree'
+		collapseAll: 'Collapse all'
 	},
 
 	// Header context menu
@@ -380,16 +380,16 @@ export class GridEngine<T = unknown> {
 	protected _emptyRowDraft: T | null = null  // Tracks edits to empty row before commit
 
 	// Tree / hierarchy state
-	protected _treePathMember: string | null = null
-	protected _treeLevelMember: string | null = null
-	protected _treeParentMember: string | null = null
+	protected _pathMember: string | null = null
+	protected _levelMember: string | null = null
+	protected _parentPathMember: string | null = null
 	protected _idMember: string | null = 'id'
 	protected _hasWarnedAboutMissingRowId: boolean = false
-	protected _treeSeparator: string | null = null  // null = auto-detect
+	protected _treePathSeparator: string | null = null  // null = auto-detect
 	protected _isTreeDataSorted: boolean = false
 	protected _expandedPaths: Set<string> = new Set()       // Active set used for visibility checks
 	protected _expandedPathsExternal: Set<string> | null = null  // Set provided by user (we mutate it directly)
-	protected _defaultExpandDepth: number | null = null
+	protected _expandLevel: number | null = null
 	protected _treeIndex: TreeIndex | null = null            // Built from items; null when tree mode off
 	protected _treeDoubleClickBehavior: TreeDoubleClickBehavior = 'none'
 	// Chevron customization
@@ -1476,12 +1476,12 @@ export class GridEngine<T = unknown> {
 	get idMember(): string | null { return this._idMember }
 	set idMember(value: string | null) {
 		this._idMember = value || null
-		// Editable grid without idMember/treePathMember produces drift on reorder; warn once.
+		// Editable grid without idMember/pathMember produces drift on reorder; warn once.
 		this.maybeWarnAboutRowIdentity()
 	}
 
 	/**
-	 * Return a stable string key for a row. Coalesce order: row id (getIdCallback / idMember) → treePathMember
+	 * Return a stable string key for a row. Coalesce order: row id (getIdCallback / idMember) → pathMember
 	 * value → displayed-index string fallback. Used to key drafts and invalid-cell markers
 	 * so they don't drift when the displayed order changes (sort, filter, page, tree toggle).
 	 *
@@ -1490,8 +1490,8 @@ export class GridEngine<T = unknown> {
 	getStableRowKey(item: T, displayedIndex: number): string {
 		const id = this.getRowId(item)
 		if (id !== undefined && id !== null) return String(id)
-		if (this._treePathMember) {
-			const v = (item as Record<string, unknown>)[this._treePathMember]
+		if (this._pathMember) {
+			const v = (item as Record<string, unknown>)[this._pathMember]
 			if (v !== undefined && v !== null) return String(v)
 		}
 		return String(displayedIndex)
@@ -1500,7 +1500,7 @@ export class GridEngine<T = unknown> {
 	/** True when the row has an id (`getRowId`) or a tree path — i.e. its key is not the display index. */
 	private hasStableIdentity(item: T): boolean {
 		if (this.getRowId(item) != null) return true
-		return !!this._treePathMember && (item as Record<string, unknown>)[this._treePathMember] != null
+		return !!this._pathMember && (item as Record<string, unknown>)[this._pathMember] != null
 	}
 
 	/**
@@ -1533,10 +1533,10 @@ export class GridEngine<T = unknown> {
 	private maybeWarnAboutRowIdentity(): void {
 		if (this._hasWarnedAboutMissingRowId) return
 		if (!this._isEditable) return
-		if (this._idMember || this._getIdCallback || this._treePathMember) return
+		if (this._idMember || this._getIdCallback || this._pathMember) return
 		this._hasWarnedAboutMissingRowId = true
 		initLogger.warn(
-			'editable grid has no `idMember` (and no `treePathMember`). ' +
+			'editable grid has no `idMember` (and no `pathMember`). ' +
 			'Internal state (drafts, invalid-cell markers) will be keyed by displayed index, ' +
 			'so re-ordering (sort, filter, pagination) can move state to the wrong row. ' +
 			'Set `idMember` to the field that uniquely identifies each row.'
@@ -1547,30 +1547,30 @@ export class GridEngine<T = unknown> {
 	// Tree / Hierarchy
 	// ==========================================================================
 
-	get treePathMember(): string | null { return this._treePathMember }
-	set treePathMember(value: string | null) {
-		this._treePathMember = value || null
+	get pathMember(): string | null { return this._pathMember }
+	set pathMember(value: string | null) {
+		this._pathMember = value || null
 		this.rebuildTreeState()
 		this.requestUpdate()
 	}
 
-	get treeLevelMember(): string | null { return this._treeLevelMember }
-	set treeLevelMember(value: string | null) {
-		this._treeLevelMember = value || null
+	get levelMember(): string | null { return this._levelMember }
+	set levelMember(value: string | null) {
+		this._levelMember = value || null
 		this.rebuildTreeState()
 		this.requestUpdate()
 	}
 
-	get treeParentMember(): string | null { return this._treeParentMember }
-	set treeParentMember(value: string | null) {
-		this._treeParentMember = value || null
+	get parentPathMember(): string | null { return this._parentPathMember }
+	set parentPathMember(value: string | null) {
+		this._parentPathMember = value || null
 		this.rebuildTreeState()
 		this.requestUpdate()
 	}
 
-	get treeSeparator(): string | null { return this._treeSeparator }
-	set treeSeparator(value: string | null) {
-		this._treeSeparator = value || null
+	get treePathSeparator(): string | null { return this._treePathSeparator }
+	set treePathSeparator(value: string | null) {
+		this._treePathSeparator = value || null
 		this.rebuildTreeState()
 		this.requestUpdate()
 	}
@@ -1588,9 +1588,9 @@ export class GridEngine<T = unknown> {
 		this.requestUpdate()
 	}
 
-	get defaultExpandDepth(): number | null { return this._defaultExpandDepth }
-	set defaultExpandDepth(value: number | null) {
-		this._defaultExpandDepth = (typeof value === 'number' && value >= 0) ? value : null
+	get expandLevel(): number | null { return this._expandLevel }
+	set expandLevel(value: number | null) {
+		this._expandLevel = (typeof value === 'number' && value >= 0) ? value : null
 		// Only re-init if user hasn't given us their own set
 		if (!this._expandedPathsExternal) {
 			this.rebuildExpandedPaths()
@@ -1599,75 +1599,95 @@ export class GridEngine<T = unknown> {
 	}
 
 	get isTreeMode(): boolean {
-		return !!this._treePathMember && !!this._treeIndex
+		return !!this._pathMember && !!this._treeIndex
 	}
 
 	isPathExpanded(path: string): boolean {
 		return this._expandedPaths.has(path)
 	}
 
-	toggleExpandedPath(path: string): void {
+	/** The row a tree path belongs to (undefined when the path is unknown). */
+	getRowByPath(path: string): T | undefined {
+		const node = this._treeIndex?.nodes.get(path)
+		return node ? this._items[node.rowIndex] : undefined
+	}
+
+	/** One `row-expand` / `row-collapse` per changed path, then one `expanded-change`. */
+	private notifyExpanded(expanded: string[], collapsed: string[]): void {
+		for (const path of expanded) this.notify('row-expand', { row: this.getRowByPath(path), path })
+		for (const path of collapsed) this.notify('row-collapse', { row: this.getRowByPath(path), path })
+		this.notify('expanded-change', { paths: [...this._expandedPaths] })
+	}
+
+	/** Expand / collapse one row (chevron, keyboard, double-click). */
+	toggleRowExpanded(path: string): void {
 		const wasExpanded = this._expandedPaths.has(path)
-		perfLogger.debug('toggleExpandedPath start:', path, '| willExpand:', !wasExpanded, '| _items.length:', this._items.length, '| treeNodes:', this._treeIndex?.nodes.size ?? 0)
+		perfLogger.debug('toggleRowExpanded start:', path, '| willExpand:', !wasExpanded, '| _items.length:', this._items.length, '| treeNodes:', this._treeIndex?.nodes.size ?? 0)
 		if (wasExpanded) this._expandedPaths.delete(path)
 		else this._expandedPaths.add(path)
 		interactionLogger.debug('tree toggle:', path, wasExpanded ? 'expanded → collapsed' : 'collapsed → expanded', '| set size now:', this._expandedPaths.size)
-		this.notify('expand-change', { path, isExpanded: !wasExpanded, expandedPaths: new Set(this._expandedPaths) })
+		if (wasExpanded) this.notifyExpanded([], [path])
+		else this.notifyExpanded([path], [])
 		this.requestUpdate()
 	}
 
-	expandAll(): void {
-		if (!this._treeIndex) return
-		this._expandedPaths.clear()
-		for (const p of this._treeIndex.nodes.keys()) this._expandedPaths.add(p)
-		interactionLogger.debug('tree expandAll: size =', this._expandedPaths.size)
-		this.notify('expand-change', { path: null, isExpanded: true, expandedPaths: new Set(this._expandedPaths) })
+	/** Expand the given rows (one level each; their descendants keep their state). */
+	expandRows(paths: string | string[]): void {
+		const changed = (Array.isArray(paths) ? paths : [paths]).filter(p => !this._expandedPaths.has(p))
+		if (changed.length === 0) return
+		for (const p of changed) this._expandedPaths.add(p)
+		this.notifyExpanded(changed, [])
 		this.requestUpdate()
 	}
 
-	collapseAll(): void {
-		this._expandedPaths.clear()
-		interactionLogger.debug('tree collapseAll')
-		this.notify('expand-change', { path: null, isExpanded: false, expandedPaths: new Set(this._expandedPaths) })
+	/** Collapse the given rows (their descendants keep their state). */
+	collapseRows(paths: string | string[]): void {
+		const changed = (Array.isArray(paths) ? paths : [paths]).filter(p => this._expandedPaths.has(p))
+		if (changed.length === 0) return
+		for (const p of changed) this._expandedPaths.delete(p)
+		this.notifyExpanded([], changed)
 		this.requestUpdate()
 	}
 
-	/**
-	 * Expand a path's entire subtree (the path itself + all descendants).
-	 * Used by the per-row "expand all" context-menu action — file-explorer convention
-	 * is "expand everything *under here*", not the entire dataset.
-	 */
-	expandSubtree(path: string): void {
-		if (!this._treeIndex) return
-		const root = this._treeIndex.nodes.get(path)
-		if (!root) return
-		// BFS over descendants
+	/** `path` and every descendant (BFS); `[]` when the path is unknown. */
+	private subtreePaths(path: string): string[] {
+		if (!this._treeIndex?.nodes.has(path)) return []
+		const out: string[] = []
 		const queue: string[] = [path]
 		while (queue.length) {
 			const p = queue.shift()!
-			this._expandedPaths.add(p)
+			out.push(p)
 			const node = this._treeIndex.nodes.get(p)
 			if (node) queue.push(...node.childPaths)
 		}
-		this.notify('expand-change', { path, isExpanded: true, expandedPaths: new Set(this._expandedPaths) })
-		this.requestUpdate()
+		return out
 	}
 
 	/**
-	 * Collapse a path's entire subtree (the path itself + all descendants).
+	 * Expand everything — or, with `path`, that row and everything under it (the
+	 * file-explorer "expand all under here"). Fires `expanded-change` only.
 	 */
-	collapseSubtree(path: string): void {
+	expandAll(path?: string | null): void {
 		if (!this._treeIndex) return
-		const root = this._treeIndex.nodes.get(path)
-		if (!root) return
-		const queue: string[] = [path]
-		while (queue.length) {
-			const p = queue.shift()!
-			this._expandedPaths.delete(p)
-			const node = this._treeIndex.nodes.get(p)
-			if (node) queue.push(...node.childPaths)
+		const paths = path == null ? [...this._treeIndex.nodes.keys()] : this.subtreePaths(path)
+		if (path != null && paths.length === 0) return
+		for (const p of paths) this._expandedPaths.add(p)
+		interactionLogger.debug('tree expandAll:', path ?? '(all)', '| size =', this._expandedPaths.size)
+		this.notify('expanded-change', { paths: [...this._expandedPaths] })
+		this.requestUpdate()
+	}
+
+	/** Collapse everything — or, with `path`, that row and everything under it. Fires `expanded-change` only. */
+	collapseAll(path?: string | null): void {
+		if (path == null) {
+			this._expandedPaths.clear()
+		} else {
+			const paths = this.subtreePaths(path)
+			if (paths.length === 0) return
+			for (const p of paths) this._expandedPaths.delete(p)
 		}
-		this.notify('expand-change', { path, isExpanded: false, expandedPaths: new Set(this._expandedPaths) })
+		interactionLogger.debug('tree collapseAll:', path ?? '(all)')
+		this.notify('expanded-change', { paths: [...this._expandedPaths] })
 		this.requestUpdate()
 	}
 
@@ -1751,8 +1771,8 @@ export class GridEngine<T = unknown> {
 
 	/** Read the path field from a row */
 	protected getRowTreePath(item: T): string | null {
-		if (!this._treePathMember) return null
-		const v = (item as Record<string, unknown>)[this._treePathMember]
+		if (!this._pathMember) return null
+		const v = (item as Record<string, unknown>)[this._pathMember]
 		if (v === null || v === undefined) return null
 		const s = String(v)
 		return s === '' ? null : s
@@ -1768,13 +1788,13 @@ export class GridEngine<T = unknown> {
 
 	/** Rebuild _treeIndex from current items */
 	protected rebuildTreeState(): void {
-		if (!this._treePathMember || this._items.length === 0) {
+		if (!this._pathMember || this._items.length === 0) {
 			this._treeIndex = null
 			this.rebuildExpandedPaths()
 			return
 		}
 		// Detect separator
-		let sep = this._treeSeparator
+		let sep = this._treePathSeparator
 		if (!sep) {
 			for (const item of this._items) {
 				const p = this.getRowTreePath(item)
@@ -1791,8 +1811,8 @@ export class GridEngine<T = unknown> {
 
 			// Level: from member or computed from path segments
 			let level = 0
-			if (this._treeLevelMember) {
-				const v = (item as Record<string, unknown>)[this._treeLevelMember]
+			if (this._levelMember) {
+				const v = (item as Record<string, unknown>)[this._levelMember]
 				if (typeof v === 'number') level = v
 			} else {
 				level = Math.max(0, path.split(sep).filter(Boolean).length - 1)
@@ -1800,8 +1820,8 @@ export class GridEngine<T = unknown> {
 
 			// Parent: from member or derived by stripping last segment
 			let parent: string | null = null
-			if (this._treeParentMember) {
-				const v = (item as Record<string, unknown>)[this._treeParentMember]
+			if (this._parentPathMember) {
+				const v = (item as Record<string, unknown>)[this._parentPathMember]
 				parent = (v === null || v === undefined || v === '') ? null : String(v)
 			} else {
 				const trimmed = path.endsWith(sep) ? path.slice(0, -sep.length) : path
@@ -1835,13 +1855,13 @@ export class GridEngine<T = unknown> {
 		}
 		const set = new Set<string>()
 		if (this._treeIndex) {
-			if (this._defaultExpandDepth !== null) {
+			if (this._expandLevel !== null) {
 				// "Show tree to depth N" — a node at level N is visible iff every
 				// ancestor (levels 0..N-1) is expanded. So expand paths with level < N.
 				// depth=0 → nothing expanded, only roots visible.
 				// depth=1 → roots expanded, level-1 visible (no level-2).
 				for (const node of this._treeIndex.nodes.values()) {
-					if (node.level < this._defaultExpandDepth) set.add(node.path)
+					if (node.level < this._expandLevel) set.add(node.path)
 				}
 			} else {
 				// Default: everything expanded
@@ -2731,7 +2751,7 @@ export class GridEngine<T = unknown> {
 	// ==========================================================================
 
 	/**
-	 * Identity a draft is stored under: the row's `idMember` (or `treePathMember`)
+	 * Identity a draft is stored under: the row's `idMember` (or `pathMember`)
 	 * value when set, otherwise the row object itself — never the display index, so
 	 * a draft stays with its row when the view is sorted, paged, filtered or a tree
 	 * branch toggles.
@@ -2739,8 +2759,8 @@ export class GridEngine<T = unknown> {
 	private draftKey(item: T): unknown {
 		const id = this.getRowId(item)
 		if (id !== undefined && id !== null) return `key:${String(id)}`
-		if (this._treePathMember) {
-			const v = (item as Record<string, unknown>)[this._treePathMember]
+		if (this._pathMember) {
+			const v = (item as Record<string, unknown>)[this._pathMember]
 			if (v !== undefined && v !== null) return `key:${String(v)}`
 		}
 		return item
@@ -3214,7 +3234,7 @@ export class GridEngine<T = unknown> {
 
 					// Capture the empty row's rowKey BEFORE inserting so we can rewrite its
 					// invalid-cell markers to the post-commit rowKey. Indexed-fallback keys
-					// (when neither idMember nor treePathMember is set) need shifting; stable
+					// (when neither idMember nor pathMember is set) need shifting; stable
 					// id keys carry over unchanged.
 					const oldRowKey = this.getStableRowKey(this._emptyRowDraft as T, rowIndex)
 

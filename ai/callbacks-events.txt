@@ -122,10 +122,16 @@ column-selection-change / onColumnSelectionChange
   The three selection events fire once per gesture / API call (a drag
   notifies on mouseup) and only when that selection actually changed.
 
-expand-change / onExpandChange
-  Detail: { path, isExpanded, expandedPaths }
-  Fires when tree rows are expanded / collapsed (toggle, subtree,
-  expand / collapse all - path is null for the "all" operations).
+row-expand / onRowExpand, row-collapse / onRowCollapse
+  Detail: { row, path }
+  One tree row was expanded / collapsed (chevron, keyboard, double-click,
+  toggleRowExpanded, expandRows / collapseRows). NOT for expandAll /
+  collapseAll - those fire only expanded-change.
+
+expanded-change / onExpandedChange
+  Detail: { paths }  (every expanded path after the change, an array)
+  The expanded set changed - any expand / collapse, incl. expandAll /
+  collapseAll. One event per change, after the row events.
 
 paste-complete / onPasteComplete
   Detail: { totalCells, successfulCells, failedCells, skippedCells,

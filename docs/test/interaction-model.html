@@ -19,7 +19,7 @@
 	<h2>#grid — toolbar + cell menu + header menu + shortcuts</h2>
 	<web-grid id="grid"></web-grid>
 
-	<h2>#tree — tree built-ins + expand-change</h2>
+	<h2>#tree — tree built-ins + expanded-change</h2>
 	<web-grid id="tree"></web-grid>
 
 	<script type="module">
@@ -146,9 +146,9 @@
 			{ path: '1.2', name: 'Child B' }
 		]
 		tree.columns = [{ field: 'name', title: 'Name', isTree: true, width: '200px' }]
-		tree.treePathMember = 'path'
-		tree.contextMenu = ['expand-all', 'collapse-all', 'expand-tree', 'collapse-tree']
-		tree.onExpandChange = (d) => log('expand:' + d.path + ':' + d.isExpanded)
+		tree.pathMember = 'path'
+		tree.contextMenu = ['expand', 'collapse', 'expand-all', 'collapse-all']
+		tree.onExpandedChange = (d) => log('expanded:' + d.paths.length)
 	</script>
 </body>
 </html>

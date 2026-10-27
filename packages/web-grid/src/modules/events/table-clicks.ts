@@ -82,7 +82,7 @@ export function handleCellClickToEdit<T>(ctx: GridHost<T>, e: Event): void {
 		const path = chevron.getAttribute('data-tree-toggle')
 		uiLogger.debug('chevron click:', path, '| target:', target.tagName, target.className)
 		if (path !== null) {
-			ctx.engine.toggleExpandedPath(path)
+			ctx.engine.toggleRowExpanded(path)
 		}
 		return
 	}

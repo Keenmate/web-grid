@@ -90,11 +90,11 @@ el.controller, and `controller` on every ctx / detail.
     selectAll(): void
     // tree
     isPathExpanded(path: string): boolean
-    toggleExpandedPath(path: string): void
+    toggleRowExpanded(path: string): void
     expandAll(): void
     collapseAll(): void
-    expandSubtree(path: string): void
-    collapseSubtree(path: string): void
+    expandAll(path: string): void
+    collapseAll(path: string): void
     getRowTreeInfo(row: T): { path: string; level: number; hasChildren: boolean } | null
     // columns
     setColumnWidth(field: string, width: string): void
@@ -333,7 +333,7 @@ Built on @keenmate/web-components-core/actions (ActionItem / MenuItem /
 MenuDivider). See toolbar-actions.txt.
 
   type GridRowAction    = 'add' | 'delete' | 'duplicate' | 'move-up' | 'move-down'
-  type GridTreeAction   = 'expand-all' | 'collapse-all' | 'expand-tree' | 'collapse-tree'
+  type GridTreeAction   = 'expand' | 'collapse' | 'expand-all' | 'collapse-all'
   type GridCellAction   = GridRowAction | GridTreeAction
   type GridHeaderAction = 'sort-asc' | 'sort-desc' | 'clear-sort' | 'hide-column'
                         | 'freeze-column' | 'unfreeze-column' | 'column-visibility'
@@ -409,7 +409,7 @@ twins called with the detail. Every detail extends GridContext<T>.
     'filter-change':         FilterChangeEventDetail<T>         onFilterChange
     'column-resize':         ColumnResizeEventDetail<T>         onColumnResize
     'column-reorder':        ColumnReorderEventDetail<T>        onColumnReorder
-    'expand-change':         ExpandChangeEventDetail<T>         onExpandChange
+    'expanded-change':         ExpandedChangeEventDetail<T>         onExpandedChange
     'row-lock-change':       RowLockChangeEventDetail<T>        onRowLockChange
     'paste-complete':        PasteCompleteEventDetail<T>        onPasteComplete
     'action':                GridActionEventDetail<T>           onAction
@@ -426,7 +426,7 @@ twins called with the detail. Every detail extends GridContext<T>.
   DataRequestEventDetail<T>     = DataRequestDetail & GridContext<T>
   ColumnResizeEventDetail<T>    = ColumnResizeDetail & GridContext<T>
   ColumnReorderEventDetail<T>   = ColumnReorderDetail & GridContext<T>
-  ExpandChangeEventDetail<T>    = TreeExpandedChangeDetail & GridContext<T>
+  ExpandedChangeEventDetail<T>    = TreeExpandedChangeDetail & GridContext<T>
   RowLockChangeEventDetail<T>   = RowLockChangeDetail<T> & GridContext<T>
   PasteCompleteEventDetail<T>   = PasteDetail<T> & GridContext<T>
 
@@ -576,10 +576,10 @@ GRIDLABELS
       duplicate: string
       moveUp: string
       moveDown: string
+      expand: string
+      collapse: string
       expandAll: string
       collapseAll: string
-      expandTree: string
-      collapseTree: string
     }
     contextMenu: {                 header menu built-in texts
       sortAsc: string

@@ -16,8 +16,8 @@
 
 	<h2>#vsGrid — 50 roots × 4 subs × 3 teams = 850 rows, virtual scroll on</h2>
 	<div class="controls">
-		<button type="button" id="expand-all">Expand all</button>
-		<button type="button" id="collapse-all">Collapse all</button>
+		<button type="button" id="expand">Expand all</button>
+		<button type="button" id="collapse">Collapse all</button>
 	</div>
 	<web-grid id="vsGrid" style="max-width: 700px; max-height: 380px;"></web-grid>
 	<div class="state-panel">
@@ -47,7 +47,7 @@
 		 *  total leaves: 50*4*3 = 600 teams + 50*4 = 200 subs + 50 roots = 850 rows
 		 *
 		 * Notes the spec relies on:
-		 *  - defaultExpandDepth=1 → roots expand on initial load; sub paths visible,
+		 *  - expandLevel=1 → roots expand on initial load; sub paths visible,
 		 *    team paths hidden.
 		 *  - virtualScrollItemHeight=38; viewport ~380 → ~18 rows max in DOM (plus
 		 *    spacer rows for off-screen).
@@ -82,10 +82,10 @@
 		const vsGrid = document.getElementById('vsGrid')
 		vsGrid.columns = columns
 		vsGrid.items = allData
-		vsGrid.treePathMember = 'path'
-		vsGrid.treeLevelMember = 'level'
+		vsGrid.pathMember = 'path'
+		vsGrid.levelMember = 'level'
 		vsGrid.isTreeDataSorted = true
-		vsGrid.defaultExpandDepth = 1
+		vsGrid.expandLevel = 1
 		vsGrid.treeDoubleClickBehavior = 'toggle'
 		vsGrid.isVirtualScrollEnabled = true
 		vsGrid.virtualScrollItemHeight = 38
@@ -108,11 +108,11 @@
 		new MutationObserver(refreshVs).observe(vsGrid.shadowRoot, { childList: true, subtree: true })
 		requestAnimationFrame(() => requestAnimationFrame(refreshVs))
 
-		document.getElementById('expand-all').addEventListener('click', () => {
+		document.getElementById('expand').addEventListener('click', () => {
 			vsGrid.expandAll()
 			refreshVs()
 		})
-		document.getElementById('collapse-all').addEventListener('click', () => {
+		document.getElementById('collapse').addEventListener('click', () => {
 			vsGrid.collapseAll()
 			refreshVs()
 		})
@@ -124,10 +124,10 @@
 		let nextRoot = 1
 
 		isGrid.columns = columns
-		isGrid.treePathMember = 'path'
-		isGrid.treeLevelMember = 'level'
+		isGrid.pathMember = 'path'
+		isGrid.levelMember = 'level'
 		isGrid.isTreeDataSorted = true
-		isGrid.defaultExpandDepth = 1
+		isGrid.expandLevel = 1
 		isGrid.treeDoubleClickBehavior = 'toggle'
 		isGrid.isVirtualScrollEnabled = true
 		isGrid.virtualScrollItemHeight = 38

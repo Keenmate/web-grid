@@ -86,6 +86,7 @@ export type {
 
 	// Tree types
 	TreeExpandedChangeDetail,
+	TreeRowExpandDetail,
 	ChevronCallback,
 	TreeDoubleClickBehavior,
 

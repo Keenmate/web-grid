@@ -20,7 +20,7 @@ const CS = {
 	dropdownNoOptions: 'Žádné možnosti',
 	actions: {
 		add: 'Přidat řádek', delete: 'Smazat řádek', duplicate: 'Duplikovat řádek', moveUp: 'Nahoru', moveDown: 'Dolů',
-		expandAll: 'Rozbalit vše', collapseAll: 'Sbalit vše', expandTree: 'Rozbalit strom', collapseTree: 'Sbalit strom'
+		expand: 'Rozbalit', collapse: 'Sbalit', expandAll: 'Rozbalit vše', collapseAll: 'Sbalit vše'
 	},
 	contextMenu: {
 		sortAsc: 'Seřadit vzestupně', sortDesc: 'Seřadit sestupně', clearSort: 'Zrušit řazení', hideColumn: 'Skrýt sloupec',

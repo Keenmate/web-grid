@@ -33,6 +33,7 @@ import type {
 	RowSelectionChangeDetail,
 	ColumnSelectionChangeDetail,
 	TreeExpandedChangeDetail,
+	TreeRowExpandDetail,
 	EditorOption
 } from './types.js'
 
@@ -118,13 +119,18 @@ export interface GridController<T = any> {
 	selectAll(): void
 	// tree
 	isPathExpanded(path: string): boolean
-	toggleExpandedPath(path: string): void
-	expandAll(): void
-	collapseAll(): void
-	/** Expand `path` and every descendant. */
-	expandSubtree(path: string): void
-	/** Collapse `path` and every descendant. */
-	collapseSubtree(path: string): void
+	/** The expanded tree paths (read-only here; assign `el.expandedPaths`). */
+	readonly expandedPaths: Set<string>
+	/** Expand / collapse one row (`row-expand` / `row-collapse` + `expanded-change`). */
+	toggleRowExpanded(path: string): void
+	/** Expand the given rows, one level each. */
+	expandRows(paths: string | string[]): void
+	/** Collapse the given rows. */
+	collapseRows(paths: string | string[]): void
+	/** Expand the whole tree — or, with `path`, that row and every descendant. */
+	expandAll(path?: string | null): void
+	/** Collapse the whole tree — or, with `path`, that row and every descendant. */
+	collapseAll(path?: string | null): void
 	getRowTreeInfo(row: T): { path: string; level: number; hasChildren: boolean } | null
 	// columns
 	setColumnWidth(field: string, width: string): void
@@ -265,7 +271,7 @@ export interface HeaderMenuContext<T = any> extends GridContext<T> {
 	colIndex: number
 	sortDirection: 'asc' | 'desc' | null
 	isFrozen: boolean
-	/** True when the grid has `treePathMember` set (the tree column can't be hidden). */
+	/** True when the grid has `pathMember` set (the tree column can't be hidden). */
 	isTreeMode: boolean
 	/** All columns, hidden ones included. */
 	allColumns: Column<T>[]
@@ -377,7 +383,7 @@ export interface ChevronContext<T = any> extends GridContext<T> {
 export type GridRowAction = 'add' | 'delete' | 'duplicate' | 'move-up' | 'move-down'
 
 /** Tree built-ins of the cell context menu. */
-export type GridTreeAction = 'expand-all' | 'collapse-all' | 'expand-tree' | 'collapse-tree'
+export type GridTreeAction = 'expand' | 'collapse' | 'expand-all' | 'collapse-all'
 
 /** Built-ins of the cell context menu. */
 export type GridCellAction = GridRowAction | GridTreeAction
@@ -494,7 +500,8 @@ export interface FilterChangeEventDetail<T = any> extends GridContext<T> {
 
 export type ColumnResizeEventDetail<T = any> = ColumnResizeDetail & GridContext<T>
 export type ColumnReorderEventDetail<T = any> = ColumnReorderDetail & GridContext<T>
-export type ExpandChangeEventDetail<T = any> = TreeExpandedChangeDetail & GridContext<T>
+export type ExpandedChangeEventDetail<T = any> = TreeExpandedChangeDetail & GridContext<T>
+export type RowExpandEventDetail<T = any> = TreeRowExpandDetail<T> & GridContext<T>
 export type RowLockChangeEventDetail<T = any> = RowLockChangeDetail<T> & GridContext<T>
 export type PasteCompleteEventDetail<T = any> = PasteDetail<T> & GridContext<T>
 
@@ -513,7 +520,9 @@ export type GridEventMap<T = any> = {
 	'filter-change': FilterChangeEventDetail<T>
 	'column-resize': ColumnResizeEventDetail<T>
 	'column-reorder': ColumnReorderEventDetail<T>
-	'expand-change': ExpandChangeEventDetail<T>
+	'row-expand': RowExpandEventDetail<T>
+	'row-collapse': RowExpandEventDetail<T>
+	'expanded-change': ExpandedChangeEventDetail<T>
 	'row-lock-change': RowLockChangeEventDetail<T>
 	'paste-complete': PasteCompleteEventDetail<T>
 	'action': GridActionEventDetail<T>

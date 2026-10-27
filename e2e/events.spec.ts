@@ -3,7 +3,7 @@ import { test, expect, type Page, gridLocator, cell, header, onGrid, eventsOf, d
 /**
  * Events — `edit-start`, `edit-cancel`, `cell-selection-change`,
  * `row-selection-change`, `column-selection-change`, `row-delete` (Ctrl+Delete),
- * `expand-change`. Each fires exactly once per happening, the
+ * `row-expand` / `row-collapse` / `expanded-change`. Each fires exactly once per happening, the
  * camelCase `on*` twin runs first with the very same detail object, and the
  * detail carries non-enumerable `controller` + `element`.
  *
@@ -231,48 +231,61 @@ test('plain Delete clears the cell (row-change to null), no row-delete', async (
 	expect(await domEvents(page, 'row-change')).toEqual([expect.objectContaining({ rowIndex: 0, field: 'name', oldValue: 'Alpha', newValue: null })])
 })
 
-test.describe('expand-change', () => {
-	test('a chevron click → { path, isExpanded, expandedPaths }, once per toggle', async ({ page }) => {
+test.describe('row-expand / row-collapse / expanded-change', () => {
+	test('a chevron click → row-collapse { row, path }, then expanded-change { paths }', async ({ page }) => {
 		await chevron(page, '1.1').click()
-		const d = await onceWithTwin(page, 'expand-change', 'tree')
-		expect(d.path).toBe('1.1')
-		expect(d.isExpanded).toBe(false)
-		expect(d.expandedPaths).not.toContain('1.1')
-		expect(d.expandedPaths).toContain('1')
+		const r = await onceWithTwin(page, 'row-collapse', 'tree')
+		expect(r.path).toBe('1.1')
+		expect(r.row).toEqual(expect.objectContaining({ path: '1.1' }))
+		const d = await onceWithTwin(page, 'expanded-change', 'tree')
+		expect(d.paths).not.toContain('1.1')
+		expect(d.paths).toContain('1')
+		expect(await domEvents(page, 'row-expand')).toEqual([])
 		await expect(gridLocator(page, 'tree').locator('tbody tr.wg__row')).toHaveCount(4)  // Leaf A1 hidden
 
 		await clearEvents(page, 'events')
 		await chevron(page, '1.1').click()
-		const d2 = await onceWithTwin(page, 'expand-change', 'tree')
-		expect([d2.path, d2.isExpanded]).toEqual(['1.1', true])
-		expect(d2.expandedPaths).toContain('1.1')
+		expect((await onceWithTwin(page, 'row-expand', 'tree')).path).toBe('1.1')
+		expect((await onceWithTwin(page, 'expanded-change', 'tree')).paths).toContain('1.1')
 	})
 
-	test('expandAll / collapseAll → path null', async ({ page }) => {
+	test('expandAll / collapseAll → only expanded-change (no row events)', async ({ page }) => {
 		await onGrid(page, el => el.collapseAll(), 'tree')
-		const d = await onceWithTwin(page, 'expand-change', 'tree')
-		expect([d.path, d.isExpanded, d.expandedPaths]).toEqual([null, false, []])
+		expect((await onceWithTwin(page, 'expanded-change', 'tree')).paths).toEqual([])
+		expect(await domEvents(page, 'row-collapse')).toEqual([])
 		await expect(gridLocator(page, 'tree').locator('tbody tr.wg__row')).toHaveCount(2)
 		await clearEvents(page, 'events')
 		await onGrid(page, el => el.expandAll(), 'tree')
-		const d2 = await onceWithTwin(page, 'expand-change', 'tree')
-		expect([d2.path, d2.isExpanded]).toEqual([null, true])
-		expect(d2.expandedPaths).toEqual(expect.arrayContaining(['1', '1.1']))
+		expect((await onceWithTwin(page, 'expanded-change', 'tree')).paths).toEqual(expect.arrayContaining(['1', '1.1']))
+		expect(await domEvents(page, 'row-expand')).toEqual([])
 	})
 
-	test('toggleExpandedPath through the API', async ({ page }) => {
-		await onGrid(page, el => el.toggleExpandedPath('1'), 'tree')
-		const d = await onceWithTwin(page, 'expand-change', 'tree')
-		expect([d.path, d.isExpanded]).toEqual(['1', false])
+	test('expandAll(path) / collapseAll(path) act on that subtree only', async ({ page }) => {
+		await onGrid(page, el => el.collapseAll('1.1'), 'tree')
+		expect(await onGrid(page, el => [el.isPathExpanded('1'), el.isPathExpanded('1.1')], 'tree')).toEqual([true, false])
+		await onGrid(page, el => el.expandAll('1.1'), 'tree')
+		expect(await onGrid(page, el => el.isPathExpanded('1.1'), 'tree')).toBe(true)
+	})
+
+	test('toggleRowExpanded / expandRows / collapseRows through the API', async ({ page }) => {
+		await onGrid(page, el => el.toggleRowExpanded('1'), 'tree')
+		expect((await onceWithTwin(page, 'row-collapse', 'tree')).path).toBe('1')
 		expect(await onGrid(page, el => el.isPathExpanded('1'), 'tree')).toBe(false)
+		await clearEvents(page, 'events')
+		await onGrid(page, el => el.expandRows(['1']), 'tree')
+		expect((await onceWithTwin(page, 'row-expand', 'tree')).path).toBe('1')
+		await clearEvents(page, 'events')
+		await onGrid(page, el => el.collapseRows('1'), 'tree')
+		expect((await onceWithTwin(page, 'row-collapse', 'tree')).path).toBe('1')
+		expect(await onGrid(page, el => [...el.controller.expandedPaths].includes('1'), 'tree')).toBe(false)
 	})
 
-	test('an earlier detail.expandedPaths is a snapshot (not mutated by later toggles)', async ({ page }) => {
+	test('an earlier detail.paths is a snapshot (not mutated by later toggles)', async ({ page }) => {
 		await chevron(page, '1.1').click()
 		await chevron(page, '1').click()
 		const sizes = await page.evaluate(() => (window as any).__events
-			.filter((e: any) => e.type === 'expand-change' && e.via === 'event')
-			.map((e: any) => [...e.detail.expandedPaths].sort()))
+			.filter((e: any) => e.type === 'expanded-change' && e.via === 'event')
+			.map((e: any) => [...e.detail.paths].sort()))
 		expect(sizes).toHaveLength(2)
 		// the first detail still has '1' (only 1.1 collapsed); the second lacks '1' too
 		expect(sizes[0]).toContain('1')

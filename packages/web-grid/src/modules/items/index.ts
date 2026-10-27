@@ -37,7 +37,7 @@ import { parseKeyCombo, matchesKeyCombo } from '../keyboard/index.js'
 import { applySort } from '../events/sort.js'
 
 const ROW_ACTIONS: readonly GridRowAction[] = ['add', 'delete', 'duplicate', 'move-up', 'move-down']
-const TREE_ACTIONS: readonly string[] = ['expand-all', 'collapse-all', 'expand-tree', 'collapse-tree']
+const TREE_ACTIONS: readonly string[] = ['expand', 'collapse', 'expand-all', 'collapse-all']
 const HEADER_ACTIONS: readonly string[] = ['sort-asc', 'sort-desc', 'clear-sort', 'hide-column', 'freeze-column', 'unfreeze-column', 'column-visibility', 'show-all-columns', 'toggle-column']
 
 export const isRowAction = (a: unknown): a is GridRowAction => ROW_ACTIONS.includes(a as GridRowAction)
@@ -88,11 +88,12 @@ export function cellMenuDefaults<T>(host: GridHost<T>, action: string | undefine
 	const engine = host.engine
 	const labels = engine.labels.actions
 	switch (action) {
-		// Per-row "expand all" means everything *under here* (file-explorer convention); leaves hide it
-		case 'expand-all': return { text: labels.expandAll, icon: '▾', isVisible: !!engine.getRowTreeInfo(ctx.row)?.hasChildren }
-		case 'collapse-all': return { text: labels.collapseAll, icon: '▸', isVisible: !!engine.getRowTreeInfo(ctx.row)?.hasChildren }
-		case 'expand-tree': return { text: labels.expandTree, icon: '⤓', isVisible: engine.isTreeMode }
-		case 'collapse-tree': return { text: labels.collapseTree, icon: '⤒', isVisible: engine.isTreeMode && engine.expandedPaths.size > 0 }
+		// Per-row expand / collapse means the row and everything *under it* (file-explorer convention); leaves hide it
+		case 'expand': return { text: labels.expand, icon: '▾', isVisible: !!engine.getRowTreeInfo(ctx.row)?.hasChildren }
+		case 'collapse': return { text: labels.collapse, icon: '▸', isVisible: !!engine.getRowTreeInfo(ctx.row)?.hasChildren }
+		// The whole tree
+		case 'expand-all': return { text: labels.expandAll, icon: '⤓', isVisible: engine.isTreeMode }
+		case 'collapse-all': return { text: labels.collapseAll, icon: '⤒', isVisible: engine.isTreeMode && engine.expandedPaths.size > 0 }
 	}
 	return undefined
 }
@@ -250,10 +251,10 @@ function runTreeBuiltIn<T>(host: GridHost<T>, d: GridActionEventDetail<T>): void
 	const engine = host.engine
 	const info = d.row !== undefined ? engine.getRowTreeInfo(d.row as T) : null
 	switch (d.action) {
-		case 'expand-all': if (info) engine.expandSubtree(info.path); return
-		case 'collapse-all': if (info) engine.collapseSubtree(info.path); return
-		case 'expand-tree': engine.expandAll(); return
-		case 'collapse-tree': engine.collapseAll(); return
+		case 'expand': if (info) engine.expandAll(info.path); return
+		case 'collapse': if (info) engine.collapseAll(info.path); return
+		case 'expand-all': engine.expandAll(); return
+		case 'collapse-all': engine.collapseAll(); return
 	}
 }
 

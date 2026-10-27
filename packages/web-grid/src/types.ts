@@ -135,7 +135,7 @@ export type EditorOptions<T = unknown> = {
 }
 
 // Validation state for a cell.
-// `rowKey` is a stable id derived from `idMember` (preferred), `treePathMember` (tree mode),
+// `rowKey` is a stable id derived from `idMember` (preferred), `pathMember` (tree mode),
 // or the displayed-index fallback as a string. Keying by stable id (not displayed index) means
 // invalid markers survive sort/filter/pagination/tree-toggle reorderings.
 export type CellValidationState = {
@@ -356,7 +356,7 @@ export type QuickGridProps<T> = {
 	// (or `getIdCallback`). Internal state (drafts, invalid-cell markers)
 	// is keyed by this value, so pagination, filter, sort, and tree expand/collapse no longer
 	// cause an in-flight edit / invalid marker to land on the wrong row when the displayed
-	// order changes. Falls back to `treePathMember` (tree mode) → for drafts, the row object
+	// order changes. Falls back to `pathMember` (tree mode) → for drafts, the row object
 	// itself; for invalid-cell markers, the displayed-row index string.
 	idMember?: keyof T | string
 	// Sorting
@@ -487,18 +487,20 @@ export type QuickGridProps<T> = {
 	onFilterChange?: (detail: GridEventMap<T>['filter-change']) => void
 	onColumnResize?: (detail: GridEventMap<T>['column-resize']) => void
 	onColumnReorder?: (detail: GridEventMap<T>['column-reorder']) => void
-	onExpandChange?: (detail: GridEventMap<T>['expand-change']) => void
+	onRowExpand?: (detail: GridEventMap<T>['row-expand']) => void
+	onRowCollapse?: (detail: GridEventMap<T>['row-collapse']) => void
+	onExpandedChange?: (detail: GridEventMap<T>['expanded-change']) => void
 	onRowLockChange?: (detail: GridEventMap<T>['row-lock-change']) => void
 	onPasteComplete?: (detail: GridEventMap<T>['paste-complete']) => void
 	onAction?: (detail: GridEventMap<T>['action']) => void
 	// Tree / hierarchy (ltree-style path strings: "1.2.3", "/dept/eng/team", "C:\\a\\b")
-	treePathMember?: keyof T | string                  // Required to enable tree mode: field holding the path
-	treeLevelMember?: keyof T | string                 // Optional pre-computed depth (0-based)
-	treeParentMember?: keyof T | string                // Optional pre-computed parent path
-	treeSeparator?: string                             // Path separator (auto-detected from first row when omitted)
+	pathMember?: keyof T | string                  // Required to enable tree mode: field holding the path
+	levelMember?: keyof T | string                 // Optional pre-computed depth (0-based)
+	parentPathMember?: keyof T | string                // Optional pre-computed parent path
+	treePathSeparator?: string                             // Path separator (auto-detected from first row when omitted)
 	isTreeDataSorted?: boolean                           // true = trust caller order completely (grid never re-sorts; pair with data-request for sort changes). false = grid sorts siblings depth-first.
-	expandedPaths?: Set<string>                        // Bindable set of expanded paths (mutated by grid; fires expand-change)
-	defaultExpandDepth?: number                        // Tree depth to show initially: 0 = only roots, 1 = roots + their children, etc. (default: all expanded)
+	expandedPaths?: Set<string>                        // Bindable set of expanded paths (mutated by grid; fires expanded-change)
+	expandLevel?: number                        // Tree depth to show initially: 0 = only roots, 1 = roots + their children, etc. (default: all expanded)
 	treeDoubleClickBehavior?: TreeDoubleClickBehavior  // What happens when user double-clicks a tree-column cell (default: 'none')
 	// Chevron customization (static glyphs are defaults; callback overrides per-row)
 	treeExpandedGlyph?: string                         // HTML/text shown when node is expanded (default: '▶' — same glyph as collapsed; CSS rotates 90° via .wg__tree-chevron--expanded)
@@ -642,10 +644,10 @@ export type GridLabels = {
 		duplicate: string            // "Duplicate row"
 		moveUp: string               // "Move up"
 		moveDown: string             // "Move down"
-		expandAll: string            // "Expand all"
-		collapseAll: string          // "Collapse all"
-		expandTree: string           // "Expand entire tree"
-		collapseTree: string         // "Collapse entire tree"
+		expand: string               // "Expand" (the row and everything under it)
+		collapse: string             // "Collapse" (the row and everything under it)
+		expandAll: string            // "Expand all" (the whole tree)
+		collapseAll: string          // "Collapse all" (the whole tree)
 	}
 
 	// Header context menu
@@ -798,11 +800,15 @@ export type CreateRowCallback<T = any> = (ctx: CreateRowContext<T>) => T
 /** What happens when the user double-clicks a tree-column cell */
 export type TreeDoubleClickBehavior = 'none' | 'toggle'
 
-/** Detail of `expand-change`: a node was toggled, or a bulk expand / collapse ran */
+/** Detail of `expanded-change`: the expanded set changed (one event per change, the whole new set) */
 export type TreeExpandedChangeDetail = {
-	path: string | null           // Toggled path / subtree root; null for expandAll / collapseAll
-	isExpanded: boolean           // New state (true = expanded, false = collapsed)
-	expandedPaths: Set<string>    // Full current set of expanded paths (after the change)
+	paths: string[]               // Every expanded path after the change (same as `expandedPaths`)
+}
+
+/** Detail of `row-expand` / `row-collapse`: one tree row was expanded / collapsed */
+export type TreeRowExpandDetail<T = any> = {
+	row: T | undefined            // The row of `path`
+	path: string
 }
 
 /**

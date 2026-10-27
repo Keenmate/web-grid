@@ -144,10 +144,10 @@
 
         vsGrid.columns = columns
         vsGrid.items = allData
-        vsGrid.treePathMember = 'path'
-        vsGrid.treeLevelMember = 'level'
+        vsGrid.pathMember = 'path'
+        vsGrid.levelMember = 'level'
         vsGrid.isTreeDataSorted = true
-        vsGrid.defaultExpandDepth = 1
+        vsGrid.expandLevel = 1
         vsGrid.treeDoubleClickBehavior = 'toggle'
         vsGrid.isVirtualScrollEnabled = true
         vsGrid.virtualScrollItemHeight = 38
@@ -170,7 +170,7 @@
         }
         refreshVisibleCount()
 
-        vsGrid.onExpandChange = refreshVisibleCount
+        vsGrid.onExpandedChange = refreshVisibleCount
 
         document.getElementById('vsEnabled').addEventListener('change', e => {
             vsGrid.isVirtualScrollEnabled = e.target.checked
@@ -203,8 +203,8 @@
         seedRoots.forEach(p => isExpanded.add(p))
 
         isGrid.columns = columns
-        isGrid.treePathMember = 'path'
-        isGrid.treeLevelMember = 'level'
+        isGrid.pathMember = 'path'
+        isGrid.levelMember = 'level'
         isGrid.isTreeDataSorted = true
         isGrid.expandedPaths = isExpanded
         isGrid.treeDoubleClickBehavior = 'toggle'

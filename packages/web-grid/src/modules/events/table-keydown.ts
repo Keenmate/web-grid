@@ -74,22 +74,22 @@ export function handleTableKeyDown<T>(ctx: GridHost<T>, e: Event): void {
 			let targetPath: string | null = null
 			if (ke.key === 'ArrowRight') {
 				if (info.hasChildren && !ctx.engine.isPathExpanded(info.path)) {
-					ctx.engine.toggleExpandedPath(info.path)
+					ctx.engine.toggleRowExpanded(info.path)
 					targetPath = info.path
 				}
 			} else {
 				if (info.hasChildren && ctx.engine.isPathExpanded(info.path)) {
-					ctx.engine.toggleExpandedPath(info.path)
+					ctx.engine.toggleRowExpanded(info.path)
 					targetPath = info.path
 				} else {
 					const ancestor = ctx.engine.findNearestExpandedAncestor(info.path)
 					if (ancestor !== null) {
-						ctx.engine.toggleExpandedPath(ancestor)
+						ctx.engine.toggleRowExpanded(ancestor)
 						targetPath = ancestor
 					}
 				}
 			}
-			// Restore focus after the render. toggleExpandedPath queues a
+			// Restore focus after the render. toggleRowExpanded queues a
 			// microtask render; ours queues after it, so displayItems is fresh
 			// and the new <td> exists when moveFocus tries to focus it.
 			if (targetPath !== null) {

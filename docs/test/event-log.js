@@ -12,7 +12,7 @@
 const ALL_EVENTS = [
 	'row-change', 'edit-start', 'edit-cancel', 'validation-error', 'row-focus', 'row-delete',
 	'cell-selection-change', 'row-selection-change', 'column-selection-change', 'data-request', 'filter-change', 'column-resize', 'column-reorder',
-	'expand-change', 'row-lock-change', 'paste-complete', 'action'
+	'row-expand', 'row-collapse', 'expanded-change', 'row-lock-change', 'paste-complete', 'action'
 ]
 
 const camel = (name) => 'on' + name.replace(/(^|-)([a-z])/g, (_, __, c) => c.toUpperCase())

@@ -185,7 +185,7 @@ The grid follows the shared KeenMate interaction model (web-components-core `/ac
 'action'                                // onAction          — any toolbar / menu / shortcut item activated
 // … row-focus, row-delete, cell-selection-change, row-selection-change,
 //   column-selection-change, data-request, filter-change,
-//   column-resize, column-reorder, expand-change, row-lock-change, paste-complete
+//   column-resize, column-reorder, row-expand, row-collapse, expanded-change, row-lock-change, paste-complete
 
 // EditorOptions notification
 onSelect(ctx)                           // "option was selected"
@@ -213,7 +213,7 @@ searchCallback           // returns search results (async)
 renderOptionCallback     // returns HTML string for option
 ```
 
-Built-in item names are kebab-case (`'move-up'`, `'sort-asc'`, `'expand-all'`) and the row built-ins (`add`, `delete`, `duplicate`, `move-up`, `move-down`) do the work themselves after the `action` event. Do not add lowercase `on*` properties (they collide with native `HTMLElement` handlers like `onpaste` / `onselect`).
+Built-in item names are kebab-case (`'move-up'`, `'sort-asc'`, `'expand'`) and the row built-ins (`add`, `delete`, `duplicate`, `move-up`, `move-down`) do the work themselves after the `action` event. Do not add lowercase `on*` properties (they collide with native `HTMLElement` handlers like `onpaste` / `onselect`).
 
 **Why this matters:**
 - Events can be safely ignored - component works without them

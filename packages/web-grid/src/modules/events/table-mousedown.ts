@@ -81,7 +81,7 @@ export function handleTableMouseDown<T>(ctx: GridHost<T>, e: Event): void {
 						uiLogger.debug('tree dblclick (mousedown.detail=2) toggle:', info.path)
 						e.preventDefault()
 						e.stopPropagation()
-						ctx.engine.toggleExpandedPath(info.path)
+						ctx.engine.toggleRowExpanded(info.path)
 						return
 					}
 				}

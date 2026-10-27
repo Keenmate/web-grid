@@ -291,10 +291,10 @@ built-in names, menu items, dividers.
 
 Built-in names in the cell menu:
     row:  'add' | 'delete' | 'duplicate' | 'move-up' | 'move-down'  (same work as the toolbar)
-    tree: 'expand-all'    - expand this row's subtree (hidden on leaves)
-          'collapse-all'  - collapse this row's subtree (hidden on leaves)
-          'expand-tree'   - expand the whole tree (tree mode only)
-          'collapse-tree' - collapse the whole tree (tree mode, something expanded)
+    tree: 'expand'    - expand this row's subtree (hidden on leaves)
+          'collapse'  - collapse this row's subtree (hidden on leaves)
+          'expand-all'   - expand the whole tree (tree mode only)
+          'collapse-all' - collapse the whole tree (tree mode, something expanded)
 
 Menu item (GridMenuItem<T>, ctx = CellContext<T>):
 
@@ -500,10 +500,10 @@ Relevant labels that can be customized:
         duplicate: 'Duplicate row',
         moveUp: 'Move up',
         moveDown: 'Move down',
+        expand: 'Expand',
+        collapse: 'Collapse',
         expandAll: 'Expand all',
-        collapseAll: 'Collapse all',
-        expandTree: 'Expand entire tree',
-        collapseTree: 'Collapse entire tree'
+        collapseAll: 'Collapse all'
       },
       contextMenu: {                  // header menu built-ins
         sortAsc: 'Sort Ascending',

@@ -129,7 +129,7 @@ make `isRowDirty` value-based like `isCellDirty`.
 
 **Follow-up:** drafts are never pruned by setting `items` (server paging: a missing row is another page); they leave via `replaceRowById`, `discardDraft(row)` (new), `discardRowDraft`, `discardAllDrafts`. `getDrafts()` lists them all. Server paging + editing without a usable id warns once (`GRID:INIT`).
 
-**Fixed:** drafts are keyed by row identity — the `idMember` / `treePathMember` value, else the row object itself (never the display index). The index-based API (`getRowDraft(i)`, `isRowDirty(i)`, …) resolves the displayed row first; `getDraftRowIndices()` lists the display indices of displayed rows with a draft. `updateRowById` / `replaceRowById` also looked drafts up by the `items` index — fixed with it. New tests: no-`idMember` sort, filter.
+**Fixed:** drafts are keyed by row identity — the `idMember` / `pathMember` value, else the row object itself (never the display index). The index-based API (`getRowDraft(i)`, `isRowDirty(i)`, …) resolves the displayed row first; `getDraftRowIndices()` lists the display indices of displayed rows with a draft. `updateRowById` / `replaceRowById` also looked drafts up by the `items` index — fixed with it. New tests: no-`idMember` sort, filter.
 
 **Where:** `grid.ts` `_draftRows: Map<number, T>` keyed by `rowIndex` (the
 *display* index); `getCellRawValue`, `isCellDirty`, `isRowDirty`,
@@ -223,12 +223,12 @@ nothing visible (row-lock-change with `row: null, rowIndex: -1`),
 **Question:** should `getRowId()` fall back to `idMember` (and `idValueMember` be
 deprecated)? Fixtures set both for now.
 
-## 12. `expand-change` hands out the grid's live `expandedPaths` Set — FIXED
+## 12. `expanded-change` hands out the grid's live `expandedPaths` Set — FIXED
 
-**Fixed:** `expandedPaths: new Set(this._expandedPaths)` in all five `expand-change` notifications.
+**Fixed:** `expandedPaths: new Set(this._expandedPaths)` in all five `expanded-change` notifications.
 
 **Where:** `grid.ts:1420, 1429, 1436, 1457, 1475` —
-`notify('expand-change', { …, expandedPaths: this._expandedPaths })`.
+`notify('expanded-change', { …, expandedPaths: this._expandedPaths })`.
 
 **Symptom:** a stored detail changes after later toggles (collapse 1.1 → detail
 shows `['1']`; collapse 1 → the *same* earlier detail now shows `[]`). A consumer
