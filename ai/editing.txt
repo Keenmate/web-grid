@@ -33,19 +33,19 @@ editTrigger (EditTrigger, default: 'dblclick')
                    the focused cell with that character as initial input. Similar
                    to Excel behavior.
 
-editStartSelection (EditStartSelection, default: 'selectAll')
+editStartSelection (EditStartSelection, default: 'select-all')
   Where the cursor goes when entering edit mode via navigate trigger:
-    'mousePosition'  -- Cursor at click position.
-    'selectAll'      -- All text is selected (default).
-    'cursorAtStart'  -- Cursor at the beginning.
-    'cursorAtEnd'    -- Cursor at the end.
+    'mouse-position'  -- Cursor at click position.
+    'select-all'      -- All text is selected (default).
+    'cursor-at-start'  -- Cursor at the beginning.
+    'cursor-at-end'    -- Cursor at the end.
 
 dropdownToggleVisibility (ToggleVisibility, default: 'on-focus')
   When the dropdown arrow button is visible for select/combobox/autocomplete:
     'always'   -- Always visible in every cell.
     'on-focus'  -- Only visible when the cell is focused.
 
-shouldShowDropdownOnFocus (boolean, default: false)
+shouldOpenDropdownOnFocus (boolean, default: false)
   When true, the dropdown opens automatically as soon as the cell is focused.
   Typically used with editTrigger='always' in input-matrix mode.
 
@@ -67,15 +67,15 @@ properties can still be overridden after setting mode.
 
 mode='read-only'
   isEditable=false, cellSelectionMode='click',
-  dropdownToggleVisibility='on-focus', shouldShowDropdownOnFocus=false
+  dropdownToggleVisibility='on-focus', shouldOpenDropdownOnFocus=false
 
 mode='excel'
   isEditable=true, editTrigger='navigate', cellSelectionMode='click',
-  dropdownToggleVisibility='always', shouldShowDropdownOnFocus=false
+  dropdownToggleVisibility='always', shouldOpenDropdownOnFocus=false
 
 mode='input-matrix'
   isEditable=true, editTrigger='always', cellSelectionMode='shift',
-  dropdownToggleVisibility='always', shouldShowDropdownOnFocus=true
+  dropdownToggleVisibility='always', shouldOpenDropdownOnFocus=true
 
 
 EDITOR TYPES
@@ -103,8 +103,8 @@ Options (editorOptions):
   inputMode          (string)  -- Virtual keyboard hint.
                                   Values: 'text', 'numeric', 'email', 'tel', 'url'.
   editStartSelection (EditStartSelection) -- Per-column cursor position override.
-                                  Values: 'mousePosition', 'selectAll', 'cursorAtStart',
-                                  'cursorAtEnd'. Default: 'selectAll'.
+                                  Values: 'mouse-position', 'select-all', 'cursor-at-start',
+                                  'cursor-at-end'. Default: 'select-all'.
 
 Example:
   {
@@ -442,7 +442,7 @@ Draft behavior:
     changes) so the consumer can compare.
 
 Dirty indicator:
-  grid.isDirtyIndicatorVisible (boolean, default: true)
+  grid.isDirtyIndicatorShown (boolean, default: true)
     When enabled, edited cells show a subtle orange background tint and a small
     corner triangle. Row numbers show an orange left border when any cell in
     the row has been modified.
@@ -513,7 +513,7 @@ Column-level overrides:
                                  for this column: 'always' or 'on-focus'.
   shouldOpenDropdownOnEnter   -- Override Enter behavior for dropdown columns
                                  on this column.
-  isEditButtonVisible         -- Show the edit button in this column's editable
+  isEditButtonShown         -- Show the edit button in this column's editable
                                  cells whatever the editTrigger.
   editorOptions               -- Editor-specific options for this column.
   renderEditorCallback            -- Handler for custom editor type.

@@ -303,7 +303,7 @@
         const grid = document.getElementById('grid')
         grid.items = JSON.parse(JSON.stringify(sampleData))
         grid.columns = columns
-        grid.isRowNumbersVisible = true
+        grid.isRowNumbersShown = true
         grid.isEditable = true
         grid.editTrigger = 'navigate'  // Required for cell focus
         grid.isHoverable = true
@@ -324,7 +324,7 @@
         const grid2 = document.getElementById('grid2')
         grid2.items = JSON.parse(JSON.stringify(sampleData))
         grid2.columns = columns
-        grid2.isRowNumbersVisible = true
+        grid2.isRowNumbersShown = true
         grid2.isEditable = true
         grid2.editTrigger = 'navigate'
         grid2.isHoverable = true

@@ -88,26 +88,26 @@ HTML attributes (kebab-case) or JavaScript properties (camelCase).
 
 Attribute (HTML)        Property (JS)           Type       Default   Description
 ----------------------  ----------------------  ---------  --------  -----------
-is-striped              isStriped               boolean    false     Alternate row backgrounds
-is-hoverable            isHoverable             boolean    false     Highlight row on hover
-sort-mode               sortMode                string     'none'    'none', 'single', or 'multi'
-is-filterable           isFilterable            boolean    false     Show per-column filter inputs
+striped              isStriped               boolean    false     Alternate row backgrounds
+hoverable            isHoverable             boolean    false     Highlight row on hover
+sort-mode               sortMode                string     'none'    'none', 'single', or 'multiple'
+filterable           isFilterable            boolean    false     Show per-column filter inputs
 filter-mode             filterMode              string     'client'  'server': the consumer filters (filter-change event)
-is-pageable             isPageable              boolean    false     Enable pagination
+pageable             isPageable              boolean    false     Enable pagination
 page-size               pageSize                number     10        Rows per page
-is-editable             isEditable              boolean    false     Enable cell editing
+editable             isEditable              boolean    false     Enable cell editing
 edit-trigger            editTrigger             string     'dblclick' How editing starts (see below)
-is-row-numbers-visible  isRowNumbersVisible     boolean    false     Show row number column
-                        isDirtyIndicatorVisible boolean    true      Show dirty indicator on edited cells
+show-row-numbers  isRowNumbersShown     boolean    false     Show row number column
+                        isDirtyIndicatorShown boolean    true      Show dirty indicator on edited cells
 mode                    mode                    string     (none)    Grid mode (see below)
-is-scrollable           isScrollable            boolean    false     Enable scroll container
-freeze-columns          freezeColumns           number     0         Freeze first N columns
+scrollable           isScrollable            boolean    false     Enable scroll container
+frozen-column-count          frozenColumnCount           number     0         Freeze first N columns
 
 Edit trigger values: 'click', 'dblclick', 'button', 'always', 'navigate'
 
 Sorting example:
 
-  grid.sortMode = 'multi'
+  grid.sortMode = 'multiple'
 
 Pagination example:
 
@@ -163,7 +163,7 @@ overriding individual properties.
     All cells always in edit mode. Shift+click for cell selection. Tab to
     navigate between fields.
     Sets: isEditable=true, editTrigger='always', cellSelectionMode='shift',
-          dropdownToggleVisibility='always', shouldShowDropdownOnFocus=true
+          dropdownToggleVisibility='always', shouldOpenDropdownOnFocus=true
 
 For detailed grid mode documentation, see grid-modes.txt.
 

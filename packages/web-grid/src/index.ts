@@ -94,13 +94,7 @@ export type {
 	FocusedCell,
 	SortDirection,
 	PopupPosition,
-	ConnectorArrowDir,
-
-	// Deprecated aliases retained for one release — drop in next major.
-	/** @deprecated use `Editor` */
-	EditorType,
-	/** @deprecated use `RowLock` */
-	RowLockInfo
+	ConnectorArrowDir
 } from './types.js'
 
 // Default export

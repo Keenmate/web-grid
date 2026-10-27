@@ -114,18 +114,18 @@ function executeFocusCell(ctx: ExecutorContext, action: FocusCellAction): GridAc
 	// Update fill handle position for the newly focused cell
 	updateFillHandle(ctx)
 
-	// Auto-open dropdown if shouldShowDropdownOnFocus is true
+	// Auto-open dropdown if shouldOpenDropdownOnFocus is true
 	const editorType = column.editor
 	const isDropdownEditor = editorType === 'select' || editorType === 'combobox' || editorType === 'autocomplete'
 	const isNavigateMode = effectiveTrigger === 'navigate'
-	if (isAlwaysEditMode && ctx.engine.shouldShowDropdownOnFocus && !ctx.dropdown.justSelected) {
+	if (isAlwaysEditMode && ctx.engine.shouldOpenDropdownOnFocus && !ctx.dropdown.justSelected) {
 		if (isDropdownEditor) {
 			return [{ type: 'openDropdown' }]
 		}
 	}
 	// Navigate mode: don't check justSelected - we're moving to a different cell,
 	// so the dropdown should open even after a Tab-select from the previous cell
-	if (isNavigateMode && ctx.engine.shouldShowDropdownOnFocus) {
+	if (isNavigateMode && ctx.engine.shouldOpenDropdownOnFocus) {
 		if (isDropdownEditor) {
 			return [
 				{ type: 'startEdit', target: { rowIndex, colIndex } },

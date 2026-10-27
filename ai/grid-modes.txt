@@ -21,7 +21,7 @@ Or via HTML attribute:
 
 Setting mode calls applyModeDefaults() internally, which sets
 isEditable, editTrigger, cellSelectionMode, dropdownToggleVisibility,
-and shouldShowDropdownOnFocus to mode-appropriate values.
+and shouldOpenDropdownOnFocus to mode-appropriate values.
 
 
 READ-ONLY MODE
@@ -33,7 +33,7 @@ Defaults applied:
   isEditable               = false
   cellSelectionMode        = "click"
   dropdownToggleVisibility = "on-focus"
-  shouldShowDropdownOnFocus = false
+  shouldOpenDropdownOnFocus = false
 
 Use case: Display grids with copy support. Users can browse data,
 select cell ranges by clicking and dragging, and copy selections to
@@ -50,7 +50,7 @@ Behavior:
 Common configuration:
 
   grid.mode = "read-only"
-  grid.sortMode = "multi"
+  grid.sortMode = "multiple"
   grid.isFilterable = true
   grid.isHoverable = true
 
@@ -65,7 +65,7 @@ Defaults applied:
   editTrigger              = "navigate"
   cellSelectionMode        = "click"
   dropdownToggleVisibility = "always"
-  shouldShowDropdownOnFocus = false
+  shouldOpenDropdownOnFocus = false
 
 Use case: Spreadsheet-like editing. Navigate cells with arrow keys,
 type to start editing, Escape to cancel. Click+drag for cell range
@@ -97,7 +97,7 @@ Behavior:
 Common configuration:
 
   grid.mode = "excel"
-  grid.isRowToolbarVisible = true
+  grid.isRowToolbarShown = true
   grid.rowToolbar = ["add", "delete", "duplicate"]
   grid.beforeFillCallback = (ctx) => { /* return false to cancel the fill */ }
   grid.isCheckboxAlwaysEditable = true
@@ -113,7 +113,7 @@ Defaults applied:
   editTrigger              = "always"
   cellSelectionMode        = "shift"
   dropdownToggleVisibility = "always"
-  shouldShowDropdownOnFocus = true
+  shouldOpenDropdownOnFocus = true
 
 Use case: All editable cells are always in edit mode. The grid behaves
 like a form with a table layout. Every cell renders its editor (text
@@ -128,7 +128,7 @@ Behavior:
 - Arrow keys behave as cursor navigation within text inputs (left/right
   move the text cursor, up/down move between cells).
 - For dropdown columns, focusing the cell automatically opens the
-  dropdown (shouldShowDropdownOnFocus = true).
+  dropdown (shouldOpenDropdownOnFocus = true).
 - Dropdown toggle buttons are always visible.
 - Escape within a cell cancels the edit and restores the previous value.
 - Cell range selection uses Shift+Click (not plain click), because plain
@@ -138,7 +138,7 @@ Behavior:
 Common configuration:
 
   grid.mode = "input-matrix"
-  grid.isRowToolbarVisible = true
+  grid.isRowToolbarShown = true
   grid.rowToolbar = ["add", "delete"]
   grid.shouldOpenDropdownOnEnter = true
 
@@ -151,14 +151,14 @@ afterward. The override persists until mode is set again.
 
   grid.mode = "excel"
   grid.cellSelectionMode = "shift"       // Override: use Shift+Click for selection
-  grid.shouldShowDropdownOnFocus = true   // Override: auto-open dropdowns
+  grid.shouldOpenDropdownOnFocus = true   // Override: auto-open dropdowns
 
   grid.mode = "read-only"
   grid.isEditable = true                  // Override: allow editing in "read-only" layout
   grid.editTrigger = "dblclick"           // Override: double-click to edit
 
   grid.mode = "input-matrix"
-  grid.shouldShowDropdownOnFocus = false  // Override: don't auto-open dropdowns
+  grid.shouldOpenDropdownOnFocus = false  // Override: don't auto-open dropdowns
 
 Per-column overrides also work. Column-level editTrigger and
 dropdownToggleVisibility take precedence over grid-level values:
@@ -234,7 +234,7 @@ cellSelectionMode = "shift" (input-matrix):
   This avoids conflict with always-editing cells that need plain clicks
   to position the cursor in their editor inputs.
 
-cellSelectionMode = "disabled":
+cellSelectionMode = "none":
   No cell range selection. Clicks only focus cells or start editing.
 
 For all modes, the shouldCopyWithHeaders property controls whether
@@ -254,7 +254,7 @@ Properties set by mode (grid-level):
   editTrigger                   (unchanged) "navigate"  "always"
   cellSelectionMode             "click"     "click"     "shift"
   dropdownToggleVisibility      "on-focus"  "always"    "always"
-  shouldShowDropdownOnFocus     (unchanged) false       true
+  shouldOpenDropdownOnFocus     (unchanged) false       true
 
 Note: "unchanged" means the property is not set by the mode and retains
 its current value (or its default if never explicitly set).
@@ -262,6 +262,6 @@ its current value (or its default if never explicitly set).
 Related properties not set by mode but commonly configured alongside:
   isCheckboxAlwaysEditable   - Checkboxes clickable even in navigate state
   shouldOpenDropdownOnEnter  - Enter key opens dropdown vs moves down
-  editStartSelection         - Cursor position on edit start: "selectAll",
-                               "cursorAtStart", "cursorAtEnd", "mousePosition"
+  editStartSelection         - Cursor position on edit start: "select-all",
+                               "cursor-at-start", "cursor-at-end", "mouse-position"
   shouldCopyWithHeaders      - Include headers when copying cell selection

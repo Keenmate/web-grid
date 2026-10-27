@@ -10,10 +10,10 @@ SORTING
 Sorting is controlled by two grid-level properties and one per-column flag.
 
 Grid properties:
-  sortMode    String. Default: 'none'. Values: 'none', 'single', 'multi'.
+  sortMode    String. Default: 'none'. Values: 'none', 'single', 'multiple'.
               'none' disables sorting entirely.
               'single' allows one column sorted at a time.
-              'multi' allows multiple columns sorted simultaneously.
+              'multiple' allows multiple columns sorted simultaneously.
 
   sort        Array of SortState objects. Default: [].
               Each entry: { column: string, direction: 'asc' | 'desc' }
@@ -22,7 +22,7 @@ Grid properties:
 
 Per-column flag:
   isSortable  Boolean on column definition. When set, this column participates
-              in sorting when the grid's sortMode is 'single' or 'multi'.
+              in sorting when the grid's sortMode is 'single' or 'multiple'.
 
 User interaction:
   - Click a sortable column header: sets that column as the sole sort (asc).
@@ -45,7 +45,7 @@ data from your server. The detail.sort array tells you the requested sort state.
 Example -- enable multi-column sort with initial state:
 
   const grid = document.getElementById('grid')
-  grid.sortMode = 'multi'
+  grid.sortMode = 'multiple'
   grid.sort = [
     { column: 'lastName', direction: 'asc' },
     { column: 'firstName', direction: 'asc' }
@@ -151,7 +151,7 @@ Grid properties:
                       pagination so the grid can calculate total pages. For
                       client-side mode, the grid uses items.length.
 
-  isPaginationVisible Boolean or 'auto'. Default: true. (showPagination is a
+  isPaginationShown Boolean or 'auto'. Default: true. (showPagination is a
                       deprecated alias.)
                       true -- always show pagination bar.
                       false -- never show.
@@ -165,12 +165,12 @@ Grid properties:
                       both top-right and bottom-right corners.
 
   paginationLayout    String. Controls element order inside the pagination bar.
-                      Default: 'pageSize|previous|pageInfo|next'.
-                      Elements: 'first', 'previous', 'pageInfo', 'next',
-                      'last', 'pageSize'.
-                      Example: 'first|previous|pageInfo|next|last' shows
+                      Default: 'page-size|previous|page-info|next'.
+                      Elements: 'first', 'previous', 'page-info', 'next',
+                      'last', 'page-size'.
+                      Example: 'first|previous|page-info|next|last' shows
                       first/last buttons.
-                      Example: 'pageSize|previous|pageInfo|next' shows page
+                      Example: 'page-size|previous|page-info|next' shows page
                       size selector on the left.
 
   getPaginationLabelsCallback
@@ -192,7 +192,7 @@ Example -- client-side pagination:
   grid.pageSize = 25
   grid.pageSizes = [10, 25, 50, 100]
   grid.paginationPosition = 'bottom-center'
-  grid.paginationLayout = 'pageSize|previous|pageInfo|next'
+  grid.paginationLayout = 'page-size|previous|page-info|next'
   grid.items = allData  // grid slices automatically
 
 Example -- custom pagination labels (i18n):
@@ -241,16 +241,16 @@ DataRequestDetail type:
     skip: number                // Items to skip (offset for server query)
   }
 
-  DataRequestTrigger: 'sort' | 'page' | 'pageSize' | 'filter' | 'init' | 'loadMore'
+  DataRequestTrigger: 'sort' | 'page' | 'page-size' | 'filter' | 'init' | 'load-more'
   DataRequestMode: 'replace' | 'append'
 
 The trigger field tells you what changed:
   'sort'     -- user clicked a sortable header or used a header-menu sort
   'page'     -- user navigated to a different page
-  'pageSize' -- user changed the page size selector
+  'page-size' -- user changed the page size selector
   'filter'   -- user changed a filter-row input (server pagination; page 1)
   'init'     -- initial data load (if triggered programmatically)
-  'loadMore' -- infinite scroll requested more items
+  'load-more' -- infinite scroll requested more items
 
 Before a user page change (pager, page size, server-mode sort / filter row)
 beforePageChangeCallback(ctx) runs: false stays, a number goes to that page
@@ -289,7 +289,7 @@ Example:
   grid.pageSizes = [10, 25, 50, 100]
   grid.paginationMode = 'server'
   grid.sortMode = 'single'
-  grid.paginationLayout = 'pageSize|first|previous|pageInfo|next|last'
+  grid.paginationLayout = 'page-size|first|previous|page-info|next|last'
 
   // Fetch data from server
   async function loadData(detail) {

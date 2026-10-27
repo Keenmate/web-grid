@@ -6,7 +6,7 @@ import { test, expect, type Page, gridLocator, cell, onGrid, domEvents, eventsOf
  * `filterMode: 'server'`.
  *
  * Fixture: docs/test/filtering.html — 6 rows (see the seed table there),
- * `is-filterable` set in markup, salary column has a `>N` / `<N` / `N`
+ * `filterable` set in markup, salary column has a `>N` / `<N` / `N`
  * filterCallback. The columns aren't `isFilterable`, so no filter row renders —
  * filters are driven through the element API (the filter row: filter-row.spec.ts).
  */
@@ -61,10 +61,10 @@ test.describe('client filtering', () => {
 		await expect(rowCount(page)).toHaveCount(1)
 	})
 
-	test('removing the is-filterable attribute resets to the default (off)', async ({ page }) => {
+	test('removing the filterable attribute resets to the default (off)', async ({ page }) => {
 		await onGrid(page, el => el.setFilter('name', 'bob'))
 		await expect(rowCount(page)).toHaveCount(1)
-		await onGrid(page, el => el.removeAttribute('is-filterable'))
+		await onGrid(page, el => el.removeAttribute('filterable'))
 		await expect(rowCount(page)).toHaveCount(6)
 		expect(await onGrid(page, el => el.isFilterable)).toBe(false)
 	})

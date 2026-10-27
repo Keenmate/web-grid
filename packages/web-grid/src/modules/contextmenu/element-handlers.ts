@@ -180,7 +180,7 @@ export function handleHeaderContextMenu<T>(
 		field,
 		colIndex,
 		sortDirection: engine.sort.find(s => s.column === field)?.direction ?? null,
-		isFrozen: colIndex < engine.freezeColumns,
+		isFrozen: colIndex < engine.frozenColumnCount,
 		isTreeMode: engine.isTreeMode,
 		allColumns: engine.columns,  // All columns (hidden included) for the visibility submenu
 		labels: engine.labels

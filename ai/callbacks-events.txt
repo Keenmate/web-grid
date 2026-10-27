@@ -68,7 +68,7 @@ data-request / onDataRequest
   Detail: { sort, page, pageSize, trigger, mode, skip }
   Fires when sort (incl. a header-menu sort), page, or pageSize changes,
   or more rows are needed (infinite scroll).
-  trigger: 'sort' | 'page' | 'pageSize' | 'init' | 'loadMore'
+  trigger: 'sort' | 'page' | 'page-size' | 'init' | 'load-more'
   mode: 'replace' | 'append' (append for infinite scroll loadMore)
 
 filter-change / onFilterChange
@@ -161,7 +161,7 @@ beforePageChangeCallback
   Signature: (ctx: BeforePageChangeContext<T>) => boolean | number | void | Promise<…>
   Runs before a user action swaps the displayed rows: pager buttons, page-size
   change, header sort and filter-row changes in server pagination.
-  ctx: { trigger: 'page' | 'pageSize' | 'sort' | 'filter', fromPage, toPage,
+  ctx: { trigger: 'page' | 'page-size' | 'sort' | 'filter', fromPage, toPage,
   drafts }   (drafts = getDrafts(): every unsaved draft)
   false → stay; nothing → continue; a number → go to that page instead.
   Async OK: the pager is disabled (aria-busy) and further navigation ignored

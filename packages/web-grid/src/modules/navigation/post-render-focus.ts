@@ -59,7 +59,7 @@ export function restoreFocusAfterRender<T>(
 				} else {
 					// Apply editStartSelection setting
 					switch (editStartSelection) {
-						case 'mousePosition':
+						case 'mouse-position':
 							if (cursorPos !== undefined) {
 								const pos = Math.min(cursorPos, editor.value.length)
 								editor.setSelectionRange(pos, pos)
@@ -68,13 +68,13 @@ export function restoreFocusAfterRender<T>(
 								editor.setSelectionRange(editor.value.length, editor.value.length)
 							}
 							break
-						case 'cursorAtStart':
+						case 'cursor-at-start':
 							editor.setSelectionRange(0, 0)
 							break
-						case 'cursorAtEnd':
+						case 'cursor-at-end':
 							editor.setSelectionRange(editor.value.length, editor.value.length)
 							break
-						case 'selectAll':
+						case 'select-all':
 						default:
 							editor.select()
 							break

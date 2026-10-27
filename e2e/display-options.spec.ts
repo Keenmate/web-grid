@@ -26,16 +26,16 @@ test.describe('container flags', () => {
 	test('isHoverable / isStriped default on; attributes turn them off, removal restores', async ({ page }) => {
 		await expect(wg(page)).toHaveClass(/wg--hoverable/)
 		await expect(wg(page)).toHaveClass(/wg--striped/)
-		await onGrid(page, el => { el.setAttribute('is-hoverable', 'false'); el.setAttribute('is-striped', 'false') }, 'flat')
+		await onGrid(page, el => { el.setAttribute('hoverable', 'false'); el.setAttribute('striped', 'false') }, 'flat')
 		await expect(wg(page)).not.toHaveClass(/wg--hoverable/)
 		await expect(wg(page)).not.toHaveClass(/wg--striped/)
-		await onGrid(page, el => { el.removeAttribute('is-hoverable'); el.removeAttribute('is-striped') }, 'flat')
+		await onGrid(page, el => { el.removeAttribute('hoverable'); el.removeAttribute('striped') }, 'flat')
 		await expect(wg(page)).toHaveClass(/wg--hoverable/)
 		await expect(wg(page)).toHaveClass(/wg--striped/)
 	})
 
 	test('isScrollable + scrollMaxHeight cap the grid height', async ({ page }) => {
-		await onGrid(page, el => { el.setAttribute('is-scrollable', ''); el.setAttribute('scroll-max-height', '200px') }, 'flat')
+		await onGrid(page, el => { el.setAttribute('scrollable', ''); el.setAttribute('scroll-max-height', '200px') }, 'flat')
 		await expect(wg(page)).toHaveClass(/wg--scrollable/)
 		await expect.poll(async () => (await wg(page).boundingBox())!.height).toBeLessThanOrEqual(202)
 		expect(await wg(page).evaluate(el => el.scrollHeight > el.clientHeight)).toBe(true)
@@ -55,13 +55,13 @@ test.describe('container flags', () => {
 	})
 
 	test('isTableBorderOnly adds the modifier and a separate table scroll container', async ({ page }) => {
-		await onGrid(page, el => el.setAttribute('is-table-border-only', ''), 'flat')
+		await onGrid(page, el => el.setAttribute('table-border-only', ''), 'flat')
 		await expect(wg(page)).toHaveClass(/wg--table-border-only/)
 		await expect(gridLocator(page, 'flat').locator('.wg__table-container')).toHaveCount(1)
 	})
 
 	test('isStickyRowNumbers keeps the row numbers visible while scrolling horizontally', async ({ page }) => {
-		await onGrid(page, el => el.setAttribute('is-sticky-row-numbers', ''), 'flat')
+		await onGrid(page, el => el.setAttribute('sticky-row-numbers', ''), 'flat')
 		const rn = gridLocator(page, 'flat').locator('.wg__row-number[data-row-number="0"]')
 		const before = (await rn.boundingBox())!.x
 		await wg(page).evaluate(el => { el.scrollLeft = 150 })
@@ -85,8 +85,8 @@ test.describe('shortcuts help', () => {
 		await expect(help(page).locator('.wg__shortcuts-help-item')).toHaveCount(1)
 	})
 
-	test('isShortcutsHelpVisible removal hides it', async ({ page }) => {
-		await onGrid(page, el => el.removeAttribute('is-shortcuts-help-visible'), 'flat')
+	test('isShortcutsHelpShown removal hides it', async ({ page }) => {
+		await onGrid(page, el => el.removeAttribute('show-shortcuts-help'), 'flat')
 		await expect(help(page)).toHaveCount(0)
 	})
 })

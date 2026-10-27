@@ -30,10 +30,10 @@
                 <label>
                     Edit Start Selection:
                     <select id="editStartSelection">
-                        <option value="mousePosition">mousePosition (default)</option>
-                        <option value="selectAll">selectAll</option>
-                        <option value="cursorAtEnd">cursorAtEnd</option>
-                        <option value="cursorAtStart">cursorAtStart</option>
+                        <option value="mouse-position">mousePosition (default)</option>
+                        <option value="select-all">selectAll</option>
+                        <option value="cursor-at-end">cursorAtEnd</option>
+                        <option value="cursor-at-start">cursorAtStart</option>
                     </select>
                 </label>
                 <label>
@@ -271,7 +271,7 @@
                     initialOptions: countryOptions,
                     valueMember: 'value',
                     displayMember: 'label',
-                    editStartSelection: 'selectAll'
+                    editStartSelection: 'select-all'
                 }
             },
             {
@@ -306,7 +306,7 @@
 
         // Load settings from localStorage
         const savedEditTrigger = localStorage.getItem('editTrigger.value') || 'click'
-        const savedEditStartSelection = localStorage.getItem('editStartSelection.value') || 'mousePosition'
+        const savedEditStartSelection = localStorage.getItem('editStartSelection.value') || 'mouse-position'
 
         grid.editTrigger = savedEditTrigger
         grid.editStartSelection = savedEditStartSelection
@@ -385,7 +385,7 @@
         gridEmptyRow.isEditable = true
         gridEmptyRow.editTrigger = 'navigate'  // REQUIRED for empty row
         gridEmptyRow.isStriped = true
-        gridEmptyRow.isRowNumbersVisible = true
+        gridEmptyRow.isRowNumbersShown = true
         gridEmptyRow.isNewRowEnabled = true
         gridEmptyRow.newRowPosition = 'bottom'
         gridEmptyRow.createEmptyRowCallback = () => ({

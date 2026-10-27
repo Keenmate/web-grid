@@ -82,9 +82,9 @@
 		grid.pageSize = 5
 		grid.isEditable = true
 		grid.editTrigger = 'navigate'
-		grid.isRowNumbersVisible = true
-		grid.isDirtyIndicatorVisible = true
-		grid.sortMode = 'multi'
+		grid.isRowNumbersShown = true
+		grid.isDirtyIndicatorShown = true
+		grid.sortMode = 'multiple'
 
 		// Lock rows that are On Leave.
 		grid.rowLocking = {
@@ -118,7 +118,7 @@
 			grid.isStriped = e.target.checked
 		})
 		document.getElementById('sortable').addEventListener('change', (e) => {
-			grid.sortMode = e.target.checked ? 'multi' : 'none'
+			grid.sortMode = e.target.checked ? 'multiple' : 'none'
 		})
 		document.getElementById('editable').addEventListener('change', (e) => {
 			grid.isEditable = e.target.checked

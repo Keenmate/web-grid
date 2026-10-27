@@ -44,12 +44,12 @@
 		 *  row N  |  N+1 | Employee N+1  | emp{N+1}@k.io   | Engineer|Designer|Manager (N%3)
 		 *
 		 * Notes the spec relies on:
-		 *  - virtualScrollRowHeight=38, virtualScrollBuffer=5 → at viewport
+		 *  - virtualScrollItemHeight=38, virtualScrollOverscan=5 → at viewport
 		 *    height 380 you'd render ~20 rows max even though items.length=1000.
 		 *  - rows are exposed via data-row attribute; first rendered row index
 		 *    advances as you scrollTop.
 		 *  - #infiniteGrid loads 200 items at a time up to 600 max via
-		 *    onDataRequest mode='append' trigger='loadMore'.
+		 *    onDataRequest mode='append' trigger='load-more'.
 		 */
 		const ROLES = ['Engineer', 'Designer', 'Manager']
 		function generate(count, startId = 1) {
@@ -78,9 +78,9 @@
 		grid.columns = columns
 		grid.items = generate(1000)
 		grid.isVirtualScrollEnabled = true
-		grid.virtualScrollRowHeight = 38
-		grid.virtualScrollBuffer = 5
-		grid.isRowNumbersVisible = true
+		grid.virtualScrollItemHeight = 38
+		grid.virtualScrollOverscan = 5
+		grid.isRowNumbersShown = true
 
 		const renderedEl = document.querySelector('[data-testid="rendered-rows"]')
 		const topSpacerEl = document.querySelector('[data-testid="top-spacer"]')
@@ -115,7 +115,7 @@
 		infiniteGrid.items = generate(BATCH)
 		infiniteGrid.hasMoreItems = true
 		infiniteGrid.isVirtualScrollEnabled = true
-		infiniteGrid.virtualScrollRowHeight = 38
+		infiniteGrid.virtualScrollItemHeight = 38
 		infiniteGrid.isInfiniteScrollEnabled = true
 		infiniteGrid.infiniteScrollThreshold = 100
 
@@ -135,7 +135,7 @@
 			line.textContent = `trigger=${detail.trigger} mode=${detail.mode} skip=${detail.skip}`
 			reqLog.insertBefore(line, reqLog.firstChild)
 
-			if (detail.trigger === 'loadMore' && detail.mode === 'append') {
+			if (detail.trigger === 'load-more' && detail.mode === 'append') {
 				const nextStart = infiniteGrid.items.length + 1
 				const remaining = MAX - infiniteGrid.items.length
 				const toLoad = Math.min(BATCH, remaining)

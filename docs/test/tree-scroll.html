@@ -49,7 +49,7 @@
 		 * Notes the spec relies on:
 		 *  - defaultExpandDepth=1 → roots expand on initial load; sub paths visible,
 		 *    team paths hidden.
-		 *  - virtualScrollRowHeight=38; viewport ~380 → ~18 rows max in DOM (plus
+		 *  - virtualScrollItemHeight=38; viewport ~380 → ~18 rows max in DOM (plus
 		 *    spacer rows for off-screen).
 		 *  - Each row has data-row-index (current visible index) — the row-index
 		 *    space contracts/expands as you collapse/expand.
@@ -84,11 +84,11 @@
 		vsGrid.items = allData
 		vsGrid.treePathMember = 'path'
 		vsGrid.treeLevelMember = 'level'
-		vsGrid.treeDataSorted = true
+		vsGrid.isTreeDataSorted = true
 		vsGrid.defaultExpandDepth = 1
 		vsGrid.treeDoubleClickBehavior = 'toggle'
 		vsGrid.isVirtualScrollEnabled = true
-		vsGrid.virtualScrollRowHeight = 38
+		vsGrid.virtualScrollItemHeight = 38
 
 		const vsTotalEl = document.querySelector('[data-testid="vs-total-items"]')
 		const vsRenderedEl = document.querySelector('[data-testid="vs-rendered-rows"]')
@@ -126,11 +126,11 @@
 		isGrid.columns = columns
 		isGrid.treePathMember = 'path'
 		isGrid.treeLevelMember = 'level'
-		isGrid.treeDataSorted = true
+		isGrid.isTreeDataSorted = true
 		isGrid.defaultExpandDepth = 1
 		isGrid.treeDoubleClickBehavior = 'toggle'
 		isGrid.isVirtualScrollEnabled = true
-		isGrid.virtualScrollRowHeight = 38
+		isGrid.virtualScrollItemHeight = 38
 		isGrid.isInfiniteScrollEnabled = true
 		isGrid.infiniteScrollThreshold = 100
 		isGrid.hasMoreItems = true
@@ -160,7 +160,7 @@
 			line.textContent = `trigger=${detail.trigger} mode=${detail.mode}`
 			isReqLog.insertBefore(line, isReqLog.firstChild)
 
-			if (detail.trigger === 'loadMore') {
+			if (detail.trigger === 'load-more') {
 				if (nextRoot > MAX) {
 					isGrid.hasMoreItems = false
 					refreshIs()

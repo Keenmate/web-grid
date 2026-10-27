@@ -67,11 +67,11 @@
 			{ field: 'dept', title: 'Dept', width: '120px' },
 			{ field: 'salary', title: 'Salary', width: '110px', editor: 'number' }
 		]
-		grid.isRowNumbersVisible = true
+		grid.isRowNumbersShown = true
 		grid.isHoverable = true
 		grid.editTrigger = 'navigate'
 		grid.cellSelectionMode = 'click'
-		grid.sortMode = 'multi'
+		grid.sortMode = 'multiple'
 
 		const selectedRowsEl = document.querySelector('[data-testid="selected-rows"]')
 		const selectedCellsEl = document.querySelector('[data-testid="selected-cells"]')

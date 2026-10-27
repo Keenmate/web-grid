@@ -267,16 +267,16 @@ import type { MenuHandle } from '@keenmate/web-components-core/menu'
 // extractor and toEnum both read the same literal source of truth).
 const PAGINATION_MODES = ['client', 'server'] as const
 const EDIT_TRIGGERS = ['click', 'dblclick', 'button', 'always', 'navigate'] as const
-const EDIT_START_SELECTIONS = ['mousePosition', 'selectAll', 'cursorAtStart', 'cursorAtEnd'] as const
+const EDIT_START_SELECTIONS = ['mouse-position', 'select-all', 'cursor-at-start', 'cursor-at-end'] as const
 const GRID_PRESETS_LIST = ['read-only', 'excel', 'input-matrix'] as const
-const CELL_SELECTION_MODES = ['disabled', 'click', 'shift'] as const
+const CELL_SELECTION_MODES = ['none', 'click', 'shift'] as const
 const TOGGLE_VISIBILITIES = ['always', 'on-focus'] as const
 const TOOLBAR_VERTICAL_ALIGNS = ['top', 'center', 'bottom'] as const
 const TOOLBAR_HORIZONTAL_ALIGNS = ['start', 'center', 'end', 'cursor'] as const
 const TOOLBAR_TRIGGERS = ['hover', 'click', 'button'] as const
 const TOOLBAR_POSITIONS = ['auto', 'left', 'right', 'top', 'inline'] as const
 const SHORTCUTS_HELP_POSITIONS = ['top-right', 'top-left'] as const
-const SORT_MODES = ['none', 'single', 'multi'] as const
+const SORT_MODES = ['none', 'single', 'multiple'] as const
 const NEW_ROW_POSITIONS = ['top', 'bottom'] as const
 const TREE_DOUBLE_CLICK_BEHAVIORS = ['none', 'toggle'] as const
 const PASTE_MODES = ['skip-non-editable', 'all-columns', 'editable-only'] as const
@@ -309,7 +309,7 @@ const EVENTS: readonly EventDef[] = [
 ]
 
 /**
- * Boolean-or-`'auto'` tri-state (used by `is-pagination-visible`). Absent → the
+ * Boolean-or-`'auto'` tri-state (used by `show-pagination`). Absent → the
  * grid default; `auto` → `'auto'`; otherwise the usual true/false-ish parse.
  */
 const toBoolOrAuto = (fallback: boolean): InputDef['converter'] =>
@@ -361,27 +361,27 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	// two persist flags (side-effect setters) deliberately stay property-only.
 	static inputs: readonly InputDef[] = [
 		// Filtering & pagination
-		{ configKey: 'isFilterable', attribute: 'is-filterable', converter: toBool('default-false'), default: false, on: 'update' },
+		{ configKey: 'isFilterable', attribute: 'filterable', converter: toBool('default-false'), default: false, on: 'update' },
 		{ configKey: 'filterMode', attribute: 'filter-mode', converter: toEnum(FILTER_MODES, { default: 'client' }), default: 'client', on: 'update' },
-		{ configKey: 'isPageable', attribute: 'is-pageable', converter: toBool('default-false'), default: false, on: 'update' },
+		{ configKey: 'isPageable', attribute: 'pageable', converter: toBool('default-false'), default: false, on: 'update' },
 		{ configKey: 'pageSize', attribute: 'page-size', converter: toInt({ min: 1, default: 10 }), default: 10, on: 'update' },
 		{ configKey: 'paginationMode', attribute: 'pagination-mode', converter: toEnum(PAGINATION_MODES, { default: 'client' }), default: 'client', on: 'update' },
-		{ configKey: 'isPaginationVisible', attribute: 'is-pagination-visible', converter: toBoolOrAuto(true), default: true, on: 'update', type: "boolean | 'auto'" },
+		{ configKey: 'isPaginationShown', attribute: 'show-pagination', converter: toBoolOrAuto(true), default: true, on: 'update', type: "boolean | 'auto'" },
 		{ configKey: 'paginationPosition', attribute: 'pagination-position', converter: toText({ default: 'bottom-center' }), default: 'bottom-center', on: 'update' },
-		{ configKey: 'paginationLayout', attribute: 'pagination-layout', converter: toText({ default: 'pageSize|previous|pageInfo|next' }), default: 'pageSize|previous|pageInfo|next', on: 'update' },
+		{ configKey: 'paginationLayout', attribute: 'pagination-layout', converter: toText({ default: 'page-size|previous|page-info|next' }), default: 'page-size|previous|page-info|next', on: 'update' },
 		// Appearance
-		{ configKey: 'isStriped', attribute: 'is-striped', converter: toBool('default-true'), default: true, on: 'update' },
-		{ configKey: 'isHoverable', attribute: 'is-hoverable', converter: toBool('default-true'), default: true, on: 'update' },
-		{ configKey: 'isTableBorderOnly', attribute: 'is-table-border-only', converter: toBool('default-false'), default: false, on: 'update' },
-		{ configKey: 'isScrollable', attribute: 'is-scrollable', converter: toBool('default-false'), default: false, on: 'update' },
+		{ configKey: 'isStriped', attribute: 'striped', converter: toBool('default-true'), default: true, on: 'update' },
+		{ configKey: 'isHoverable', attribute: 'hoverable', converter: toBool('default-true'), default: true, on: 'update' },
+		{ configKey: 'isTableBorderOnly', attribute: 'table-border-only', converter: toBool('default-false'), default: false, on: 'update' },
+		{ configKey: 'isScrollable', attribute: 'scrollable', converter: toBool('default-false'), default: false, on: 'update' },
 		{ configKey: 'scrollMaxHeight', attribute: 'scroll-max-height', converter: toText({ default: '100vh' }), default: '100vh', on: 'update' },
 		// Editing
-		{ configKey: 'isEditable', attribute: 'is-editable', converter: toBool('default-false'), default: false, on: 'update' },
+		{ configKey: 'isEditable', attribute: 'editable', converter: toBool('default-false'), default: false, on: 'update' },
 		{ configKey: 'editTrigger', attribute: 'edit-trigger', converter: toEnum(EDIT_TRIGGERS, { default: 'dblclick' }), default: 'dblclick', on: 'update' },
 		// HTML of the edit button (editTrigger 'button'), e.g. '<span class="lucide-pencil"></span>'
 		{ configKey: 'editButtonIcon', attribute: 'edit-button-icon', converter: toText({ default: '✎' }), default: '✎', on: 'update' },
-		{ configKey: 'editStartSelection', attribute: 'edit-start-selection', converter: toEnum(EDIT_START_SELECTIONS, { default: 'mousePosition' }), default: 'mousePosition', on: 'update' },
-		{ configKey: 'shouldCommitOnClickAway', attribute: 'should-commit-on-click-away', converter: toBool('default-true'), default: true, on: 'update' },
+		{ configKey: 'editStartSelection', attribute: 'edit-start-selection', converter: toEnum(EDIT_START_SELECTIONS, { default: 'mouse-position' }), default: 'mouse-position', on: 'update' },
+		{ configKey: 'shouldCommitOnClickAway', attribute: 'commit-on-click-away', converter: toBool('default-true'), default: true, on: 'update' },
 		// A preset: also sets isEditable / isReadonly / editTrigger / dropdown flags / cellSelectionMode
 		// in the same batch; inputs set explicitly in that batch win (core getBatchValuesCallback).
 		{ configKey: 'preset', attribute: 'preset', converter: toEnum(GRID_PRESETS_LIST, { default: 'excel' }), default: 'excel', on: 'update',
@@ -393,21 +393,21 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		{ configKey: 'cellSelectionMode', attribute: 'cell-selection-mode', converter: toEnum(CELL_SELECTION_MODES, { default: 'click' }), default: 'click', on: 'update' },
 		// Dropdown editor
 		{ configKey: 'dropdownToggleVisibility', attribute: 'dropdown-toggle-visibility', converter: toEnum(TOGGLE_VISIBILITIES, { default: 'always' }), default: 'always', on: 'update' },
-		{ configKey: 'shouldShowDropdownOnFocus', attribute: 'should-show-dropdown-on-focus', converter: toBool('default-true'), default: true, on: 'update' },
-		{ configKey: 'shouldOpenDropdownOnEnter', attribute: 'should-open-dropdown-on-enter', converter: toBool('default-false'), default: false, on: 'update' },
-		{ configKey: 'isCheckboxAlwaysEditable', attribute: 'is-checkbox-always-editable', converter: toBool('default-false'), default: false, on: 'update' },
+		{ configKey: 'shouldOpenDropdownOnFocus', attribute: 'open-dropdown-on-focus', converter: toBool('default-true'), default: true, on: 'update' },
+		{ configKey: 'shouldOpenDropdownOnEnter', attribute: 'open-dropdown-on-enter', converter: toBool('default-false'), default: false, on: 'update' },
+		{ configKey: 'isCheckboxAlwaysEditable', attribute: 'checkbox-always-editable', converter: toBool('default-false'), default: false, on: 'update' },
 		// Row numbers & indicators
-		{ configKey: 'isRowNumbersVisible', attribute: 'is-row-numbers-visible', converter: toBool('default-false'), default: false, on: 'update' },
-		{ configKey: 'isDirtyIndicatorVisible', attribute: 'is-dirty-indicator-visible', converter: toBool('default-true'), default: true, on: 'update' },
-		{ configKey: 'isStickyRowNumbers', attribute: 'is-sticky-row-numbers', converter: toBool('default-false'), default: false, on: 'update' },
-		{ configKey: 'freezeColumns', attribute: 'freeze-columns', converter: toInt({ min: 0, default: 0 }), default: 0, on: 'update' },
+		{ configKey: 'isRowNumbersShown', attribute: 'show-row-numbers', converter: toBool('default-false'), default: false, on: 'update' },
+		{ configKey: 'isDirtyIndicatorShown', attribute: 'show-dirty-indicator', converter: toBool('default-true'), default: true, on: 'update' },
+		{ configKey: 'isStickyRowNumbers', attribute: 'sticky-row-numbers', converter: toBool('default-false'), default: false, on: 'update' },
+		{ configKey: 'frozenColumnCount', attribute: 'frozen-column-count', converter: toInt({ min: 0, default: 0 }), default: 0, on: 'update' },
 		// Row toolbar
-		{ configKey: 'isRowToolbarVisible', attribute: 'is-row-toolbar-visible', converter: toBool('default-false'), default: false, on: 'update' },
+		{ configKey: 'isRowToolbarShown', attribute: 'show-row-toolbar', converter: toBool('default-false'), default: false, on: 'update' },
 		{ configKey: 'toolbarVerticalAlign', attribute: 'toolbar-vertical-align', converter: toEnum(TOOLBAR_VERTICAL_ALIGNS, { default: 'bottom' }), default: 'bottom', on: 'update' },
 		{ configKey: 'toolbarHorizontalAlign', attribute: 'toolbar-horizontal-align', converter: toEnum(TOOLBAR_HORIZONTAL_ALIGNS, { default: 'center' }), default: 'center', on: 'update' },
 		{ configKey: 'toolbarTrigger', attribute: 'toolbar-trigger', converter: toEnum(TOOLBAR_TRIGGERS, { default: 'hover' }), default: 'hover', on: 'update' },
 		{ configKey: 'toolbarPosition', attribute: 'toolbar-position', converter: toEnum(TOOLBAR_POSITIONS, { default: 'auto' }), default: 'auto', on: 'update' },
-		{ configKey: 'shouldToolbarFollowCursor', attribute: 'should-toolbar-follow-cursor', converter: toBool('default-false'), default: false, on: 'update' },
+		{ configKey: 'shouldToolbarFollowCursor', attribute: 'toolbar-follow-cursor', converter: toBool('default-false'), default: false, on: 'update' },
 		{ configKey: 'cellToolbarOffset', attribute: 'cell-toolbar-offset', converter: toNumberOrLength(0.2), default: 0.2, on: 'update', type: 'number | string' },
 		// absent → labels.inlineActionsHeader; an explicit "" → blank header
 		{ configKey: 'inlineActionsTitle', attribute: 'inline-actions-title', converter: toText({ isNullable: true, isEmptyAllowed: true }), default: undefined, on: 'update' },
@@ -415,35 +415,35 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		{ configKey: 'contextMenuXOffset', attribute: 'context-menu-x-offset', converter: toInt({ default: 8 }), default: 8, on: 'update' },
 		{ configKey: 'contextMenuYOffset', attribute: 'context-menu-y-offset', converter: toInt({ default: 0 }), default: 0, on: 'update' },
 		// Shortcuts help
-		{ configKey: 'isShortcutsHelpVisible', attribute: 'is-shortcuts-help-visible', converter: toBool('default-false'), default: false, on: 'update' },
+		{ configKey: 'isShortcutsHelpShown', attribute: 'show-shortcuts-help', converter: toBool('default-false'), default: false, on: 'update' },
 		{ configKey: 'shortcutsHelpPosition', attribute: 'shortcuts-help-position', converter: toEnum(SHORTCUTS_HELP_POSITIONS, { default: 'top-right' }), default: 'top-right', on: 'update' },
 		// Columns
 		{ configKey: 'columnMinWidth', attribute: 'column-min-width', converter: toText({ isNullable: true }), default: undefined, on: 'update' },
-		{ configKey: 'isColumnReorderAllowed', attribute: 'is-column-reorder-allowed', converter: toBool('default-false'), default: false, on: 'update' },
+		{ configKey: 'isColumnReorderAllowed', attribute: 'allow-column-reorder', converter: toBool('default-false'), default: false, on: 'update' },
 		{ configKey: 'sortMode', attribute: 'sort-mode', converter: toEnum(SORT_MODES, { default: 'none' }), default: 'none', on: 'update' },
 		// Summary
 		{ configKey: 'summaryPosition', attribute: 'summary-position', converter: toText({ isNullable: true }), default: undefined, on: 'update' },
-		{ configKey: 'isSummaryInline', attribute: 'is-summary-inline', converter: toBool('default-true'), default: true, on: 'update' },
+		{ configKey: 'isSummaryInline', attribute: 'summary-inline', converter: toBool('default-true'), default: true, on: 'update' },
 		// Virtual & infinite scroll
-		{ configKey: 'isVirtualScrollEnabled', attribute: 'is-virtual-scroll-enabled', converter: toBool('default-false'), default: false, on: 'update' },
+		{ configKey: 'isVirtualScrollEnabled', attribute: 'enable-virtual-scroll', converter: toBool('default-false'), default: false, on: 'update' },
 		{ configKey: 'virtualScrollThreshold', attribute: 'virtual-scroll-threshold', converter: toInt({ min: 0, default: 100 }), default: 100, on: 'update' },
-		{ configKey: 'virtualScrollRowHeight', attribute: 'virtual-scroll-row-height', converter: toInt({ min: 1, default: 38 }), default: 38, on: 'update' },
-		{ configKey: 'virtualScrollBuffer', attribute: 'virtual-scroll-buffer', converter: toInt({ min: 0, default: 10 }), default: 10, on: 'update' },
-		{ configKey: 'isInfiniteScrollEnabled', attribute: 'is-infinite-scroll-enabled', converter: toBool('default-false'), default: false, on: 'update' },
+		{ configKey: 'virtualScrollItemHeight', attribute: 'virtual-scroll-item-height', converter: toInt({ min: 1, default: 38 }), default: 38, on: 'update' },
+		{ configKey: 'virtualScrollOverscan', attribute: 'virtual-scroll-overscan', converter: toInt({ min: 0, default: 10 }), default: 10, on: 'update' },
+		{ configKey: 'isInfiniteScrollEnabled', attribute: 'enable-infinite-scroll', converter: toBool('default-false'), default: false, on: 'update' },
 		{ configKey: 'infiniteScrollThreshold', attribute: 'infinite-scroll-threshold', converter: toInt({ min: 0, default: 100 }), default: 100, on: 'update' },
 		// New empty row
-		{ configKey: 'isNewRowEnabled', attribute: 'is-new-row-enabled', converter: toBool('default-false'), default: false, on: 'update' },
+		{ configKey: 'isNewRowEnabled', attribute: 'enable-new-row', converter: toBool('default-false'), default: false, on: 'update' },
 		{ configKey: 'newRowPosition', attribute: 'new-row-position', converter: toEnum(NEW_ROW_POSITIONS, { default: 'bottom' }), default: 'bottom', on: 'update' },
 		{ configKey: 'newRowIndicator', attribute: 'new-row-indicator', converter: toText({ default: '+' }), default: '+', on: 'update' },
 		// Tree
-		{ configKey: 'treeDataSorted', attribute: 'tree-data-sorted', converter: toBool('default-false'), default: false, on: 'update' },
+		{ configKey: 'isTreeDataSorted', attribute: 'tree-data-sorted', converter: toBool('default-false'), default: false, on: 'update' },
 		{ configKey: 'treeDoubleClickBehavior', attribute: 'tree-double-click-behavior', converter: toEnum(TREE_DOUBLE_CLICK_BEHAVIORS, { default: 'none' }), default: 'none', on: 'update' },
 		{ configKey: 'treeExpandedGlyph', attribute: 'tree-expanded-glyph', converter: toText({ default: '▶' }), default: '▶', on: 'update' },
 		{ configKey: 'treeCollapsedGlyph', attribute: 'tree-collapsed-glyph', converter: toText({ default: '▶' }), default: '▶', on: 'update' },
 		// Paste / clipboard
-		{ configKey: 'shouldCopyWithHeaders', attribute: 'should-copy-with-headers', converter: toBool('default-false'), default: false, on: 'update' },
+		{ configKey: 'shouldCopyWithHeaders', attribute: 'copy-with-headers', converter: toBool('default-false'), default: false, on: 'update' },
 		{ configKey: 'pasteMode', attribute: 'paste-mode', converter: toEnum(PASTE_MODES, { default: 'skip-non-editable' }), default: 'skip-non-editable', on: 'update' },
-		{ configKey: 'shouldValidateOnPaste', attribute: 'should-validate-on-paste', converter: toBool('default-true'), default: true, on: 'update' },
+		{ configKey: 'shouldValidateOnPaste', attribute: 'validate-on-paste', converter: toBool('default-true'), default: true, on: 'update' },
 		// Fill handle — grid-wide drag direction; a column's own `fillDirection` wins
 		{ configKey: 'fillDirection', attribute: 'fill-direction', converter: toEnum(FILL_DIRECTIONS, { default: 'vertical' }), default: 'vertical', on: 'update' },
 		// Tooltip timing (element-local, not on grid — the bridge's `in this.engine`
@@ -754,7 +754,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	/**
 	 * The edit button's content — an HTML string (default `✎`), e.g. an icon font /
 	 * sprite: `'<span class="lucide-pencil"></span>'`. Shown in editable cells with
-	 * `editTrigger: 'button'` (or `column.isEditButtonVisible`); its accessible name is
+	 * `editTrigger: 'button'` (or `column.isEditButtonShown`); its accessible name is
 	 * `labels.editCell`.
 	 */
 	get editButtonIcon(): string { return this.engine.editButtonIcon }
@@ -780,8 +780,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	get dropdownToggleVisibility(): ToggleVisibility { return this.engine.dropdownToggleVisibility }
 	set dropdownToggleVisibility(value: ToggleVisibility) { this.engine.dropdownToggleVisibility = value }
 
-	get shouldShowDropdownOnFocus(): boolean { return this.engine.shouldShowDropdownOnFocus }
-	set shouldShowDropdownOnFocus(value: boolean) { this.engine.shouldShowDropdownOnFocus = value }
+	get shouldOpenDropdownOnFocus(): boolean { return this.engine.shouldOpenDropdownOnFocus }
+	set shouldOpenDropdownOnFocus(value: boolean) { this.engine.shouldOpenDropdownOnFocus = value }
 
 	get shouldOpenDropdownOnEnter(): boolean { return this.engine.shouldOpenDropdownOnEnter }
 	set shouldOpenDropdownOnEnter(value: boolean) { this.engine.shouldOpenDropdownOnEnter = value }
@@ -789,11 +789,11 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	get isCheckboxAlwaysEditable(): boolean { return this.engine.isCheckboxAlwaysEditable }
 	set isCheckboxAlwaysEditable(value: boolean) { this.engine.isCheckboxAlwaysEditable = value }
 
-	get isRowNumbersVisible(): boolean { return this.engine.isRowNumbersVisible }
-	set isRowNumbersVisible(value: boolean) { this.engine.isRowNumbersVisible = value }
+	get isRowNumbersShown(): boolean { return this.engine.isRowNumbersShown }
+	set isRowNumbersShown(value: boolean) { this.engine.isRowNumbersShown = value }
 
-	get isDirtyIndicatorVisible(): boolean { return this.engine.isDirtyIndicatorVisible }
-	set isDirtyIndicatorVisible(value: boolean) { this.engine.isDirtyIndicatorVisible = value }
+	get isDirtyIndicatorShown(): boolean { return this.engine.isDirtyIndicatorShown }
+	set isDirtyIndicatorShown(value: boolean) { this.engine.isDirtyIndicatorShown = value }
 
 	isCellDirty(rowIndex: number, field: string): boolean { this.flush(); return this.engine.isCellDirty(rowIndex, field) }
 	isRowDirty(rowIndex: number): boolean { this.flush(); return this.engine.isRowDirty(rowIndex) }
@@ -801,14 +801,14 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	get isStickyRowNumbers(): boolean { return this.engine.isStickyRowNumbers }
 	set isStickyRowNumbers(value: boolean) { this.engine.isStickyRowNumbers = value }
 
-	get freezeColumns(): number { return this.engine.freezeColumns }
-	set freezeColumns(value: number) { this.engine.freezeColumns = value }
+	get frozenColumnCount(): number { return this.engine.frozenColumnCount }
+	set frozenColumnCount(value: number) { this.engine.frozenColumnCount = value }
 
 	get invalidCells(): CellValidationState[] { return this.engine.invalidCells }
 	set invalidCells(value: CellValidationState[]) { this.engine.invalidCells = value }
 
-	get isRowToolbarVisible(): boolean { return this.engine.isRowToolbarVisible }
-	set isRowToolbarVisible(value: boolean) { this.engine.isRowToolbarVisible = value }
+	get isRowToolbarShown(): boolean { return this.engine.isRowToolbarShown }
+	set isRowToolbarShown(value: boolean) { this.engine.isRowToolbarShown = value }
 
 	get rowToolbar(): GridToolbarEntry<T>[] { return this.engine.rowToolbar }
 	set rowToolbar(value: GridToolbarEntry<T>[]) { this.engine.rowToolbar = value }
@@ -818,13 +818,6 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 
 	get toolbarHorizontalAlign(): 'start' | 'center' | 'end' | 'cursor' { return this.engine.toolbarHorizontalAlign }
 	set toolbarHorizontalAlign(value: 'start' | 'center' | 'end' | 'cursor') { this.engine.toolbarHorizontalAlign = value }
-
-	// Deprecated aliases
-	get toolbarAlign(): 'top' | 'center' | 'bottom' { return this.toolbarVerticalAlign }
-	set toolbarAlign(value: 'top' | 'center' | 'bottom') { this.toolbarVerticalAlign = value }
-
-	get toolbarTopPosition(): 'start' | 'center' | 'end' | 'cursor' { return this.toolbarHorizontalAlign }
-	set toolbarTopPosition(value: 'start' | 'center' | 'end' | 'cursor') { this.toolbarHorizontalAlign = value }
 
 	get toolbarTrigger(): 'hover' | 'click' | 'button' { return this.engine.toolbarTrigger }
 	set toolbarTrigger(value: 'hover' | 'click' | 'button') { this.engine.toolbarTrigger = value }
@@ -838,10 +831,6 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	get shouldToolbarFollowCursor(): boolean { return this.engine.shouldToolbarFollowCursor }
 	set shouldToolbarFollowCursor(value: boolean) { this.engine.shouldToolbarFollowCursor = value }
 
-	/** @deprecated use `shouldToolbarFollowCursor` */
-	get toolbarFollowsCursor(): boolean { return this.shouldToolbarFollowCursor }
-	/** @deprecated use `shouldToolbarFollowCursor` */
-	set toolbarFollowsCursor(value: boolean) { this.shouldToolbarFollowCursor = value }
 
 	get getCellToolbarItemsCallback(): ((ctx: CellContext<T>) => GridToolbarEntry<T>[] | null | undefined) | undefined {
 		return this.engine.getCellToolbarItemsCallback
@@ -953,8 +942,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	get treeSeparator(): string | null { return this.engine.treeSeparator }
 	set treeSeparator(value: string | null) { this.engine.treeSeparator = value }
 
-	get treeDataSorted(): boolean { return this.engine.treeDataSorted }
-	set treeDataSorted(value: boolean) { this.engine.treeDataSorted = value }
+	get isTreeDataSorted(): boolean { return this.engine.isTreeDataSorted }
+	set isTreeDataSorted(value: boolean) { this.engine.isTreeDataSorted = value }
 
 	get expandedPaths(): Set<string> { return this.engine.expandedPaths }
 	set expandedPaths(value: Set<string> | null | undefined) { this.engine.expandedPaths = value as Set<string> }
@@ -979,8 +968,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	get renderChevronCallback(): ChevronCallback<T> | undefined { return this.engine.renderChevronCallback }
 	set renderChevronCallback(value: ChevronCallback<T> | undefined) { this.engine.renderChevronCallback = value }
 
-	get isShortcutsHelpVisible(): boolean { return this.engine.isShortcutsHelpVisible }
-	set isShortcutsHelpVisible(value: boolean) { this.engine.isShortcutsHelpVisible = value }
+	get isShortcutsHelpShown(): boolean { return this.engine.isShortcutsHelpShown }
+	set isShortcutsHelpShown(value: boolean) { this.engine.isShortcutsHelpShown = value }
 
 	get shortcutsHelpPosition(): 'top-right' | 'top-left' { return this.engine.shortcutsHelpPosition }
 	set shortcutsHelpPosition(value: 'top-right' | 'top-left') { this.engine.shortcutsHelpPosition = value }
@@ -1011,13 +1000,9 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	get totalItems(): number | null { return this.engine.totalItems }
 	set totalItems(value: number | null) { this.engine.totalItems = value }
 
-	get isPaginationVisible(): boolean | 'auto' { return this.engine.isPaginationVisible }
-	set isPaginationVisible(value: boolean | 'auto') { this.engine.isPaginationVisible = value }
+	get isPaginationShown(): boolean | 'auto' { return this.engine.isPaginationShown }
+	set isPaginationShown(value: boolean | 'auto') { this.engine.isPaginationShown = value }
 
-	/** @deprecated use `isPaginationVisible` */
-	get showPagination(): boolean | 'auto' { return this.isPaginationVisible }
-	/** @deprecated use `isPaginationVisible` */
-	set showPagination(value: boolean | 'auto') { this.isPaginationVisible = value }
 
 	get paginationPosition(): string { return this.engine.paginationPosition }
 	set paginationPosition(value: string) { this.engine.paginationPosition = value }
@@ -1105,10 +1090,10 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	// Fill handle: `false` cancels the fill (async OK)
 	/**
 	 * Runs before a user action swaps the displayed rows — pager buttons, page-size change,
-	 * header sort and filter-row changes in server mode (`ctx.trigger`: `'page'` / `'pageSize'` /
+	 * header sort and filter-row changes in server mode (`ctx.trigger`: `'page'` / `'page-size'` /
 	 * `'sort'` / `'filter'`; `fromPage`, `toPage`, `drafts`). `false` → stay; a number → go to
 	 * that page instead; may be async (the pager is disabled meanwhile). Programmatic
-	 * `currentPage` writes and infinite-scroll `loadMore` skip it.
+	 * `currentPage` writes and infinite-scroll `load-more` skip it.
 	 */
 	get beforePageChangeCallback(): ((ctx: BeforePageChangeContext<T>) => boolean | number | void | Promise<boolean | number | void>) | undefined { return this.engine.beforePageChangeCallback }
 	set beforePageChangeCallback(value: ((ctx: BeforePageChangeContext<T>) => boolean | number | void | Promise<boolean | number | void>) | undefined) { this.engine.beforePageChangeCallback = value }
@@ -1126,10 +1111,6 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	get isTableBorderOnly(): boolean { return this.engine.isTableBorderOnly }
 	set isTableBorderOnly(value: boolean) { this.engine.isTableBorderOnly = value }
 
-	/** @deprecated use `isTableBorderOnly` */
-	get tableBorderOnly(): boolean { return this.isTableBorderOnly }
-	/** @deprecated use `isTableBorderOnly` */
-	set tableBorderOnly(value: boolean) { this.isTableBorderOnly = value }
 
 	// Virtual scroll
 	get isVirtualScrollEnabled(): boolean { return this.engine.isVirtualScrollEnabled }
@@ -1138,11 +1119,11 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	get virtualScrollThreshold(): number { return this.engine.virtualScrollThreshold }
 	set virtualScrollThreshold(value: number) { this.engine.virtualScrollThreshold = value }
 
-	get virtualScrollRowHeight(): number { return this.engine.virtualScrollRowHeight }
-	set virtualScrollRowHeight(value: number) { this.engine.virtualScrollRowHeight = value }
+	get virtualScrollItemHeight(): number { return this.engine.virtualScrollItemHeight }
+	set virtualScrollItemHeight(value: number) { this.engine.virtualScrollItemHeight = value }
 
-	get virtualScrollBuffer(): number { return this.engine.virtualScrollBuffer }
-	set virtualScrollBuffer(value: number) { this.engine.virtualScrollBuffer = value }
+	get virtualScrollOverscan(): number { return this.engine.virtualScrollOverscan }
+	set virtualScrollOverscan(value: number) { this.engine.virtualScrollOverscan = value }
 
 	// Infinite scroll
 	get isInfiniteScrollEnabled(): boolean { return this.engine.isInfiniteScrollEnabled }
@@ -1546,8 +1527,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 
 		const { scrollTop, startIndex, endIndex } = calculateScrollToRow({
 			targetRow,
-			rowHeight: this.engine.virtualScrollRowHeight,
-			buffer: this.engine.virtualScrollBuffer,
+			rowHeight: this.engine.virtualScrollItemHeight,
+			buffer: this.engine.virtualScrollOverscan,
 			totalItems: this.engine.displayItems.length,
 			viewportHeight: container.clientHeight,
 			scrollHeight: container.scrollHeight,
@@ -1660,8 +1641,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		if (useVirtualScroll) {
 			// Calculate virtual scroll params
 			const items = this.engine.displayItems
-			const rowHeight = this.engine.virtualScrollRowHeight
-			const buffer = this.engine.virtualScrollBuffer
+			const rowHeight = this.engine.virtualScrollItemHeight
+			const buffer = this.engine.virtualScrollOverscan
 
 			// Use stored scroll position for calculation (scrollTop from old container)
 			const viewportHeight = oldContainer?.clientHeight || 400  // Default height if not available
@@ -1735,7 +1716,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 				const sc = this.engine.isTableBorderOnly
 					? (container.querySelector('.wg__table-container') as HTMLElement) || container
 					: container
-				const maxScrollTop = Math.max(0, this.engine.displayItems.length * this.engine.virtualScrollRowHeight - sc.clientHeight)
+				const maxScrollTop = Math.max(0, this.engine.displayItems.length * this.engine.virtualScrollItemHeight - sc.clientHeight)
 				if (sc.scrollTop > maxScrollTop) sc.scrollTop = maxScrollTop
 			}
 		} else {
@@ -1775,7 +1756,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 				: container
 
 			if (useVirtualScroll) {
-				const maxScrollTop = Math.max(0, this.engine.displayItems.length * this.engine.virtualScrollRowHeight - scrollContainer.clientHeight)
+				const maxScrollTop = Math.max(0, this.engine.displayItems.length * this.engine.virtualScrollItemHeight - scrollContainer.clientHeight)
 				scrollContainer.scrollTop = Math.min(scrollTop, maxScrollTop)
 			} else {
 				scrollContainer.scrollTop = scrollTop

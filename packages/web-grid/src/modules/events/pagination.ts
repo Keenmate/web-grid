@@ -35,15 +35,15 @@ export function handlePaginationClick<T>(ctx: GridHost<T>, e: Event): boolean {
 
 /**
  * Handle page size select change — through `beforePageChangeCallback` (trigger
- * 'pageSize', toPage 1). Returns true if the page size changed synchronously.
+ * 'page-size', toPage 1). Returns true if the page size changed synchronously.
  */
 export function handlePageSizeChange<T>(ctx: GridHost<T>, select: HTMLSelectElement): boolean {
 	const newPageSize = parseInt(select.value, 10)
 	if (newPageSize === ctx.engine.pageSize) return false
-	return guardPageChange(ctx, 'pageSize', 1, page => {
+	return guardPageChange(ctx, 'page-size', 1, page => {
 		ctx.setAttributes({ pageSize: newPageSize })
 		ctx.engine.currentPage = page
-		ctx.engine.fireDataRequest('pageSize')
+		ctx.engine.fireDataRequest('page-size')
 	})
 }
 

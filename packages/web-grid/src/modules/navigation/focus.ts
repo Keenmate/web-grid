@@ -131,7 +131,7 @@ function ensureRowVisibleMinimal<T>(ctx: GridHost<T>, rowIndex: number): void {
 	const container = ctx.shadow.querySelector('.wg') as HTMLElement
 	if (!container) return
 
-	const rowHeight = ctx.engine.virtualScrollRowHeight
+	const rowHeight = ctx.engine.virtualScrollItemHeight
 	const scrollTop = container.scrollTop
 	const viewportHeight = container.clientHeight
 
@@ -163,7 +163,7 @@ export function scrollToRowPosition<T>(ctx: GridHost<T>, rowIndex: number): void
 	const container = ctx.shadow.querySelector('.wg') as HTMLElement
 	if (!container) return
 
-	const rowHeight = ctx.engine.virtualScrollRowHeight
+	const rowHeight = ctx.engine.virtualScrollItemHeight
 
 	// Position target row as second visible row (rowIndex - 1 at top)
 	// This gives one row of context above the target

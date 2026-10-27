@@ -8,12 +8,12 @@ Row focus is a separate concept that tracks which row the user last clicked.
 
 ROW SELECTION
 -------------
-Rows are selected by clicking row number cells (requires isRowNumbersVisible).
+Rows are selected by clicking row number cells (requires isRowNumbersShown).
 Selected row indices are tracked in a Set internally. The selectedRows property
 returns them as a sorted array.
 
 Prerequisite:
-  grid.isRowNumbersVisible = true
+  grid.isRowNumbersShown = true
 
 Interaction patterns:
   Click row number         - Select single row (replaces previous selection)
@@ -56,7 +56,7 @@ Event:
     the selected set changed -- incl. rows cleared by a cell / column selection.
 
 Example:
-  grid.isRowNumbersVisible = true
+  grid.isRowNumbersShown = true
   grid.onRowSelectionChange = ({ rows }) => console.log(rows.length, 'rows')
   grid.selectRow(0, 'replace')
   grid.selectRow(2, 'toggle')
@@ -70,7 +70,7 @@ CELL RANGE SELECTION
 Rectangular cell ranges are selected by click+drag, shift+click, or from the
 keyboard. The behavior depends on cellSelectionMode.
 
-Keyboard (any mode but 'disabled', cell focused, not editing):
+Keyboard (any mode but 'none', cell focused, not editing):
   Shift+Arrow          grow / shrink the range by one cell from the focused cell
                        (the anchor keeps focus; crossing it flips the range)
   Shift+Home / End     to the start / end of the row
@@ -79,7 +79,7 @@ Keyboard (any mode but 'disabled', cell focused, not editing):
 
 Property:
   cellSelectionMode        - CellSelectionMode
-    'disabled'  - No cell range selection
+    'none'      - No cell range selection
     'click'     - Click+drag on cells to select range; Shift+click extends the
                   range from the focused cell (default, excel/read-only modes)
     'shift'     - Shift+click to select range; plain click edits (used in input-matrix mode)
@@ -397,7 +397,7 @@ Example:
   ]
 
 To show a help overlay listing shortcuts:
-  grid.isShortcutsHelpVisible = true
+  grid.isShortcutsHelpShown = true
   grid.shortcutsHelpPosition = 'top-right'  // or 'top-left'
 
 

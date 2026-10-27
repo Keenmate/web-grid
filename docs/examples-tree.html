@@ -47,7 +47,7 @@
             <h2>Organizations</h2>
             <p>Each row carries a <code>path</code> like <code>"1.2.3"</code>. Levels and parent paths are derived automatically; provide <code>treeLevelMember</code> / <code>treeParentMember</code> if your DB already computes them.</p>
             <p><strong>Sorting in tree mode</strong> is sibling-aware: clicking a header sorts each parent's children among themselves (e.g., "sort each department's sub-teams by Annual Budget"). The hierarchy stays intact — parents always appear above their children.</p>
-            <p>For <strong>custom sort logic</strong> (e.g., sort departments by total budget aggregated over all descendants), set <code>treeDataSorted: true</code>, listen to the <code>data-request</code> event (<code>onDataRequest</code>), sort the items yourself, and push them back via <code>grid.items = …</code>. The grid will trust your order completely and skip its internal sibling sort.</p>
+            <p>For <strong>custom sort logic</strong> (e.g., sort departments by total budget aggregated over all descendants), set <code>isTreeDataSorted: true</code>, listen to the <code>data-request</code> event (<code>onDataRequest</code>), sort the items yourself, and push them back via <code>grid.items = …</code>. The grid will trust your order completely and skip its internal sibling sort.</p>
             <p><strong>Keyboard:</strong> click a cell, then arrows move focus, <strong>Ctrl/Cmd + ←</strong> collapses the focused parent (or walks up to the nearest expanded ancestor), <strong>Ctrl/Cmd + →</strong> expands. Right-click for tree context-menu items. (This grid is in <code>editTrigger: 'navigate'</code>.)</p>
 
             <div class="controls">
@@ -180,7 +180,7 @@ rowGateGrid.columns = [
 
         <div class="card">
             <h2>Custom Sort: Grouped Aggregate</h2>
-            <p>When you want to sort siblings by an <strong>aggregate over their descendants</strong> (e.g. "sort departments by total budget across all sub-teams"), set <code>treeDataSorted: true</code> and own the order yourself. The grid will fire <code>data-request</code> (<code>onDataRequest</code>) when sort changes, you compute the aggregate, sort, and push items back. The grid never re-sorts internally in this mode.</p>
+            <p>When you want to sort siblings by an <strong>aggregate over their descendants</strong> (e.g. "sort departments by total budget across all sub-teams"), set <code>isTreeDataSorted: true</code> and own the order yourself. The grid will fire <code>data-request</code> (<code>onDataRequest</code>) when sort changes, you compute the aggregate, sort, and push items back. The grid never re-sorts internally in this mode.</p>
 
             <web-grid id="aggGrid" style="max-width: 100%; max-height: 500px; border: 1px solid #e2e8f0;"></web-grid>
 
@@ -189,7 +189,7 @@ rowGateGrid.columns = [
             </p>
 
             <h3 style="margin-top: 1.5rem;">How it works</h3>
-            <pre style="background: #f8f9fa; padding: 0.75rem; border-radius: 4px; font-size: 0.85rem; overflow-x: auto;"><code>aggGrid.treeDataSorted = true              // grid won't re-sort
+            <pre style="background: #f8f9fa; padding: 0.75rem; border-radius: 4px; font-size: 0.85rem; overflow-x: auto;"><code>aggGrid.isTreeDataSorted = true              // grid won't re-sort
 aggGrid.expandedPaths = new Set(allPaths)  // own expansion too, so re-setting items keeps it stable
 
 aggGrid.onDataRequest = ({ sort }) =&gt; {
@@ -331,7 +331,7 @@ files.renderChevronCallback = ({ isExpanded, hasChildren }) =&gt; {
         grid.columns = orgColumns
         grid.treePathMember = 'path'
         grid.defaultExpandDepth = 2
-        grid.treeDataSorted = true
+        grid.isTreeDataSorted = true
         grid.treeDoubleClickBehavior = 'toggle'
         grid.editTrigger = 'navigate'   // cells focusable; arrows nav; Ctrl+Arrow toggles tree
         grid.sortMode = 'single'
@@ -370,7 +370,7 @@ files.renderChevronCallback = ({ isExpanded, hasChildren }) =&gt; {
             grid.treeDoubleClickBehavior = e.target.checked ? 'toggle' : 'none'
         })
         document.getElementById('dataSorted').addEventListener('change', e => {
-            grid.treeDataSorted = e.target.checked
+            grid.isTreeDataSorted = e.target.checked
         })
         document.getElementById('depth').addEventListener('change', e => {
             const v = e.target.value
@@ -416,7 +416,7 @@ files.renderChevronCallback = ({ isExpanded, hasChildren }) =&gt; {
         ]
         navGrid.treePathMember = 'path'
         navGrid.defaultExpandDepth = 99       // start fully expanded so all rows are reachable
-        navGrid.treeDataSorted = true
+        navGrid.isTreeDataSorted = true
         navGrid.treeDoubleClickBehavior = 'toggle'
         navGrid.editTrigger = 'navigate'      // enables cell focus + Ctrl+arrow keys
         navGrid.isEditable = true             // grid-level editing on (per-row predicate decides)
@@ -464,7 +464,7 @@ files.renderChevronCallback = ({ isExpanded, hasChildren }) =&gt; {
         ]
         rowGateGrid.treePathMember = 'path'
         rowGateGrid.defaultExpandDepth = 99
-        rowGateGrid.treeDataSorted = true
+        rowGateGrid.isTreeDataSorted = true
         rowGateGrid.treeDoubleClickBehavior = 'toggle'
         rowGateGrid.editTrigger = 'navigate'
         rowGateGrid.isEditable = true
@@ -485,7 +485,7 @@ files.renderChevronCallback = ({ isExpanded, hasChildren }) =&gt; {
         ]
 
         // -----------------------------------------------------------------
-        // Custom sort by grouped aggregate (treeDataSorted=true + onDataRequest)
+        // Custom sort by grouped aggregate (isTreeDataSorted=true + onDataRequest)
         // -----------------------------------------------------------------
         const aggGrid = document.getElementById('aggGrid')
         const aggColumns = [
@@ -546,7 +546,7 @@ files.renderChevronCallback = ({ isExpanded, hasChildren }) =&gt; {
         aggGrid.items = orgData
         aggGrid.columns = aggColumns
         aggGrid.treePathMember = 'path'
-        aggGrid.treeDataSorted = true
+        aggGrid.isTreeDataSorted = true
         aggGrid.sortMode = 'single'
         aggGrid.isHoverable = true
         aggGrid.isStriped = true
@@ -584,7 +584,7 @@ files.renderChevronCallback = ({ isExpanded, hasChildren }) =&gt; {
         cvGrid.columns = cvColumns
         cvGrid.treePathMember = 'path'
         cvGrid.defaultExpandDepth = 2
-        cvGrid.treeDataSorted = true
+        cvGrid.isTreeDataSorted = true
         cvGrid.treeDoubleClickBehavior = 'toggle'
         cvGrid.isHoverable = true
         cvGrid.isStriped = true
@@ -684,7 +684,7 @@ files.renderChevronCallback = ({ isExpanded, hasChildren }) =&gt; {
         files.items = fileData
         files.columns = fileColumns
         files.treePathMember = 'path'
-        files.treeDataSorted = true
+        files.isTreeDataSorted = true
         files.defaultExpandDepth = 0
         files.isHoverable = true
 

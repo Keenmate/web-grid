@@ -283,7 +283,7 @@ test.describe('cell formatting & class callbacks', () => {
 })
 
 test.describe('row numbers', () => {
-	test('isRowNumbersVisible renders a row-number cell with 0-based data attr and 1-based display', async ({ page }) => {
+	test('isRowNumbersShown renders a row-number cell with 0-based data attr and 1-based display', async ({ page }) => {
 		await gotoBasic(page)
 
 		const firstRowNumber = gridLocator(page).locator('tbody tr').first().locator('.wg__row-number').first()

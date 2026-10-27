@@ -276,7 +276,7 @@ export class ActionPipelineAdapter<T = unknown> {
 
 		// Not editing: Shift+Arrow / Shift+Home/End / Ctrl+Shift+Arrow grow or shrink the
 		// cell range from the focused cell (the anchor keeps focus)
-		if (isRangeExtensionKey(e) && this.ctx.engine.cellSelectionMode !== 'disabled') {
+		if (isRangeExtensionKey(e) && this.ctx.engine.cellSelectionMode !== 'none') {
 			e.preventDefault()
 			e.stopPropagation()
 			extendCellRangeByKey(this.ctx, e)
@@ -727,7 +727,7 @@ export class ActionPipelineAdapter<T = unknown> {
 			const selectionMode = this.ctx.engine.cellSelectionMode
 			const isShiftClick = e.shiftKey
 			const shouldSelectRange =
-				selectionMode !== 'disabled' && (
+				selectionMode !== 'none' && (
 					(selectionMode === 'click' && !isShiftClick) ||
 					(selectionMode === 'shift' && isShiftClick)
 				)
@@ -811,7 +811,7 @@ export class ActionPipelineAdapter<T = unknown> {
 			e.stopImmediatePropagation()
 		}
 
-		// Calculate cursor position from click for editStartSelection: 'mousePosition'
+		// Calculate cursor position from click for editStartSelection: 'mouse-position'
 		const cellElement = target.closest('.wg__cell') as HTMLElement
 		const cursorPosition = cellElement ? getCursorPositionFromClick(e, cellElement) : null
 
@@ -860,7 +860,7 @@ export class ActionPipelineAdapter<T = unknown> {
 		const isDate = this.isDateEditor(cell.colIndex)
 		const isCustom = this.isCustomEditor(cell.colIndex)
 
-		// Calculate cursor position from click for editStartSelection: 'mousePosition'
+		// Calculate cursor position from click for editStartSelection: 'mouse-position'
 		const cellElement = target.closest('.wg__cell') as HTMLElement
 		const cursorPosition = cellElement ? getCursorPositionFromClick(e, cellElement) : null
 

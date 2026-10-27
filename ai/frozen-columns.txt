@@ -8,23 +8,23 @@ OVERVIEW
 Frozen columns use CSS position: sticky to pin columns to the left edge of
 the scroll container. They remain visible while the user scrolls horizontally.
 Two mechanisms exist: per-column (isFrozen on Column) and grid-level
-(freezeColumns count).
+(frozenColumnCount count).
 
 
 GRID-LEVEL PROPERTY
 -------------------
-freezeColumns (number, default: 0)
+frozenColumnCount (number, default: 0)
   Freeze the first N columns. Applied after visual reorder from per-column
   isFrozen settings. Set on the grid element:
 
-  grid.freezeColumns = 3
+  grid.frozenColumnCount = 3
 
 
 PER-COLUMN PROPERTY
 -------------------
 isFrozen (boolean) on Column<T>
   Marks an individual column as frozen. Frozen columns are reordered to the
-  left side before the freezeColumns count is applied.
+  left side before the frozenColumnCount count is applied.
 
   grid.columns = [
     { field: 'id', title: 'ID', isFrozen: true },
@@ -39,7 +39,7 @@ isStickyRowNumbers (boolean, default: false)
   When true, the row number column sticks to the left during horizontal scroll.
   Works independently of frozen columns.
 
-  grid.isRowNumbersVisible = true
+  grid.isRowNumbersShown = true
   grid.isStickyRowNumbers = true
 
 

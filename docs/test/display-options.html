@@ -15,7 +15,7 @@
 	<code>treeCollapsedGlyph</code> / <code>renderChevronCallback</code>).</p>
 
 	<h2>#flat — 30 rows, row numbers, one row shortcut, help visible</h2>
-	<web-grid id="flat" is-row-numbers-visible is-shortcuts-help-visible style="max-width: 500px;"></web-grid>
+	<web-grid id="flat" show-row-numbers show-shortcuts-help style="max-width: 500px;"></web-grid>
 
 	<h2>#tree — Root › Child › Leaf, Other</h2>
 	<web-grid id="tree" style="max-width: 400px;"></web-grid>
@@ -34,7 +34,7 @@
 
 		const tree = document.getElementById('tree')
 		tree.treePathMember = 'path'
-		tree.treeDataSorted = true
+		tree.isTreeDataSorted = true
 		tree.columns = [{ field: 'name', title: 'Name', width: '220px', isTree: true }]
 		tree.items = [
 			{ path: '1', name: 'Root' },

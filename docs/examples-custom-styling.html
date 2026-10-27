@@ -373,7 +373,7 @@
                 editor: 'combobox',
                 editorOptions: {
                     options: departmentOptions,
-                    editStartSelection: 'selectAll'
+                    editStartSelection: 'select-all'
                 }
             },
             {
@@ -445,7 +445,7 @@
                     minSearchLength: 0,
                     debounceMs: 200,
                     dropdownMinWidth: '220px',  // Wider than 180px cell
-                    editStartSelection: 'selectAll',
+                    editStartSelection: 'select-all',
                     // Custom dropdown rendering with group colors
                     renderOptionCallback: ({ option: opt, ...ctx }) => {
                         const classes = ['wg__dropdown-option']
@@ -553,7 +553,7 @@
         grid.isStriped = false  // Disable striping to better show custom colors
         grid.isHoverable = true
         grid.isEditable = true
-        grid.sortMode = 'multi'  // Enable multi-column sorting
+        grid.sortMode = 'multiple'  // Enable multi-column sorting
 
         // Dynamic row styling - gray out inactive employees
         grid.getRowClassCallback = ({ row, rowIndex: index }) => {
@@ -666,7 +666,7 @@
         gridDoubleBorder.isPageable = true
         gridDoubleBorder.pageSize = 3
         gridDoubleBorder.paginationPosition = 'bottom-right'
-        gridDoubleBorder.paginationLayout = 'previous|pageInfo|next'
+        gridDoubleBorder.paginationLayout = 'previous|page-info|next'
 
         // Grid with isTableBorderOnly (no double border)
         const gridTableBorderOnly = document.getElementById('gridTableBorderOnly')
@@ -675,7 +675,7 @@
         gridTableBorderOnly.isPageable = true
         gridTableBorderOnly.pageSize = 3
         gridTableBorderOnly.paginationPosition = 'bottom-right'
-        gridTableBorderOnly.paginationLayout = 'previous|pageInfo|next'
+        gridTableBorderOnly.paginationLayout = 'previous|page-info|next'
         gridTableBorderOnly.isTableBorderOnly = true
     </script>
 </body>

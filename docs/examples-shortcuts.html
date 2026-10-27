@@ -132,7 +132,7 @@ grid.onAction = ({ action, id, rowIndex }) => {
 }
 
 // Show help icon
-grid.isShortcutsHelpVisible = true</pre>
+grid.isShortcutsHelpShown = true</pre>
                 </div>
             </div>
         </div>
@@ -143,7 +143,7 @@ grid.isShortcutsHelpVisible = true</pre>
                 <h3>Grid Properties</h3>
                 <table class="props-table">
                     <tr><td><code>rowShortcuts</code></td><td>Array of shortcut definitions</td></tr>
-                    <tr><td><code>isShortcutsHelpVisible</code></td><td>Show info icon (default: false)</td></tr>
+                    <tr><td><code>isShortcutsHelpShown</code></td><td>Show info icon (default: false)</td></tr>
                     <tr><td><code>shortcutsHelpPosition</code></td><td>'top-right' | 'top-left'</td></tr>
                     <tr><td><code>renderShortcutsHelpCallback</code></td><td>Custom HTML for overlay</td></tr>
                 </table>
@@ -273,7 +273,7 @@ grid.isShortcutsHelpVisible = true</pre>
         }
 
         // Show shortcuts help icon
-        grid.isShortcutsHelpVisible = true
+        grid.isShortcutsHelpShown = true
         grid.shortcutsHelpPosition = 'top-right'
         grid.renderShortcutsHelpCallback = () => '<p style="margin:0;font-size:12px;color:#666;">Click a cell to focus, then use shortcuts</p>'
 

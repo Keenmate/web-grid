@@ -21,7 +21,7 @@ ROW TOOLBAR BASICS
 The row toolbar is a floating (or inline) set of action buttons
 that appear per-row. Enable it with two properties:
 
-    grid.isRowToolbarVisible = true
+    grid.isRowToolbarShown = true
     grid.rowToolbar = ['add', 'delete', 'duplicate', 'move-up', 'move-down']
 
 The rowToolbar array (GridToolbarEntry<T>[]) accepts built-in names,
@@ -195,7 +195,7 @@ INLINE ACTIONS
 When toolbarPosition is set to 'inline', toolbar items render as a
 fixed column in the table instead of a floating popup.
 
-    grid.isRowToolbarVisible = true
+    grid.isRowToolbarShown = true
     grid.toolbarPosition = 'inline'
     grid.rowToolbar = ['add', 'delete', 'duplicate']
 

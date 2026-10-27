@@ -67,7 +67,7 @@
 
         <div class="card">
             <h2>Per-Column Reorder Opt-Out</h2>
-            <p>Individual columns can disable reordering with <code>isMovable: false</code>. The first two columns (ID and Name) cannot be dragged, but you can still move other columns around them.</p>
+            <p>Individual columns can disable reordering with <code>isReorderable: false</code>. The first two columns (ID and Name) cannot be dragged, but you can still move other columns around them.</p>
 
             <web-grid id="gridMovable" style="max-width: 100%; max-height: 300px;"></web-grid>
         </div>
@@ -79,7 +79,7 @@
             <div class="controls">
                 <label>
                     Freeze Columns:
-                    <select id="freezeColumns">
+                    <select id="frozenColumnCount">
                         <option value="0">0</option>
                         <option value="1">1</option>
                         <option value="2" selected>2</option>
@@ -321,17 +321,17 @@
         const grid = document.getElementById('grid')
         grid.items = sampleData
         grid.columns = columns
-        grid.isRowNumbersVisible = true
+        grid.isRowNumbersShown = true
         grid.isStriped = true
         grid.isHoverable = true
         grid.isColumnReorderAllowed = true
-        grid.sortMode = 'multi'
+        grid.sortMode = 'multiple'
 
         // Grid 2 - With persistence
         const grid2 = document.getElementById('grid2')
         grid2.items = sampleData.slice(0, 15)
         grid2.columns = columns
-        grid2.isRowNumbersVisible = true
+        grid2.isRowNumbersShown = true
         grid2.isStriped = true
         grid2.isHoverable = true
         grid2.gridName = 'resize-demo-grid'
@@ -367,22 +367,22 @@
             { field: 'status', title: 'Status (not resizable)', width: '80px', isResizable: false },
             { field: 'phone', title: 'Phone', width: '120px' }
         ]
-        grid3.isRowNumbersVisible = true
+        grid3.isRowNumbersShown = true
         grid3.isStriped = true
         grid3.isHoverable = true
         grid3.isColumnReorderAllowed = true
 
-        // Grid - Per-column reorder opt-out (isMovable)
+        // Grid - Per-column reorder opt-out (isReorderable)
         const gridMovable = document.getElementById('gridMovable')
         gridMovable.items = sampleData.slice(0, 10)
         gridMovable.columns = [
-            { field: 'id', title: 'ID (locked)', width: '80px', isMovable: false },
-            { field: 'name', title: 'Name (locked)', width: '150px', isMovable: false },
+            { field: 'id', title: 'ID (locked)', width: '80px', isReorderable: false },
+            { field: 'name', title: 'Name (locked)', width: '150px', isReorderable: false },
             { field: 'email', title: 'Email', width: '200px' },
-            { field: 'status', title: 'Status (locked)', width: '100px', isMovable: false },
+            { field: 'status', title: 'Status (locked)', width: '100px', isReorderable: false },
             { field: 'phone', title: 'Phone', width: '120px' }
         ]
-        gridMovable.isRowNumbersVisible = true
+        gridMovable.isRowNumbersShown = true
         gridMovable.isStriped = true
         gridMovable.isHoverable = true
         gridMovable.isColumnReorderAllowed = true
@@ -421,16 +421,16 @@
         const gridFrozen = document.getElementById('gridFrozen')
         gridFrozen.items = wideData
         gridFrozen.columns = wideColumns
-        gridFrozen.isRowNumbersVisible = true
+        gridFrozen.isRowNumbersShown = true
         gridFrozen.isStickyRowNumbers = true
-        gridFrozen.freezeColumns = 2
+        gridFrozen.frozenColumnCount = 2
         gridFrozen.isStriped = true
         gridFrozen.isHoverable = true
         gridFrozen.isColumnReorderAllowed = true
 
         // Controls for frozen grid
-        document.getElementById('freezeColumns').addEventListener('change', e => {
-            gridFrozen.freezeColumns = parseInt(e.target.value)
+        document.getElementById('frozenColumnCount').addEventListener('change', e => {
+            gridFrozen.frozenColumnCount = parseInt(e.target.value)
         })
 
         document.getElementById('stickyRowNumbers').addEventListener('change', e => {
@@ -452,9 +452,9 @@
         const gridReorder = document.getElementById('gridReorder')
         gridReorder.items = wideData.slice(0, 20)
         gridReorder.columns = reorderColumns
-        gridReorder.isRowNumbersVisible = true
+        gridReorder.isRowNumbersShown = true
         gridReorder.isStickyRowNumbers = true
-        gridReorder.freezeColumns = 2  // First 2 columns are frozen
+        gridReorder.frozenColumnCount = 2  // First 2 columns are frozen
         gridReorder.isStriped = true
         gridReorder.isHoverable = true
         gridReorder.gridName = 'reorder-demo-grid'
@@ -511,9 +511,9 @@
         const gridVirtual = document.getElementById('gridVirtual')
         gridVirtual.items = virtualData
         gridVirtual.columns = virtualColumns
-        gridVirtual.isRowNumbersVisible = true
+        gridVirtual.isRowNumbersShown = true
         gridVirtual.isStickyRowNumbers = true
-        gridVirtual.freezeColumns = 1
+        gridVirtual.frozenColumnCount = 1
         gridVirtual.isStriped = true
         gridVirtual.isHoverable = true
         gridVirtual.isVirtualScrollEnabled = true
@@ -532,10 +532,10 @@
         const gridHeaderMenu = document.getElementById('gridHeaderMenu')
         gridHeaderMenu.items = sampleData
         gridHeaderMenu.columns = headerMenuColumns
-        gridHeaderMenu.isRowNumbersVisible = true
+        gridHeaderMenu.isRowNumbersShown = true
         gridHeaderMenu.isStriped = true
         gridHeaderMenu.isHoverable = true
-        gridHeaderMenu.sortMode = 'multi'
+        gridHeaderMenu.sortMode = 'multiple'
 
         // Store original columns for reset
         const originalHeaderMenuColumns = [...headerMenuColumns]

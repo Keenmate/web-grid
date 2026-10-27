@@ -24,7 +24,7 @@
                 </label>
                 <label>
                     Freeze Columns:
-                    <select id="freezeColumns">
+                    <select id="frozenColumnCount">
                         <option value="0">0</option>
                         <option value="1">1</option>
                         <option value="2" selected>2</option>
@@ -32,7 +32,7 @@
                     </select>
                 </label>
                 <label>
-                    <input type="checkbox" id="showRowNumbers" checked> isRowNumbersVisible
+                    <input type="checkbox" id="showRowNumbers" checked> isRowNumbersShown
                 </label>
             </div>
 
@@ -42,7 +42,7 @@
                 <div class="note-title">How it works</div>
                 <ul>
                     <li><code>isStickyRowNumbers: true</code> - Row number column stays fixed on the left</li>
-                    <li><code>freezeColumns: N</code> - First N columns are frozen (after visual reorder)</li>
+                    <li><code>frozenColumnCount: N</code> - First N columns are frozen (after visual reorder)</li>
                     <li><code>frozen: true</code> on Column - Mark individual columns as frozen (they move to the left)</li>
                 </ul>
             </div>
@@ -68,7 +68,7 @@
                     <h3>Grid-Level Properties</h3>
                     <table class="props-table">
                         <tr>
-                            <td><code>isRowNumbersVisible</code></td>
+                            <td><code>isRowNumbersShown</code></td>
                             <td>Show row number column</td>
                         </tr>
                         <tr>
@@ -76,7 +76,7 @@
                             <td>Make row numbers sticky (frozen)</td>
                         </tr>
                         <tr>
-                            <td><code>freezeColumns</code></td>
+                            <td><code>frozenColumnCount</code></td>
                             <td>Number of columns to freeze from left</td>
                         </tr>
                     </table>
@@ -162,9 +162,9 @@
         const grid = document.getElementById('grid')
         grid.items = wideData
         grid.columns = columns
-        grid.isRowNumbersVisible = true
+        grid.isRowNumbersShown = true
         grid.isStickyRowNumbers = true
-        grid.freezeColumns = 2
+        grid.frozenColumnCount = 2
         grid.isStriped = true
         grid.isHoverable = true
 
@@ -173,12 +173,12 @@
             grid.isStickyRowNumbers = e.target.checked
         })
 
-        document.getElementById('freezeColumns').addEventListener('change', e => {
-            grid.freezeColumns = parseInt(e.target.value)
+        document.getElementById('frozenColumnCount').addEventListener('change', e => {
+            grid.frozenColumnCount = parseInt(e.target.value)
         })
 
         document.getElementById('showRowNumbers').addEventListener('change', e => {
-            grid.isRowNumbersVisible = e.target.checked
+            grid.isRowNumbersShown = e.target.checked
         })
 
         // Second grid - demonstrating column-level frozen property
@@ -199,7 +199,7 @@
 
         grid2.items = wideData.slice(0, 20)
         grid2.columns = columnsWithFrozen
-        grid2.isRowNumbersVisible = true
+        grid2.isRowNumbersShown = true
         grid2.isStickyRowNumbers = true
         grid2.isStriped = true
         grid2.isHoverable = true

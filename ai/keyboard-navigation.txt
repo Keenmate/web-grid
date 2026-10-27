@@ -240,13 +240,13 @@ Built-in range keys (no rangeShortcuts needed):
 
 SHORTCUTS HELP OVERLAY
 ----------------------
-When isShortcutsHelpVisible is true and rowShortcuts has entries, the grid
+When isShortcutsHelpShown is true and rowShortcuts has entries, the grid
 displays a small info icon. Hovering or focusing the icon reveals an overlay
 listing all registered shortcuts with their key combinations and texts.
 
 Properties:
 
-  isShortcutsHelpVisible       boolean, default false
+  isShortcutsHelpShown       boolean, default false
                                Show the shortcuts help icon
 
   shortcutsHelpPosition        'top-right' (default) or 'top-left'
@@ -258,7 +258,7 @@ Properties:
 
 Example:
 
-  grid.isShortcutsHelpVisible = true
+  grid.isShortcutsHelpShown = true
   grid.shortcutsHelpPosition = 'top-right'
 
   grid.renderShortcutsHelpCallback = () => {

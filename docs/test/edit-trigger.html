@@ -11,7 +11,7 @@
 	<p>Targeted by <code>e2e/edit-trigger.spec.ts</code>. Reload resets all state.</p>
 
 	<div class="fixture">
-		<h2>#clickGrid — editTrigger='click', editStartSelection='selectAll'</h2>
+		<h2>#clickGrid — editTrigger='click', editStartSelection='select-all'</h2>
 		<web-grid id="clickGrid" style="max-width: 480px; max-height: 240px;"></web-grid>
 	</div>
 
@@ -42,7 +42,7 @@
 		 *
 		 * Behaviour the spec exercises:
 		 *  #clickGrid    — editTrigger='click': a single click opens the editor.
-		 *                  editStartSelection='selectAll' so the editor mounts with
+		 *                  editStartSelection='select-all' so the editor mounts with
 		 *                  the whole value selected.
 		 *  #dblclickGrid — editTrigger='dblclick': a single click only focuses the
 		 *                  cell; a double-click opens the editor.
@@ -68,7 +68,7 @@
 		clickGrid.columns = columns()
 		clickGrid.isEditable = true
 		clickGrid.editTrigger = 'click'
-		clickGrid.editStartSelection = 'selectAll'
+		clickGrid.editStartSelection = 'select-all'
 
 		const dblclickGrid = document.getElementById('dblclickGrid')
 		dblclickGrid.items = seed()

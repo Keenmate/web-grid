@@ -82,7 +82,7 @@ test('isSummaryInline: same area as pagination → one shared footer; false → 
 	await expect(gridLocator(page).locator('.wg__footer .wg__summary')).toHaveCount(1)
 	await expect(gridLocator(page).locator('.wg__footer .wg__pagination')).toHaveCount(1)
 
-	await onGrid(page, el => el.setAttribute('is-summary-inline', 'false'))
+	await onGrid(page, el => el.setAttribute('summary-inline', 'false'))
 	await expect(gridLocator(page).locator('.wg__footer')).toHaveCount(0)
 	await expect(gridLocator(page).locator('.wg__bottom-area > .wg__summary')).toHaveCount(1)
 	await expect(gridLocator(page).locator('.wg__bottom-area > .wg__pagination')).toHaveCount(1)

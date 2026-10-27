@@ -50,7 +50,7 @@
         <!-- ============================================================ -->
         <div class="card">
             <h2>2. Tree + Infinite Scroll</h2>
-            <p>"Server" returns full subtrees (one root + all its descendants) in batches. Each batch appends to the bottom of the items array, so caller-controlled append-order works cleanly with <code>treeDataSorted: true</code>.</p>
+            <p>"Server" returns full subtrees (one root + all its descendants) in batches. Each batch appends to the bottom of the items array, so caller-controlled append-order works cleanly with <code>isTreeDataSorted: true</code>.</p>
 
             <div class="controls">
                 <span>Loaded: <strong id="isLoadedCount">0</strong> rows</span>
@@ -146,11 +146,11 @@
         vsGrid.items = allData
         vsGrid.treePathMember = 'path'
         vsGrid.treeLevelMember = 'level'
-        vsGrid.treeDataSorted = true
+        vsGrid.isTreeDataSorted = true
         vsGrid.defaultExpandDepth = 1
         vsGrid.treeDoubleClickBehavior = 'toggle'
         vsGrid.isVirtualScrollEnabled = true
-        vsGrid.virtualScrollRowHeight = 38
+        vsGrid.virtualScrollItemHeight = 38
         vsGrid.isStriped = true
         vsGrid.isHoverable = true
 
@@ -205,11 +205,11 @@
         isGrid.columns = columns
         isGrid.treePathMember = 'path'
         isGrid.treeLevelMember = 'level'
-        isGrid.treeDataSorted = true
+        isGrid.isTreeDataSorted = true
         isGrid.expandedPaths = isExpanded
         isGrid.treeDoubleClickBehavior = 'toggle'
         isGrid.isVirtualScrollEnabled = true
-        isGrid.virtualScrollRowHeight = 38
+        isGrid.virtualScrollItemHeight = 38
         isGrid.isInfiniteScrollEnabled = true
         isGrid.infiniteScrollThreshold = 200
         isGrid.hasMoreItems = true
@@ -244,7 +244,7 @@
         }
 
         isGrid.onDataRequest = async (detail) => {
-            if (detail.trigger !== 'loadMore') return
+            if (detail.trigger !== 'load-more') return
             isLoadingEl.style.display = ''
             const more = await fetchNextBatch()
             if (more.length > 0) {

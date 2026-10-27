@@ -73,7 +73,7 @@ export function renderHeaderRow<T>(ctx: GridHost<T>): string {
 
 	// Row number column (may be sticky)
 	let rowNumberColumnHtml = ''
-	if (ctx.engine.isRowNumbersVisible) {
+	if (ctx.engine.isRowNumbersShown) {
 		const isSticky = ctx.engine.isStickyRowNumbers
 		const stickyStyle = isSticky
 			? `position: sticky; left: 0; z-index: 4;`
@@ -86,7 +86,7 @@ export function renderHeaderRow<T>(ctx: GridHost<T>): string {
 	}
 
 	// Inline actions column (toolbarPosition="inline")
-	const showInlineActions = ctx.engine.isRowToolbarVisible && ctx.engine.toolbarPosition === 'inline'
+	const showInlineActions = ctx.engine.isRowToolbarShown && ctx.engine.toolbarPosition === 'inline'
 	let inlineActionsHeaderHtml = ''
 	if (showInlineActions) {
 		// Compute column width from max button count per toolbar row
@@ -100,7 +100,7 @@ export function renderHeaderRow<T>(ctx: GridHost<T>): string {
 	}
 
 	// Actions column for button trigger mode (floating toolbar trigger)
-	const showActionsColumn = ctx.engine.isRowToolbarVisible && ctx.engine.toolbarTrigger === 'button' && ctx.engine.toolbarPosition !== 'inline'
+	const showActionsColumn = ctx.engine.isRowToolbarShown && ctx.engine.toolbarTrigger === 'button' && ctx.engine.toolbarPosition !== 'inline'
 	const actionsColumnHtml = showActionsColumn
 		? '<th class="wg__header wg__actions-column"></th>'
 		: ''
@@ -223,14 +223,14 @@ export function renderDataRows<T>(ctx: GridHost<T>): string {
 	const visualColumns = ctx.engine.visualColumns
 
 	// Row number column
-	const showRowNumbers = ctx.engine.isRowNumbersVisible
+	const showRowNumbers = ctx.engine.isRowNumbersShown
 	const stickyRowNumbers = ctx.engine.isStickyRowNumbers
 
 	// Inline actions column (toolbarPosition="inline")
-	const showInlineActions = ctx.engine.isRowToolbarVisible && ctx.engine.toolbarPosition === 'inline'
+	const showInlineActions = ctx.engine.isRowToolbarShown && ctx.engine.toolbarPosition === 'inline'
 
 	// Actions column for button trigger mode (floating toolbar trigger)
-	const showActionsColumn = ctx.engine.isRowToolbarVisible && ctx.engine.toolbarTrigger === 'button' && ctx.engine.toolbarPosition !== 'inline'
+	const showActionsColumn = ctx.engine.isRowToolbarShown && ctx.engine.toolbarTrigger === 'button' && ctx.engine.toolbarPosition !== 'inline'
 	const colspanWithExtras = visualColumns.length + (showActionsColumn ? 1 : 0) + (showRowNumbers ? 1 : 0) + (showInlineActions ? 1 : 0)
 
 	if (items.length === 0) {
@@ -275,7 +275,7 @@ export function renderDataRows<T>(ctx: GridHost<T>): string {
 			} else if (isEmptyRow) {
 				rowNumberCell = `<td class="wg__cell wg__row-number wg__empty-row-indicator${frozenClass}" style="${stickyStyle}" data-row-number="${rowIndex}">${ctx.engine.newRowIndicator}</td>`
 			} else {
-				const dirtyClass = ctx.engine.isDirtyIndicatorVisible && ctx.engine.isRowDirty(rowIndex) ? ' wg__row-number--dirty' : ''
+				const dirtyClass = ctx.engine.isDirtyIndicatorShown && ctx.engine.isRowDirty(rowIndex) ? ' wg__row-number--dirty' : ''
 				rowNumberCell = `<td class="wg__cell wg__row-number${dirtyClass}${frozenClass}" style="${stickyStyle}" data-row-number="${rowIndex}">${rowIndex + 1}</td>`
 			}
 
@@ -325,7 +325,7 @@ export function renderDataRows<T>(ctx: GridHost<T>): string {
 			if (column.maxLines) classes.push('wg__cell--line-clamp')
 			if (isActivelyEditing) classes.push('wg__cell--editing')
 			if (ctx.engine.isCellInvalid(rowIndex, field)) classes.push('wg__cell--invalid')
-			if (ctx.engine.isDirtyIndicatorVisible && ctx.engine.isCellDirty(rowIndex, field)) {
+			if (ctx.engine.isDirtyIndicatorShown && ctx.engine.isCellDirty(rowIndex, field)) {
 				classes.push('wg__cell--dirty')
 			}
 			if (ctx.engine.isCellInSelectedRange(rowIndex, visualIndex)) classes.push('wg__cell--in-range')
@@ -455,14 +455,14 @@ export function renderDataRowsVirtual<T>(ctx: GridHost<T>, params: VirtualScroll
 	const { startIndex, endIndex, rowHeight, totalItems } = params
 
 	// Row number column
-	const showRowNumbers = ctx.engine.isRowNumbersVisible
+	const showRowNumbers = ctx.engine.isRowNumbersShown
 	const stickyRowNumbers = ctx.engine.isStickyRowNumbers
 
 	// Inline actions column (toolbarPosition="inline")
-	const showInlineActions = ctx.engine.isRowToolbarVisible && ctx.engine.toolbarPosition === 'inline'
+	const showInlineActions = ctx.engine.isRowToolbarShown && ctx.engine.toolbarPosition === 'inline'
 
 	// Actions column for button trigger mode (floating toolbar trigger)
-	const showActionsColumn = ctx.engine.isRowToolbarVisible && ctx.engine.toolbarTrigger === 'button' && ctx.engine.toolbarPosition !== 'inline'
+	const showActionsColumn = ctx.engine.isRowToolbarShown && ctx.engine.toolbarTrigger === 'button' && ctx.engine.toolbarPosition !== 'inline'
 	const colspanWithExtras = visualColumns.length + (showActionsColumn ? 1 : 0) + (showRowNumbers ? 1 : 0) + (showInlineActions ? 1 : 0)
 
 	if (items.length === 0) {
@@ -521,7 +521,7 @@ export function renderDataRowsVirtual<T>(ctx: GridHost<T>, params: VirtualScroll
 			} else if (isEmptyRow) {
 				rowNumberCell = `<td class="wg__cell wg__row-number wg__empty-row-indicator${frozenClass}" style="${stickyStyle}" data-row-number="${rowIndex}">${ctx.engine.newRowIndicator}</td>`
 			} else {
-				const dirtyClass = ctx.engine.isDirtyIndicatorVisible && ctx.engine.isRowDirty(rowIndex) ? ' wg__row-number--dirty' : ''
+				const dirtyClass = ctx.engine.isDirtyIndicatorShown && ctx.engine.isRowDirty(rowIndex) ? ' wg__row-number--dirty' : ''
 				rowNumberCell = `<td class="wg__cell wg__row-number${dirtyClass}${frozenClass}" style="${stickyStyle}" data-row-number="${rowIndex}">${rowIndex + 1}</td>`
 			}
 
@@ -571,7 +571,7 @@ export function renderDataRowsVirtual<T>(ctx: GridHost<T>, params: VirtualScroll
 			if (column.maxLines) classes.push('wg__cell--line-clamp')
 			if (isActivelyEditing) classes.push('wg__cell--editing')
 			if (ctx.engine.isCellInvalid(rowIndex, field)) classes.push('wg__cell--invalid')
-			if (ctx.engine.isDirtyIndicatorVisible && ctx.engine.isCellDirty(rowIndex, field)) {
+			if (ctx.engine.isDirtyIndicatorShown && ctx.engine.isCellDirty(rowIndex, field)) {
 				classes.push('wg__cell--dirty')
 			}
 			if (ctx.engine.isCellInSelectedRange(rowIndex, visualIndex)) classes.push('wg__cell--in-range')
@@ -672,8 +672,8 @@ export function renderDataRowsVirtual<T>(ctx: GridHost<T>, params: VirtualScroll
  * @param position Position string (e.g., "bottom-center", "top-right")
  */
 export function renderPagination<T>(ctx: GridHost<T>, position: string = 'bottom-center'): string {
-	// Don't render if not pageable or isPaginationVisible is false
-	const showPag = ctx.engine.isPaginationVisible
+	// Don't render if not pageable or isPaginationShown is false
+	const showPag = ctx.engine.isPaginationShown
 	if (!ctx.engine.isPageable || showPag === false) return ''
 	// 'auto' mode: hide when only 1 page
 	if (showPag === 'auto' && ctx.engine.totalPages <= 1) return ''
@@ -743,13 +743,13 @@ export function renderPagination<T>(ctx: GridHost<T>, position: string = 'bottom
 				${labels.last}
 			</button>
 		`,
-		pageInfo: `
+		'page-info': `
 			<div class="wg__pagination-info">
 				${labels.pageInfo}
 				<span class="wg__pagination-count">${labels.itemCount}</span>
 			</div>
 		`,
-		pageSize: pageSizes.length > 0 ? `
+		'page-size': pageSizes.length > 0 ? `
 			<div class="wg__pagination-pagesize">
 				<select class="wg__pagination-select" data-action="pagesize" ${isPending ? 'disabled' : ''}>
 					${pageSizes.map(size =>

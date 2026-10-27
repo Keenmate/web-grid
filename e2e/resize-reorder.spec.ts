@@ -8,9 +8,9 @@ import { test, expect, Page, Locator, gridLocator, header } from './fixtures'
  *                     and onColumnResize logging to [data-testid="resize-log"].
  *   #grid3          — Status column has `isResizable: false`; its handle gets
  *                     `wg__resize-handle--disabled`.
- *   #gridMovable    — `isMovable: false` on ID / Name / Status — drag-reorder
+ *   #gridMovable    — `isReorderable: false` on ID / Name / Status — drag-reorder
  *                     of those columns is blocked.
- *   #gridReorder    — drag-to-reorder, freezeColumns=2 (id/name frozen),
+ *   #gridReorder    — drag-to-reorder, frozenColumnCount=2 (id/name frozen),
  *                     onColumnReorder logging to [data-testid="reorder-log"].
  *   #gridHeaderMenu — right-click header context menu with predefined items.
  *
@@ -213,7 +213,7 @@ test.describe('column reorder — #gridReorder', () => {
 	})
 
 	test('frozen columns (id, name) cannot be drag-reordered', async ({ page }) => {
-		// gridReorder has freezeColumns=2 so id/name are frozen — handleReorderStart
+		// gridReorder has frozenColumnCount=2 so id/name are frozen — handleReorderStart
 		// returns early for them, so no ghost element ever appears.
 		const before = await getHeaderFieldOrder(page, 'gridReorder')
 		await reorderColumnTo(page, 'gridReorder', 'id', 'salary')
@@ -223,10 +223,10 @@ test.describe('column reorder — #gridReorder', () => {
 })
 
 // =============================================================================
-// isMovable opt-out — #gridMovable
+// isReorderable opt-out — #gridMovable
 // =============================================================================
 
-test.describe('isMovable opt-out — #gridMovable', () => {
+test.describe('isReorderable opt-out — #gridMovable', () => {
 	test('locked columns (id, name, status) cannot be dragged', async ({ page }) => {
 		const before = await getHeaderFieldOrder(page, 'gridMovable')
 		await reorderColumnTo(page, 'gridMovable', 'id', 'phone')
@@ -236,7 +236,7 @@ test.describe('isMovable opt-out — #gridMovable', () => {
 
 	test('non-locked columns can still be moved around', async ({ page }) => {
 		const before = await getHeaderFieldOrder(page, 'gridMovable')
-		// email (non-locked) → phone (non-locked). Both bypass the isMovable gate.
+		// email (non-locked) → phone (non-locked). Both bypass the isReorderable gate.
 		const emailIndex = before.indexOf('email')
 		const phoneIndex = before.indexOf('phone')
 		expect(emailIndex).toBeLessThan(phoneIndex)

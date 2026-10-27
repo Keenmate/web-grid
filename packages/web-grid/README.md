@@ -73,7 +73,7 @@ Or via CDN (no bundler):
   // Optional: enable features
   grid.isStriped = true;
   grid.isHoverable = true;
-  grid.sortMode = 'multi';
+  grid.sortMode = 'multiple';
   grid.isPageable = true;
   grid.pageSize = 25;
   grid.mode = 'excel';                   // isEditable + editTrigger='navigate' + cellSelectionMode='click'

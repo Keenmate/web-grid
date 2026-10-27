@@ -193,7 +193,7 @@ Defines how a column renders, edits, and behaves.
     shouldOpenDropdownOnEnter?: boolean
     validateCallback?: (ctx: ValidateContext<T>) => ValidateResult | Promise<ValidateResult>
     renderEditorCallback?: (ctx: EditorContext<T>) => void
-    isEditButtonVisible?: boolean
+    isEditButtonShown?: boolean
     getValidationTooltipCallback?: (ctx: ValidationTooltipContext<T>) => string | null
     tooltipMember?: string
     getTooltipCallback?: (ctx: CellContext<T>) => string | null
@@ -203,7 +203,7 @@ Defines how a column renders, edits, and behaves.
     filterCallback?: (ctx: FilterContext<T>) => boolean | null
     isFrozen?: boolean
     isResizable?: boolean             Default: true
-    isMovable?: boolean               Default: true
+    isReorderable?: boolean               Default: true
     isHidden?: boolean
     isSortable?: boolean
     isFilterable?: boolean
@@ -284,17 +284,17 @@ SIMPLE TYPE ALIASES
 
   type GridMode = 'read-only' | 'excel' | 'input-matrix'
 
-  type SortMode = 'none' | 'single' | 'multi'
+  type SortMode = 'none' | 'single' | 'multiple'
 
   type SortDirection = 'asc' | 'desc'
 
-  type CellSelectionMode = 'disabled' | 'click' | 'shift'
+  type CellSelectionMode = 'none' | 'click' | 'shift'
 
   type ToggleVisibility = 'always' | 'on-focus'
 
   type DateOutputFormat = 'date' | 'iso' | 'timestamp'
 
-  type EditStartSelection = 'mousePosition' | 'selectAll' | 'cursorAtStart' | 'cursorAtEnd'
+  type EditStartSelection = 'mouse-position' | 'select-all' | 'cursor-at-start' | 'cursor-at-end'
 
   type FillDirection = 'vertical' | 'all'
 
@@ -302,7 +302,7 @@ SIMPLE TYPE ALIASES
 
   type LockedRowEditBehavior = 'block' | 'allow' | 'callback'
 
-  type DataRequestTrigger = 'sort' | 'page' | 'pageSize' | 'init' | 'loadMore'
+  type DataRequestTrigger = 'sort' | 'page' | 'page-size' | 'init' | 'load-more'
 
   type DataRequestMode = 'replace' | 'append'
 

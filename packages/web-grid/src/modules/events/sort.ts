@@ -25,7 +25,7 @@ export function handleSortClick<T>(ctx: GridHost<T>, e: MouseEvent, field?: stri
 	const existingIndex = currentSort.findIndex(s => s.column === field)
 	const isCtrlClick = e.ctrlKey || e.metaKey
 
-	if (isCtrlClick && ctx.engine.sortMode === 'multi') {
+	if (isCtrlClick && ctx.engine.sortMode === 'multiple') {
 		// Multi-column sort: Ctrl+Click adds/toggles/removes column
 		if (existingIndex >= 0) {
 			const existing = currentSort[existingIndex]

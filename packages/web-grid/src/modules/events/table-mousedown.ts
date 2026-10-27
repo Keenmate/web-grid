@@ -119,7 +119,7 @@ export function handleTableMouseDown<T>(ctx: GridHost<T>, e: Event): void {
 
 			// Check if we should handle cell range selection
 			const shouldSelectRange =
-				selectionMode !== 'disabled' && (
+				selectionMode !== 'none' && (
 					(selectionMode === 'click' && !isShiftClick) ||
 					(selectionMode === 'shift' && isShiftClick)
 				)

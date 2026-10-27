@@ -311,7 +311,7 @@ export interface PaginationLabelsContext<T = any> extends GridContext<T> {
 }
 
 /** What swapped the rows — `beforePageChangeCallback` ctx `trigger`. */
-export type PageChangeTrigger = 'page' | 'pageSize' | 'sort' | 'filter'
+export type PageChangeTrigger = 'page' | 'page-size' | 'sort' | 'filter'
 
 /**
  * ctx of `beforePageChangeCallback` — a user action is about to swap the displayed rows

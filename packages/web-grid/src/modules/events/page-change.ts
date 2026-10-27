@@ -12,7 +12,7 @@
 // The hook may be async: while it is pending the pager is disabled and a second
 // navigation is ignored. A sync hook keeps the flow synchronous (core's
 // runBeforeCallbackEager). Programmatic `currentPage` writes and infinite-scroll
-// `loadMore` don't go through here.
+// `load-more` don't go through here.
 
 import { runBeforeCallbackEager } from '@keenmate/web-components-core'
 import type { GridHost } from '../grid-context.js'

@@ -159,7 +159,7 @@
                 <h2>Usage</h2>
                 <div class="code-block">
                     <pre>// Enable toolbar with built-in actions
-grid.isRowToolbarVisible = true
+grid.isRowToolbarShown = true
 grid.rowToolbar = ['add', 'delete', 'duplicate', 'move-up', 'move-down']
 grid.toolbarTrigger = 'hover' // or 'click', 'button'
 
@@ -327,7 +327,7 @@ grid.onAction = ({ id, row }) => { /* id === 'setHigh', ... */ }</pre>
                <code>beforeActionCallback</code> vetoes deleting high-priority tasks.</p>
             <web-grid id="grid3" isStriped isHoverable style="max-width: 100%; max-height: 400px; border: 1px solid #e2e8f0;"></web-grid>
             <div class="code-block" style="margin-top: 1rem;">
-                <pre>grid.isRowToolbarVisible = true
+                <pre>grid.isRowToolbarShown = true
 grid.toolbarPosition = 'inline'  // Renders as column
 grid.inlineActionsTitle = 'Actions'  // Optional header
 
@@ -464,7 +464,7 @@ grid.beforeActionCallback = ({ action, row }) => {
         const grid = document.getElementById('grid')
         grid.items = tasks
         grid.columns = columns
-        grid.isRowToolbarVisible = true
+        grid.isRowToolbarShown = true
         // A divider separates move and CRUD actions
         // Tooltips show text + description + keyboard shortcut (auto-detected from rowShortcuts)
         grid.rowToolbar = [
@@ -569,7 +569,7 @@ grid.beforeActionCallback = ({ action, row }) => {
         grid2.items = tasks.map(t => ({...t}))  // Clone for independent data
         grid2.columns = columns
 
-        grid2.isRowToolbarVisible = true
+        grid2.isRowToolbarShown = true
         grid2.toolbarTrigger = savedTrigger
         grid2.toolbarPosition = savedPosition
         grid2.toolbarVerticalAlign = savedVerticalAlign
@@ -606,7 +606,7 @@ grid.beforeActionCallback = ({ action, row }) => {
         grid4.items = tasks.map(t => ({...t}))  // Clone for independent data
         grid4.columns = columns
 
-        grid4.isRowToolbarVisible = true
+        grid4.isRowToolbarShown = true
         grid4.toolbarPosition = 'top'
         grid4.shouldToolbarFollowCursor = true  // Toolbar follows mouse horizontally
         grid4.cellToolbarOffset = savedCellToolbarOffset
@@ -658,7 +658,7 @@ grid.beforeActionCallback = ({ action, row }) => {
         grid3.items = tasks.map(t => ({...t}))  // Clone for independent data
         grid3.columns = columns
 
-        grid3.isRowToolbarVisible = true
+        grid3.isRowToolbarShown = true
         grid3.toolbarPosition = 'inline'  // Key setting: renders as column
         grid3.inlineActionsTitle = 'Actions'
 

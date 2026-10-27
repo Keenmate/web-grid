@@ -2,11 +2,11 @@ import { test, expect, type Page, gridLocator, cell, onGrid, domEvents, clearEve
 
 /**
  * Dropdown / checkbox flags — `dropdownToggleVisibility` (grid + column),
- * `shouldShowDropdownOnFocus`, `shouldOpenDropdownOnEnter` (grid + column),
+ * `shouldOpenDropdownOnFocus`, `shouldOpenDropdownOnEnter` (grid + column),
  * checkbox toggling in navigate mode, `isCheckboxAlwaysEditable`.
  *
  * Fixture: docs/test/dropdown-flags.html — navigate mode,
- * should-show-dropdown-on-focus="false"; cols 0=name, 1=status (select),
+ * open-dropdown-on-focus="false"; cols 0=name, 1=status (select),
  * 2=done (checkbox), 3=owner (select, column shouldOpenDropdownOnEnter: true).
  */
 
@@ -40,7 +40,7 @@ test.describe('dropdownToggleVisibility', () => {
 	})
 })
 
-test.describe('shouldShowDropdownOnFocus', () => {
+test.describe('shouldOpenDropdownOnFocus', () => {
 	test('false (markup): focusing a select cell does not open the dropdown', async ({ page }) => {
 		await cell(page, 0, 1).click()
 		await expect(cell(page, 0, 1)).toBeFocused()
@@ -49,8 +49,8 @@ test.describe('shouldShowDropdownOnFocus', () => {
 	})
 
 	test('true: focusing a select cell opens its dropdown', async ({ page }) => {
-		await onGrid(page, el => el.removeAttribute('should-show-dropdown-on-focus'))  // default true
-		expect(await onGrid(page, el => el.shouldShowDropdownOnFocus)).toBe(true)
+		await onGrid(page, el => el.removeAttribute('open-dropdown-on-focus'))  // default true
+		expect(await onGrid(page, el => el.shouldOpenDropdownOnFocus)).toBe(true)
 		await cell(page, 1, 1).click()
 		await expect(dropdown(page)).toBeVisible()
 		await expect(dropdown(page).locator('.wg__dropdown-option')).toHaveText(['To do', 'Doing', 'Done'])
@@ -73,7 +73,7 @@ test.describe('shouldOpenDropdownOnEnter', () => {
 	})
 
 	test('grid attribute true opens on Enter for every select column', async ({ page }) => {
-		await onGrid(page, el => el.setAttribute('should-open-dropdown-on-enter', ''))
+		await onGrid(page, el => el.setAttribute('open-dropdown-on-enter', ''))
 		await cell(page, 1, 1).click()
 		await page.keyboard.press('Enter')
 		await expect(dropdown(page)).toBeVisible()
@@ -89,7 +89,7 @@ test.describe('checkbox', () => {
 	})
 
 	test('isCheckboxAlwaysEditable: one click on the checkbox toggles it', async ({ page }) => {
-		await onGrid(page, el => el.setAttribute('is-checkbox-always-editable', ''))
+		await onGrid(page, el => el.setAttribute('checkbox-always-editable', ''))
 		await cell(page, 1, 2).locator('input[type="checkbox"]').click({ force: true })
 		await expect.poll(() => onGrid(page, el => el.getRowDraft(1)?.done), { timeout: 1500 }).toBe(false)
 		await expect(cell(page, 1, 2).locator('input[type="checkbox"]')).not.toBeChecked()

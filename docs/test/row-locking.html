@@ -12,7 +12,7 @@
 	row numbers. <code>rowLocking.getLockInfoCallback</code> locks rows whose <code>lock</code> field is set
 	(Beta, by "Carol"). External locks via <code>lockRowById</code>. Events logged to <code>row-locking-log</code>.</p>
 
-	<web-grid id="grid" is-editable edit-trigger="navigate" is-row-numbers-visible style="max-width: 600px;"></web-grid>
+	<web-grid id="grid" editable edit-trigger="navigate" show-row-numbers style="max-width: 600px;"></web-grid>
 	<pre data-testid="row-locking-log"></pre>
 
 	<script type="module">

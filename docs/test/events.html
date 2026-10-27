@@ -12,7 +12,7 @@
 	logged to <code>events-log</code> / <code>window.__events</code>.</p>
 
 	<h2>#grid — flat, navigate mode, click cell-selection, row numbers</h2>
-	<web-grid id="grid" is-editable edit-trigger="navigate" cell-selection-mode="click" is-row-numbers-visible style="max-width: 600px;"></web-grid>
+	<web-grid id="grid" editable edit-trigger="navigate" cell-selection-mode="click" show-row-numbers style="max-width: 600px;"></web-grid>
 
 	<h2>#tree — tree (path), all expanded</h2>
 	<web-grid id="tree" style="max-width: 600px;"></web-grid>
@@ -46,7 +46,7 @@
 
 		const tree = document.getElementById('tree')
 		tree.treePathMember = 'path'
-		tree.treeDataSorted = true
+		tree.isTreeDataSorted = true
 		tree.columns = [{ field: 'name', title: 'Name', width: '220px', isTree: true }]
 		tree.items = [
 			{ path: '1', name: 'Root' },

@@ -19,12 +19,12 @@ virtualScrollThreshold (number, default: 100)
   checks this automatically, so you often do not need to set
   isVirtualScrollEnabled manually.
 
-virtualScrollRowHeight (number, default: 38)
+virtualScrollItemHeight (number, default: 38)
   Fixed row height in pixels. All rows MUST be the same height for virtual
   scroll to calculate positions correctly. This value is used to compute
   total scroll height, visible row range, and scroll offsets.
 
-virtualScrollBuffer (number, default: 10)
+virtualScrollOverscan (number, default: 10)
   Number of extra rows rendered above and below the visible viewport. This
   prevents blank flashes during fast scrolling. Higher values render more
   DOM nodes but provide smoother scrolling.
@@ -35,7 +35,7 @@ HOW IT WORKS
 The grid calculates which rows are visible based on:
   - scrollTop of the scroll container
   - viewportHeight (clientHeight of container minus header height)
-  - virtualScrollRowHeight (fixed height per row)
+  - virtualScrollItemHeight (fixed height per row)
 
 A spacer element with the total height (rowCount * rowHeight) is placed in
 the table to create the correct scrollbar. Only rows in the visible range
@@ -58,7 +58,7 @@ When navigating to a row outside the current viewport:
 
 FIXED ROW HEIGHT REQUIREMENT
 -----------------------------
-Virtual scroll requires all rows to be exactly virtualScrollRowHeight pixels
+Virtual scroll requires all rows to be exactly virtualScrollItemHeight pixels
 tall. Variable row heights are NOT supported. If rows have different content
 heights, set a fixed height via CSS:
 
@@ -72,8 +72,8 @@ Or use textOverflow: 'ellipsis' on columns to prevent text wrapping.
 EXAMPLE
 -------
   grid.items = largeDataset           // 10,000 rows
-  grid.virtualScrollRowHeight = 40    // Each row is 40px
-  grid.virtualScrollBuffer = 15       // Render 15 extra rows each side
+  grid.virtualScrollItemHeight = 40    // Each row is 40px
+  grid.virtualScrollOverscan = 15       // Render 15 extra rows each side
   // virtualScrollThreshold defaults to 100, so virtual scroll activates
   // automatically for datasets >= 100 rows
 
@@ -102,7 +102,7 @@ HOW IT WORKS
 ------------
 When the user scrolls within infiniteScrollThreshold pixels of the bottom,
 the grid fires the data-request event (twin: onDataRequest) with:
-  trigger: 'loadMore'
+  trigger: 'load-more'
   mode: 'append'
   skip: current items.length
 
@@ -115,7 +115,7 @@ Example:
   grid.isInfiniteScrollEnabled = true
   grid.infiniteScrollThreshold = 200
   grid.onDataRequest = async (detail) => {
-    if (detail.trigger === 'loadMore') {
+    if (detail.trigger === 'load-more') {
       const newItems = await fetchItems(detail.skip, detail.pageSize)
       grid.items = [...grid.items, ...newItems]
       if (newItems.length < detail.pageSize) {

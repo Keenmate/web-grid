@@ -55,7 +55,7 @@ test('newRowIndicator / newRowPosition (attributes) restyle and move the row', a
 })
 
 test('isNewRowEnabled=false removes it (attribute removal)', async ({ page }) => {
-	await onGrid(page, el => el.removeAttribute('is-new-row-enabled'))
+	await onGrid(page, el => el.removeAttribute('enable-new-row'))
 	await expect(rows(page)).toHaveCount(2)
 	await expect(emptyRow(page)).toHaveCount(0)
 })

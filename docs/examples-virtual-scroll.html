@@ -119,10 +119,10 @@ grid.isVirtualScrollEnabled = true
 grid.virtualScrollThreshold = 100  // Enable when >= 100 items
 
 // Configure row height (must match CSS)
-grid.virtualScrollRowHeight = 38  // Default: 38px
+grid.virtualScrollItemHeight = 38  // Default: 38px
 
 // Buffer rows above/below viewport
-grid.virtualScrollBuffer = 10  // Default: 10
+grid.virtualScrollOverscan = 10  // Default: 10
 
 // Check if virtual scroll is active
 if (grid.shouldUseVirtualScroll()) {
@@ -145,7 +145,7 @@ grid.hasMoreItems = true  // Set false when done
 
 // Handle load more events
 grid.onDataRequest = async (detail) => {
-  if (detail.trigger === 'loadMore') {
+  if (detail.trigger === 'load-more') {
     // detail.mode = 'append'
     // detail.skip = current item count
     const more = await fetchMore(detail.skip)
@@ -164,7 +164,7 @@ grid.onDataRequest = async (detail) => {
   sort: SortState[]      // Current sort state
   page: number           // Current page (for pagination)
   pageSize: number       // Items per page
-  trigger: DataRequestTrigger  // What triggered: 'sort' | 'page' | 'pageSize' | 'init' | 'loadMore'
+  trigger: DataRequestTrigger  // What triggered: 'sort' | 'page' | 'page-size' | 'init' | 'load-more'
   mode: 'replace' | 'append'   // How to handle response
   skip: number           // Items to skip (offset for server)
 }
@@ -231,17 +231,17 @@ grid.onDataRequest = (detail) => {
         const renderedRowsEl = document.getElementById('renderedRows')
 
         grid1.columns = columns
-        grid1.sortMode = 'multi'
+        grid1.sortMode = 'multiple'
         grid1.isEditable = true  // Enable editing to test with virtual scroll
         grid1.editTrigger = 'navigate'  // Enable focus visual on click
 
         // Enable virtual scroll
         grid1.isVirtualScrollEnabled = true
-        grid1.virtualScrollRowHeight = 38
-        grid1.virtualScrollBuffer = 10
+        grid1.virtualScrollItemHeight = 38
+        grid1.virtualScrollOverscan = 10
 
         // Row toolbar
-        grid1.isRowToolbarVisible = true
+        grid1.isRowToolbarShown = true
         grid1.toolbarTrigger = 'hover'
         grid1.rowToolbar = [
             {
@@ -280,8 +280,8 @@ grid.onDataRequest = (detail) => {
 
             // Calculate approximate rendered rows
             const viewportHeight = 400
-            const rowHeight = grid1.virtualScrollRowHeight
-            const buffer = grid1.virtualScrollBuffer
+            const rowHeight = grid1.virtualScrollItemHeight
+            const buffer = grid1.virtualScrollOverscan
             const visibleRows = Math.ceil(viewportHeight / rowHeight) + buffer * 2
             renderedRowsEl.textContent = `~${visibleRows}`
         }
@@ -306,16 +306,16 @@ grid.onDataRequest = (detail) => {
         const hasMoreEl = document.getElementById('hasMore')
 
         grid2.columns = columns
-        grid2.sortMode = 'multi'
+        grid2.sortMode = 'multiple'
 
         // Enable both virtual scroll and infinite scroll
         grid2.isVirtualScrollEnabled = true
-        grid2.virtualScrollRowHeight = 38
+        grid2.virtualScrollItemHeight = 38
         grid2.isInfiniteScrollEnabled = true
         grid2.infiniteScrollThreshold = 100
 
         // Row toolbar
-        grid2.isRowToolbarVisible = true
+        grid2.isRowToolbarShown = true
         grid2.toolbarTrigger = 'hover'
         grid2.rowToolbar = [
             {
@@ -384,7 +384,7 @@ grid.onDataRequest = (detail) => {
 
         // Handle data requests
         grid2.onDataRequest = async (detail) => {
-            if (detail.trigger === 'loadMore') {
+            if (detail.trigger === 'load-more') {
                 loadingIndicator.classList.remove('hidden')
 
                 const moreData = await fetchMoreData(detail.skip, BATCH_SIZE)

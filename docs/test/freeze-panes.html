@@ -11,18 +11,18 @@
 	<p>Targeted by <code>e2e/freeze-panes.spec.ts</code>. Reload resets all state.</p>
 
 	<div class="fixture">
-		<h2>#grid — grid-level freezeColumns + sticky row numbers</h2>
+		<h2>#grid — grid-level frozenColumnCount + sticky row numbers</h2>
 		<div class="controls">
 			<label><input type="checkbox" id="stickyRowNumbers" checked> isStickyRowNumbers</label>
-			<label>freezeColumns:
-				<select id="freezeColumns">
+			<label>frozenColumnCount:
+				<select id="frozenColumnCount">
 					<option value="0">0</option>
 					<option value="1">1</option>
 					<option value="2" selected>2</option>
 					<option value="3">3</option>
 				</select>
 			</label>
-			<label><input type="checkbox" id="showRowNumbers" checked> isRowNumbersVisible</label>
+			<label><input type="checkbox" id="showRowNumbers" checked> isRowNumbersShown</label>
 		</div>
 		<web-grid id="grid" style="max-width: 560px; max-height: 280px;"></web-grid>
 	</div>
@@ -42,8 +42,8 @@
 		 *  field:   id   name   email   department   role   location   salary   phone
 		 *  width:   80   150    200     120          100    120        100      120
 		 *
-		 * #grid — freezeColumns=2 (id, name frozen) + isRowNumbersVisible +
-		 *   isStickyRowNumbers. The freezeColumns <select> drives grid.freezeColumns
+		 * #grid — frozenColumnCount=2 (id, name frozen) + isRowNumbersShown +
+		 *   isStickyRowNumbers. The frozenColumnCount <select> drives grid.frozenColumnCount
 		 *   live so the spec can re-check the frozen class wiring at 0 / 2 / 3.
 		 *
 		 * #grid2 — the `status` column is declared LAST but carries `isFrozen: true`.
@@ -54,7 +54,7 @@
 		 * Behaviour exercised:
 		 *  - frozen headers/body cells get wg__header--frozen / wg__cell--frozen
 		 *  - the last frozen column gets the --frozen-last modifier
-		 *  - changing freezeColumns adds/removes the classes on the right headers
+		 *  - changing frozenColumnCount adds/removes the classes on the right headers
 		 *  - an isFrozen column jumps to the leftmost data-column slot
 		 *  - scrolling horizontally toggles wg--scrolled-horizontal on the .wg container
 		 *
@@ -83,22 +83,22 @@
 			{ field: 'phone', title: 'Phone', width: '120px' }
 		]
 
-		// #grid — grid-level freezeColumns.
+		// #grid — grid-level frozenColumnCount.
 		const grid = document.getElementById('grid')
 		grid.items = wideData
 		grid.columns = baseColumns
-		grid.isRowNumbersVisible = true
+		grid.isRowNumbersShown = true
 		grid.isStickyRowNumbers = true
-		grid.freezeColumns = 2
+		grid.frozenColumnCount = 2
 
 		document.getElementById('stickyRowNumbers').addEventListener('change', (e) => {
 			grid.isStickyRowNumbers = e.target.checked
 		})
-		document.getElementById('freezeColumns').addEventListener('change', (e) => {
-			grid.freezeColumns = parseInt(e.target.value, 10)
+		document.getElementById('frozenColumnCount').addEventListener('change', (e) => {
+			grid.frozenColumnCount = parseInt(e.target.value, 10)
 		})
 		document.getElementById('showRowNumbers').addEventListener('change', (e) => {
-			grid.isRowNumbersVisible = e.target.checked
+			grid.isRowNumbersShown = e.target.checked
 		})
 
 		// #grid2 — column-level isFrozen. `status` is declared last but isFrozen:true
@@ -116,7 +116,7 @@
 			{ field: 'status', title: 'Status', width: '100px', isFrozen: true }
 		]
 		grid2.items = wideData.map((r, i) => ({ ...r, status: i % 3 === 0 ? 'On Leave' : 'Active' }))
-		grid2.isRowNumbersVisible = true
+		grid2.isRowNumbersShown = true
 		grid2.isStickyRowNumbers = true
 	</script>
 </body>

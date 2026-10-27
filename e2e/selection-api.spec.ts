@@ -4,7 +4,7 @@ import { test, expect, type Page, gridLocator, cell, onGrid, domEvents, clearEve
  * Selection API + `cellSelectionMode` — `selectRow` (replace / toggle / range),
  * `selectRowRange`, `isRowSelected`, `getSelectedRowsData`, `clearSelection`,
  * `selectCellRange` / `getSelectedCells` / `clearCellSelection`, and the
- * 'disabled' / 'shift' cell-selection modes.
+ * 'none' / 'shift' cell-selection modes.
  *
  * Fixture: docs/test/selection-api.html — 6 rows (id 1-6, name A-F, qty id*10),
  * navigate mode, row numbers; cols 0=id, 1=name, 2=qty. Default mode 'click'.
@@ -89,8 +89,8 @@ test.describe('cellSelectionMode', () => {
 		await expect(inRange(page)).toHaveCount(6)
 	})
 
-	test("'disabled': a drag selects nothing, no event", async ({ page }) => {
-		await onGrid(page, el => el.setAttribute('cell-selection-mode', 'disabled'))
+	test("'none': a drag selects nothing, no event", async ({ page }) => {
+		await onGrid(page, el => el.setAttribute('cell-selection-mode', 'none'))
 		await drag(page, [0, 1], [2, 2])
 		await page.waitForTimeout(100)
 		await expect(inRange(page)).toHaveCount(0)
@@ -109,7 +109,7 @@ test.describe('cellSelectionMode', () => {
 	test('an invalid mode is rejected; attribute removal restores click', async ({ page }) => {
 		await onGrid(page, el => el.setAttribute('cell-selection-mode', 'lasso'))
 		expect(await onGrid(page, el => el.cellSelectionMode)).toBe('click')
-		await onGrid(page, el => { el.setAttribute('cell-selection-mode', 'disabled'); el.removeAttribute('cell-selection-mode') })
+		await onGrid(page, el => { el.setAttribute('cell-selection-mode', 'none'); el.removeAttribute('cell-selection-mode') })
 		expect(await onGrid(page, el => el.cellSelectionMode)).toBe('click')
 	})
 })

@@ -130,15 +130,15 @@ test.describe('tree + infinite scroll (#isGrid)', () => {
 		await gotoTreeScroll(page)
 
 		// 85 rows × 38px ≈ 3230px scrollable; viewport ~380; threshold 100.
-		// Scrolling to ~2800 should trigger loadMore.
+		// Scrolling to ~2800 should trigger load-more.
 		await scrollInner(page, 'web-grid#isGrid', 2800)
 
 		// After fetch settles, items count goes 85 → 170 (one more batch of 5 roots).
 		await expect(page.locator('[data-testid="is-loaded-items"]')).toHaveText('170')
 
-		// Request log shows the loadMore.
+		// Request log shows the load-more.
 		await expect(page.locator('[data-testid="is-req-log"] .row').first())
-			.toContainText('trigger=loadMore')
+			.toContainText('trigger=load-more')
 	})
 
 	test('hasMore flips to false once MAX roots have been loaded', async ({ page }) => {

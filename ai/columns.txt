@@ -195,7 +195,7 @@ renderEditorCallback ((ctx: EditorContext<T>) => void)
         else cancel()
       }
 
-isEditButtonVisible (boolean)
+isEditButtonShown (boolean)
     Show the edit button in this column's editable cells whatever the
     editTrigger (editTrigger: 'button' shows it anyway). Clicking it starts
     editing; its content is the grid's editButtonIcon (HTML).
@@ -340,7 +340,7 @@ isResizable (boolean, default: true)
     Allow the column width to be changed by dragging the column border.
     Drag uses minWidth/maxWidth constraints if set.
 
-isMovable (boolean, default: true)
+isReorderable (boolean, default: true)
     Allow the column to be reordered by dragging. Requires
     isColumnReorderAllowed on the grid to be true.
 
@@ -351,7 +351,7 @@ isHidden (boolean)
 
 isSortable (boolean)
     Enable sorting for this column. The grid must also have sortMode
-    set to 'single' or 'multi'. Clicking the header toggles sort.
+    set to 'single' or 'multiple'. Clicking the header toggles sort.
 
 isFilterable (boolean)
     Enable the per-column filter input for this column. The grid must
@@ -434,7 +434,7 @@ fillDirection (FillDirection)
       // Layout
       isFrozen: false,
       isResizable: true,
-      isMovable: true,
+      isReorderable: true,
       isSortable: true,
       isFilterable: true,
       isHidden: false,

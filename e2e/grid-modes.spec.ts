@@ -42,7 +42,7 @@ test.describe('mode preset applies the right property bundle', () => {
 		await expect(resolved(page)).toContainText('editTrigger=navigate')
 		await expect(resolved(page)).toContainText('cellSelectionMode=click')
 		await expect(resolved(page)).toContainText('dropdownToggleVisibility=always')
-		await expect(resolved(page)).toContainText('shouldShowDropdownOnFocus=false')
+		await expect(resolved(page)).toContainText('shouldOpenDropdownOnFocus=false')
 	})
 
 	test('switching to read-only applies the read-only bundle', async ({ page }) => {
@@ -65,7 +65,7 @@ test.describe('mode preset applies the right property bundle', () => {
 		await expect(resolved(page)).toContainText('isReadonly=false')
 		await expect(resolved(page)).toContainText('editTrigger=always')
 		await expect(resolved(page)).toContainText('cellSelectionMode=shift')
-		await expect(resolved(page)).toContainText('shouldShowDropdownOnFocus=true')
+		await expect(resolved(page)).toContainText('shouldOpenDropdownOnFocus=true')
 	})
 })
 

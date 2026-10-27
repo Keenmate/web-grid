@@ -34,10 +34,10 @@
 		 *                  cellSelectionMode='click'
 		 *   excel        — isEditable=true, editTrigger='navigate',
 		 *                  dropdownToggleVisibility='always',
-		 *                  shouldShowDropdownOnFocus=false, cellSelectionMode='click'
+		 *                  shouldOpenDropdownOnFocus=false, cellSelectionMode='click'
 		 *   input-matrix — isEditable=true, editTrigger='always',
 		 *                  dropdownToggleVisibility='always',
-		 *                  shouldShowDropdownOnFocus=true, cellSelectionMode='shift'
+		 *                  shouldOpenDropdownOnFocus=true, cellSelectionMode='shift'
 		 *
 		 * After each mode switch the fixture reads the resolved properties back off
 		 * the grid and writes them to [data-testid="resolved"] so the spec can verify
@@ -78,7 +78,7 @@
 				`editTrigger=${grid.editTrigger}`,
 				`cellSelectionMode=${grid.cellSelectionMode}`,
 				`dropdownToggleVisibility=${grid.dropdownToggleVisibility}`,
-				`shouldShowDropdownOnFocus=${grid.shouldShowDropdownOnFocus}`
+				`shouldOpenDropdownOnFocus=${grid.shouldOpenDropdownOnFocus}`
 			].join(' | ')
 		}
 

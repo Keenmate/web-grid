@@ -27,7 +27,7 @@
 	</div>
 
 	<div class="fixture">
-		<h2>#gridMovable — per-column isMovable opt-out</h2>
+		<h2>#gridMovable — per-column isReorderable opt-out</h2>
 		<web-grid id="gridMovable" style="max-width: 100%; max-height: 200px;"></web-grid>
 	</div>
 
@@ -58,9 +58,9 @@
 		 *                    can assert "from 150px".
 		 *  #grid3          — `status` has isResizable:false → its handle gets
 		 *                    wg__resize-handle--disabled and drags are no-ops.
-		 *  #gridMovable    — id / name / status have isMovable:false → Tab/drag
+		 *  #gridMovable    — id / name / status have isReorderable:false → Tab/drag
 		 *                    reorder of those columns is blocked.
-		 *  #gridReorder    — drag-to-reorder, freezeColumns=2 (id, name frozen so they
+		 *  #gridReorder    — drag-to-reorder, frozenColumnCount=2 (id, name frozen so they
 		 *                    cannot be dragged), onColumnReorder logs to
 		 *                    [data-testid="reorder-log"].
 		 *  #gridHeaderMenu — right-click header context menu with predefined items
@@ -93,8 +93,8 @@
 			{ field: 'status', title: 'Status', width: '100px' },
 			{ field: 'phone', title: 'Phone', width: '120px' }
 		]
-		grid.isRowNumbersVisible = true
-		grid.sortMode = 'multi'
+		grid.isRowNumbersShown = true
+		grid.sortMode = 'multiple'
 
 		// #grid2 — resize + persistence.
 		const grid2 = document.getElementById('grid2')
@@ -108,7 +108,7 @@
 			{ field: 'status', title: 'Status', width: '100px' },
 			{ field: 'phone', title: 'Phone', width: '120px' }
 		]
-		grid2.isRowNumbersVisible = true
+		grid2.isRowNumbersShown = true
 		grid2.gridName = 'resize-test-grid2'
 		grid2.shouldPersistColumnWidths = true
 		grid2.onColumnResize = (detail) => {
@@ -126,19 +126,19 @@
 			{ field: 'status', title: 'Status', width: '80px', isResizable: false },
 			{ field: 'phone', title: 'Phone', width: '120px' }
 		]
-		grid3.isRowNumbersVisible = true
+		grid3.isRowNumbersShown = true
 
-		// #gridMovable — per-column isMovable opt-out.
+		// #gridMovable — per-column isReorderable opt-out.
 		const gridMovable = document.getElementById('gridMovable')
 		gridMovable.items = seed()
 		gridMovable.columns = [
-			{ field: 'id', title: 'ID', width: '80px', isMovable: false },
-			{ field: 'name', title: 'Name', width: '150px', isMovable: false },
+			{ field: 'id', title: 'ID', width: '80px', isReorderable: false },
+			{ field: 'name', title: 'Name', width: '150px', isReorderable: false },
 			{ field: 'email', title: 'Email', width: '200px' },
-			{ field: 'status', title: 'Status', width: '100px', isMovable: false },
+			{ field: 'status', title: 'Status', width: '100px', isReorderable: false },
 			{ field: 'phone', title: 'Phone', width: '120px' }
 		]
-		gridMovable.isRowNumbersVisible = true
+		gridMovable.isRowNumbersShown = true
 		gridMovable.isColumnReorderAllowed = true
 
 		// #gridReorder — drag-to-reorder, id / name frozen.
@@ -154,9 +154,9 @@
 			{ field: 'salary', title: 'Salary', width: '100px' },
 			{ field: 'status', title: 'Status', width: '100px' }
 		]
-		gridReorder.isRowNumbersVisible = true
+		gridReorder.isRowNumbersShown = true
 		gridReorder.isStickyRowNumbers = true
-		gridReorder.freezeColumns = 2
+		gridReorder.frozenColumnCount = 2
 		gridReorder.isColumnReorderAllowed = true
 		gridReorder.onColumnReorder = (detail) => {
 			document.querySelector('[data-testid="reorder-log"]').textContent =
@@ -175,8 +175,8 @@
 		const gridHeaderMenu = document.getElementById('gridHeaderMenu')
 		gridHeaderMenu.items = seed()
 		gridHeaderMenu.columns = headerMenuColumnDefs()
-		gridHeaderMenu.isRowNumbersVisible = true
-		gridHeaderMenu.sortMode = 'multi'
+		gridHeaderMenu.isRowNumbersShown = true
+		gridHeaderMenu.sortMode = 'multiple'
 		gridHeaderMenu.headerContextMenu = [
 			'sort-asc',
 			'sort-desc',

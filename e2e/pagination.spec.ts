@@ -2,7 +2,7 @@ import { test, expect, type Page, gridLocator, cell, onGrid, domEvents, clearEve
 
 /**
  * Pagination — client + server `paginationMode`, `pageSizes` selector,
- * `paginationLayout` / `paginationPosition`, `isPaginationVisible: 'auto'`,
+ * `paginationLayout` / `paginationPosition`, `isPaginationShown: 'auto'`,
  * `getPaginationLabelsCallback` / `labels`.
  *
  * Fixture: docs/test/pagination.html — #grid: 23 rows, page-size 5, pageSizes
@@ -50,7 +50,7 @@ test.describe('client pagination', () => {
 		await expect(info(page)).toContainText('Page 1 of 3')
 		expect(await onGrid(page, el => [el.pageSize, el.currentPage])).toEqual([10, 1])
 		expect(await domEvents(page, 'data-request', 'grid')).toEqual([
-			expect.objectContaining({ trigger: 'pageSize', page: 1, pageSize: 10, skip: 0 })
+			expect.objectContaining({ trigger: 'page-size', page: 1, pageSize: 10, skip: 0 })
 		])
 	})
 
@@ -70,7 +70,7 @@ test.describe('client pagination', () => {
 		await btn(page, 'first').click()
 		expect(await onGrid(page, el => el.currentPage)).toBe(1)
 
-		await onGrid(page, el => el.setAttribute('pagination-layout', 'pageInfo|pageSize'))
+		await onGrid(page, el => el.setAttribute('pagination-layout', 'page-info|page-size'))
 		await expect(pag(page).locator('.wg__pagination-btn')).toHaveCount(0)
 		await expect(pag(page).locator('.wg__pagination-info + .wg__pagination-pagesize')).toHaveCount(1)
 	})
@@ -96,22 +96,22 @@ test.describe('client pagination', () => {
 		await expect(bottom).not.toHaveClass(/--left|--right/)
 	})
 
-	test("isPaginationVisible: 'auto' hides the bar on a single page, false always hides", async ({ page }) => {
-		await onGrid(page, el => el.setAttribute('is-pagination-visible', 'auto'))
-		expect(await onGrid(page, el => el.isPaginationVisible)).toBe('auto')
+	test("isPaginationShown: 'auto' hides the bar on a single page, false always hides", async ({ page }) => {
+		await onGrid(page, el => el.setAttribute('show-pagination', 'auto'))
+		expect(await onGrid(page, el => el.isPaginationShown)).toBe('auto')
 		await expect(pag(page)).toHaveCount(1)  // 5 pages
 		await onGrid(page, el => { el.pageSize = 25 })
 		await expect(rows(page)).toHaveCount(23)
 		await expect(pag(page)).toHaveCount(0)  // 1 page
-		await onGrid(page, el => { el.pageSize = 5; el.isPaginationVisible = false })
+		await onGrid(page, el => { el.pageSize = 5; el.isPaginationShown = false })
 		await expect(rows(page)).toHaveCount(5)
 		await expect(pag(page)).toHaveCount(0)
-		await onGrid(page, el => el.removeAttribute('is-pagination-visible'))
+		await onGrid(page, el => el.removeAttribute('show-pagination'))
 		await expect(pag(page)).toHaveCount(1)
 	})
 
 	test('isPageable=false shows all rows and no bar', async ({ page }) => {
-		await onGrid(page, el => el.removeAttribute('is-pageable'))
+		await onGrid(page, el => el.removeAttribute('pageable'))
 		await expect(rows(page)).toHaveCount(23)
 		await expect(pag(page)).toHaveCount(0)
 	})
@@ -120,7 +120,7 @@ test.describe('client pagination', () => {
 test.describe('labels', () => {
 	test('getPaginationLabelsCallback overrides the texts and gets the paging context', async ({ page }) => {
 		await onGrid(page, el => {
-			el.paginationLayout = 'first|previous|pageInfo|next|last|pageSize'
+			el.paginationLayout = 'first|previous|page-info|next|last|page-size'
 			el.getPaginationLabelsCallback = (ctx: any) => {
 				;(window as any).__labelsCtx = { currentPage: ctx.currentPage, totalPages: ctx.totalPages, totalItems: ctx.totalItems, pageSize: ctx.pageSize, hasController: !!ctx.controller }
 				return { pageInfo: `Strana ${ctx.currentPage} z ${ctx.totalPages}`, itemCount: `${ctx.totalItems} položek`, next: 'Další', perPage: 'na stránku' }
@@ -164,7 +164,7 @@ test.describe("paginationMode 'server'", () => {
 		await clearEvents(page, 'pagination')
 		await pag(page, 'server').locator('.wg__pagination-select').selectOption('20')
 		expect(await domEvents(page, 'data-request', 'server')).toEqual([
-			expect.objectContaining({ trigger: 'pageSize', page: 1, pageSize: 20, skip: 0 })
+			expect.objectContaining({ trigger: 'page-size', page: 1, pageSize: 20, skip: 0 })
 		])
 		await expect(rows(page, 'server')).toHaveCount(20)
 		await expect(info(page, 'server')).toContainText('Page 1 of 3')
@@ -223,7 +223,7 @@ test.describe('beforePageChangeCallback', () => {
 		await hook(page, 'grid', false)
 		const select = pag(page).locator('.wg__pagination-select')
 		await select.selectOption('10')
-		expect(await calls(page)).toEqual([expect.objectContaining({ trigger: 'pageSize', fromPage: 1, toPage: 1 })])
+		expect(await calls(page)).toEqual([expect.objectContaining({ trigger: 'page-size', fromPage: 1, toPage: 1 })])
 		expect(await onGrid(page, el => el.pageSize)).toBe(5)
 		await expect(select).toHaveValue('5')
 	})

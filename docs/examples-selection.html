@@ -52,7 +52,7 @@
                     <li><strong>Delete</strong> - Delete selected rows</li>
                     <li><strong>Ctrl+C</strong> - Copy selection to clipboard</li>
                 </ul>
-                <pre style="background: #f8fafc; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.85rem; margin-top: 0.5rem;"><code>cellSelectionMode: 'disabled'  // No cell range selection</code></pre>
+                <pre style="background: #f8fafc; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.85rem; margin-top: 0.5rem;"><code>cellSelectionMode: 'none'  // No cell range selection</code></pre>
             </div>
         </div>
 
@@ -395,11 +395,11 @@ grid.focusedRowIndex = null // Clear focus</code></pre>
         const gridRowSelection = document.getElementById('grid-row-selection')
         gridRowSelection.items = createSampleData()
         gridRowSelection.columns = columns
-        gridRowSelection.isRowNumbersVisible = true
+        gridRowSelection.isRowNumbersShown = true
         gridRowSelection.isHoverable = true
         gridRowSelection.mode = 'navigate'
-        gridRowSelection.cellSelectionMode = 'disabled'  // No cell drag selection, only row/column selection
-        gridRowSelection.sortMode = 'multi'
+        gridRowSelection.cellSelectionMode = 'none'  // No cell drag selection, only row/column selection
+        gridRowSelection.sortMode = 'multiple'
         gridRowSelection.isColumnReorderAllowed = true
 
         gridRowSelection.rangeShortcuts = [
@@ -450,8 +450,8 @@ grid.focusedRowIndex = null // Clear focus</code></pre>
         const gridCellRangeClick = document.getElementById('grid-cell-range-click')
         gridCellRangeClick.items = createSampleData()
         gridCellRangeClick.columns = columns
-        gridCellRangeClick.isRowNumbersVisible = true
-        gridCellRangeClick.sortMode = 'multi'
+        gridCellRangeClick.isRowNumbersShown = true
+        gridCellRangeClick.sortMode = 'multiple'
         gridCellRangeClick.isColumnReorderAllowed = true
 
         // LocalStorage key for this example
@@ -651,11 +651,11 @@ grid.focusedRowIndex = null // Clear focus</code></pre>
         const gridCellRangeShift = document.getElementById('grid-cell-range-shift')
         gridCellRangeShift.items = createSampleData()
         gridCellRangeShift.columns = columns
-        gridCellRangeShift.isRowNumbersVisible = true
+        gridCellRangeShift.isRowNumbersShown = true
         gridCellRangeShift.isHoverable = true
         gridCellRangeShift.editTrigger = 'click'
         gridCellRangeShift.cellSelectionMode = 'shift'
-        gridCellRangeShift.sortMode = 'multi'
+        gridCellRangeShift.sortMode = 'multiple'
         gridCellRangeShift.isColumnReorderAllowed = true
 
         gridCellRangeShift.rangeShortcuts = [
@@ -716,11 +716,11 @@ grid.focusedRowIndex = null // Clear focus</code></pre>
         const gridRangeShortcuts = document.getElementById('grid-range-shortcuts')
         gridRangeShortcuts.items = createSampleData()
         gridRangeShortcuts.columns = columns
-        gridRangeShortcuts.isRowNumbersVisible = true
+        gridRangeShortcuts.isRowNumbersShown = true
         gridRangeShortcuts.isHoverable = true
         gridRangeShortcuts.mode = 'navigate'
         gridRangeShortcuts.cellSelectionMode = 'click'
-        gridRangeShortcuts.sortMode = 'multi'
+        gridRangeShortcuts.sortMode = 'multiple'
         gridRangeShortcuts.isColumnReorderAllowed = true
 
         gridRangeShortcuts.rangeShortcuts = [
@@ -823,10 +823,10 @@ grid.focusedRowIndex = null // Clear focus</code></pre>
         const gridRowFocus = document.getElementById('grid-row-focus')
         gridRowFocus.items = createSampleData()
         gridRowFocus.columns = columns
-        gridRowFocus.isRowNumbersVisible = true
+        gridRowFocus.isRowNumbersShown = true
         gridRowFocus.isHoverable = true
         gridRowFocus.mode = 'navigate'
-        gridRowFocus.sortMode = 'multi'
+        gridRowFocus.sortMode = 'multiple'
 
         const detailPanel = document.getElementById('rowFocusDetail')
         const focusLog = document.getElementById('rowFocusLog')

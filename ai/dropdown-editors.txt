@@ -208,7 +208,7 @@ Grid-level dropdown settings (set on the grid element, overridable per-column):
     'always' shows it permanently; 'on-focus' shows it on hover/focus.
     Per-column override: column.dropdownToggleVisibility
 
-  shouldShowDropdownOnFocus   boolean (default: false)
+  shouldOpenDropdownOnFocus   boolean (default: false)
     When true, the dropdown opens automatically when a cell is focused.
 
   shouldOpenDropdownOnEnter   boolean (default: false)
@@ -449,9 +449,9 @@ GRID MODE DEFAULTS FOR DROPDOWNS
 
 Grid modes set different defaults for dropdown behavior:
 
-  read-only      dropdownToggleVisibility: 'on-focus', shouldShowDropdownOnFocus: false
-  excel          dropdownToggleVisibility: 'always',  shouldShowDropdownOnFocus: false
-  input-matrix   dropdownToggleVisibility: 'always',  shouldShowDropdownOnFocus: true
+  read-only      dropdownToggleVisibility: 'on-focus', shouldOpenDropdownOnFocus: false
+  excel          dropdownToggleVisibility: 'always',  shouldOpenDropdownOnFocus: false
+  input-matrix   dropdownToggleVisibility: 'always',  shouldOpenDropdownOnFocus: true
 
 In input-matrix mode, dropdown cells auto-open when focused, making it
 behave like a form. In excel mode, toggles are always visible but require

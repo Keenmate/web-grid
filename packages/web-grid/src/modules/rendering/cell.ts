@@ -71,7 +71,7 @@ export function renderCell<T>(
 	if (column.maxLines) classes.push('wg__cell--line-clamp')
 	if (isActivelyEditing) classes.push('wg__cell--editing')
 	if (isInvalid) classes.push('wg__cell--invalid')
-	if (ctx.engine.isDirtyIndicatorVisible && ctx.engine.isCellDirty(rowIndex, field)) {
+	if (ctx.engine.isDirtyIndicatorShown && ctx.engine.isCellDirty(rowIndex, field)) {
 		classes.push('wg__cell--dirty')
 	}
 	if (visualIndex >= 0 && ctx.engine.isCellInSelectedRange(rowIndex, visualIndex)) classes.push('wg__cell--in-range')
@@ -112,7 +112,7 @@ export function renderCell<T>(
 	if (rowNumberCell && !rowNumberCell.matches('.wg__row-number--locked, .wg__empty-row-indicator')) {
 		rowNumberCell.classList.toggle(
 			'wg__row-number--dirty',
-			ctx.engine.isDirtyIndicatorVisible && ctx.engine.isRowDirty(rowIndex)
+			ctx.engine.isDirtyIndicatorShown && ctx.engine.isRowDirty(rowIndex)
 		)
 	}
 }
@@ -140,7 +140,7 @@ function focusEditorInCell<T>(
 		const cursorPos = options.cursorPosition
 		// Combobox/autocomplete default to selectAll (cursor positioning doesn't apply to filter inputs)
 		const isDropdownInput = editor.classList.contains('wg__combobox-input') || editor.classList.contains('wg__autocomplete-input')
-		const defaultSelection = isDropdownInput ? 'selectAll' : undefined
+		const defaultSelection = isDropdownInput ? 'select-all' : undefined
 		const editStartSelection = column.editorOptions?.editStartSelection || defaultSelection || ctx.engine.editStartSelection
 
 		if (options.initialSearchQuery !== undefined) {
@@ -150,7 +150,7 @@ function focusEditorInCell<T>(
 		} else {
 			// Apply editStartSelection setting
 			switch (editStartSelection) {
-				case 'mousePosition':
+				case 'mouse-position':
 					if (cursorPos !== undefined) {
 						const pos = Math.min(cursorPos, editor.value.length)
 						editor.setSelectionRange(pos, pos)
@@ -158,13 +158,13 @@ function focusEditorInCell<T>(
 						editor.setSelectionRange(editor.value.length, editor.value.length)
 					}
 					break
-				case 'cursorAtStart':
+				case 'cursor-at-start':
 					editor.setSelectionRange(0, 0)
 					break
-				case 'cursorAtEnd':
+				case 'cursor-at-end':
 					editor.setSelectionRange(editor.value.length, editor.value.length)
 					break
-				case 'selectAll':
+				case 'select-all':
 				default:
 					editor.select()
 					break

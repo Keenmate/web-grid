@@ -86,8 +86,8 @@ Turn on whatever the page calls for. Everything is off by default:
 ```javascript
 grid.isStriped = true            // alternating row backgrounds
 grid.isHoverable = true          // hover highlight
-grid.isRowNumbersVisible = true  // leftmost # column
-grid.sortMode = 'multi'          // click headers to sort, Ctrl+click to add
+grid.isRowNumbersShown = true  // leftmost # column
+grid.sortMode = 'multiple'          // click headers to sort, Ctrl+click to add
 grid.isPageable = true
 grid.pageSize = 25
 grid.isEditable = true
@@ -100,8 +100,8 @@ grid.editTrigger = 'navigate'    // Excel-like: type to edit the focused cell
 |----------|------|---------|
 | `items` | `T[]` | Row data — the only required "content" property |
 | `columns` | `Column<T>[]` | Column definitions with at least a `field` each |
-| `isStriped` / `isHoverable` / `isRowNumbersVisible` | `boolean` | Cosmetic toggles |
-| `sortMode` | `'none' \| 'single' \| 'multi'` | Column sort behavior |
+| `isStriped` / `isHoverable` / `isRowNumbersShown` | `boolean` | Cosmetic toggles |
+| `sortMode` | `'none' \| 'single' \| 'multiple'` | Column sort behavior |
 | `isPageable` + `pageSize` | `boolean` + `number` | Pagination |
 | `isEditable` + `editTrigger` | `boolean` + `EditTrigger` | Enable inline editing and how it starts |
 | `isFilterable` | `boolean` | Per-column filter row under the headers |
@@ -114,7 +114,7 @@ Short recipes for common setups. Each sets only what's necessary on top of the S
 ### Sortable grid
 
 ```javascript
-grid.sortMode = 'multi'   // or 'single'
+grid.sortMode = 'multiple'   // or 'single'
 ```
 
 ### Paginated grid with top + bottom pager
@@ -194,7 +194,7 @@ grid.columns = [...grid.columns]   // reassign to trigger re-render
 ### Row toolbar
 
 ```javascript
-grid.isRowToolbarVisible = true
+grid.isRowToolbarShown = true
 grid.rowToolbar = ['add', 'delete', 'duplicate', 'move-up', 'move-down']   // the built-ins do the work
 ```
 
@@ -300,9 +300,9 @@ This architecture separates mode detection (the adapter decides *what* action a 
 | `isFilterable` | `boolean` | `false` | Show the filter row (inputs for columns with `isFilterable: true`) and apply `filters` |
 | `isStriped` | `boolean` | `false` | Alternate row background colors |
 | `isHoverable` | `boolean` | `false` | Highlight row on hover |
-| `isRowNumbersVisible` | `boolean` | `false` | Show row number column |
+| `isRowNumbersShown` | `boolean` | `false` | Show row number column |
 | `isStickyRowNumbers` | `boolean` | `false` | Freeze row number column during horizontal scroll |
-| `freezeColumns` | `number` | `0` | Freeze first N columns (applied after visual reorder from `isFrozen`) |
+| `frozenColumnCount` | `number` | `0` | Freeze first N columns (applied after visual reorder from `isFrozen`) |
 | `mode` | `GridMode` | — | Grid mode: `'read-only'`, `'excel'`, `'input-matrix'` (see [Grid Modes](#grid-modes)) |
 | `focusedRowIndex` | `number \| null` | `null` | Currently focused row index (readable/writable) |
 
@@ -314,10 +314,10 @@ This architecture separates mode detection (the adapter decides *what* action a 
 | `isRowEditable` | `boolean` | — | Static per-grid row editability |
 | `getIsRowEditableCallback` | `(ctx: { row }) => boolean` | — | Decides editability per row |
 | `editTrigger` | `EditTrigger` | `'dblclick'` | How editing starts: `'click'`, `'dblclick'`, `'button'` (an edit button in editable cells — on hover and in the focused cell; F2 / Enter too), `'always'`, `'navigate'` |
-| `editButtonIcon` | `string` (HTML) | `'✎'` | Content of the edit button (`editTrigger: 'button'` / `column.isEditButtonVisible`) — HTML, e.g. `'<span class="lucide-pencil"></span>'`. Attribute `edit-button-icon`. Accessible name: `labels.editCell` |
-| `editStartSelection` | `EditStartSelection` | `'selectAll'` | Cursor position when entering edit via navigate: `'mousePosition'`, `'selectAll'`, `'cursorAtStart'`, `'cursorAtEnd'` |
+| `editButtonIcon` | `string` (HTML) | `'✎'` | Content of the edit button (`editTrigger: 'button'` / `column.isEditButtonShown`) — HTML, e.g. `'<span class="lucide-pencil"></span>'`. Attribute `edit-button-icon`. Accessible name: `labels.editCell` |
+| `editStartSelection` | `EditStartSelection` | `'select-all'` | Cursor position when entering edit via navigate: `'mouse-position'`, `'select-all'`, `'cursor-at-start'`, `'cursor-at-end'` |
 | `dropdownToggleVisibility` | `ToggleVisibility` | `'on-focus'` | When to show dropdown toggle button: `'always'`, `'on-focus'` |
-| `shouldShowDropdownOnFocus` | `boolean` | `false` | Auto-open dropdown when cell is focused |
+| `shouldOpenDropdownOnFocus` | `boolean` | `false` | Auto-open dropdown when cell is focused |
 | `shouldOpenDropdownOnEnter` | `boolean` | `false` | Enter key opens dropdown (`true`) or moves to next row (`false`) |
 | `isCheckboxAlwaysEditable` | `boolean` | `false` | Checkboxes are always clickable, even in navigate mode |
 
@@ -326,7 +326,7 @@ This architecture separates mode detection (the adapter decides *what* action a 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
 | `sort` | `SortState[]` | `[]` | Current sort state (set for initial/server-side sort) |
-| `sortMode` | `SortMode` | `'none'` | Sort mode: `'none'` (disabled), `'single'`, `'multi'` |
+| `sortMode` | `SortMode` | `'none'` | Sort mode: `'none'` (disabled), `'single'`, `'multiple'` |
 
 ### Pagination
 
@@ -337,18 +337,18 @@ This architecture separates mode detection (the adapter decides *what* action a 
 | `pageSizes` | `number[]` | — | Available page sizes for selector (e.g., `[10, 25, 50, 100]`) |
 | `paginationMode` | `'client' \| 'server'` | `'client'` | `'client'` = grid slices items; `'server'` = items are already current page |
 | `currentPage` | `number` | `1` | Current page (1-based). A filter change resets it to 1 (unless set in the same task — a restored page + filter keep the page); a shorter `items` clamps it |
-| `beforePageChangeCallback` | `(ctx: { trigger, fromPage, toPage, drafts }) => boolean \| number \| void \| Promise<…>` | — | Runs before a user action swaps the rows — pager buttons, page-size change, header sort / filter-row change in server mode (`trigger`: `'page'` / `'pageSize'` / `'sort'` / `'filter'`). `false` → stay, a number → go to that page instead; async OK (the pager is disabled meanwhile). Programmatic `currentPage` writes and `loadMore` skip it |
+| `beforePageChangeCallback` | `(ctx: { trigger, fromPage, toPage, drafts }) => boolean \| number \| void \| Promise<…>` | — | Runs before a user action swaps the rows — pager buttons, page-size change, header sort / filter-row change in server mode (`trigger`: `'page'` / `'page-size'` / `'sort'` / `'filter'`). `false` → stay, a number → go to that page instead; async OK (the pager is disabled meanwhile). Programmatic `currentPage` writes and `load-more` skip it |
 | `totalItems` | `number \| null` | `null` | Total item count for server-side pagination |
-| `isPaginationVisible` | `boolean \| 'auto'` | `'auto'` | `true` = always show, `false` = never, `'auto'` = hide when ≤1 page (`showPagination` is a deprecated alias) |
+| `isPaginationShown` | `boolean \| 'auto'` | `'auto'` | `true` = always show, `false` = never, `'auto'` = hide when ≤1 page (`showPagination` is a deprecated alias) |
 | `paginationPosition` | `string` | `'bottom-center'` | Position(s): `'bottom-center'`, `'top-right\|bottom-right'` for multiple |
 | `getPaginationLabelsCallback` | `(ctx: { currentPage, totalPages, totalItems, pageSize }) => Partial<PaginationLabels>` | — | Customize/translate pagination text |
-| `paginationLayout` | `string` | — | Element order: `'pageSize\|previous\|pageInfo\|next'` or `'first\|previous\|pageInfo\|next\|last'` |
+| `paginationLayout` | `string` | — | Element order: `'page-size\|previous\|page-info\|next'` or `'first\|previous\|page-info\|next\|last'` |
 
 ### Row Toolbar
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `isRowToolbarVisible` | `boolean` | `false` | Show row action toolbar |
+| `isRowToolbarShown` | `boolean` | `false` | Show row action toolbar |
 | `rowToolbar` | `GridToolbarEntry<T>[]` | `['add', 'delete', 'duplicate']` | Toolbar entries: built-in names, action items, dividers (see [Row Toolbar](#row-toolbar-1)) |
 | `toolbarTrigger` | `'hover' \| 'click' \| 'button'` | `'hover'` | How to show toolbar |
 | `toolbarPosition` | `ToolbarPosition` | `'auto'` | Preferred position: `'auto'`, `'left'`, `'right'`, `'top'`, `'inline'` |
@@ -382,7 +382,7 @@ This architecture separates mode detection (the adapter decides *what* action a 
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `cellSelectionMode` | `CellSelectionMode` | `'click'` | How to select cell ranges: `'disabled'` (none), `'click'` (drag; Shift+click extends from the focused cell), `'shift'` (Shift+click twice / Shift+drag). In every mode but `'disabled'`, Shift+Arrow grows / shrinks the range from the focused cell (the anchor keeps focus), Shift+Home / End go to the row start / end, Ctrl+Shift+Arrow to the data edge; while editing, Shift+Arrow selects text in the editor |
+| `cellSelectionMode` | `CellSelectionMode` | `'click'` | How to select cell ranges: `'none'`, `'click'` (drag; Shift+click extends from the focused cell), `'shift'` (Shift+click twice / Shift+drag). In every mode but `'disabled'`, Shift+Arrow grows / shrinks the range from the focused cell (the anchor keeps focus), Shift+Home / End go to the row start / end, Ctrl+Shift+Arrow to the data edge; while editing, Shift+Arrow selects text in the editor |
 | `shouldCopyWithHeaders` | `boolean` | `false` | Include column headers when copying cell selection to clipboard |
 
 ### Keyboard Shortcuts
@@ -391,7 +391,7 @@ This architecture separates mode detection (the adapter decides *what* action a 
 |----------|------|---------|-------------|
 | `rowShortcuts` | `GridShortcut<T>[]` | — | Action items bound to a key on the focused / hovered row (see [Keyboard Shortcuts](#keyboard-shortcuts-1)) |
 | `rangeShortcuts` | `GridRangeShortcut<T>[]` | — | Action items bound to a key on the selected rows / cell range |
-| `isShortcutsHelpVisible` | `boolean` | `false` | Show keyboard shortcuts help icon |
+| `isShortcutsHelpShown` | `boolean` | `false` | Show keyboard shortcuts help icon |
 | `shortcutsHelpPosition` | `'top-right' \| 'top-left'` | `'top-right'` | Help icon position |
 | `renderShortcutsHelpCallback` | `(ctx) => string` | — | Custom HTML shown alongside the shortcuts list |
 
@@ -449,8 +449,8 @@ This architecture separates mode detection (the adapter decides *what* action a 
 |----------|------|---------|-------------|
 | `isVirtualScrollEnabled` | `boolean` | `false` | Enable virtual scroll |
 | `virtualScrollThreshold` | `number` | `100` | Auto-enable when items ≥ threshold |
-| `virtualScrollRowHeight` | `number` | `38` | Fixed row height in pixels |
-| `virtualScrollBuffer` | `number` | `10` | Extra rows rendered above/below viewport |
+| `virtualScrollItemHeight` | `number` | `38` | Fixed row height in pixels |
+| `virtualScrollOverscan` | `number` | `10` | Extra rows rendered above/below viewport |
 
 ### Infinite Scroll
 
@@ -550,7 +550,7 @@ Every column callback takes one `ctx`. The cell ctx (`CellContext<T>`) is `{ row
 | `dropdownToggleVisibility` | `ToggleVisibility` | Per-column override: `'always'` or `'on-focus'` |
 | `shouldOpenDropdownOnEnter` | `boolean` | Per-column override: Enter opens dropdown or moves down |
 | `renderEditorCallback` | `(ctx: EditorContext<T>) => void` | Handler for `'custom'` editor type — the cell ctx + `commit(value)` / `cancel()` |
-| `isEditButtonVisible` | `boolean` | Show the edit button in this column's editable cells whatever the `editTrigger` (`'button'` shows it anyway) |
+| `isEditButtonShown` | `boolean` | Show the edit button in this column's editable cells whatever the `editTrigger` (`'button'` shows it anyway) |
 
 ### Validation
 
@@ -593,7 +593,7 @@ Grid-level paste hooks: `beforePasteCallback(ctx)` runs before a multi-cell past
 |-------|------|-------------|
 | `isFrozen` | `boolean` | Column sticks to left side during horizontal scroll |
 | `isResizable` | `boolean` | Allow column width to be changed by dragging (default: `true`) |
-| `isMovable` | `boolean` | Allow column to be reordered by dragging (default: `true`) |
+| `isReorderable` | `boolean` | Allow column to be reordered by dragging (default: `true`) |
 | `isHidden` | `boolean` | Column is not rendered but kept in array for visibility toggling |
 | `isSortable` | `boolean` | Enable sorting for this column (when grid has `sortMode` enabled) |
 | `isFilterable` | `boolean` | This column gets a filter-row input (opt-in) |
@@ -625,7 +625,7 @@ Grid-level paste hooks: `beforePasteCallback(ctx)` runs before a multi-cell past
 | `placeholder` | `string` | — | Placeholder text |
 | `pattern` | `string` | — | Input pattern attribute |
 | `inputMode` | `'text' \| 'numeric' \| 'email' \| 'tel' \| 'url'` | — | Virtual keyboard hint |
-| `editStartSelection` | `EditStartSelection` | `'selectAll'` | Cursor position when entering edit |
+| `editStartSelection` | `EditStartSelection` | `'select-all'` | Cursor position when entering edit |
 
 ### Number Options
 
@@ -722,7 +722,7 @@ Set `editor: 'custom'` and provide a `renderEditorCallback` on the column:
 
 The `mode` property sets sensible defaults for common use cases:
 
-| Mode | `isEditable` | `editTrigger` | `cellSelectionMode` | `dropdownToggleVisibility` | `shouldShowDropdownOnFocus` |
+| Mode | `isEditable` | `editTrigger` | `cellSelectionMode` | `dropdownToggleVisibility` | `shouldOpenDropdownOnFocus` |
 |------|-------------|--------------|--------------------|--------------------------|-----------------------------|
 | `'read-only'` | `false` | — | `'click'` | `'on-focus'` | `false` |
 | `'excel'` | `true` | `'navigate'` | `'click'` | `'always'` | `false` |
@@ -774,7 +774,7 @@ A **divider** is an entry `{ divider: true, text? }` (a labelled one is a group 
 ### Basic Setup
 
 ```javascript
-grid.isRowToolbarVisible = true
+grid.isRowToolbarShown = true
 grid.rowToolbar = ['add', 'delete', 'duplicate', 'move-up', 'move-down']
 ```
 
@@ -959,7 +959,7 @@ grid.rangeShortcuts = [
 ]
 ```
 
-Row shortcuts act on the focused / hovered row with the cell ctx; range shortcuts act on the selection with `{ rows, rowIndices, cellRange?, cells? }` (custom only). Both fire the `action` event with `source: 'keyboard'`. With `isShortcutsHelpVisible`, the shortcuts are listed in a help popover.
+Row shortcuts act on the focused / hovered row with the cell ctx; range shortcuts act on the selection with `{ rows, rowIndices, cellRange?, cells? }` (custom only). Both fire the `action` event with `source: 'keyboard'`. With `isShortcutsHelpShown`, the shortcuts are listed in a help popover.
 
 ## Events
 

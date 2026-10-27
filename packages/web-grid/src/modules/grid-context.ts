@@ -27,7 +27,7 @@ export interface GridHost<T = unknown> {
 	// Grid logic
 	readonly engine: GridEngine<T>
 
-	/** Core: write inputs (`pageSize`, `freezeColumns`, …) through the property path and apply them now. */
+	/** Core: write inputs (`pageSize`, `frozenColumnCount`, …) through the property path and apply them now. */
 	setAttributes(values: Record<string, unknown>): void
 
 	// Dropdown runtime state — owned by DropdownService (open flag, options, highlight,

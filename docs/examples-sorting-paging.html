@@ -207,14 +207,14 @@
                     <div id="layout-elements" class="layout-elements">
                         <span class="layout-chip" data-element="first" draggable="true">first</span>
                         <span class="layout-chip" data-element="previous" draggable="true">previous</span>
-                        <span class="layout-chip" data-element="pageInfo" draggable="true">pageInfo</span>
+                        <span class="layout-chip" data-element="page-info" draggable="true">page-info</span>
                         <span class="layout-chip" data-element="next" draggable="true">next</span>
                         <span class="layout-chip" data-element="last" draggable="true">last</span>
-                        <span class="layout-chip inactive" data-element="pageSize" draggable="true">pageSize</span>
+                        <span class="layout-chip inactive" data-element="page-size" draggable="true">page-size</span>
                     </div>
                     <div class="config-hint">Click to toggle, drag to reorder</div>
                     <div class="config-output">
-                        <code>paginationLayout = "</code><input type="text" id="layout-output" value="first|previous|pageInfo|next|last" style="font-family: monospace; border: 1px solid #d1d5db; border-radius: 3px; padding: 2px 6px; width: 380px;"><code>"</code>
+                        <code>paginationLayout = "</code><input type="text" id="layout-output" value="first|previous|page-info|next|last" style="font-family: monospace; border: 1px solid #d1d5db; border-radius: 3px; padding: 2px 6px; width: 380px;"><code>"</code>
                     </div>
                 </div>
 
@@ -310,12 +310,12 @@ grid.paginationPosition = 'top-right|bottom-right'
 // Server-side pagination
 grid.totalItems = 500
 grid.currentPage = 1
-grid.isPaginationVisible = true
+grid.isPaginationShown = true
 
 // Handle data requests
 grid.onDataRequest = (detail) => {
     // detail: { sort, page, pageSize, trigger }
-    // trigger: 'sort' | 'page' | 'pageSize' | 'init'
+    // trigger: 'sort' | 'page' | 'page-size' | 'init'
     fetchData(detail).then(res => {
         grid.items = res.data
         grid.totalItems = res.total
@@ -398,12 +398,12 @@ grid.summaryInline = false  // Each on its own row</pre>
 
         grid1.items = allData.slice(0, 50)  // 50 items for client-side demo
         grid1.columns = columns
-        grid1.sortMode = 'multi'
+        grid1.sortMode = 'multiple'
         grid1.isPageable = true
         grid1.pageSize = 10
         grid1.pageSizes = [5, 10, 25, 50]  // Page size options
         grid1.paginationPosition = 'bottom-right'  // Pagination on the right
-        grid1.paginationLayout = 'first|previous|pageInfo|next|last'  // Full navigation with first/last
+        grid1.paginationLayout = 'first|previous|page-info|next|last'  // Full navigation with first/last
 
         // Summary at same position as pagination (will appear on left)
         grid1.summaryPosition = 'bottom-right'
@@ -545,7 +545,7 @@ grid.summaryInline = false  // Each on its own row</pre>
         const loadingOverlay = document.getElementById('loadingOverlay')
 
         grid2.columns = columns
-        grid2.sortMode = 'multi'
+        grid2.sortMode = 'multiple'
         grid2.isPageable = true
         grid2.pageSize = 10
         grid2.pageSizes = [10, 25, 50, 100]  // Page size options

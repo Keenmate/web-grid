@@ -9,10 +9,10 @@
 <body>
 	<h1>dropdown-flags fixture</h1>
 	<p>Targeted by <code>e2e/dropdown-flags.spec.ts</code>: <code>dropdownToggleVisibility</code>,
-	<code>shouldShowDropdownOnFocus</code>, <code>shouldOpenDropdownOnEnter</code> (grid + column),
+	<code>shouldOpenDropdownOnFocus</code>, <code>shouldOpenDropdownOnEnter</code> (grid + column),
 	<code>isCheckboxAlwaysEditable</code>. Navigate mode, explicit flags in markup.</p>
 
-	<web-grid id="grid" is-editable edit-trigger="navigate" should-show-dropdown-on-focus="false" style="max-width: 600px;"></web-grid>
+	<web-grid id="grid" editable edit-trigger="navigate" open-dropdown-on-focus="false" style="max-width: 600px;"></web-grid>
 	<pre data-testid="dropdown-flags-log"></pre>
 
 	<script type="module">

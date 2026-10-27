@@ -26,7 +26,7 @@ const ACTION_LABEL_KEYS: Record<string, keyof GridLabels['actions']> = {
 export function renderShortcutsHelpIcon<T>(ctx: GridHost<T>): string {
 	const rowShortcuts = ctx.engine.rowShortcuts ?? []
 	const rangeShortcuts = ctx.engine.rangeShortcuts ?? []
-	if (!ctx.engine.isShortcutsHelpVisible || (rowShortcuts.length === 0 && rangeShortcuts.length === 0)) {
+	if (!ctx.engine.isShortcutsHelpShown || (rowShortcuts.length === 0 && rangeShortcuts.length === 0)) {
 		return ''
 	}
 

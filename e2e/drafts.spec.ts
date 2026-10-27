@@ -2,7 +2,7 @@ import { test, expect, type Page, gridLocator, cell, header, onGrid, domEvents, 
 
 /**
  * Drafts — an edit writes to a per-row draft (the `items` stay untouched);
- * dirty indicator (`isDirtyIndicatorVisible`), `isCellDirty` / `isRowDirty` /
+ * dirty indicator (`isDirtyIndicatorShown`), `isCellDirty` / `isRowDirty` /
  * `getRowDraft` / `hasRowDraft` / `getDraftRowIndices`, `getDrafts`, `discardRowDraft` /
  * `discardDraft` / `discardAllDrafts`, drafts never pruned by `items`, and the `row-change` detail.
  *
@@ -71,15 +71,15 @@ test.describe('dirty state', () => {
 		expect(await onGrid(page, el => [el.getRowDraft(2), el.getDraftRowIndices()])).toEqual([{ id: 3, name: 'G', qty: 31 }, [2]])
 	})
 
-	test('isDirtyIndicatorVisible=false hides the indicator but keeps the draft', async ({ page }) => {
-		await onGrid(page, el => el.setAttribute('is-dirty-indicator-visible', 'false'))
+	test('isDirtyIndicatorShown=false hides the indicator but keeps the draft', async ({ page }) => {
+		await onGrid(page, el => el.setAttribute('show-dirty-indicator', 'false'))
 		await editCell(page, cell(page, 0, NAME), 'A')
 		await expect(cell(page, 0, NAME)).toHaveText('A')
 		await expect(cell(page, 0, NAME)).not.toHaveClass(/wg__cell--dirty/)
 		await expect(rowNumber(page, 0)).not.toHaveClass(/wg__row-number--dirty/)
 		expect(await onGrid(page, el => el.isCellDirty(0, 'name'))).toBe(true)
 		// removal → back to the default (visible)
-		await onGrid(page, el => el.removeAttribute('is-dirty-indicator-visible'))
+		await onGrid(page, el => el.removeAttribute('show-dirty-indicator'))
 		await expect(cell(page, 0, NAME)).toHaveClass(/wg__cell--dirty/)
 	})
 

@@ -125,7 +125,7 @@ function handleDocumentMouseMove(e: MouseEvent): void {
 	updateAllColumnCells(activeContext, resizeState.field, `${newWidth}px`)
 
 	// Update frozen column offsets if we have frozen columns
-	if (activeContext.engine.freezeColumns > 0 || activeContext.engine.isStickyRowNumbers) {
+	if (activeContext.engine.frozenColumnCount > 0 || activeContext.engine.isStickyRowNumbers) {
 		updateFrozenColumnOffsets(activeContext)
 	}
 }
@@ -214,8 +214,8 @@ const ROW_NUMBER_COLUMN_WIDTH = 40
  * Recalculates cumulative offsets based on current widths
  */
 function updateFrozenColumnOffsets<T>(ctx: GridHost<T>): void {
-	const frozenCount = ctx.engine.freezeColumns
-	const hasRowNumbers = ctx.engine.isRowNumbersVisible && ctx.engine.isStickyRowNumbers
+	const frozenCount = ctx.engine.frozenColumnCount
+	const hasRowNumbers = ctx.engine.isRowNumbersShown && ctx.engine.isStickyRowNumbers
 	let offset = hasRowNumbers ? ROW_NUMBER_COLUMN_WIDTH : 0
 
 	// Get visual columns (already sorted with frozen first)

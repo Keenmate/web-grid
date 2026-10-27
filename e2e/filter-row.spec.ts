@@ -38,7 +38,7 @@ test.describe('rendering', () => {
 	})
 
 	test('no row without grid isFilterable, or when no column is filterable', async ({ page }) => {
-		await onGrid(page, el => el.removeAttribute('is-filterable'))
+		await onGrid(page, el => el.removeAttribute('filterable'))
 		await expect(filterRow(page)).toHaveCount(0)
 		await onGrid(page, el => { el.isFilterable = true; el.columns = el.columns.map((c: any) => ({ ...c, isFilterable: false })) })
 		await expect(filterRow(page)).toHaveCount(0)
@@ -145,7 +145,7 @@ test.describe('layout', () => {
 		}))
 		const headerHeight = await gridLocator(page).locator('thead tr').first().evaluate(tr => (tr as HTMLElement).offsetHeight)
 		expect(cellInfo.every(c => c.position === 'sticky' && c.top === `${headerHeight}px`)).toBe(true)
-		expect(cellInfo.filter(c => c.frozen)).toHaveLength(1)   // the id column (freeze-columns=1)
+		expect(cellInfo.filter(c => c.frozen)).toHaveLength(1)   // the id column (frozen-column-count=1)
 	})
 })
 

@@ -26,13 +26,13 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | --- | :-: | --- | --- |
 | Initial render (headers, rows, formatted values) | ✓ | `basic.spec.ts` | `basic.html` |
 | `isStriped`, `isSortable`, `isEditable`, `isPageable` toggles | ✓ | `basic.spec.ts` | `basic.html` |
-| Row numbers (`isRowNumbersVisible`) | ✓ | `basic.spec.ts` | `basic.html` |
+| Row numbers (`isRowNumbersShown`) | ✓ | `basic.spec.ts` | `basic.html` |
 | `formatCallback` / cell class callbacks | ✓ | `basic.spec.ts`, `custom-styling.spec.ts` | `basic.html`, `custom-styling.html` |
 | `cellClass`, `getCellClassCallback`, `getRowClassCallback`, `renderCellCallback` | ✓ | `custom-styling.spec.ts` | `custom-styling.html` |
 | Container (max-height) vs full-height (`isTableBorderOnly`) | ✓ | `height-modes.spec.ts` | `height-modes.html` |
 | `isHoverable`, `isStriped`, `isScrollable` + `scrollMaxHeight`, `isTableBorderOnly`, `isStickyRowNumbers` | ✓ | `display-options.spec.ts`, `freeze-panes.spec.ts` | `display-options.html`, `freeze-panes.html` |
 | `scrollMaxHeight` reset to default — property and attribute paths (#34, test fixed) | ✓ | `display-options.spec.ts` | `display-options.html` |
-| Freeze panes (`freezeColumns`, column `isFrozen`) | ✓ | `freeze-panes.spec.ts` | `freeze-panes.html` |
+| Freeze panes (`frozenColumnCount`, column `isFrozen`) | ✓ | `freeze-panes.spec.ts` | `freeze-panes.html` |
 | Column visibility (`isHidden`, hide-column / column-visibility menu) | ✓ | `column-visibility.spec.ts` | `column-visibility.html` |
 | Virtual scroll (1,000 rows) + infinite scroll | ✓ | `virtual-scroll.spec.ts` | `virtual-scroll.html` |
 
@@ -53,7 +53,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Server `paginationMode` → `data-request` {page,pageSize,skip,trigger} | ✓ | `pagination.spec.ts` | `pagination.html` |
 | Client paging buttons, disabled ends, `data-request` trigger page / pageSize | ✓ | `pagination.spec.ts` | `pagination.html` |
 | `pageSizes`, `paginationLayout`, `paginationPosition` | ✓ | `pagination.spec.ts` | `pagination.html` |
-| `isPaginationVisible: 'auto'` hides on one page | ✓ | `pagination.spec.ts` | `pagination.html` |
+| `isPaginationShown: 'auto'` hides on one page | ✓ | `pagination.spec.ts` | `pagination.html` |
 | `getPaginationLabelsCallback`, pagination `labels` | ✓ | `pagination.spec.ts` | `pagination.html` |
 
 ## 3. Editing
@@ -65,10 +65,10 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Date editor (open, select, keyboard, min/max, months) | ✓ | `datepicker.spec.ts` | `datepicker.html` |
 | `editTrigger` click / dblclick / navigate, `shouldCommitOnClickAway` | ✓ | `edit-trigger.spec.ts` | `edit-trigger.html` |
 | `editTrigger` 'always', column override, `editStartSelection` (grid + column, all 4 modes) | ✓ | `edit-modes.spec.ts` | `edit-modes.html` |
-| `editTrigger: 'button'` edit button: editable / locked cells, hover + focused visibility, click edits, F2, `editButtonIcon` HTML + attribute, `labels.editCell`, `column.isEditButtonVisible` (#26 fixed) | ✓ | `edit-modes.spec.ts` | `edit-modes.html` |
+| `editTrigger: 'button'` edit button: editable / locked cells, hover + focused visibility, click edits, F2, `editButtonIcon` HTML + attribute, `labels.editCell`, `column.isEditButtonShown` (#26 fixed) | ✓ | `edit-modes.spec.ts` | `edit-modes.html` |
 | Number editor parsing (ints, decimals, padding, empty → null, negatives) | ✓ | `edit-modes.spec.ts` | `edit-modes.html` |
 | Number editor: strict parse, non-numbers / min / max / negatives invalid (no clamping), decimals round, min/max/step attributes, label i18n (#25 fixed) | ✓ | `edit-modes.spec.ts` | `edit-modes.html` |
-| `dropdownToggleVisibility`, `shouldShowDropdownOnFocus`, `shouldOpenDropdownOnEnter` (grid + column), checkbox Space toggle | ✓ | `dropdown-flags.spec.ts` | `dropdown-flags.html` |
+| `dropdownToggleVisibility`, `shouldOpenDropdownOnFocus`, `shouldOpenDropdownOnEnter` (grid + column), checkbox Space toggle | ✓ | `dropdown-flags.spec.ts` | `dropdown-flags.html` |
 | `isCheckboxAlwaysEditable` one-click toggle, off by default (#27 fixed) | ✓ | `dropdown-flags.spec.ts` | `dropdown-flags.html` |
 | `mode` preset (read-only / excel / input-matrix) | ✓ | `grid-modes.spec.ts`, `inputs.spec.ts` | `grid-modes.html`, `inputs.html` |
 | `validateCallback` (string / result / transform) | ✓ | `validation.spec.ts` | `validation.html` |
@@ -137,7 +137,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Feature | Status | Spec | Fixture |
 | --- | :-: | --- | --- |
 | Resize, persistence, `isResizable` opt-out | ✓ | `resize-reorder.spec.ts` | `resize-reorder.html` |
-| Reorder, `isMovable` opt-out | ✓ | `resize-reorder.spec.ts` | `resize-reorder.html` |
+| Reorder, `isReorderable` opt-out | ✓ | `resize-reorder.spec.ts` | `resize-reorder.html` |
 | `gridName` + `shouldPersistColumnOrder` (save, restore, orphan cleanup), `setColumnOrder`, `isColumnReorderAllowed` off | ✓ | `column-order.spec.ts` | `column-order.html` |
 | Persisted state with gridName set before columns (#29 fixed), `setColumnOrder` persisted (#30 fixed) | ✓ | `column-order.spec.ts` | `column-order.html` |
 

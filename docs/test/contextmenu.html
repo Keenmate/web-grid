@@ -91,7 +91,7 @@
 		let rows = seed()
 		grid.items = rows
 		grid.columns = baseColumns()
-		grid.isRowNumbersVisible = true
+		grid.isRowNumbersShown = true
 		grid.contextMenu = [
 			{
 				id: 'view',
@@ -177,7 +177,7 @@
 		const gridHeader = document.getElementById('gridHeader')
 		gridHeader.items = seed()
 		gridHeader.columns = baseColumns()
-		gridHeader.isRowNumbersVisible = true
+		gridHeader.isRowNumbersShown = true
 		gridHeader.sortMode = 'single'
 		gridHeader.headerContextMenu = [
 			'sort-asc',

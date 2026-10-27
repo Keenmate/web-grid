@@ -13,7 +13,7 @@ import { test, expect, Page, gridLocator, cell } from './fixtures'
  * a Delete- or arrow-bound rowShortcut would silently never fire.
  *
  * Every shortcut writes "<id> row <rowIndex>" to [data-testid="shortcut-log"].
- * isShortcutsHelpVisible is on, so the .wg__shortcuts-help overlay renders.
+ * isShortcutsHelpShown is on, so the .wg__shortcuts-help overlay renders.
  * See shortcuts.html for the seed table.
  */
 
@@ -133,7 +133,7 @@ test.describe('rowShortcuts require a focused row', () => {
 // Shortcuts help overlay
 // =============================================================================
 
-test.describe('shortcuts help overlay (isShortcutsHelpVisible)', () => {
+test.describe('shortcuts help overlay (isShortcutsHelpShown)', () => {
 	test('renders the .wg__shortcuts-help overlay with one item per shortcut', async ({ page }) => {
 		await gotoShortcuts(page)
 

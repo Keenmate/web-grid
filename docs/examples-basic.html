@@ -38,7 +38,7 @@
                     <input type="checkbox" id="navigate" checked> Navigate Mode
                 </label>
                 <label>
-                    <input type="checkbox" id="isDirtyIndicatorVisible" checked> Dirty Indicator
+                    <input type="checkbox" id="isDirtyIndicatorShown" checked> Dirty Indicator
                 </label>
             </div>
 
@@ -208,7 +208,7 @@
                     minDate: '2015-01-01',
                     maxDate: '2030-12-31',
                     outputFormat: 'iso',
-                    editStartSelection: 'selectAll'
+                    editStartSelection: 'select-all'
                 },
                 getDisplayValueCallback: ({ value: val }) => {
                     if (!val) return ''
@@ -239,7 +239,7 @@
                 width: '160px',
                 editor: 'autocomplete',
                 editorOptions: {
-                    editStartSelection: 'selectAll',
+                    editStartSelection: 'select-all',
                     initialOptions: [
                         { value: 'John Doe', label: 'John Doe' },
                         { value: 'Jane Smith', label: 'Jane Smith' }
@@ -281,8 +281,8 @@
         grid.pageSize = 5
         grid.isEditable = true
         grid.editTrigger = 'navigate'
-        grid.isRowNumbersVisible = true
-        grid.sortMode = 'multi'
+        grid.isRowNumbersShown = true
+        grid.sortMode = 'multiple'
         grid.tooltipShowDelay = 0
         grid.tooltipHideDelay = 100
 
@@ -343,7 +343,7 @@
         })
 
         document.getElementById('sortable').addEventListener('change', (e) => {
-            grid.sortMode = e.target.checked ? 'multi' : 'none'
+            grid.sortMode = e.target.checked ? 'multiple' : 'none'
         })
 
         document.getElementById('isPageable').addEventListener('change', (e) => {
@@ -358,8 +358,8 @@
             grid.editTrigger = e.target.checked ? 'navigate' : 'dblclick'
         })
 
-        document.getElementById('isDirtyIndicatorVisible').addEventListener('change', (e) => {
-            grid.isDirtyIndicatorVisible = e.target.checked
+        document.getElementById('isDirtyIndicatorShown').addEventListener('change', (e) => {
+            grid.isDirtyIndicatorShown = e.target.checked
         })
     </script>
 </body>

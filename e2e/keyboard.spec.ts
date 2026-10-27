@@ -223,8 +223,8 @@ test.describe('range selection from the keyboard', () => {
 		expect(await rangeOf(page)).toEqual([1, 1, 3, 2])
 	})
 
-	test("'disabled' mode: Shift+Arrow and Shift+click select nothing", async ({ page }) => {
-		await onGrid(page, el => el.setAttribute('cell-selection-mode', 'disabled'))
+	test("'none' mode: Shift+Arrow and Shift+click select nothing", async ({ page }) => {
+		await onGrid(page, el => el.setAttribute('cell-selection-mode', 'none'))
 		await cell(page, 1, 1).click()
 		await page.keyboard.press('Shift+ArrowDown')
 		await cell(page, 3, 3).click({ modifiers: ['Shift'] })

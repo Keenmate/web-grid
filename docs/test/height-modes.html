@@ -59,14 +59,14 @@
 		containerGrid.items = Array.from({ length: 30 }, (_, i) => rowAt(i))
 		containerGrid.columns = columns
 		containerGrid.isStriped = true
-		containerGrid.isRowNumbersVisible = true
+		containerGrid.isRowNumbersShown = true
 
 		// #fullGrid — 6 rows, no cap, isTableBorderOnly.
 		const fullGrid = document.getElementById('fullGrid')
 		fullGrid.items = Array.from({ length: 6 }, (_, i) => rowAt(i))
 		fullGrid.columns = columns
 		fullGrid.isStriped = true
-		fullGrid.isRowNumbersVisible = true
+		fullGrid.isRowNumbersShown = true
 		fullGrid.isTableBorderOnly = true
 	</script>
 </body>

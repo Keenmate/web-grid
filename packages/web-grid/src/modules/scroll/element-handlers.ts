@@ -26,8 +26,8 @@ export function handleVirtualScroll<T>(ctx: GridHost<T>, container: HTMLElement)
 	const { startIndex, endIndex } = calculateVisibleRange({
 		scrollTop: container.scrollTop,
 		viewportHeight: container.clientHeight,
-		rowHeight: ctx.engine.virtualScrollRowHeight,
-		buffer: ctx.engine.virtualScrollBuffer,
+		rowHeight: ctx.engine.virtualScrollItemHeight,
+		buffer: ctx.engine.virtualScrollOverscan,
 		totalItems: ctx.engine.displayItems.length,
 		editingRowIndex: ctx.engine.editingCell?.rowIndex
 	})
@@ -51,7 +51,7 @@ export function renderVirtualRows<T>(ctx: GridHost<T>, container: HTMLElement): 
 	const params: VirtualScrollParams = {
 		startIndex: ctx.virtualScroll.start,
 		endIndex: ctx.virtualScroll.end,
-		rowHeight: ctx.engine.virtualScrollRowHeight,
+		rowHeight: ctx.engine.virtualScrollItemHeight,
 		totalItems: items.length
 	}
 
@@ -93,7 +93,7 @@ export function handleInfiniteScroll<T>(ctx: GridHost<T>, container: HTMLElement
 		ctx.virtualScroll.setIsLoadingMore(true)
 
 		// Fire data request with loadMore trigger
-		ctx.engine.fireDataRequest('loadMore')
+		ctx.engine.fireDataRequest('load-more')
 
 		// The consumer is responsible for:
 		// 1. Fetching more data

@@ -66,7 +66,7 @@ test.describe('keyboard Ctrl+C', () => {
 	})
 
 	test('a dragged range with shouldCopyWithHeaders prepends the titles', async ({ page }) => {
-		await onGrid(page, el => el.setAttribute('should-copy-with-headers', ''))
+		await onGrid(page, el => el.setAttribute('copy-with-headers', ''))
 		await dragSelect(page, 1, 0, 2, 1)
 		await page.keyboard.press('Control+c')
 		expect(await copied(page)).toBe('ID\tName\n2\tBanana\n3\tCherry')

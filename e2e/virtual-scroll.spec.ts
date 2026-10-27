@@ -11,7 +11,7 @@ import { test, expect, Page, gridLocator } from './fixtures'
  * index), so we can assert which rows are currently in the DOM.
  *
  * #infiniteGrid loads 200 items at a time up to 600 via data-request
- * (trigger='loadMore', mode='append'); the state panel logs each request.
+ * (trigger='load-more', mode='append'); the state panel logs each request.
  */
 
 const PAGE = '/test/virtual-scroll.html'
@@ -125,16 +125,16 @@ test.describe('infinite scroll', () => {
 		await expect(page.locator('[data-testid="has-more"]')).toHaveText('true')
 	})
 
-	test('scrolling near the bottom triggers a loadMore append request', async ({ page }) => {
+	test('scrolling near the bottom triggers a load-more append request', async ({ page }) => {
 		await gotoVirtualScroll(page)
 
 		// Scroll the infinite grid near the bottom of its current 200 items.
 		// 200 * 38 = 7600, viewport ~380, threshold 100 → trigger around 7100.
 		await scrollInner(page, 'web-grid#infiniteGrid', 7200)
 
-		// First entry of the request log should be a loadMore append for skip=200.
+		// First entry of the request log should be a load-more append for skip=200.
 		const firstReq = page.locator('[data-testid="datarequest-log"] .row').first()
-		await expect(firstReq).toContainText('trigger=loadMore')
+		await expect(firstReq).toContainText('trigger=load-more')
 		await expect(firstReq).toContainText('mode=append')
 
 		// After the handler appended a batch, item count should grow.

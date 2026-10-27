@@ -159,7 +159,7 @@ like `_invalidCells`.
 (`modules/rendering/table.ts:246/527`, `wg__row-number--dirty`) is only rebuilt
 on a full render.
 
-**Symptom:** with `is-row-numbers-visible`, editing a cell marks the cell
+**Symptom:** with `show-row-numbers`, editing a cell marks the cell
 `wg__cell--dirty` immediately, but the row number only turns dirty after some
 unrelated full render (sort, toggling a flag, …).
 
@@ -320,7 +320,7 @@ shortcuts too" (`test.fail`).
 `modules/editing/editor-keydown.ts:160-215` (Enter, Tab on the last editable
 cell) is never reached — the same duplicated-handler pattern as GRID-1 (#1).
 
-**Symptom:** with `is-new-row-enabled`, typing into the empty row and pressing
+**Symptom:** with `enable-new-row`, typing into the empty row and pressing
 Enter / Tab-on-last-cell keeps the values in the empty-row draft forever; no row
 is added to `items`, no `row-change` for the new row, `createEmptyRowCallback`'s
 row never lands. (Only a dropdown Enter, `dropdownSelect` with
@@ -476,7 +476,7 @@ or drop the options from the type.
 
 ## 26. `editTrigger: 'button'` has no button — FIXED
 
-**Fixed:** built it — editable cells (not read-only / locked) in display mode get `.wg__edit-button` (shown on hover and in the focused cell); a click starts editing, F2 / Enter as usual. Content is the new `editButtonIcon` input (HTML, default `✎`, attribute `edit-button-icon`), accessible name `labels.editCell`; `column.isEditButtonVisible` (was dead) shows it whatever the trigger.
+**Fixed:** built it — editable cells (not read-only / locked) in display mode get `.wg__edit-button` (shown on hover and in the focused cell); a click starts editing, F2 / Enter as usual. Content is the new `editButtonIcon` input (HTML, default `✎`, attribute `edit-button-icon`), accessible name `labels.editCell`; `column.isEditButtonShown` (was dead) shows it whatever the trigger.
 
 **Where:** `types.ts:43` lists `'button'`; nothing renders an edit button —
 only `modules/editing/lifecycle.ts:216` treats it like `click`/`dblclick` for

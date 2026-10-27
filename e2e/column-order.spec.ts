@@ -111,8 +111,8 @@ test('isColumnReorderAllowed off: a header drag does not reorder (no event)', as
 	expect(await domEvents(page, 'column-reorder', 'locked')).toEqual([])
 })
 
-test('removing is-column-reorder-allowed turns drag reorder off', async ({ page }) => {
-	await onGrid(page, el => el.removeAttribute('is-column-reorder-allowed'), 'persist')
+test('removing allow-column-reorder turns drag reorder off', async ({ page }) => {
+	await onGrid(page, el => el.removeAttribute('allow-column-reorder'), 'persist')
 	await dragHeader(page, 'persist', 'qty', 'name')
 	await page.waitForTimeout(150)
 	expect(await order(page, 'persist')).toEqual(['id', 'name', 'city', 'qty'])

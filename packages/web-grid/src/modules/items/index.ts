@@ -266,7 +266,7 @@ function runHeaderBuiltIn<T>(host: GridHost<T>, d: GridActionEventDetail<T>): vo
 		case 'sort-desc': {
 			const direction = d.action === 'sort-asc' ? 'asc' : 'desc'
 			const ctrlKey = (d.sourceEvent as MouseEvent | undefined)?.ctrlKey === true
-			if (ctrlKey && engine.sortMode === 'multi') {
+			if (ctrlKey && engine.sortMode === 'multiple') {
 				// Multi-sort: Ctrl+click adds/updates this column
 				const next = [...engine.sort]
 				const i = next.findIndex(s => s.column === field)
@@ -291,10 +291,10 @@ function runHeaderBuiltIn<T>(host: GridHost<T>, d: GridActionEventDetail<T>): vo
 			return
 		}
 		case 'freeze-column':
-			host.setAttributes({ freezeColumns: colIndex + 1 })
+			host.setAttributes({ frozenColumnCount: colIndex + 1 })
 			return
 		case 'unfreeze-column':
-			host.setAttributes({ freezeColumns: Math.max(0, colIndex) })
+			host.setAttributes({ frozenColumnCount: Math.max(0, colIndex) })
 			return
 		case 'show-all-columns':
 			engine.columns.forEach(col => { col.isHidden = false })

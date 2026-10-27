@@ -635,7 +635,7 @@ function cleanup<T>(ctx: GridHost<T>): void {
  */
 export function extendCellRangeTo<T>(ctx: GridHost<T>, rowIndex: number, colIndex: number): boolean {
 	const engine = ctx.engine
-	if (engine.cellSelectionMode === 'disabled') return false
+	if (engine.cellSelectionMode === 'none') return false
 	const anchor = engine.focusedCell
 	if (!anchor) return false
 	const visualCols = engine.visualColumns
@@ -681,7 +681,7 @@ export function isRangeExtensionKey(e: KeyboardEvent): boolean {
 export function extendCellRangeByKey<T>(ctx: GridHost<T>, e: KeyboardEvent): boolean {
 	const engine = ctx.engine
 	const anchor = engine.focusedCell
-	if (!anchor || engine.cellSelectionMode === 'disabled') return false
+	if (!anchor || engine.cellSelectionMode === 'none') return false
 
 	// The free corner: the current range's end when it is anchored here, else the anchor
 	const range = engine.selectedCellRange

@@ -87,9 +87,9 @@ export function handleReorderStart<T>(ctx: GridHost<T>, e: MouseEvent, field: st
 	const visualIndex = visualCols.findIndex(vc => String(vc.column.field) === field)
 	if (visualIndex < frozenCount) return  // This is a frozen column
 
-	// Check if column has isMovable: false
+	// Check if column has isReorderable: false
 	const column = visualCols[visualIndex]?.column
-	if (column?.isMovable === false) return
+	if (column?.isReorderable === false) return
 
 	// Get non-frozen column index
 	const nonFrozenIndex = visualIndex - frozenCount
@@ -209,7 +209,7 @@ function handleDocumentMouseMove(e: MouseEvent): void {
 }
 
 /**
- * Find the minimum valid drop index (respects isMovable: false columns)
+ * Find the minimum valid drop index (respects isReorderable: false columns)
  * Dropping before a non-movable column would shift it, so we must drop after all non-movable columns.
  */
 function getMinDropIndex<T>(ctx: GridHost<T>): number {
@@ -220,7 +220,7 @@ function getMinDropIndex<T>(ctx: GridHost<T>): number {
 	// Find the highest index of any non-movable column
 	let minDropIndex = 0
 	for (let i = 0; i < nonFrozenCols.length; i++) {
-		if (nonFrozenCols[i].column.isMovable === false) {
+		if (nonFrozenCols[i].column.isReorderable === false) {
 			minDropIndex = i + 1  // Must drop AFTER this column
 		}
 	}

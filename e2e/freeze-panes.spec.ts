@@ -3,8 +3,8 @@ import { test, expect, Page, gridLocator, header } from './fixtures'
 /**
  * E2E coverage for the frozen-columns fixture (docs/test/freeze-panes.html).
  * The page hosts two grids:
- *   #grid   — 8-col / 10-row dataset, freezeColumns=2, isRowNumbers visible +
- *             sticky. A freezeColumns <select> drives grid.freezeColumns live.
+ *   #grid   — 8-col / 10-row dataset, frozenColumnCount=2, isRowNumbers visible +
+ *             sticky. A frozenColumnCount <select> drives grid.frozenColumnCount live.
  *   #grid2  — same columns + a `status` column with `isFrozen: true` declared
  *             *last*; the grid reorders it to the leftmost data slot.
  *
@@ -12,7 +12,7 @@ import { test, expect, Page, gridLocator, header } from './fixtures'
  *   - frozen headers/body cells get the `wg__header--frozen` / `wg__cell--frozen`
  *     modifier classes
  *   - the last frozen column gets the `--frozen-last` modifier
- *   - changing `freezeColumns` adds/removes the classes on the right headers
+ *   - changing `frozenColumnCount` adds/removes the classes on the right headers
  *   - a column with `isFrozen: true` jumps to the leftmost data-column slot
  *     regardless of its position in the array
  *   - scrolling horizontally past a frozen column toggles the
@@ -42,10 +42,10 @@ test.beforeEach(async ({ page }) => {
 })
 
 // =============================================================================
-// #grid — freezeColumns=2 + sticky row numbers
+// #grid — frozenColumnCount=2 + sticky row numbers
 // =============================================================================
 
-test.describe('grid-level freezeColumns + isStickyRowNumbers — #grid', () => {
+test.describe('grid-level frozenColumnCount + isStickyRowNumbers — #grid', () => {
 	test('first two data column headers are tagged wg__header--frozen', async ({ page }) => {
 		await expect(header(page, 'grid', 'id')).toHaveClass(/wg__header--frozen/)
 		await expect(header(page, 'grid', 'name')).toHaveClass(/wg__header--frozen/)
@@ -55,7 +55,7 @@ test.describe('grid-level freezeColumns + isStickyRowNumbers — #grid', () => {
 	})
 
 	test('the last frozen column gets wg__header--frozen-last for the shadow indicator', async ({ page }) => {
-		// With freezeColumns=2, "name" is the last frozen data column.
+		// With frozenColumnCount=2, "name" is the last frozen data column.
 		await expect(header(page, 'grid', 'name')).toHaveClass(/wg__header--frozen-last/)
 		await expect(header(page, 'grid', 'id')).not.toHaveClass(/wg__header--frozen-last/)
 	})
@@ -75,8 +75,8 @@ test.describe('grid-level freezeColumns + isStickyRowNumbers — #grid', () => {
 		await expect(rowNumberCell).toHaveClass(/wg__cell--frozen/)
 	})
 
-	test('setting freezeColumns=0 strips the frozen class from data columns', async ({ page }) => {
-		await page.locator('#freezeColumns').selectOption('0')
+	test('setting frozenColumnCount=0 strips the frozen class from data columns', async ({ page }) => {
+		await page.locator('#frozenColumnCount').selectOption('0')
 
 		await expect(header(page, 'grid', 'id')).not.toHaveClass(/wg__header--frozen/)
 		await expect(header(page, 'grid', 'name')).not.toHaveClass(/wg__header--frozen/)
@@ -89,8 +89,8 @@ test.describe('grid-level freezeColumns + isStickyRowNumbers — #grid', () => {
 		await expect(rowNumberCell).toHaveClass(/wg__cell--frozen/)
 	})
 
-	test('setting freezeColumns=3 extends the frozen range to the email column', async ({ page }) => {
-		await page.locator('#freezeColumns').selectOption('3')
+	test('setting frozenColumnCount=3 extends the frozen range to the email column', async ({ page }) => {
+		await page.locator('#frozenColumnCount').selectOption('3')
 
 		await expect(header(page, 'grid', 'id')).toHaveClass(/wg__header--frozen/)
 		await expect(header(page, 'grid', 'name')).toHaveClass(/wg__header--frozen/)

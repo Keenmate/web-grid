@@ -182,8 +182,8 @@ test.describe('editTrigger', () => {
 		await expect(btn).toHaveText('✎')
 	})
 
-	test('column.isEditButtonVisible shows the button whatever the editTrigger', async ({ page }) => {
-		await onGrid(page, el => { el.columns = el.columns.map((c: any) => c.field === 'name' ? { ...c, isEditButtonVisible: true } : c) })
+	test('column.isEditButtonShown shows the button whatever the editTrigger', async ({ page }) => {
+		await onGrid(page, el => { el.columns = el.columns.map((c: any) => c.field === 'name' ? { ...c, isEditButtonShown: true } : c) })
 		await expect(cell(page, 0, 0).locator('.wg__edit-button')).toHaveCount(1)
 		await expect(cell(page, 0, 3).locator('.wg__edit-button')).toHaveCount(0)
 		await cell(page, 0, 0).hover()
@@ -193,33 +193,33 @@ test.describe('editTrigger', () => {
 })
 
 test.describe('editStartSelection', () => {
-	test("default 'mousePosition' places the caret where the editor was opened", async ({ page }) => {
+	test("default 'mouse-position' places the caret where the editor was opened", async ({ page }) => {
 		await cell(page, 0, 3).click({ position: { x: 4, y: 10 } })  // note column, click-to-edit, near the left edge
 		const [s, e] = await selection(page, 0, 3)
 		expect(s).toBe(e)
 		expect(s).toBeLessThan(3)
 	})
 
-	test("'selectAll' selects the whole value", async ({ page }) => {
-		await onGrid(page, el => el.setAttribute('edit-start-selection', 'selectAll'))
+	test("'select-all' selects the whole value", async ({ page }) => {
+		await onGrid(page, el => el.setAttribute('edit-start-selection', 'select-all'))
 		await cell(page, 0, 3).click()
 		expect(await selection(page, 0, 3)).toEqual([0, 11, 11])
 	})
 
-	test("'cursorAtStart' / 'cursorAtEnd'", async ({ page }) => {
-		await onGrid(page, el => { el.editStartSelection = 'cursorAtStart' })
+	test("'cursor-at-start' / 'cursor-at-end'", async ({ page }) => {
+		await onGrid(page, el => { el.editStartSelection = 'cursor-at-start' })
 		await cell(page, 0, 3).click()
 		expect(await selection(page, 0, 3)).toEqual([0, 0, 11])
 		await page.keyboard.press('Escape')
-		await onGrid(page, el => { el.editStartSelection = 'cursorAtEnd' })
+		await onGrid(page, el => { el.editStartSelection = 'cursor-at-end' })
 		await cell(page, 1, 3).click()
 		expect(await selection(page, 1, 3)).toEqual([6, 6, 6])
 	})
 
 	test('a column editorOptions.editStartSelection overrides the grid', async ({ page }) => {
 		await onGrid(page, el => {
-			el.editStartSelection = 'cursorAtStart'
-			el.columns = el.columns.map((c: any) => c.field === 'note' ? { ...c, editorOptions: { editStartSelection: 'selectAll' } } : c)
+			el.editStartSelection = 'cursor-at-start'
+			el.columns = el.columns.map((c: any) => c.field === 'note' ? { ...c, editorOptions: { editStartSelection: 'select-all' } } : c)
 		})
 		await cell(page, 0, 3).click()
 		expect(await selection(page, 0, 3)).toEqual([0, 11, 11])
@@ -227,6 +227,6 @@ test.describe('editStartSelection', () => {
 
 	test('an invalid edit-start-selection attribute is rejected (default kept)', async ({ page }) => {
 		await onGrid(page, el => el.setAttribute('edit-start-selection', 'bogus'))
-		expect(await onGrid(page, el => el.editStartSelection)).toBe('mousePosition')
+		expect(await onGrid(page, el => el.editStartSelection)).toBe('mouse-position')
 	})
 })

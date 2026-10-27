@@ -37,7 +37,7 @@
 		/*
 		 * Org-chart tree — 23 rows keyed by an ltree-style `path`. The visible row
 		 * order (with everything expanded) matches the array order below, because
-		 * every grid uses treeDataSorted=true. The spec hard-codes these indices:
+		 * every grid uses isTreeDataSorted=true. The spec hard-codes these indices:
 		 *
 		 *  idx | path     | name           | kind   | status
 		 *  ----+----------+----------------+--------+-------------
@@ -135,7 +135,7 @@
 		]
 		grid.treePathMember = 'path'
 		grid.defaultExpandDepth = 2
-		grid.treeDataSorted = true
+		grid.isTreeDataSorted = true
 		grid.treeDoubleClickBehavior = 'toggle'
 		grid.editTrigger = 'navigate'
 		grid.sortMode = 'single'
@@ -160,7 +160,7 @@
 		]
 		navGrid.treePathMember = 'path'
 		navGrid.defaultExpandDepth = 99
-		navGrid.treeDataSorted = true
+		navGrid.isTreeDataSorted = true
 		navGrid.treeDoubleClickBehavior = 'toggle'
 		navGrid.editTrigger = 'navigate'
 		navGrid.isEditable = true
@@ -178,7 +178,7 @@
 		]
 		rowGateGrid.treePathMember = 'path'
 		rowGateGrid.defaultExpandDepth = 99
-		rowGateGrid.treeDataSorted = true
+		rowGateGrid.isTreeDataSorted = true
 		rowGateGrid.treeDoubleClickBehavior = 'toggle'
 		rowGateGrid.editTrigger = 'navigate'
 		rowGateGrid.isEditable = true
@@ -198,7 +198,7 @@
 		]
 		cvGrid.treePathMember = 'path'
 		cvGrid.defaultExpandDepth = 2
-		cvGrid.treeDataSorted = true
+		cvGrid.isTreeDataSorted = true
 		cvGrid.treeDoubleClickBehavior = 'toggle'
 		cvGrid.headerContextMenu = [
 			'sort-asc',

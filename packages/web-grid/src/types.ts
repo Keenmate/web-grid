@@ -37,9 +37,6 @@ import type {
 // Editor type options
 export type Editor = "text" | "number" | "checkbox" | "select" | "combobox" | "date" | "autocomplete" | "custom"
 
-/** @deprecated use `Editor` */
-export type EditorType = Editor
-
 // How editing is triggered
 export type EditTrigger = "click" | "dblclick" | "button" | "always" | "navigate"
 
@@ -53,13 +50,13 @@ export type ToggleVisibility = "always" | "on-focus"
 export type DateOutputFormat = "date" | "iso" | "timestamp"
 
 // How to position cursor/selection when entering edit mode
-export type EditStartSelection = "mousePosition" | "selectAll" | "cursorAtStart" | "cursorAtEnd"
+export type EditStartSelection = "mouse-position" | "select-all" | "cursor-at-start" | "cursor-at-end"
 
 // Fill handle direction mode
 export type FillDirection = "vertical" | "all"
 
 // Cell selection mode - how cell ranges are selected
-export type CellSelectionMode = "disabled" | "click" | "shift"
+export type CellSelectionMode = "none" | "click" | "shift"
 
 // Option for select/combobox/autocomplete editors
 export type EditorOption = {
@@ -109,7 +106,7 @@ export type EditorOptions<T = unknown> = {
 	placeholder?: string
 	pattern?: string
 	inputMode?: "text" | "numeric" | "email" | "tel" | "url"
-	editStartSelection?: EditStartSelection  // Cursor position when entering edit (default: "selectAll")
+	editStartSelection?: EditStartSelection  // Cursor position when entering edit (default: "select-all")
 
 	// === NUMBER ===
 	min?: number
@@ -208,7 +205,7 @@ export type Column<T> = {
 	renderEditorCallback?: (ctx: EditorContext<T>) => void
 	// Show the edit button in this column's editable cells whatever the editTrigger
 	// (editTrigger: 'button' shows it anyway)
-	isEditButtonVisible?: boolean
+	isEditButtonShown?: boolean
 	// Tooltip - displayed on cell hover
 	tooltipMember?: string  // Property name in row data containing tooltip text
 	getTooltipCallback?: (ctx: CellContext<T>) => string | null  // Dynamic tooltip (takes priority over tooltipMember)
@@ -223,7 +220,7 @@ export type Column<T> = {
 	// Resizable - allow column width to be changed by dragging (default: true)
 	isResizable?: boolean
 	// Movable - allow column to be reordered by dragging (default: true)
-	isMovable?: boolean
+	isReorderable?: boolean
 	// Fill direction - override grid-level fillDirection for this column
 	fillDirection?: FillDirection
 	// Hidden - column is not rendered but kept in columns array for visibility toggling
@@ -346,10 +343,10 @@ export type QuickGridProps<T> = {
 	pageSize?: number
 	isStriped?: boolean
 	isHoverable?: boolean
-	isRowNumbersVisible?: boolean  // Show row number column on the left (default: false)
-	isDirtyIndicatorVisible?: boolean  // Show visual indicator on cells with unsaved changes (default: true)
+	isRowNumbersShown?: boolean  // Show row number column on the left (default: false)
+	isDirtyIndicatorShown?: boolean  // Show visual indicator on cells with unsaved changes (default: true)
 	isStickyRowNumbers?: boolean  // Make row number column sticky (freeze panes)
-	freezeColumns?: number  // Freeze first N columns (after visual reorder from isFrozen: true)
+	frozenColumnCount?: number  // Freeze first N columns (after visual reorder from isFrozen: true)
 	class?: string
 	style?: string
 	getCustomStylesCallback?: (ctx: GridContext<T>) => string  // Custom CSS to inject into shadow DOM
@@ -364,18 +361,16 @@ export type QuickGridProps<T> = {
 	idMember?: keyof T | string
 	// Sorting
 	sort?: SortState[]  // Current sort state (can be set for initial/server-side sort)
-	sortMode?: SortMode  // Sort mode: "none" (disabled), "single", or "multi" (default: "none")
+	sortMode?: SortMode  // Sort mode: "none" (disabled), "single", or "multiple" (default: "none")
 	// Pagination state
 	currentPage?: number  // Current page (1-based)
 	totalItems?: number   // Total items for server-side pagination
-	isPaginationVisible?: boolean | 'auto'  // true=always show, false=never, 'auto'=hide when ≤1 page
-	/** @deprecated use `isPaginationVisible` */
-	showPagination?: boolean | 'auto'
+	isPaginationShown?: boolean | 'auto'  // true=always show, false=never, 'auto'=hide when ≤1 page
 	pageSizes?: number[]  // Available page sizes for selector (e.g., [10, 25, 50, 100])
 	paginationMode?: 'client' | 'server'  // 'client' = grid slices items, 'server' = items are already current page (default: 'client')
 	paginationPosition?: string  // Position(s): "bottom-center" (default), "top-right|bottom-right" for multiple
 	getPaginationLabelsCallback?: PaginationLabelsCallback<T>  // Customize/translate pagination text
-	paginationLayout?: string  // Element order: "pageSize|previous|pageInfo|next" or "first|previous|pageInfo|next|last"
+	paginationLayout?: string  // Element order: "page-size|previous|page-info|next" or "first|previous|page-info|next|last"
 	// Summary
 	summaryPosition?: string  // Position(s): "bottom-left", "top-right|bottom-right", etc.
 	renderSummaryCallback?: SummaryCallback<T>  // Returns the summary HTML
@@ -396,13 +391,13 @@ export type QuickGridProps<T> = {
 	isReadonly?: boolean  // Values can't change (no edit / paste / fill / row add-delete-move); still focusable, selectable, copyable
 	isDisabled?: boolean  // No interaction at all
 	dropdownToggleVisibility?: ToggleVisibility  // When to show dropdown toggle (always, on-focus)
-	shouldShowDropdownOnFocus?: boolean  // Auto-open dropdown when cell is focused
+	shouldOpenDropdownOnFocus?: boolean  // Auto-open dropdown when cell is focused
 	shouldOpenDropdownOnEnter?: boolean  // Enter opens dropdown (true) or moves down (false, default)
 	isCheckboxAlwaysEditable?: boolean  // Make checkboxes always interactive, even in navigate mode
 	// Invalid cells state (for external tracking)
 	invalidCells?: CellValidationState[]
 	// Row toolbar (floating toolbar for row actions)
-	isRowToolbarVisible?: boolean
+	isRowToolbarShown?: boolean
 	rowToolbar?: GridToolbarEntry<T>[]  // Built-in names, action items, dividers (default: ['add', 'delete', 'duplicate'])
 	toolbarVerticalAlign?: 'top' | 'center' | 'bottom'  // Vertical alignment for left/right positions: top (rows above), center, bottom (default, rows below)
 	toolbarHorizontalAlign?: 'start' | 'center' | 'end' | 'cursor'  // Horizontal alignment for top position (default: 'center')
@@ -410,8 +405,6 @@ export type QuickGridProps<T> = {
 	toolbarPosition?: ToolbarPosition  // Preferred position: auto (default), left, right, top, or inline
 	toolbarColumn?: string | number  // Column to position toolbar over (field name or index) for 'top' position
 	shouldToolbarFollowCursor?: boolean  // Toolbar follows mouse cursor horizontally (default: false)
-	/** @deprecated use `shouldToolbarFollowCursor` */
-	toolbarFollowsCursor?: boolean
 	getCellToolbarItemsCallback?: (ctx: CellContext<T>) => GridToolbarEntry<T>[] | null | undefined  // Cell-specific toolbar items (merged over rowToolbar by id / action)
 	cellToolbarOffset?: number | string  // Horizontal offset: number 0-1 as fraction of cell width, or CSS length string (e.g. '2rem'). Default: 0.2
 	toolbarBtnMinWidth?: string  // Min-width for toolbar buttons (CSS value, e.g. '32px'). Overrides --wg-toolbar-btn-min-width
@@ -432,20 +425,18 @@ export type QuickGridProps<T> = {
 	// Keyboard shortcuts on the focused / hovered row, and on the selected rows / cell range
 	rowShortcuts?: GridShortcut<T>[]
 	rangeShortcuts?: GridRangeShortcut<T>[]
-	isShortcutsHelpVisible?: boolean              // Show info icon (default: false)
+	isShortcutsHelpShown?: boolean              // Show info icon (default: false)
 	shortcutsHelpPosition?: 'top-right' | 'top-left'  // Icon position (default: 'top-right')
 	renderShortcutsHelpCallback?: (ctx: GridContext<T>) => string   // Custom HTML shown with the shortcuts list
 	// Scroll behavior
 	isScrollable?: boolean               // Enable scroll container with max-height: 100vh (default: false)
 	scrollMaxHeight?: string             // Custom max-height when isScrollable is true (default: '100vh')
 	isTableBorderOnly?: boolean          // Border only around table, not pagination/toolbar (default: false)
-	/** @deprecated use `isTableBorderOnly` */
-	tableBorderOnly?: boolean
 	// Virtual scroll
 	isVirtualScrollEnabled?: boolean     // Enable virtual scroll (default: false)
 	virtualScrollThreshold?: number      // Auto-enable when items >= threshold (default: 100)
-	virtualScrollRowHeight?: number      // Fixed row height in px (default: 38)
-	virtualScrollBuffer?: number         // Extra rows above/below viewport (default: 10)
+	virtualScrollItemHeight?: number      // Fixed row height in px (default: 38)
+	virtualScrollOverscan?: number         // Extra rows above/below viewport (default: 10)
 	// Infinite scroll (load more)
 	isInfiniteScrollEnabled?: boolean    // Enable infinite scroll (default: false)
 	infiniteScrollThreshold?: number     // Distance from bottom to trigger load (default: 100px)
@@ -466,7 +457,7 @@ export type QuickGridProps<T> = {
 	beforePageChangeCallback?: (ctx: BeforePageChangeContext<T>) => boolean | number | void | Promise<boolean | number | void>
 
 	// Cell range selection
-	cellSelectionMode?: CellSelectionMode  // How to select cell ranges: 'disabled', 'click' (default), 'shift'
+	cellSelectionMode?: CellSelectionMode  // How to select cell ranges: 'none', 'click' (default), 'shift'
 	shouldCopyWithHeaders?: boolean  // Include column headers when copying cell selection to clipboard (default: false)
 
 	// Multi-cell paste (Excel / TSV)
@@ -505,7 +496,7 @@ export type QuickGridProps<T> = {
 	treeLevelMember?: keyof T | string                 // Optional pre-computed depth (0-based)
 	treeParentMember?: keyof T | string                // Optional pre-computed parent path
 	treeSeparator?: string                             // Path separator (auto-detected from first row when omitted)
-	treeDataSorted?: boolean                           // true = trust caller order completely (grid never re-sorts; pair with data-request for sort changes). false = grid sorts siblings depth-first.
+	isTreeDataSorted?: boolean                           // true = trust caller order completely (grid never re-sorts; pair with data-request for sort changes). false = grid sorts siblings depth-first.
 	expandedPaths?: Set<string>                        // Bindable set of expanded paths (mutated by grid; fires expand-change)
 	defaultExpandDepth?: number                        // Tree depth to show initially: 0 = only roots, 1 = roots + their children, etc. (default: all expanded)
 	treeDoubleClickBehavior?: TreeDoubleClickBehavior  // What happens when user double-clicks a tree-column cell (default: 'none')
@@ -544,7 +535,7 @@ export type FocusedCell = {
 export type SortDirection = "asc" | "desc"
 
 // Sort mode - none (disabled), single column, or multi-column
-export type SortMode = "none" | "single" | "multi"
+export type SortMode = "none" | "single" | "multiple"
 
 // Popup position
 export type PopupPosition = 'left' | 'right' | 'top'
@@ -563,7 +554,7 @@ export type SortState = {
 }
 
 // What triggered the data request
-export type DataRequestTrigger = 'sort' | 'page' | 'pageSize' | 'filter' | 'init' | 'loadMore'
+export type DataRequestTrigger = 'sort' | 'page' | 'page-size' | 'filter' | 'init' | 'load-more'
 
 // How to handle the data response
 export type DataRequestMode = 'replace' | 'append'
@@ -692,9 +683,6 @@ export type RowLock = {
 	reason?: string          // Why locked
 	[key: string]: unknown   // Allow extra properties
 }
-
-/** @deprecated use `RowLock` */
-export type RowLockInfo = RowLock
 
 // Edit behavior for locked rows
 export type LockedRowEditBehavior =

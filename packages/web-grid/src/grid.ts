@@ -168,15 +168,15 @@ export const GRID_PRESETS: Record<GridPreset, {
 	isReadonly?: boolean
 	editTrigger?: EditTrigger
 	dropdownToggleVisibility?: ToggleVisibility
-	shouldShowDropdownOnFocus?: boolean
+	shouldOpenDropdownOnFocus?: boolean
 	cellSelectionMode?: CellSelectionMode
 }> = {
 	// No editing, click to select cells
 	'read-only': { isEditable: false, isReadonly: true, dropdownToggleVisibility: 'on-focus', cellSelectionMode: 'click' },
 	// Excel-like: click+drag to select
-	'excel': { isEditable: true, isReadonly: false, editTrigger: 'navigate', dropdownToggleVisibility: 'always', shouldShowDropdownOnFocus: false, cellSelectionMode: 'click' },
+	'excel': { isEditable: true, isReadonly: false, editTrigger: 'navigate', dropdownToggleVisibility: 'always', shouldOpenDropdownOnFocus: false, cellSelectionMode: 'click' },
 	// Avoid conflict with always-editing cells
-	'input-matrix': { isEditable: true, isReadonly: false, editTrigger: 'always', dropdownToggleVisibility: 'always', shouldShowDropdownOnFocus: true, cellSelectionMode: 'shift' },
+	'input-matrix': { isEditable: true, isReadonly: false, editTrigger: 'always', dropdownToggleVisibility: 'always', shouldOpenDropdownOnFocus: true, cellSelectionMode: 'shift' },
 }
 
 /**
@@ -205,21 +205,21 @@ export class GridEngine<T = unknown> {
 	protected _getIsRowEditableCallback: ((ctx: RowDataContext<T>) => boolean) | undefined = undefined
 	protected _editTrigger: EditTrigger = "dblclick"
 	protected _editButtonIcon: string = '✎'
-	protected _editStartSelection: EditStartSelection = "mousePosition"
+	protected _editStartSelection: EditStartSelection = "mouse-position"
 	protected _shouldCommitOnClickAway: boolean = true
 	protected _preset: GridPreset = "excel"
 	protected _isReadonly: boolean = false
 	protected _isDisabled: boolean = false
 	protected _dropdownToggleVisibility: ToggleVisibility = "always"
-	protected _shouldShowDropdownOnFocus: boolean = true
+	protected _shouldOpenDropdownOnFocus: boolean = true
 	protected _shouldOpenDropdownOnEnter: boolean = false
 	protected _isCheckboxAlwaysEditable: boolean = false
-	protected _isRowNumbersVisible: boolean = false
+	protected _isRowNumbersShown: boolean = false
 	protected _isStickyRowNumbers: boolean = false
-	protected _freezeColumns: number = 0
+	protected _frozenColumnCount: number = 0
 	protected _invalidCells: CellValidationState[] = []
-	protected _isDirtyIndicatorVisible: boolean = true
-	protected _isRowToolbarVisible: boolean = false
+	protected _isDirtyIndicatorShown: boolean = true
+	protected _isRowToolbarShown: boolean = false
 	protected _rowToolbar: GridToolbarEntry<T>[] = ['add', 'delete', 'duplicate']
 	protected _toolbarVerticalAlign: 'top' | 'center' | 'bottom' = 'bottom'
 	protected _toolbarHorizontalAlign: 'start' | 'center' | 'end' | 'cursor' = 'center'
@@ -236,7 +236,7 @@ export class GridEngine<T = unknown> {
 	protected _contextMenuYOffset: number = 0
 	protected _headerContextMenu: GridHeaderMenuEntry<T>[] | undefined = undefined
 	protected _rowShortcuts: GridShortcut<T>[] | undefined = undefined
-	protected _isShortcutsHelpVisible: boolean = false
+	protected _isShortcutsHelpShown: boolean = false
 	protected _shortcutsHelpPosition: 'top-right' | 'top-left' = 'top-right'
 	protected _renderShortcutsHelpCallback: ((ctx: GridContext<T>) => string) | undefined = undefined
 
@@ -289,10 +289,10 @@ export class GridEngine<T = unknown> {
 	protected _currentPage: number = 1
 	protected _isPageSetInTask: boolean = false
 	protected _totalItems: number | null = null  // null = use items.length (client-side)
-	protected _isPaginationVisible: boolean | 'auto' = true
+	protected _isPaginationShown: boolean | 'auto' = true
 	protected _paginationPosition: string = 'bottom-center'
 	protected _getPaginationLabelsCallback?: PaginationLabelsCallback<T>
-	protected _paginationLayout: string = 'pageSize|previous|pageInfo|next'
+	protected _paginationLayout: string = 'page-size|previous|page-info|next'
 
 	// Summary
 	protected _summaryPosition?: string
@@ -315,8 +315,8 @@ export class GridEngine<T = unknown> {
 	// Virtual scroll
 	protected _isVirtualScrollEnabled: boolean = false
 	protected _virtualScrollThreshold: number = 100
-	protected _virtualScrollRowHeight: number = 38
-	protected _virtualScrollBuffer: number = 10
+	protected _virtualScrollItemHeight: number = 38
+	protected _virtualScrollOverscan: number = 10
 
 	// Infinite scroll
 	protected _isInfiniteScrollEnabled: boolean = false
@@ -386,7 +386,7 @@ export class GridEngine<T = unknown> {
 	protected _idMember: string | null = 'id'
 	protected _hasWarnedAboutMissingRowId: boolean = false
 	protected _treeSeparator: string | null = null  // null = auto-detect
-	protected _treeDataSorted: boolean = false
+	protected _isTreeDataSorted: boolean = false
 	protected _expandedPaths: Set<string> = new Set()       // Active set used for visibility checks
 	protected _expandedPathsExternal: Set<string> | null = null  // Set provided by user (we mutate it directly)
 	protected _defaultExpandDepth: number | null = null
@@ -591,7 +591,7 @@ export class GridEngine<T = unknown> {
 		this.requestUpdate()
 	}
 
-	/** HTML of the edit button (`editTrigger: 'button'` / `column.isEditButtonVisible`). */
+	/** HTML of the edit button (`editTrigger: 'button'` / `column.isEditButtonShown`). */
 	get editButtonIcon(): string { return this._editButtonIcon }
 	set editButtonIcon(value: string) {
 		this._editButtonIcon = value
@@ -629,9 +629,9 @@ export class GridEngine<T = unknown> {
 		return column.dropdownToggleVisibility ?? this._dropdownToggleVisibility
 	}
 
-	get shouldShowDropdownOnFocus(): boolean { return this._shouldShowDropdownOnFocus }
-	set shouldShowDropdownOnFocus(value: boolean) {
-		this._shouldShowDropdownOnFocus = value
+	get shouldOpenDropdownOnFocus(): boolean { return this._shouldOpenDropdownOnFocus }
+	set shouldOpenDropdownOnFocus(value: boolean) {
+		this._shouldOpenDropdownOnFocus = value
 	}
 
 	get shouldOpenDropdownOnEnter(): boolean { return this._shouldOpenDropdownOnEnter }
@@ -652,15 +652,15 @@ export class GridEngine<T = unknown> {
 		this.requestUpdate()
 	}
 
-	get isRowNumbersVisible(): boolean { return this._isRowNumbersVisible }
-	set isRowNumbersVisible(value: boolean) {
-		this._isRowNumbersVisible = value
+	get isRowNumbersShown(): boolean { return this._isRowNumbersShown }
+	set isRowNumbersShown(value: boolean) {
+		this._isRowNumbersShown = value
 		this.requestUpdate()
 	}
 
-	get isDirtyIndicatorVisible(): boolean { return this._isDirtyIndicatorVisible }
-	set isDirtyIndicatorVisible(value: boolean) {
-		this._isDirtyIndicatorVisible = value
+	get isDirtyIndicatorShown(): boolean { return this._isDirtyIndicatorShown }
+	set isDirtyIndicatorShown(value: boolean) {
+		this._isDirtyIndicatorShown = value
 		this.requestUpdate()
 	}
 
@@ -670,9 +670,9 @@ export class GridEngine<T = unknown> {
 		this.requestUpdate()
 	}
 
-	get freezeColumns(): number { return this._freezeColumns }
-	set freezeColumns(value: number) {
-		this._freezeColumns = Math.max(0, Math.floor(value))
+	get frozenColumnCount(): number { return this._frozenColumnCount }
+	set frozenColumnCount(value: number) {
+		this._frozenColumnCount = Math.max(0, Math.floor(value))
 		this.requestUpdate()
 	}
 
@@ -702,14 +702,14 @@ export class GridEngine<T = unknown> {
 			}
 		})
 
-		// Now handle freezeColumns - these freeze the first N non-explicitly-frozen columns
+		// Now handle frozenColumnCount - these freeze the first N non-explicitly-frozen columns
 		// They should stay at the front of normalCols and NOT be reorderable
 		const positionalFrozenCols: Array<{ column: Column<T>; originalIndex: number }> = []
 		const reorderableCols: Array<{ column: Column<T>; originalIndex: number }> = []
 
 		normalCols.forEach((entry, idx) => {
-			if (idx < this._freezeColumns) {
-				// This column is frozen by position (freezeColumns prop)
+			if (idx < this._frozenColumnCount) {
+				// This column is frozen by position (frozenColumnCount prop)
 				positionalFrozenCols.push(entry)
 			} else {
 				reorderableCols.push(entry)
@@ -739,11 +739,11 @@ export class GridEngine<T = unknown> {
 	}
 
 	/**
-	 * Get the total number of frozen columns (from frozen: true + freezeColumns prop).
+	 * Get the total number of frozen columns (from frozen: true + frozenColumnCount prop).
 	 */
 	get totalFrozenColumns(): number {
 		const explicitlyFrozen = this._columns.filter(c => c.isFrozen).length
-		return explicitlyFrozen + this._freezeColumns
+		return explicitlyFrozen + this._frozenColumnCount
 	}
 
 	/**
@@ -764,9 +764,9 @@ export class GridEngine<T = unknown> {
 	get currentCellError(): string | null { return this._currentCellError }
 	get hoveredRowIndex(): number | null { return this._hoveredRowIndex }
 
-	get isRowToolbarVisible(): boolean { return this._isRowToolbarVisible }
-	set isRowToolbarVisible(value: boolean) {
-		this._isRowToolbarVisible = value
+	get isRowToolbarShown(): boolean { return this._isRowToolbarShown }
+	set isRowToolbarShown(value: boolean) {
+		this._isRowToolbarShown = value
 		this.requestUpdate()
 	}
 
@@ -789,13 +789,6 @@ export class GridEngine<T = unknown> {
 		this.checkToolbarConflicts()
 		this.requestUpdate()
 	}
-
-	// Deprecated aliases
-	get toolbarAlign(): 'top' | 'center' | 'bottom' { return this._toolbarVerticalAlign }
-	set toolbarAlign(value: 'top' | 'center' | 'bottom') { this.toolbarVerticalAlign = value }
-
-	get toolbarTopPosition(): 'start' | 'center' | 'end' | 'cursor' { return this._toolbarHorizontalAlign }
-	set toolbarTopPosition(value: 'start' | 'center' | 'end' | 'cursor') { this.toolbarHorizontalAlign = value }
 
 	get toolbarTrigger(): 'hover' | 'click' | 'button' { return this._toolbarTrigger }
 	set toolbarTrigger(value: 'hover' | 'click' | 'button') {
@@ -822,10 +815,6 @@ export class GridEngine<T = unknown> {
 		this.checkToolbarConflicts()
 	}
 
-	/** @deprecated use `shouldToolbarFollowCursor` */
-	get toolbarFollowsCursor(): boolean { return this._shouldToolbarFollowCursor }
-	/** @deprecated use `shouldToolbarFollowCursor` */
-	set toolbarFollowsCursor(value: boolean) { this.shouldToolbarFollowCursor = value }
 
 	get getCellToolbarItemsCallback(): ((ctx: CellContext<T>) => GridToolbarEntry<T>[] | null | undefined) | undefined {
 		return this._getCellToolbarItemsCallback
@@ -884,9 +873,9 @@ export class GridEngine<T = unknown> {
 		this.requestUpdate()
 	}
 
-	get isShortcutsHelpVisible(): boolean { return this._isShortcutsHelpVisible }
-	set isShortcutsHelpVisible(value: boolean) {
-		this._isShortcutsHelpVisible = value
+	get isShortcutsHelpShown(): boolean { return this._isShortcutsHelpShown }
+	set isShortcutsHelpShown(value: boolean) {
+		this._isShortcutsHelpShown = value
 		this.requestUpdate()
 	}
 
@@ -928,16 +917,12 @@ export class GridEngine<T = unknown> {
 		this.requestUpdate()
 	}
 
-	get isPaginationVisible(): boolean | 'auto' { return this._isPaginationVisible }
-	set isPaginationVisible(value: boolean | 'auto') {
-		this._isPaginationVisible = value
+	get isPaginationShown(): boolean | 'auto' { return this._isPaginationShown }
+	set isPaginationShown(value: boolean | 'auto') {
+		this._isPaginationShown = value
 		this.requestUpdate()
 	}
 
-	/** @deprecated use `isPaginationVisible` */
-	get showPagination(): boolean | 'auto' { return this._isPaginationVisible }
-	/** @deprecated use `isPaginationVisible` */
-	set showPagination(value: boolean | 'auto') { this.isPaginationVisible = value }
 
 	get paginationPosition(): string { return this._paginationPosition }
 	set paginationPosition(value: string) {
@@ -1032,10 +1017,6 @@ export class GridEngine<T = unknown> {
 		this.requestUpdate()
 	}
 
-	/** @deprecated use `isTableBorderOnly` */
-	get tableBorderOnly(): boolean { return this._isTableBorderOnly }
-	/** @deprecated use `isTableBorderOnly` */
-	set tableBorderOnly(value: boolean) { this.isTableBorderOnly = value }
 
 	// Virtual scroll
 	get isVirtualScrollEnabled(): boolean { return this._isVirtualScrollEnabled }
@@ -1050,15 +1031,15 @@ export class GridEngine<T = unknown> {
 		this.requestUpdate()
 	}
 
-	get virtualScrollRowHeight(): number { return this._virtualScrollRowHeight }
-	set virtualScrollRowHeight(value: number) {
-		this._virtualScrollRowHeight = value
+	get virtualScrollItemHeight(): number { return this._virtualScrollItemHeight }
+	set virtualScrollItemHeight(value: number) {
+		this._virtualScrollItemHeight = value
 		this.requestUpdate()
 	}
 
-	get virtualScrollBuffer(): number { return this._virtualScrollBuffer }
-	set virtualScrollBuffer(value: number) {
-		this._virtualScrollBuffer = value
+	get virtualScrollOverscan(): number { return this._virtualScrollOverscan }
+	set virtualScrollOverscan(value: number) {
+		this._virtualScrollOverscan = value
 		this.requestUpdate()
 	}
 
@@ -1594,9 +1575,9 @@ export class GridEngine<T = unknown> {
 		this.requestUpdate()
 	}
 
-	get treeDataSorted(): boolean { return this._treeDataSorted }
-	set treeDataSorted(value: boolean) {
-		this._treeDataSorted = value
+	get isTreeDataSorted(): boolean { return this._isTreeDataSorted }
+	set isTreeDataSorted(value: boolean) {
+		this._isTreeDataSorted = value
 		this.requestUpdate()
 	}
 
@@ -1928,12 +1909,12 @@ export class GridEngine<T = unknown> {
 		}
 		const allowed = this.getTreeFilterAllowedPaths()
 
-		// `treeDataSorted: true` means "trust me, don't re-sort". When the caller
+		// `isTreeDataSorted: true` means "trust me, don't re-sort". When the caller
 		// owns the order — either because they want sibling sort handled in JS for
 		// a server-mode simulation, or to compute aggregates like grouped sums —
 		// they'll re-supply items via data-request when sort changes. The grid
 		// never re-walks the tree in this mode.
-		if (this._treeDataSorted) {
+		if (this._isTreeDataSorted) {
 			const result: T[] = []
 			for (let i = 0; i < this._items.length; i++) {
 				const item = this._items[i]
@@ -2507,7 +2488,7 @@ export class GridEngine<T = unknown> {
 			return this._emptyRowDraft
 		}
 		// Create and cache the empty row. The default factory reads the columns, so a
-		// row built before any columns exist (e.g. `is-new-row-enabled` in markup, a
+		// row built before any columns exist (e.g. `enable-new-row` in markup, a
 		// render before `columns` is assigned) is not cached — it would lack the fields.
 		const newRow = this.createNewEmptyRow()
 		if (this._createEmptyRowCallback || this._columns.length > 0) {
@@ -2592,7 +2573,7 @@ export class GridEngine<T = unknown> {
 	fireDataRequest(trigger: DataRequestTrigger): void {
 		{
 			// For loadMore, skip is current item count; for pagination, it's page-based
-			const skip = trigger === 'loadMore'
+			const skip = trigger === 'load-more'
 				? this._items.length
 				: (this._currentPage - 1) * this._pageSize
 
@@ -2601,7 +2582,7 @@ export class GridEngine<T = unknown> {
 				page: this._currentPage,
 				pageSize: this._pageSize,
 				trigger,
-				mode: trigger === 'loadMore' ? 'append' : 'replace',
+				mode: trigger === 'load-more' ? 'append' : 'replace',
 				skip
 			}
 			dataLogger.debug('fireDataRequest:', trigger, detail)
@@ -2639,7 +2620,7 @@ export class GridEngine<T = unknown> {
 		if (preset.isReadonly !== undefined) this._isReadonly = preset.isReadonly
 		if (preset.editTrigger !== undefined) this._editTrigger = preset.editTrigger
 		if (preset.dropdownToggleVisibility !== undefined) this._dropdownToggleVisibility = preset.dropdownToggleVisibility
-		if (preset.shouldShowDropdownOnFocus !== undefined) this._shouldShowDropdownOnFocus = preset.shouldShowDropdownOnFocus
+		if (preset.shouldOpenDropdownOnFocus !== undefined) this._shouldOpenDropdownOnFocus = preset.shouldOpenDropdownOnFocus
 		if (preset.cellSelectionMode !== undefined) this._cellSelectionMode = preset.cellSelectionMode
 	}
 

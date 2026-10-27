@@ -1,5 +1,5 @@
 // =============================================================================
-// Edit button (editTrigger: 'button', or column.isEditButtonVisible)
+// Edit button (editTrigger: 'button', or column.isEditButtonShown)
 // =============================================================================
 // An editable cell (not read-only, not locked) in display mode gets a small
 // button — shown on hover and in the focused cell (CSS). A click starts editing;
@@ -15,7 +15,7 @@ import { openDropdownForCurrentEditor } from '../dropdown/index.js'
 export function hasEditButton<T>(ctx: GridHost<T>, column: Column<T>, isEditable: boolean): boolean {
 	if (!isEditable) return false
 	const trigger = column.editTrigger ?? ctx.engine.editTrigger
-	return trigger === 'button' || column.isEditButtonVisible === true
+	return trigger === 'button' || column.isEditButtonShown === true
 }
 
 export function renderEditButton<T>(ctx: GridHost<T>, rowIndex: number, colIndex: number): string {

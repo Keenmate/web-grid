@@ -78,7 +78,7 @@ test.describe('lock sources', () => {
 	})
 
 	test('without row numbers the tooltip moves to the row', async ({ page }) => {
-		await onGrid(page, el => { el.isRowNumbersVisible = false })
+		await onGrid(page, el => { el.isRowNumbersShown = false })
 		await expect(row(page, 1)).toHaveAttribute('data-tooltip', 'Locked by Carol')
 		await expect(row(page, 0)).not.toHaveAttribute('data-tooltip', /./)
 	})

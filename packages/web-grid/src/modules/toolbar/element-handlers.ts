@@ -152,7 +152,7 @@ export function showToolbarForRow<T>(
 		return
 	}
 
-	if (!ctx.engine.isRowToolbarVisible || !ctx.engine.rowToolbar.length) {
+	if (!ctx.engine.isRowToolbarShown || !ctx.engine.rowToolbar.length) {
 		return
 	}
 

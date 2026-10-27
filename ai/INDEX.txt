@@ -101,7 +101,7 @@ Filter -> sorting-filtering-pagination.txt
 filterCallback -> columns.txt, sorting-filtering-pagination.txt
 filterMode ('server') -> sorting-filtering-pagination.txt
 focusCell -> public-methods.txt
-freezeColumns -> frozen-columns.txt
+frozenColumnCount -> frozen-columns.txt
 Frozen columns -> frozen-columns.txt
 
 G

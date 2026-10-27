@@ -275,7 +275,7 @@ test.describe('open gaps (interaction-model-plan follow-ups)', () => {
 		await page.evaluate(() => {
 			const g = document.getElementById('grid') as any
 			g.rangeShortcuts = [{ id: 'sum', text: 'Sum selection', shortcut: 'Ctrl+Shift+S', onClick: () => {} }]
-			g.isShortcutsHelpVisible = true
+			g.isShortcutsHelpShown = true
 		})
 		const help = grid(page).locator('.wg__shortcuts-help')
 		await expect(help).toHaveCount(1)
@@ -289,7 +289,7 @@ test.describe('open gaps (interaction-model-plan follow-ups)', () => {
 			const g = document.getElementById('grid') as any
 			g.rowShortcuts = []
 			g.rangeShortcuts = [{ id: 'sum', text: 'Sum selection', shortcut: 'Ctrl+Shift+S', onClick: () => {} }]
-			g.isShortcutsHelpVisible = true
+			g.isShortcutsHelpShown = true
 		})
 		const help = grid(page).locator('.wg__shortcuts-help')
 		await expect(help).toContainText('Sum selection')

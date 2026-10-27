@@ -4,7 +4,7 @@ import { test, expect, Page, Locator, gridLocator, cell } from './fixtures'
  * E2E coverage for editTrigger modes (docs/test/edit-trigger.html). The page
  * hosts three identical 5-row grids, one per mode:
  *   #clickGrid    — editTrigger='click': a single click opens the editor;
- *                   editStartSelection='selectAll' selects the whole value.
+ *                   editStartSelection='select-all' selects the whole value.
  *   #dblclickGrid — editTrigger='dblclick': a single click only focuses;
  *                   a double-click opens the editor.
  *   #navigateGrid — editTrigger='navigate': a single click only focuses;
@@ -36,7 +36,7 @@ test.describe("editTrigger='click' — #clickGrid", () => {
 		await expect(editorIn(nameCell)).toBeVisible()
 	})
 
-	test('editStartSelection="selectAll" mounts the editor with the whole value selected', async ({ page }) => {
+	test('editStartSelection="select-all" mounts the editor with the whole value selected', async ({ page }) => {
 		const nameCell = cell(page, 'clickGrid', 1, 1)  // Bob
 		await nameCell.click()
 

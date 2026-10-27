@@ -44,7 +44,7 @@
 		 * a `Delete` or `Ctrl+ArrowUp` rowShortcut would silently never fire.
 		 *
 		 * Every shortcut writes "<id> row <rowIndex>" to [data-testid="shortcut-log"].
-		 * isShortcutsHelpVisible is on, so the .wg__shortcuts-help overlay renders.
+		 * isShortcutsHelpShown is on, so the .wg__shortcuts-help overlay renders.
 		 */
 		const seed = () => [
 			{ id: 1, name: 'Laptop', category: 'Electronics' },
@@ -117,7 +117,7 @@
 			}
 		]
 
-		grid.isShortcutsHelpVisible = true
+		grid.isShortcutsHelpShown = true
 		grid.shortcutsHelpPosition = 'top-right'
 	</script>
 </body>

@@ -14,7 +14,7 @@
 //    opened in an RAF callback so the editor DOM exists.
 //  - handleSelectTriggerClick: legacy select trigger toggle. Skipped in
 //    'always' editTrigger mode because the pipeline opens the dropdown via
-//    shouldShowDropdownOnFocus — re-running it here would toggle-close it.
+//    shouldOpenDropdownOnFocus — re-running it here would toggle-close it.
 //  - handleHeaderColumnSelectClick: only fires when isColumnReorderAllowed
 //    is on (otherwise the mousedown handler does column selection). Plain /
 //    Shift / Ctrl pick replace / range / toggle.
@@ -126,7 +126,7 @@ export function handleCellClickToEdit<T>(ctx: GridHost<T>, e: Event): void {
 /**
  * Legacy click on a .wg__select-trigger / .wg__select-value — toggles the
  * select dropdown. Skipped in `always` editTrigger mode (pipeline opens the
- * dropdown there via shouldShowDropdownOnFocus; re-toggling would close it).
+ * dropdown there via shouldOpenDropdownOnFocus; re-toggling would close it).
  */
 export function handleSelectTriggerClick<T>(ctx: GridHost<T>, e: Event): void {
 	const target = e.target as HTMLElement
