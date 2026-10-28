@@ -110,8 +110,8 @@ test.describe('client pagination', () => {
 		await expect(pag(page)).toHaveCount(1)
 	})
 
-	test('isPageable=false shows all rows and no bar', async ({ page }) => {
-		await onGrid(page, el => el.removeAttribute('pageable'))
+	test('isPagingEnabled=false shows all rows and no bar', async ({ page }) => {
+		await onGrid(page, el => el.removeAttribute('enable-paging'))
 		await expect(rows(page)).toHaveCount(23)
 		await expect(pag(page)).toHaveCount(0)
 	})
@@ -277,7 +277,7 @@ test.describe('beforePageChangeCallback', () => {
 	})
 
 	test('ctx.drafts lists unsaved drafts (force "save before leaving the page")', async ({ page }) => {
-		await onGrid(page, el => { el.isEditable = true; el.columns = el.columns.map((c: any) => c.field === 'name' ? { ...c, editor: 'text' } : c) })
+		await onGrid(page, el => { el.isEditingEnabled = true; el.columns = el.columns.map((c: any) => c.field === 'name' ? { ...c, editor: 'text' } : c) })
 		await hook(page, 'grid', undefined)
 		await page.evaluate(() => {
 			const el = document.getElementById('grid') as any

@@ -44,14 +44,14 @@ test.beforeEach(async ({ page }) => {
 test.describe('preset (core getBatchValuesCallback)', () => {
 	test('markup: an explicit attribute wins over the preset, the rest of the preset applies', async ({ page }) => {
 		await mount(page, 'preset="input-matrix" edit-trigger="click"')
-		expect(await read(page, el => [el.editTrigger, el.isEditable, el.cellSelectionMode, el.shouldOpenDropdownOnFocus]))
+		expect(await read(page, el => [el.editTrigger, el.isEditingEnabled, el.cellSelectionMode, el.shouldOpenDropdownOnFocus]))
 			.toEqual(['click', true, 'shift', true])
 		expect(await read(page, el => [el.engine.editTrigger, el.engine.cellSelectionMode])).toEqual(['click', 'shift'])
 	})
 
 	test('markup: the same result with the attributes in reverse order', async ({ page }) => {
 		await mount(page, 'edit-trigger="click" preset="input-matrix"')
-		expect(await read(page, el => [el.editTrigger, el.isEditable, el.cellSelectionMode]))
+		expect(await read(page, el => [el.editTrigger, el.isEditingEnabled, el.cellSelectionMode]))
 			.toEqual(['click', true, 'shift'])
 		expect(await read(page, el => [el.engine.editTrigger, el.engine.cellSelectionMode])).toEqual(['click', 'shift'])
 	})
@@ -72,7 +72,7 @@ test.describe('preset (core getBatchValuesCallback)', () => {
 			el.editTrigger = 'click'
 			el.preset = 'excel'
 			el.flush()
-			return [el.editTrigger, el.engine.editTrigger, el.engine.isEditable]
+			return [el.editTrigger, el.engine.editTrigger, el.engine.isEditingEnabled]
 		})).toEqual(['click', 'click', true])
 	})
 
@@ -88,7 +88,7 @@ test.describe('preset (core getBatchValuesCallback)', () => {
 
 test.describe('property path', () => {
 	test('engine-derived state is current right after a write', async ({ page }) => {
-		await mount(page, 'pageable page-size="10"')
+		await mount(page, 'enable-paging page-size="10"')
 		expect(await read(page, el => {
 			el.pageSize = 25
 			return [el.totalPages, el.displayItems.length]
@@ -96,7 +96,7 @@ test.describe('property path', () => {
 	})
 
 	test('an invalid value is rejected and the previous value kept', async ({ page }) => {
-		await mount(page, 'pageable')
+		await mount(page, 'enable-paging')
 		const warnings: string[] = []
 		page.on('console', m => { if (m.type() === 'warning') warnings.push(m.text()) })
 		expect(await read(page, el => {
@@ -110,7 +110,7 @@ test.describe('property path', () => {
 	})
 
 	test('the page-size selector updates the element property', async ({ page }) => {
-		await mount(page, 'pageable page-size="10"')
+		await mount(page, 'enable-paging page-size="10"')
 		const select = page.locator('web-grid#t .wg__pagination-select')
 		await select.selectOption('25')
 		expect(await read(page, el => [el.pageSize, el.engine.pageSize, el.totalPages])).toEqual([25, 25, 4])
@@ -205,7 +205,7 @@ test.describe('every input (table-driven)', () => {
 
 test.describe('readonly / disabled (C5)', () => {
 	test('readonly: nothing is editable, the grid stays focusable', async ({ page }) => {
-		await mount(page, 'editable')
+		await mount(page, 'enable-editing')
 		expect(await read(page, el => el.canEditCell(0, 'name'))).toBe(true)
 		await page.evaluate(() => { (document.getElementById('t') as any).setAttribute('readonly', '') })
 		expect(await read(page, el => [el.isReadonly, el.canEditCell(0, 'name')])).toEqual([true, false])

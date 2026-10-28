@@ -15,7 +15,7 @@ REQUIREMENTS
 ------------
 The fill handle appears only when ALL of these conditions are met:
   - editTrigger is 'navigate' (or mode is 'excel', which sets navigate)
-  - isEditable is true on the grid
+  - isEditingEnabled is true on the grid
   - The focused cell's column has isEditable: true
   - The cell is not currently in edit mode
   - No dropdown is open

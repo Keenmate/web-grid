@@ -226,7 +226,7 @@
         const gridNavigate = document.getElementById('gridNavigate')
         gridNavigate.items = navigateData
         gridNavigate.columns = navigateColumns
-        gridNavigate.isEditable = true
+        gridNavigate.isEditingEnabled = true
         gridNavigate.editTrigger = 'navigate'
         gridNavigate.onRowChange = (detail) => {
             if (detail.isValid) {
@@ -304,7 +304,7 @@
         const gridValidation = document.getElementById('gridValidation')
         gridValidation.items = validationData
         gridValidation.columns = validationColumns
-        gridValidation.isEditable = true
+        gridValidation.isEditingEnabled = true
         gridValidation.editTrigger = 'navigate'
         gridValidation.onRowChange = (detail) => {
             if (detail.isValid) {
@@ -426,7 +426,7 @@
         const gridAllEditors = document.getElementById('gridAllEditors')
         gridAllEditors.items = allEditorsData
         gridAllEditors.columns = allEditorsColumns
-        gridAllEditors.isEditable = true
+        gridAllEditors.isEditingEnabled = true
         gridAllEditors.editTrigger = 'navigate'
         gridAllEditors.onRowChange = (detail) => {
             if (detail.isValid) {
@@ -470,7 +470,7 @@
         const gridCustomEditor = document.getElementById('gridCustomEditor')
         gridCustomEditor.items = customEditorData
         gridCustomEditor.columns = customEditorColumns
-        gridCustomEditor.isEditable = true
+        gridCustomEditor.isEditingEnabled = true
         gridCustomEditor.editTrigger = 'navigate'
         gridCustomEditor.onRowChange = (detail) => {
             if (detail.isValid) {
@@ -526,7 +526,7 @@
         const gridAlways = document.getElementById('gridAlways')
         gridAlways.items = alwaysEditableData
         gridAlways.columns = alwaysEditableColumns
-        gridAlways.isEditable = true
+        gridAlways.isEditingEnabled = true
         gridAlways.onRowChange = (detail) => {
             if (detail.isValid) {
                 alwaysEditableData[detail.rowIndex] = { ...detail.draftRow }

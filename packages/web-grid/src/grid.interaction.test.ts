@@ -74,7 +74,7 @@ describe('single-ctx column callbacks', () => {
 
 	it('filterCallback gets { filterValue, row, column, field }', () => {
 		const { grid } = makeGrid()
-		grid.isFilterable = true
+		grid.isFilteringEnabled = true
 		grid.columns = [{
 			field: 'qty',
 			title: 'Qty',
@@ -86,7 +86,7 @@ describe('single-ctx column callbacks', () => {
 
 	it("filterMode 'server' doesn't filter, still notifies filter-change", () => {
 		const { grid, events } = makeGrid()
-		grid.isFilterable = true
+		grid.isFilteringEnabled = true
 		grid.filterMode = 'server'
 		grid.setFilter('name', 'zzz')
 		expect(grid.filteredItems).toHaveLength(3)
@@ -98,7 +98,7 @@ describe('notifications', () => {
 	it('commitEdit notifies cell-edit-start / row-change; validateCallback gets source', async () => {
 		const { grid, events } = makeGrid()
 		let source: unknown
-		grid.isEditable = true
+		grid.isEditingEnabled = true
 		grid.columns = [{ field: 'qty', title: 'Qty', validateCallback: (ctx) => { source = ctx.source; return ctx.value === 99 ? 'too many' : null } }] as Column<Row>[]
 		grid.startEdit(0, 'qty')
 		await grid.commitEdit(0, 'qty', 5)

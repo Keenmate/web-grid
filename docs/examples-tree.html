@@ -104,7 +104,7 @@
 const isLeafRow = ({ row }) =&gt; !parentPaths.has(row.path)
 
 navGrid.editTrigger = 'navigate'
-navGrid.isEditable = true
+navGrid.isEditingEnabled = true
 navGrid.columns = [
     { field: 'name', title: 'Organization', isTree: true },     // tree column — always read-only
     { field: 'headcount', title: 'Headcount', isEditable: true, getIsEditableCallback: isLeafRow, editor: 'number' },
@@ -134,7 +134,7 @@ navGrid.contextMenu = [
 
             <pre style="margin-top: 1rem; background: #f8f9fa; padding: 0.75rem; border-radius: 4px; font-size: 0.85rem; overflow-x: auto;"><code>// Grid-level row gate — applies to every column on every row
 rowGateGrid.editTrigger = 'navigate'
-rowGateGrid.isEditable = true
+rowGateGrid.isEditingEnabled = true
 rowGateGrid.getIsRowEditableCallback = ({ row }) =&gt; row.status === 'Active'
 
 rowGateGrid.columns = [
@@ -335,7 +335,7 @@ files.renderChevronCallback = ({ isExpanded, hasChildren }) =&gt; {
         grid.treeDoubleClickBehavior = 'toggle'
         grid.editTrigger = 'navigate'   // cells focusable; arrows nav; Ctrl+Arrow toggles tree
         grid.sortMode = 'single'
-        grid.isFilterable = true
+        grid.isFilteringEnabled = true
         grid.isHoverable = true
         grid.isStriped = true
 
@@ -364,7 +364,7 @@ files.renderChevronCallback = ({ isExpanded, hasChildren }) =&gt; {
 
         // Controls
         document.getElementById('editable').addEventListener('change', e => {
-            grid.isEditable = e.target.checked
+            grid.isEditingEnabled = e.target.checked
         })
         document.getElementById('dblToggle').addEventListener('change', e => {
             grid.treeDoubleClickBehavior = e.target.checked ? 'toggle' : 'none'
@@ -419,7 +419,7 @@ files.renderChevronCallback = ({ isExpanded, hasChildren }) =&gt; {
         navGrid.isTreeDataSorted = true
         navGrid.treeDoubleClickBehavior = 'toggle'
         navGrid.editTrigger = 'navigate'      // enables cell focus + Ctrl+arrow keys
-        navGrid.isEditable = true             // grid-level editing on (per-row predicate decides)
+        navGrid.isEditingEnabled = true             // grid-level editing on (per-row predicate decides)
         navGrid.isHoverable = true
         navGrid.isStriped = true
 
@@ -467,7 +467,7 @@ files.renderChevronCallback = ({ isExpanded, hasChildren }) =&gt; {
         rowGateGrid.isTreeDataSorted = true
         rowGateGrid.treeDoubleClickBehavior = 'toggle'
         rowGateGrid.editTrigger = 'navigate'
-        rowGateGrid.isEditable = true
+        rowGateGrid.isEditingEnabled = true
         rowGateGrid.getIsRowEditableCallback = ({ row }) => row.status === 'Active'
         rowGateGrid.isHoverable = true
         rowGateGrid.isStriped = true

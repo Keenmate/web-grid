@@ -98,7 +98,7 @@ touches `_currentPage`; `paginatedItems` (`:2130`) then slices past the end.
 **Symptom:** on page 3 of a client-paginated grid, a filter that leaves one page
 of matches renders an **empty grid** with "Page 3 of 1".
 
-**Repro:** `isPageable = true; pageSize = 2; currentPage = 3; setFilter('city', 'brno')`.
+**Repro:** `isPagingEnabled = true; pageSize = 2; currentPage = 3; setFilter('city', 'brno')`.
 
 **Suggested fix:** reset `_currentPage = 1` when the filters change (client mode),
 or clamp `currentPage` to `totalPages` in `paginatedItems`.

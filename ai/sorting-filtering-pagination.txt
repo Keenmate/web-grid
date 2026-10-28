@@ -73,7 +73,7 @@ setFilter(field, text), which resets currentPage to 1. Matching is a
 case-insensitive substring test unless the column has a filterCallback.
 
 Grid property:
-  isFilterable  Boolean. Default: false. true = show the filter row and apply
+  isFilteringEnabled  Boolean (attribute enable-filtering). Default: false. true = show the filter row and apply
                 filters (the row only renders when a column is filterable).
 
 Per-column flag:
@@ -115,7 +115,7 @@ filter-change, query your server and set items:
 
 Example:
 
-  grid.isFilterable = true
+  grid.isFilteringEnabled = true
   grid.columns = [
     { field: 'name', title: 'Name', isFilterable: true },
     { field: 'email', title: 'Email', isFilterable: true },
@@ -130,7 +130,7 @@ server-side data fetching.
 
 Grid properties:
 
-  isPageable          Boolean. Default: false. Enables pagination.
+  isPagingEnabled          Boolean. Default: false. Enables pagination.
 
   pageSize            Number. Default: 10. Rows displayed per page.
 
@@ -188,7 +188,7 @@ Grid properties:
 
 Example -- client-side pagination:
 
-  grid.isPageable = true
+  grid.isPagingEnabled = true
   grid.pageSize = 25
   grid.pageSizes = [10, 25, 50, 100]
   grid.paginationPosition = 'bottom-center'
@@ -284,7 +284,7 @@ Example:
     { field: 'name', title: 'Name', isSortable: true },
     { field: 'email', title: 'Email', isSortable: true }
   ]
-  grid.isPageable = true
+  grid.isPagingEnabled = true
   grid.pageSize = 25
   grid.pageSizes = [10, 25, 50, 100]
   grid.paginationMode = 'server'
@@ -390,7 +390,7 @@ Example -- server-side summary with metadata:
 
 Example -- summary with pagination in same row:
 
-  grid.isPageable = true
+  grid.isPagingEnabled = true
   grid.paginationPosition = 'bottom-right'
   grid.summaryPosition = 'bottom-left'
   grid.isSummaryInline = true  // shares the bottom row with pagination

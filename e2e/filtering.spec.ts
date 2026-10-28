@@ -1,12 +1,12 @@
 import { test, expect, type Page, gridLocator, cell, onGrid, domEvents, eventsOf, clearEvents, waitForRows } from './fixtures'
 
 /**
- * Filtering through the API — `isFilterable`, `filters`, `setFilter`,
+ * Filtering through the API — `isFilteringEnabled`, `filters`, `setFilter`,
  * `filter-change` (+ `onFilterChange` twin), column `filterCallback`,
  * `filterMode: 'server'`.
  *
  * Fixture: docs/test/filtering.html — 6 rows (see the seed table there),
- * `filterable` set in markup, salary column has a `>N` / `<N` / `N`
+ * `enable-filtering` set in markup, salary column has a `>N` / `<N` / `N`
  * filterCallback. The columns aren't `isFilterable`, so no filter row renders —
  * filters are driven through the element API (the filter row: filter-row.spec.ts).
  */
@@ -52,25 +52,25 @@ test.describe('client filtering', () => {
 		await expect(rowCount(page)).toHaveCount(0)
 	})
 
-	test('isFilterable=false ignores filters (they are kept, not applied)', async ({ page }) => {
-		await onGrid(page, el => { el.isFilterable = false; el.setFilter('name', 'bob') })
+	test('isFilteringEnabled=false ignores filters (they are kept, not applied)', async ({ page }) => {
+		await onGrid(page, el => { el.isFilteringEnabled = false; el.setFilter('name', 'bob') })
 		await expect(rowCount(page)).toHaveCount(6)
 		expect(await onGrid(page, el => el.filters)).toEqual({ name: 'bob' })
 		// turning it back on applies the kept filter
-		await onGrid(page, el => { el.isFilterable = true })
+		await onGrid(page, el => { el.isFilteringEnabled = true })
 		await expect(rowCount(page)).toHaveCount(1)
 	})
 
-	test('removing the filterable attribute resets to the default (off)', async ({ page }) => {
+	test('removing the enable-filtering attribute resets to the default (off)', async ({ page }) => {
 		await onGrid(page, el => el.setFilter('name', 'bob'))
 		await expect(rowCount(page)).toHaveCount(1)
-		await onGrid(page, el => el.removeAttribute('filterable'))
+		await onGrid(page, el => el.removeAttribute('enable-filtering'))
 		await expect(rowCount(page)).toHaveCount(6)
-		expect(await onGrid(page, el => el.isFilterable)).toBe(false)
+		expect(await onGrid(page, el => el.isFilteringEnabled)).toBe(false)
 	})
 
 	test('a filter change while on a later page keeps rows visible (page resets / clamps)', async ({ page }) => {
-		await onGrid(page, el => { el.isPageable = true; el.pageSize = 2; el.currentPage = 3 })
+		await onGrid(page, el => { el.isPagingEnabled = true; el.pageSize = 2; el.currentPage = 3 })
 		expect(await names(page)).toEqual(['Eva Martinez', 'Frank Lee'])
 		await onGrid(page, el => el.setFilter('city', 'brno'))  // 2 matches → 1 page
 		await expect(rowCount(page)).toHaveCount(2)
@@ -79,7 +79,7 @@ test.describe('client filtering', () => {
 	})
 
 	test('a later filter change goes back to page 1 even when the current page still exists', async ({ page }) => {
-		await onGrid(page, el => { el.isPageable = true; el.pageSize = 1; el.currentPage = 2 })
+		await onGrid(page, el => { el.isPagingEnabled = true; el.pageSize = 1; el.currentPage = 2 })
 		await onGrid(page, el => el.setFilter('city', 'brno'))  // 2 matches → 2 pages
 		await expect(rowCount(page)).toHaveCount(1)
 		expect(await onGrid(page, el => el.currentPage)).toBe(1)
@@ -90,7 +90,7 @@ test.describe('client filtering', () => {
 	})
 
 	test('a page + filter restored together keep the page (either order)', async ({ page }) => {
-		await onGrid(page, el => { el.isPageable = true; el.pageSize = 1; el.filters = { city: 'brno' }; el.currentPage = 2 })
+		await onGrid(page, el => { el.isPagingEnabled = true; el.pageSize = 1; el.filters = { city: 'brno' }; el.currentPage = 2 })
 		await expect(cell(page, 0, 1)).toHaveText('Eva Martinez')
 		expect(await onGrid(page, el => el.currentPage)).toBe(2)
 		await onGrid(page, el => { el.filters = {}; el.currentPage = 1 })
@@ -99,7 +99,7 @@ test.describe('client filtering', () => {
 	})
 
 	test('items shrinking clamps the page (no reset)', async ({ page }) => {
-		await onGrid(page, el => { el.isPageable = true; el.pageSize = 2; el.currentPage = 3 })
+		await onGrid(page, el => { el.isPagingEnabled = true; el.pageSize = 2; el.currentPage = 3 })
 		await onGrid(page, el => { el.items = el.items.slice(0, 4) })
 		await expect(rowCount(page)).toHaveCount(2)
 		expect(await onGrid(page, el => el.currentPage)).toBe(2)

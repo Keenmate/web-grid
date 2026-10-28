@@ -364,9 +364,9 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	// two persist flags (side-effect setters) deliberately stay property-only.
 	static inputs: readonly InputDef[] = [
 		// Filtering & pagination
-		{ configKey: 'isFilterable', attribute: 'filterable', converter: toBool('default-false'), default: false, on: 'update' },
+		{ configKey: 'isFilteringEnabled', attribute: 'enable-filtering', converter: toBool('default-false'), default: false, on: 'update' },
 		{ configKey: 'filterMode', attribute: 'filter-mode', converter: toEnum(FILTER_MODES, { default: 'client' }), default: 'client', on: 'update' },
-		{ configKey: 'isPageable', attribute: 'pageable', converter: toBool('default-false'), default: false, on: 'update' },
+		{ configKey: 'isPagingEnabled', attribute: 'enable-paging', converter: toBool('default-false'), default: false, on: 'update' },
 		{ configKey: 'pageSize', attribute: 'page-size', converter: toInt({ min: 1, default: 10 }), default: 10, on: 'update' },
 		{ configKey: 'paginationMode', attribute: 'pagination-mode', converter: toEnum(PAGINATION_MODES, { default: 'client' }), default: 'client', on: 'update' },
 		{ configKey: 'isPaginationShown', attribute: 'show-pagination', converter: toBoolOrAuto(true), default: true, on: 'update', type: "boolean | 'auto'" },
@@ -379,13 +379,13 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		{ configKey: 'isScrollable', attribute: 'scrollable', converter: toBool('default-false'), default: false, on: 'update' },
 		{ configKey: 'scrollMaxHeight', attribute: 'scroll-max-height', converter: toText({ default: '100vh' }), default: '100vh', on: 'update' },
 		// Editing
-		{ configKey: 'isEditable', attribute: 'editable', converter: toBool('default-false'), default: false, on: 'update' },
+		{ configKey: 'isEditingEnabled', attribute: 'enable-editing', converter: toBool('default-false'), default: false, on: 'update' },
 		{ configKey: 'editTrigger', attribute: 'edit-trigger', converter: toEnum(EDIT_TRIGGERS, { default: 'dblclick' }), default: 'dblclick', on: 'update' },
 		// HTML of the edit button (editTrigger 'button'), e.g. '<span class="lucide-pencil"></span>'
 		{ configKey: 'editButtonIcon', attribute: 'edit-button-icon', converter: toText({ default: '✎' }), default: '✎', on: 'update' },
 		{ configKey: 'editStartSelection', attribute: 'edit-start-selection', converter: toEnum(EDIT_START_SELECTIONS, { default: 'mouse-position' }), default: 'mouse-position', on: 'update' },
 		{ configKey: 'shouldCommitOnClickAway', attribute: 'commit-on-click-away', converter: toBool('default-true'), default: true, on: 'update' },
-		// A preset: also sets isEditable / isReadonly / editTrigger / dropdown flags / cellSelectionMode
+		// A preset: also sets isEditingEnabled / isReadonly / editTrigger / dropdown flags / cellSelectionMode
 		// in the same batch; inputs set explicitly in that batch win (core getBatchValuesCallback).
 		{ configKey: 'preset', attribute: 'preset', converter: toEnum(GRID_PRESETS_LIST, { default: 'excel' }), default: 'excel', on: 'update',
 			getBatchValuesCallback: (preset) => GRID_PRESETS[preset as GridPreset] ?? null },
@@ -715,8 +715,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	get columns(): Column<T>[] { return this.engine.columns }
 	set columns(value: Column<T>[]) { this.engine.columns = value }
 
-	get isFilterable(): boolean { return this.engine.isFilterable }
-	set isFilterable(value: boolean) { this.engine.isFilterable = value }
+	get isFilteringEnabled(): boolean { return this.engine.isFilteringEnabled }
+	set isFilteringEnabled(value: boolean) { this.engine.isFilteringEnabled = value }
 
 	/** 'server': the grid doesn't filter `items` — handle `filter-change` and replace `items`. */
 	get filterMode(): 'client' | 'server' { return this.engine.filterMode }
@@ -729,8 +729,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	set filters(value: Record<string, string>) { this.engine.filters = value }
 	setFilter(field: string, value: string): void { this.flush(); this.engine.setFilter(field, value) }
 
-	get isPageable(): boolean { return this.engine.isPageable }
-	set isPageable(value: boolean) { this.engine.isPageable = value }
+	get isPagingEnabled(): boolean { return this.engine.isPagingEnabled }
+	set isPagingEnabled(value: boolean) { this.engine.isPagingEnabled = value }
 
 	get pageSize(): number { return this.engine.pageSize }
 	set pageSize(value: number) { this.engine.pageSize = value }
@@ -747,8 +747,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	get isHoverable(): boolean { return this.engine.isHoverable }
 	set isHoverable(value: boolean) { this.engine.isHoverable = value }
 
-	get isEditable(): boolean { return this.engine.isEditable }
-	set isEditable(value: boolean) { this.engine.isEditable = value }
+	get isEditingEnabled(): boolean { return this.engine.isEditingEnabled }
+	set isEditingEnabled(value: boolean) { this.engine.isEditingEnabled = value }
 
 	get isRowEditable(): boolean | undefined { return this.engine.isRowEditable }
 	set isRowEditable(value: boolean | undefined) { this.engine.isRowEditable = value }

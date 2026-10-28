@@ -103,7 +103,7 @@
                 <h2>Configuration</h2>
                 <div class="code-block">
                     <pre>// Enable navigate mode for cell focus
-grid.isEditable = true
+grid.isEditingEnabled = true
 grid.editTrigger = 'navigate'
 
 // Row built-ins do the work: 'delete' removes the row,
@@ -224,7 +224,7 @@ grid.isShortcutsHelpShown = true</pre>
         const grid = document.getElementById('grid1')
         grid.items = items
         grid.columns = columns
-        grid.isEditable = true
+        grid.isEditingEnabled = true
         grid.editTrigger = 'navigate'  // Enable navigate mode for keyboard focus
 
         // Row built-ins (delete / duplicate) do the work; this factory shapes the copy

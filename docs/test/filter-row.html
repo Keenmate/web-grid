@@ -16,12 +16,12 @@
 	a lone <code>&gt;</code> is incomplete → <code>null</code> → red border, filter ignored.</p>
 
 	<h2>#grid — client filtering + pagination (13 rows, page-size 4)</h2>
-	<web-grid id="grid" filterable pageable page-size="4" sort-mode="single" frozen-column-count="1"
+	<web-grid id="grid" enable-filtering enable-paging page-size="4" sort-mode="single" frozen-column-count="1"
 		show-row-numbers style="max-width: 640px; max-height: 260px;"></web-grid>
 
 	<h2>#server — server pagination: a filter change runs <code>beforePageChangeCallback</code> (trigger 'filter') and fires <code>data-request</code> (trigger 'filter')</h2>
 	<label><input type="checkbox" id="block-server"> block leaving the page (beforePageChangeCallback → false)</label>
-	<web-grid id="server" filterable pageable pagination-mode="server" filter-mode="server" page-size="4"
+	<web-grid id="server" enable-filtering enable-paging pagination-mode="server" filter-mode="server" page-size="4"
 		style="max-width: 640px;"></web-grid>
 
 	<pre data-testid="filter-row-log"></pre>

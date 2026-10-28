@@ -7,9 +7,9 @@ import { test, expect, Page, gridLocator, cell } from './fixtures'
  * [data-testid="resolved"] after each switch.
  *
  * Modes (see grid.ts applyModeDefaults):
- *   read-only    — isEditable=false, dropdownToggleVisibility='on-focus'
- *   excel        — isEditable=true, editTrigger='navigate'
- *   input-matrix — isEditable=true, editTrigger='always', cellSelectionMode='shift'
+ *   read-only    — isEditingEnabled=false, dropdownToggleVisibility='on-focus'
+ *   excel        — isEditingEnabled=true, editTrigger='navigate'
+ *   input-matrix — isEditingEnabled=true, editTrigger='always', cellSelectionMode='shift'
  *
  * Column indices: 0=id (read-only), 1=name (text), 2=score (number).
  */
@@ -38,7 +38,7 @@ test.describe('mode preset applies the right property bundle', () => {
 		await gotoGridModes(page)
 
 		await expect(modeLabel(page)).toHaveText('excel')
-		await expect(resolved(page)).toContainText('isEditable=true')
+		await expect(resolved(page)).toContainText('isEditingEnabled=true')
 		await expect(resolved(page)).toContainText('editTrigger=navigate')
 		await expect(resolved(page)).toContainText('cellSelectionMode=click')
 		await expect(resolved(page)).toContainText('dropdownToggleVisibility=always')
@@ -50,7 +50,7 @@ test.describe('mode preset applies the right property bundle', () => {
 		await modeButton(page, 'read-only').click()
 
 		await expect(modeLabel(page)).toHaveText('read-only')
-		await expect(resolved(page)).toContainText('isEditable=false')
+		await expect(resolved(page)).toContainText('isEditingEnabled=false')
 		await expect(resolved(page)).toContainText('isReadonly=true')
 		await expect(resolved(page)).toContainText('dropdownToggleVisibility=on-focus')
 		await expect(resolved(page)).toContainText('cellSelectionMode=click')
@@ -61,7 +61,7 @@ test.describe('mode preset applies the right property bundle', () => {
 		await modeButton(page, 'input-matrix').click()
 
 		await expect(modeLabel(page)).toHaveText('input-matrix')
-		await expect(resolved(page)).toContainText('isEditable=true')
+		await expect(resolved(page)).toContainText('isEditingEnabled=true')
 		await expect(resolved(page)).toContainText('isReadonly=false')
 		await expect(resolved(page)).toContainText('editTrigger=always')
 		await expect(resolved(page)).toContainText('cellSelectionMode=shift')

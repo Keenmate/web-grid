@@ -217,7 +217,7 @@ Built-in item names are kebab-case (`'move-up'`, `'sort-asc'`, `'expand'`) and t
 
 ### v2 naming rules (suite-wide, BlissFramework naming-conventions D-NC-13..27)
 
-- Boolean attributes are the short HTML form derived from the config key: `is*Shown` → `show-*`, `is*Enabled` → `enable-*`, `should*` → bare, `is*Allowed` → `allow-*`, other `is*` → without the prefix (`isFilterable` → `filterable`). `isReadonly` / `isDisabled` → `readonly` / `disabled`.
+- Boolean attributes are the short HTML form derived from the config key: `is*Shown` → `show-*`, `is*Enabled` → `enable-*`, `should*` → bare, `is*Allowed` → `allow-*`, layout / appearance variants and data hints `is<Adj>` → bare (`isStriped` → `striped`). Feature switches are `is*Enabled` (`isFilteringEnabled` / `enable-filtering`, `isPagingEnabled` / `enable-paging`, `isEditingEnabled` / `enable-editing`). `isReadonly` / `isDisabled` → `readonly` / `disabled`.
 - Enum values kebab-case; "off" is `'none'`; `multiple`, never `multi`. No bare `mode` (`preset`).
 - Events: `<state>-change` for set changes (whole new state: `expanded-change { paths }`, `focus-change`, `*-selection-change`), `<domain>-<verb>` for acts (`row-expand`, `row-delete`, `cell-paste`, `cell-edit-start`). Detail nouns: never a bare `index` (`rowIndex`, `optionIndex`), `old*` / `new*` pairs, `item` only for the core `ActionItem`.
 - State is a same-named property on the element AND `el.controller` (controller read-only): `selectedRows` (objects), `selectedRowIndices`, `items`, `displayItems`, `columns`, `sort`, `filters`, `invalidCells`, `selectedCellRange`, `expandedPaths`. `get*()` only for lookups with arguments / computed snapshots (`getDrafts`, `getSelectedCells`, `getSelectedColumns`).

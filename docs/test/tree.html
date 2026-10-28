@@ -163,7 +163,7 @@
 		navGrid.isTreeDataSorted = true
 		navGrid.treeDoubleClickBehavior = 'toggle'
 		navGrid.editTrigger = 'navigate'
-		navGrid.isEditable = true
+		navGrid.isEditingEnabled = true
 		navGrid.contextMenu = treeContextMenu
 
 		// #rowGateGrid — grid-level getIsRowEditableCallback gate (status === 'Active').
@@ -181,7 +181,7 @@
 		rowGateGrid.isTreeDataSorted = true
 		rowGateGrid.treeDoubleClickBehavior = 'toggle'
 		rowGateGrid.editTrigger = 'navigate'
-		rowGateGrid.isEditable = true
+		rowGateGrid.isEditingEnabled = true
 		rowGateGrid.getIsRowEditableCallback = ({ row }) => row.status === 'Active'
 		rowGateGrid.contextMenu = treeContextMenu
 

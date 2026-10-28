@@ -10,7 +10,7 @@ changes.
 GRID-LEVEL EDITING PROPERTIES
 ------------------------------
 
-isEditable (boolean, default: false)
+isEditingEnabled (boolean, default: false; attribute enable-editing)
   Master switch. Must be true for any editing to occur (a column's
   getIsEditableCallback returning true is the one exception).
 
@@ -66,15 +66,15 @@ The mode property sets sensible defaults for common use cases. Individual
 properties can still be overridden after setting mode.
 
 mode='read-only'
-  isEditable=false, cellSelectionMode='click',
+  isEditingEnabled=false, cellSelectionMode='click',
   dropdownToggleVisibility='on-focus', shouldOpenDropdownOnFocus=false
 
 mode='excel'
-  isEditable=true, editTrigger='navigate', cellSelectionMode='click',
+  isEditingEnabled=true, editTrigger='navigate', cellSelectionMode='click',
   dropdownToggleVisibility='always', shouldOpenDropdownOnFocus=false
 
 mode='input-matrix'
-  isEditable=true, editTrigger='always', cellSelectionMode='shift',
+  isEditingEnabled=true, editTrigger='always', cellSelectionMode='shift',
   dropdownToggleVisibility='always', shouldOpenDropdownOnFocus=true
 
 

@@ -30,12 +30,12 @@
 		 * One grid + three preset buttons. The `preset` input is a convenience setter
 		 * that applies a bundle of property defaults (see grid.ts applyModeDefaults):
 		 *
-		 *   read-only    — isEditable=false, dropdownToggleVisibility='on-focus',
+		 *   read-only    — isEditingEnabled=false, dropdownToggleVisibility='on-focus',
 		 *                  cellSelectionMode='click'
-		 *   excel        — isEditable=true, editTrigger='navigate',
+		 *   excel        — isEditingEnabled=true, editTrigger='navigate',
 		 *                  dropdownToggleVisibility='always',
 		 *                  shouldOpenDropdownOnFocus=false, cellSelectionMode='click'
-		 *   input-matrix — isEditable=true, editTrigger='always',
+		 *   input-matrix — isEditingEnabled=true, editTrigger='always',
 		 *                  dropdownToggleVisibility='always',
 		 *                  shouldOpenDropdownOnFocus=true, cellSelectionMode='shift'
 		 *
@@ -73,7 +73,7 @@
 		function renderResolved() {
 			modeEl.textContent = grid.preset
 			resolvedEl.textContent = [
-				`isEditable=${grid.isEditable}`,
+				`isEditingEnabled=${grid.isEditingEnabled}`,
 				`isReadonly=${grid.isReadonly}`,
 				`editTrigger=${grid.editTrigger}`,
 				`cellSelectionMode=${grid.cellSelectionMode}`,

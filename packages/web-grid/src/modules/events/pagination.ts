@@ -50,7 +50,7 @@ export function handlePageSizeChange<T>(ctx: GridHost<T>, select: HTMLSelectElem
 /**
  * Attach pagination click + page-size change listeners to the `.wg` container.
  *
- * Why the container (not `.wg__pagination`): when `isPageable` toggles or the
+ * Why the container (not `.wg__pagination`): when `isPagingEnabled` toggles or the
  * pagination region re-renders, its DOM is replaced via innerHTML and any
  * listener attached directly to the pagination element is lost. Delegating
  * from the container survives surgical re-renders.

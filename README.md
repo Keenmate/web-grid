@@ -7,7 +7,7 @@ A feature-rich, framework-agnostic data grid web component built with TypeScript
 A major release — see the CHANGELOG for every rename (no aliases).
 
 - **Shared interaction model** (`@keenmate/web-components-core`): every callback takes one `ctx` (with `controller` + `element`), every event has an `on*` twin, the row toolbar / cell and header menus / shortcuts are core action items, and both menus run on core `openMenu()`.
-- **Suite-wide naming**: boolean attributes in the short HTML form (`filterable`, `editable`, `show-row-numbers`, `enable-virtual-scroll`, …), kebab-case enum values, `preset` (was `mode`), tree API with web-treeview names (`toggleRowExpanded`, `expandAll(path?)`, `row-expand` / `row-collapse` / `expanded-change`), `cell-edit-start` / `cell-paste` / `focus-change` events, state as same-named properties on the element and `el.controller` (`selectedRows`, `selectedRowIndices`, `items`, …).
+- **Suite-wide naming**: boolean attributes in the short HTML form (`enable-filtering`, `enable-editing`, `show-row-numbers`, `enable-virtual-scroll`, …), kebab-case enum values, `preset` (was `mode`), tree API with web-treeview names (`toggleRowExpanded`, `expandAll(path?)`, `row-expand` / `row-collapse` / `expanded-change`), `cell-edit-start` / `cell-paste` / `focus-change` events, state as same-named properties on the element and `el.controller` (`selectedRows`, `selectedRowIndices`, `items`, …).
 - **`readonly` and `disabled`**: `readonly` blocks edits, paste, fill and row add / delete / move but keeps selection and copy; `disabled` makes the grid inert. The `read-only` preset sets `readonly`.
 - **Ctrl+Delete deletes**: the `delete` built-in removes the row (veto with `beforeActionCallback`) and `row-delete` reports it after the fact.
 - **Core lifecycle**: `defer` / `release()` hold the first render, then `ready` / `:state(ready)` / `whenReady()`; `destroy()`.
@@ -91,9 +91,9 @@ grid.isStriped = true            // alternating row backgrounds
 grid.isHoverable = true          // hover highlight
 grid.isRowNumbersShown = true  // leftmost # column
 grid.sortMode = 'multiple'          // click headers to sort, Ctrl+click to add
-grid.isPageable = true
+grid.isPagingEnabled = true
 grid.pageSize = 25
-grid.isEditable = true
+grid.isEditingEnabled = true
 grid.editTrigger = 'navigate'    // Excel-like: type to edit the focused cell
 ```
 
@@ -105,9 +105,9 @@ grid.editTrigger = 'navigate'    // Excel-like: type to edit the focused cell
 | `columns` | `Column<T>[]` | Column definitions with at least a `field` each |
 | `isStriped` / `isHoverable` / `isRowNumbersShown` | `boolean` | Cosmetic toggles |
 | `sortMode` | `'none' \| 'single' \| 'multiple'` | Column sort behavior |
-| `isPageable` + `pageSize` | `boolean` + `number` | Pagination |
-| `isEditable` + `editTrigger` | `boolean` + `EditTrigger` | Enable inline editing and how it starts |
-| `isFilterable` | `boolean` | Per-column filter row under the headers |
+| `isPagingEnabled` + `pageSize` | `boolean` + `number` | Pagination |
+| `isEditingEnabled` + `editTrigger` | `boolean` + `EditTrigger` | Enable inline editing and how it starts |
+| `isFilteringEnabled` | `boolean` | Per-column filter row under the headers |
 | `preset` | `'read-only' \| 'excel' \| 'input-matrix'` | Presets that set several of the above together |
 | `isReadonly` / `isDisabled` | `boolean` | `readonly` (values can't change, still selectable / copyable) / `disabled` (no interaction) |
 
@@ -124,7 +124,7 @@ grid.sortMode = 'multiple'   // or 'single'
 ### Paginated grid with top + bottom pager
 
 ```javascript
-grid.isPageable = true
+grid.isPagingEnabled = true
 grid.pageSize = 25
 grid.paginationPosition = 'top-center|bottom-center'
 ```
@@ -132,13 +132,13 @@ grid.paginationPosition = 'top-center|bottom-center'
 ### Editable grid (Excel-like navigation)
 
 ```javascript
-grid.preset = 'excel'   // isEditable + editTrigger='navigate' + cellSelectionMode='click'
+grid.preset = 'excel'   // isEditingEnabled + editTrigger='navigate' + cellSelectionMode='click'
 ```
 
 Or opt in manually for finer control:
 
 ```javascript
-grid.isEditable = true
+grid.isEditingEnabled = true
 grid.editTrigger = 'navigate'
 ```
 
@@ -301,7 +301,7 @@ This architecture separates mode detection (the adapter decides *what* action a 
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `isFilterable` | `boolean` | `false` | Show the filter row (inputs for columns with `isFilterable: true`) and apply `filters` |
+| `isFilteringEnabled` | `boolean` | `false` | Show the filter row (inputs for columns with `isFilterable: true`) and apply `filters` |
 | `isStriped` | `boolean` | `false` | Alternate row background colors |
 | `isHoverable` | `boolean` | `false` | Highlight row on hover |
 | `isRowNumbersShown` | `boolean` | `false` | Show row number column |
@@ -316,7 +316,7 @@ This architecture separates mode detection (the adapter decides *what* action a 
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `isEditable` | `boolean` | `false` | Enable cell editing |
+| `isEditingEnabled` | `boolean` | `false` | Enable cell editing |
 | `isRowEditable` | `boolean` | — | Static per-grid row editability |
 | `getIsRowEditableCallback` | `(ctx: { row }) => boolean` | — | Decides editability per row |
 | `editTrigger` | `EditTrigger` | `'dblclick'` | How editing starts: `'click'`, `'dblclick'`, `'button'` (an edit button in editable cells — on hover and in the focused cell; F2 / Enter too), `'always'`, `'navigate'` |
@@ -338,7 +338,7 @@ This architecture separates mode detection (the adapter decides *what* action a 
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `isPageable` | `boolean` | `false` | Enable pagination |
+| `isPagingEnabled` | `boolean` | `false` | Enable pagination |
 | `pageSize` | `number` | `10` | Rows per page |
 | `pageSizes` | `number[]` | — | Available page sizes for selector (e.g., `[10, 25, 50, 100]`) |
 | `paginationMode` | `'client' \| 'server'` | `'client'` | `'client'` = grid slices items; `'server'` = items are already current page |
@@ -488,7 +488,7 @@ This architecture separates mode detection (the adapter decides *what* action a 
 | `filters` | `Record<string, string>` | `{}` | Current filter value per field |
 | `filterMode` | `'client' \| 'server'` | `'client'` | `'server'`: the grid doesn't filter `items` — listen to `filter-change` (`{ filters }`) and load the rows. Attribute `filter-mode` |
 
-**Filter row.** With `isFilterable`, a row under the header gets a text input for every column with `isFilterable: true` (labelled "Filter &lt;column&gt;" via `labels.filterColumn`; Tab-reachable). Typing is debounced (300 ms; Enter applies at once, Escape clears) → `setFilter(field, text)` → page 1. A `filterCallback` returning `null` marks the input `.invalid` (red border, `aria-invalid`) and ignores that filter. In server pagination a filter change runs `beforePageChangeCallback` (trigger `'filter'`) and fires `data-request` (trigger `'filter'`). Styled by the `--wg-filter-*` variables. A filter change (UI or `setFilter` / `filters`) resets `currentPage` to 1.
+**Filter row.** With `isFilteringEnabled`, a row under the header gets a text input for every column with `isFilterable: true` (labelled "Filter &lt;column&gt;" via `labels.filterColumn`; Tab-reachable). Typing is debounced (300 ms; Enter applies at once, Escape clears) → `setFilter(field, text)` → page 1. A `filterCallback` returning `null` marks the input `.invalid` (red border, `aria-invalid`) and ignores that filter. In server pagination a filter change runs `beforePageChangeCallback` (trigger `'filter'`) and fires `data-request` (trigger `'filter'`). Styled by the `--wg-filter-*` variables. A filter change (UI or `setFilter` / `filters`) resets `currentPage` to 1.
 
 ### Styling
 
@@ -725,7 +725,7 @@ Set `editor: 'custom'` and provide a `renderEditorCallback` on the column:
 
 The `preset` property (attribute `preset`; `mode` before v2) sets sensible defaults for common use cases:
 
-| Preset | `isEditable` | `editTrigger` | `cellSelectionMode` | `dropdownToggleVisibility` | `shouldOpenDropdownOnFocus` |
+| Preset | `isEditingEnabled` | `editTrigger` | `cellSelectionMode` | `dropdownToggleVisibility` | `shouldOpenDropdownOnFocus` |
 |------|-------------|--------------|--------------------|--------------------------|-----------------------------|
 | `'read-only'` (+ `isReadonly = true`) | `false` | — | `'click'` | `'on-focus'` | `false` |
 | `'excel'` | `true` | `'navigate'` | `'click'` | `'always'` | `false` |

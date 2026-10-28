@@ -29,7 +29,7 @@
                     <input type="checkbox" id="sortable" checked> Sortable
                 </label>
                 <label>
-                    <input type="checkbox" id="isPageable"> Pageable
+                    <input type="checkbox" id="isPagingEnabled"> Pageable
                 </label>
                 <label>
                     <input type="checkbox" id="isEditable" checked> Editable
@@ -279,7 +279,7 @@
         grid.items = sampleData
         grid.columns = columns
         grid.pageSize = 5
-        grid.isEditable = true
+        grid.isEditingEnabled = true
         grid.editTrigger = 'navigate'
         grid.isRowNumbersShown = true
         grid.sortMode = 'multiple'
@@ -342,12 +342,12 @@
             grid.sortMode = e.target.checked ? 'multiple' : 'none'
         })
 
-        document.getElementById('isPageable').addEventListener('change', (e) => {
-            grid.isPageable = e.target.checked
+        document.getElementById('isPagingEnabled').addEventListener('change', (e) => {
+            grid.isPagingEnabled = e.target.checked
         })
 
         document.getElementById('isEditable').addEventListener('change', (e) => {
-            grid.isEditable = e.target.checked
+            grid.isEditingEnabled = e.target.checked
         })
 
         document.getElementById('navigate').addEventListener('change', (e) => {

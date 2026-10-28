@@ -25,7 +25,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Feature | Status | Spec | Fixture |
 | --- | :-: | --- | --- |
 | Initial render (headers, rows, formatted values) | ✓ | `basic.spec.ts` | `basic.html` |
-| `isStriped`, `isSortable`, `isEditable`, `isPageable` toggles | ✓ | `basic.spec.ts` | `basic.html` |
+| `isStriped`, `isSortable`, `isEditingEnabled`, `isPagingEnabled` toggles | ✓ | `basic.spec.ts` | `basic.html` |
 | Row numbers (`isRowNumbersShown`) | ✓ | `basic.spec.ts` | `basic.html` |
 | `formatCallback` / cell class callbacks | ✓ | `basic.spec.ts`, `custom-styling.spec.ts` | `basic.html`, `custom-styling.html` |
 | `cellClass`, `getCellClassCallback`, `getRowClassCallback`, `renderCellCallback` | ✓ | `custom-styling.spec.ts` | `custom-styling.html` |
@@ -43,7 +43,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Single sort, sort cycle, multi-sort | ✓ | `basic.spec.ts` | `basic.html` |
 | Local pagination (page size, next/prev) | ✓ | `basic.spec.ts` | `basic.html` |
 | Page-size selector updates the property | ✓ | `inputs.spec.ts` | `inputs.html` |
-| `isFilterable` / `filters` / `setFilter` narrows rows (API) | ✓ | `filtering.spec.ts` | `filtering.html` |
+| `isFilteringEnabled` / `filters` / `setFilter` narrows rows (API) | ✓ | `filtering.spec.ts` | `filtering.html` |
 | Filter row (#4): inputs for `column.isFilterable`, label i18n, debounce / Enter / Escape → page 1, focus + caret + typed text survive re-renders, grid keys not reached, Tab order, `.invalid` for `filterCallback` null, sticky + frozen cells, server pagination → `beforePageChangeCallback` / `data-request` trigger `'filter'` | ✓ | `filter-row.spec.ts` | `filter-row.html` |
 | `filter-change` event detail + `onFilterChange` twin | ✓ | `filtering.spec.ts` | `filtering.html` |
 | Filter change → page 1, same-task page + filter keep the page, shorter `items` clamps (NOTES #5) | ✓ | `filtering.spec.ts` | `filtering.html` |

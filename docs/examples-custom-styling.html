@@ -552,7 +552,7 @@
         grid.columns = columns
         grid.isStriped = false  // Disable striping to better show custom colors
         grid.isHoverable = true
-        grid.isEditable = true
+        grid.isEditingEnabled = true
         grid.sortMode = 'multiple'  // Enable multi-column sorting
 
         // Dynamic row styling - gray out inactive employees
@@ -663,7 +663,7 @@
         const gridDoubleBorder = document.getElementById('gridDoubleBorder')
         gridDoubleBorder.items = borderDemoData
         gridDoubleBorder.columns = borderDemoColumns
-        gridDoubleBorder.isPageable = true
+        gridDoubleBorder.isPagingEnabled = true
         gridDoubleBorder.pageSize = 3
         gridDoubleBorder.paginationPosition = 'bottom-right'
         gridDoubleBorder.paginationLayout = 'previous|page-info|next'
@@ -672,7 +672,7 @@
         const gridTableBorderOnly = document.getElementById('gridTableBorderOnly')
         gridTableBorderOnly.items = borderDemoData
         gridTableBorderOnly.columns = borderDemoColumns
-        gridTableBorderOnly.isPageable = true
+        gridTableBorderOnly.isPagingEnabled = true
         gridTableBorderOnly.pageSize = 3
         gridTableBorderOnly.paginationPosition = 'bottom-right'
         gridTableBorderOnly.paginationLayout = 'previous|page-info|next'

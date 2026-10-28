@@ -63,7 +63,7 @@
 
             <div class="controls">
                 <label>
-                    <span title="Preset that configures isEditable, editTrigger, cellSelectionMode, and dropdown behavior">Mode:</span>
+                    <span title="Preset that configures isEditingEnabled, editTrigger, cellSelectionMode, and dropdown behavior">Mode:</span>
                     <select id="clickMode" title="read-only: non-editable, click to select&#10;excel: editable via navigate, click+drag to select&#10;input-matrix: always editing, shift+drag to select">
                         <option value="read-only">read-only</option>
                         <option value="excel" selected>excel</option>
@@ -88,7 +88,7 @@
                     </select>
                 </label>
                 <label>
-                    <input type="checkbox" id="clickIsEditable" checked> isEditable
+                    <input type="checkbox" id="clickIsEditable" checked> isEditingEnabled
                 </label>
                 <label>
                     <input type="checkbox" id="clickIsHoverable" checked> isHoverable
@@ -122,9 +122,9 @@
                 <div style="margin-top: 1rem; padding: 0.75rem; background: #f0f9ff; border-radius: 6px; font-size: 0.85rem;">
                     <strong>Mode presets:</strong> The <code>mode</code> property is a convenience that sets multiple properties at once. Changing it will update the controls above:
                     <ul style="margin: 0.5rem 0 0 0; padding-left: 1.25rem;">
-                        <li><strong>read-only</strong> &mdash; isEditable=false, cellSelectionMode=click</li>
-                        <li><strong>excel</strong> &mdash; isEditable=true, editTrigger=navigate, cellSelectionMode=click</li>
-                        <li><strong>input-matrix</strong> &mdash; isEditable=true, editTrigger=always, cellSelectionMode=shift (cells are always editing, so shift+drag is needed to select)</li>
+                        <li><strong>read-only</strong> &mdash; isEditingEnabled=false, cellSelectionMode=click</li>
+                        <li><strong>excel</strong> &mdash; isEditingEnabled=true, editTrigger=navigate, cellSelectionMode=click</li>
+                        <li><strong>input-matrix</strong> &mdash; isEditingEnabled=true, editTrigger=always, cellSelectionMode=shift (cells are always editing, so shift+drag is needed to select)</li>
                     </ul>
                 </div>
                 <pre style="background: #f8fafc; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.85rem; margin-top: 0.5rem;"><code>cellSelectionMode: 'click'  // Default
@@ -462,7 +462,7 @@ grid.focusedRowIndex = null // Clear focus</code></pre>
             mode: 'excel',
             cellSelectionMode: 'click',
             editTrigger: 'navigate',
-            isEditable: true,
+            isEditingEnabled: true,
             isHoverable: true
         }
 
@@ -489,7 +489,7 @@ grid.focusedRowIndex = null // Clear focus</code></pre>
         const applySettings = (settings) => {
             // Apply to grid
             gridCellRangeClick.isHoverable = settings.isHoverable
-            gridCellRangeClick.isEditable = settings.isEditable
+            gridCellRangeClick.isEditingEnabled = settings.isEditingEnabled
             gridCellRangeClick.editTrigger = settings.editTrigger
             gridCellRangeClick.cellSelectionMode = settings.cellSelectionMode
             gridCellRangeClick.mode = settings.mode
@@ -498,7 +498,7 @@ grid.focusedRowIndex = null // Clear focus</code></pre>
             document.getElementById('clickMode').value = settings.mode
             document.getElementById('clickCellSelectionMode').value = settings.cellSelectionMode
             document.getElementById('clickEditTrigger').value = settings.editTrigger
-            document.getElementById('clickIsEditable').checked = settings.isEditable
+            document.getElementById('clickIsEditable').checked = settings.isEditingEnabled
             document.getElementById('clickIsHoverable').checked = settings.isHoverable
         }
 
@@ -544,11 +544,11 @@ grid.focusedRowIndex = null // Clear focus</code></pre>
         const syncControlsWithGrid = () => {
             document.getElementById('clickCellSelectionMode').value = gridCellRangeClick.cellSelectionMode
             document.getElementById('clickEditTrigger').value = gridCellRangeClick.editTrigger
-            document.getElementById('clickIsEditable').checked = gridCellRangeClick.isEditable
+            document.getElementById('clickIsEditable').checked = gridCellRangeClick.isEditingEnabled
             // Update currentSettings to match
             currentSettings.cellSelectionMode = gridCellRangeClick.cellSelectionMode
             currentSettings.editTrigger = gridCellRangeClick.editTrigger
-            currentSettings.isEditable = gridCellRangeClick.isEditable
+            currentSettings.isEditingEnabled = gridCellRangeClick.isEditingEnabled
             saveSettings(currentSettings)
         }
 
@@ -560,7 +560,7 @@ grid.focusedRowIndex = null // Clear focus</code></pre>
             console.log('preset changed to:', e.target.value)
             console.log('  → grid.editTrigger:', gridCellRangeClick.editTrigger)
             console.log('  → grid.cellSelectionMode:', gridCellRangeClick.cellSelectionMode)
-            console.log('  → grid.isEditable:', gridCellRangeClick.isEditable)
+            console.log('  → grid.isEditingEnabled:', gridCellRangeClick.isEditingEnabled)
             console.log('  → grid.preset:', gridCellRangeClick.preset)
             console.log('  → columns[1].isEditable:', gridCellRangeClick.columns[1]?.isEditable)
         })
@@ -580,10 +580,10 @@ grid.focusedRowIndex = null // Clear focus</code></pre>
         })
 
         document.getElementById('clickIsEditable').addEventListener('change', (e) => {
-            currentSettings.isEditable = e.target.checked
-            gridCellRangeClick.isEditable = e.target.checked
+            currentSettings.isEditingEnabled = e.target.checked
+            gridCellRangeClick.isEditingEnabled = e.target.checked
             saveSettings(currentSettings)
-            console.log('isEditable changed to:', e.target.checked)
+            console.log('isEditingEnabled changed to:', e.target.checked)
         })
 
         document.getElementById('clickIsHoverable').addEventListener('change', (e) => {

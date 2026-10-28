@@ -328,7 +328,7 @@ export type ParsedKeyCombo = {
 export type QuickGridProps<T> = {
 	items: T[]
 	columns: Column<T>[]
-	isFilterable?: boolean
+	isFilteringEnabled?: boolean
 	// Default `min-width` applied to every column header that doesn't specify its own `minWidth`.
 	// Useful with `fillerColumn` so content-sized columns don't collapse too far when the filler
 	// claims leftover space. Skipped on columns that opted into `autoWidth`.
@@ -337,7 +337,7 @@ export type QuickGridProps<T> = {
 	// inputs and fires `filter-change` on every keystroke with a `{field: value}` map; the consumer
 	// replaces `items`. Typical pattern: debounce, post the filter map to a backend, set `items`.
 	filterMode?: 'client' | 'server'
-	isPageable?: boolean
+	isPagingEnabled?: boolean
 	pageSize?: number
 	isStriped?: boolean
 	isHoverable?: boolean
@@ -375,8 +375,8 @@ export type QuickGridProps<T> = {
 	summaryMetadata?: unknown  // Passed to renderSummaryCallback as ctx.metadata
 	isSummaryInline?: boolean  // Share row with pagination when in same area (default: true)
 	// Editing props
-	isEditable?: boolean
-	// Row-level editability gate. Combined with grid-level `isEditable` and column-level `isEditable`:
+	isEditingEnabled?: boolean
+	// Row-level editability gate. Combined with grid-level `isEditingEnabled` and column-level `isEditable`:
 	// all three must pass for a cell to be editable. Use when every editable column shares the same
 	// row predicate — cheaper than repeating the predicate on every column.
 	isRowEditable?: boolean

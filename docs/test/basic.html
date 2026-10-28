@@ -80,7 +80,7 @@
 		grid.items = seed()
 		grid.columns = columns
 		grid.pageSize = 5
-		grid.isEditable = true
+		grid.isEditingEnabled = true
 		grid.editTrigger = 'navigate'
 		grid.isRowNumbersShown = true
 		grid.isDirtyIndicatorShown = true
@@ -121,10 +121,10 @@
 			grid.sortMode = e.target.checked ? 'multiple' : 'none'
 		})
 		document.getElementById('editable').addEventListener('change', (e) => {
-			grid.isEditable = e.target.checked
+			grid.isEditingEnabled = e.target.checked
 		})
 		document.getElementById('pageable').addEventListener('change', (e) => {
-			grid.isPageable = e.target.checked
+			grid.isPagingEnabled = e.target.checked
 		})
 	</script>
 </body>

@@ -76,9 +76,9 @@ Or via CDN (no bundler):
   grid.isStriped = true;
   grid.isHoverable = true;
   grid.sortMode = 'multiple';
-  grid.isPageable = true;
+  grid.isPagingEnabled = true;
   grid.pageSize = 25;
-  grid.preset = 'excel';                 // isEditable + editTrigger='navigate' + cellSelectionMode='click'
+  grid.preset = 'excel';                 // isEditingEnabled + editTrigger='navigate' + cellSelectionMode='click'
 </script>
 ```
 

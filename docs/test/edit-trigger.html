@@ -66,20 +66,20 @@
 		const clickGrid = document.getElementById('clickGrid')
 		clickGrid.items = seed()
 		clickGrid.columns = columns()
-		clickGrid.isEditable = true
+		clickGrid.isEditingEnabled = true
 		clickGrid.editTrigger = 'click'
 		clickGrid.editStartSelection = 'select-all'
 
 		const dblclickGrid = document.getElementById('dblclickGrid')
 		dblclickGrid.items = seed()
 		dblclickGrid.columns = columns()
-		dblclickGrid.isEditable = true
+		dblclickGrid.isEditingEnabled = true
 		dblclickGrid.editTrigger = 'dblclick'
 
 		const navigateGrid = document.getElementById('navigateGrid')
 		navigateGrid.items = seed()
 		navigateGrid.columns = columns()
-		navigateGrid.isEditable = true
+		navigateGrid.isEditingEnabled = true
 		navigateGrid.editTrigger = 'navigate'
 	</script>
 </body>

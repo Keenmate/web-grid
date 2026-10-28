@@ -93,7 +93,7 @@
 		const grid = document.getElementById('grid')
 		grid.items = seed()
 		grid.columns = columns
-		grid.isEditable = true
+		grid.isEditingEnabled = true
 		grid.editTrigger = 'navigate'
 		const fillLog = document.querySelector('[data-testid="fill-log"]')
 		grid.beforeFillCallback = (detail) => {
@@ -106,7 +106,7 @@
 		const grid2 = document.getElementById('grid2')
 		grid2.items = seed()
 		grid2.columns = columns
-		grid2.isEditable = true
+		grid2.isEditingEnabled = true
 		grid2.editTrigger = 'navigate'
 		const fillLog2 = document.querySelector('[data-testid="fill-log-2"]')
 		grid2.beforeFillCallback = (detail) => {
@@ -128,7 +128,7 @@
 			{ field: 'description', title: 'Row', width: '80px', isEditable: false },
 			{ field: 'value', title: 'Value', width: '150px', editor: 'number' }
 		]
-		gridVertical.isEditable = true
+		gridVertical.isEditingEnabled = true
 		gridVertical.editTrigger = 'navigate'
 
 		// #gridHorizontal — row of cells; default fillDirection ('vertical') means a
@@ -145,7 +145,7 @@
 			{ field: 'col3', title: 'C', width: '80px', editor: 'text' },
 			{ field: 'col4', title: 'D', width: '80px', editor: 'text' }
 		]
-		gridHorizontal.isEditable = true
+		gridHorizontal.isEditingEnabled = true
 		gridHorizontal.editTrigger = 'navigate'
 	</script>
 </body>

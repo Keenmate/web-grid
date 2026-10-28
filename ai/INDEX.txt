@@ -131,7 +131,9 @@ idMember -> editing.txt, row-locking.txt
 Infinite scroll -> virtual-scroll.txt
 Inline actions -> toolbar-actions.txt
 Installation -> basic-setup.txt
-isEditable -> columns.txt, editing.txt
+isEditable (column) -> columns.txt, editing.txt
+isEditingEnabled -> editing.txt, basic-setup.txt
+isFilteringEnabled -> sorting-filtering-pagination.txt
 isFrozen -> frozen-columns.txt, columns.txt
 isLocked -> row-locking.txt
 isSortable -> columns.txt, sorting-filtering-pagination.txt

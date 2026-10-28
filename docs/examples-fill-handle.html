@@ -304,7 +304,7 @@
         grid.items = JSON.parse(JSON.stringify(sampleData))
         grid.columns = columns
         grid.isRowNumbersShown = true
-        grid.isEditable = true
+        grid.isEditingEnabled = true
         grid.editTrigger = 'navigate'  // Required for cell focus
         grid.isHoverable = true
 
@@ -325,7 +325,7 @@
         grid2.items = JSON.parse(JSON.stringify(sampleData))
         grid2.columns = columns
         grid2.isRowNumbersShown = true
-        grid2.isEditable = true
+        grid2.isEditingEnabled = true
         grid2.editTrigger = 'navigate'
         grid2.isHoverable = true
 
@@ -351,7 +351,7 @@
             { field: 'description', title: 'Row', width: '80px', isEditable: false },
             { field: 'value', title: 'Value (drag down)', width: '150px' }
         ]
-        gridVertical.isEditable = true
+        gridVertical.isEditingEnabled = true
         gridVertical.editTrigger = 'navigate'
         gridVertical.isHoverable = true
 
@@ -368,7 +368,7 @@
             { field: 'col3', title: 'C', width: '80px' },
             { field: 'col4', title: 'D', width: '80px' }
         ]
-        gridHorizontal.isEditable = true
+        gridHorizontal.isEditingEnabled = true
         gridHorizontal.editTrigger = 'navigate'
         gridHorizontal.isHoverable = true
     </script>

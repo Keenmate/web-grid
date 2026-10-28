@@ -90,7 +90,7 @@ import { gridPerf } from './perf.js'
 /** The settings a `preset` also sets. Shared by the engine's `preset`
  * setter and the element's `preset` input (`getBatchValuesCallback`). */
 export const GRID_PRESETS: Record<GridPreset, {
-	isEditable?: boolean
+	isEditingEnabled?: boolean
 	isReadonly?: boolean
 	editTrigger?: EditTrigger
 	dropdownToggleVisibility?: ToggleVisibility
@@ -98,11 +98,11 @@ export const GRID_PRESETS: Record<GridPreset, {
 	cellSelectionMode?: CellSelectionMode
 }> = {
 	// No editing, click to select cells
-	'read-only': { isEditable: false, isReadonly: true, dropdownToggleVisibility: 'on-focus', cellSelectionMode: 'click' },
+	'read-only': { isEditingEnabled: false, isReadonly: true, dropdownToggleVisibility: 'on-focus', cellSelectionMode: 'click' },
 	// Excel-like: click+drag to select
-	'excel': { isEditable: true, isReadonly: false, editTrigger: 'navigate', dropdownToggleVisibility: 'always', shouldOpenDropdownOnFocus: false, cellSelectionMode: 'click' },
+	'excel': { isEditingEnabled: true, isReadonly: false, editTrigger: 'navigate', dropdownToggleVisibility: 'always', shouldOpenDropdownOnFocus: false, cellSelectionMode: 'click' },
 	// Avoid conflict with always-editing cells
-	'input-matrix': { isEditable: true, isReadonly: false, editTrigger: 'always', dropdownToggleVisibility: 'always', shouldOpenDropdownOnFocus: true, cellSelectionMode: 'shift' },
+	'input-matrix': { isEditingEnabled: true, isReadonly: false, editTrigger: 'always', dropdownToggleVisibility: 'always', shouldOpenDropdownOnFocus: true, cellSelectionMode: 'shift' },
 }
 
 /**
@@ -119,14 +119,14 @@ export class GridEngine<T = unknown> {
 	protected _items: T[] = []
 	protected _columns: Column<T>[] = []
 	protected _sortMode: SortMode = "none"
-	protected _isFilterable: boolean = false
-	protected _isPageable: boolean = false
+	protected _isFilteringEnabled: boolean = false
+	protected _isPagingEnabled: boolean = false
 	protected _pageSize: number = 10
 	protected _pageSizes: number[] = [10, 25, 50, 100]
 	protected _paginationMode: 'client' | 'server' = 'client'
 	protected _isStriped: boolean = true
 	protected _isHoverable: boolean = true
-	protected _isEditable: boolean = false
+	protected _isEditingEnabled: boolean = false
 	protected _isRowEditable: boolean | undefined = undefined
 	protected _getIsRowEditableCallback: ((ctx: RowDataContext<T>) => boolean) | undefined = undefined
 	protected _editTrigger: EditTrigger = "dblclick"
@@ -412,9 +412,9 @@ export class GridEngine<T = unknown> {
 		this.requestUpdate()
 	}
 
-	get isFilterable(): boolean { return this._isFilterable }
-	set isFilterable(value: boolean) {
-		this._isFilterable = value
+	get isFilteringEnabled(): boolean { return this._isFilteringEnabled }
+	set isFilteringEnabled(value: boolean) {
+		this._isFilteringEnabled = value
 		this.requestUpdate()
 	}
 
@@ -431,9 +431,9 @@ export class GridEngine<T = unknown> {
 		this.requestUpdate()
 	}
 
-	get isPageable(): boolean { return this._isPageable }
-	set isPageable(value: boolean) {
-		this._isPageable = value
+	get isPagingEnabled(): boolean { return this._isPagingEnabled }
+	set isPagingEnabled(value: boolean) {
+		this._isPagingEnabled = value
 		this.requestUpdate()
 	}
 
@@ -468,9 +468,9 @@ export class GridEngine<T = unknown> {
 		this.requestUpdate()
 	}
 
-	get isEditable(): boolean { return this._isEditable }
-	set isEditable(value: boolean) {
-		this._isEditable = value
+	get isEditingEnabled(): boolean { return this._isEditingEnabled }
+	set isEditingEnabled(value: boolean) {
+		this._isEditingEnabled = value
 		this.checkEditTriggerConflicts()
 		this.maybeWarnAboutRowIdentity()
 		this.maybeWarnAboutServerDrafts()
@@ -494,7 +494,7 @@ export class GridEngine<T = unknown> {
 	}
 
 	/** Grid-level editing is on and neither `isReadonly` nor `isDisabled` blocks it. */
-	get isEffectivelyEditable(): boolean { return this._isEditable && !this._isReadonly && !this._isDisabled }
+	get isEffectivelyEditable(): boolean { return this._isEditingEnabled && !this._isReadonly && !this._isDisabled }
 
 	get isRowEditable(): boolean | undefined { return this._isRowEditable }
 	set isRowEditable(value: boolean | undefined) {
@@ -1449,7 +1449,7 @@ export class GridEngine<T = unknown> {
 
 	private checkServerDrafts(): void {
 		if (this._hasWarnedAboutServerDrafts) return
-		if (this._paginationMode !== 'server' || !this._isEditable || this._items.length === 0) return
+		if (this._paginationMode !== 'server' || !this._isEditingEnabled || this._items.length === 0) return
 		if (this.getRowId(this._items[0]) != null) return
 		this._hasWarnedAboutServerDrafts = true
 		initLogger.warn(
@@ -1461,7 +1461,7 @@ export class GridEngine<T = unknown> {
 
 	private maybeWarnAboutRowIdentity(): void {
 		if (this._hasWarnedAboutMissingRowId) return
-		if (!this._isEditable) return
+		if (!this._isEditingEnabled) return
 		if (this._idMember || this._getIdCallback || this._pathMember) return
 		this._hasWarnedAboutMissingRowId = true
 		initLogger.warn(
@@ -1820,7 +1820,7 @@ export class GridEngine<T = unknown> {
 	/** Compute paths matched by current text filters, plus their ancestors */
 	protected getTreeFilterAllowedPaths(): Set<string> | null {
 		if (!this._treeIndex) return null
-		if (!this._isFilterable) return null
+		if (!this._isFilteringEnabled) return null
 		const filterEntries = Object.entries(this._filters).filter(([, v]) => !!v)
 		if (filterEntries.length === 0) return null
 
@@ -2255,7 +2255,7 @@ export class GridEngine<T = unknown> {
 		// The grid still tracks `_filters` to drive the input UI, but doesn't apply them.
 		if (this._filterMode === 'server') return this._items
 
-		if (!this._isFilterable || Object.keys(this._filters).length === 0) {
+		if (!this._isFilteringEnabled || Object.keys(this._filters).length === 0) {
 			return this._items
 		}
 
@@ -2371,7 +2371,7 @@ export class GridEngine<T = unknown> {
 		const baseItems = this.isTreeMode ? this.getTreeVisibleItems() : this.sortedItems
 
 		let result: T[]
-		if (!this._isPageable) {
+		if (!this._isPagingEnabled) {
 			result = baseItems
 		} else if (this._paginationMode === 'server') {
 			// Server-side pagination: items are already the current page, don't slice
@@ -2565,7 +2565,7 @@ export class GridEngine<T = unknown> {
 	protected applyPresetDefaults(): void {
 		const preset = GRID_PRESETS[this._preset]
 		if (!preset) return
-		if (preset.isEditable !== undefined) this._isEditable = preset.isEditable
+		if (preset.isEditingEnabled !== undefined) this._isEditingEnabled = preset.isEditingEnabled
 		if (preset.isReadonly !== undefined) this._isReadonly = preset.isReadonly
 		if (preset.editTrigger !== undefined) this._editTrigger = preset.editTrigger
 		if (preset.dropdownToggleVisibility !== undefined) this._dropdownToggleVisibility = preset.dropdownToggleVisibility
@@ -2590,9 +2590,9 @@ export class GridEngine<T = unknown> {
 	 * Check for editTrigger conflicts in read-only mode
 	 */
 	protected checkEditTriggerConflicts(): void {
-		if (!this._isEditable && this._editTrigger === 'always') {
+		if (!this._isEditingEnabled && this._editTrigger === 'always') {
 			initLogger.warn(
-				'editTrigger="always" is not supported in read-only mode (isEditable=false).\n' +
+				'editTrigger="always" is not supported in read-only mode (isEditingEnabled=false).\n' +
 				'Supported editTrigger values in read-only mode: "navigate", "click", "dblclick".\n' +
 				'The grid may behave unexpectedly.',
 				'font-size: 14px; font-weight: bold;'
@@ -3329,7 +3329,7 @@ export class GridEngine<T = unknown> {
 	 *   2. column.isEditable === function with row → must return true to continue
 	 *   3. grid.isRowEditable with row → must pass to continue
 	 *   4. column.isEditable === true → editable (overrides grid-level)
-	 *   5. else → defer to grid-level isEditable
+	 *   5. else → defer to grid-level isEditingEnabled
 	 */
 	isCellEditable(column: Column<T>, row?: T): boolean {
 		// 0. Tree column is always read-only when tree mode is active. The column hosts
@@ -3364,8 +3364,8 @@ export class GridEngine<T = unknown> {
 		//    opt rows in even on a read-only grid.
 		if (column.getIsEditableCallback && row !== undefined) return true
 
-		// 6. Defer to grid-level isEditable
-		return this._isEditable
+		// 6. Defer to grid-level isEditingEnabled
+		return this._isEditingEnabled
 	}
 
 	/**

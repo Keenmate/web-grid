@@ -119,8 +119,8 @@ Summary of differences:
 ----------
 
 isEditable (boolean)
-    Enable editing for this column. The grid-level isEditable must also
-    be true (or a grid mode like 'excel'/'input-matrix' must be set).
+    Enable editing for this column. The grid-level isEditingEnabled must also
+    be true (or a preset like 'excel' / 'input-matrix' must be set).
 
 getIsEditableCallback ((ctx: { row }) => boolean)
     Per-row editability for this column (e.g. editable only on employee

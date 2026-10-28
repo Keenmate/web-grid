@@ -45,7 +45,7 @@ Then drop it into your markup and bind data:
 
 The `preset` property (attribute `preset`; `mode` before v2) sets sensible defaults for common use cases:
 
-| Preset | `isEditable` | `editTrigger` | `cellSelectionMode` | `dropdownToggleVisibility` | `shouldOpenDropdownOnFocus` |
+| Preset | `isEditingEnabled` | `editTrigger` | `cellSelectionMode` | `dropdownToggleVisibility` | `shouldOpenDropdownOnFocus` |
 |------|-------------|--------------|--------------------|--------------------------|-----------------------------|
 | `'read-only'` (+ `isReadonly`) | `false` | —             | `'click'` | `'on-focus'` | `false` |
 | `'excel'`        | `true`  | `'navigate'`  | `'click'` | `'always'`   | `false` |
@@ -75,7 +75,7 @@ The `QuickGridProps<T>` type defined in `src/types.ts` is the canonical source o
 
 | Property | Type | Default | Description |
 |---|---|---|---|
-| `isFilterable` | `boolean` | `false` | Show the filter row (inputs for columns with `isFilterable: true`) and apply `filters` |
+| `isFilteringEnabled` | `boolean` | `false` | Show the filter row (inputs for columns with `isFilterable: true`) and apply `filters` |
 | `isStriped` | `boolean` | `false` | Alternate row backgrounds |
 | `isHoverable` | `boolean` | `false` | Highlight row on hover |
 | `isRowNumbersShown` | `boolean` | `false` | Show leftmost row-number column |
@@ -93,8 +93,8 @@ The `QuickGridProps<T>` type defined in `src/types.ts` is the canonical source o
 
 | Property | Type | Default | Description |
 |---|---|---|---|
-| `isEditable` | `boolean` | `false` | Enable cell editing |
-| `isRowEditable` | `boolean` | — | Row-level editability gate; combined with grid- and column-level `isEditable` (all three must pass) |
+| `isEditingEnabled` | `boolean` | `false` | Enable cell editing |
+| `isRowEditable` | `boolean` | — | Row-level editability gate; combined with grid-level `isEditingEnabled` and column-level `isEditable` (all three must pass) |
 | `getIsRowEditableCallback` | `(ctx: { row }) => boolean` | — | Decides row editability per row (wins over `isRowEditable`) |
 | `editTrigger` | `EditTrigger` | `'dblclick'` | How editing starts: `'click'`, `'dblclick'`, `'button'` (an edit button in editable cells — on hover and in the focused cell; F2 / Enter too), `'always'`, `'navigate'` |
 | `editButtonIcon` | `string` (HTML) | `'✎'` | Content of the edit button (`editTrigger: 'button'` / `column.isEditButtonShown`) — HTML, e.g. `'<span class="lucide-pencil"></span>'`. Attribute `edit-button-icon`. Accessible name: `labels.editCell` |
@@ -117,7 +117,7 @@ The `QuickGridProps<T>` type defined in `src/types.ts` is the canonical source o
 
 | Property | Type | Default | Description |
 |---|---|---|---|
-| `isPageable` | `boolean` | `false` | Enable pagination |
+| `isPagingEnabled` | `boolean` | `false` | Enable pagination |
 | `page-size` | `number` | `10` | Rows per page |
 | `pageSizes` | `number[]` | — | Available page sizes for the page-size selector |
 | `paginationMode` | `'client' \| 'server'` | `'client'` | Client slices `items`; server treats `items` as the current page |
@@ -405,7 +405,7 @@ For full-height mode, also set `isTableBorderOnly = true`.
 | `filters` | `Record<string, string>` | `{}` | Current filter value per field |
 | `filterMode` | `'client' \| 'server'` | `'client'` | `'server'` (attribute `filter-mode`): the grid doesn't filter `items` — listen to `filter-change` (`{ filters }`) and load the rows |
 
-**Filter row.** With `isFilterable`, a row under the header gets a text input for every column with `isFilterable: true` (labelled "Filter &lt;column&gt;" via `labels.filterColumn`; Tab-reachable). Typing is debounced (300 ms; Enter applies at once, Escape clears) → `setFilter(field, text)` → page 1. A `filterCallback` returning `null` marks the input `.invalid` (red border, `aria-invalid`) and ignores that filter. In server pagination a filter change runs `beforePageChangeCallback` (trigger `'filter'`) and fires `data-request` (trigger `'filter'`). Styled by the `--wg-filter-*` variables. A filter change (UI or `setFilter` / `filters`) resets `currentPage` to 1.
+**Filter row.** With `isFilteringEnabled`, a row under the header gets a text input for every column with `isFilterable: true` (labelled "Filter &lt;column&gt;" via `labels.filterColumn`; Tab-reachable). Typing is debounced (300 ms; Enter applies at once, Escape clears) → `setFilter(field, text)` → page 1. A `filterCallback` returning `null` marks the input `.invalid` (red border, `aria-invalid`) and ignores that filter. In server pagination a filter change runs `beforePageChangeCallback` (trigger `'filter'`) and fires `data-request` (trigger `'filter'`). Styled by the `--wg-filter-*` variables. A filter change (UI or `setFilter` / `filters`) resets `currentPage` to 1.
 
 ### Styling
 

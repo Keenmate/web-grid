@@ -96,7 +96,7 @@
 				validateCallback: ({ value }) => Number(value) > 100 ? 'Max 100' : null
 			}
 		]
-		grid.isEditable = true
+		grid.isEditingEnabled = true
 		grid.editTrigger = 'navigate'
 
 		const logEl = document.querySelector('[data-testid="validation-log"]')

@@ -517,7 +517,7 @@
         const grid2 = document.getElementById('grid2')
         grid2.items = products.map(p => ({ ...p }))
         grid2.columns = editableColumns
-        grid2.isEditable = true
+        grid2.isEditingEnabled = true
         grid2.editTrigger = 'dblclick'
         grid2.contextMenu = editableContextMenu
         // The copy the 'duplicate' built-in inserts (default: shallow copy with the id cleared)

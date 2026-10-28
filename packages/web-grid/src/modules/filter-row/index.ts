@@ -1,5 +1,5 @@
 // =============================================================================
-// Filter row (grid `isFilterable`)
+// Filter row (grid `isFilteringEnabled`)
 // =============================================================================
 // The row itself is rendered with the header (rendering/table.ts →
 // renderHeaderRow) so frozen offsets and widths match. This module owns the

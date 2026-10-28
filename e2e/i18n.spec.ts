@@ -119,7 +119,7 @@ test('labels.noData is the empty-table text', async ({ page }) => {
 })
 
 test('labels.noResults when rows exist but the filter matched nothing', async ({ page }) => {
-	await onGrid(page, el => { el.isFilterable = true; el.filters = { [el.columns[0].field]: 'zzz-no-match' } })
+	await onGrid(page, el => { el.isFilteringEnabled = true; el.filters = { [el.columns[0].field]: 'zzz-no-match' } })
 	await expect(gridLocator(page).locator('.wg__empty')).toHaveText('No matching items')
 	await expect(gridLocator(page).locator('.wg__empty')).toHaveAttribute('data-empty', 'no-results')
 	await onGrid(page, el => { el.labels = { noResults: 'Nic nenalezeno' } })

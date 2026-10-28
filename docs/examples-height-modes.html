@@ -131,7 +131,7 @@
                 </div>
 
                 <label>
-                    <input type="checkbox" id="isPageable"> Pager
+                    <input type="checkbox" id="isPagingEnabled"> Pager
                 </label>
 
                 <label id="heightLabel">
@@ -235,7 +235,7 @@
         const mount = document.getElementById('mount')
         const state = {
             mode: 'container',    // 'container' | 'full'
-            isPageable: false,
+            isPagingEnabled: false,
             height: 350,
             rows: 40
         }
@@ -266,7 +266,7 @@
             grid.isHoverable = true
             grid.isRowNumbersShown = true
             grid.sortMode = 'single'
-            grid.isPageable = state.isPageable
+            grid.isPagingEnabled = state.isPagingEnabled
             grid.pageSize = 10
             grid.paginationPosition = 'top-center|bottom-center'
 
@@ -303,8 +303,8 @@
             render()
         })
 
-        document.getElementById('isPageable').addEventListener('change', (e) => {
-            state.isPageable = e.target.checked
+        document.getElementById('isPagingEnabled').addEventListener('change', (e) => {
+            state.isPagingEnabled = e.target.checked
             render()
         })
 

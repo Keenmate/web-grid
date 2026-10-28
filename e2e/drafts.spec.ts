@@ -112,7 +112,7 @@ test.describe('dirty state', () => {
 
 	test('a draft follows its row through a filter; getDraftRowIndices lists display indices', async ({ page }) => {
 		await editCell(page, cell(page, 3, NAME), 'Delta 2')  // id 4
-		await onGrid(page, el => { el.isFilterable = true; el.filters = { name: 'delta' } })
+		await onGrid(page, el => { el.isFilteringEnabled = true; el.filters = { name: 'delta' } })
 		await expect.poll(() => onGrid(page, el => el.displayItems.map((r: any) => r.id))).toEqual([4])
 		expect(await onGrid(page, el => [el.getRowDraft(0)?.name, el.getDraftRowIndices(), el.isRowDirty(0)])).toEqual(['Delta 2', [0], true])
 		await expect(cell(page, 0, NAME)).toHaveText('Delta 2')

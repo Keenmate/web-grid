@@ -70,10 +70,10 @@ export function applySort<T>(ctx: GridHost<T>, nextSort: SortState[]): void {
 	const engine = ctx.engine
 	const apply = (page: number) => {
 		engine.sort = nextSort
-		if (engine.isPageable) engine.currentPage = page
+		if (engine.isPagingEnabled) engine.currentPage = page
 		engine.fireDataRequest('sort')
 	}
-	if (engine.paginationMode === 'server' && engine.isPageable) {
+	if (engine.paginationMode === 'server' && engine.isPagingEnabled) {
 		guardPageChange(ctx, 'sort', 1, apply)
 	} else {
 		apply(1)

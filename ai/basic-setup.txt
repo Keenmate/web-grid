@@ -91,11 +91,11 @@ Attribute (HTML)        Property (JS)           Type       Default     Descripti
 striped                 isStriped               boolean    true        Alternate row backgrounds
 hoverable               isHoverable             boolean    true        Highlight row on hover
 sort-mode               sortMode                string     'none'      'none', 'single', or 'multiple'
-filterable              isFilterable            boolean    false       Show per-column filter inputs
+enable-filtering        isFilteringEnabled      boolean    false       Show per-column filter inputs
 filter-mode             filterMode              string     'client'    'server': the consumer filters (filter-change event)
-pageable                isPageable              boolean    false       Enable pagination
+enable-paging           isPagingEnabled         boolean    false       Enable pagination
 page-size               pageSize                number     10          Rows per page
-editable                isEditable              boolean    false       Enable cell editing
+enable-editing          isEditingEnabled        boolean    false       Enable cell editing
 edit-trigger            editTrigger             string     'dblclick'  How editing starts (see below)
 readonly                isReadonly              boolean    false       Values can't change; still focusable / selectable / copyable
 disabled                isDisabled              boolean    false       No interaction at all (dimmed, not focusable)
@@ -114,13 +114,13 @@ Sorting example:
 
 Pagination example:
 
-  grid.isPageable = true
+  grid.isPagingEnabled = true
   grid.pageSize = 25
   grid.pageSizes = [10, 25, 50, 100]
 
 Filtering example:
 
-  grid.isFilterable = true
+  grid.isFilteringEnabled = true
 
 
 CORE PROPERTIES
@@ -154,18 +154,18 @@ overriding individual properties.
 
   grid.preset = 'read-only'
     No editing. Click to select cells. For display grids with copy support.
-    Sets: isEditable=false, cellSelectionMode='click'
+    Sets: isEditingEnabled=false, cellSelectionMode='click'
 
   grid.preset = 'excel'
     Navigate cells with arrows, type to start editing, Escape to cancel.
     Click+drag for cell selection.
-    Sets: isEditable=true, editTrigger='navigate', cellSelectionMode='click',
+    Sets: isEditingEnabled=true, editTrigger='navigate', cellSelectionMode='click',
           dropdownToggleVisibility='always'
 
   grid.preset = 'input-matrix'
     All cells always in edit mode. Shift+click for cell selection. Tab to
     navigate between fields.
-    Sets: isEditable=true, editTrigger='always', cellSelectionMode='shift',
+    Sets: isEditingEnabled=true, editTrigger='always', cellSelectionMode='shift',
           dropdownToggleVisibility='always', shouldOpenDropdownOnFocus=true
 
 For detailed preset documentation, see grid-modes.txt.

@@ -8,7 +8,7 @@ import { test, expect, Page, Locator, gridLocator, cell } from './fixtures'
  *  - checkbox editor   (Protected, col 5)
  *  - contextMenu       (right-click → array-driven custom items with callbacks)
  *
- * The grid is in navigate mode + isEditable=true, so editing starts on F2/Space
+ * The grid is in navigate mode + isEditingEnabled=true, so editing starts on F2/Space
  * (or dblclick for the custom one). The page surfaces an event log through the
  * [data-testid="event-log"] node — it gets a new line for every custom-editor
  * open/commit/cancel and every context-menu interaction. See the comment block

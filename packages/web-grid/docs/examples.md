@@ -50,7 +50,7 @@ See [`examples-sorting-paging.html`](../../../docs/examples-sorting-paging.html)
 ### Paginated grid with top + bottom pager
 
 ```javascript
-grid.isPageable = true
+grid.isPagingEnabled = true
 grid.pageSize = 25
 grid.paginationPosition = 'top-center|bottom-center'
 ```
@@ -58,13 +58,13 @@ grid.paginationPosition = 'top-center|bottom-center'
 ### Editable grid (Excel-like)
 
 ```javascript
-grid.preset = 'excel'                // sets isEditable + editTrigger='navigate' + cellSelectionMode='click'
+grid.preset = 'excel'                // sets isEditingEnabled + editTrigger='navigate' + cellSelectionMode='click'
 ```
 
 Or opt in manually for finer control:
 
 ```javascript
-grid.isEditable = true
+grid.isEditingEnabled = true
 grid.editTrigger = 'navigate'
 ```
 
@@ -288,7 +288,7 @@ The `isTree: true` column renders the chevron + indent. See [`examples-tree.html
 
 ```javascript
 grid.paginationMode = 'server'
-grid.isPageable = true
+grid.isPagingEnabled = true
 grid.pageSize = 25
 grid.totalItems = 0                   // unknown until first response
 grid.sortMode = 'multiple'
@@ -309,7 +309,7 @@ The grid does **not** slice `items` itself in `paginationMode: 'server'` — you
 ### Filter changes (server-side filtering)
 
 ```javascript
-grid.isFilterable = true
+grid.isFilteringEnabled = true
 grid.filterMode = 'server'            // or <web-grid filter-mode="server">
 grid.addEventListener('filter-change', async (e) => {
   // e.detail.filters: { fieldName: 'typed text', ... }

@@ -357,7 +357,7 @@ BUTTON MODE (editTrigger: 'button')
   starts editing; a plain click only focuses. F2 / Enter start editing as in
   the other modes.
 
-READ-ONLY (isEditable: false or mode: 'read-only')
+READ-ONLY (isEditingEnabled: false or preset: 'read-only')
   Navigation keys work normally (arrows, Tab, Home, End, PageUp, PageDown).
   No editing keys function. Ctrl+C copies. Cell selection works if enabled.
 

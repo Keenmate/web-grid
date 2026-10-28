@@ -37,10 +37,10 @@ test.describe('rendering', () => {
 		expect(counts[0]).toBe(counts[1])
 	})
 
-	test('no row without grid isFilterable, or when no column is filterable', async ({ page }) => {
-		await onGrid(page, el => el.removeAttribute('filterable'))
+	test('no row without grid isFilteringEnabled, or when no column is filterable', async ({ page }) => {
+		await onGrid(page, el => el.removeAttribute('enable-filtering'))
 		await expect(filterRow(page)).toHaveCount(0)
-		await onGrid(page, el => { el.isFilterable = true; el.columns = el.columns.map((c: any) => ({ ...c, isFilterable: false })) })
+		await onGrid(page, el => { el.isFilteringEnabled = true; el.columns = el.columns.map((c: any) => ({ ...c, isFilterable: false })) })
 		await expect(filterRow(page)).toHaveCount(0)
 	})
 

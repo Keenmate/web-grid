@@ -63,10 +63,10 @@ export function renderHeaderRow<T>(ctx: GridHost<T>): string {
 	// Track cumulative offset for sticky positioning
 	let cumulativeOffset = 0
 
-	// Filter row (grid isFilterable): one cell per header cell, an input under each
+	// Filter row (grid isFilteringEnabled): one cell per header cell, an input under each
 	// column with `column.isFilterable` (v1: text). Built in the same pass so the
 	// frozen offsets and widths match the header.
-	const isFilterRowVisible = ctx.engine.isFilterable && visualColumns.some(({ column }) => column.isFilterable)
+	const isFilterRowVisible = ctx.engine.isFilteringEnabled && visualColumns.some(({ column }) => column.isFilterable)
 	const filters = isFilterRowVisible ? ctx.engine.filters : {}
 	const invalidFilterFields = isFilterRowVisible ? ctx.engine.getInvalidFilterFields() : new Set<string>()
 	let filterLeadHtml = ''
@@ -683,7 +683,7 @@ export function renderDataRowsVirtual<T>(ctx: GridHost<T>, params: VirtualScroll
 export function renderPagination<T>(ctx: GridHost<T>, position: string = 'bottom-center'): string {
 	// Don't render if not pageable or isPaginationShown is false
 	const showPag = ctx.engine.isPaginationShown
-	if (!ctx.engine.isPageable || showPag === false) return ''
+	if (!ctx.engine.isPagingEnabled || showPag === false) return ''
 	// 'auto' mode: hide when only 1 page
 	if (showPag === 'auto' && ctx.engine.totalPages <= 1) return ''
 
