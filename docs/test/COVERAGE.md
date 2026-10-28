@@ -131,6 +131,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Inline actions header default label (#28 fixed), explicit `""` → blank header | ✓ | `toolbar-options.spec.ts` | `toolbar-options.html` |
 | Core action items, contexts, `on*` twins, controller | ✓ | `interaction-model.spec.ts` | `interaction-model.html` |
 | Range shortcuts in the shortcuts help (#16 fixed) | ✓ | `interaction-model.spec.ts` | `interaction-model.html` |
+| Row built-ins target the selection when the clicked row is in it (delete / duplicate / move as a block, selection follows; row toolbar keeps the selection) | ✓ | `interaction-model.spec.ts` | `interaction-model.html` |
 | Move-row built-in keeps focus on the moved row (#14 fixed) | ✓ | `interaction-model.spec.ts` | `interaction-model.html` |
 | Built-in order: built-in before the `action` event — listener sees add / delete / move results (#15 resolved); lock tooltip i18n → `row-locking.spec.ts` (#10) | ✓ | `interaction-model.spec.ts` | `interaction-model.html` |
 
@@ -150,7 +151,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Tree mode expand/collapse, Ctrl+Arrow, Tab nav, `isRowEditable`, tree column locked | ✓ | `tree.spec.ts` | `tree.html` |
 | Predefined tree context-menu items (incl. clicking through) | ✓ | `tree.spec.ts` | `tree.html` |
 | Tree + virtual / infinite scroll | ✓ | `tree-scroll.spec.ts` | `tree-scroll.html` |
-| Tree API `toggleRowExpanded` / `expandRows` / `collapseRows` / `expandAll(paths?)` / `collapseAll(paths?)` + `ExpandOptions` (`isExclusive`, `silent`), `expandedPaths` string[], menu `expand` (one level) / `expand-subtree` / selection targeting, `row-expand` / `row-collapse` / `expanded-change { paths }`, `controller.expandedPaths` | ✓ | `events.spec.ts`, `grid.tree.test.ts` (unit) | `events.html` |
+| Tree API `toggleRowExpanded` / `expandRows` / `collapseRows` / `expandAll(paths?)` / `collapseAll(paths?)` + `ExpandOptions` (`isExclusive`, `isSilent`), `expandedPaths` string[], menu `expand` (one level) / `expand-subtree` / selection targeting, `row-expand` / `row-collapse` / `expanded-change { paths }`, `controller.expandedPaths` | ✓ | `events.spec.ts`, `grid.tree.test.ts` (unit) | `events.html` |
 | `treeExpandedGlyph` / `treeCollapsedGlyph` / `renderChevronCallback` | ✓ | `display-options.spec.ts` | `display-options.html` |
 
 ## 9. Events

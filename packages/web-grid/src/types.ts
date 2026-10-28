@@ -815,8 +815,8 @@ export type TreeExpandedChangeDetail = {
 export type ExpandOptions = {
 	/** Expand: collapse every expanded row that isn't on a target's ancestor chain (`expandAll`: or under a target). No effect on collapse. */
 	isExclusive?: boolean
-	/** Change the state without announcing it: no `row-expand` / `row-collapse` / `expanded-change`. */
-	silent?: boolean
+	/** Change the state without announcing it: no `row-expand` / `row-collapse` / `expanded-change` (the grid still re-renders). */
+	isSilent?: boolean
 }
 
 /** Detail of `row-expand` / `row-collapse`: one tree row was expanded / collapsed */

@@ -251,7 +251,7 @@
             const more = await fetchNextBatch()
             if (more.length > 0) {
                 isGrid.items = [...isGrid.items, ...more]
-                isGrid.expandRows(newRoots, { silent: true })
+                isGrid.expandRows(newRoots, { isSilent: true })
             }
             isGrid.hasMoreItems = nextRootToLoad <= ROOTS
             isLoadingEl.style.display = 'none'

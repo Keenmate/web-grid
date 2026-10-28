@@ -283,7 +283,7 @@ expandAll(paths?: string | string[] | null, options?): void
 collapseAll(paths?: string | string[] | null, options?): void
                                            (expandAll / collapseAll fire only expanded-change)
   options: ExpandOptions { isExclusive?: boolean  expand: collapse every other branch
-                           silent?: boolean       no events }
+                           isSilent?: boolean     no events }
   Tree mode (pathMember). expanded-change detail: { paths } (string[]).
 
 

@@ -32,14 +32,19 @@ Built-in row actions (they DO the work, after the `action` event):
     'add'        - Insert a new row after the current row. The row is
                    createEmptyRowCallback(ctx)'s result (may be async),
                    else a blank row (every column field = null).
-    'delete'     - Remove the current row from items.
-    'duplicate'  - Insert a copy after the row:
+    'delete'     - Remove the target rows from items.
+    'duplicate'  - Insert a copy after each target row:
                    createDuplicateRowCallback({ row })'s result, else a
                    shallow copy with idMember cleared.
-    'move-up'    - Swap the row with its displayed neighbour above
-                   (disabled on the first row).
-    'move-down'  - Swap with the displayed neighbour below
-                   (disabled on the last row).
+    'move-up'    - Move the target rows one displayed position up, as a
+                   block (disabled when the block is at the top).
+    'move-down'  - Same, down (disabled at the bottom).
+
+Targets: the whole row selection when the clicked / focused row is in it,
+else just that row (range shortcuts: their rows) - the same rule as the
+tree actions. 'add' always inserts after the clicked row. The row
+selection follows its rows afterwards (deleted rows drop out); a row
+toolbar opened on a selected row keeps the selection.
 
 Each built-in gets a default SVG icon and text (labels.actions);
 'delete' is isDanger. Override any of it with an object:

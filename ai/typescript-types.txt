@@ -630,7 +630,7 @@ ADDITIONAL EXPORTED TYPES
   type ColumnReorderDetail = { field: string, fromIndex: number, toIndex: number, allOrder: ColumnOrderState[] }
   type TreeExpandedChangeDetail = { paths: string[] }
   type TreeRowExpandDetail<T> = { row: T | null, path: string }
-  type ExpandOptions = { isExclusive?: boolean, silent?: boolean }
+  type ExpandOptions = { isExclusive?: boolean, isSilent?: boolean }
   type SummaryCallback<T> = (ctx: SummaryContext<T>) => string
   type ChevronCallback<T> = (ctx: ChevronContext<T>) => string
   type CreateRowCallback<T> = (ctx: CreateRowContext<T>) => T

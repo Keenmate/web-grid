@@ -131,10 +131,11 @@ Unchanged: `filter-mode`, `page-size`, `pagination-mode`, `pagination-position`,
 | `toggleExpandedPath(path)` | `toggleRowExpanded(path, options?)` |
 | `expandSubtree(path)` / `collapseSubtree(path)` | `expandAll(paths)` / `collapseAll(paths)` — `string \| string[] \| null` (`null` / none = the whole tree; paths = those rows + everything under them, ancestors open) |
 | — | `expandRows(paths, options?)` / `collapseRows(paths, options?)` (one level; collapsed ancestors open too; leaves are never "expanded") |
-| — | `ExpandOptions { isExclusive?, silent? }` on every expand / collapse method (`isExclusive`: expanding collapses every other branch; `silent`: no events) |
+| — | `ExpandOptions { isExclusive?, isSilent? }` on every expand / collapse method (`isExclusive`: expanding collapses every other branch; `isSilent`: no events) |
 | `expandedPaths: Set<string>` (bindable, mutated by the grid) | `expandedPaths: string[]` on the element and controller — reading returns a copy, assigning replaces the state (no events), `null` → the `expandLevel` default |
 | event `expand-change { path, isExpanded, expandedPaths }` (+ `onExpandChange`) | `row-expand` / `row-collapse` `{ row, path }` for single-row acts + `expanded-change { paths }` (whole set, string array) on every change (`onRowExpand` / `onRowCollapse` / `onExpandedChange`) |
 | cell-menu built-ins `expand-all` / `collapse-all` (row + subtree) | `expand-subtree` / `collapse-subtree`; NEW `expand` / `collapse` = one level. The per-row tree items act on the whole row selection when the clicked row is in it, else just that row |
+| row built-ins `delete` / `duplicate` / `move-up` / `move-down` act on the clicked / focused row only (`delete`: a range shortcut's `rows`) | the same target rule as the tree items: the whole row selection when the row is in it, else just the row (`add` still inserts after the clicked row). Moves go as a block (disabled at the edge); the row selection follows its rows; a row toolbar opened on a selected row keeps the selection (it used to clear it) |
 | cell-menu built-ins `expand-tree` / `collapse-tree` (whole tree) | `expand-all` / `collapse-all` |
 | `labels.actions.expandAll` / `collapseAll` / `expandTree` / `collapseTree` | `expand` / `collapse` (one level) / `expandSubtree` / `collapseSubtree` (row + everything under it) / `expandAll` / `collapseAll` (whole tree) |
 | `row-expand` / `row-collapse` `row: T \| undefined` | `row: T \| null` |

@@ -110,6 +110,52 @@ test.describe('row toolbar — core action items', () => {
 	})
 })
 
+test.describe('row built-ins act on the selection when the clicked row is in it', () => {
+	const selected = (page: Page) => grid(page).evaluate((el: any) => el.selectedRows.map((r: any) => r.name))
+
+	test('delete: the selection (row in it) — else just the clicked row', async ({ page }) => {
+		await grid(page).evaluate((el: any) => el.selectRowRange(1, 2))  // Beta, Gamma
+		await contextMenuOn(page, cell(page, 3, 1))  // Delta — not in the selection
+		await menu(page).locator('[data-action="delete"]').click()
+		await expect.poll(() => names(page)).toEqual(['Alpha', 'Beta', 'Gamma'])
+		expect(await selected(page)).toEqual(['Beta', 'Gamma'])  // the selection is untouched
+
+		await contextMenuOn(page, cell(page, 2, 1))  // Gamma — in the selection
+		await menu(page).locator('[data-action="delete"]').click()
+		await expect.poll(() => names(page)).toEqual(['Alpha'])
+		expect(await log(page)).toContain('row-delete:Beta')
+		expect(await selected(page)).toEqual([])
+	})
+
+	test('duplicate: each selected row, the copy right after its original; the selection follows', async ({ page }) => {
+		await grid(page).evaluate((el: any) => { el.selectRow(0); el.selectRow(2, 'toggle') })  // Alpha, Gamma
+		await contextMenuOn(page, cell(page, 0, 1))
+		await menu(page).locator('[data-action="duplicate"]').click()
+		await expect.poll(() => names(page)).toEqual(['Alpha', 'Alpha', 'Beta', 'Gamma', 'Gamma', 'Delta'])
+		expect(await grid(page).evaluate((el: any) => el.selectedRowIndices)).toEqual([0, 3])
+	})
+
+	test('move-down / move-up: the selection moves as a block; the row toolbar keeps the selection', async ({ page }) => {
+		await grid(page).evaluate((el: any) => el.selectRowRange(0, 1))  // Alpha, Beta
+		await openToolbarOn(page, row(page, 1))
+		await expect(toolbar(page).locator('[data-action="move-up"]')).toBeDisabled()  // the block is at the top
+		await toolbar(page).locator('[data-action="move-down"]').click()
+		await expect.poll(() => names(page)).toEqual(['Gamma', 'Alpha', 'Beta', 'Delta'])
+		expect(await selected(page)).toEqual(['Alpha', 'Beta'])
+
+		await openToolbarOn(page, row(page, 2))  // Beta — in the selection
+		await toolbar(page).locator('[data-action="move-down"]').click()
+		await expect.poll(() => names(page)).toEqual(['Gamma', 'Delta', 'Alpha', 'Beta'])
+		// the block is at the bottom: another move-down is a no-op (the open toolbar keeps its button states)
+		await toolbar(page).locator('[data-action="move-down"]').click()
+		await page.waitForTimeout(50)
+		expect(await names(page)).toEqual(['Gamma', 'Delta', 'Alpha', 'Beta'])
+		await toolbar(page).locator('[data-action="move-up"]').click()
+		await expect.poll(() => names(page)).toEqual(['Gamma', 'Alpha', 'Beta', 'Delta'])
+		expect(await selected(page)).toEqual(['Alpha', 'Beta'])
+	})
+})
+
 test.describe('cell context menu', () => {
 	test('custom item: detail carries the cell; the menu closes', async ({ page }) => {
 		await contextMenuOn(page, cell(page, 1, 1))

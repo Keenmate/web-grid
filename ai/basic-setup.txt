@@ -127,6 +127,8 @@ CORE PROPERTIES
 ---------------
 items : T[]
   The data array. Each element is a row object. Setting this re-renders the grid.
+  Reading it returns the live rows: after insertRow / removeRows / moveRow, the
+  row built-ins and a committed new row. Cell edits stay in drafts (getDrafts()).
   Example: grid.items = [{ id: 1, name: 'Alice' }, { id: 2, name: 'Bob' }]
 
 columns : Column<T>[]

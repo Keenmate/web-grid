@@ -62,20 +62,25 @@ export function normalizeEntry<E>(entry: string | E): E {
 // Built-in defaults (text / icon / visibility / disabled / danger)
 // =============================================================================
 
-/** Defaults of a row built-in for the row in `ctx` (null row → no row-dependent state). */
+/**
+ * Defaults of a row built-in for the row in `ctx` (null row → no row-dependent state).
+ * move-up / move-down judge the whole target block (the selection when the row is in it).
+ */
 export function rowActionDefaults<T>(host: GridHost<T>, action: string | undefined, ctx: { row?: T }): Partial<ResolvedActionItem<GridAction>> | undefined {
 	if (!isRowAction(action)) return undefined
 	const labels = host.engine.labels.actions
 	const display = host.engine.displayItems
-	const pos = ctx.row === undefined ? -1 : display.indexOf(ctx.row)
+	const positions = rowTargets<T>(host, ctx.row).map(r => display.indexOf(r)).filter(p => p >= 0)
+	const top = positions.length ? Math.min(...positions) : -1
+	const bottom = positions.length ? Math.max(...positions) : -1
 	// A read-only grid changes no rows: every row built-in is disabled
 	const isLocked = host.engine.isReadonly || host.engine.isDisabled
 	switch (action) {
 		case 'add': return { text: labels.add, icon: ROW_ICONS.add, isDisabled: isLocked }
 		case 'delete': return { text: labels.delete, icon: ROW_ICONS.delete, isDanger: true, isDisabled: isLocked }
 		case 'duplicate': return { text: labels.duplicate, icon: ROW_ICONS.duplicate, isDisabled: isLocked }
-		case 'move-up': return { text: labels.moveUp, icon: ROW_ICONS['move-up'], isDisabled: isLocked || pos <= 0 }
-		case 'move-down': return { text: labels.moveDown, icon: ROW_ICONS['move-down'], isDisabled: isLocked || pos === -1 || pos >= display.length - 1 }
+		case 'move-up': return { text: labels.moveUp, icon: ROW_ICONS['move-up'], isDisabled: isLocked || top <= 0 }
+		case 'move-down': return { text: labels.moveDown, icon: ROW_ICONS['move-down'], isDisabled: isLocked || bottom === -1 || bottom >= display.length - 1 }
 	}
 }
 
@@ -214,11 +219,26 @@ async function runBuiltIn<T>(host: GridHost<T>, d: GridActionEventDetail<T>): Pr
 	if (isHeaderAction(d.action)) return runHeaderBuiltIn(host, d)
 }
 
-/** add / delete / duplicate / move-up / move-down on `d.row` (delete: `d.rows` when given). */
+/**
+ * The built-ins on rows. `add` inserts after `d.row`; delete / duplicate / move-up /
+ * move-down act on the targets (`rowTargets`: `d.rows`, else the selection when
+ * `d.row` is in it, else `d.row`). The row selection follows its rows afterwards.
+ */
 async function runRowBuiltIn<T>(host: GridHost<T>, d: GridActionEventDetail<T>): Promise<void> {
 	const engine = host.engine
 	if (engine.isReadonly || engine.isDisabled) return  // a read-only grid changes no rows
+	const restoreSelection = engine.keepRowSelection()
+	try {
+		await runRowBuiltInOn(host, d)
+	} finally {
+		restoreSelection()
+	}
+}
+
+async function runRowBuiltInOn<T>(host: GridHost<T>, d: GridActionEventDetail<T>): Promise<void> {
+	const engine = host.engine
 	const row = d.row as T | undefined
+	const targets = rowTargets<T>(host, row, d.rows)
 	switch (d.action) {
 		case 'add': {
 			const created = engine.createEmptyRowCallback
@@ -228,7 +248,7 @@ async function runRowBuiltIn<T>(host: GridHost<T>, d: GridActionEventDetail<T>):
 			return
 		}
 		case 'delete': {
-			const rows = d.rows?.length ? d.rows : row !== undefined ? [row] : []
+			const rows = targets
 			if (rows.length === 0) return
 			const display = engine.displayItems
 			const rowIndices = rows.map(r => display.indexOf(r))
@@ -237,16 +257,22 @@ async function runRowBuiltIn<T>(host: GridHost<T>, d: GridActionEventDetail<T>):
 			return
 		}
 		case 'duplicate':
-			if (row !== undefined) engine.duplicateRow(row)
+			for (const r of targets) engine.duplicateRow(r)  // each copy right after its original
 			return
 		case 'move-up':
 		case 'move-down': {
-			if (row === undefined) return
+			// The targets move as a block: nothing moves when its leading row can't
+			const delta = d.action === 'move-up' ? -1 : 1
+			const display = engine.displayItems
+			const ordered = targets.filter(r => display.indexOf(r) >= 0)
+				.sort((a, b) => (display.indexOf(a) - display.indexOf(b)) * -delta)  // the leading edge first
+			const edge = ordered.length ? display.indexOf(ordered[0]) : -1
+			if (edge === -1 || edge + delta < 0 || edge + delta >= display.length) return
 			// The focused cell follows its row (the moved one, or the neighbour it swapped
 			// with), so e.g. a repeated Alt+ArrowDown keeps moving the same row.
 			const focused = engine.focusedCell
 			const focusedRow = focused ? engine.displayItems[focused.rowIndex] : undefined
-			engine.moveRow(row, d.action === 'move-up' ? -1 : 1)
+			for (const r of ordered) engine.moveRow(r, delta)
 			if (focused && focusedRow !== undefined) {
 				const newIndex = engine.displayItems.indexOf(focusedRow)
 				if (newIndex >= 0 && newIndex !== focused.rowIndex) engine.setFocusedCell(newIndex, focused.colIndex)
@@ -263,17 +289,21 @@ function blankRow<T>(columns: Column<T>[]): T {
 }
 
 /**
- * Tree paths a per-row tree action acts on: `rows` when given (a range shortcut),
- * else the whole row selection when `row` is in it, else just `row` — rows with
- * children only.
+ * Rows a row / tree action acts on: `rows` when given (a range shortcut), else the
+ * whole row selection (display order) when `row` is in it, else just `row`.
  */
+function rowTargets<T>(host: GridHost<T>, row: unknown, rows?: unknown[]): T[] {
+	if (rows?.length) return rows as T[]
+	if (row === undefined) return []
+	const selected = host.engine.selectedRows
+	return selected.includes(row as T) ? selected : [row as T]
+}
+
+/** Tree paths a per-row tree action acts on: the `rowTargets` with children. */
 function treeTargetPaths<T>(host: GridHost<T>, row: unknown, rows?: unknown[]): string[] {
 	const engine = host.engine
-	if (row === undefined && !rows?.length) return []
-	const selected = engine.selectedRows
-	const targets = rows?.length ? rows : selected.includes(row as T) ? selected : [row]
 	const paths: string[] = []
-	for (const r of targets) {
+	for (const r of rowTargets<T>(host, row, rows)) {
 		const info = engine.getRowTreeInfo(r as T)
 		if (info?.hasChildren) paths.push(info.path)
 	}

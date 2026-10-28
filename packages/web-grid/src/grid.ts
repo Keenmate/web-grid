@@ -1155,6 +1155,30 @@ export class GridEngine<T = unknown> {
 		this.requestUpdate()
 	}
 
+	/**
+	 * Snapshot the row selection by row identity; the returned function re-points it
+	 * at those rows after `items` changed under it (row built-ins): removed rows
+	 * drop out, moved / shifted rows stay selected. Notifies only on a real change.
+	 */
+	keepRowSelection(): () => void {
+		const display = this.displayItems
+		const rows = this.selectedRowIndices.map(i => display[i]).filter(r => r !== undefined)
+		const anchor = this._lastSelectedRowIndex === null ? undefined : display[this._lastSelectedRowIndex]
+		return () => {
+			if (rows.length === 0) return
+			const now = this.displayItems
+			const next = rows.map(r => now.indexOf(r)).filter(i => i >= 0)
+			if (next.length === this._selectedRowIndices.size && next.every(i => this._selectedRowIndices.has(i))) return
+			this.trackSelection(() => {
+				this._selectedRowIndices.clear()
+				for (const i of next) this._selectedRowIndices.add(i)
+				const a = anchor === undefined ? -1 : now.indexOf(anchor)
+				this._lastSelectedRowIndex = a >= 0 ? a : null
+			})
+			this.requestUpdate()
+		}
+	}
+
 	/** Clear only the row selection. */
 	clearRowSelection(): void {
 		if (this._selectedRowIndices.size > 0) {
@@ -1551,9 +1575,9 @@ export class GridEngine<T = unknown> {
 		return node ? (this._items[node.rowIndex] ?? null) : null
 	}
 
-	/** One `row-expand` / `row-collapse` per changed path, then one `expanded-change` (nothing when `silent`). */
+	/** One `row-expand` / `row-collapse` per changed path, then one `expanded-change` (nothing when `isSilent`). */
 	private notifyExpanded(expanded: string[], collapsed: string[], options?: ExpandOptions): void {
-		if (options?.silent) return
+		if (options?.isSilent) return
 		for (const path of expanded) this.notify('row-expand', { row: this.getRowByPath(path), path })
 		for (const path of collapsed) this.notify('row-collapse', { row: this.getRowByPath(path), path })
 		this.notify('expanded-change', { paths: [...this._expandedPaths] })
@@ -1606,7 +1630,7 @@ export class GridEngine<T = unknown> {
 	 * Expand the given rows one level (their collapsed ancestors open too, their
 	 * descendants keep their state). `row-expand` per row that opened +
 	 * `expanded-change`. `isExclusive`: every other branch collapses (no
-	 * `row-collapse` for those); `silent`: no events.
+	 * `row-collapse` for those); `isSilent`: no events.
 	 */
 	expandRows(paths: string | string[], options?: ExpandOptions): void {
 		const targets = this.toPathList(paths).filter(p => this._treeIndex?.nodes.has(p))
@@ -1626,7 +1650,7 @@ export class GridEngine<T = unknown> {
 		this.requestUpdate()
 	}
 
-	/** Collapse the given rows (their descendants keep their state). `row-collapse` per row + `expanded-change`; `silent`: no events. */
+	/** Collapse the given rows (their descendants keep their state). `row-collapse` per row + `expanded-change`; `isSilent`: no events. */
 	collapseRows(paths: string | string[], options?: ExpandOptions): void {
 		const changed = this.toPathList(paths).filter(p => this._expandedPaths.has(p))
 		if (changed.length === 0) return
@@ -1652,7 +1676,7 @@ export class GridEngine<T = unknown> {
 	/**
 	 * Expand the whole tree (`null` / no paths) — or the given rows and everything
 	 * under them (their ancestors open too). Fires `expanded-change` only (none
-	 * when `silent`). `isExclusive` (with paths): every other branch collapses.
+	 * when `isSilent`). `isExclusive` (with paths): every other branch collapses.
 	 */
 	expandAll(paths?: string | string[] | null, options?: ExpandOptions): void {
 		if (!this._treeIndex) return
@@ -1667,11 +1691,11 @@ export class GridEngine<T = unknown> {
 		}
 		for (const p of toExpand) this._expandedPaths.add(p)
 		interactionLogger.debug('tree expandAll:', paths ?? '(all)', '| size =', this._expandedPaths.size)
-		if (!options?.silent) this.notify('expanded-change', { paths: [...this._expandedPaths] })
+		if (!options?.isSilent) this.notify('expanded-change', { paths: [...this._expandedPaths] })
 		this.requestUpdate()
 	}
 
-	/** Collapse the whole tree (`null` / no paths) — or the given rows and everything under them. Fires `expanded-change` only (none when `silent`). */
+	/** Collapse the whole tree (`null` / no paths) — or the given rows and everything under them. Fires `expanded-change` only (none when `isSilent`). */
 	collapseAll(paths?: string | string[] | null, options?: ExpandOptions): void {
 		if (!this.hasPathArg(paths)) {
 			this._expandedPaths.clear()
@@ -1681,7 +1705,7 @@ export class GridEngine<T = unknown> {
 			for (const p of toCollapse) this._expandedPaths.delete(p)
 		}
 		interactionLogger.debug('tree collapseAll:', paths ?? '(all)')
-		if (!options?.silent) this.notify('expanded-change', { paths: [...this._expandedPaths] })
+		if (!options?.isSilent) this.notify('expanded-change', { paths: [...this._expandedPaths] })
 		this.requestUpdate()
 	}
 

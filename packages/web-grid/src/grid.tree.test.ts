@@ -206,13 +206,13 @@ describe('expandedPaths state', () => {
 		expect(events).toEqual([])
 	})
 
-	it('silent: the state changes, no events', () => {
+	it('isSilent: the state changes, no events', () => {
 		const events = captureEvents()
-		grid.expandRows('1.1', { silent: true })
-		grid.toggleRowExpanded('1.1.1', { silent: true })
-		grid.collapseRows('1.1', { silent: true })
-		grid.expandAll(null, { silent: true })
-		grid.collapseAll(['1.1'], { silent: true })
+		grid.expandRows('1.1', { isSilent: true })
+		grid.toggleRowExpanded('1.1.1', { isSilent: true })
+		grid.collapseRows('1.1', { isSilent: true })
+		grid.expandAll(null, { isSilent: true })
+		grid.collapseAll(['1.1'], { isSilent: true })
 		expect(events).toEqual([])
 		expect(grid.isPathExpanded('1')).toBe(true)
 		expect(grid.isPathExpanded('1.1.1')).toBe(false)

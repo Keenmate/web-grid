@@ -67,7 +67,7 @@ The `QuickGridProps<T>` type defined in `src/types.ts` is the canonical source o
 
 | Property | Type | Default | Description |
 |---|---|---|---|
-| `items` | `T[]` | `[]` | Row data — the only required "content" property |
+| `items` | `T[]` | `[]` | Row data — the only required "content" property. Reading it returns the live rows: after `insertRow` / `removeRows` / `moveRow`, the row built-ins and a committed new row (cell edits stay in drafts — `getDrafts()`). |
 | `columns` | `Column<T>[]` | `[]` | Column definitions (see [Column definition](#column-definition)) |
 | `idMember` | `keyof T \| string \| null` | `'id'` | Field that uniquely identifies a row — the only row-id member (`getRowId`, `getRowById`, `getRowIndex`, `updateRowById`, `replaceRowById`, row locking; `getIdCallback` wins). Internal state (drafts, invalid-cell markers) is keyed by this value; falls back to `pathMember` or displayed-row index |
 
@@ -180,9 +180,11 @@ Usable as a string (`'add'`) or by `action` on an item (`{ action: 'delete', ico
 | `action` | What it does |
 |---|---|
 | `'add'` | Inserts `createEmptyRowCallback(ctx)`'s row (else a blank row) after the row |
-| `'delete'` | Removes the row |
-| `'duplicate'` | Inserts `createDuplicateRowCallback({ row })`'s copy (else a shallow copy with `idMember` cleared) after the row |
-| `'move-up'` / `'move-down'` | Swaps the row with its displayed neighbour |
+| `'delete'` | Removes the target rows |
+| `'duplicate'` | Inserts `createDuplicateRowCallback({ row })`'s copy (else a shallow copy with `idMember` cleared) after each target row |
+| `'move-up'` / `'move-down'` | Moves the target rows one displayed position, as a block (disabled when the block is at the edge) |
+
+Targets: the whole row selection when the clicked / focused row is in it, else just that row (range shortcuts: their `rows`) — the same rule as the tree actions. `add` always inserts after the clicked row. The row selection follows its rows afterwards; a row toolbar opened on a selected row keeps the selection.
 
 Veto any of them (e.g. confirm a delete) with `beforeActionCallback` → `false`.
 
@@ -344,7 +346,7 @@ Path-string driven (ltree-style: `"1.2.3"`, `"/dept/eng/team"`, `"C:\\a\\b"`).
 | `treeExpandedGlyph` / `treeCollapsedGlyph` | `string` | `'▶'` | Static glyphs. When equal, CSS rotates 90°; when different, glyph swaps |
 | `renderChevronCallback` | `(ctx: { row, isExpanded, hasChildren, level, path }) => string` | — | Per-row chevron HTML; cached per `(row, expanded)` |
 
-Methods: `toggleRowExpanded(path, options?)`, `expandRows(paths, options?)` / `collapseRows(paths, options?)` (one level; collapsed ancestors open too), `expandAll(paths?, options?)` / `collapseAll(paths?, options?)` (`null` = whole tree, else those rows and everything under them), `isPathExpanded(path)`. `paths` is a `string | string[]`; `options` is `ExpandOptions { isExclusive?, silent? }` (`isExclusive`: expanding collapses every other branch; `silent`: no events). A single-row expand / collapse fires `row-expand` / `row-collapse` `{ row, path }`; every change fires `expanded-change` `{ paths }` (the whole set). Cell-menu built-ins: `expand` / `collapse` (one level), `expand-subtree` / `collapse-subtree` (the row + everything under it), `expand-all` / `collapse-all` (whole tree); the per-row ones act on the selection when the clicked row is in it.
+Methods: `toggleRowExpanded(path, options?)`, `expandRows(paths, options?)` / `collapseRows(paths, options?)` (one level; collapsed ancestors open too), `expandAll(paths?, options?)` / `collapseAll(paths?, options?)` (`null` = whole tree, else those rows and everything under them), `isPathExpanded(path)`. `paths` is a `string | string[]`; `options` is `ExpandOptions { isExclusive?, isSilent? }` (`isExclusive`: expanding collapses every other branch; `isSilent`: no events). A single-row expand / collapse fires `row-expand` / `row-collapse` `{ row, path }`; every change fires `expanded-change` `{ paths }` (the whole set). Cell-menu built-ins: `expand` / `collapse` (one level), `expand-subtree` / `collapse-subtree` (the row + everything under it), `expand-all` / `collapse-all` (whole tree); the per-row ones act on the selection when the clicked row is in it.
 
 ### Height & scroll
 

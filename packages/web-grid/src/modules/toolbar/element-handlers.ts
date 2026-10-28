@@ -319,8 +319,9 @@ export function handleToolbarItemClick<T>(
 	event: MouseEvent,
 	triggerElement: HTMLElement
 ): void {
-	// Clear any active selections through the pipeline
-	ctx.pipelineAdapter?.clearSelection()
+	// Clear any active selections through the pipeline — unless the row is in the row
+	// selection: then the row built-ins act on the whole selection (and keep it)
+	if (!ctx.engine.selectedRows.includes(row)) ctx.pipelineAdapter?.clearSelection()
 
 	// Find CURRENT index of the row item (it may have moved)
 	const currentIndex = ctx.engine.displayItems.findIndex(i => i === row)
@@ -372,10 +373,11 @@ export function handleInlineActionClick<T>(
 	event: MouseEvent,
 	triggerElement: HTMLElement
 ): void {
-	// Clear any active selections through the pipeline
-	ctx.pipelineAdapter?.clearSelection()
-
+	// Clear any active selections through the pipeline — unless the row is in the row
+	// selection: then the row built-ins act on the whole selection (and keep it)
 	const row = ctx.engine.displayItems[rowIndex]
+	if (!ctx.engine.selectedRows.includes(row)) ctx.pipelineAdapter?.clearSelection()
+
 	if (!row) return
 	const button = resolveToolbar(ctx, ctx.engine.rowToolbar, ctx.engine.rowCtx(row, rowIndex))[buttonIndex]
 	if (!button || button.resolved.isDisabled) return

@@ -296,7 +296,7 @@ This architecture separates mode detection (the adapter decides *what* action a 
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `items` | `T[]` | `[]` | Data array to display |
+| `items` | `T[]` | `[]` | Data array to display. Reading it returns the live rows: after `insertRow` / `removeRows` / `moveRow`, the row built-ins and a committed new row (cell edits stay in drafts — `getDrafts()`). |
 | `columns` | `Column<T>[]` | `[]` | Column definitions (see [Column Definition](#column-definition)) |
 
 ### Display
@@ -790,10 +790,12 @@ The row built-ins **do the work** (after the `action` event) — don't also inse
 | `action` | What it does |
 |----------|--------------|
 | `'add'` | Inserts `createEmptyRowCallback(ctx)`'s row (else a blank row) after the row |
-| `'delete'` | Removes the row |
-| `'duplicate'` | Inserts `createDuplicateRowCallback({ row })`'s copy (else a shallow copy with `idMember` cleared) after the row |
-| `'move-up'` | Swaps the row with the displayed neighbour above |
-| `'move-down'` | Swaps the row with the displayed neighbour below |
+| `'delete'` | Removes the target rows |
+| `'duplicate'` | Inserts `createDuplicateRowCallback({ row })`'s copy (else a shallow copy with `idMember` cleared) after each target row |
+| `'move-up'` | Moves the target rows one displayed position up, as a block (disabled when the block is at the top) |
+| `'move-down'` | Moves the target rows one displayed position down, as a block (disabled at the bottom) |
+
+**Targets** (same rule as the tree actions): the whole row selection when the clicked / focused row is in it, else just that row (a range shortcut: its `rows`). `add` always inserts after the clicked row. The row selection follows its rows afterwards (deleted rows drop out). A row toolbar opened on a selected row keeps the selection.
 
 Use a string (`'add'`) for the default look, or an object to restyle it: `{ action: 'delete', icon: '🗑️', text: 'Remove' }`. Built-in texts come from `labels.actions`. To veto one (e.g. confirm a delete), return `false` from `beforeActionCallback`.
 
@@ -881,7 +883,7 @@ grid.contextMenu = [
 ]
 ```
 
-Cell menu built-ins (by `action` or string): the row built-ins (`add`, `delete`, `duplicate`, `move-up`, `move-down`) and, in tree mode, `expand` / `collapse` (one level), `expand-subtree` / `collapse-subtree` (the row and everything under it), `expand-all` / `collapse-all` (the whole tree); the per-row tree items act on the whole selection when the clicked row is in it.
+Cell menu built-ins (by `action` or string): the row built-ins (`add`, `delete`, `duplicate`, `move-up`, `move-down`) and, in tree mode, `expand` / `collapse` (one level), `expand-subtree` / `collapse-subtree` (the row and everything under it), `expand-all` / `collapse-all` (the whole tree); the row built-ins (except `add`) and the per-row tree items act on the whole selection when the clicked row is in it.
 
 `beforeContextMenuOpenCallback(ctx)` runs (sync) before the menu opens with the cell ctx: return `false` to show no grid menu (the browser's own menu shows), or an entries array to show instead of `contextMenu`.
 
@@ -1001,7 +1003,7 @@ grid.onRowChange = (detail) => save(detail.draftRow)
 
 ## Controller
 
-`el.controller` is the public `GridController` facade — the same object every ctx / detail carries as `controller`. It covers state as read-only properties named like the element's (`items`, `displayItems`, `columns`, `sort`, `filters`, `invalidCells`, `selectedRows`, `selectedRowIndices`, `selectedCellRange`, `expandedPaths`), rows (`insertRow`, `insertRows`, `removeRow`, `removeRows`, `duplicateRow`, `moveRow`, `getRowById`, `getRowIndex`, `updateRowById`, …), drafts and validation, row locking, row / cell / column selection, tree (`expandRows`, `collapseRows`, `expandAll(paths?)`, `collapseAll(paths?)`, `toggleRowExpanded` — all take `ExpandOptions { isExclusive?, silent? }`, …), columns (widths, order), focus / editing (`focusCell`, `startEditing`) and menus (`closeContextMenu`, `closeToolbar`). Most of these are also methods on the element itself (below).
+`el.controller` is the public `GridController` facade — the same object every ctx / detail carries as `controller`. It covers state as read-only properties named like the element's (`items`, `displayItems`, `columns`, `sort`, `filters`, `invalidCells`, `selectedRows`, `selectedRowIndices`, `selectedCellRange`, `expandedPaths`), rows (`insertRow`, `insertRows`, `removeRow`, `removeRows`, `duplicateRow`, `moveRow`, `getRowById`, `getRowIndex`, `updateRowById`, …), drafts and validation, row locking, row / cell / column selection, tree (`expandRows`, `collapseRows`, `expandAll(paths?)`, `collapseAll(paths?)`, `toggleRowExpanded` — all take `ExpandOptions { isExclusive?, isSilent? }`, …), columns (widths, order), focus / editing (`focusCell`, `startEditing`) and menus (`closeContextMenu`, `closeToolbar`). Most of these are also methods on the element itself (below).
 
 ## Public Methods
 
