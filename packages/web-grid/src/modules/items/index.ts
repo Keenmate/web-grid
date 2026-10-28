@@ -397,13 +397,19 @@ export function findShortcut<T, S extends GridShortcut<T> | GridRangeShortcut<T>
 }
 
 /** Run a matching row shortcut on the cell / row in `fields`; true when one ran (the key was consumed). */
-export function handleRowShortcut<T>(host: GridHost<T>, e: KeyboardEvent, fields: Omit<CellContext<T>, 'controller' | 'element'>, shouldStopPropagation = false): boolean {
+export function handleRowShortcut<T>(
+	host: GridHost<T>,
+	e: KeyboardEvent,
+	fields: Omit<CellContext<T>, 'controller' | 'element'>,
+	shouldStopPropagation = false,
+	after?: (detail: GridActionEventDetail<T>) => void
+): boolean {
 	const ctx = host.engine.ctx(fields)
 	const shortcut = findShortcut(host, e, host.engine.rowShortcuts, ctx)
 	if (!shortcut) return false
 	e.preventDefault()
 	if (shouldStopPropagation) e.stopPropagation()
-	void activateGridItem(host, { item: shortcut, fields, source: 'keyboard', sourceEvent: e })
+	void activateGridItem(host, { item: shortcut, fields, source: 'keyboard', sourceEvent: e, after })
 	return true
 }
 

@@ -116,6 +116,21 @@ test.describe('row toolbar — core action items', () => {
 		await expect(toolbar(page).locator('[data-action="move-up"]')).toBeEnabled()
 	})
 
+	test('a shortcut on the open toolbar targets the row at its current position after a move', async ({ page }) => {
+		await grid(page).evaluate((el: any) => { el.rowShortcuts = [{ shortcut: 'Alt+ArrowDown', action: 'move-down' }] })
+		await openToolbarOn(page, row(page, 0))  // Alpha
+		await page.keyboard.press('Alt+ArrowDown')
+		await expect.poll(() => names(page)).toEqual(['Beta', 'Alpha', 'Gamma', 'Delta'])
+		// the toolbar still belongs to Alpha (now row 1): the next press moves Alpha again
+		await page.keyboard.press('Alt+ArrowDown')
+		await expect.poll(() => names(page)).toEqual(['Beta', 'Gamma', 'Alpha', 'Delta'])
+		await expect(toolbar(page).locator('[data-action="move-up"]')).toBeEnabled()
+		// a toolbar click after the keyboard moves acts on Alpha too
+		await toolbar(page).locator('[data-action="move-down"]').click()
+		await expect.poll(() => names(page)).toEqual(['Beta', 'Gamma', 'Delta', 'Alpha'])
+		await expect(toolbar(page).locator('[data-action="move-down"]')).toBeDisabled()
+	})
+
 	test('beforeActionCallback returning false cancels the event and the built-in', async ({ page }) => {
 		await page.evaluate(() => { (window as any).__vetoBuiltIns = true })
 		await openToolbarOn(page, row(page, 1))

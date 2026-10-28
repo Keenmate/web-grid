@@ -188,6 +188,31 @@ test.describe('cell-aware toolbar — #grid4', () => {
 		}).toEqual(['setHigh', 'setMedium', 'setLow', 'add', 'delete', 'duplicate'])
 	})
 
+	test('a shortcut on an open cell toolbar targets the row (and cell) at its current position after a move', async ({ page }) => {
+		const grid4 = gridLocator(page, 'grid4')
+		await grid4.evaluate((el: any) => {
+			(window as any).__probe = []
+			el.rowShortcuts = [
+				{ shortcut: 'Alt+ArrowDown', action: 'move-down' },
+				{ id: 'probe', shortcut: 'Alt+P', onClick: (ctx: any) => (window as any).__probe.push({ rowIndex: ctx.rowIndex, field: ctx.field, title: ctx.row.title }) },
+			]
+		})
+		await openToolbarOn(page, cellOnRow(page, 'grid4', 0, 'priority'))
+		const toolbar = activeToolbar(page, 'grid4')
+		await expect.poll(async () => {
+			await cellOnRow(page, 'grid4', 0, 'title').dispatchEvent('mousemove', { bubbles: true })
+			await cellOnRow(page, 'grid4', 0, 'priority').dispatchEvent('mousemove', { bubbles: true })
+			return toolbar.locator('.wg__toolbar-btn').first().getAttribute('data-id')
+		}).toBe('setHigh')
+		const title0 = await grid4.evaluate((el: any) => el.items[0].title)
+
+		await page.keyboard.press('Alt+ArrowDown')
+		await expect.poll(() => grid4.evaluate((el: any) => el.items[1].title)).toBe(title0)
+		await expect(toolbar).toBeVisible()
+		await page.keyboard.press('Alt+P')
+		await expect.poll(() => page.evaluate(() => (window as any).__probe)).toEqual([{ rowIndex: 1, field: 'priority', title: title0 }])
+	})
+
 	test('hovering the status cell swaps in status-specific items', async ({ page }) => {
 		await openToolbarOn(page, cellOnRow(page, 'grid4', 0, 'status'))
 

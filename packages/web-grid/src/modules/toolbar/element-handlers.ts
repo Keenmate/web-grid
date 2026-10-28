@@ -15,6 +15,7 @@ import {
 	getActiveToolbar,
 	getActiveToolbarButtons,
 	getActiveToolbarRowIndex,
+	getActiveToolbarRowItem,
 	isToolbarOwnedBy,
 	openToolbar,
 	closeToolbar,
@@ -55,13 +56,33 @@ export function setupToolbarShortcuts<T>(ctx: GridHost<T>): void {
 			return
 		}
 
-		const toolbarRowIndex = getActiveToolbarRowIndex()
-		if (toolbarRowIndex === null || !isToolbarOwnedBy(ctx.shadow)) return
+		if (getActiveToolbarRowIndex() === null || !isToolbarOwnedBy(ctx.shadow)) return
 
-		const row = ctx.engine.displayItems[toolbarRowIndex]
-		if (!row) return
+		// The toolbar's row at its CURRENT position (a move keeps the toolbar open on it)
+		const row = getActiveToolbarRowItem<T>()
+		const rowIndex = row === null ? -1 : ctx.engine.displayItems.indexOf(row)
+		if (row === null || rowIndex === -1) return
 
-		handleRowShortcut(ctx, e, rowCellFields(ctx, row, toolbarRowIndex), true)
+		const cell = toolbarCells.get(ctx)
+		const fields = cell && cell.row === row
+			? { ...cell, rowIndex }
+			: rowCellFields(ctx, row, rowIndex)
+		const isMove = (a: string) => a === 'move-up' || a === 'move-down'
+		handleRowShortcut(ctx, e, fields, true, (d) => {
+			// Same follow-up as a toolbar click: close when the row is gone, else refresh
+			// the open toolbar's button states (and the connector after a move)
+			if (getActiveToolbarRowItem<T>() !== row) return
+			if (d.action === 'delete' || ctx.engine.displayItems.indexOf(row) === -1) {
+				closeToolbarAndReset(ctx)
+				return
+			}
+			ctx.render()
+			refreshOpenToolbar(ctx, row, ctx.engine.displayItems.indexOf(row))
+			if (isMove(d.action)) {
+				updateConnector(ctx, ctx.engine.displayItems)
+				ctx.renderConnector()
+			}
+		})
 	}
 
 	ctx.toolbar.setShortcutHandler(handler)
