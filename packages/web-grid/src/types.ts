@@ -496,7 +496,7 @@ export type QuickGridProps<T> = {
 	parentPathMember?: keyof T | string                // Optional pre-computed parent path
 	treePathSeparator?: string                             // Path separator (auto-detected from first row when omitted)
 	isTreeDataSorted?: boolean                           // true = trust caller order completely (grid never re-sorts; pair with data-request for sort changes). false = grid sorts siblings depth-first.
-	expandedPaths?: Set<string>                        // Bindable set of expanded paths (mutated by grid; fires expanded-change)
+	expandedPaths?: string[]                           // Expanded tree paths (read: a copy; assign: replaces the state, no events)
 	expandLevel?: number                        // Tree depth to show initially: 0 = only roots, 1 = roots + their children, etc. (default: all expanded)
 	treeDoubleClickBehavior?: TreeDoubleClickBehavior  // What happens when user double-clicks a tree-column cell (default: 'none')
 	// Chevron customization (static glyphs are defaults; callback overrides per-row)
@@ -648,8 +648,10 @@ export type GridLabels = {
 		duplicate: string            // "Duplicate row"
 		moveUp: string               // "Move up"
 		moveDown: string             // "Move down"
-		expand: string               // "Expand" (the row and everything under it)
-		collapse: string             // "Collapse" (the row and everything under it)
+		expand: string               // "Expand" (one level)
+		collapse: string             // "Collapse"
+		expandSubtree: string        // "Expand subtree" (the row and everything under it)
+		collapseSubtree: string      // "Collapse subtree" (the row and everything under it)
 		expandAll: string            // "Expand all" (the whole tree)
 		collapseAll: string          // "Collapse all" (the whole tree)
 	}
@@ -809,9 +811,17 @@ export type TreeExpandedChangeDetail = {
 	paths: string[]               // Every expanded path after the change (same as `expandedPaths`)
 }
 
+/** Options of the tree expand / collapse methods (same shape as web-treeview's) */
+export type ExpandOptions = {
+	/** Expand: collapse every expanded row that isn't on a target's ancestor chain (`expandAll`: or under a target). No effect on collapse. */
+	isExclusive?: boolean
+	/** Change the state without announcing it: no `row-expand` / `row-collapse` / `expanded-change`. */
+	silent?: boolean
+}
+
 /** Detail of `row-expand` / `row-collapse`: one tree row was expanded / collapsed */
 export type TreeRowExpandDetail<T = any> = {
-	row: T | undefined            // The row of `path`
+	row: T | null                 // The row of `path`
 	path: string
 }
 

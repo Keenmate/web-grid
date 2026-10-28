@@ -95,7 +95,7 @@
                 <li><strong>Ctrl/Cmd + ←</strong>: collapse the focused parent row, or walk up to the nearest expanded ancestor and collapse that (refocuses the ancestor).</li>
                 <li><strong>Ctrl/Cmd + →</strong>: expand the focused row when it has children and is collapsed.</li>
                 <li><strong>Tab / Shift-Tab</strong>: jumps to the next/previous <em>editable</em> cell. In this grid <strong>only leaf rows are editable</strong> — Tab skips Acme / Engineering / Platform Team and walks straight from leaf to leaf. The tree column itself is always read-only (since v1.2.0), so Tab skips it too.</li>
-                <li><strong>Right-click any row</strong>: tree context-menu items (<code>'expand'</code>, <code>'collapse'</code>, <code>'expand-all'</code>, <code>'collapse-all'</code>) plus a custom "Show row data" action. The first two only show on parent rows.</li>
+                <li><strong>Right-click any row</strong>: tree context-menu items (<code>'expand'</code>, <code>'collapse'</code> (one level), <code>'expand-subtree'</code>, <code>'collapse-subtree'</code>, <code>'expand-all'</code>, <code>'collapse-all'</code>) plus a custom "Show row data" action. The first two only show on parent rows.</li>
             </ul>
 
             <web-grid id="navGrid" style="max-width: 100%; max-height: 500px; border: 1px solid #e2e8f0;"></web-grid>
@@ -190,7 +190,7 @@ rowGateGrid.columns = [
 
             <h3 style="margin-top: 1.5rem;">How it works</h3>
             <pre style="background: #f8f9fa; padding: 0.75rem; border-radius: 4px; font-size: 0.85rem; overflow-x: auto;"><code>aggGrid.isTreeDataSorted = true              // grid won't re-sort
-aggGrid.expandedPaths = new Set(allPaths)  // own expansion too, so re-setting items keeps it stable
+aggGrid.expandedPaths = allPaths  // own expansion too, so re-setting items keeps it stable
 
 aggGrid.onDataRequest = ({ sort }) =&gt; {
     if (!sort.length) {
@@ -343,12 +343,14 @@ files.renderChevronCallback = ({ isExpanded, hasChildren }) =&gt; {
             .status-warn { color: #b54708; font-weight: 500; }
         `
 
-        // Tree context menu — predefined items expand/collapse the right-clicked subtree
-        // (per-row variants) or the entire tree (*-tree variants). Visibility predicates
-        // are baked in: 'expand'/'collapse' only show on rows with children.
+        // Tree context menu — 'expand' / 'collapse' one level, '*-subtree' the row and
+        // everything under it (the selection when the row is in it), '*-all' the whole
+        // tree. The per-row items only show on rows with children.
         grid.contextMenu = [
             'expand',
             'collapse',
+            'expand-subtree',
+            'collapse-subtree',
             { divider: true },
             'expand-all',
             'collapse-all'
@@ -540,7 +542,7 @@ files.renderChevronCallback = ({ isExpanded, hasChildren }) =&gt; {
         }
 
         // Own the expanded set so re-supplying items doesn't reset expansion
-        const aggExpanded = new Set(orgData.map(r => r.path))
+        const aggExpanded = orgData.map(r => r.path)
         aggGrid.expandedPaths = aggExpanded
 
         aggGrid.items = orgData

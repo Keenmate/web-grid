@@ -35,7 +35,8 @@ import type {
 	CreateRowCallback,
 	NewRowPosition,
 	ChevronCallback,
-	TreeDoubleClickBehavior
+	TreeDoubleClickBehavior,
+	ExpandOptions
 } from './types.js'
 import type {
 	GridController,
@@ -313,7 +314,7 @@ export class GridEngine<T = unknown> {
 	protected _treePathSeparator: string | null = null  // null = auto-detect
 	protected _isTreeDataSorted: boolean = false
 	protected _expandedPaths: Set<string> = new Set()       // Active set used for visibility checks
-	protected _expandedPathsExternal: Set<string> | null = null  // Set provided by user (we mutate it directly)
+	protected _hasExplicitExpandedPaths = false              // expandedPaths was assigned: items changes keep the current state
 	protected _expandLevel: number | null = null
 	protected _treeIndex: TreeIndex | null = null            // Built from items; null when tree mode off
 	protected _treeDoubleClickBehavior: TreeDoubleClickBehavior = 'none'
@@ -1510,18 +1511,27 @@ export class GridEngine<T = unknown> {
 		this.requestUpdate()
 	}
 
-	get expandedPaths(): Set<string> { return this._expandedPaths }
-	set expandedPaths(value: Set<string> | null | undefined) {
-		this._expandedPathsExternal = value instanceof Set ? value : null
-		this.rebuildExpandedPaths()
+	/**
+	 * The expanded tree paths. Reading returns a copy; assigning replaces the
+	 * expanded state (no events). `null` / `undefined` → back to the `expandLevel`
+	 * default.
+	 */
+	get expandedPaths(): string[] { return [...this._expandedPaths] }
+	set expandedPaths(value: string[] | null | undefined) {
+		this._hasExplicitExpandedPaths = Array.isArray(value)
+		if (Array.isArray(value)) this._expandedPaths = new Set(value)
+		else this.rebuildExpandedPaths()
 		this.requestUpdate()
 	}
+
+	/** How many tree paths are expanded (cheap — no copy). */
+	get expandedPathCount(): number { return this._expandedPaths.size }
 
 	get expandLevel(): number | null { return this._expandLevel }
 	set expandLevel(value: number | null) {
 		this._expandLevel = (typeof value === 'number' && value >= 0) ? value : null
-		// Only re-init if user hasn't given us their own set
-		if (!this._expandedPathsExternal) {
+		// Only re-init if the user hasn't assigned expandedPaths
+		if (!this._hasExplicitExpandedPaths) {
 			this.rebuildExpandedPaths()
 			this.requestUpdate()
 		}
@@ -1541,40 +1551,87 @@ export class GridEngine<T = unknown> {
 		return node ? (this._items[node.rowIndex] ?? null) : null
 	}
 
-	/** One `row-expand` / `row-collapse` per changed path, then one `expanded-change`. */
-	private notifyExpanded(expanded: string[], collapsed: string[]): void {
+	/** One `row-expand` / `row-collapse` per changed path, then one `expanded-change` (nothing when `silent`). */
+	private notifyExpanded(expanded: string[], collapsed: string[], options?: ExpandOptions): void {
+		if (options?.silent) return
 		for (const path of expanded) this.notify('row-expand', { row: this.getRowByPath(path), path })
 		for (const path of collapsed) this.notify('row-collapse', { row: this.getRowByPath(path), path })
 		this.notify('expanded-change', { paths: [...this._expandedPaths] })
 	}
 
+	/** `string | string[] | null` → the non-empty paths. */
+	private toPathList(paths: string | string[] | null | undefined): string[] {
+		if (paths == null) return []
+		return (Array.isArray(paths) ? paths : [paths]).filter(p => typeof p === 'string' && p !== '')
+	}
+
+	/** Was a path argument given at all (vs. `null` / `undefined` / `[]` = the whole tree)? */
+	private hasPathArg(paths: string | string[] | null | undefined): boolean {
+		return paths != null && (!Array.isArray(paths) || paths.length > 0)
+	}
+
+	/** `path` and its ancestors (root first), known paths only. */
+	private spinePaths(path: string): string[] {
+		const out: string[] = []
+		let p: string | null = this._treeIndex?.nodes.has(path) ? path : null
+		while (p !== null) {
+			out.unshift(p)
+			p = this._treeIndex!.nodes.get(p)?.parent ?? null
+		}
+		return out
+	}
+
+	/**
+	 * `isExclusive`: collapse every expanded row that isn't on a target's ancestor
+	 * chain (`keepUnder`: or under a target). Returns the paths it collapsed.
+	 */
+	private collapseOffSpine(targets: string[], keepUnder: boolean): string[] {
+		const keep = new Set<string>()
+		for (const t of targets) for (const p of this.spinePaths(t)) keep.add(p)
+		if (keepUnder) for (const t of targets) for (const p of this.subtreePaths(t)) keep.add(p)
+		const collapsed: string[] = []
+		for (const p of [...this._expandedPaths]) {
+			if (!keep.has(p)) { this._expandedPaths.delete(p); collapsed.push(p) }
+		}
+		return collapsed
+	}
+
 	/** Expand / collapse one row (chevron, keyboard, double-click). */
-	toggleRowExpanded(path: string): void {
-		const wasExpanded = this._expandedPaths.has(path)
-		perfLogger.debug('toggleRowExpanded start:', path, '| willExpand:', !wasExpanded, '| _items.length:', this._items.length, '| treeNodes:', this._treeIndex?.nodes.size ?? 0)
-		if (wasExpanded) this._expandedPaths.delete(path)
-		else this._expandedPaths.add(path)
-		interactionLogger.debug('tree toggle:', path, wasExpanded ? 'expanded → collapsed' : 'collapsed → expanded', '| set size now:', this._expandedPaths.size)
-		if (wasExpanded) this.notifyExpanded([], [path])
-		else this.notifyExpanded([path], [])
+	toggleRowExpanded(path: string, options?: ExpandOptions): void {
+		if (this._expandedPaths.has(path)) this.collapseRows(path, options)
+		else this.expandRows(path, options)
+	}
+
+	/**
+	 * Expand the given rows one level (their collapsed ancestors open too, their
+	 * descendants keep their state). `row-expand` per row that opened +
+	 * `expanded-change`. `isExclusive`: every other branch collapses (no
+	 * `row-collapse` for those); `silent`: no events.
+	 */
+	expandRows(paths: string | string[], options?: ExpandOptions): void {
+		const targets = this.toPathList(paths).filter(p => this._treeIndex?.nodes.has(p))
+		if (targets.length === 0) return
+		const collapsed = options?.isExclusive ? this.collapseOffSpine(targets, false) : []
+		const expanded: string[] = []
+		for (const t of targets) {
+			for (const p of this.spinePaths(t)) {
+				if (this._expandedPaths.has(p) || !this._treeIndex!.nodes.get(p)?.childPaths.length) continue
+				this._expandedPaths.add(p)
+				expanded.push(p)
+			}
+		}
+		if (expanded.length === 0 && collapsed.length === 0) return
+		interactionLogger.debug('tree expandRows:', targets, '| size now:', this._expandedPaths.size)
+		this.notifyExpanded(expanded, [], options)
 		this.requestUpdate()
 	}
 
-	/** Expand the given rows (one level each; their descendants keep their state). */
-	expandRows(paths: string | string[]): void {
-		const changed = (Array.isArray(paths) ? paths : [paths]).filter(p => !this._expandedPaths.has(p))
-		if (changed.length === 0) return
-		for (const p of changed) this._expandedPaths.add(p)
-		this.notifyExpanded(changed, [])
-		this.requestUpdate()
-	}
-
-	/** Collapse the given rows (their descendants keep their state). */
-	collapseRows(paths: string | string[]): void {
-		const changed = (Array.isArray(paths) ? paths : [paths]).filter(p => this._expandedPaths.has(p))
+	/** Collapse the given rows (their descendants keep their state). `row-collapse` per row + `expanded-change`; `silent`: no events. */
+	collapseRows(paths: string | string[], options?: ExpandOptions): void {
+		const changed = this.toPathList(paths).filter(p => this._expandedPaths.has(p))
 		if (changed.length === 0) return
 		for (const p of changed) this._expandedPaths.delete(p)
-		this.notifyExpanded([], changed)
+		this.notifyExpanded([], changed, options)
 		this.requestUpdate()
 	}
 
@@ -1593,30 +1650,38 @@ export class GridEngine<T = unknown> {
 	}
 
 	/**
-	 * Expand everything — or, with `path`, that row and everything under it (the
-	 * file-explorer "expand all under here"). Fires `expanded-change` only.
+	 * Expand the whole tree (`null` / no paths) — or the given rows and everything
+	 * under them (their ancestors open too). Fires `expanded-change` only (none
+	 * when `silent`). `isExclusive` (with paths): every other branch collapses.
 	 */
-	expandAll(path?: string | null): void {
+	expandAll(paths?: string | string[] | null, options?: ExpandOptions): void {
 		if (!this._treeIndex) return
-		const paths = path == null ? [...this._treeIndex.nodes.keys()] : this.subtreePaths(path)
-		if (path != null && paths.length === 0) return
-		for (const p of paths) this._expandedPaths.add(p)
-		interactionLogger.debug('tree expandAll:', path ?? '(all)', '| size =', this._expandedPaths.size)
-		this.notify('expanded-change', { paths: [...this._expandedPaths] })
+		let toExpand: string[]
+		if (!this.hasPathArg(paths)) {
+			toExpand = [...this._treeIndex.nodes.keys()]
+		} else {
+			const known = this.toPathList(paths).filter(p => this._treeIndex!.nodes.has(p))
+			if (known.length === 0) return
+			if (options?.isExclusive) this.collapseOffSpine(known, true)
+			toExpand = known.flatMap(t => [...this.spinePaths(t), ...this.subtreePaths(t)])
+		}
+		for (const p of toExpand) this._expandedPaths.add(p)
+		interactionLogger.debug('tree expandAll:', paths ?? '(all)', '| size =', this._expandedPaths.size)
+		if (!options?.silent) this.notify('expanded-change', { paths: [...this._expandedPaths] })
 		this.requestUpdate()
 	}
 
-	/** Collapse everything — or, with `path`, that row and everything under it. Fires `expanded-change` only. */
-	collapseAll(path?: string | null): void {
-		if (path == null) {
+	/** Collapse the whole tree (`null` / no paths) — or the given rows and everything under them. Fires `expanded-change` only (none when `silent`). */
+	collapseAll(paths?: string | string[] | null, options?: ExpandOptions): void {
+		if (!this.hasPathArg(paths)) {
 			this._expandedPaths.clear()
 		} else {
-			const paths = this.subtreePaths(path)
-			if (paths.length === 0) return
-			for (const p of paths) this._expandedPaths.delete(p)
+			const toCollapse = this.toPathList(paths).flatMap(t => this.subtreePaths(t))
+			if (toCollapse.length === 0) return
+			for (const p of toCollapse) this._expandedPaths.delete(p)
 		}
-		interactionLogger.debug('tree collapseAll:', path ?? '(all)')
-		this.notify('expanded-change', { paths: [...this._expandedPaths] })
+		interactionLogger.debug('tree collapseAll:', paths ?? '(all)')
+		if (!options?.silent) this.notify('expanded-change', { paths: [...this._expandedPaths] })
 		this.requestUpdate()
 	}
 
@@ -1777,9 +1842,8 @@ export class GridEngine<T = unknown> {
 
 	/** Re-initialize the active expanded set after items/config changes */
 	protected rebuildExpandedPaths(): void {
-		if (this._expandedPathsExternal) {
-			// User owns the set; we just point at it
-			this._expandedPaths = this._expandedPathsExternal
+		if (this._hasExplicitExpandedPaths) {
+			// The user assigned expandedPaths: keep the current state (assigned + changed since)
 			return
 		}
 		const set = new Set<string>()

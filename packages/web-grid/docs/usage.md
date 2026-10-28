@@ -235,8 +235,9 @@ grid.rowToolbar = [
 | `action` | What it does |
 |---|---|
 | `'add'`, `'delete'`, `'duplicate'`, `'move-up'`, `'move-down'` | The row built-ins (above) |
-| `'expand'` / `'collapse'` | Expand / collapse every tree node |
-| `'expand-all'` / `'collapse-all'` | Expand / collapse the current subtree |
+| `'expand'` / `'collapse'` | Expand (one level) / collapse the row — the whole row selection when the row is in it |
+| `'expand-subtree'` / `'collapse-subtree'` | The row (or selection) and everything under it |
+| `'expand-all'` / `'collapse-all'` | The whole tree |
 
 #### Menu item shape
 
@@ -337,13 +338,13 @@ Path-string driven (ltree-style: `"1.2.3"`, `"/dept/eng/team"`, `"C:\\a\\b"`).
 | `parentPathMember` | `keyof T \| string` | — | Pre-computed parent path |
 | `treePathSeparator` | `string` | auto | Auto-detected from first row when omitted |
 | `isTreeDataSorted` | `boolean` | `false` | `true` = grid never re-sorts (pair with the `data-request` event); `false` = grid sorts siblings depth-first |
-| `expandedPaths` | `Set<string>` | — | Bindable set of expanded paths; mutated by grid |
+| `expandedPaths` | `string[]` | — | The expanded paths: reading returns a copy, assigning replaces the state (no events); `null` → the `expandLevel` default |
 | `expandLevel` | `number` | all | `0` = roots only; `1` = roots + children; etc. |
 | `treeDoubleClickBehavior` | `TreeDoubleClickBehavior` | `'none'` | Action when double-clicking a tree-column cell |
 | `treeExpandedGlyph` / `treeCollapsedGlyph` | `string` | `'▶'` | Static glyphs. When equal, CSS rotates 90°; when different, glyph swaps |
 | `renderChevronCallback` | `(ctx: { row, isExpanded, hasChildren, level, path }) => string` | — | Per-row chevron HTML; cached per `(row, expanded)` |
 
-Methods: `toggleRowExpanded(path)`, `expandRows(paths)` / `collapseRows(paths)` (one level each), `expandAll(path?)` / `collapseAll(path?)` (whole tree, or a row and everything under it), `isPathExpanded(path)`. A single-row expand / collapse fires `row-expand` / `row-collapse` `{ row, path }`; every change fires `expanded-change` `{ paths }` (the whole set). Cell-menu built-ins: `expand` / `collapse` (the row + subtree), `expand-all` / `collapse-all` (whole tree).
+Methods: `toggleRowExpanded(path, options?)`, `expandRows(paths, options?)` / `collapseRows(paths, options?)` (one level; collapsed ancestors open too), `expandAll(paths?, options?)` / `collapseAll(paths?, options?)` (`null` = whole tree, else those rows and everything under them), `isPathExpanded(path)`. `paths` is a `string | string[]`; `options` is `ExpandOptions { isExclusive?, silent? }` (`isExclusive`: expanding collapses every other branch; `silent`: no events). A single-row expand / collapse fires `row-expand` / `row-collapse` `{ row, path }`; every change fires `expanded-change` `{ paths }` (the whole set). Cell-menu built-ins: `expand` / `collapse` (one level), `expand-subtree` / `collapse-subtree` (the row + everything under it), `expand-all` / `collapse-all` (whole tree); the per-row ones act on the selection when the clicked row is in it.
 
 ### Height & scroll
 
@@ -721,7 +722,7 @@ grid.onAction = ({ action, id, row }) => {
 | Selection | `selectRow`, `selectRowRange`, `clearSelection` (all kinds), `clearRowSelection`, `isRowSelected`, `copySelectedRowsToClipboard`, `selectCellRange`, `clearCellSelection`, `getSelectedCells`, `copyCellSelectionToClipboard`, `selectColumn`, `selectColumnRange`, `clearColumnSelection`, `getSelectedColumns`, `isColumnSelected`, `select-all` |
 
 Every selection output lists entries in **on-screen order** and identifies a column by its index in `columns` (`colIndex`) + `field`: `getSelectedCells()` → `CellContext[]`, `getSelectedColumns()` → `[{ colIndex, field, column }]`. Column selection inputs (`selectColumn(colIndex)`, `selectColumnRange`, `isColumnSelected`) take the index in `columns`.
-| Tree | `isPathExpanded`, `toggleRowExpanded`, `expandRows`, `collapseRows`, `expandAll(path?)`, `collapseAll(path?)`, `getRowTreeInfo` |
+| Tree | `isPathExpanded`, `toggleRowExpanded`, `expandRows`, `collapseRows`, `expandAll(paths?, options?)`, `collapseAll(paths?, options?)`, `getRowTreeInfo` |
 | Columns | `setColumnWidth`, `setColumnWidths`, `getColumnWidthsState`, `setColumnOrder`, `getColumnOrderState` |
 | Focus / editing | `focusCell`, `startEditing`, `scrollToRow(rowIndex)` → `Promise<boolean>` |
 | Menus | `closeContextMenu`, `closeToolbar` |
@@ -883,7 +884,8 @@ grid.labels = {
   actions: {                       // built-in row / tree action texts
     add: 'Add row', delete: 'Delete row', duplicate: 'Duplicate row',
     moveUp: 'Move up', moveDown: 'Move down',
-    expand: 'Expand', collapse: 'Collapse',          // row + subtree
+    expand: 'Expand', collapse: 'Collapse',          // one level
+    expandSubtree: 'Expand subtree', collapseSubtree: 'Collapse subtree',  // row + everything under it
     expandAll: 'Expand all', collapseAll: 'Collapse all'  // whole tree
   },
   contextMenu: {                   // header-menu built-in texts

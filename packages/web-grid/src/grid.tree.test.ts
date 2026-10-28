@@ -112,7 +112,7 @@ describe('expandedPaths state', () => {
 
 	beforeEach(() => {
 		grid = makeOrgGrid()
-		grid.expandedPaths = new Set()  // start collapsed for predictable tests
+		grid.expandedPaths = []  // start collapsed for predictable tests
 	})
 
 	it('isPathExpanded reflects the current set', () => {
@@ -143,14 +143,15 @@ describe('expandedPaths state', () => {
 	it('toggleRowExpanded fires row-expand / row-collapse, then expanded-change with the whole set', () => {
 		const events = captureEvents()
 
-		grid.toggleRowExpanded('1.1')
+		grid.toggleRowExpanded('1.1')    // its collapsed ancestor '1' opens too
 		grid.toggleRowExpanded('1.1.1')
 		grid.toggleRowExpanded('1.1')
+		grid.toggleRowExpanded('1.2')    // a leaf: nothing
 
 		expect(events).toEqual([
-			'row-expand 1.1', 'expanded-change [1.1]',
-			'row-expand 1.1.1', 'expanded-change [1.1,1.1.1]',
-			'row-collapse 1.1', 'expanded-change [1.1.1]'
+			'row-expand 1', 'row-expand 1.1', 'expanded-change [1,1.1]',
+			'row-expand 1.1.1', 'expanded-change [1,1.1,1.1.1]',
+			'row-collapse 1.1', 'expanded-change [1,1.1.1]'
 		])
 	})
 
@@ -178,7 +179,7 @@ describe('expandedPaths state', () => {
 
 		expect(events.every(e => e.startsWith('expanded-change'))).toBe(true)
 		expect(events).toHaveLength(4)
-		expect(events[0]).toBe('expanded-change [1.1,1.1.1,1.1.1.1,1.1.1.2,1.1.2]')
+		expect(events[0]).toBe('expanded-change [1,1.1,1.1.1,1.1.1.1,1.1.1.2,1.1.2]')
 		expect(events[3]).toBe('expanded-change []')
 	})
 
@@ -192,7 +193,47 @@ describe('expandedPaths state', () => {
 	it('collapseAll empties the set', () => {
 		grid.expandAll()
 		grid.collapseAll()
-		expect(grid.expandedPaths.size).toBe(0)
+		expect(grid.expandedPaths).toEqual([])
+	})
+
+	it('expandedPaths is a string[]: reading returns a copy, assigning replaces the state without events', () => {
+		const events = captureEvents()
+		grid.expandedPaths = ['1', '1.1']
+		const read = grid.expandedPaths
+		read.push('1.2')
+		expect(grid.expandedPaths).toEqual(['1', '1.1'])
+		expect(grid.isPathExpanded('1.2')).toBe(false)
+		expect(events).toEqual([])
+	})
+
+	it('silent: the state changes, no events', () => {
+		const events = captureEvents()
+		grid.expandRows('1.1', { silent: true })
+		grid.toggleRowExpanded('1.1.1', { silent: true })
+		grid.collapseRows('1.1', { silent: true })
+		grid.expandAll(null, { silent: true })
+		grid.collapseAll(['1.1'], { silent: true })
+		expect(events).toEqual([])
+		expect(grid.isPathExpanded('1')).toBe(true)
+		expect(grid.isPathExpanded('1.1.1')).toBe(false)
+	})
+
+	it('isExclusive: expanding collapses every other branch', () => {
+		grid.expandAll()
+		grid.expandRows('1.1.1', { isExclusive: true })
+		expect(grid.expandedPaths.sort()).toEqual(['1', '1.1', '1.1.1'])
+		grid.expandAll()
+		grid.expandAll('1.1', { isExclusive: true })  // keeps everything under the target
+		expect(grid.expandedPaths.sort()).toEqual(['1', '1.1', '1.1.1', '1.1.1.1', '1.1.1.2', '1.1.2'])
+	})
+
+	it('expandAll / collapseAll take a path list', () => {
+		grid.expandAll(['1.1.1', '1.2'])
+		expect(grid.isPathExpanded('1.1.1')).toBe(true)
+		expect(grid.isPathExpanded('1.1')).toBe(true)  // ancestors open
+		grid.collapseAll(['1.1', '1.2'])
+		expect(grid.isPathExpanded('1.1.1')).toBe(false)
+		expect(grid.isPathExpanded('1')).toBe(true)
 	})
 })
 
@@ -201,7 +242,7 @@ describe('findNearestExpandedAncestor', () => {
 
 	beforeEach(() => {
 		grid = makeOrgGrid()
-		grid.expandedPaths = new Set()
+		grid.expandedPaths = []
 	})
 
 	it('returns null when no ancestor is expanded', () => {
@@ -220,7 +261,7 @@ describe('findNearestExpandedAncestor', () => {
 	})
 
 	it('does not return the input path itself even when expanded', () => {
-		grid.toggleRowExpanded('1.1.1')
+		grid.expandedPaths = ['1.1.1']
 		// '1.1.1' is expanded, but we ask about '1.1.1' — the function walks ancestors,
 		// not self. With no expanded ancestor, returns null.
 		expect(grid.findNearestExpandedAncestor('1.1.1')).toBeNull()
@@ -232,16 +273,16 @@ describe('expandAll / collapseAll (per-row variants)', () => {
 
 	beforeEach(() => {
 		grid = makeOrgGrid()
-		grid.expandedPaths = new Set()
+		grid.expandedPaths = []
 	})
 
-	it('expandAll expands the path and all its descendants that have children', () => {
+	it('expandAll expands the path, its ancestors and all its descendants', () => {
 		grid.expandAll('1.1')
 		// '1.1' is the root we asked to expand, and '1.1.1' is a descendant with children.
 		expect(grid.isPathExpanded('1.1')).toBe(true)
 		expect(grid.isPathExpanded('1.1.1')).toBe(true)
-		// Sibling subtrees are untouched.
-		expect(grid.isPathExpanded('1')).toBe(false)
+		// Its ancestor opens (so it is visible); sibling subtrees are untouched.
+		expect(grid.isPathExpanded('1')).toBe(true)
 		expect(grid.isPathExpanded('1.2')).toBe(false)
 	})
 

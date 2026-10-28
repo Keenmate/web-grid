@@ -196,11 +196,11 @@
         let nextRootToLoad = 1
 
         // Owned expanded set so the grid never resets it on items change
-        const isExpanded = new Set()
+        const isExpanded = []
         // Initial expand depth = 1 (roots only)
         const seedRoots = []
         for (let r = 1; r <= ROOTS_PER_BATCH; r++) seedRoots.push(`r${r}`)
-        seedRoots.forEach(p => isExpanded.add(p))
+        seedRoots.forEach(p => isExpanded.push(p))
 
         isGrid.columns = columns
         isGrid.pathMember = 'path'
@@ -230,14 +230,16 @@
         updateInfiniteStats()
 
         // Simulate a server fetch for the next batch of root subtrees
+        let newRoots = []
         async function fetchNextBatch() {
             await new Promise(r => setTimeout(r, 300))
             if (nextRootToLoad > ROOTS) return []
             const batch = []
+            newRoots = []
             const end = Math.min(nextRootToLoad + ROOTS_PER_BATCH - 1, ROOTS)
             for (let r = nextRootToLoad; r <= end; r++) {
                 batch.push(...buildSubtree(r))
-                isExpanded.add(`r${r}`)  // expand new roots by default
+                newRoots.push(`r${r}`)  // expand new roots by default
             }
             nextRootToLoad = end + 1
             return batch
@@ -249,6 +251,7 @@
             const more = await fetchNextBatch()
             if (more.length > 0) {
                 isGrid.items = [...isGrid.items, ...more]
+                isGrid.expandRows(newRoots, { silent: true })
             }
             isGrid.hasMoreItems = nextRootToLoad <= ROOTS
             isLoadingEl.style.display = 'none'

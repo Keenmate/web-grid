@@ -93,11 +93,12 @@ el.controller, and `controller` on every ctx / detail.
     selectAll(): void
     // tree
     isPathExpanded(path: string): boolean
-    toggleRowExpanded(path: string): void
-    expandAll(): void
-    collapseAll(): void
-    expandAll(path: string): void
-    collapseAll(path: string): void
+    readonly expandedPaths: string[]
+    toggleRowExpanded(path: string, options?: ExpandOptions): void
+    expandRows(paths: string | string[], options?: ExpandOptions): void
+    collapseRows(paths: string | string[], options?: ExpandOptions): void
+    expandAll(paths?: string | string[] | null, options?: ExpandOptions): void
+    collapseAll(paths?: string | string[] | null, options?: ExpandOptions): void
     getRowTreeInfo(row: T): { path: string; level: number; hasChildren: boolean } | null
     // columns
     setColumnWidth(field: string, width: string): void
@@ -334,7 +335,7 @@ Built on @keenmate/web-components-core/actions (ActionItem / MenuItem /
 MenuDivider). See toolbar-actions.txt.
 
   type GridRowAction    = 'add' | 'delete' | 'duplicate' | 'move-up' | 'move-down'
-  type GridTreeAction   = 'expand' | 'collapse' | 'expand-all' | 'collapse-all'
+  type GridTreeAction   = 'expand' | 'collapse' | 'expand-subtree' | 'collapse-subtree' | 'expand-all' | 'collapse-all'
   type GridCellAction   = GridRowAction | GridTreeAction
   type GridHeaderAction = 'sort-asc' | 'sort-desc' | 'clear-sort' | 'hide-column'
                         | 'freeze-column' | 'unfreeze-column' | 'column-visibility'
@@ -627,7 +628,9 @@ ADDITIONAL EXPORTED TYPES
   type ColumnOrderState = { field: string, order: number }
   type ColumnResizeDetail = { field: string, oldWidth: string, newWidth: string, allWidths: ColumnWidthState[] }
   type ColumnReorderDetail = { field: string, fromIndex: number, toIndex: number, allOrder: ColumnOrderState[] }
-  type TreeExpandedChangeDetail = { path: string | null, isExpanded: boolean, expandedPaths: Set<string> }
+  type TreeExpandedChangeDetail = { paths: string[] }
+  type TreeRowExpandDetail<T> = { row: T | null, path: string }
+  type ExpandOptions = { isExclusive?: boolean, silent?: boolean }
   type SummaryCallback<T> = (ctx: SummaryContext<T>) => string
   type ChevronCallback<T> = (ctx: ChevronContext<T>) => string
   type CreateRowCallback<T> = (ctx: CreateRowContext<T>) => T

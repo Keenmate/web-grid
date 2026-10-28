@@ -37,7 +37,7 @@ import { parseKeyCombo, matchesKeyCombo } from '../keyboard/index.js'
 import { applySort } from '../events/sort.js'
 
 const ROW_ACTIONS: readonly GridRowAction[] = ['add', 'delete', 'duplicate', 'move-up', 'move-down']
-const TREE_ACTIONS: readonly string[] = ['expand', 'collapse', 'expand-all', 'collapse-all']
+const TREE_ACTIONS: readonly string[] = ['expand', 'collapse', 'expand-subtree', 'collapse-subtree', 'expand-all', 'collapse-all']
 const HEADER_ACTIONS: readonly string[] = ['sort-asc', 'sort-desc', 'clear-sort', 'hide-column', 'freeze-column', 'unfreeze-column', 'column-visibility', 'show-all-columns', 'toggle-column']
 
 export const isRowAction = (a: unknown): a is GridRowAction => ROW_ACTIONS.includes(a as GridRowAction)
@@ -88,12 +88,21 @@ export function cellMenuDefaults<T>(host: GridHost<T>, action: string | undefine
 	const engine = host.engine
 	const labels = engine.labels.actions
 	switch (action) {
-		// Per-row expand / collapse means the row and everything *under it* (file-explorer convention); leaves hide it
-		case 'expand': return { text: labels.expand, icon: '▾', isVisible: !!engine.getRowTreeInfo(ctx.row)?.hasChildren }
-		case 'collapse': return { text: labels.collapse, icon: '▸', isVisible: !!engine.getRowTreeInfo(ctx.row)?.hasChildren }
+		// Per-row: the targets (the selection when the row is in it, else the row); leaves hide them.
+		// expand / collapse = one level; *-subtree = the row and everything under it.
+		case 'expand': {
+			const targets = treeTargetPaths(host, ctx.row)
+			return { text: labels.expand, icon: '▾', isVisible: targets.length > 0, isDisabled: targets.every(p => engine.isPathExpanded(p)) }
+		}
+		case 'collapse': {
+			const targets = treeTargetPaths(host, ctx.row)
+			return { text: labels.collapse, icon: '▸', isVisible: targets.length > 0, isDisabled: !targets.some(p => engine.isPathExpanded(p)) }
+		}
+		case 'expand-subtree': return { text: labels.expandSubtree, icon: '⇊', isVisible: treeTargetPaths(host, ctx.row).length > 0 }
+		case 'collapse-subtree': return { text: labels.collapseSubtree, icon: '⇈', isVisible: treeTargetPaths(host, ctx.row).length > 0 }
 		// The whole tree
 		case 'expand-all': return { text: labels.expandAll, icon: '⤓', isVisible: engine.isTreeMode }
-		case 'collapse-all': return { text: labels.collapseAll, icon: '⤒', isVisible: engine.isTreeMode && engine.expandedPaths.size > 0 }
+		case 'collapse-all': return { text: labels.collapseAll, icon: '⤒', isVisible: engine.isTreeMode && engine.expandedPathCount > 0 }
 	}
 	return undefined
 }
@@ -253,14 +262,33 @@ function blankRow<T>(columns: Column<T>[]): T {
 	return row as T
 }
 
+/**
+ * Tree paths a per-row tree action acts on: `rows` when given (a range shortcut),
+ * else the whole row selection when `row` is in it, else just `row` — rows with
+ * children only.
+ */
+function treeTargetPaths<T>(host: GridHost<T>, row: unknown, rows?: unknown[]): string[] {
+	const engine = host.engine
+	if (row === undefined && !rows?.length) return []
+	const selected = engine.selectedRows
+	const targets = rows?.length ? rows : selected.includes(row as T) ? selected : [row]
+	const paths: string[] = []
+	for (const r of targets) {
+		const info = engine.getRowTreeInfo(r as T)
+		if (info?.hasChildren) paths.push(info.path)
+	}
+	return paths
+}
+
 function runTreeBuiltIn<T>(host: GridHost<T>, d: GridActionEventDetail<T>): void {
 	const engine = host.engine
-	const info = d.row !== undefined ? engine.getRowTreeInfo(d.row as T) : null
 	switch (d.action) {
-		case 'expand': if (info) engine.expandAll(info.path); return
-		case 'collapse': if (info) engine.collapseAll(info.path); return
-		case 'expand-all': engine.expandAll(); return
-		case 'collapse-all': engine.collapseAll(); return
+		case 'expand': engine.expandRows(treeTargetPaths(host, d.row, d.rows)); return
+		case 'collapse': engine.collapseRows(treeTargetPaths(host, d.row, d.rows)); return
+		case 'expand-subtree': { const p = treeTargetPaths(host, d.row, d.rows); if (p.length) engine.expandAll(p); return }
+		case 'collapse-subtree': { const p = treeTargetPaths(host, d.row, d.rows); if (p.length) engine.collapseAll(p); return }
+		case 'expand-all': engine.expandAll(null); return
+		case 'collapse-all': engine.collapseAll(null); return
 	}
 }
 

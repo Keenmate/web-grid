@@ -77,6 +77,8 @@ export const DEFAULT_LABELS: GridLabels = {
 		moveDown: 'Move down',
 		expand: 'Expand',
 		collapse: 'Collapse',
+		expandSubtree: 'Expand subtree',
+		collapseSubtree: 'Collapse subtree',
 		expandAll: 'Expand all',
 		collapseAll: 'Collapse all'
 	},

@@ -267,14 +267,24 @@ getColumnOrderState(): ColumnOrderState[]
 TREE
 ----------------------------------------------------------------------
 
-expandedPaths: Set<string>                 property (element: read / assign; controller: read-only)
+expandedPaths: string[]                    property (element: read a copy / assign = replace the
+                                           state, no events; null = expandLevel default;
+                                           controller: read-only)
 isPathExpanded(path: string): boolean
-toggleRowExpanded(path: string): void      one row; row-expand / row-collapse + expanded-change
-expandRows(paths: string | string[]): void   one level each; row-expand per row + expanded-change
-collapseRows(paths: string | string[]): void row-collapse per row + expanded-change
-expandAll(path?: string | null): void      whole tree, or that row + everything under it
-collapseAll(path?: string | null): void    (expandAll / collapseAll fire only expanded-change)
-  Tree mode (pathMember). expanded-change detail: { paths }.
+toggleRowExpanded(path, options?): void    one row; row-expand / row-collapse + expanded-change
+expandRows(paths: string | string[], options?): void
+                                           one level (collapsed ancestors open too);
+                                           row-expand per row that opened + expanded-change
+collapseRows(paths: string | string[], options?): void
+                                           row-collapse per row + expanded-change
+expandAll(paths?: string | string[] | null, options?): void
+                                           null = whole tree; paths = those rows + everything
+                                           under them (ancestors open too)
+collapseAll(paths?: string | string[] | null, options?): void
+                                           (expandAll / collapseAll fire only expanded-change)
+  options: ExpandOptions { isExclusive?: boolean  expand: collapse every other branch
+                           silent?: boolean       no events }
+  Tree mode (pathMember). expanded-change detail: { paths } (string[]).
 
 
 ----------------------------------------------------------------------
@@ -319,8 +329,8 @@ Selection (same names as on the element)
   selectedCellRange: CellRange | null
 
 Tree
-  expandAll(path: string): void               expand path and every descendant
-  collapseAll(path: string): void
+  expandRows(paths, options?) / collapseRows(paths, options?)
+  expandAll(paths?, options?) / collapseAll(paths?, options?)   null = whole tree
   getRowTreeInfo(row: T): { path, level, hasChildren } | null
 
 Menus / toolbar

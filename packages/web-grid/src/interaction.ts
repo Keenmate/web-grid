@@ -28,6 +28,7 @@ import type {
 	FocusChangeDetail,
 	RowLock,
 	RowLockChangeDetail,
+	ExpandOptions,
 	SortState,
 	CellSelectionChangeDetail,
 	RowSelectionChangeDetail,
@@ -130,18 +131,18 @@ export interface GridController<T = any> {
 	selectAll(): void
 	// tree
 	isPathExpanded(path: string): boolean
-	/** The expanded tree paths (read-only here; assign `el.expandedPaths`). */
-	readonly expandedPaths: Set<string>
+	/** The expanded tree paths (a copy; assign `el.expandedPaths`). */
+	readonly expandedPaths: string[]
 	/** Expand / collapse one row (`row-expand` / `row-collapse` + `expanded-change`). */
-	toggleRowExpanded(path: string): void
-	/** Expand the given rows, one level each. */
-	expandRows(paths: string | string[]): void
+	toggleRowExpanded(path: string, options?: ExpandOptions): void
+	/** Expand the given rows one level (ancestors open too). */
+	expandRows(paths: string | string[], options?: ExpandOptions): void
 	/** Collapse the given rows. */
-	collapseRows(paths: string | string[]): void
-	/** Expand the whole tree — or, with `path`, that row and every descendant. */
-	expandAll(path?: string | null): void
-	/** Collapse the whole tree — or, with `path`, that row and every descendant. */
-	collapseAll(path?: string | null): void
+	collapseRows(paths: string | string[], options?: ExpandOptions): void
+	/** Expand the whole tree (`null`) — or the given rows and every descendant. */
+	expandAll(paths?: string | string[] | null, options?: ExpandOptions): void
+	/** Collapse the whole tree (`null`) — or the given rows and every descendant. */
+	collapseAll(paths?: string | string[] | null, options?: ExpandOptions): void
 	getRowTreeInfo(row: T): { path: string; level: number; hasChildren: boolean } | null
 	// columns
 	setColumnWidth(field: string, width: string): void
@@ -398,7 +399,7 @@ export interface ChevronContext<T = any> extends GridContext<T> {
 export type GridRowAction = 'add' | 'delete' | 'duplicate' | 'move-up' | 'move-down'
 
 /** Tree built-ins of the cell context menu. */
-export type GridTreeAction = 'expand' | 'collapse' | 'expand-all' | 'collapse-all'
+export type GridTreeAction = 'expand' | 'collapse' | 'expand-subtree' | 'collapse-subtree' | 'expand-all' | 'collapse-all'
 
 /** Built-ins of the cell context menu. */
 export type GridCellAction = GridRowAction | GridTreeAction

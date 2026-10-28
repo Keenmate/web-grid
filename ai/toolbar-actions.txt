@@ -291,8 +291,12 @@ built-in names, menu items, dividers.
 
 Built-in names in the cell menu:
     row:  'add' | 'delete' | 'duplicate' | 'move-up' | 'move-down'  (same work as the toolbar)
-    tree: 'expand'    - expand this row's subtree (hidden on leaves)
-          'collapse'  - collapse this row's subtree (hidden on leaves)
+    tree: 'expand'           - expand one level (hidden on leaves)
+          'collapse'         - collapse (hidden on leaves)
+          'expand-subtree'   - expand the row and everything under it (hidden on leaves)
+          'collapse-subtree' - collapse the row and everything under it (hidden on leaves)
+          the per-row tree items act on the whole row selection when the clicked
+          row is in it, else just the clicked row
           'expand-all'   - expand the whole tree (tree mode only)
           'collapse-all' - collapse the whole tree (tree mode, something expanded)
 

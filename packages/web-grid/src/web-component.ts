@@ -5,6 +5,7 @@
 import { GridEngine, GRID_PRESETS } from './grid.js'
 import type {
 	Column,
+	ExpandOptions,
 	CellValidationState,
 	EditTrigger,
 	EditStartSelection,
@@ -956,23 +957,24 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	get isTreeDataSorted(): boolean { return this.engine.isTreeDataSorted }
 	set isTreeDataSorted(value: boolean) { this.engine.isTreeDataSorted = value }
 
-	get expandedPaths(): Set<string> { return this.engine.expandedPaths }
-	set expandedPaths(value: Set<string> | null | undefined) { this.engine.expandedPaths = value as Set<string> }
+	/** The expanded tree paths (a copy). Assigning replaces the expanded state (no events); `null` → the `expandLevel` default. */
+	get expandedPaths(): string[] { return this.engine.expandedPaths }
+	set expandedPaths(value: string[] | null | undefined) { this.engine.expandedPaths = value }
 
 	get expandLevel(): number | null { return this.engine.expandLevel }
 	set expandLevel(value: number | null) { this.engine.expandLevel = value }
 
 	isPathExpanded(path: string): boolean { this.flush(); return this.engine.isPathExpanded(path) }
 	/** Expand / collapse one tree row (`row-expand` / `row-collapse` + `expanded-change`). */
-	toggleRowExpanded(path: string): void { this.flush(); this.engine.toggleRowExpanded(path) }
-	/** Expand the given tree rows, one level each (`row-expand` per row + `expanded-change`). */
-	expandRows(paths: string | string[]): void { this.flush(); this.engine.expandRows(paths) }
+	toggleRowExpanded(path: string, options?: ExpandOptions): void { this.flush(); this.engine.toggleRowExpanded(path, options) }
+	/** Expand the given tree rows one level, ancestors opening too (`row-expand` per row + `expanded-change`). */
+	expandRows(paths: string | string[], options?: ExpandOptions): void { this.flush(); this.engine.expandRows(paths, options) }
 	/** Collapse the given tree rows (`row-collapse` per row + `expanded-change`). */
-	collapseRows(paths: string | string[]): void { this.flush(); this.engine.collapseRows(paths) }
-	/** Expand the whole tree — or, with `path`, that row and everything under it (`expanded-change` only). */
-	expandAll(path?: string | null): void { this.flush(); this.engine.expandAll(path) }
-	/** Collapse the whole tree — or, with `path`, that row and everything under it (`expanded-change` only). */
-	collapseAll(path?: string | null): void { this.flush(); this.engine.collapseAll(path) }
+	collapseRows(paths: string | string[], options?: ExpandOptions): void { this.flush(); this.engine.collapseRows(paths, options) }
+	/** Expand the whole tree (`null`) — or the given rows and everything under them (`expanded-change` only). */
+	expandAll(paths?: string | string[] | null, options?: ExpandOptions): void { this.flush(); this.engine.expandAll(paths, options) }
+	/** Collapse the whole tree (`null`) — or the given rows and everything under them (`expanded-change` only). */
+	collapseAll(paths?: string | string[] | null, options?: ExpandOptions): void { this.flush(); this.engine.collapseAll(paths, options) }
 
 	get treeDoubleClickBehavior(): import('./types.js').TreeDoubleClickBehavior { return this.engine.treeDoubleClickBehavior }
 	set treeDoubleClickBehavior(value: import('./types.js').TreeDoubleClickBehavior) { this.engine.treeDoubleClickBehavior = value }

@@ -7,7 +7,7 @@ A feature-rich, framework-agnostic data grid web component built with TypeScript
 A major release — see the CHANGELOG for every rename (no aliases).
 
 - **Shared interaction model** (`@keenmate/web-components-core`): every callback takes one `ctx` (with `controller` + `element`), every event has an `on*` twin, the row toolbar / cell and header menus / shortcuts are core action items, and both menus run on core `openMenu()`.
-- **Suite-wide naming**: boolean attributes in the short HTML form (`enable-filtering`, `enable-editing`, `show-row-numbers`, `enable-virtual-scroll`, …), kebab-case enum values, `preset` (was `mode`), tree API with web-treeview names (`toggleRowExpanded`, `expandAll(path?)`, `row-expand` / `row-collapse` / `expanded-change`), `cell-edit-start` / `cell-paste` / `focus-change` events, state as same-named properties on the element and `el.controller` (`selectedRows`, `selectedRowIndices`, `items`, …).
+- **Suite-wide naming**: boolean attributes in the short HTML form (`enable-filtering`, `enable-editing`, `show-row-numbers`, `enable-virtual-scroll`, …), kebab-case enum values, `preset` (was `mode`), tree API with web-treeview names (`toggleRowExpanded`, `expandRows` / `expandAll(paths?)` with `ExpandOptions`, `expandedPaths: string[]`, `row-expand` / `row-collapse` / `expanded-change`), `cell-edit-start` / `cell-paste` / `focus-change` events, state as same-named properties on the element and `el.controller` (`selectedRows`, `selectedRowIndices`, `items`, …).
 - **`readonly` and `disabled`**: `readonly` blocks edits, paste, fill and row add / delete / move but keeps selection and copy; `disabled` makes the grid inert. The `read-only` preset sets `readonly`.
 - **Ctrl+Delete deletes**: the `delete` built-in removes the row (veto with `beforeActionCallback`) and `row-delete` reports it after the fact.
 - **Core lifecycle**: `defer` / `release()` hold the first render, then `ready` / `:state(ready)` / `whenReady()`; `destroy()`.
@@ -879,7 +879,7 @@ grid.contextMenu = [
 ]
 ```
 
-Cell menu built-ins (by `action` or string): the row built-ins (`add`, `delete`, `duplicate`, `move-up`, `move-down`) and, in tree mode, `expand`, `collapse`, `expand-all`, `collapse-all`.
+Cell menu built-ins (by `action` or string): the row built-ins (`add`, `delete`, `duplicate`, `move-up`, `move-down`) and, in tree mode, `expand` / `collapse` (one level), `expand-subtree` / `collapse-subtree` (the row and everything under it), `expand-all` / `collapse-all` (the whole tree); the per-row tree items act on the whole selection when the clicked row is in it.
 
 `beforeContextMenuOpenCallback(ctx)` runs (sync) before the menu opens with the cell ctx: return `false` to show no grid menu (the browser's own menu shows), or an entries array to show instead of `contextMenu`.
 
@@ -999,7 +999,7 @@ grid.onRowChange = (detail) => save(detail.draftRow)
 
 ## Controller
 
-`el.controller` is the public `GridController` facade — the same object every ctx / detail carries as `controller`. It covers state as read-only properties named like the element's (`items`, `displayItems`, `columns`, `sort`, `filters`, `invalidCells`, `selectedRows`, `selectedRowIndices`, `selectedCellRange`, `expandedPaths`), rows (`insertRow`, `insertRows`, `removeRow`, `removeRows`, `duplicateRow`, `moveRow`, `getRowById`, `getRowIndex`, `updateRowById`, …), drafts and validation, row locking, row / cell / column selection, tree (`expandRows`, `collapseRows`, `expandAll(path?)`, `collapseAll(path?)`, `toggleRowExpanded`, …), columns (widths, order), focus / editing (`focusCell`, `startEditing`) and menus (`closeContextMenu`, `closeToolbar`). Most of these are also methods on the element itself (below).
+`el.controller` is the public `GridController` facade — the same object every ctx / detail carries as `controller`. It covers state as read-only properties named like the element's (`items`, `displayItems`, `columns`, `sort`, `filters`, `invalidCells`, `selectedRows`, `selectedRowIndices`, `selectedCellRange`, `expandedPaths`), rows (`insertRow`, `insertRows`, `removeRow`, `removeRows`, `duplicateRow`, `moveRow`, `getRowById`, `getRowIndex`, `updateRowById`, …), drafts and validation, row locking, row / cell / column selection, tree (`expandRows`, `collapseRows`, `expandAll(paths?)`, `collapseAll(paths?)`, `toggleRowExpanded` — all take `ExpandOptions { isExclusive?, silent? }`, …), columns (widths, order), focus / editing (`focusCell`, `startEditing`) and menus (`closeContextMenu`, `closeToolbar`). Most of these are also methods on the element itself (below).
 
 ## Public Methods
 
@@ -1243,6 +1243,8 @@ grid.labels = {
     moveDown: 'Move down',
     expand: 'Expand',
     collapse: 'Collapse',
+    expandSubtree: 'Expand subtree',
+    collapseSubtree: 'Collapse subtree',
     expandAll: 'Expand all',
     collapseAll: 'Collapse all'
   },

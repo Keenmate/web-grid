@@ -1,4 +1,4 @@
-import { test, expect, Page, Locator, gridLocator, clickMenuItem } from './fixtures'
+import { test, expect, Page, Locator, gridLocator, clickMenuItem, menuRoot } from './fixtures'
 
 /**
  * Smoke tests for tree mode against the tree fixture (docs/test/tree.html).
@@ -211,6 +211,46 @@ test.describe('cellContextMenu — predefined tree items', () => {
 		await expect(menu.locator('[data-action="collapse"]')).toHaveCount(0)
 		// Tree-wide items still show
 		await expect(menu.locator('[data-action="expand-all"]')).toContainText('Expand all')
+	})
+
+	async function runMenuAction(page: Page, rowIndex: number, action: string) {
+		await openCellContextMenu(page, GRID, rowIndex, 0)
+		const item = menuRoot(page).locator(`[data-action="${action}"]`)
+		await expect(item).toHaveCount(1)
+		await item.evaluate((el: HTMLElement) => el.click())
+	}
+	const expanded = (page: Page) => gridLocator(page).evaluate((el: any) => [...el.expandedPaths].sort())
+
+	test('"Expand" opens one level; "Expand subtree" / "Collapse subtree" the row and everything under it', async ({ page }) => {
+		await gotoTreeDemo(page)
+		await gridLocator(page).evaluate((el: any) => { el.expandedPaths = [] })
+		await runMenuAction(page, 0, 'expand')
+		expect(await expanded(page)).toEqual(['1'])
+		await runMenuAction(page, 0, 'expand-subtree')
+		const all = await expanded(page)
+		expect(all).toContain('1.1')
+		expect(all).toContain('1.4')
+		expect(await gridLocator(page).evaluate((el: any) => el.items.every((r: any) => el.isPathExpanded(r.path)))).toBe(true)
+		await runMenuAction(page, 0, 'collapse-subtree')
+		expect(await expanded(page)).toEqual([])
+	})
+
+	test('per-row tree actions act on the selection when the clicked row is in it, else just the row', async ({ page }) => {
+		await gotoTreeDemo(page)
+		// Acme expanded: rows 1.. are its children (collapsed)
+		await gridLocator(page).evaluate((el: any) => { el.expandedPaths = ['1']; el.flush(); el.selectRow(1); el.selectRow(2, 'toggle') })
+		const [p1, p2, p3] = await gridLocator(page).evaluate((el: any) => [1, 2, 3].map(i => el.controller.getRowTreeInfo(el.displayItems[i]).path))
+		await runMenuAction(page, 1, 'expand')
+		let e = await expanded(page)
+		expect(e).toContain(p1)
+		expect(e).toContain(p2)
+		expect(e).not.toContain(p3)
+		const p4 = await gridLocator(page).evaluate((el: any) => el.displayItems.map((r: any) => el.controller.getRowTreeInfo(r)).find((i: any) => i.hasChildren && !el.isPathExpanded(i.path))?.path)
+		const i4 = await gridLocator(page).evaluate((el: any, p) => el.displayItems.findIndex((r: any) => el.controller.getRowTreeInfo(r).path === p), p4)
+		await runMenuAction(page, i4, 'expand')  // not selected → just that row
+		e = await expanded(page)
+		expect(e).toContain(p4)
+		expect(e.length).toBe(4)
 	})
 
 	test('"Expand all" expands the whole tree', async ({ page }) => {

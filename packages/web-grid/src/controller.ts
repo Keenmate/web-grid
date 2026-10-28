@@ -77,11 +77,11 @@ export function createGridController<T>(el: GridElement<T>): GridController<T> {
 		// tree
 		isPathExpanded: (path) => g().isPathExpanded(path),
 		get expandedPaths() { return g().expandedPaths },
-		toggleRowExpanded: (path) => g().toggleRowExpanded(path),
-		expandRows: (paths) => g().expandRows(paths),
-		collapseRows: (paths) => g().collapseRows(paths),
-		expandAll: (path) => g().expandAll(path),
-		collapseAll: (path) => g().collapseAll(path),
+		toggleRowExpanded: (path, options) => g().toggleRowExpanded(path, options),
+		expandRows: (paths, options) => g().expandRows(paths, options),
+		collapseRows: (paths, options) => g().collapseRows(paths, options),
+		expandAll: (paths, options) => g().expandAll(paths, options),
+		collapseAll: (paths, options) => g().collapseAll(paths, options),
 		getRowTreeInfo: (row) => g().getRowTreeInfo(row),
 		// columns
 		setColumnWidth: (field, width) => g().setColumnWidth(field, width),

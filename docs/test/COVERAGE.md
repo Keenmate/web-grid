@@ -150,7 +150,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Tree mode expand/collapse, Ctrl+Arrow, Tab nav, `isRowEditable`, tree column locked | ✓ | `tree.spec.ts` | `tree.html` |
 | Predefined tree context-menu items (incl. clicking through) | ✓ | `tree.spec.ts` | `tree.html` |
 | Tree + virtual / infinite scroll | ✓ | `tree-scroll.spec.ts` | `tree-scroll.html` |
-| Tree API `toggleRowExpanded` / `expandRows` / `collapseRows` / `expandAll(path?)` / `collapseAll(path?)`, `row-expand` / `row-collapse` / `expanded-change { paths }`, `controller.expandedPaths` | ✓ | `events.spec.ts`, `grid.tree.test.ts` (unit) | `events.html` |
+| Tree API `toggleRowExpanded` / `expandRows` / `collapseRows` / `expandAll(paths?)` / `collapseAll(paths?)` + `ExpandOptions` (`isExclusive`, `silent`), `expandedPaths` string[], menu `expand` (one level) / `expand-subtree` / selection targeting, `row-expand` / `row-collapse` / `expanded-change { paths }`, `controller.expandedPaths` | ✓ | `events.spec.ts`, `grid.tree.test.ts` (unit) | `events.html` |
 | `treeExpandedGlyph` / `treeCollapsedGlyph` / `renderChevronCallback` | ✓ | `display-options.spec.ts` | `display-options.html` |
 
 ## 9. Events

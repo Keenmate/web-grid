@@ -103,7 +103,7 @@
 			vsRenderedEl.textContent = String(bodyRows.length)
 			const first = bodyRows[0]?.getAttribute('data-row-index')
 			vsFirstEl.textContent = first != null ? first : '?'
-			vsExpandedEl.textContent = String(vsGrid.expandedPaths?.size ?? 0)
+			vsExpandedEl.textContent = String(vsGrid.expandedPaths?.length ?? 0)
 		}
 		new MutationObserver(refreshVs).observe(vsGrid.shadowRoot, { childList: true, subtree: true })
 		requestAnimationFrame(() => requestAnimationFrame(refreshVs))
