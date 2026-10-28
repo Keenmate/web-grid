@@ -229,6 +229,6 @@
   top: 50%;
   transform: translateY(-50%);
   font-size: var(--wg-font-size-sm);
-  animation: wg-pulse 1s infinite;
+  animation: wg-pulse var(--wg-loading-pulse-duration) infinite;
   /* @keyframes wg-pulse defined in animations.css */
 }

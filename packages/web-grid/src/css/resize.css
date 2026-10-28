@@ -18,7 +18,7 @@
   cursor: col-resize;
   z-index: var(--wg-z-resize-handle);
   opacity: 0;
-  transition: opacity 0.1s ease;
+  transition: opacity var(--wg-transition-fast) var(--wg-easing);
 }
 
 /* Show resize handle on header hover */

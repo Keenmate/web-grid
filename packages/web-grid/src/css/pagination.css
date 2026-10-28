@@ -23,7 +23,7 @@
   font-family: inherit; /* Form elements don't inherit font by default */
   font-size: var(--wg-font-size-base);
   cursor: pointer;
-  transition: all var(--wg-transition-fast);
+  transition: all var(--wg-transition-fast) var(--wg-easing);
 }
 
 .wg__pagination-btn:hover:not(:disabled) {

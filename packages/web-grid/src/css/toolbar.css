@@ -56,7 +56,7 @@
 	font-size: var(--wg-font-size-base);
 	font-weight: var(--wg-font-weight-normal);
 	padding: var(--wg-toolbar-btn-padding);
-	transition: background 0.1s ease;
+	transition: background var(--wg-transition-fast) var(--wg-easing);
 }
 
 .wg__toolbar-btn:hover {
@@ -68,7 +68,7 @@
 }
 
 .wg__toolbar-btn:disabled {
-	opacity: 0.5;
+	opacity: var(--wg-disabled-opacity);
 	cursor: not-allowed;
 }
 
@@ -201,7 +201,7 @@
 	box-sizing: border-box;
 	font-family: inherit;
 	font-size: var(--wg-font-size-base);
-	transition: background var(--wg-transition-fast);
+	transition: background var(--wg-transition-fast) var(--wg-easing);
 }
 
 .wg__inline-action-btn:hover {
@@ -214,7 +214,7 @@
 
 .wg__inline-action-btn:disabled,
 .wg__inline-action-btn--disabled {
-	opacity: 0.5;
+	opacity: var(--wg-disabled-opacity);
 	cursor: not-allowed;
 }
 

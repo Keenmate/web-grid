@@ -54,6 +54,7 @@ const DATEPICKER_STYLES = `
 
 	/* Shadow */
 	--wg-dp-shadow: var(--wg-shadow-lg, 0 4px 16px var(--wg-dp-shadow-color));
+	--wg-dp-disabled-opacity: var(--base-disabled-opacity, 0.65);
 }
 
 .wg-datepicker {
@@ -236,7 +237,7 @@ const DATEPICKER_STYLES = `
 
 .wg-datepicker__day--disabled {
 	color: var(--wg-dp-text-disabled);
-	opacity: 0.5;
+	opacity: var(--wg-dp-disabled-opacity);
 	cursor: not-allowed;
 }
 

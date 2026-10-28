@@ -70,6 +70,8 @@
   /* Background Colors (the contract's surface ladder, derived from the main bg) */
   --wg-elevated-bg: var(--base-elevated-bg, light-dark(oklch(from var(--wg-main-bg) calc(l - 0.03) c h), oklch(from var(--wg-main-bg) calc(l + 0.06) c h)));
   --wg-disabled-bg: var(--base-disabled-bg, light-dark(oklch(from var(--wg-main-bg) calc(l - 0.024) c h), oklch(from var(--wg-main-bg) calc(l + 0.048) c h)));
+  /* Disabled dimming: one fade for the grid, its buttons, options and menu items (the contract's). */
+  --wg-disabled-opacity: var(--base-disabled-opacity, 0.65);
   /* Dropdown / floating surface (toolbar, context menu, dropdown panels). */
   --wg-dropdown-bg: var(--base-dropdown-bg, var(--wg-main-bg));
 
@@ -208,7 +210,7 @@
   --wg-pagination-btn-border: 1px solid var(--wg-border-color);
   --wg-pagination-btn-border-hover: 1px solid var(--wg-border-color-hover);
   --wg-pagination-btn-border-radius: var(--wg-border-radius-sm);
-  --wg-pagination-btn-disabled-opacity: 0.4;
+  --wg-pagination-btn-disabled-opacity: var(--wg-disabled-opacity);
 
   /* ==========================================================================
      EMPTY STATE
@@ -343,8 +345,14 @@
   /* ==========================================================================
      TRANSITIONS
      ========================================================================== */
-  --wg-transition-fast: 0.1s ease;
-  --wg-transition-normal: 0.15s ease;
+  /* The contract's speeds and easing only. Motion off = `0s` here, or --base-duration-*: 0s
+     page-wide; prefers-reduced-motion does it (block at the end of this file). */
+  --wg-transition-fast: var(--base-duration-fast, 0.1s);
+  --wg-transition-normal: var(--base-duration-normal, 0.15s);
+  --wg-easing: var(--base-ease-standard, cubic-bezier(0.4, 0, 0.2, 1));
+  /* Loading pulse of the autocomplete / combobox editors: a cycle, not a transition, so it
+     keeps its own period (it shows that options are loading). 0s stops it. */
+  --wg-loading-pulse-duration: 1s;
 
   /* ==========================================================================
      Z-INDEX LAYERS
@@ -460,4 +468,13 @@
      ========================================================================== */
   --wg-tooltip-padding: calc(0.6 * var(--wg-rem)) calc(1.0 * var(--wg-rem));
   --wg-tooltip-shadow: 0 2px 8px var(--wg-shadow-color);
+}
+
+/* Reduced motion: no transitions, no loading pulse. */
+@media (prefers-reduced-motion: reduce) {
+  :host {
+    --wg-transition-fast: 0s;
+    --wg-transition-normal: 0s;
+    --wg-loading-pulse-duration: 0s;
+  }
 }

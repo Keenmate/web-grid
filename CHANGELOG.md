@@ -38,6 +38,25 @@ text-mixed hover). Standalone it now looks the same as with the contract:
   inherited font. `e2e/contract-parity.spec.ts` compares every color token standalone vs. with
   the contract (light, dark, custom accent). The e2e color parser reads `oklch()`.
 
+### Changed — BREAKING (motion and disabled dimming follow the contract)
+
+- **Durations chain to `--base-duration-*`:** `--wg-transition-fast: var(--base-duration-fast, 0.1s)`,
+  `--wg-transition-normal: var(--base-duration-normal, 0.15s)`. They are durations only now (were
+  `0.1s ease` / `0.15s ease`); the easing is the new `--wg-easing`
+  (`var(--base-ease-standard, cubic-bezier(0.4, 0, 0.2, 1))`, was `ease`).
+- **No hard-coded durations left:** the resize handle and toolbar button fades (`0.1s`) and the tree
+  chevron (`0.12s` rotation → `0.1s`, snapped to the fast speed) go through `--wg-transition-fast`.
+- **Motion off is CSS only:** `--wg-transition-*: 0s` on the grid, or `--base-duration-*: 0s` page-wide.
+  `prefers-reduced-motion: reduce` sets them to `0s`. The autocomplete / combobox loading pulse keeps
+  its own 1s cycle (`--wg-loading-pulse-duration`, it shows that options are loading); `0s` stops it,
+  and reduced motion does.
+- **One disabled fade:** new `--wg-disabled-opacity: var(--base-disabled-opacity, 0.65)` dims the
+  disabled grid (was `0.6`), disabled dropdown options and toolbar / inline action buttons (were
+  `0.5`), and the pagination buttons (`--wg-pagination-btn-disabled-opacity` now defaults to it, was
+  `0.4`). The datepicker popup (outside the shadow root) reads `--base-disabled-opacity` for its
+  disabled days (`--wg-dp-disabled-opacity`, was `0.5`). Locked rows (`--wg-row-locked-opacity`,
+  `0.7`) and the read-only checkbox (`0.5`) are not disabled states and keep theirs.
+
 ### Changed — BREAKING (v2 API naming unification)
 
 Names now follow the suite-wide naming rules (BlissFramework naming-conventions D-NC-13..27),

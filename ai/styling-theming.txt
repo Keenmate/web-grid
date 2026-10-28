@@ -96,6 +96,19 @@ Layout:
 The full list is 120+ variables. See _variables.css or the manifest for the complete set.
 
 
+MOTION AND DISABLED DIMMING
+---------------------------
+  --wg-transition-fast        var(--base-duration-fast, 0.1s)   hover fades, chevron, tooltip, pagination
+  --wg-transition-normal      var(--base-duration-normal, 0.15s)
+  --wg-easing                 var(--base-ease-standard, cubic-bezier(0.4, 0, 0.2, 1))
+  --wg-loading-pulse-duration 1s   loading pulse cycle of autocomplete / combobox editors
+  --wg-disabled-opacity       var(--base-disabled-opacity, 0.65)   disabled grid, buttons, options
+
+Motion off (CSS only, no attribute): set --wg-transition-*: 0s and --wg-loading-pulse-duration: 0s
+on the grid, or --base-duration-*: 0s on :root for all components. prefers-reduced-motion: reduce
+does this automatically.
+
+
 DARK MODE
 ---------
 Dark mode activates automatically. No configuration needed. Detection methods:
@@ -244,7 +257,7 @@ Manifest structure:
 baseVariables entry format:
 
   {
-    "name": "base-accent-color",
+    "name": "base-primary-color",
     "required": true,
     "usage": "Editor focus outline, active sort indicator, selected pagination button"
   }

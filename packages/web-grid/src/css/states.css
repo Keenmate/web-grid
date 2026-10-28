@@ -22,7 +22,7 @@
 
 /* Disabled grid (`disabled`): the container is `inert`, dimmed */
 .wg--disabled {
-  opacity: 0.6;
+  opacity: var(--wg-disabled-opacity);
 }
 
 /* ==============================================================================

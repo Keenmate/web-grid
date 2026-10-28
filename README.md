@@ -1155,6 +1155,21 @@ This means:
 | `--wg-dropdown-bg` | Floating surfaces (toolbar, dropdowns); the context menus use `--wg-context-menu-*` ([Context Menu](#menu-keyboard-markup-and-theming)) |
 | `--wg-border-color` | Border color |
 
+### Motion and disabled dimming
+
+Motion uses the contract's speeds and easing only: `--wg-transition-fast`
+(`--base-duration-fast`, 0.1s), `--wg-transition-normal` (`--base-duration-normal`, 0.15s),
+`--wg-easing` (`--base-ease-standard`). To turn motion off:
+
+```css
+web-grid { --wg-transition-fast: 0s; --wg-transition-normal: 0s; --wg-loading-pulse-duration: 0s; }
+:root { --base-duration-fast: 0s; --base-duration-normal: 0s; --base-duration-medium: 0s; --base-duration-slow: 0s; } /* page-wide */
+```
+
+`prefers-reduced-motion: reduce` does the same. Disabled parts (the disabled grid, toolbar and
+pagination buttons, dropdown options) fade by `--wg-disabled-opacity`
+(`--base-disabled-opacity`, 0.65).
+
 ### Component Variables Manifest
 
 A machine-readable manifest documenting all CSS variables is included in the package:
@@ -1163,8 +1178,8 @@ A machine-readable manifest documenting all CSS variables is included in the pac
 import manifest from '@keenmate/web-grid/manifest'
 
 console.log(manifest.prefix)              // "wg"
-console.log(manifest.baseVariables)       // 38 --base-* variables consumed
-console.log(manifest.componentVariables)  // 208 --wg-* variables exposed
+console.log(manifest.baseVariables)       // 43 --base-* variables consumed
+console.log(manifest.componentVariables)  // 214 --wg-* variables exposed
 ```
 
 The manifest follows the [component-variables schema](https://raw.githubusercontent.com/keenmate/schemas/main/component-variables.schema.json) and contains:

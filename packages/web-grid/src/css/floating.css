@@ -22,7 +22,7 @@
   box-shadow: var(--wg-tooltip-shadow);
   pointer-events: none;
   opacity: 0;
-  transition: opacity var(--wg-transition-fast);
+  transition: opacity var(--wg-transition-fast) var(--wg-easing);
 }
 
 .wg__tooltip--visible {

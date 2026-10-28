@@ -34,7 +34,7 @@
   color: var(--wg-tree-chevron-color);
   cursor: pointer;
   flex-shrink: 0;
-  transition: transform 0.12s ease, background 0.1s ease;
+  transition: transform var(--wg-transition-fast) var(--wg-easing), background var(--wg-transition-fast) var(--wg-easing);
 }
 
 .wg__tree-chevron:hover:not(.wg__tree-chevron--leaf) {

@@ -156,7 +156,7 @@
 }
 
 .wg__dropdown-option--disabled {
-  opacity: 0.5;
+  opacity: var(--wg-disabled-opacity);
   cursor: not-allowed;
   pointer-events: none;
 }
