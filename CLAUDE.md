@@ -222,7 +222,7 @@ Built-in item names are kebab-case (`'move-up'`, `'sort-asc'`, `'expand'`) and t
 - Events: `<state>-change` for set changes (whole new state: `expanded-change { paths }`, `focus-change`, `*-selection-change`), `<domain>-<verb>` for acts (`row-expand`, `row-delete`, `cell-paste`, `cell-edit-start`). Detail nouns: never a bare `index` (`rowIndex`, `optionIndex`), `old*` / `new*` pairs, `item` only for the core `ActionItem`.
 - State is a same-named property on the element AND `el.controller` (controller read-only): `selectedRows` (objects), `selectedRowIndices`, `items`, `displayItems`, `columns`, `sort`, `filters`, `invalidCells`, `selectedCellRange`, `expandedPaths`. `get*()` only for lookups with arguments / computed snapshots (`getDrafts`, `getSelectedCells`, `getSelectedColumns`).
 - Verbs: remove = programmatic (`removeRows`, `removeRow`), delete = user command (`delete` built-in + `row-delete`), clear = empty a set (`clearSelection` = all kinds), discard = drafts (`discardDraft(row)`), open/close = surfaces you work in (`openGoToRowDialog`), `scrollTo*` → `Promise<boolean>`.
-- UI strings only through `labels` (`labels.ts`: `resolveLabels` / `formatLabel`); empty-table key `empty`. No `*Text` options.
+- UI strings only through `labels` (`labels.ts`: `resolveLabels` / `formatLabel`); empty-table keys `noData` (no rows) / `noResults` (filter matched nothing); `''` = blank, `undefined` = default. No `*Text` options.
 - Lifecycle from core: `defer` / `release()` / `ready` / `whenReady()` / `destroy()`; engine setters don't render before the first build (`#isBuilt`).
 
 **Why this matters:**

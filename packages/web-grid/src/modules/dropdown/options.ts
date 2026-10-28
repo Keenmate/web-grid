@@ -44,10 +44,32 @@ export function getOptionDisplayValue(
 	return value != null ? String(value) : ''
 }
 
+// The synthetic first item of an `isEmptyAllowed` dropdown (value null)
+const EMPTY_OPTION = Symbol('wg-empty-option')
+
+/** Is this the synthetic empty item (`editorOptions.isEmptyAllowed`)? */
+export function isEmptyOption(opt: EditorOption | undefined): boolean {
+	return !!opt && (opt as Record<symbol, unknown>)[EMPTY_OPTION] === true
+}
+
+/**
+ * The option list as shown: with `editorOptions.isEmptyAllowed`, an empty first
+ * item (value `null`, text `labels.dropdownEmptyOption`) ahead of `options`.
+ * Only for an unfiltered list — a typed filter / search shows its matches only.
+ */
+export function withEmptyOption(options: EditorOption[], opts: EditorOptions<any>, text: string): EditorOption[] {
+	if (!opts.isEmptyAllowed) return options
+	const empty = { value: null as unknown as string, label: text, [EMPTY_OPTION]: true } as EditorOption
+	if (opts.valueMember) (empty as Record<string, unknown>)[opts.valueMember] = null
+	if (opts.displayMember) (empty as Record<string, unknown>)[opts.displayMember] = text
+	return [empty, ...options]
+}
+
 /**
  * Get display label from option object
  */
 export function getOptionLabel(opt: EditorOption, opts: EditorOptions<any>): string {
+	if (isEmptyOption(opt)) return opt.label
 	if (opts.getDisplayValueCallback) return opts.getDisplayValueCallback(optionCtx(opts, { option: opt }))
 	const displayMember = opts.displayMember || 'label'
 	return String((opt as Record<string, unknown>)[displayMember] ?? opt.label ?? '')
@@ -57,6 +79,7 @@ export function getOptionLabel(opt: EditorOption, opts: EditorOptions<any>): str
  * Get value from option object
  */
 export function getOptionValue(opt: EditorOption, opts: EditorOptions<any>): unknown {
+	if (isEmptyOption(opt)) return null
 	if (opts.getValueCallback) return opts.getValueCallback(optionCtx(opts, { option: opt }))
 	const valueMember = opts.valueMember || 'value'
 	return (opt as Record<string, unknown>)[valueMember] ?? opt.value
@@ -75,6 +98,7 @@ export function getOptionSearchText(opt: EditorOption, opts: EditorOptions<any>)
  * Get icon from option object
  */
 export function getOptionIcon(opt: EditorOption, opts: EditorOptions<any>): string | null {
+	if (isEmptyOption(opt)) return null
 	if (opts.getIconCallback) return opts.getIconCallback(optionCtx(opts, { option: opt }))
 	if (opts.iconMember) return (opt as Record<string, unknown>)[opts.iconMember] as string || null
 	return null
@@ -84,6 +108,7 @@ export function getOptionIcon(opt: EditorOption, opts: EditorOptions<any>): stri
  * Get subtitle from option object
  */
 export function getOptionSubtitle(opt: EditorOption, opts: EditorOptions<any>): string | null {
+	if (isEmptyOption(opt)) return null
 	if (opts.getSubtitleCallback) return opts.getSubtitleCallback(optionCtx(opts, { option: opt }))
 	if (opts.subtitleMember) return (opt as Record<string, unknown>)[opts.subtitleMember] as string || null
 	return null
@@ -93,6 +118,7 @@ export function getOptionSubtitle(opt: EditorOption, opts: EditorOptions<any>): 
  * Check if option is disabled
  */
 export function isOptionDisabled(opt: EditorOption, opts: EditorOptions<any>): boolean {
+	if (isEmptyOption(opt)) return false
 	if (opts.getIsDisabledCallback) return opts.getIsDisabledCallback(optionCtx(opts, { option: opt }))
 	if (opts.disabledMember) return Boolean((opt as Record<string, unknown>)[opts.disabledMember])
 	return false

@@ -6,7 +6,7 @@
 import { computePosition, flip, offset, size } from '@floating-ui/dom'
 import type { EditorOption, EditorOptions } from '../../types.js'
 import type { GridHost } from '../grid-context.js'
-import { getOptionLabel, getOptionValue, getOptionIcon, getOptionSubtitle, isOptionDisabled, optionCtx } from './options.js'
+import { getOptionLabel, getOptionValue, getOptionIcon, getOptionSubtitle, isOptionDisabled, isEmptyOption, optionCtx } from './options.js'
 import { removeFillHandle } from '../fill-handle/index.js'
 
 /**
@@ -62,7 +62,8 @@ export function renderDropdown<T>(
 			const disabled = isOptionDisabled(opt, opts)
 
 			// Custom render callback
-			if (opts.renderOptionCallback) {
+			const isEmpty = isEmptyOption(opt)
+			if (opts.renderOptionCallback && !isEmpty) {
 				return opts.renderOptionCallback(optionCtx(opts, { option: opt, optionIndex: i, isFocused: isHighlighted, isSelected, isDisabled: disabled }))
 			}
 
@@ -75,6 +76,7 @@ export function renderDropdown<T>(
 			if (isHighlighted) classes.push('wg__dropdown-option--highlighted')
 			if (isSelected) classes.push('wg__dropdown-option--selected')
 			if (disabled) classes.push('wg__dropdown-option--disabled')
+			if (isEmpty) classes.push('wg__dropdown-option--empty')
 
 			const iconHtml = icon ? `<span class="wg__dropdown-option-icon">${ctx.escapeHtml(icon)}</span>` : ''
 			const subtitleHtml = subtitle ? `<span class="wg__dropdown-option-subtitle">${ctx.escapeHtml(subtitle)}</span>` : ''

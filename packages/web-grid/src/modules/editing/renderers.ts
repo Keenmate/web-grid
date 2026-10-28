@@ -5,7 +5,7 @@
 
 import type { Column } from '../../types.js'
 import type { GridHost } from '../grid-context.js'
-import { getOptionDisplayValue, getOptionValue } from '../dropdown/index.js'
+import { getOptionDisplayValue, getOptionValue, withEmptyOption } from '../dropdown/index.js'
 
 /**
  * Render the appropriate editor for a cell
@@ -255,8 +255,8 @@ export function renderSelectEditor<T>(
 	column: Column<T>
 ): string {
 	const opts = column.editorOptions || {}
-	const options = opts.options || []
-	const displayValue = getOptionDisplayValue(value, options, opts)
+	const displayValue = getOptionDisplayValue(value, opts.options || [], opts)
+	const options = withEmptyOption(opts.options || [], opts, opts.labels?.dropdownEmptyOption ?? ctx.engine.labels.dropdownEmptyOption)
 	const initialQuery = ctx.engine.editingCell?.initialSearchQuery
 
 	// Initialize dropdown options for select
@@ -295,9 +295,9 @@ export function renderComboboxEditor<T>(
 	column: Column<T>
 ): string {
 	const opts = column.editorOptions || {}
-	const options = opts.options || []
-	const displayValue = getOptionDisplayValue(value, options, opts)
+	const displayValue = getOptionDisplayValue(value, opts.options || [], opts)
 	const initialQuery = ctx.engine.editingCell?.initialSearchQuery
+	const options = initialQuery ? (opts.options || []) : withEmptyOption(opts.options || [], opts, opts.labels?.dropdownEmptyOption ?? ctx.engine.labels.dropdownEmptyOption)
 
 	// If user typed a character to start editing, use that as initial value
 	const inputValue = initialQuery !== undefined ? initialQuery : displayValue
@@ -332,9 +332,9 @@ export function renderAutocompleteEditor<T>(
 	column: Column<T>
 ): string {
 	const opts = column.editorOptions || {}
-	const initialOptions = opts.initialOptions || opts.options || []
-	const displayValue = getOptionDisplayValue(value, initialOptions, opts)
+	const displayValue = getOptionDisplayValue(value, opts.initialOptions || opts.options || [], opts)
 	const initialQuery = ctx.engine.editingCell?.initialSearchQuery
+	const initialOptions = initialQuery ? (opts.initialOptions || opts.options || []) : withEmptyOption(opts.initialOptions || opts.options || [], opts, opts.labels?.dropdownEmptyOption ?? ctx.engine.labels.dropdownEmptyOption)
 
 	// If user typed a character to start editing, use that as initial value
 	const inputValue = initialQuery !== undefined ? initialQuery : displayValue

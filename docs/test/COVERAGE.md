@@ -171,7 +171,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | --- | :-: | --- | --- |
 | `readonly` (nothing editable, still focusable) / `disabled` (container inert) | ✓ | `inputs.spec.ts` | `inputs.html` |
 | Core `defer` / `release()` / `ready` event / `ready` attribute | ✓ | `inputs.spec.ts` | `inputs.html` |
-| `labels` JSON attribute, `labels.empty`, column `editorOptions.labels` | ✓ | `i18n.spec.ts` | `i18n.html` |
+| `labels` JSON attribute, `labels.noData` / `noResults` / `''` blank, column `editorOptions.labels`, dropdown no-data / no-results | ✓ | `i18n.spec.ts` | `i18n.html` |
 | Dark-mode signals (per-instance, ancestor + theme-source, color-scheme, OS) | ✓ | `theming.spec.ts` | `theming.html` |
 | Core theme context (page signal → `data-context-theme`), `--base-*` chain | ✓ | `theme-context.spec.ts` | `theme-context.html` |
 | Contrast in dark mode (3 theme depths) | ✓ | `dark-mode.spec.ts` | `dark-mode.html` |

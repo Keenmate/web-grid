@@ -178,15 +178,18 @@ onSelect(ctx)
     }
   }
 
-allowEmpty (boolean)
-  When true, adds an empty/null option at the top of the dropdown.
-  Selecting it commits null/empty to the cell.
+isEmptyAllowed (boolean, default false)
+  select / combobox / autocomplete: an empty first item (text
+  labels.dropdownEmptyOption, "—") ahead of the options; picking it sets
+  the value to null. Shown for the unfiltered list only (not for a typed
+  filter / search).
 
-labels ({ dropdownEmpty?, dropdownSearching? })
-  This column's dropdown texts, per key over the grid's labels:
-  dropdownEmpty - shown when the filter returns no matches (grid default
-  labels.dropdownEmpty, "No options"); dropdownSearching - shown during an
-  async search (labels.dropdownSearching, "Searching...").
+labels ({ dropdownNoData?, dropdownNoResults?, dropdownSearching?, dropdownEmptyOption? })
+  This column's dropdown texts, per key over the grid's labels ('' = blank):
+  dropdownNoData - the editor has no options at all ("No options");
+  dropdownNoResults - a typed filter / search matched nothing ("No matching options");
+  dropdownSearching - a typed async search is in flight ("Searching…");
+  dropdownEmptyOption - the isEmptyAllowed item ("—").
 
 dropdownMinWidth (string)
   CSS minimum width for the dropdown popup. Useful when the cell is narrow
@@ -325,7 +328,7 @@ Example 1: Select with custom value/display members
       valueMember: 'code',
       displayMember: 'name',
       groupMember: 'region',
-      allowEmpty: true
+      isEmptyAllowed: true
     }
   }
 
@@ -382,7 +385,7 @@ Example 3: Autocomplete with async search
       debounceMs: 250,
       placeholder: 'Search users...',
       dropdownMinWidth: '350px',
-      allowEmpty: true
+      isEmptyAllowed: true
     }
   }
 

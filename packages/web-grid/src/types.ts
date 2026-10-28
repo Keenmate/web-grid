@@ -95,7 +95,7 @@ export type EditorOptions<T = unknown> = {
 	onSelect?: (ctx: OptionSelectContext<T>) => void
 
 	// Other shared options
-	allowEmpty?: boolean    // Allow null/empty selection
+	isEmptyAllowed?: boolean  // select / combobox / autocomplete: an empty first item (labels.dropdownEmptyOption, "—") that sets the value to null (default false)
 	labels?: Partial<Pick<GridLabels, 'dropdownNoData' | 'dropdownNoResults' | 'dropdownSearching' | 'dropdownEmptyOption'>>  // This column's dropdown texts (per key over the grid's `labels`)
 	dropdownMinWidth?: string  // Minimum width for dropdown (e.g., "300px") - useful when cell is narrow
 

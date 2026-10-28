@@ -11,7 +11,9 @@ export {
 	getOptionIcon,
 	getOptionSubtitle,
 	isOptionDisabled,
-	getOptionGroup
+	getOptionGroup,
+	isEmptyOption,
+	withEmptyOption
 } from './options.js'
 
 // Rendering

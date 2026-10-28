@@ -594,8 +594,8 @@ Used by `select`, `combobox`, and `autocomplete`.
 |---|---|---|
 | `renderOptionCallback` | `(ctx: { option, optionIndex, isFocused, isSelected, isDisabled }) => string` | Custom HTML per option |
 | `onSelect` | `(ctx: { option, row, rowIndex, column, field, … }) => void` | Notification when an option is selected |
-| `allowEmpty` | `boolean` | Allow null / empty selection |
-| `labels` | `{ dropdownEmpty?, dropdownSearching? }` | This column's dropdown texts, per key over the grid `labels` |
+| `isEmptyAllowed` | `boolean` | An empty first item (`labels.dropdownEmptyOption`, "—") that sets the value to `null` (default `false`) |
+| `labels` | `{ dropdownNoData?, dropdownNoResults?, dropdownSearching?, dropdownEmptyOption? }` | This column's dropdown texts, per key over the grid `labels` |
 | `dropdownMinWidth` | `string` | Minimum dropdown width (e.g. `'300px'`) |
 | `placeholder` | `string` | Combobox / autocomplete placeholder |
 
@@ -857,9 +857,13 @@ grid.labels = {
   paginationPageInfo: 'Page {current} of {total}',
   paginationItemCount: '{count} items',
   paginationPerPage: 'per page',
-  empty: 'No items to display',  // empty table
-  dropdownEmpty: 'No options',
-  dropdownSearching: 'Searching...',
+  noData: 'No items to display',        // the grid has no rows
+  noResults: 'No matching items',       // rows exist, the filter matched nothing
+  loading: 'Loading…',                  // infinite-scroll load-more row
+  dropdownNoData: 'No options',          // the editor has no options at all
+  dropdownNoResults: 'No matching options',  // a typed filter / search matched nothing
+  dropdownSearching: 'Searching…',
+  dropdownEmptyOption: '—',              // the empty first item (editorOptions.isEmptyAllowed)
   rowLocked: 'This row is locked',
   rowLockedBy: 'Locked by {lockedBy}',
   goToRow: 'Go to row (1-{max}):',  // Ctrl/Cmd+G dialog

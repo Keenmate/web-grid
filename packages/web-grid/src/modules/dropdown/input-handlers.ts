@@ -5,7 +5,7 @@
 
 import type { Column } from '../../types.js'
 import type { GridHost } from '../grid-context.js'
-import { getOptionLabel } from './options.js'
+import { getOptionLabel, withEmptyOption } from './options.js'
 import { dataLogger } from '../../logger.js'
 import { renderDropdown } from './rendering.js'
 import { updateDropdownHighlight, updateLoadingIndicator, attachDropdownListeners } from './interaction.js'
@@ -39,7 +39,7 @@ export function handleComboboxInput<T>(ctx: GridHost<T>, e: Event): void {
 			return label.toLowerCase().includes(searchLower)
 		}))
 	} else {
-		ctx.dropdown.setOptions(allOptions)
+		ctx.dropdown.setOptions(withEmptyOption(allOptions, opts, opts.labels?.dropdownEmptyOption ?? ctx.engine.labels.dropdownEmptyOption))
 	}
 
 	ctx.dropdown.setHighlightedIndex(ctx.dropdown.options.length > 0 ? 0 : -1)
@@ -88,7 +88,7 @@ export function handleAutocompleteInput<T>(ctx: GridHost<T>, e: Event): void {
 	// Show dropdown immediately with initial options
 	const wrapper = input.closest('.wg__editor--autocomplete') as HTMLElement
 	if (!ctx.dropdown.isOpen && wrapper) {
-		ctx.dropdown.setOptions(opts.initialOptions || [])
+		ctx.dropdown.setOptions(query ? (opts.initialOptions || []) : withEmptyOption(opts.initialOptions || [], opts, opts.labels?.dropdownEmptyOption ?? ctx.engine.labels.dropdownEmptyOption))
 		const dropdown = renderDropdown(ctx, wrapper, ctx.dropdown.options, opts)
 		attachDropdownListeners(ctx, dropdown)
 		ctx.dropdown.setHighlightedIndex(ctx.dropdown.options.length > 0 ? 0 : -1)
@@ -99,7 +99,7 @@ export function handleAutocompleteInput<T>(ctx: GridHost<T>, e: Event): void {
 
 	// Check minimum length
 	if (query.length < minLength) {
-		ctx.dropdown.setOptions(opts.initialOptions || [])
+		ctx.dropdown.setOptions(query ? (opts.initialOptions || []) : withEmptyOption(opts.initialOptions || [], opts, opts.labels?.dropdownEmptyOption ?? ctx.engine.labels.dropdownEmptyOption))
 		if (wrapper) {
 			const dropdown = renderDropdown(ctx, wrapper, ctx.dropdown.options, opts)
 			attachDropdownListeners(ctx, dropdown)

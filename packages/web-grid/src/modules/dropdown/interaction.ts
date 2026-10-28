@@ -5,7 +5,7 @@
 
 import type { EditorOptions } from '../../types.js'
 import type { GridHost } from '../grid-context.js'
-import { getOptionValue, getOptionLabel, isOptionDisabled } from './options.js'
+import { getOptionValue, getOptionLabel, isOptionDisabled, withEmptyOption } from './options.js'
 import { renderDropdown, removeDropdown } from './rendering.js'
 import { renderCell } from '../rendering/index.js'
 
@@ -158,7 +158,7 @@ export function openDropdownForCurrentEditor<T>(ctx: GridHost<T>): void {
 			}))
 			targetIndex = ctx.dropdown.options.length > 0 ? 0 : -1
 		} else {
-			ctx.dropdown.setOptions(allOptions)
+			ctx.dropdown.setOptions(withEmptyOption(allOptions, opts, opts.labels?.dropdownEmptyOption ?? ctx.engine.labels.dropdownEmptyOption))
 			// Calculate highlight index for current value
 			const item = ctx.engine.displayItems[rowIndex]
 			const currentValue = item ? (item as Record<string, unknown>)[field] : undefined
@@ -168,9 +168,9 @@ export function openDropdownForCurrentEditor<T>(ctx: GridHost<T>): void {
 			targetIndex = currentIdx >= 0 ? currentIdx : 0
 		}
 	} else if (editor === 'combobox' || editor === 'autocomplete') {
-		const baseOptions = editor === 'autocomplete'
+		const baseOptions = withEmptyOption(editor === 'autocomplete'
 			? (opts.initialOptions || opts.options || [])
-			: (opts.options || [])
+			: (opts.options || []), opts, opts.labels?.dropdownEmptyOption ?? ctx.engine.labels.dropdownEmptyOption)
 
 		// Get current cell value
 		const item = ctx.engine.displayItems[rowIndex]

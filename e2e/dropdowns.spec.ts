@@ -229,3 +229,54 @@ test.describe('autocomplete editor with async searchCallback (assignee)', () => 
 		await expect(dropdownOptions(page)).toHaveCount(0)
 	})
 })
+
+// =============================================================================
+// editorOptions.isEmptyAllowed — an empty first item → value null
+// =============================================================================
+
+test.describe('editorOptions.isEmptyAllowed', () => {
+	async function allowEmpty(page: Page, field: string, labels?: object) {
+		await page.locator(GRID).evaluate((el: any, [f, l]) => {
+			el.columns = el.columns.map((c: any) => c.field === f ? { ...c, editorOptions: { ...c.editorOptions, isEmptyAllowed: true, ...(l ? { labels: l } : {}) } } : c)
+		}, [field, labels] as const)
+	}
+
+	test('select: the empty first item ("—") commits null', async ({ page }) => {
+		await gotoDropdowns(page)
+		await allowEmpty(page, 'country')
+		await openEditor(page, 0, COL.country)
+		await expect(dropdownOptions(page)).toHaveCount(8)
+		const first = dropdownOptions(page).first()
+		await expect(first).toHaveText('—')
+		await expect(first).toHaveClass(/wg__dropdown-option--empty/)
+		await first.click({ force: true })
+		await expect(dropdown(page)).toHaveCount(0)
+		await expect(cell(page, 0, COL.country)).not.toContainText('United States')
+		await expect.poll(() => page.locator(GRID).evaluate((el: any) => el.getRowDraft(0)?.country)).toBeNull()
+	})
+
+	test('select: keyboard still moves from the current value (offset by the empty item)', async ({ page }) => {
+		await gotoDropdowns(page)
+		await allowEmpty(page, 'country')
+		await openEditor(page, 1, COL.country)  // Germany
+		await page.keyboard.press('ArrowDown')
+		await page.keyboard.press('Enter')
+		await expect(cell(page, 1, COL.country)).toContainText('France')
+	})
+
+	test('combobox: the empty item shows unfiltered, not for a typed filter; column label override', async ({ page }) => {
+		await gotoDropdowns(page)
+		await allowEmpty(page, 'product', { dropdownEmptyOption: '(none)' })
+		await openEditor(page, 0, COL.product)
+		await expect(dropdownOptions(page)).toHaveCount(7)
+		await expect(dropdownOptions(page).first()).toHaveText('(none)')
+		await cell(page, 0, COL.product).locator('.wg__combobox-input').fill('phon')
+		await expect(dropdownOptions(page)).toHaveCount(1)
+	})
+
+	test('without isEmptyAllowed there is no empty item', async ({ page }) => {
+		await gotoDropdowns(page)
+		await openEditor(page, 0, COL.country)
+		await expect(dropdown(page).locator('.wg__dropdown-option--empty')).toHaveCount(0)
+	})
+})
