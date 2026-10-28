@@ -66,10 +66,21 @@ Every `--wg-*` color, font, or measurement resolves through a three-step chain:
 :host {
   /* 1. External override on the host wins.
      2. Otherwise read --base-*. theme-designer / pure-admin / ... declare these on :root.
-     3. Otherwise the hardcoded fallback applies. */
-  --wg-accent-color: var(--base-primary-color, #0078d4);
+     3. Otherwise the standalone fallback applies. */
+  --wg-accent-color: var(--base-primary-color, #3b82f6);
+  --wg-accent-color-hover: var(--base-primary-color-hover,
+    light-dark(color-mix(in srgb, black 15%, var(--wg-accent-color)),
+               color-mix(in srgb, white 15%, var(--wg-accent-color))));
 }
 ```
+
+Standalone (no `@keenmate/base-css-variables` on the page) the grid looks the same as with
+it: inputs (accent, main bg, text color, danger, shadow color) fall back to the contract's
+default values, and every derived color (hover / active, tints, text levels, borders, tooltip,
+text on the accent) falls back to the contract's **formula** on the `--wg-*` input. So
+`--wg-accent-color: #10b981` alone brings its hover, tint and text-on-accent along. The build
+checks this (`npm run check:contract`, `base-contract-check`), and `e2e/contract-parity.spec.ts`
+compares every color token standalone vs. with the contract, in light and dark.
 
 Practical consequences:
 
@@ -80,7 +91,7 @@ web-grid { --wg-accent-color: #10b981; }
 /* (2) Theme every KeenMate component on the page (Theme Designer pattern) */
 :root { --base-primary-color: #10b981; }
 
-/* (3) No override → built-in default applies (`#0078d4` in this case) */
+/* (3) No override → the contract's default applies (`#3b82f6` in this case) */
 ```
 
 The chain is the same for typography, surfaces, borders, danger colors, tooltip colors, and input chrome — see the [variables manifest](#variables-manifest) for the full list.
@@ -154,11 +165,11 @@ The full table lives in [the manifest](../component-variables.manifest.json).
 `@keenmate/web-grid` reads roughly 37 `--base-*` variables across these categories. Setting any of them on `:root` themes every KeenMate component on the page at once.
 
 - **Colors**: `--base-primary-color` (+ `-hover` / `-active`), `--base-primary-bg-subtle`, `--base-text-color-1` … `-4`, `--base-on-primary-text-color`, `--base-main-bg`, `--base-elevated-bg`, `--base-hover-bg`, `--base-active-bg`, `--base-disabled-bg`, `--base-dropdown-bg`, `--base-tooltip-bg`, `--base-tooltip-text-color`, `--base-border-color`.
-- **Inputs**: `--base-input-bg` / `-color` / `-border` (+ `-hover` / `-focus`) / `-placeholder-color`.
+- **Inputs**: `--base-input-bg` / `-text-color` / `-border-color` / `-border` (+ `-hover` / `-focus`) / `-placeholder-color`.
 - **Danger**: `--base-danger-color`, `--base-danger-bg-subtle`.
 - **Tooltip**: `--base-tooltip-bg`, `--base-tooltip-text-color`.
 - **Typography**: `--base-font-family`, `--base-font-size-base` / `-sm` / `-xs` / `-2xs`, `--base-font-weight-normal` / `-semibold`, `--base-line-height-*`.
-- **Other**: `--base-border-radius-*`, `--base-dropdown-box-shadow`.
+- **Other**: `--base-border-radius-*`, `--base-dropdown-box-shadow`, `--base-shadow-color`.
 
 ## Color-scheme contract
 
@@ -177,9 +188,10 @@ Dark / light mode is driven by **five signals**. Each one is honored at the righ
 Every `--wg-*` color fallback in `variables.css` resolves through `light-dark(<light>, <dark>)`:
 
 ```css
---wg-main-bg:       light-dark(#fff, #1f1f1f);
---wg-text-color-1:  light-dark(#1a1a1a, #e6e6e6);
---wg-border-color:  light-dark(#e5e7eb, #404040);
+--wg-main-bg:       var(--base-main-bg, light-dark(#ffffff, #1e293b));
+--wg-text-color-1:  var(--base-text-color-1, light-dark(#334155, #f1f5f9));
+--wg-border-color:  var(--base-border-color, light-dark(oklch(from var(--wg-main-bg) calc(l - 0.096) c h),
+                                                       oklch(from var(--wg-main-bg) calc(l + 0.192) c h)));
 ```
 
 `light-dark()` picks the right branch based on the resolved `color-scheme` value at that element. The library's job is to set `color-scheme` correctly based on the signals above — that's all `dark-mode.css` does. It does **not** override `--wg-*` or `--base-*` directly; setting them would silently replace your themed values.

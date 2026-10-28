@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Test — contract parity</title>
+	<style>
+		web-grid { max-width: 600px; }
+	</style>
+</head>
+<body>
+	<h1>contract parity</h1>
+	<p>Targeted by <code>e2e/contract-parity.spec.ts</code>: one plain grid, no theme of its own.
+	   The spec renders it with and without <code>@keenmate/base-css-variables</code>.</p>
+
+	<web-grid id="parity"></web-grid>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+
+		const grid = document.getElementById('parity')
+		grid.columns = [
+			{ field: 'id', title: 'ID', width: '70px' },
+			{ field: 'name', title: 'Name', width: '150px' }
+		]
+		grid.items = [
+			{ id: 1, name: 'Alice Johnson' },
+			{ id: 2, name: 'Bob Smith' }
+		]
+	</script>
+</body>
+</html>

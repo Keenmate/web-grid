@@ -1124,11 +1124,13 @@ web-grid {
 }
 ```
 
-Each `--wg-*` variable falls back to a `--base-*` variable, then to a hardcoded default:
+Each `--wg-*` variable falls back to a `--base-*` variable, then to a standalone default — the
+contract's default value for inputs, the contract's formula on the `--wg-*` input for derived
+colors (so the grid looks the same with or without `@keenmate/base-css-variables`):
 
 ```css
 :host {
-  --wg-accent-color: var(--base-primary-color, #0078d4);
+  --wg-accent-color: var(--base-primary-color, #3b82f6);
 }
 ```
 

@@ -8,7 +8,7 @@
 
    Usage from outside Shadow DOM:
      web-grid {
-       --wg-accent-color: #0078d4;
+       --wg-accent-color: #3b82f6;
        --wg-header-bg: #f5f5f5;
      }
    ============================================================================== */
@@ -40,62 +40,68 @@
      Color variables follow this priority chain:
        1. External override: --wg-accent-color: #custom
        2. Base theme value: var(--base-primary-color)
-       3. Hardcoded default fallback */
+       3. Standalone fallback (no contract loaded). Inputs (accent, main bg, text color,
+          danger, shadow color) fall back to the contract's default values; everything
+          derived from them falls back to the contract's FORMULA on the --wg-* input, so
+          overriding --wg-accent-color standalone brings its hover, tint and text along
+          (checked by `npm run check:contract`). light-dark() resolves from the inherited
+          color-scheme (dark-mode.css flips it per signal). */
 
   /* Accent Colors */
-  --wg-accent-color: var(--base-primary-color, #0078d4);
-  --wg-accent-color-hover: var(--base-primary-color-hover, #106ebe);
-  --wg-accent-color-active: var(--base-primary-color-active, #005a9e);
-  --wg-accent-color-light: var(--base-primary-bg-subtle, color-mix(in srgb, var(--wg-accent-color) 15%, transparent));
+  --wg-accent-color: var(--base-primary-color, #3b82f6);
+  --wg-accent-color-hover: var(--base-primary-color-hover, light-dark(color-mix(in srgb, black 15%, var(--wg-accent-color)), color-mix(in srgb, white 15%, var(--wg-accent-color))));
+  --wg-accent-color-active: var(--base-primary-color-active, light-dark(color-mix(in srgb, black 30%, var(--wg-accent-color)), color-mix(in srgb, white 30%, var(--wg-accent-color))));
+  /* Accent tint: 10% (light) / 20% (dark), as the contract's --base-primary-bg-subtle. */
+  --wg-accent-color-light: var(--base-primary-bg-subtle, light-dark(color-mix(in srgb, var(--wg-accent-color) 10%, transparent), color-mix(in srgb, var(--wg-accent-color) 20%, transparent)));
 
-  /* Text Color Levels (FluentUI-style hierarchy) */
-  /* light-dark() fallbacks activate when the consumer sets `color-scheme: dark`
-     (or `light dark`) on the page — typically via `body { color-scheme: dark }`.
-     The framework-class dark-mode blocks in dark-mode.css remain the primary
-     mechanism for data-theme="dark" / data-bs-theme="dark" / .dark switches. */
-  --wg-text-color-1: var(--base-text-color-1, light-dark(#242424, #f5f5f5));
-  --wg-text-color-2: var(--base-text-color-2, light-dark(#424242, #d4d4d4));
-  --wg-text-color-3: var(--base-text-color-3, light-dark(#707070, #a3a3a3));
-  --wg-text-on-accent: var(--base-on-primary-text-color, #ffffff);
+  /* Surface + shadow inputs (contract defaults) — the derived colors below mix from them. */
+  --wg-main-bg: var(--base-main-bg, light-dark(#ffffff, #1e293b));
+  --wg-shadow-color: var(--base-shadow-color, light-dark(rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.4)));
 
-  /* Background Colors (semantic taxonomy matching pure-admin's --base-* names) */
-  --wg-main-bg: var(--base-main-bg, light-dark(#ffffff, #1a1a1a));
-  --wg-elevated-bg: var(--base-elevated-bg, light-dark(#f5f5f5, #2b2b2b));
-  /* Dropdown / floating surface (toolbar, context menu, dropdown panels):
-     primary lookup is --base-dropdown-bg; falls back through --base-elevated-bg
-     so theme-designer's elevated-bg also covers floating UI. */
-  --wg-dropdown-bg: var(--base-dropdown-bg, var(--base-elevated-bg, var(--base-main-bg, light-dark(#ffffff, #2b2b2b))));
+  /* Text Color Levels: text-color-1 mixed into the main bg (75% / 55%), as the contract.
+     text-on-accent is the text drawn ON the accent fill, black or white by APCA contrast
+     (the contract's formula). With the contract loaded it follows --base-primary-color; set it
+     together with --wg-accent-color when you override the accent on top of the contract. */
+  --wg-text-color-1: var(--base-text-color-1, light-dark(#334155, #f1f5f9));
+  --wg-text-color-2: var(--base-text-color-2, color-mix(in srgb, var(--wg-text-color-1) 75%, var(--wg-main-bg)));
+  --wg-text-color-3: var(--base-text-color-3, color-mix(in srgb, var(--wg-text-color-1) 55%, var(--wg-main-bg)));
+  --wg-text-on-accent: var(--base-on-primary-text-color, color(from color(from var(--wg-accent-color) srgb calc(0.21 * r * r * (0.4 + r * (0.82 - 0.22 * r)) + 0.72 * g * g * (0.4 + g * (0.82 - 0.22 * g)) + 0.07 * b * b * (0.4 + b * (0.82 - 0.22 * b))) 0 0) srgb clamp(0, (0.34 - r) * 1e9, 1) clamp(0, (0.34 - r) * 1e9, 1) clamp(0, (0.34 - r) * 1e9, 1)));
 
-  /* Border Colors */
-  --wg-border-color: var(--base-border-color, light-dark(#e0e0e0, #3d3d3d));
-  --wg-border-color-hover: var(--base-border-color, light-dark(#d1d1d1, #5a5a5a));
+  /* Background Colors (the contract's surface ladder, derived from the main bg) */
+  --wg-elevated-bg: var(--base-elevated-bg, light-dark(oklch(from var(--wg-main-bg) calc(l - 0.03) c h), oklch(from var(--wg-main-bg) calc(l + 0.06) c h)));
+  --wg-disabled-bg: var(--base-disabled-bg, light-dark(oklch(from var(--wg-main-bg) calc(l - 0.024) c h), oklch(from var(--wg-main-bg) calc(l + 0.048) c h)));
+  /* Dropdown / floating surface (toolbar, context menu, dropdown panels). */
+  --wg-dropdown-bg: var(--base-dropdown-bg, var(--wg-main-bg));
+
+  /* Border Colors: divider = the main bg's hue shifted in lightness (contract formula).
+     The input outline (--wg-input-border-color) is stronger. */
+  --wg-border-color: var(--base-border-color, light-dark(oklch(from var(--wg-main-bg) calc(l - 0.096) c h), oklch(from var(--wg-main-bg) calc(l + 0.192) c h)));
+  --wg-border-color-hover: var(--base-border-color, var(--wg-border-color));
 
   /* Input Colors */
-  --wg-input-bg: var(--base-input-bg, light-dark(#ffffff, #1f1f1f));
+  --wg-input-bg: var(--base-input-bg, var(--wg-main-bg));
   --wg-input-color: var(--base-input-text-color, var(--wg-text-color-1));
-  --wg-input-border: var(--base-input-border, 1px solid light-dark(#d1d1d1, #5a5a5a));
-  --wg-input-border-hover: var(--base-input-border-hover, 1px solid #0078d4);
-  --wg-input-border-focus: var(--base-input-border-focus, 1px solid #0078d4);
-  --wg-input-placeholder-color: var(--base-input-placeholder-color, light-dark(#707070, #a3a3a3));
+  --wg-input-border-color: var(--base-input-border-color, light-dark(color-mix(in srgb, var(--wg-text-color-1) 45%, var(--wg-main-bg)), color-mix(in srgb, var(--wg-text-color-1) 35%, var(--wg-main-bg))));
+  --wg-input-border: var(--base-input-border, 1px solid var(--wg-input-border-color));
+  --wg-input-border-hover: var(--base-input-border-hover, 1px solid var(--wg-accent-color));
+  --wg-input-border-focus: var(--base-input-border-focus, 1px solid var(--wg-accent-color));
+  --wg-input-placeholder-color: var(--base-input-placeholder-color, var(--wg-text-color-3));
 
   /* Danger/Error Colors */
-  --wg-danger-color: var(--base-danger-color, light-dark(#d13438, #f87c86));
-  --wg-danger-bg-light: var(--base-danger-bg-subtle, light-dark(#fde7e9, #442726));
+  --wg-danger-color: var(--base-danger-color, #dc2626);
+  --wg-danger-bg-light: var(--base-danger-bg-subtle, light-dark(color-mix(in srgb, var(--wg-danger-color) 10%, transparent), color-mix(in srgb, var(--wg-danger-color) 20%, transparent)));
 
-  /* Hover/Active States
-     Adaptive via color-mix so the highlight stays visible in both light and dark
-     modes (always steps toward the text color). The flat-color fallback in
-     --base-main-bg ensures the mix has a valid second operand even when the
-     consumer hasn't set any --base-* vars. */
-  --wg-hover-bg: var(--base-hover-bg, color-mix(in srgb, var(--wg-text-color-1) 8%, var(--base-main-bg, light-dark(#ffffff, #1a1a1a))));
-  --wg-active-bg: var(--base-active-bg, color-mix(in srgb, var(--wg-text-color-1) 14%, var(--base-main-bg, light-dark(#ffffff, #1a1a1a))));
+  /* Hover/Active States: the contract's translucent overlay of the main bg's hue, so it
+     shows on any surface in both modes. */
+  --wg-hover-bg: var(--base-hover-bg, light-dark(color-mix(in oklch, oklch(from var(--wg-main-bg) calc(l - 0.45) c h) 14%, transparent), color-mix(in oklch, oklch(from var(--wg-main-bg) calc(l + 0.45) c h) 28%, transparent)));
+  --wg-active-bg: var(--base-active-bg, light-dark(color-mix(in oklch, oklch(from var(--wg-main-bg) calc(l - 0.45) c h) 24%, transparent), color-mix(in oklch, oklch(from var(--wg-main-bg) calc(l + 0.45) c h) 48%, transparent)));
 
   /* ==========================================================================
      TYPOGRAPHY
      ========================================================================== */
   --wg-font-size-base: calc(var(--base-font-size-sm, 1.4) * var(--wg-rem));
   --wg-font-size-sm: calc(var(--base-font-size-xs, 1.2) * var(--wg-rem));
-  --wg-font-size-xs: calc(var(--base-font-size-2xs, 1.1) * var(--wg-rem));
+  --wg-font-size-xs: calc(var(--base-font-size-2xs, 1) * var(--wg-rem));
   --wg-font-size-lg: calc(var(--base-font-size-base, 1.6) * var(--wg-rem));
 
   --wg-font-family: var(--base-font-family, inherit);
@@ -154,7 +160,7 @@
   --wg-cell-splitter-width: 1px;
   --wg-cell-bg-hover: var(--wg-hover-bg);
   --wg-cell-bg-editing: var(--wg-main-bg);
-  --wg-cell-readonly-bg: var(--base-disabled-bg, var(--wg-elevated-bg));
+  --wg-cell-readonly-bg: var(--wg-disabled-bg);
 
   /* ==========================================================================
      ROW COMPONENT
@@ -255,7 +261,7 @@
   --wg-toolbar-bg: var(--wg-dropdown-bg);
   --wg-toolbar-border: 1px solid var(--wg-border-color);
   --wg-toolbar-border-radius: var(--wg-border-radius-sm);
-  --wg-toolbar-shadow: var(--base-dropdown-box-shadow, 0 2px 8px var(--base-shadow-color, rgba(0, 0, 0, 0.15)));
+  --wg-toolbar-shadow: var(--base-dropdown-box-shadow, 0 8px 16px var(--wg-shadow-color));
   --wg-toolbar-divider-color: var(--wg-border-color);
   --wg-toolbar-divider-height: calc(1.6 * var(--wg-rem));
   --wg-toolbar-row-height: calc(3.7 * var(--wg-rem));
@@ -280,15 +286,15 @@
      OVERLAY / DIALOG
      ========================================================================== */
   --wg-overlay-bg: rgba(0, 0, 0, 0.4);
-  --wg-dialog-shadow: 0 4px 20px var(--base-shadow-color, rgba(0, 0, 0, 0.15));
+  --wg-dialog-shadow: 0 4px 20px var(--wg-shadow-color);
 
   /* ==========================================================================
      TOOLTIP
      ==========================================================================
      Tooltip is inverse-colored (light text on dark bg in light mode; flips in
      dark mode). Themed via the shared --base-tooltip-bg. */
-  --wg-tooltip-bg: var(--base-tooltip-bg, light-dark(#333333, #f5f5f5));
-  --wg-tooltip-color: var(--base-tooltip-text-color, light-dark(#ffffff, #1a1a1a));
+  --wg-tooltip-bg: var(--base-tooltip-bg, light-dark(color-mix(in srgb, var(--wg-text-color-1) 85%, var(--wg-main-bg)), oklch(from var(--wg-main-bg) calc(l + 0.15) c h)));
+  --wg-tooltip-color: var(--base-tooltip-text-color, light-dark(var(--wg-main-bg), var(--wg-text-color-1)));
   --wg-tooltip-max-width: 300px;
   --wg-tooltip-arrow-size: 8px;
 
@@ -372,7 +378,7 @@
   /* ==========================================================================
      ROW LOCKING
      ========================================================================== */
-  --wg-row-locked-bg: var(--base-disabled-bg, var(--wg-elevated-bg));
+  --wg-row-locked-bg: var(--wg-disabled-bg);
   --wg-row-locked-opacity: 0.7;
 
   /* ==========================================================================
@@ -380,10 +386,10 @@
      ========================================================================== */
   --wg-frozen-column-bg: var(--wg-main-bg);
   --wg-frozen-header-bg: color-mix(in srgb, var(--wg-accent-color) 8%, var(--wg-header-bg));
-  --wg-frozen-column-shadow: 2px 0 4px var(--base-shadow-color, rgba(0, 0, 0, 0.1));
-  --wg-frozen-column-shadow-active: 6px 0 12px var(--base-shadow-color, rgba(0, 0, 0, 0.25));  /* Enhanced shadow when scrolled */
+  --wg-frozen-column-shadow: 2px 0 4px var(--wg-shadow-color);
+  --wg-frozen-column-shadow-active: 6px 0 12px var(--wg-shadow-color);  /* Enhanced shadow when scrolled */
   --wg-frozen-column-border: 2px solid var(--wg-border-color);
-  --wg-frozen-column-shadow-gradient: linear-gradient(to right, var(--base-shadow-color, rgba(0, 0, 0, 0.15)), transparent);
+  --wg-frozen-column-shadow-gradient: linear-gradient(to right, var(--wg-shadow-color), transparent);
   --wg-frozen-column-shadow-width: 8px;
 
   /* ==========================================================================
@@ -410,7 +416,7 @@
      ========================================================================== */
   --wg-selection-bg: color-mix(in srgb, var(--wg-accent-color) 15%, transparent);
   --wg-selection-row-number-bg: var(--wg-accent-color);
-  --wg-selection-row-number-color: var(--base-on-primary-text-color, light-dark(#fff, #fff));
+  --wg-selection-row-number-color: var(--wg-text-on-accent);
   --wg-selection-border-width: 2px;
   --wg-selection-border-color: var(--wg-accent-color);
 
@@ -453,5 +459,5 @@
      TOOLTIP EXTRAS (Component-Specific)
      ========================================================================== */
   --wg-tooltip-padding: calc(0.6 * var(--wg-rem)) calc(1.0 * var(--wg-rem));
-  --wg-tooltip-shadow: 0 2px 8px var(--base-shadow-color, rgba(0, 0, 0, 0.2));
+  --wg-tooltip-shadow: 0 2px 8px var(--wg-shadow-color);
 }

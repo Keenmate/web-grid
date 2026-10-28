@@ -99,9 +99,17 @@ export function parseColor(s: string): RGBA {
 	//   rgb(r g b / a)            modern syntax, 0-255 channels
 	//   color(srgb r g b)         modern color() notation, 0-1 channels
 	//   color(srgb r g b / a)     modern color() notation with alpha
+	//   oklch(l c h [/ a])        what the contract's relative-color formulas resolve to
 	//   transparent               special keyword
 	if (s === 'transparent' || s === 'rgba(0, 0, 0, 0)') {
 		return { r: 0, g: 0, b: 0, a: 0 }
+	}
+	const oklchMatch = s.match(/oklch\(([^)]+)\)/i)
+	if (oklchMatch) {
+		const parts = oklchMatch[1].split(/[\s/]+/).filter(Boolean).map(Number)
+		const [l, c, h] = parts
+		const a = parts.length >= 4 ? parts[3] : 1
+		return { ...oklchToRgb(l, c, h), a }
 	}
 	const colorFnMatch = s.match(/color\(\s*srgb\s+([^)]+)\)/i)
 	if (colorFnMatch) {
@@ -118,6 +126,26 @@ export function parseColor(s: string): RGBA {
 		return { r, g, b, a }
 	}
 	throw new Error(`Unparseable color: ${s}`)
+}
+
+/** OKLCH -> sRGB 0-255 (Björn Ottosson's OKLab matrices), clamped to the gamut. */
+function oklchToRgb(l: number, c: number, h: number): { r: number; g: number; b: number } {
+	const hr = (h * Math.PI) / 180
+	const A = c * Math.cos(hr)
+	const B = c * Math.sin(hr)
+	const l_ = (l + 0.3963377774 * A + 0.2158037573 * B) ** 3
+	const m_ = (l - 0.1055613458 * A - 0.0638541728 * B) ** 3
+	const s_ = (l - 0.0894841775 * A - 1.291485548 * B) ** 3
+	const lin = [
+		4.0767416621 * l_ - 3.3077115913 * m_ + 0.2309699292 * s_,
+		-1.2684380046 * l_ + 2.6097574011 * m_ - 0.3413193965 * s_,
+		-0.0041960863 * l_ - 0.7034186147 * m_ + 1.707614701 * s_,
+	]
+	const [r, g, b] = lin.map((v) => {
+		const e = v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - 0.055
+		return Math.round(Math.min(1, Math.max(0, e)) * 255)
+	})
+	return { r, g, b }
 }
 
 /** Standard alpha-over composite. bg is assumed opaque (a=1). */

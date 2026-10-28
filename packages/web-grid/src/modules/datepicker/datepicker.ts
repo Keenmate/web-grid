@@ -14,18 +14,21 @@ const DATEPICKER_STYLES = `
 	position: fixed;
 	z-index: var(--wg-dp-z-index, 9999);
 
-	/* Colors */
-	--wg-dp-background: var(--base-main-bg, #fff);
-	--wg-dp-border-color: var(--base-border-color, #e0e0e0);
-	--wg-dp-text-color: var(--base-text-color-1, #1a1a1a);
-	--wg-dp-text-secondary: var(--base-text-color-3, #666);
-	--wg-dp-text-muted: var(--base-text-color-4, #ccc);
-	--wg-dp-text-disabled: var(--base-text-color-4, #999);
-	--wg-dp-accent-color: var(--base-primary-color, #0078d4);
-	--wg-dp-accent-hover: var(--base-primary-color-hover, #006cbd);
-	--wg-dp-hover-bg: var(--base-hover-bg, #f5f5f5);
-	--wg-dp-hover-border: var(--base-border-color, #ccc);
-	--wg-dp-selected-text: var(--base-on-primary-text-color, #fff);
+	/* Colors — the popup lives in the document (outside the grid's shadow root), so it
+	   carries its own inputs (contract defaults) and the contract's formulas on them;
+	   light-dark() follows the page's color-scheme. */
+	--wg-dp-background: var(--base-main-bg, light-dark(#ffffff, #1e293b));
+	--wg-dp-text-color: var(--base-text-color-1, light-dark(#334155, #f1f5f9));
+	--wg-dp-accent-color: var(--base-primary-color, #3b82f6);
+	--wg-dp-shadow-color: var(--base-shadow-color, light-dark(rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.4)));
+	--wg-dp-border-color: var(--base-border-color, light-dark(oklch(from var(--wg-dp-background) calc(l - 0.096) c h), oklch(from var(--wg-dp-background) calc(l + 0.192) c h)));
+	--wg-dp-text-secondary: var(--base-text-color-3, color-mix(in srgb, var(--wg-dp-text-color) 55%, var(--wg-dp-background)));
+	--wg-dp-text-muted: var(--base-text-color-4, color-mix(in srgb, var(--wg-dp-text-color) 40%, var(--wg-dp-background)));
+	--wg-dp-text-disabled: var(--base-text-color-4, var(--wg-dp-text-muted));
+	--wg-dp-accent-hover: var(--base-primary-color-hover, light-dark(color-mix(in srgb, black 15%, var(--wg-dp-accent-color)), color-mix(in srgb, white 15%, var(--wg-dp-accent-color))));
+	--wg-dp-hover-bg: var(--base-hover-bg, light-dark(color-mix(in oklch, oklch(from var(--wg-dp-background) calc(l - 0.45) c h) 14%, transparent), color-mix(in oklch, oklch(from var(--wg-dp-background) calc(l + 0.45) c h) 28%, transparent)));
+	--wg-dp-hover-border: var(--base-border-color, var(--wg-dp-border-color));
+	--wg-dp-selected-text: var(--base-on-primary-text-color, color(from color(from var(--wg-dp-accent-color) srgb calc(0.21 * r * r * (0.4 + r * (0.82 - 0.22 * r)) + 0.72 * g * g * (0.4 + g * (0.82 - 0.22 * g)) + 0.07 * b * b * (0.4 + b * (0.82 - 0.22 * b))) 0 0) srgb clamp(0, (0.34 - r) * 1e9, 1) clamp(0, (0.34 - r) * 1e9, 1) clamp(0, (0.34 - r) * 1e9, 1)));
 
 	/* Typography */
 	--wg-dp-font-family: var(--wg-font-family, var(--base-font-family, inherit));
@@ -50,7 +53,7 @@ const DATEPICKER_STYLES = `
 	--wg-dp-gap-xs: 1px;
 
 	/* Shadow */
-	--wg-dp-shadow: var(--wg-shadow-lg, 0 4px 16px var(--base-shadow-color, rgba(0, 0, 0, 0.15)));
+	--wg-dp-shadow: var(--wg-shadow-lg, 0 4px 16px var(--wg-dp-shadow-color));
 }
 
 .wg-datepicker {

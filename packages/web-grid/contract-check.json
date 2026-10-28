@@ -1,0 +1,10 @@
+{
+  "$comment": "Deliberate differences from @keenmate/base-css-variables, read by `npm run check:contract` (base-contract-check). Each entry needs a reason.",
+  "allow": [
+    {
+      "token": "--base-font-family",
+      "rule": "C2",
+      "reason": "Standalone the grid (and its datepicker popup) inherits the page font instead of imposing the contract's system stack."
+    }
+  ]
+}

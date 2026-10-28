@@ -10,6 +10,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Changed — standalone colors follow `@keenmate/base-css-variables`
+
+Without the contract on the page the grid's fallbacks were a palette of their own (Fluent blue
+`#0078d4` accent with fixed `#106ebe` / `#005a9e` steps, `#242424` text, `#1a1a1a` dark surface,
+text-mixed hover). Standalone it now looks the same as with the contract:
+
+- **Inputs fall back to the contract's defaults:** `--wg-accent-color` `#3b82f6` (was
+  `#0078d4`), main bg `#ffffff` / `#1e293b`, text `#334155` / `#f1f5f9`, danger `#dc2626`.
+- **Derived colors fall back to the contract's formula on the `--wg-*` input**, so overriding
+  `--wg-accent-color` standalone brings its steps along: accent hover / active (15% / 30%
+  toward black or white), accent tint 10% / 20% (was 15%), text levels 2 / 3, elevated /
+  disabled surfaces, border, hover / active overlays, danger tint, tooltip, text on the accent
+  (black or white by APCA).
+- **New tokens:** `--wg-shadow-color` (one shadow tone; dialog, tooltip, toolbar and frozen-column
+  shadows read it — before, each had its own black alpha), `--wg-disabled-bg` (read-only cells
+  and locked rows, was the elevated surface), `--wg-input-border-color` (the filter / editor
+  outline, stronger than the divider).
+- `--wg-dropdown-bg` falls back to the main bg (the contract's `--base-dropdown-bg`), no longer
+  through `--base-elevated-bg`. The toolbar shadow fallback is the contract's
+  `0 8px 16px` dropdown shadow. `--wg-font-size-xs` fallback multiplier 1 (was 1.1), as
+  `--base-font-size-2xs`.
+- The datepicker popup (rendered outside the shadow root) carries the same inputs and formulas
+  in its `--wg-dp-*` tokens and follows the page's `color-scheme`.
+- **Checked:** `npm run check:contract` (`base-contract-check`, devDependency
+  `@keenmate/base-css-variables` ^2.0.0-rc05) runs in the build; `contract-check.json` allows the
+  inherited font. `e2e/contract-parity.spec.ts` compares every color token standalone vs. with
+  the contract (light, dark, custom accent). The e2e color parser reads `oklch()`.
+
 ### Changed — BREAKING (v2 API naming unification)
 
 Names now follow the suite-wide naming rules (BlissFramework naming-conventions D-NC-13..27),

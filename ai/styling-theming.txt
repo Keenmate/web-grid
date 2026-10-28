@@ -8,21 +8,23 @@ WebGrid uses a two-level CSS variable system for theming:
 Each --wg-* variable falls back to a --base-* variable, then to a hardcoded default:
 
   :host {
-    --wg-accent-color: var(--base-accent-color, #0078d4);
-    --wg-main-bg: var(--base-main-bg, #ffffff);
+    --wg-accent-color: var(--base-primary-color, #3b82f6);
+    --wg-main-bg: var(--base-main-bg, light-dark(#ffffff, #1e293b));
     --wg-font-size-base: calc(var(--base-font-size-sm, 1.4) * var(--wg-rem));
   }
 
 Priority chain:
   1. Setting --wg-accent-color on <web-grid> overrides ONLY the grid
-  2. Setting --base-accent-color on :root themes ALL KeenMate components
+  2. Setting --base-primary-color on :root themes ALL KeenMate components
      (web-grid, web-multiselect, web-daterangepicker, etc.)
-  3. If neither is set, the hardcoded default (#0078d4) is used
+  3. If neither is set, the standalone default applies: the contract's default
+     (#3b82f6) for inputs, the contract's formula on --wg-* for derived colors
+     (hover, tints, borders, text levels), so it matches @keenmate/base-css-variables
 
 Example -- theme all KeenMate components at once:
 
   :root {
-    --base-accent-color: #10b981;
+    --base-primary-color: #10b981;
     --base-main-bg: #ffffff;
     --base-font-family: 'Inter', sans-serif;
   }
@@ -49,15 +51,15 @@ KEY VARIABLES
 -------------
 Colors:
   --wg-accent-color          Primary accent (focus outlines, active states, selection)
-                             Falls back to: --base-accent-color, default: #0078d4
+                             Falls back to: --base-primary-color, default: #3b82f6
   --wg-text-color-1          Primary text (cells, headers)
-                             Falls back to: --base-text-color-1, default: #242424
+                             Falls back to: --base-text-color-1, default: #334155 / #f1f5f9 (dark)
   --wg-text-color-2          Secondary text (row numbers, labels)
   --wg-text-color-3          Muted text (placeholders, empty states)
   --wg-main-bg               Main background (table body, cells)
-                             Falls back to: --base-main-bg, default: #ffffff
+                             Falls back to: --base-main-bg, default: #ffffff / #1e293b (dark)
   --wg-elevated-bg           Elevated background (headers, striped rows)
-                             Falls back to: --base-elevated-bg, default: #f5f5f5
+                             Falls back to: --base-elevated-bg, default: main bg 0.03 darker (OKLCH)
   --wg-hover-bg              Hover background (row hover, button hover)
                              Falls back to: --base-hover-bg, default: color-mix derived
   --wg-border-color          All borders (table, cells, header separators)

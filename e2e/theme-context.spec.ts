@@ -97,7 +97,7 @@ test('--base-primary-color on :root flows into --wg-accent-color; unset → buil
 	await open(page)
 	const accent = () => page.locator(HOSTS[0]).evaluate(
 		(el) => getComputedStyle(el).getPropertyValue('--wg-accent-color').trim().toLowerCase())
-	expect(await accent()).toBe('#0078d4')
+	expect(await accent()).toBe('#3b82f6')
 	await page.evaluate(() => document.documentElement.style.setProperty('--base-primary-color', '#D40511'))
 	await expect.poll(accent).toBe('#d40511')
 })
