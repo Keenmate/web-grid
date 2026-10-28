@@ -101,9 +101,12 @@ getRowId(row: T): unknown | undefined
   Get the unique ID of a row: getIdCallback({ row }) when set, else
   row[idMember].
 
-findRowById(id: unknown): { row: T, rowIndex: number } | null
-  Find a row by its unique ID. Returns the row object and its current
-  index, or null if not found.
+getRowById(id: unknown): T | null
+  The row with this unique ID, or null if not found.
+
+getRowIndex(row: T): number
+  The row's display index (the rowIndex every ctx / event uses; follows
+  sorting, filtering, paging), or -1 when it isn't displayed.
 
 
 ----------------------------------------------------------------------

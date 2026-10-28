@@ -934,7 +934,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 
 	/**
 	 * Field that uniquely identifies a row (default `'id'`; `null` = none). The only row-id
-	 * member: drafts, invalid-cell markers, `getRowId` / `findRowById` / `updateRowById` /
+	 * member: drafts, invalid-cell markers, `getRowId` / `getRowById` / `updateRowById` /
 	 * `replaceRowById` / `lockRowById` use it (`getIdCallback` wins when set).
 	 */
 	get idMember(): string | null { return this.engine.idMember }
@@ -1203,8 +1203,10 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 
 	// Row identification methods
 	getRowId(row: T): unknown | undefined { this.flush(); return this.engine.getRowId(row) }
-	/** `rowIndex` = index into `items` (not the display index). */
-	findRowById(id: unknown): { row: T; rowIndex: number } | null { this.flush(); return this.engine.findRowById(id) }
+	/** The row with this ID (`idMember` / `getIdCallback`), or null. */
+	getRowById(id: unknown): T | null { this.flush(); return this.engine.getRowById(id) }
+	/** The row's display index (the `rowIndex` of every ctx / event), or -1 when it isn't displayed. */
+	getRowIndex(row: T): number { this.flush(); return this.engine.getRowIndex(row) }
 
 	// Row locking methods
 	isRowLocked(rowOrId: T | unknown): boolean { this.flush(); return this.engine.isRowLocked(rowOrId) }

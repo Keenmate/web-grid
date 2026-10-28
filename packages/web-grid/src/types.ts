@@ -350,7 +350,7 @@ export type QuickGridProps<T> = {
 	getCustomStylesCallback?: (ctx: GridContext<T>) => string  // Custom CSS to inject into shadow DOM
 	getRowClassCallback?: (ctx: RowContext<T>) => string | null  // Dynamic CSS class for rows
 	// Field on each row uniquely identifying it (default: 'id'; `null` = none). The only row-id
-	// member: getRowId / findRowById / updateRowById / replaceRowById / lockRowById read it
+	// member: getRowId / getRowById / updateRowById / replaceRowById / lockRowById read it
 	// (or `getIdCallback`). Internal state (drafts, invalid-cell markers)
 	// is keyed by this value, so pagination, filter, sort, and tree expand/collapse no longer
 	// cause an in-flight edit / invalid marker to land on the wrong row when the displayed
@@ -464,7 +464,7 @@ export type QuickGridProps<T> = {
 	beforePasteCallback?: (ctx: BeforePasteContext<T>) => boolean | void | Promise<boolean | void>
 	createRowCallback?: CreateRowCallback<T>  // New row for pasted data past the last row
 
-	// Row identity (drafts, row locking, findRowById / updateRowById): `idMember` (default 'id')
+	// Row identity (drafts, row locking, getRowById / updateRowById): `idMember` (default 'id')
 	getIdCallback?: (ctx: RowDataContext<T>) => unknown  // Computed id; wins over idMember
 	rowLocking?: RowLockingOptions<T>
 
@@ -715,7 +715,7 @@ export type RowLockingOptions<T> = {
 export type RowLockChangeDetail<T> = {
 	rowId: unknown
 	row: T | null
-	rowIndex: number
+	rowIndex: number  // display index (-1 when the row isn't displayed / unknown)
 	lockInfo: RowLock | null
 	source: 'property' | 'callback' | 'external'
 }

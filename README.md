@@ -265,7 +265,7 @@ const columns: Column<Employee>[] = [
 - **Frozen Columns** — Stick columns to the left during horizontal scroll
 - **Fill Handle** — Excel-like autofill by dragging a cell's corner
 - **Row Locking** — Optimistic locking with external lock management (WebSocket-ready)
-- **Row Identification** — `idMember` (default `'id'`) / `getIdCallback` for drafts, `findRowById`, `updateRowById`, `replaceRowById`, row locking
+- **Row Identification** — `idMember` (default `'id'`) / `getIdCallback` for drafts, `getRowById`, `getRowIndex`, `updateRowById`, `replaceRowById`, row locking
 - **Virtual Scroll** — Render only visible rows for large datasets
 - **Infinite Scroll** — Load-more pattern triggered near bottom of scroll
 - **Dark Mode** — Auto-detects OS/attribute/class preferences
@@ -420,7 +420,7 @@ This architecture separates mode detection (the adapter decides *what* action a 
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `idMember` | `string \| null` | `'id'` | Field containing the row's unique ID — the only row-id member: drafts, invalid-cell markers, `getRowId`, `findRowById`, `updateRowById`, `replaceRowById`, row locking. `null` = rows have no id |
+| `idMember` | `string \| null` | `'id'` | Field containing the row's unique ID — the only row-id member: drafts, invalid-cell markers, `getRowId`, `getRowById`, `getRowIndex`, `updateRowById`, `replaceRowById`, row locking. `null` = rows have no id |
 | `getIdCallback` | `(ctx: { row }) => unknown` | — | Callback returning the row's unique ID (wins over `idMember`) |
 
 ### Row Locking
@@ -999,7 +999,7 @@ grid.onRowChange = (detail) => save(detail.draftRow)
 
 ## Controller
 
-`el.controller` is the public `GridController` facade — the same object every ctx / detail carries as `controller`. It covers state as read-only properties named like the element's (`items`, `displayItems`, `columns`, `sort`, `filters`, `invalidCells`, `selectedRows`, `selectedRowIndices`, `selectedCellRange`, `expandedPaths`), rows (`insertRow`, `insertRows`, `removeRow`, `removeRows`, `duplicateRow`, `moveRow`, `findRowById`, `updateRowById`, …), drafts and validation, row locking, row / cell / column selection, tree (`expandRows`, `collapseRows`, `expandAll(path?)`, `collapseAll(path?)`, `toggleRowExpanded`, …), columns (widths, order), focus / editing (`focusCell`, `startEditing`) and menus (`closeContextMenu`, `closeToolbar`). Most of these are also methods on the element itself (below).
+`el.controller` is the public `GridController` facade — the same object every ctx / detail carries as `controller`. It covers state as read-only properties named like the element's (`items`, `displayItems`, `columns`, `sort`, `filters`, `invalidCells`, `selectedRows`, `selectedRowIndices`, `selectedCellRange`, `expandedPaths`), rows (`insertRow`, `insertRows`, `removeRow`, `removeRows`, `duplicateRow`, `moveRow`, `getRowById`, `getRowIndex`, `updateRowById`, …), drafts and validation, row locking, row / cell / column selection, tree (`expandRows`, `collapseRows`, `expandAll(path?)`, `collapseAll(path?)`, `toggleRowExpanded`, …), columns (widths, order), focus / editing (`focusCell`, `startEditing`) and menus (`closeContextMenu`, `closeToolbar`). Most of these are also methods on the element itself (below).
 
 ## Public Methods
 
@@ -1036,7 +1036,8 @@ grid.onRowChange = (detail) => save(detail.draftRow)
 | Method | Returns | Description |
 |--------|---------|-------------|
 | `getRowId(row)` | `unknown \| undefined` | Get the ID of a row using `getIdCallback` / `idMember` |
-| `findRowById(id)` | `{ row, rowIndex } \| null` | Find a row by its ID |
+| `getRowById(id)` | `T \| null` | Find a row by its ID |
+| `getRowIndex(row)` | `number` | The row's display index (the `rowIndex` of every ctx / event), `-1` when not displayed |
 
 ### Row Updates
 

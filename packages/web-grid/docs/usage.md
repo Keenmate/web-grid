@@ -69,7 +69,7 @@ The `QuickGridProps<T>` type defined in `src/types.ts` is the canonical source o
 |---|---|---|---|
 | `items` | `T[]` | `[]` | Row data — the only required "content" property |
 | `columns` | `Column<T>[]` | `[]` | Column definitions (see [Column definition](#column-definition)) |
-| `idMember` | `keyof T \| string \| null` | `'id'` | Field that uniquely identifies a row — the only row-id member (`getRowId`, `findRowById`, `updateRowById`, `replaceRowById`, row locking; `getIdCallback` wins). Internal state (drafts, invalid-cell markers) is keyed by this value; falls back to `pathMember` or displayed-row index |
+| `idMember` | `keyof T \| string \| null` | `'id'` | Field that uniquely identifies a row — the only row-id member (`getRowId`, `getRowById`, `getRowIndex`, `updateRowById`, `replaceRowById`, row locking; `getIdCallback` wins). Internal state (drafts, invalid-cell markers) is keyed by this value; falls back to `pathMember` or displayed-row index |
 
 ### Display
 
@@ -715,7 +715,7 @@ grid.onAction = ({ action, id, row }) => {
 | Area | Methods |
 |---|---|
 | State (read-only, same names as the element) | `items`, `displayItems`, `columns`, `sort`, `filters`, `invalidCells`, `selectedRows`, `selectedRowIndices`, `selectedCellRange`, `expandedPaths`; `setFilter(field, value)` |
-| Rows | `insertRow(row, afterRow?)`, `insertRows(rows, afterRow?)`, `removeRow(row)`, `removeRows(rows)`, `duplicateRow(row)`, `moveRow(row, -1 \| 1)`, `getRowId(row)`, `findRowById(id)`, `updateRowById(id, data)`, `replaceRowById(id, row)` |
+| Rows | `insertRow(row, afterRow?)`, `insertRows(rows, afterRow?)`, `removeRow(row)`, `removeRows(rows)`, `duplicateRow(row)`, `moveRow(row, -1 \| 1)`, `getRowId(row)`, `getRowById(id)`, `getRowIndex(row)`, `updateRowById(id, data)`, `replaceRowById(id, row)` |
 | Drafts / validation | `getRowDraft`, `hasRowDraft`, `getDraftRowIndices`, `getDrafts`, `discardDraft`, `discardAllDrafts`, `isCellDirty`, `isRowDirty`, `isCellInvalid`, `getCellValidationError`, `canEditCell` |
 | Row locking | `isRowLocked`, `getRowLockInfo`, `lockRowById`, `unlockRowById`, `getExternalLocks`, `clearExternalLocks` |
 | Selection | `selectRow`, `selectRowRange`, `clearSelection` (all kinds), `clearRowSelection`, `isRowSelected`, `copySelectedRowsToClipboard`, `selectCellRange`, `clearCellSelection`, `getSelectedCells`, `copyCellSelectionToClipboard`, `selectColumn`, `selectColumnRange`, `clearColumnSelection`, `getSelectedColumns`, `isColumnSelected`, `select-all` |
@@ -789,7 +789,8 @@ After a paste, the `cell-paste` event (`onCellPaste`) reports `{ totalCells, suc
 | Method | Returns | Description |
 |---|---|---|
 | `getRowId(row)` | `unknown \| undefined` | Get the ID using `getIdCallback` / `idMember` (default `'id'`) |
-| `findRowById(id)` | `{ row, rowIndex } \| null` (index into `items`) | Find a row by its ID |
+| `getRowById(id)` | `T \| null` | Find a row by its ID |
+| `getRowIndex(row)` | `number` | The row's display index (the `rowIndex` of every ctx / event), `-1` when not displayed |
 
 ### Row updates
 

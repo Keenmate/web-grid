@@ -113,7 +113,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Lock tooltip i18n (#10 fixed) | ✓ | `row-locking.spec.ts` | `row-locking.html` |
 | `lockRowById/unlockRowById/isRowLocked/getRowLockInfo/clearExternalLocks`, `row-lock-change` | ✓ | `row-locking.spec.ts` | `row-locking.html` |
 | Lock blocks F2 / typing / paste; `lockedEditBehavior` allow / callback + `getCanEditLockedCallback` | ✓ | `row-locking.spec.ts` | `row-locking.html` |
-| `getIdCallback` / `idMember`, `getRowId`, `updateRowById`, `replaceRowById`, `findRowById` | ✓ | `row-api.spec.ts` | `row-api.html` |
+| `getIdCallback` / `idMember`, `getRowId`, `updateRowById`, `replaceRowById`, `getRowById`, `getRowIndex` | ✓ | `row-api.spec.ts` | `row-api.html` |
 | `idMember` is the only row-id member, default `'id'`; `idValueMember` / `getRowIdCallback` removed (#11 fixed) | ✓ | `row-api.spec.ts` | `row-api.html` |
 | `focusCell`, `startEditing` | ✓ | `row-api.spec.ts` | `row-api.html` |
 | `startEditing` on a read-only cell (#19 fixed) | ✓ | `row-api.spec.ts` | `row-api.html` |

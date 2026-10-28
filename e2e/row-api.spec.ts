@@ -17,24 +17,29 @@ test.beforeEach(async ({ page }) => {
 })
 
 test.describe('identity', () => {
-	test('idMember (default id): getRowId / findRowById (index into items); unknown id → null', async ({ page }) => {
-		expect(await onGrid(page, el => [el.getRowId(el.items[1]), el.findRowById(3), el.findRowById(99)])).toEqual([
-			2, { row: { id: 3, name: 'Gamma', qty: 30, code: 'G-3' }, rowIndex: 2 }, null
+	test('idMember (default id): getRowId / getRowById; unknown id → null', async ({ page }) => {
+		expect(await onGrid(page, el => [el.getRowId(el.items[1]), el.getRowById(3), el.getRowById(99)])).toEqual([
+			2, { id: 3, name: 'Gamma', qty: 30, code: 'G-3' }, null
 		])
+	})
+
+	test('getRowIndex(row) is the display index (follows sorting); unknown row → -1; also on the controller', async ({ page }) => {
+		expect(await onGrid(page, el => [el.getRowIndex(el.items[2]), el.getRowIndex({ id: 3 }), el.controller.getRowIndex(el.items[0])])).toEqual([2, -1, 0])
+		expect(await onGrid(page, el => { el.sort = [{ column: 'name', direction: 'desc' }]; el.flush(); return [el.getRowIndex(el.getRowById(1)), el.controller.getRowById(1)?.name] })).toEqual([2, 'Alpha'])
 	})
 
 	test('getIdCallback wins over idMember and gets { row } + context', async ({ page }) => {
 		const r = await onGrid(page, el => {
 			el.getIdCallback = (ctx: any) => { (window as any).__idCtx = !!ctx.controller; return ctx.row.code }
-			return [el.getRowId(el.items[0]), el.findRowById('B-2')?.rowIndex, el.findRowById(2), (window as any).__idCtx]
+			return [el.getRowId(el.items[0]), el.getRowById('B-2')?.id, el.getRowById(2), (window as any).__idCtx]
 		})
-		expect(r).toEqual(['A-1', 1, null, true])
+		expect(r).toEqual(['A-1', 2, null, true])
 	})
 
 	test('idMember defaults to id; another member re-keys the id APIs; null turns them off', async ({ page }) => {
 		expect(await onGrid(page, el => el.idMember)).toBe('id')
-		expect(await onGrid(page, el => { el.idMember = 'code'; return [el.findRowById('B-2')?.rowIndex, el.findRowById(2)] })).toEqual([1, null])
-		expect(await onGrid(page, el => { el.idMember = null; return [el.getRowId(el.items[0]), el.findRowById(1)] })).toEqual([undefined, null])
+		expect(await onGrid(page, el => { el.idMember = 'code'; return [el.getRowById('B-2')?.id, el.getRowById(2)] })).toEqual([2, null])
+		expect(await onGrid(page, el => { el.idMember = null; return [el.getRowId(el.items[0]), el.getRowById(1)] })).toEqual([undefined, null])
 	})
 
 	test('the removed idValueMember / getRowIdCallback are not inputs any more', async ({ page }) => {

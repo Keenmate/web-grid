@@ -1535,10 +1535,10 @@ export class GridEngine<T = unknown> {
 		return this._expandedPaths.has(path)
 	}
 
-	/** The row a tree path belongs to (undefined when the path is unknown). */
-	getRowByPath(path: string): T | undefined {
+	/** The row a tree path belongs to (null when the path is unknown). */
+	getRowByPath(path: string): T | null {
 		const node = this._treeIndex?.nodes.get(path)
-		return node ? this._items[node.rowIndex] : undefined
+		return node ? (this._items[node.rowIndex] ?? null) : null
 	}
 
 	/** One `row-expand` / `row-collapse` per changed path, then one `expanded-change`. */
@@ -3546,13 +3546,20 @@ export class GridEngine<T = unknown> {
 		return undefined
 	}
 
-	/**
-	 * Find a row by its ID. `rowIndex` is the index into `items` (not the display index).
-	 */
-	findRowById(id: unknown): { row: T; rowIndex: number } | null {
-		const rowIndex = this._items.findIndex(row => this.getRowId(row) === id)
-		if (rowIndex === -1) return null
-		return { row: this._items[rowIndex], rowIndex }
+	/** The row with this ID (`idMember` / `getIdCallback`), or null. */
+	getRowById(id: unknown): T | null {
+		const i = this.itemIndexById(id)
+		return i === -1 ? null : this._items[i]
+	}
+
+	/** The row's display index (the `rowIndex` every ctx / event uses), or -1 when it isn't displayed. */
+	getRowIndex(row: T): number {
+		return this.displayItems.indexOf(row)
+	}
+
+	/** Index into `items` of the row with this ID (-1 when unknown). */
+	private itemIndexById(id: unknown): number {
+		return this._items.findIndex(row => this.getRowId(row) === id)
 	}
 
 	// ==========================================================================
@@ -3571,18 +3578,11 @@ export class GridEngine<T = unknown> {
 		if (typeof rowOrId === 'object' && rowOrId !== null) {
 			row = rowOrId as T
 			id = this.getRowId(row)
-			rowIndex = this._items.indexOf(row)
-			if (rowIndex === -1) {
-				// Row might be from displayItems
-				rowIndex = this.displayItems.indexOf(row)
-			}
+			rowIndex = this.getRowIndex(row)
 		} else {
 			id = rowOrId
-			const found = this.findRowById(id)
-			if (found) {
-				row = found.row
-				rowIndex = found.rowIndex
-			}
+			row = this.getRowById(id) ?? undefined
+			if (row) rowIndex = this.getRowIndex(row)
 		}
 
 		// 1. Check external locks first (highest priority - real-time)
@@ -3642,8 +3642,9 @@ export class GridEngine<T = unknown> {
 		this._externalLocks.set(id, lockInfo)
 
 		// Cancel editing if the locked row is currently being edited
-		const found = this.findRowById(id)
-		if (found && this._editingCell && this._editingCell.rowIndex === found.rowIndex) {
+		const row = this.getRowById(id)
+		const rowIndex = row ? this.getRowIndex(row) : -1
+		if (rowIndex !== -1 && this._editingCell && this._editingCell.rowIndex === rowIndex) {
 			this.cancelEdit()
 		}
 
@@ -3651,8 +3652,8 @@ export class GridEngine<T = unknown> {
 
 		this.notify('row-lock-change', {
 			rowId: id,
-			row: found?.row ?? null,
-			rowIndex: found?.rowIndex ?? -1,
+			row,
+			rowIndex,
 			lockInfo,
 			source: 'external'
 		})
@@ -3669,11 +3670,11 @@ export class GridEngine<T = unknown> {
 		if (wasLocked) {
 			this.requestUpdate()
 
-			const found = this.findRowById(id)
+			const row = this.getRowById(id)
 			this.notify('row-lock-change', {
 				rowId: id,
-				row: found?.row ?? null,
-				rowIndex: found?.rowIndex ?? -1,
+				row,
+				rowIndex: row ? this.getRowIndex(row) : -1,
 				lockInfo: null,
 				source: 'external'
 			})
@@ -3704,14 +3705,14 @@ export class GridEngine<T = unknown> {
 	 * Update a row's data by ID (partial update, preserves other fields)
 	 */
 	updateRowById(id: unknown, newData: Partial<T>): boolean {
-		const found = this.findRowById(id)
-		if (!found) return false
+		const row = this.getRowById(id)
+		if (!row) return false
 
 		// Update original data
-		Object.assign(this._items[found.rowIndex], newData)
+		Object.assign(row as object, newData)
 
 		// Update draft if exists
-		const draft = this._draftRows.get(this.draftKey(found.row))
+		const draft = this._draftRows.get(this.draftKey(row))
 		if (draft) {
 			Object.assign(draft, newData)
 		}
@@ -3724,13 +3725,14 @@ export class GridEngine<T = unknown> {
 	 * Replace entire row by ID
 	 */
 	replaceRowById(id: unknown, newRow: T): boolean {
-		const found = this.findRowById(id)
-		if (!found) return false
+		const i = this.itemIndexById(id)
+		if (i === -1) return false
+		const oldRow = this._items[i]
 
-		this._items[found.rowIndex] = newRow
+		this._items[i] = newRow
 
 		// Clear draft for this row (data was replaced externally)
-		this.deleteDraftByKey(this.draftKey(found.row))
+		this.deleteDraftByKey(this.draftKey(oldRow))
 
 		this.requestUpdate()
 		return true

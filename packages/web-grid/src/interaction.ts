@@ -68,8 +68,10 @@ export interface GridController<T = any> {
 	/** Move `row` one displayed position up (`-1`) or down (`1`). */
 	moveRow(row: T, delta: -1 | 1): void
 	getRowId(row: T): unknown | undefined
-	/** `rowIndex` = index into `items` (not the display index). */
-	findRowById(id: unknown): { row: T; rowIndex: number } | null
+	/** The row with this ID (`idMember` / `getIdCallback`), or null. */
+	getRowById(id: unknown): T | null
+	/** The row's display index (the `rowIndex` of every ctx / event), or -1 when it isn't displayed. */
+	getRowIndex(row: T): number
 	updateRowById(id: unknown, newData: Partial<T>): boolean
 	replaceRowById(id: unknown, newRow: T): boolean
 	// drafts / validation

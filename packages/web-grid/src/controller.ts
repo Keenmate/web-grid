@@ -28,7 +28,8 @@ export function createGridController<T>(el: GridElement<T>): GridController<T> {
 		duplicateRow: (row) => g().duplicateRow(row),
 		moveRow: (row, delta) => g().moveRow(row, delta),
 		getRowId: (row) => g().getRowId(row),
-		findRowById: (id) => g().findRowById(id),
+		getRowById: (id) => g().getRowById(id),
+		getRowIndex: (row) => g().getRowIndex(row),
 		updateRowById: (id, newData) => g().updateRowById(id, newData),
 		replaceRowById: (id, newRow) => g().replaceRowById(id, newRow),
 		// drafts / validation

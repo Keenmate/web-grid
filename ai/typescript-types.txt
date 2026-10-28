@@ -46,7 +46,8 @@ el.controller, and `controller` on every ctx / detail.
     duplicateRow(row: T): T
     moveRow(row: T, delta: -1 | 1): void
     getRowId(row: T): unknown | undefined
-    findRowById(id: unknown): { row: T; rowIndex: number } | null
+    getRowById(id: unknown): T | null
+    getRowIndex(row: T): number         display index, -1 when not displayed
     updateRowById(id: unknown, newData: Partial<T>): boolean
     replaceRowById(id: unknown, newRow: T): boolean
     // drafts / validation
