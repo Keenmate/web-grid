@@ -130,7 +130,6 @@ I
 idMember -> editing.txt, row-locking.txt
 Infinite scroll -> virtual-scroll.txt
 Inline actions -> toolbar-actions.txt
-inlineActionsTitle -> toolbar-actions.txt
 Installation -> basic-setup.txt
 isEditable -> columns.txt, editing.txt
 isFrozen -> frozen-columns.txt, columns.txt

@@ -412,8 +412,6 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		{ configKey: 'toolbarPosition', attribute: 'toolbar-position', converter: toEnum(TOOLBAR_POSITIONS, { default: 'auto' }), default: 'auto', on: 'update' },
 		{ configKey: 'shouldToolbarFollowCursor', attribute: 'toolbar-follow-cursor', converter: toBool('default-false'), default: false, on: 'update' },
 		{ configKey: 'cellToolbarOffset', attribute: 'cell-toolbar-offset', converter: toNumberOrLength(0.2), default: 0.2, on: 'update', type: 'number | string' },
-		// absent → labels.inlineActionsHeader; an explicit "" → blank header
-		{ configKey: 'inlineActionsTitle', attribute: 'inline-actions-title', converter: toText({ isNullable: true, isEmptyAllowed: true }), default: undefined, on: 'update' },
 		// Context menu
 		{ configKey: 'contextMenuXOffset', attribute: 'context-menu-x-offset', converter: toInt({ default: 8 }), default: 8, on: 'update' },
 		{ configKey: 'contextMenuYOffset', attribute: 'context-menu-y-offset', converter: toInt({ default: 0 }), default: 0, on: 'update' },
@@ -856,8 +854,6 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	set toolbarBtnMinWidth(value: string | undefined) { this.engine.toolbarBtnMinWidth = value }
 
 	/** Inline actions column header. Absent / `null` → `labels.inlineActionsHeader`; `''` → blank (narrow one-action columns). */
-	get inlineActionsTitle(): string | null | undefined { return this.engine.inlineActionsTitle }
-	set inlineActionsTitle(value: string | null | undefined) { this.engine.inlineActionsTitle = value }
 
 	get contextMenu(): GridMenuEntry<T>[] | undefined { return this.engine.contextMenu }
 	set contextMenu(value: GridMenuEntry<T>[] | undefined) { this.engine.contextMenu = value }

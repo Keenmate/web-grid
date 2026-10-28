@@ -135,7 +135,6 @@ test.describe('every input (table-driven)', () => {
 				columnMinWidth: ['50px', '50px'],
 				summaryPosition: ['top-left', 'top-left'],
 				cellToolbarOffset: ['0.5', 0.5],
-				inlineActionsTitle: ['Ops', 'Ops'],
 				editButtonIcon: ['<b>E</b>', '<b>E</b>'],
 				newRowIndicator: ['*', '*'],
 				treeExpandedGlyph: ['-', '-'],

@@ -144,7 +144,6 @@ The `QuickGridProps<T>` type defined in `src/types.ts` is the canonical source o
 | `getCellToolbarItemsCallback` | `(ctx: CellContext<T>) => GridToolbarEntry<T>[] \| null \| undefined` | — | Cell-specific toolbar items, merged over `rowToolbar` by `id` / `action` |
 | `cellToolbarOffset` | `number \| string` | `0.2` | Horizontal offset: `0`–`1` as fraction of cell width, or CSS length (e.g. `'2rem'`) |
 | `toolbarBtnMinWidth` | `string` | — | Min-width for toolbar buttons; overrides `--wg-toolbar-btn-min-width` |
-| `inlineActionsTitle` | `string \| null` | — (`labels.inlineActionsHeader`, "Actions") | Header title for inline actions column (`toolbarPosition='inline'`). Use `''` for no title |
 | `createEmptyRowCallback` | `(ctx) => T \| Promise<T>` | — | The row the `add` built-in inserts (default: a blank row); also the new-empty-row factory |
 | `createDuplicateRowCallback` | `(ctx: { row, rowIndex }) => T` | — | The copy the `duplicate` built-in inserts (default: shallow copy with `idMember` cleared) |
 | `beforeActionCallback` | `(detail: GridActionEventDetail<T>) => unknown` | — | Runs before any toolbar / menu / shortcut item activates — return `false` to cancel (async OK) |

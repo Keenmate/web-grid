@@ -115,8 +115,8 @@ test.describe('toolbarPosition', () => {
 		await cell(page, 0, 1).click()
 		await page.waitForTimeout(100)
 		await expect(toolbar(page)).toHaveCount(0)
-		// inlineActionsTitle relabels the header
-		await onGrid(page, el => el.setAttribute('inline-actions-title', 'Ops'))
+		// labels.inlineActionsHeader relabels the header
+		await onGrid(page, el => el.setAttribute('labels', '{"inlineActionsHeader":"Ops"}'))
 		await expect(gridLocator(page).locator('thead th.wg__inline-actions-header')).toHaveText('Ops')
 	})
 })
@@ -128,15 +128,13 @@ test('the inline actions header defaults to labels.inlineActionsHeader ("Actions
 	await expect(gridLocator(page).locator('thead th.wg__inline-actions-header')).toHaveText('Akce')
 })
 
-test('an explicit empty inline-actions-title blanks the header; removing it restores the label', async ({ page }) => {
-	await onGrid(page, el => { el.setAttribute('toolbar-position', 'inline'); el.setAttribute('inline-actions-title', '') })
+test("labels.inlineActionsHeader '' blanks the header; undefined restores the default", async ({ page }) => {
+	await onGrid(page, el => { el.setAttribute('toolbar-position', 'inline'); el.labels = { inlineActionsHeader: '' } })
 	const th = gridLocator(page).locator('thead th.wg__inline-actions-header')
 	await expect(th).toHaveCount(1)
 	await expect(th).toHaveText('')
-	await onGrid(page, el => { el.removeAttribute('inline-actions-title') })
+	await onGrid(page, el => { el.labels = { inlineActionsHeader: undefined } })
 	await expect(th).toHaveText('Actions')
-	await onGrid(page, el => { el.inlineActionsTitle = '' })
-	await expect(th).toHaveText('')
 })
 
 test('an invalid toolbar-position is rejected (previous kept)', async ({ page }) => {

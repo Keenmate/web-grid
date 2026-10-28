@@ -157,7 +157,6 @@
 		grid3.isHoverable = true
 		grid3.isRowToolbarShown = true
 		grid3.toolbarPosition = 'inline'
-		grid3.inlineActionsTitle = 'Actions'
 		grid3.rowToolbar = [
 			{ id: 'edit', icon: '✏️', text: 'Edit task', getIsDisabledCallback: ({ row }) => row.status === 'Done' },
 			{ action: 'delete', icon: '🗑️', text: 'Delete task', getIsVisibleCallback: ({ row }) => row.priority !== 'High' },

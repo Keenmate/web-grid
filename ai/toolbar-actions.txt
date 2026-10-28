@@ -209,9 +209,9 @@ Behavior differences from floating toolbar:
 
 Column header title:
 
-    (absent)                              labels.inlineActionsHeader ("Actions")
-    grid.inlineActionsTitle = 'Ops'       custom header text
-    grid.inlineActionsTitle = ''          no header text
+    (default)                                     "Actions"
+    grid.labels = { inlineActionsHeader: 'Ops' }  custom header text
+    grid.labels = { inlineActionsHeader: '' }     no header text
 
 The column width auto-sizes based on the maximum number of buttons
 across all rows, using --wg-toolbar-btn-min-width and --wg-inline-actions-gap
@@ -517,8 +517,8 @@ Relevant labels that can be customized:
       }
     }
 
-The inlineActionsTitle property overrides inlineActionsHeader label
-when toolbarPosition is 'inline'.
+labels.inlineActionsHeader is the inline actions column header
+(toolbarPosition 'inline'); '' gives a blank header.
 
 
 CSS VARIABLES

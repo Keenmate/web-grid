@@ -96,7 +96,7 @@ export function renderHeaderRow<T>(ctx: GridHost<T>): string {
 		// Width = buttons * btnWidth + (buttons-1) * gap + 2 * paddingSm
 		// Using calc with CSS vars so it respects theming
 		const colWidth = `calc(${maxBtns} * var(--wg-toolbar-btn-min-width) + ${Math.max(0, maxBtns - 1)} * var(--wg-inline-actions-gap) + 2 * var(--wg-spacing-sm))`
-		inlineActionsHeaderHtml = `<th class="wg__header wg__inline-actions-header" style="width: ${colWidth}">${ctx.escapeHtml(ctx.engine.inlineActionsTitle ?? ctx.engine.labels.inlineActionsHeader)}</th>`
+		inlineActionsHeaderHtml = `<th class="wg__header wg__inline-actions-header" style="width: ${colWidth}">${ctx.escapeHtml(ctx.engine.labels.inlineActionsHeader)}</th>`
 		filterLeadHtml += '<th class="wg__filter-cell"></th>'
 	}
 

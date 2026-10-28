@@ -329,7 +329,7 @@ grid.onAction = ({ id, row }) => { /* id === 'setHigh', ... */ }</pre>
             <div class="code-block" style="margin-top: 1rem;">
                 <pre>grid.isRowToolbarShown = true
 grid.toolbarPosition = 'inline'  // Renders as column
-grid.inlineActionsTitle = 'Actions'  // Optional header
+grid.labels = { inlineActionsHeader: 'Actions' }  // Optional header ('' = blank)
 
 grid.rowToolbar = [
     {
@@ -660,7 +660,6 @@ grid.beforeActionCallback = ({ action, row }) => {
 
         grid3.isRowToolbarShown = true
         grid3.toolbarPosition = 'inline'  // Key setting: renders as column
-        grid3.inlineActionsTitle = 'Actions'
 
         // Inline toolbar with disabled / visible callbacks
         grid3.rowToolbar = [

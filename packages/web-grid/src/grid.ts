@@ -156,7 +156,6 @@ export class GridEngine<T = unknown> {
 	protected _getCellToolbarItemsCallback: ((ctx: CellContext<T>) => GridToolbarEntry<T>[] | null | undefined) | undefined = undefined
 	protected _cellToolbarOffset: number | string = 0.2
 	protected _toolbarBtnMinWidth: string | undefined = undefined
-	protected _inlineActionsTitle: string | null | undefined = undefined
 	protected _contextMenu: GridMenuEntry<T>[] | undefined = undefined
 	protected _contextMenuXOffset: number = 8
 	protected _contextMenuYOffset: number = 0
@@ -764,11 +763,6 @@ export class GridEngine<T = unknown> {
 		this._toolbarBtnMinWidth = value
 	}
 
-	get inlineActionsTitle(): string | null | undefined { return this._inlineActionsTitle }
-	set inlineActionsTitle(value: string | null | undefined) {
-		this._inlineActionsTitle = value
-		this.requestUpdate()
-	}
 
 	get contextMenu(): GridMenuEntry<T>[] | undefined { return this._contextMenu }
 	set contextMenu(value: GridMenuEntry<T>[] | undefined) {
