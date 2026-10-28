@@ -1,5 +1,5 @@
 ---
-description: Prepare @keenmate/web-grid for npm publish — bump version, finalize CHANGELOG/READMEs, build, test, commit
+description: Prepare @keenmate/web-grid for npm publish — bump version, finalize CHANGELOG/README, build, test, commit
 argument-hint: rc|release|patch|minor|major
 ---
 
@@ -7,122 +7,123 @@ argument-hint: rc|release|patch|minor|major
 
 You are preparing this package for `npm publish`. **Do not run `npm publish`** — the user logs in and publishes manually.
 
-## Argument
+This command follows the canonical `/publish` structure defined in the BlissFramework component guidelines at
+`web-components/publish-command.md`. Sections marked **[canonical]** are byte-identical across every
+component's `/publish`; sections marked **[per-repo]** are customized for this repo's layout, build, and tests.
+
+## Argument [canonical]
 
 The release type: **$ARGUMENTS**
 
 Must be one of:
 
-- `rc` — ship the WIP rc as-is. The topmost CHANGELOG heading (e.g. `## [1.6.0-rc01] - 2026-06-11`) gets ` [PUBLISHED]` appended. Rare in this repo today — the last rc was `1.2.0-rc01` — but supported for future use.
-- `release` — promote a WIP rc to a final release. `1.6.0-rcN` → `1.6.0`. CHANGELOG heading is renamed to match the new version.
-- `patch` — SemVer patch bump. Drops any `-rc` suffix. `1.5.2-rcN` → `1.5.2`, `1.5.1` → `1.5.2`.
+- `rc` — ship the WIP rc as-is. The topmost CHANGELOG heading (e.g. `## [1.6.0-rc01] - 2026-06-18`) gets ` [PUBLISHED]` appended.
+- `release` — promote a WIP rc to a final release. `X.Y.Z-rcN` → `X.Y.Z`. CHANGELOG heading is renamed to match the new version.
+- `patch` — SemVer patch bump. Drops any `-rc` suffix.
 - `minor` — SemVer minor bump. Drops `-rc`. Resets patch.
 - `major` — SemVer major bump. Drops `-rc`. Resets minor and patch.
 
 If missing or invalid, stop and ask the user which one to use (don't guess).
 
-## Repo layout
+## Repo layout [per-repo]
 
-This is an **npm workspaces monorepo**. The publishable package lives at `packages/web-grid/`; the workspace root holds the docs site, e2e tests, and the changelog. Key paths:
+Monorepo. The publishable package lives at `packages/web-grid/`; the workspace root holds the canonical CHANGELOG and README.
 
-- **`packages/web-grid/package.json`** — `version` field is the source of truth for the published package. (The root `package.json` is `"private": true` and never published.)
-- **`CHANGELOG.md`** at the **repo root** — historical quirk. The changelog tracks releases of `@keenmate/web-grid` even though it lives outside `PKG_DIR`. Topmost `## [X.Y.Z] - YYYY-MM-DD` heading **without** the `[PUBLISHED]` marker is the WIP section.
-- **`README.md` source of truth is the repo root**: `./README.md` is the canonical README; `./packages/web-grid/README.md` is a **build artifact** copied over by `make package` (the `.gitignore` lists it as "copied to package dir during build (source is root)"). The package README is still tracked in git for legacy reasons (it was committed before being added to `.gitignore`, and git keeps tracking already-tracked paths), so changes there show up in `git status` and need to be staged — but you should only ever *edit* the root README; `make package` will overwrite the package one to match. To avoid mysterious "tracked-but-gitignored" diffs, also copy the root README over the package README during this flow (mirrors what `make package` does later anyway) and stage both.
-- **`LICENSE`** lives at `./packages/web-grid/LICENSE` (ships in the tarball).
-- **`packages/web-grid/dist/`** — gitignored. Produced by `make build` (or `npm run build -w @keenmate/web-grid`). Never staged.
-- **`packages/web-grid/component-variables.manifest.json`** — manifest published with the package; edit if the variable surface changes.
-- **`docs/`** — the demo / examples site. Not packed.
-- **`e2e/`** — Playwright specs run from the workspace root via `npm run test:e2e`. Not packed.
-- **`Makefile`** at root provides convenience targets: `make build`, `make package`, `make publish`, `make publish-rc`, `make publish-dry`, `make test-e2e`.
+- **`./packages/web-grid/package.json`** — `version` field is the source of truth.
+- **`./CHANGELOG.md`** — at the workspace root. Topmost `## [X.Y.Z] - YYYY-MM-DD` heading **without** the `[PUBLISHED]` marker is the WIP section.
+- **`./README.md`** — at the workspace root. Carries `## What's New in vX.Y.Z` sections near the top (one per release, the **two most recent** retained). Mirrored to `./packages/web-grid/README.md` during build (`make package`) so the package on npm carries the same README as the repo root.
+- **`./packages/web-grid/dist/`** — gitignored. Produced by `make package` (tsc + Vite). Never staged.
+- **`./packages/web-grid/component-variables.manifest.json`** — published with the package. Edit if the variable surface changes.
+- **Build gotcha:** use `make package`, not `make build`. `make build` produces `dist/` but **skips** the README + `ai/` mirror step that copies `./README.md` → `./packages/web-grid/README.md` and `./ai/` → `./packages/web-grid/ai/`. Shipping with `make build` would publish a stale package README.
 
-## CHANGELOG convention in this repo
+## CHANGELOG convention in this repo [canonical]
 
 There is **no `## [Unreleased]` section**. The WIP section is the topmost `## [X.Y.Z] - YYYY-MM-DD` heading without a `[PUBLISHED]` tag. Already-released sections carry `[PUBLISHED]` at the end of their heading:
 
 ```
-## [1.6.0] - 2026-06-11                  ← WIP, the one you're shipping
+## [1.6.0-rc01] - 2026-06-18                  ← WIP, the one you're shipping
 ### Added
 - ...
 
-## [1.5.1] - 2026-06-10 [PUBLISHED]
+## [1.5.1] - 2026-06-09 [PUBLISHED]
 ### Added
 - ...
 ```
 
 Publishing the WIP section means **appending ` [PUBLISHED]`** to its heading — exact format: `## [X.Y.Z] - YYYY-MM-DD [PUBLISHED]`. The next development cycle creates a fresh `## [next-version] - <date>` heading on its first CHANGELOG edit.
 
-**Known data drift**: several recent releases (1.3.0, 1.4.0, 1.5.0, 1.5.1) shipped via prod merges and were tagged in `package.json` but never npm-published, so their CHANGELOG headings may be missing `[PUBLISHED]` even though the `package.json` version moved on. Don't retro-fix older sections — only finalize the section you're shipping. Substring searches for `PUBLISHED` still work; missing tags on older sections just mean "this version wasn't formally pushed to npm at the time."
+**Historical drift in this repo:** several recent releases (1.3.0, 1.4.0, 1.5.0, 1.5.1) shipped via prod merges and were tagged in `package.json` but never npm-published, so their CHANGELOG headings may be missing `[PUBLISHED]` even though the `package.json` version moved on. Don't retro-fix older sections — only finalize the section you're shipping.
 
-## Resolve versions
+## Resolve versions [canonical]
 
 Read `./packages/web-grid/package.json` `version` as `CURRENT_VERSION`.
-Read the topmost `## [X.Y.Z...]` heading from `./CHANGELOG.md` as `WIP_VERSION`.
+Read the topmost `## [X.Y.Z...]` heading from `./CHANGELOG.md` as `WIP_VERSION` (the version the latest WIP section is tagged for).
 
 Compute `NEW_VERSION`:
 
 | Argument | Logic |
 |---|---|
-| `rc` | If `CURRENT_VERSION` matches `X.Y.Z-rcN`, `NEW_VERSION = CURRENT_VERSION` (no bump — we're shipping what's already in package.json). If `CURRENT_VERSION` is a stable version, bump to the first rc of the next minor: `X.Y.Z` → `X.(Y+1).0-rc01`. Warn the user about the implicit minor bump and ask to confirm. |
+| `rc` | If `CURRENT_VERSION` matches `X.Y.Z-rcN`, `NEW_VERSION = CURRENT_VERSION` (no bump — we're shipping what's already in package.json). If `CURRENT_VERSION` is not an rc, stop and ask the user (they probably wanted `release`/`patch`/etc.). |
 | `release` | If `CURRENT_VERSION` matches `X.Y.Z-rcN`, `NEW_VERSION = X.Y.Z`. Otherwise stop. |
 | `patch` | Strip any `-rcN`, then bump patch. |
 | `minor` | Strip any `-rcN`, then bump minor, reset patch. |
 | `major` | Strip any `-rcN`, then bump major, reset minor and patch. |
 
-If `WIP_VERSION` ≠ `NEW_VERSION` (e.g. the WIP is `1.6.0-rc01` but the user asked for `release`), the CHANGELOG heading rename in step 3 also re-tags the section to `NEW_VERSION` — call this out in the report so the user notices.
+If `WIP_VERSION` ≠ `NEW_VERSION` (e.g. the WIP is `X.Y.Z-rcN` but the user asked for `release`), the CHANGELOG heading rename in step 3 also re-tags the section to `NEW_VERSION` — call this out in the report so the user notices.
 
 ## Steps (in order)
 
-### 1. Sanity checks
+### 1. Sanity checks [canonical]
 
-- Run `git status`. The repo intentionally keeps `.claude/`, `test-results/`, `docs/build/`, and similar local-only paths untracked or unstaged — those are fine. If there are **other** uncommitted changes that aren't `CHANGELOG.md`, `./README.md`, `./packages/web-grid/README.md`, or `./packages/web-grid/package.json`, list them and ask the user before continuing. (Typical case: substantive source changes belonging in this release that haven't been committed yet — confirm they're intended for this version before bumping.)
-- **Verify the new version isn't already on npm.** Run `npm view @keenmate/web-grid@<NEW_VERSION> version 2>/dev/null` — if it returns the version string, that version is already published and **stop**: bumping over it would fail at publish time and pollute the commit. Also run `npm view @keenmate/web-grid version` to fetch the latest published version on the `latest` tag; if it's higher than `NEW_VERSION`, warn the user (mismatch between local package.json history and the registry — likely caused by the data drift mentioned above) and ask before continuing.
-- Confirm the WIP CHANGELOG section has at least one bullet of substantive content under `### Added`, `### Changed`, `### Removed`, `### Fixed`, `### Internal`, or `### Notes`. If empty, stop — there's nothing meaningful to release.
-- Confirm `./README.md` (the root, canonical README) has a `## What's New in vWIP_VERSION` section. If it's missing, draft one from the CHANGELOG and present it to the user for approval before continuing:
-  - Read the WIP CHANGELOG section, distill it to 5–8 scannable bullets covering the Added/Changed themes (paraphrase, don't copy CHANGELOG bullets verbatim — those are exhaustive; What's New is the highlight reel). Pure internal refactors and Fixed-only entries don't need coverage, though headline bug fixes worth advertising are worth a bullet. Follow the formatting of existing `## What's New in vX.Y.Z` sections in the README (bold lead phrase + em-dash + 1–2 sentence explanation).
+- Run `git status`. The repo intentionally keeps `.claude/`, `test-results/`, and `docs/build/` untracked — those are fine. If there are **other** uncommitted changes that aren't `CHANGELOG.md`, `README.md`, or `packages/web-grid/package.json`, list them and ask the user before continuing. (Typical case: substantive source changes belonging in this release that haven't been committed yet — confirm they're intended for this version before bumping.)
+- **Verify the new version isn't already on npm.** Run `npm view @keenmate/web-grid@<NEW_VERSION> version 2>/dev/null` — if it returns the version string, that version is already published and **stop**: bumping over it would fail at publish time and pollute the commit.
+- **Verify the registry hasn't drifted past you.** Run `npm view @keenmate/web-grid version` to fetch the latest published version on the `latest` tag; if it's higher than `NEW_VERSION` (e.g. someone shipped from another machine, or there's a registry-vs-local mismatch from before the [PUBLISHED] convention landed), warn the user and ask before continuing.
+- Confirm the WIP CHANGELOG section has at least one bullet of substantive content under `### Added`, `### Changed`, `### Removed`, `### Fixed`, or `### Internal`. If empty, stop — there's nothing meaningful to release.
+- Confirm `./README.md` has a `## What's New in vWIP_VERSION` section. If it's missing, draft one from the CHANGELOG and present it to the user for approval before continuing:
+  - Read the WIP CHANGELOG section, distill it to 5–8 scannable bullets covering the Added/Changed themes (paraphrase, don't copy CHANGELOG bullets verbatim — those are exhaustive; What's New is the highlight reel). Pure internal refactors and Fixed-only entries don't need coverage, though headline bug fixes worth advertising are worth a bullet.
+  - **Follow the canonical "What's New" format** defined in the BlissFramework component guidelines (`web-components/readme-structure.md` → "`## What's New in vX.Y.Z` — canonical format"). Auto-check **C-RS-16** in `readme-structure.checks.sh` enforces it. Concretely:
+    - **Heading:** `## What's New in vNEW_VERSION` — lowercase `v`, no backticks around the version, no date.
+    - **Each bullet:** `- **<area or component> — <one-line headline>** — <engineer-level prose, 3–8 sentences>`. Bold-wrapped lead phrase, then a true em-dash (` — `, U+2014 with surrounding spaces), then a prose body explaining *what changed*, *why* (regression history / motivation), *what surface is affected* (concrete component / prop / file names listed inline), and *the mechanism* (the technique used). Plain hyphens or en-dashes fail the check.
+    - **No `### ` sub-headings** inside a What's New section — no `### Added` / `### Fixed` lifted from the CHANGELOG. It's a flat bullet list.
+    - **Reference implementation:** the `## What's New in v1.3.3` / `v1.3.2` sections at the top of `svelte-fluentui/README.md` are the canonical shape — mirror that voice and structure.
   - Show the user the proposed draft as plain markdown in your reply. Ask whether to (a) insert as-is, (b) edit, or (c) abort so they can write it themselves.
-  - Only proceed past step 1 once the user approves the draft (or supplies their own). On approval, insert the section directly above the current top `## What's New in vX.Y.Z` heading in `./README.md`, then continue. (The package README copy is reconciled in step 4 — no need to edit it here.)
+  - Only proceed past step 1 once the user approves the draft (or supplies their own). On approval, insert the section directly above the current top `## What's New in vX.Y.Z` heading in `./README.md`, then continue.
   - Do not silently insert the draft without confirmation — release highlights are a writing call and the user owns the voice.
 
-### 2. Bump version (if needed)
+### 2. Bump version (if needed) [canonical]
 
 If `NEW_VERSION` ≠ `CURRENT_VERSION`, edit `./packages/web-grid/package.json` and change `"version": "CURRENT_VERSION"` to `"version": "NEW_VERSION"`.
 
-There is no per-package `package-lock.json` to re-sync — this monorepo's root `package-lock.json` is regenerated by `npm install` at the workspace root if needed, but a version bump on a single workspace package doesn't require a lockfile change.
+For `rc` arg this is normally a no-op — version was bumped earlier in the development cycle.
 
-For `rc` arg this is normally a no-op — version was bumped earlier in the development cycle. The exception is the "rc from stable" case described above; if that applies, the bump happens here.
+### 3. Finalize CHANGELOG [canonical]
 
-### 3. Finalize CHANGELOG
+In `./CHANGELOG.md`:
 
-In `./CHANGELOG.md` (at repo root, **not** under `packages/`):
-
-- If `WIP_VERSION` ≠ `NEW_VERSION` (e.g. promoting `1.6.0-rc01` → `1.6.0`), rename the WIP heading from `## [WIP_VERSION] - <date>` to `## [NEW_VERSION] - <today>` (today's date from system context).
-- If `WIP_VERSION` == `NEW_VERSION`, leave the bracketed version alone but update the date to today **if** the existing date is stale (more than a few days old). The WIP date is usually whatever the day the section was opened; refresh it so the changelog reflects the actual ship date.
+- If `WIP_VERSION` ≠ `NEW_VERSION` (e.g. promoting `X.Y.Z-rcN` → `X.Y.Z`), rename the WIP heading from `## [WIP_VERSION] - <date>` to `## [NEW_VERSION] - <today>` (today's date from system context).
+- If `WIP_VERSION` == `NEW_VERSION`, leave the bracketed version alone but update the date to today **if** the existing date is stale (more than a few days old). The WIP date is usually whatever day the section was opened; refresh it so the changelog reflects the actual ship date.
 - In either case, **append ` [PUBLISHED]`** to the heading so it reads exactly: `## [NEW_VERSION] - YYYY-MM-DD [PUBLISHED]`.
 - Leave all bullet content untouched.
 - **Do not** create an empty new WIP section — the next dev cycle's first CHANGELOG edit will create one.
 
-### 4. Update root README's "What's New" — only if version changed — then sync package README
+### 4. Update README "What's New" — only if version changed [canonical]
 
-Edit `./README.md` (the root, canonical README):
+In `./README.md`:
 
-- If the existing `## What's New in vWIP_VERSION` section's version differs from `NEW_VERSION` (e.g. promoting `1.6.0-rc01` → `1.6.0`), rename its heading to `## What's New in vNEW_VERSION`. (No content rewrites — the text was already curated for this release.)
+- If the existing `## What's New in vWIP_VERSION` section's version differs from `NEW_VERSION` (e.g. promoting `X.Y.Z-rcN` → `X.Y.Z`), rename its heading to `## What's New in vNEW_VERSION`. (No content rewrites — the text was already curated for this release.)
 - Then count the `## What's New in vX.Y.Z` headings. If there are more than **two**, delete the oldest ones so only the **two most recent** remain (the just-finalized one plus the one before it).
 
 For `rc` arg this is normally a no-op on the heading itself — only trims if someone left an extra-old section behind.
 
-Then **sync the package README**: copy `./README.md` over `./packages/web-grid/README.md` (this is what `make package` does later anyway; doing it here pre-stage keeps the diff understandable and stops the commit from leaving a tracked-file mismatch).
+**Mirror the root README into the package directory.** Because this is a monorepo and the package on npm needs its own `README.md`, copy `./README.md` → `./packages/web-grid/README.md` after the root edits settle. The `make package` build also does this, but stage the mirrored file in this step so the commit captures it. After copying, run `diff ./README.md ./packages/web-grid/README.md` and confirm it produces no output — any drift between the two means the mirror didn't take.
 
-Confirm by running `diff ./README.md ./packages/web-grid/README.md` — output should be empty. Treat any divergence as a blocker.
+### 5. Validate README reflects the release [canonical]
 
-### 5. Validate README reflects the release
-
-Read both the finalized CHANGELOG section and the matching `What's New in vNEW_VERSION` section in `./README.md`. Every **Added** or **Changed** bullet in the CHANGELOG that represents a user-facing feature or behavior change should have a corresponding hit in the What's New section (paraphrased, not verbatim). Pure internal refactors and `Fixed`-only entries don't need coverage, though headline bug fixes worth advertising (e.g. "X used to silently fail; now works") are worth a bullet.
+Read both the finalized CHANGELOG section and the matching `What's New in vNEW_VERSION` section. Every **Added** or **Changed** bullet in the CHANGELOG that represents a user-facing feature or behavior change should have a corresponding hit in the What's New section (paraphrased, not verbatim). Pure internal refactors and `Fixed`-only entries don't need coverage, though headline bug fixes worth advertising (e.g. "X used to silently fail; now works") are worth a bullet.
 
 If you find a significant CHANGELOG entry that isn't reflected in What's New, add a bullet for it. If the section ends up with more than ~8 bullets after this pass, condense — What's New should be scannable, not exhaustive.
 
-After editing, **re-sync the package README**: copy `./README.md` over `./packages/web-grid/README.md` and re-run the `diff` to confirm. The two must stay byte-identical until commit.
-
-### 6. Validate CHANGELOG entries match recent work
+### 6. Validate CHANGELOG entries match recent work [canonical]
 
 Find the previous `[PUBLISHED]` tag in CHANGELOG (the version just before NEW_VERSION) and locate the commit that bumped to it — usually a commit whose subject starts with `v<previous-version>` or `- v<previous-version>`. Run `git log --oneline <previous-publish-commit>..HEAD` to list commits since.
 
@@ -130,50 +131,48 @@ Also check `git diff` (or `git status`) for any uncommitted source/test work out
 
 For every substantive commit or uncommitted change, verify the WIP CHANGELOG section mentions it. If something significant is missing, **stop and ask the user** before finalizing — don't invent entries on their behalf. Pure example/doc tweaks and trivial typo fixes don't need entries.
 
-### 7. Run e2e tests
+### 7. Run tests [per-repo]
 
-Run `npm run test:e2e` from the **workspace root** (equivalently `make test-e2e`). All specs must pass.
+Run `npm run test:e2e` (or equivalently `make test-e2e`) from the workspace root. e2e tests via Playwright. All specs must pass.
 
 If anything fails, **stop and report**. Do not proceed to build/commit. The user fixes the regression (or decides to fixme the spec) before the publish flow can continue.
 
-If Playwright complains that chromium isn't installed, suggest `npm run test:e2e:install` (or `make test-e2e-install`) and stop.
+If Playwright complains that chromium isn't installed, suggest `make test-e2e-install` (or `npx playwright install chromium`) and stop.
 
-### 8. Build the package
+### 8. Build the package [per-repo]
 
-Run `make package` from the workspace root. **Use `make package`, not `make build`** — `make package` is the one that:
+Run `make package` from the workspace root. **Use `make package`, not `make build`** — `make build` produces `dist/` but skips the README + `ai/` mirror step, so the published package would carry a stale README.
 
-1. Cleans `packages/web-grid/dist/`.
-2. Runs `tsc` for the type declarations, then Vite to emit `packages/web-grid/dist/web-grid.js`, `packages/web-grid/dist/web-grid.umd.js`, and `packages/web-grid/dist/index.d.ts` (+ all the per-module `.d.ts` files).
-3. **Copies `./README.md` → `./packages/web-grid/README.md` and `./ai/` → `./packages/web-grid/ai/`** — these are the canonical sources at root, and `npm pack` needs them under `packages/web-grid/`.
-
-`make build` skips step 3 (just builds the library and docs), which is fine for development but leaves the package's README / ai folder potentially stale at publish time.
+`make package`:
+- Cleans `./packages/web-grid/dist/`.
+- Runs `tsc` for type emit + Vite for the JS/CSS bundle.
+- Copies `./README.md` → `./packages/web-grid/README.md`.
+- Copies `./ai/` → `./packages/web-grid/ai/`.
 
 If the build errors, stop and report.
 
-After build, do a quick smoke check on the emitted artifacts under `packages/web-grid/`:
+After build, do a quick smoke check on the emitted artifacts:
+- `./packages/web-grid/dist/` contains the built JS bundle (ESM + UMD) and type declarations.
+- `./packages/web-grid/README.md` exists and matches `./README.md` (run `diff` to confirm byte-equality).
+- `./packages/web-grid/ai/` exists and mirrors `./ai/`.
 
-- `dist/web-grid.js` and `dist/web-grid.umd.js` both exist and are non-empty.
-- `dist/index.d.ts` (the `types` field target) exists.
-- `README.md` now matches `./README.md` byte-for-byte (the copy step ran).
-- `ai/` exists and has the same files as the root `ai/`.
+### 9. Verify the package contents [per-repo]
 
-Note: web-grid does **not** emit a `dist/style.css` like web-multiselect does — CSS is shipped as the raw files under `packages/web-grid/src/css/`, exposed via the `./css` export. So no `dist/style.css` check.
+From `./packages/web-grid/`, run `npm pack --dry-run` and confirm the file list includes:
 
-### 9. Verify the package contents
-
-Run `make publish-dry` from the workspace root (or `cd packages/web-grid && npm pack --dry-run`) and confirm the file list includes:
-
-- `dist/` (built JS + d.ts files)
-- `src/css/` (raw CSS files exposed via the `./css` and `./src/css/*` exports)
-- `ai/` (the prose-doc bundle for AI consumers — intentional)
+- `dist/` (built JS + d.ts files; CSS is shipped raw via `src/css/`, not as `dist/style.css`)
+- `src/css/` (raw CSS files exposed via the `./css` export)
+- `ai/` (prose-doc bundle for AI consumers; mirrored from workspace root by `make package`)
 - `component-variables.manifest.json`
-- `README.md`
+- `README.md` (mirrored from workspace root by `make package`)
 - `LICENSE`
 - `package.json`
 
-If anything user-facing is missing or anything private leaked in (e.g. `test/`, `e2e/`, `docs/`, `examples-*.html`, `*.spec.ts`, `tsconfig.json`, `vite.config.ts`), stop and report — the `files` field in `package.json` controls this and the leak needs fixing before publish.
+And confirm it does **not** include a `dist/style.css` — CSS is intentionally shipped raw via the `./css` export, not as a built bundle.
 
-### 10. Commit
+If anything user-facing is missing or anything private leaked in (e.g. `test/`, `e2e/`, `examples-*.html`, `*.spec.ts`, `tsconfig.json`, `vite.config.ts`, `test-results/`), stop and report — the `files` field in `package.json` controls this and the leak needs fixing before publish.
+
+### 10. Commit [canonical]
 
 Stage:
 
@@ -182,9 +181,9 @@ Stage:
 - `./packages/web-grid/README.md`
 - `./packages/web-grid/package.json`
 
-Do **not** stage `packages/web-grid/dist/` — it's gitignored.
+Do **not** stage `dist/` — it's gitignored.
 
-Commit message format — matches the cross-component convention (web-multiselect, web-daterangepicker, web-grid's own recent commits all use this):
+Commit message format:
 
 ```
 vNEW_VERSION - <one-line summary of the headline change>
@@ -196,9 +195,7 @@ terse; full prose lives in the CHANGELOG.>
 Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
 ```
 
-The `vX.Y.Z - …` subject style and the `Co-Authored-By: Claude Opus 4.7 (1M context)` trailer both match recent release commits in this repo (see commits `4c4c062`, `64909fb`, `ec0241e`).
-
-### 11. Report
+### 11. Report [canonical]
 
 Report back with:
 
@@ -211,27 +208,31 @@ Report back with:
     npm login          # if not already logged in
     npm publish --tag rc
     ```
-    Or `make publish-rc` from the workspace root (Makefile target wraps the cd + publish). The `--tag rc` is critical — without it npm assigns the `latest` dist-tag, which would make the pre-release the default install for everyone running `npm install @keenmate/web-grid`. With `--tag rc`, the `latest` tag stays put and consumers opt in via `@rc` or pinning the exact version.
+    The `--tag rc` is critical — without it npm assigns the `latest` dist-tag, which would make the pre-release the default install for everyone running `npm install @keenmate/web-grid`. With `--tag rc`, the `latest` tag stays put and consumers opt in via `@rc` or pinning the exact version.
   - For `release` / `patch` / `minor` / `major` (publishing a stable release):
     ```
     cd packages/web-grid
     npm login          # if not already logged in
     npm publish
     ```
-    Or `make publish`. No `--tag` needed — it correctly lands as `latest`.
-- A reminder that the CHANGELOG `[PUBLISHED]` tag is now in place — if `npm publish` fails, the user should revert the commit (`git reset --hard HEAD~1`) before retrying, since the registry will refuse to re-publish the same version.
+    No `--tag` needed — it correctly lands as `latest`.
+- A reminder that the CHANGELOG `[PUBLISHED]` tag is now in place — if `npm publish` fails, the user should revert both the tag (CHANGELOG heading) and the version bump (`packages/web-grid/package.json`) before retrying, since the registry will refuse to re-publish the same version.
 
-## Things not to do
+## Things not to do [canonical]
 
 - **Do not run `npm publish`.** The user publishes manually after `npm login`.
 - **Do not push to git remote.** The commit stays local until the user pushes.
 - **Do not create an empty `[Unreleased]` or new WIP heading** in CHANGELOG after finalizing — the next dev cycle's first edit creates the next heading.
-- **Do not retro-fix older CHANGELOG sections** that are missing the `[PUBLISHED]` tag — several historical sections (1.3.0/1.4.0/1.5.0/1.5.1) silently went out without one, and editing them noises up the diff. Only finalize the section you're shipping.
+- **Do not retro-fix older CHANGELOG sections** that are missing the `[PUBLISHED]` tag or carry legacy markers — only finalize the section you're shipping.
 - **Do not silently insert a drafted What's New section.** If you draft one in Step 1 because it's missing, you must present it and wait for explicit approval (or edits) before inserting — the writing voice is the user's call, even when you're handing them a starting point.
-- **Do not edit `./packages/web-grid/README.md` directly.** The root `./README.md` is the source of truth; `make package` copies it over. The publish flow only touches the package README to mirror the root before commit, so the two stay in sync in the working tree.
-- **Do not keep more than two `## What's New in vX.Y.Z` sections** in the README. Step 4 trims older ones; if you see three or more after Step 4, you missed one.
-- **Do not skip `make build`** — without it `packages/web-grid/dist/` is stale and the publish would ship outdated artifacts (or fail entirely if `dist/` was wiped by `make clean`).
-- **Do not skip the e2e run** — this repo's tests have caught real regressions during the 1.3.0/1.4.0 cycles, and the gate is explicit. The suite runs ~30s and covers ~290 specs.
+- **Do not keep more than two `## What's New in vX.Y.Z` sections in the README.** Step 4 trims older ones; if you see three or more after Step 4, you missed one.
+- **Do not skip the build step** — without it `dist/` is stale and the publish would ship outdated artifacts (or fail entirely if `dist/` was wiped by `make clean`).
+- **Do not skip the test gate** if the repo has one — the gate is what catches regressions before they ship.
 - **Do not invent CHANGELOG entries** to cover commits you find; ask the user if something's missing.
 - **Do not bump if there's nothing meaningful in the WIP section** — stop and explain.
-- **Do not stage `dist/`, `e2e/`, `test-results/`, `docs/build/`, or anything under `docs/`** — they're either ignored, test artifacts, or workspace-only paths that don't belong in the publish commit.
+
+### Repo-specific don'ts
+
+- **Do not use `make build` in place of `make package`** — `make build` skips the README + `ai/` mirror step, so the package on npm would ship with a stale README.
+- **Do not edit `./packages/web-grid/README.md` directly** — it's a mirror of `./README.md` produced by `make package`. Edit the root README; the mirror is regenerated.
+- **Do not stage `dist/`, `docs/build/`, `e2e/`, or `test-results/`** — they're either gitignored or test artifacts.

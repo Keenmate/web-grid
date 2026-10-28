@@ -267,6 +267,26 @@
             </div>
         </div>
 
+        <!-- GM06: Per-Column Edit Triggers -->
+        <div class="card">
+            <h2>GM06: Per-Column Edit Triggers</h2>
+            <p>The same <code>editTrigger</code> values from GM02, but applied as a <strong>per-column override</strong>. Here the buttons change the trigger only for the <strong>Status</strong> and <strong>Remote</strong> (checkbox) columns &mdash; the other columns keep the grid default of <code>dblclick</code>.</p>
+
+            <div class="mode-switcher">
+                <button class="mode-btn" data-coltrigger="click" onclick="setColTrigger('click', this)">click</button>
+                <button class="mode-btn active" data-coltrigger="dblclick" onclick="setColTrigger('dblclick', this)">dblclick</button>
+                <button class="mode-btn" data-coltrigger="navigate" onclick="setColTrigger('navigate', this)">navigate</button>
+                <button class="mode-btn" data-coltrigger="always" onclick="setColTrigger('always', this)">always</button>
+                <button class="mode-btn" data-coltrigger="button" onclick="setColTrigger('button', this)">button</button>
+            </div>
+
+            <web-grid id="colTriggerGrid" style="max-height: 300px;"></web-grid>
+
+            <div id="colTriggerInfo" class="mode-info">
+                <strong>dblclick</strong> &mdash; Only <strong>Status</strong> and <strong>Remote</strong> use this trigger. Name and Salary always require a double-click regardless of the selection.
+            </div>
+        </div>
+
         <!-- API Reference -->
         <div class="card">
             <h2>API Reference</h2>
@@ -576,6 +596,43 @@
         }
 
         pgUpdateStateDisplay()
+
+        // --- GM06: Per-Column Edit Triggers ---
+        // The trigger buttons only reconfigure these two columns; the rest keep the grid default.
+        const CONTROLLED_FIELDS = ['status', 'isRemote']
+
+        const colTriggerGrid = document.getElementById('colTriggerGrid')
+        colTriggerGrid.isEditable = true
+        colTriggerGrid.editTrigger = 'dblclick'  // grid default for the non-controlled columns
+        colTriggerGrid.isStriped = true
+        colTriggerGrid.items = employees.map(e => ({...e}))
+
+        function buildColTriggerColumns(trigger) {
+            return [
+                { field: 'id', title: 'ID', width: '60px', isEditable: false, horizontalAlign: 'center' },
+                { field: 'name', title: 'Name', width: '150px', editor: 'text' },
+                { field: 'status', title: 'Status', width: '120px', editor: 'select', editTrigger: trigger, editorOptions: { options: statusOptions, valueMember: 'value', displayMember: 'label' } },
+                { field: 'salary', title: 'Salary', width: '120px', editor: 'number', horizontalAlign: 'right', formatCallback: (v) => '$' + v.toLocaleString(), editorOptions: { min: 0, step: 1000 } },
+                { field: 'isRemote', title: 'Remote', width: '90px', editor: 'checkbox', editTrigger: trigger, horizontalAlign: 'center' }
+            ]
+        }
+
+        colTriggerGrid.columns = buildColTriggerColumns('dblclick')
+
+        const colTriggerDescriptions = {
+            'click': '<strong>click</strong> &mdash; Only <strong>Status</strong> and <strong>Remote</strong> enter edit mode on a single click. Name and Salary still need a double-click.',
+            'dblclick': '<strong>dblclick</strong> &mdash; Only <strong>Status</strong> and <strong>Remote</strong> use this trigger. Name and Salary always require a double-click regardless of the selection.',
+            'navigate': '<strong>navigate</strong> &mdash; <strong>Status</strong> and <strong>Remote</strong> open by typing/Enter/F2 while navigating. Name and Salary still need a double-click.',
+            'always': '<strong>always</strong> &mdash; <strong>Status</strong> and <strong>Remote</strong> are always in edit mode. Name and Salary remain double-click to edit.',
+            'button': '<strong>button</strong> &mdash; An edit button appears in <strong>Status</strong> and <strong>Remote</strong> cells only. Name and Salary still need a double-click.'
+        }
+
+        window.setColTrigger = function(trigger, btn) {
+            document.querySelectorAll('[data-coltrigger]').forEach(b => b.classList.remove('active'))
+            btn.classList.add('active')
+            colTriggerGrid.columns = buildColTriggerColumns(trigger)
+            document.getElementById('colTriggerInfo').innerHTML = colTriggerDescriptions[trigger]
+        }
     </script>
 </body>
 </html>

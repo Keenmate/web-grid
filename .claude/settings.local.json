@@ -49,7 +49,26 @@
       "Bash(awk '{print $NF}')",
       "Bash(node *)",
       "Read(//c/Git/KM/svelte-treeview/src/routes/test/**)",
-      "Read(//c/Git/KM/svelte-treeview/e2e/**)"
+      "Read(//c/Git/KM/svelte-treeview/e2e/**)",
+      "Bash(git stash *)",
+      "Bash(npm test *)",
+      "Bash(jobs -l)",
+      "Bash(git commit -m ' *)",
+      "Bash(git log *)",
+      "Read(//c/Git/KM/web-multiselect/.claude/**)",
+      "Read(//c/Git/KM/web-daterangepicker/.claude/**)",
+      "Bash(git mv *)",
+      "Read(//c/Git/KM/web-multiselect/docs/**)",
+      "Read(//c/Git/BlissFramework/guidelines/web-components/**)",
+      "Bash(sed -i -e 's/When tableBorderOnly is enabled/When isTableBorderOnly is enabled/g' -e 's/\\(tableBorderOnly toggled\\)/\\(isTableBorderOnly toggled\\)/g' src/web-component.ts)",
+      "Bash(sed -i 's/showPagination is false/isPaginationVisible is false/g' src/modules/rendering/table.ts)",
+      "Bash(git commit *)",
+      "Bash(git reset *)",
+      "Bash(rm -f packages/web-grid/src/css/_*.css packages/web-grid/src/modules/types.ts)",
+      "Bash(awk 'NR==1327,/^\t\\\\}$/ {print NR\": \"$0; if\\(NR>1327 && /^\t\\\\}$/\\){exit}}' packages/web-grid/src/web-component.ts)",
+      "Bash(awk 'NR>=1327 && NR<=2348 && /addEventListener|^\\\\s*\\\\/\\\\/ ===|subscribe/ {print NR\": \"$0}' packages/web-grid/src/web-component.ts)",
+      "Bash(awk *)",
+      "Bash(npm audit *)"
     ]
   }
 }
