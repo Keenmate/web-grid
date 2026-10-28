@@ -13,6 +13,7 @@ import { showTooltip, hideTooltip } from '../tooltip/index.js'
 import { activateGridItem, handleRowShortcut, rowCellFields } from '../items/index.js'
 import {
 	getActiveToolbar,
+	getActiveToolbarButtons,
 	getActiveToolbarRowIndex,
 	isToolbarOwnedBy,
 	openToolbar,
@@ -20,6 +21,7 @@ import {
 	resolveToolbar,
 	toolbarEntryKey,
 	renderToolbarHTML,
+	renderToolbarButton,
 	setActiveToolbarButtons,
 	updateConnector,
 	buildToolbarTooltipHtml,
@@ -114,14 +116,14 @@ export function removeInlineShortcuts<T>(ctx: GridHost<T>): void {
  * the text as heading, `tooltip` as description, the shortcut (the item's, or a
  * `rowShortcuts` entry with the same `id` / built-in `action`).
  */
-export function setupToolbarTooltips<T>(ctx: GridHost<T>, buttons: ToolbarButton<T>[]): void {
+export function setupToolbarTooltips<T>(ctx: GridHost<T>, buttons: ToolbarButton<T>[], elements?: Iterable<Element>): void {
 	const toolbarContainer = ctx.shadow.querySelector('.wg__toolbar-container')
 	if (!toolbarContainer) return
 
-	toolbarContainer.querySelectorAll('.wg__toolbar-btn').forEach(btn => {
+	for (const btn of elements ?? toolbarContainer.querySelectorAll('.wg__toolbar-btn')) {
 		const button = btn as HTMLElement
 		const entry = buttons[Number(button.dataset.wgIndex)]
-		if (!entry) return
+		if (!entry) continue
 		const key = entry.item.id ?? entry.item.action
 		const matchingShortcut = ctx.engine.rowShortcuts?.find(s => (s.id ?? s.action) === key)
 
@@ -131,7 +133,7 @@ export function setupToolbarTooltips<T>(ctx: GridHost<T>, buttons: ToolbarButton
 		button.addEventListener('mouseleave', () => {
 			hideTooltip(ctx)
 		})
-	})
+	}
 }
 
 /**
@@ -173,6 +175,7 @@ export function showToolbarForRow<T>(
 	// (openToolbar rebuilds with base rowToolbar items, not cell-specific items)
 	ctx.toolbar.setCurrentCellItemsJson(null)
 	toolbarCells.delete(ctx)
+	toolbarEntries.delete(ctx)
 
 	openToolbar(
 		ctx,
@@ -251,6 +254,7 @@ export function closeToolbarAndReset<T>(ctx: GridHost<T>): void {
 	}
 	ctx.toolbar.reset()
 	toolbarCells.delete(ctx)
+	toolbarEntries.delete(ctx)
 	// Hide any toolbar tooltip (mouseleave won't fire when DOM is removed)
 	hideToolbarTooltip(ctx)
 	closeToolbar()
@@ -294,6 +298,7 @@ export function updateToolbarWithCellItems<T>(
 		activeToolbar.toolbar.style.visibility = visibility
 		setActiveToolbarButtons(buttons)
 		setActiveToolbarCell(ctx, cell)
+		toolbarEntries.set(ctx, merged)
 
 		// Re-setup tooltips for new items
 		setupToolbarTooltips(ctx, buttons)
@@ -304,6 +309,58 @@ export function updateToolbarWithCellItems<T>(
 const toolbarCells = new WeakMap<object, Omit<CellContext<any>, 'controller' | 'element'>>()
 function setActiveToolbarCell<T>(ctx: GridHost<T>, cell: Omit<CellContext<T>, 'controller' | 'element'>): void {
 	toolbarCells.set(ctx, cell)
+}
+// The entries of an open cell toolbar (base rowToolbar merged with the cell's); absent = rowToolbar.
+const toolbarEntries = new WeakMap<object, GridToolbarEntry<any>[]>()
+
+/**
+ * Re-resolve the open toolbar against the row's current position (a move changes the
+ * built-ins' defaults: move-up / move-down at an edge) and patch the buttons whose
+ * state changed in place — the rest (and the button under the pointer) stay put.
+ * A changed layout (an item shown / hidden) re-renders the toolbar content.
+ */
+function refreshOpenToolbar<T>(ctx: GridHost<T>, row: T, rowIndex: number): void {
+	const active = getActiveToolbar()
+	const previous = getActiveToolbarButtons<T>()
+	if (!active || !previous) return
+	const cell = toolbarCells.get(ctx)
+	const isCell = !!cell && cell.row === row
+	const entries = (isCell ? toolbarEntries.get(ctx) : undefined) ?? ctx.engine.rowToolbar
+	let buttons = resolveToolbar(ctx, entries, isCell
+		? ctx.engine.ctx({ ...cell!, rowIndex })
+		: ctx.engine.rowCtx(row, rowIndex))
+	if (isCell) {
+		buttons = buttons.sort((a, b) => a.row - b.row)
+		toolbarCells.set(ctx, { ...cell!, rowIndex })
+	}
+	const isSameLayout = buttons.length === previous.length && buttons.every((b, i) =>
+		b.item === previous[i].item && b.row === previous[i].row && b.isDividerBefore === previous[i].isDividerBefore)
+
+	if (!isSameLayout) {
+		hideToolbarTooltip(ctx)
+		const temp = document.createElement('div')
+		temp.innerHTML = renderToolbarHTML(buttons, ctx.engine.toolbarVerticalAlign !== 'top')
+		active.toolbar.innerHTML = temp.querySelector('.wg__toolbar')?.innerHTML ?? ''
+		setActiveToolbarButtons(buttons)
+		setupToolbarTooltips(ctx, buttons)
+		return
+	}
+
+	const replaced: Element[] = []
+	buttons.forEach((b, i) => {
+		const html = renderToolbarButton(b, i, 'wg__toolbar-btn')
+		if (html === renderToolbarButton(previous[i], i, 'wg__toolbar-btn')) return
+		const el = active.toolbar.querySelector(`.wg__toolbar-btn[data-wg-index="${i}"]`)
+		if (!el) return
+		if (ctx.tooltip.anchor === el) hideToolbarTooltip(ctx)
+		const temp = document.createElement('div')
+		temp.innerHTML = html
+		const fresh = temp.firstElementChild!
+		el.replaceWith(fresh)
+		replaced.push(fresh)
+	})
+	setActiveToolbarButtons(buttons)
+	if (replaced.length) setupToolbarTooltips(ctx, buttons, replaced)
 }
 
 /**
@@ -352,6 +409,8 @@ export function handleToolbarItemClick<T>(
 				return
 			}
 			ctx.render()
+			const rowIndex = ctx.engine.displayItems.indexOf(row)
+			refreshOpenToolbar(ctx, row, rowIndex)
 			if (isMoveAction) {
 				// Show where the row moved to
 				updateConnector(ctx, ctx.engine.displayItems)

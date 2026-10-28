@@ -28,7 +28,9 @@ The rowToolbar array (GridToolbarEntry<T>[]) accepts built-in names,
 action item objects and dividers, mixed in any order. Default:
 ['add', 'delete', 'duplicate'].
 
-Built-in row actions (they DO the work, after the `action` event):
+Built-in row actions (they DO the work, BEFORE the `action` event - order:
+beforeActionCallback -> item onClick -> built-in -> `action` event, so an
+`action` listener already sees the new items):
     'add'        - Insert a new row after the current row. The row is
                    createEmptyRowCallback(ctx)'s result (may be async),
                    else a blank row (every column field = null).

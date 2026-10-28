@@ -438,6 +438,12 @@ The cell and column-header menus are the shared KeenMate menu, core `openMenu()`
 
 ### Fixed
 
+- **The open row toolbar refreshes its buttons after a built-in.** After a move (or any
+  built-in that keeps the toolbar open) the buttons are re-resolved against the row's new
+  position — `move-down` disables on the last row, `move-up` re-enables off the first — instead
+  of keeping the states from when the toolbar opened (a click on the stale button was a no-op).
+  Only changed buttons are replaced. Docs: the built-ins run *before* the `action` event
+  (README / usage / ai said "after").
 - **Cell ranges with reordered or hidden columns.** Range column indices mixed the
   column index (`data-col`) and the visual position, so a drag selection, its highlight /
   border and `getSelectedCells()` could disagree once columns were reordered or hidden

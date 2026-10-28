@@ -175,7 +175,7 @@ A divider is an entry `{ divider: true, text? }` — or `menuDivider(text)`, exp
 
 #### Built-in row actions
 
-Usable as a string (`'add'`) or by `action` on an item (`{ action: 'delete', icon: '🗑️', text: 'Remove' }`) in `rowToolbar`, cell toolbars, `contextMenu` and `rowShortcuts`. They **do the work** after the `action` event — don't also add / remove the row in an `action` listener, or it changes twice. Texts come from `labels.actions`.
+Usable as a string (`'add'`) or by `action` on an item (`{ action: 'delete', icon: '🗑️', text: 'Remove' }`) in `rowToolbar`, cell toolbars, `contextMenu` and `rowShortcuts`. They **do the work** before the `action` event (`beforeActionCallback` → item `onClick` → built-in → `action` event), so an `action` listener already sees the new `items` — don't also add / remove the row there, or it changes twice. Texts come from `labels.actions`.
 
 | `action` | What it does |
 |---|---|

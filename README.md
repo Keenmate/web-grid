@@ -785,7 +785,7 @@ grid.rowToolbar = ['add', 'delete', 'duplicate', 'move-up', 'move-down']
 
 ### Built-in Row Actions
 
-The row built-ins **do the work** (after the `action` event) — don't also insert / remove rows in an `action` listener, or the row changes twice:
+The row built-ins **do the work** — they run *before* the `action` event (order: `beforeActionCallback` → item `onClick` → built-in → `action` event), so an `action` listener already sees the new `items`. Don't also insert / remove rows in an `action` listener, or the row changes twice:
 
 | `action` | What it does |
 |----------|--------------|

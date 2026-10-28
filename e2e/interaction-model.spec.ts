@@ -100,6 +100,22 @@ test.describe('row toolbar — core action items', () => {
 		await expect.poll(() => names(page)).toEqual(['Alpha', 'Alpha', 'Gamma', 'Beta', 'New', 'Delta'])
 	})
 
+	test('the open toolbar refreshes its button states after a move', async ({ page }) => {
+		await openToolbarOn(page, row(page, 0))
+		await expect(toolbar(page).locator('[data-action="move-up"]')).toBeDisabled()
+		await toolbar(page).locator('[data-action="move-down"]').click()
+		await expect.poll(() => names(page)).toEqual(['Beta', 'Alpha', 'Gamma', 'Delta'])
+		// the toolbar stays open on Alpha (now row 1): move-up is enabled again
+		await expect(toolbar(page).locator('[data-action="move-up"]')).toBeEnabled()
+		await toolbar(page).locator('[data-action="move-down"]').click()
+		await toolbar(page).locator('[data-action="move-down"]').click()
+		await expect.poll(() => names(page)).toEqual(['Beta', 'Gamma', 'Delta', 'Alpha'])
+		// the last row: move-down is disabled
+		await expect(toolbar(page).locator('[data-action="move-down"]')).toBeDisabled()
+		await expect(toolbar(page).locator('[data-action="move-down"]')).toHaveClass(/wg__toolbar-btn--disabled/)
+		await expect(toolbar(page).locator('[data-action="move-up"]')).toBeEnabled()
+	})
+
 	test('beforeActionCallback returning false cancels the event and the built-in', async ({ page }) => {
 		await page.evaluate(() => { (window as any).__vetoBuiltIns = true })
 		await openToolbarOn(page, row(page, 1))
@@ -146,10 +162,8 @@ test.describe('row built-ins act on the selection when the clicked row is in it'
 		await openToolbarOn(page, row(page, 2))  // Beta — in the selection
 		await toolbar(page).locator('[data-action="move-down"]').click()
 		await expect.poll(() => names(page)).toEqual(['Gamma', 'Delta', 'Alpha', 'Beta'])
-		// the block is at the bottom: another move-down is a no-op (the open toolbar keeps its button states)
-		await toolbar(page).locator('[data-action="move-down"]').click()
-		await page.waitForTimeout(50)
-		expect(await names(page)).toEqual(['Gamma', 'Delta', 'Alpha', 'Beta'])
+		// the block is at the bottom: the open toolbar disables move-down
+		await expect(toolbar(page).locator('[data-action="move-down"]')).toBeDisabled()
 		await toolbar(page).locator('[data-action="move-up"]').click()
 		await expect.poll(() => names(page)).toEqual(['Gamma', 'Alpha', 'Beta', 'Delta'])
 		expect(await selected(page)).toEqual(['Alpha', 'Beta'])

@@ -477,6 +477,11 @@ export function getActiveToolbar(): { toolbar: HTMLElement; container: HTMLEleme
 	return { toolbar: activeToolbar.toolbar, container: activeToolbar.container }
 }
 
+/** The active toolbar's current buttons (as rendered). */
+export function getActiveToolbarButtons<T>(): ToolbarButton<T>[] | null {
+	return (activeToolbar?.buttons as ToolbarButton<T>[] | undefined) ?? null
+}
+
 /** Replace the active toolbar's buttons (a cell toolbar swapped its items in). */
 export function setActiveToolbarButtons<T>(buttons: ToolbarButton<T>[]): void {
 	if (activeToolbar) activeToolbar.buttons = buttons
