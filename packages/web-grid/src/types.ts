@@ -96,7 +96,7 @@ export type EditorOptions<T = unknown> = {
 
 	// Other shared options
 	allowEmpty?: boolean    // Allow null/empty selection
-	labels?: Partial<Pick<GridLabels, 'dropdownEmpty' | 'dropdownSearching'>>  // This column's dropdown texts (per key over the grid's `labels`)
+	labels?: Partial<Pick<GridLabels, 'dropdownNoData' | 'dropdownNoResults' | 'dropdownSearching' | 'dropdownEmptyOption'>>  // This column's dropdown texts (per key over the grid's `labels`)
 	dropdownMinWidth?: string  // Minimum width for dropdown (e.g., "300px") - useful when cell is narrow
 
 	// === TEXT ===
@@ -604,12 +604,16 @@ export type GridLabels = {
 	paginationItemCount: string     // e.g., "{count} items"
 	paginationPerPage: string       // e.g., "per page"
 
-	// Empty table
-	empty: string                   // "No items to display"
+	// Empty table / loading
+	noData: string                  // "No items to display" — the grid has no rows at all
+	noResults: string               // "No matching items" — rows exist but the filter matched nothing
+	loading: string                 // "Loading…" — infinite-scroll load-more row (role="status")
 
 	// Dropdown
-	dropdownEmpty: string           // "No options" - shown when filter returns empty
-	dropdownSearching: string       // "Searching..." - shown during async search
+	dropdownNoData: string          // "No options" — the editor has no options at all
+	dropdownNoResults: string       // "No matching options" — typed filter / search matched nothing
+	dropdownSearching: string       // "Searching…" — a typed async search is in flight
+	dropdownEmptyOption: string     // "—" — the empty first item of an `isEmptyAllowed` dropdown
 
 	// Row locking (row-number / row tooltip)
 	rowLocked: string               // "This row is locked" - no lockedBy known

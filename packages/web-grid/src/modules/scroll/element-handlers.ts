@@ -10,7 +10,7 @@
 import type { GridHost } from '../grid-context.js'
 import { clearEditingVisual, updateFocusVisual } from '../navigation/focus.js'
 import { renderCell } from '../rendering/cell.js'
-import { renderDataRowsVirtual, type VirtualScrollParams } from '../rendering/table.js'
+import { renderDataRowsVirtual, renderLoadingMoreRow, type VirtualScrollParams } from '../rendering/table.js'
 import { removeDropdown } from '../dropdown/rendering.js'
 import { calculateVisibleRange, shouldTriggerInfiniteScroll } from './calculations.js'
 
@@ -91,6 +91,9 @@ export function handleInfiniteScroll<T>(ctx: GridHost<T>, container: HTMLElement
 
 	if (shouldLoad) {
 		ctx.virtualScroll.setIsLoadingMore(true)
+		// The `labels.loading` row at the bottom (gone with the next render / items set)
+		const tbody = container.querySelector('tbody')
+		if (tbody && !tbody.querySelector('.wg__loading-more-row')) tbody.insertAdjacentHTML('beforeend', renderLoadingMoreRow(ctx))
 
 		// Fire data request with loadMore trigger
 		ctx.engine.fireDataRequest('load-more')

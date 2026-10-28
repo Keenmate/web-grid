@@ -217,6 +217,30 @@ export function renderHeaderRow<T>(ctx: GridHost<T>): string {
 }
 
 /**
+ * The single row shown when there is nothing to display: `labels.noResults` when
+ * rows exist (or a filter is active) but nothing matched, else `labels.noData`.
+ */
+function renderEmptyRow<T>(ctx: GridHost<T>, colspan: number): string {
+	const hasActiveFilter = Object.values(ctx.engine.filters).some(v => !!v)
+	const text = ctx.engine.items.length > 0 || hasActiveFilter ? ctx.engine.labels.noResults : ctx.engine.labels.noData
+	const kind = ctx.engine.items.length > 0 || hasActiveFilter ? 'no-results' : 'no-data'
+	return `
+			<tr>
+				<td class="wg__empty" colspan="${colspan}" data-empty="${kind}">${ctx.escapeHtml(text)}</td>
+			</tr>
+		`
+}
+
+/**
+ * The infinite-scroll "loading more" row (`labels.loading`; '' = no row), shown
+ * while a `load-more` data request is in flight.
+ */
+export function renderLoadingMoreRow<T>(ctx: GridHost<T>): string {
+	if (!ctx.virtualScroll.isLoadingMore || !ctx.engine.labels.loading) return ''
+	return `<tr class="wg__loading-more-row"><td class="wg__loading-more" colspan="999" role="status">${ctx.escapeHtml(ctx.engine.labels.loading)}</td></tr>`
+}
+
+/**
  * Render data rows
  */
 export function renderDataRows<T>(ctx: GridHost<T>): string {
@@ -234,15 +258,7 @@ export function renderDataRows<T>(ctx: GridHost<T>): string {
 	const showActionsColumn = ctx.engine.isRowToolbarShown && ctx.engine.toolbarTrigger === 'button' && ctx.engine.toolbarPosition !== 'inline'
 	const colspanWithExtras = visualColumns.length + (showActionsColumn ? 1 : 0) + (showRowNumbers ? 1 : 0) + (showInlineActions ? 1 : 0)
 
-	if (items.length === 0) {
-		return `
-			<tr>
-				<td class="wg__empty" colspan="${colspanWithExtras}">
-					${ctx.escapeHtml(ctx.engine.labels.empty)}
-				</td>
-			</tr>
-		`
-	}
+	if (items.length === 0) return renderEmptyRow(ctx, colspanWithExtras)
 
 	const activeToolbarRow = getActiveToolbarRowIndex()
 
@@ -411,7 +427,7 @@ export function renderDataRows<T>(ctx: GridHost<T>): string {
 			: ''
 
 		return `<tr class="${rowClasses.join(' ')}" data-row-index="${rowIndex}" ${rowTooltipAttr}>${rowNumberCell}${inlineActionsCell}${actionsCell}${cells}<td class="wg__cell wg__filler" data-row="${rowIndex}"></td></tr>`
-	}).join('')
+	}).join('') + renderLoadingMoreRow(ctx)
 }
 
 /**
@@ -466,15 +482,7 @@ export function renderDataRowsVirtual<T>(ctx: GridHost<T>, params: VirtualScroll
 	const showActionsColumn = ctx.engine.isRowToolbarShown && ctx.engine.toolbarTrigger === 'button' && ctx.engine.toolbarPosition !== 'inline'
 	const colspanWithExtras = visualColumns.length + (showActionsColumn ? 1 : 0) + (showRowNumbers ? 1 : 0) + (showInlineActions ? 1 : 0)
 
-	if (items.length === 0) {
-		return `
-			<tr>
-				<td class="wg__empty" colspan="${colspanWithExtras}">
-					${ctx.escapeHtml(ctx.engine.labels.empty)}
-				</td>
-			</tr>
-		`
-	}
+	if (items.length === 0) return renderEmptyRow(ctx, colspanWithExtras)
 
 	const activeToolbarRow = getActiveToolbarRowIndex()
 
@@ -664,7 +672,7 @@ export function renderDataRowsVirtual<T>(ctx: GridHost<T>, params: VirtualScroll
 		? `<tr class="wg__spacer-bottom"><td colspan="${colspanWithExtras}" style="height: ${bottomSpacerHeight}px"></td></tr>`
 		: ''
 
-	return topSpacer + visibleRows.join('') + bottomSpacer
+	return topSpacer + visibleRows.join('') + bottomSpacer + renderLoadingMoreRow(ctx)
 }
 
 /**

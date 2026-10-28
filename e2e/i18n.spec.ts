@@ -17,7 +17,7 @@ const CS = {
 	paginationPageInfo: 'Strana {current} z {total}',
 	paginationItemCount: '{count} položek',
 	paginationPerPage: 'na stránku',
-	dropdownEmpty: 'Žádné možnosti',
+	dropdownNoResults: 'Žádné možnosti',
 	actions: {
 		add: 'Přidat řádek', delete: 'Smazat řádek', duplicate: 'Duplikovat řádek', moveUp: 'Nahoru', moveDown: 'Dolů',
 		expand: 'Rozbalit', collapse: 'Sbalit', expandAll: 'Rozbalit vše', collapseAll: 'Sbalit vše'
@@ -111,17 +111,41 @@ test('labels is also a JSON attribute', async ({ page }) => {
 	await expect(pag(page).locator('[data-action="next"]')).toHaveText('Dál')
 })
 
-test('labels.empty is the empty-table text', async ({ page }) => {
+test('labels.noData is the empty-table text', async ({ page }) => {
 	await onGrid(page, el => { el.items = [] })
 	await expect(gridLocator(page).locator('.wg__empty')).toHaveText('No items to display')
-	await onGrid(page, el => { el.labels = { empty: 'Žádná data' } })
+	await onGrid(page, el => { el.labels = { noData: 'Žádná data' } })
 	await expect(gridLocator(page).locator('.wg__empty')).toHaveText('Žádná data')
+})
+
+test('labels.noResults when rows exist but the filter matched nothing', async ({ page }) => {
+	await onGrid(page, el => { el.isFilterable = true; el.filters = { [el.columns[0].field]: 'zzz-no-match' } })
+	await expect(gridLocator(page).locator('.wg__empty')).toHaveText('No matching items')
+	await expect(gridLocator(page).locator('.wg__empty')).toHaveAttribute('data-empty', 'no-results')
+	await onGrid(page, el => { el.labels = { noResults: 'Nic nenalezeno' } })
+	await expect(gridLocator(page).locator('.wg__empty')).toHaveText('Nic nenalezeno')
+})
+
+test("labels: '' renders nothing, undefined falls back to the default", async ({ page }) => {
+	await onGrid(page, el => { el.items = []; el.labels = { noData: '' } })
+	await expect(gridLocator(page).locator('.wg__empty')).toHaveText('')
+	await onGrid(page, el => { el.labels = { noData: undefined } })
+	await expect(gridLocator(page).locator('.wg__empty')).toHaveText('No items to display')
+})
+
+test('a combobox with no options at all shows labels.dropdownNoData', async ({ page }) => {
+	await onGrid(page, el => {
+		el.columns = el.columns.map((c: any) => c.field === 'kind' ? { ...c, editorOptions: { ...c.editorOptions, options: [] } } : c)
+	})
+	await cell(page, 0, 2).click()
+	await page.keyboard.type('z')
+	await expect(gridLocator(page).locator('.wg__dropdown')).toContainText('No options')
 })
 
 test('a column editorOptions.labels overrides the grid dropdown texts for that column', async ({ page }) => {
 	await onGrid(page, el => {
-		el.labels = { dropdownEmpty: 'Grid-level' }
-		el.columns = el.columns.map((c: any) => c.field === 'kind' ? { ...c, editorOptions: { ...c.editorOptions, labels: { dropdownEmpty: 'Column-level' } } } : c)
+		el.labels = { dropdownNoResults: 'Grid-level' }
+		el.columns = el.columns.map((c: any) => c.field === 'kind' ? { ...c, editorOptions: { ...c.editorOptions, labels: { dropdownNoResults: 'Column-level' } } } : c)
 	})
 	await cell(page, 0, 2).click()
 	await page.keyboard.type('zzz')

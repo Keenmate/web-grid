@@ -450,7 +450,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		// Fill handle — grid-wide drag direction; a column's own `fillDirection` wins
 		{ configKey: 'fillDirection', attribute: 'fill-direction', converter: toEnum(FILL_DIRECTIONS, { default: 'vertical' }), default: 'vertical', on: 'update' },
 		// UI strings (i18n): a partial object (also a JSON attribute) merged per key over the
-		// English defaults — `empty`, `dropdownEmpty`, pagination / go-to-row / menu texts, … (see labels.ts)
+		// English defaults — `noData` / `noResults`, `loading`, `dropdownNoData`, pagination / go-to-row / menu texts, … (see labels.ts)
 		{ configKey: 'labels', attribute: 'labels', converter: toObject(), on: 'update', type: 'GridLabelsInput' },
 		// Tooltip timing (element-local, not on grid — the bridge's `in this.engine`
 		// guard skips them; readers use the config-backed getter)
@@ -707,9 +707,11 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 
 	get items(): T[] { return this.engine.items }
 	set items(value: T[]) {
-		this.engine.items = value
-		// Reset infinite scroll loading flag
+		// Reset infinite scroll loading flag (before the re-render, so the
+		// `labels.loading` row goes away with it)
 		this.virtualScroll.setIsLoadingMore(false)
+		this.shadow?.querySelector('.wg__loading-more-row')?.remove()
+		this.engine.items = value
 	}
 
 	get columns(): Column<T>[] { return this.engine.columns }
@@ -1153,7 +1155,13 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	set infiniteScrollThreshold(value: number) { this.engine.infiniteScrollThreshold = value }
 
 	get hasMoreItems(): boolean { return this.engine.hasMoreItems }
-	set hasMoreItems(value: boolean) { this.engine.hasMoreItems = value }
+	set hasMoreItems(value: boolean) {
+		this.engine.hasMoreItems = value
+		if (!value) {
+			this.virtualScroll.setIsLoadingMore(false)
+			this.shadow?.querySelector('.wg__loading-more-row')?.remove()
+		}
+	}
 
 	// Paste
 	/** Before a multi-cell paste: `false` cancels; add "row-col" keys to `ctx.skipCells` to skip cells (async OK). */

@@ -140,7 +140,7 @@ test.describe('every input (table-driven)', () => {
 				newRowIndicator: ['*', '*'],
 				treeExpandedGlyph: ['-', '-'],
 				treeCollapsedGlyph: ['+', '+'],
-				labels: ['{"empty":"Nic"}', { empty: 'Nic' }]
+				labels: ['{"noData":"Nic"}', { noData: 'Nic' }]
 			}
 			const sample = (d: any): [string, unknown] | null => {
 				if (SPECIAL[d.configKey]) return SPECIAL[d.configKey]

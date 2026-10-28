@@ -6,6 +6,8 @@
 // too. `resolveLabels()` is the one resolving seam: a page-wide core `/locale`
 // layer (window.components.locale.labels['web-grid']) slots in here, between the
 // instance labels and the defaults. `{name}` placeholders → `formatLabel()`.
+// A key set to `''` renders nothing (deliberately empty); `undefined` / missing
+// falls back to the English default.
 
 import type { GridLabels, GridLabelsInput } from './types.js'
 
@@ -28,12 +30,16 @@ export const DEFAULT_LABELS: GridLabels = {
 	paginationItemCount: '{count} items',
 	paginationPerPage: 'per page',
 
-	// Empty table
-	empty: 'No items to display',
+	// Empty table / loading
+	noData: 'No items to display',
+	noResults: 'No matching items',
+	loading: 'Loading…',
 
 	// Dropdown
-	dropdownEmpty: 'No options',
-	dropdownSearching: 'Searching...',
+	dropdownNoData: 'No options',
+	dropdownNoResults: 'No matching options',
+	dropdownSearching: 'Searching…',
+	dropdownEmptyOption: '—',
 
 	// Row locking
 	rowLocked: 'This row is locked',
@@ -92,10 +98,16 @@ export const DEFAULT_LABELS: GridLabels = {
 export function resolveLabels(input: GridLabelsInput | null | undefined): GridLabels {
 	return {
 		...DEFAULT_LABELS,
-		...input,
-		actions: { ...DEFAULT_LABELS.actions, ...input?.actions },
-		contextMenu: { ...DEFAULT_LABELS.contextMenu, ...input?.contextMenu }
-	}
+		...definedOnly(input),
+		actions: { ...DEFAULT_LABELS.actions, ...definedOnly(input?.actions) },
+		contextMenu: { ...DEFAULT_LABELS.contextMenu, ...definedOnly(input?.contextMenu) }
+	} as GridLabels
+}
+
+/** Drop `undefined` keys so they fall back to the default (`''` is kept — deliberately empty). */
+function definedOnly<O extends object>(input: O | null | undefined): Partial<O> {
+	if (!input) return {}
+	return Object.fromEntries(Object.entries(input).filter(([, v]) => v !== undefined)) as Partial<O>
 }
 
 /** Fill `{name}` placeholders (unknown names stay as written). */

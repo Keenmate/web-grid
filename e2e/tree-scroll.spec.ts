@@ -141,6 +141,19 @@ test.describe('tree + infinite scroll (#isGrid)', () => {
 			.toContainText('trigger=load-more')
 	})
 
+	test('a pending load-more shows the labels.loading row until the request is answered', async ({ page }) => {
+		await gotoTreeScroll(page)
+		// Hold the request: no items appended until the test sets them
+		await page.locator('web-grid#isGrid').evaluate((el: any) => { el.onDataRequest = () => {} })
+		await scrollInner(page, 'web-grid#isGrid', 2800)
+		const row = page.locator('web-grid#isGrid .wg__loading-more')
+		await expect(row).toHaveText('Loading…')
+		await expect(row).toHaveAttribute('role', 'status')
+		// Answered with "nothing more" (an items assignment clears it the same way)
+		await page.locator('web-grid#isGrid').evaluate((el: any) => { el.hasMoreItems = false })
+		await expect(row).toHaveCount(0)
+	})
+
 	test('hasMore flips to false once MAX roots have been loaded', async ({ page }) => {
 		await gotoTreeScroll(page)
 

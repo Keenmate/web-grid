@@ -37,10 +37,14 @@ export function renderDropdown<T>(
 
 	// Render options
 	if (options.length === 0) {
-		const message = ctx.autocomplete.isSearching
-			? (opts.labels?.dropdownSearching ?? ctx.engine.labels.dropdownSearching)
-			: (opts.labels?.dropdownEmpty ?? ctx.engine.labels.dropdownEmpty)
-		dropdown.innerHTML = `<div class="wg__dropdown-empty">${ctx.escapeHtml(message)}</div>`
+		// Searching (typed async search in flight) / no results (there are options,
+		// or a typed search, but nothing matched) / no data (no options at all)
+		const typed = (anchor.querySelector('input') as HTMLInputElement | null)?.value.trim() ?? ''
+		const hasSource = (opts.options?.length ?? 0) > 0 || (opts.initialOptions?.length ?? 0) > 0
+		const isNoResults = hasSource || (!!opts.searchCallback && typed !== '')
+		const key = ctx.autocomplete.isSearching ? 'dropdownSearching' : isNoResults ? 'dropdownNoResults' : 'dropdownNoData'
+		const message = opts.labels?.[key] ?? ctx.engine.labels[key]
+		dropdown.innerHTML = message ? `<div class="wg__dropdown-empty">${ctx.escapeHtml(message)}</div>` : ''
 	} else {
 		// Get current value for isSelected check
 		const editingCell = ctx.engine.editingCell
