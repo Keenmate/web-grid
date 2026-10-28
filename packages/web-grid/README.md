@@ -25,7 +25,7 @@ Works **standalone** out of the box — no theme provider required. Reads `--bas
 
 ## What's new
 
-**v2.0.0-rc01** — a major: the shared KeenMate interaction model (one-ctx callbacks, `on*` event twins, core action items and menus) and suite-wide naming — short boolean attributes (`filterable`, `editable`, `show-row-numbers`, …), `preset` (was `mode`), `readonly` / `disabled`, web-treeview tree names, `cell-edit-start` / `cell-paste` / `focus-change`, Ctrl+Delete really deletes. See the CHANGELOG for every rename.
+**v2.0.0-rc01** — a major: the shared KeenMate interaction model (one-ctx callbacks, `on*` event twins, core action items and menus) and suite-wide naming — short boolean attributes (`enable-filtering`, `enable-editing`, `show-row-numbers`, …), `preset` (was `mode`), `readonly` / `disabled`, web-treeview tree names, `cell-edit-start` / `cell-paste` / `focus-change`, Ctrl+Delete really deletes. See the CHANGELOG for every rename.
 
 **v1.2.0-rc02** — Excel-like commit-on-click-away; dark-mode signals no longer override consumer `--base-*` themes; CSS surface taxonomy aligned with pure-admin (`--wg-main-bg` / `--wg-elevated-bg` / `--wg-dropdown-bg`); `@layer` cascade so consumer rules beat library defaults without `!important`; WCAG contrast e2e suite (18 assertions). See [CHANGELOG.md](../../CHANGELOG.md) for the full history.
 

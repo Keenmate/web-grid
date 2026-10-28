@@ -11,7 +11,9 @@ A major release — see the CHANGELOG for every rename (no aliases).
 - **`readonly` and `disabled`**: `readonly` blocks edits, paste, fill and row add / delete / move but keeps selection and copy; `disabled` makes the grid inert. The `read-only` preset sets `readonly`.
 - **Ctrl+Delete deletes**: the `delete` built-in removes the row (veto with `beforeActionCallback`) and `row-delete` reports it after the fact.
 - **Core lifecycle**: `defer` / `release()` hold the first render, then `ready` / `:state(ready)` / `whenReady()`; `destroy()`.
-- **`labels`** is also a JSON attribute, with `labels.noData` / `labels.noResults` for the empty table (`''` = blank); `scrollToRow(rowIndex)` resolves when the row is in view.
+- **`labels`** is also a JSON attribute, with `labels.noData` / `labels.noResults` for the empty table (`''` = blank), `labels.loading` for a pending infinite-scroll load; `scrollToRow(rowIndex)` resolves when the row is in view.
+- **Dropdowns**: `editorOptions.isEmptyAllowed` adds an empty first item (→ `null`); "no options" vs "no matching options" texts.
+- **Lookups**: `getRowById(id)` → row or `null`, `getRowIndex(row)` → display index or `-1`.
 
 ## What's New in v1.2.0-rc02
 

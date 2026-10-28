@@ -46,19 +46,19 @@ aliases kept from 1.x are gone too (`showPagination`, `tableBorderOnly`, `toolba
 `toolbarAlign`, `toolbarTopPosition`, types `EditorType`, `RowLockInfo`).
 
 **Attributes — every boolean in the short HTML form** (derived from the config key:
-`is*Shown` → `show-*`, `is*Enabled` → `enable-*`, `should*` → bare, `is*Allowed` → `allow-*`,
-other `is*` → without the prefix).
+feature switch `is*Enabled` → `enable-*`, part visibility `is*Shown` → `show-*`, behaviour
+`should*` → bare, permission `is*Allowed` → `allow-*`, layout / data hint `is<Adj>` → bare).
 
 | Old attribute | New attribute | Property |
 |---|---|---|
-| `is-filterable` | `filterable` | `isFilterable` |
-| `is-pageable` | `pageable` | `isPageable` |
+| `is-filterable` | `enable-filtering` | `isFilteringEnabled` (was `isFilterable`; column `isFilterable` unchanged) |
+| `is-pageable` | `enable-paging` | `isPagingEnabled` (was `isPageable`) |
 | `is-pagination-visible` | `show-pagination` | `isPaginationShown` (was `isPaginationVisible`) |
 | `is-striped` | `striped` | `isStriped` |
 | `is-hoverable` | `hoverable` | `isHoverable` |
 | `is-table-border-only` | `table-border-only` | `isTableBorderOnly` |
 | `is-scrollable` | `scrollable` | `isScrollable` |
-| `is-editable` | `editable` | `isEditable` |
+| `is-editable` | `enable-editing` | `isEditingEnabled` (was `isEditable`; column `isEditable` unchanged; also the `GRID_PRESETS` key) |
 | `should-commit-on-click-away` | `commit-on-click-away` | `shouldCommitOnClickAway` |
 | `mode` | `preset` | `preset` (was `mode`) |
 | — | `readonly` (new) | `isReadonly` |
@@ -88,7 +88,7 @@ other `is*` → without the prefix).
 Unchanged: `filter-mode`, `page-size`, `pagination-mode`, `pagination-position`, `pagination-layout`,
 `scroll-max-height`, `edit-trigger`, `edit-button-icon`, `edit-start-selection`, `cell-selection-mode`,
 `dropdown-toggle-visibility`, `toolbar-*-align`, `toolbar-trigger`, `toolbar-position`,
-`cell-toolbar-offset`, `inline-actions-title`, `context-menu-*-offset`, `shortcuts-help-position`,
+`cell-toolbar-offset`, `context-menu-*-offset`, `shortcuts-help-position`,
 `column-min-width`, `sort-mode`, `summary-position`, `virtual-scroll-threshold`,
 `infinite-scroll-threshold`, `new-row-position`, `new-row-indicator`, `tree-double-click-behavior`,
 `tree-*-glyph`, `paste-mode`, `fill-direction`, `tooltip-*-delay`.
@@ -128,13 +128,16 @@ Unchanged: `filter-mode`, `page-size`, `pagination-mode`, `pagination-position`,
 
 | Old | New |
 |---|---|
-| `toggleExpandedPath(path)` | `toggleRowExpanded(path)` |
-| `expandSubtree(path)` / `collapseSubtree(path)` | `expandAll(path)` / `collapseAll(path)` (no path = the whole tree) |
-| — | `expandRows(paths)` / `collapseRows(paths)` (one level each) |
+| `toggleExpandedPath(path)` | `toggleRowExpanded(path, options?)` |
+| `expandSubtree(path)` / `collapseSubtree(path)` | `expandAll(paths)` / `collapseAll(paths)` — `string \| string[] \| null` (`null` / none = the whole tree; paths = those rows + everything under them, ancestors open) |
+| — | `expandRows(paths, options?)` / `collapseRows(paths, options?)` (one level; collapsed ancestors open too; leaves are never "expanded") |
+| — | `ExpandOptions { isExclusive?, silent? }` on every expand / collapse method (`isExclusive`: expanding collapses every other branch; `silent`: no events) |
+| `expandedPaths: Set<string>` (bindable, mutated by the grid) | `expandedPaths: string[]` on the element and controller — reading returns a copy, assigning replaces the state (no events), `null` → the `expandLevel` default |
 | event `expand-change { path, isExpanded, expandedPaths }` (+ `onExpandChange`) | `row-expand` / `row-collapse` `{ row, path }` for single-row acts + `expanded-change { paths }` (whole set, string array) on every change (`onRowExpand` / `onRowCollapse` / `onExpandedChange`) |
-| cell-menu built-ins `expand-all` / `collapse-all` (row + subtree) | `expand` / `collapse` |
+| cell-menu built-ins `expand-all` / `collapse-all` (row + subtree) | `expand-subtree` / `collapse-subtree`; NEW `expand` / `collapse` = one level. The per-row tree items act on the whole row selection when the clicked row is in it, else just that row |
 | cell-menu built-ins `expand-tree` / `collapse-tree` (whole tree) | `expand-all` / `collapse-all` |
-| `labels.actions.expandAll` / `collapseAll` / `expandTree` / `collapseTree` | `expand` / `collapse` (row) / `expandAll` / `collapseAll` (whole tree) |
+| `labels.actions.expandAll` / `collapseAll` / `expandTree` / `collapseTree` | `expand` / `collapse` (one level) / `expandSubtree` / `collapseSubtree` (row + everything under it) / `expandAll` / `collapseAll` (whole tree) |
+| `row-expand` / `row-collapse` `row: T \| undefined` | `row: T \| null` |
 | `treePathMember` / `treeLevelMember` / `treeParentMember` | `pathMember` / `levelMember` / `parentPathMember` |
 | `treeSeparator` | `treePathSeparator` |
 | `defaultExpandDepth` | `expandLevel` |
@@ -147,7 +150,8 @@ Unchanged: `filter-mode`, `page-size`, `pagination-mode`, `pagination-position`,
 | `paste-complete` (`onPasteComplete`, `PasteCompleteEventDetail`) | `cell-paste` (`onCellPaste`, `CellPasteEventDetail`) |
 | `row-focus { row, rowIndex, previousRowIndex }` (`onRowFocus`) | `focus-change { row, rowIndex, oldRowIndex }` (`onFocusChange`) |
 | `row-delete { row, rowIndex }` — a request on Ctrl+Delete, nothing was deleted | Ctrl/Cmd+Delete runs the `delete` built-in (veto with `beforeActionCallback`); `row-delete { rows, rowIndices }` reports the removal after the fact — for the menu / toolbar `delete` too. Programmatic `removeRows` / `removeRow` don't fire it |
-| `findRowById(id) → { row, index }` | `{ row, rowIndex }` (index into `items`) |
+| `findRowById(id) → { row, index }` | `getRowById(id) → row \| null`; NEW `getRowIndex(row) → display index \| -1` (element + controller) |
+| `row-lock-change` `rowIndex` (index into `items`) | the display index (`-1` when not displayed), like every other `rowIndex` |
 | `renderOptionCallback` ctx `index` / `isHighlighted` | `optionIndex` / `isFocused` |
 
 **Methods & options**
@@ -166,10 +170,24 @@ Unchanged: `filter-mode`, `page-size`, `pagination-mode`, `pagination-position`,
 
 - `labels` is also a JSON attribute; `el.labels` reads back what was assigned (the texts are resolved
   per key over the English defaults).
-- NEW `labels.empty` — the empty-table text (was hard-coded "No items to display").
-- `labels.dropdownNoOptions` → `labels.dropdownEmpty`.
-- Column `editorOptions.noOptionsText` / `searchingText` → `editorOptions.labels: { dropdownEmpty, dropdownSearching }`
-  (per key over the grid labels); the unused `editorOptions.emptyLabel` is removed.
+- In `labels`, `''` renders nothing (deliberately empty); `undefined` / missing falls back to the
+  English default. Every default uses the single `…` character (`dropdownSearching` "Searching…").
+- NEW `labels.noData` — the empty-table text when the grid has no rows (was hard-coded "No items to
+  display"); NEW `labels.noResults` ("No matching items") — rows exist / a filter is active but
+  nothing matched. The empty cell carries `data-empty="no-data" | "no-results"`.
+- NEW `labels.loading` ("Loading…") — a `role="status"` row at the bottom while an infinite-scroll
+  `load-more` request is pending (gone on the next `items` / `hasMoreItems = false`; `''` = no row).
+- `labels.dropdownNoOptions` → `labels.dropdownNoData` ("No options" — the editor has no options at
+  all) + NEW `labels.dropdownNoResults` ("No matching options" — a typed filter / search matched nothing).
+- NEW `labels.dropdownEmptyOption` ("—") and `labels.actions.expandSubtree` / `collapseSubtree`.
+- Column `editorOptions.noOptionsText` / `searchingText` → `editorOptions.labels: { dropdownNoData,
+  dropdownNoResults, dropdownSearching, dropdownEmptyOption }` (per key over the grid labels); the unused
+  `editorOptions.emptyLabel` is removed.
+- `inlineActionsTitle` / `inline-actions-title` removed — the inline actions header is
+  `labels.inlineActionsHeader` only (`''` = blank header).
+- Column `editorOptions.allowEmpty` (documented, never implemented) → `isEmptyAllowed`, now implemented:
+  select / combobox / autocomplete get an empty first item (`labels.dropdownEmptyOption`) for the
+  unfiltered list; picking it sets the value to `null`.
 
 ### Changed — BREAKING (interaction model, web-components-core rc15)
 
@@ -356,7 +374,7 @@ The cell and column-header menus are the shared KeenMate menu, core `openMenu()`
   `setCategoryLevel()` on the registry takes them (`setCategoryLevel('DATA', 'debug')`). The
   grid's configuration / persistence warnings go through the loggers (no direct `console.*`).
 - **One row-id member: `idMember`, default `'id'`.** `idValueMember` is removed; `getRowId()`,
-  `findRowById`, `updateRowById`, `replaceRowById` and `lockRowById` read `idMember` (they used
+  `getRowById`, `updateRowById`, `replaceRowById` and `lockRowById` read `idMember` (they used
   to need `idValueMember` and returned nothing with `idMember` alone). The callback twin is
   **`getIdCallback({ row })`** (was `getRowIdCallback`) and wins over `idMember`; drafts and
   invalid-cell markers are keyed by the same id. With the new default, rows that carry an `id`
