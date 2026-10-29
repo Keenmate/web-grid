@@ -37,7 +37,7 @@ el.controller, and `controller` on every ctx / detail.
     columns: Column<T>[]
     sort: SortState[]
     filters: Record<string, string>
-    setFilter(field: string, value: string): void
+    setFilter(field: string, value: string, options?: { isSilent?: boolean }): void
     // rows (used by the add / delete / duplicate / move-up / move-down built-ins)
     insertRow(row: T, afterRow?: T | null): void
     insertRows(rows: T[], afterRow?: T | null): void

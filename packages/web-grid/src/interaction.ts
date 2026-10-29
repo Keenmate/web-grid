@@ -54,7 +54,8 @@ export interface GridController<T = any> {
 	readonly columns: Column<T>[]
 	readonly sort: SortState[]
 	readonly filters: Record<string, string>
-	setFilter(field: string, value: string): void
+	/** Fires `filter-change` unless `{ isSilent: true }` (assigning `el.filters` never fires). */
+	setFilter(field: string, value: string, options?: { isSilent?: boolean }): void
 	// rows (the `add` / `delete` / `duplicate` / `move-up` / `move-down` built-ins use these)
 	/** Insert `row` after `afterRow` (in `items` order), or at the end. */
 	insertRow(row: T, afterRow?: T | null): void

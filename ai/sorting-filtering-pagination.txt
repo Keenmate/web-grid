@@ -100,9 +100,11 @@ input gets an .invalid class).
         return row.age > Number(m[1])
       } }
 
-Every filter change fires the filter-change event (twin: onFilterChange)
-with detail { filters } (current filter value per field). The current
-filters are readable / writable as grid.filters.
+Every filter change from the filter row or setFilter() fires the
+filter-change event (twin: onFilterChange) with detail { filters }
+(current filter value per field); setFilter(field, text, { isSilent: true })
+doesn't. The current filters are readable / writable as grid.filters -
+assigning them is silent (no filter-change, like a native input.value).
 
 Server-side filtering: set filterMode = 'server' (attribute
 filter-mode="server"). The grid then does NOT filter items itself; handle

@@ -123,7 +123,7 @@ test.describe('filter-change event', () => {
 
 	test('detail carries the controller + element (non-enumerable)', async ({ page }) => {
 		await clearEvents(page, 'filtering')
-		await onGrid(page, el => { el.filters = { city: 'brno' } })
+		await onGrid(page, el => el.setFilter('city', 'brno'))
 		const info = await page.evaluate(() => {
 			const d = (window as any).__events.find((e: any) => e.type === 'filter-change' && e.via === 'event').detail
 			return {
@@ -142,6 +142,19 @@ test.describe('filter-change event', () => {
 			{ name: 'a' },
 			{ name: 'a', city: 'b' }
 		])
+	})
+
+	test('assigning filters is silent (like input.value); setFilter { isSilent } too — UI / setFilter still fire', async ({ page }) => {
+		await clearEvents(page, 'filtering')
+		await onGrid(page, el => { el.filters = { city: 'brno' } })
+		await expect(rowCount(page)).toHaveCount(2)
+		await onGrid(page, el => { el.filters = {} })
+		await onGrid(page, el => el.setFilter('name', 'bob', { isSilent: true }))
+		await onGrid(page, el => el.controller.setFilter('name', 'al', { isSilent: true }))
+		expect(await onGrid(page, el => el.filters)).toEqual({ name: 'al' })
+		expect(await eventsOf(page, 'filter-change')).toEqual([])
+		await onGrid(page, el => el.setFilter('name', 'bob'))
+		expect(await domEvents(page, 'filter-change')).toEqual([{ filters: { name: 'bob' } }])
 	})
 
 	test('filter-change does not fire a data-request in client mode', async ({ page }) => {

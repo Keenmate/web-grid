@@ -19,7 +19,7 @@ export function createGridController<T>(el: GridElement<T>): GridController<T> {
 		get columns() { return g().columns },
 		get sort() { return g().sort },
 		get filters() { return g().filters },
-		setFilter: (field, value) => g().setFilter(field, value),
+		setFilter: (field, value, options) => g().setFilter(field, value, options),
 		// rows
 		insertRow: (row, afterRow) => g().insertRow(row, afterRow),
 		insertRows: (rows, afterRow) => g().insertRows(rows, afterRow),

@@ -2384,15 +2384,16 @@ export class GridEngine<T = unknown> {
 	}
 
 	get filters(): Record<string, string> { return { ...this._filters } }
+	/** Assignment is silent (no `filter-change`) — like a native `input.value`. */
 	set filters(value: Record<string, string>) {
 		const prev = this._filters
 		this._filters = { ...value }
 		this.resetPageAfterFilterChange(prev)
-		this.notify('filter-change', { filters: { ...this._filters } })
 		this.requestUpdate()
 	}
 
-	setFilter(field: string, value: string): void {
+	/** Set (or clear, with `''`) one column filter; fires `filter-change` unless `isSilent`. */
+	setFilter(field: string, value: string, options?: { isSilent?: boolean }): void {
 		const prev = this._filters
 		if (value) this._filters = { ...this._filters, [field]: value }
 		else {
@@ -2401,7 +2402,7 @@ export class GridEngine<T = unknown> {
 			this._filters = next
 		}
 		this.resetPageAfterFilterChange(prev)
-		this.notify('filter-change', { filters: { ...this._filters } })
+		if (!options?.isSilent) this.notify('filter-change', { filters: { ...this._filters } })
 		this.requestUpdate()
 	}
 
@@ -3573,11 +3574,12 @@ export class GridEngine<T = unknown> {
 	// ==========================================================================
 
 	get focusedRowIndex(): number | null { return this._focusedRowIndex }
+	/** Assignment is silent (no `focus-change`) — like a native `input.value`. */
 	set focusedRowIndex(value: number | null) {
 		if (value === null) {
 			this.clearRowFocus()
 		} else {
-			this.setFocusedRow(value)
+			this.setFocusedRow(value, { isSilent: true })
 		}
 		this.requestUpdate()
 	}
@@ -3601,11 +3603,11 @@ export class GridEngine<T = unknown> {
 	}
 
 	/**
-	 * Set the focused row (fires callback if row changed)
+	 * Set the focused row (fires `focus-change` if the row changed, unless `isSilent`)
 	 * Called internally when a cell is focused/clicked
 	 * NOTE: Does NOT call requestUpdate() - caller handles DOM updates surgically
 	 */
-	setFocusedRow(rowIndex: number): void {
+	setFocusedRow(rowIndex: number, options?: { isSilent?: boolean }): void {
 		if (this._focusedRowIndex === rowIndex) return
 		interactionLogger.debug('setFocusedRow:', rowIndex, '(prev:', this._focusedRowIndex, ')')
 		const oldRowIndex = this._focusedRowIndex
@@ -3613,7 +3615,7 @@ export class GridEngine<T = unknown> {
 		this._onInteractionChange?.('focusedRow', { prev: oldRowIndex, current: rowIndex })
 
 		const row = this.displayItems[rowIndex]
-		if (row) this.notify('focus-change', { rowIndex, row, oldRowIndex })
+		if (row && !options?.isSilent) this.notify('focus-change', { rowIndex, row, oldRowIndex })
 	}
 
 	// ==========================================================================

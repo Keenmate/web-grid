@@ -259,7 +259,7 @@ Behavior:
   - Cell range selection (drag/shift+click) -> does NOT fire focus-change
   - Click outside grid -> clears focus (focusedRowIndex becomes null)
   - Starting cell range drag -> clears focus
-  - Programmatic: grid.focusedRowIndex = 3 (focuses row 3, fires focus-change)
+  - Programmatic: grid.focusedRowIndex = 3 (focuses row 3, silent - no focus-change)
   - Programmatic: grid.focusedRowIndex = null (clears focus)
 
 The focused row gets CSS class: wg__row--focused

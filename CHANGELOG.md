@@ -10,6 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Changed — BREAKING (assigning state is silent)
+
+Suite rule: assigning a value / selection / state property never fires the component's events
+(like a native `input.value`); methods and user interaction do.
+
+- **`el.filters = …` no longer fires `filter-change`.** The filter row and `setFilter()` still
+  do; `setFilter(field, text, { isSilent: true })` (also on `el.controller`) skips it.
+- **`el.focusedRowIndex = n` no longer fires `focus-change`.** Clicking / keyboard-focusing a
+  row still does.
+
 ### Changed — standalone colors follow `@keenmate/base-css-variables`
 
 Without the contract on the page the grid's fallbacks were a palette of their own (Fluent blue

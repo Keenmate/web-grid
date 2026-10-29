@@ -91,6 +91,22 @@ test('cell-selection-change: selectCellRange / clearCellSelection through the AP
 	expect(await eventsOf(page, 'cell-selection-change')).toEqual([])
 })
 
+test.describe('focus-change', () => {
+	test('a cell click fires it; assigning focusedRowIndex is silent (like input.value)', async ({ page }) => {
+		await clearEvents(page, 'events')
+		await onGrid(page, el => { el.focusedRowIndex = 2 })
+		expect(await onGrid(page, el => el.focusedRowIndex)).toBe(2)
+		await onGrid(page, el => { el.focusedRowIndex = null })
+		expect(await onGrid(page, el => el.focusedRowIndex)).toBe(null)
+		await onGrid(page, el => { el.focusedRowIndex = 0 })
+		expect(await eventsOf(page, 'focus-change')).toEqual([])
+
+		// user interaction still fires, oldRowIndex = the silently assigned row
+		await cell(page, 1, 1).click()
+		expect(await onceWithTwin(page, 'focus-change')).toEqual({ rowIndex: 1, row: BETA, oldRowIndex: 0 })
+	})
+})
+
 test.describe('row-selection-change', () => {
 	const rowNumber = (page: Page, row: number) => gridLocator(page).locator(`.wg__row-number[data-row-number="${row}"]`)
 

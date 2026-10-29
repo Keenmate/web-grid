@@ -73,7 +73,9 @@ data-request / onDataRequest
 
 filter-change / onFilterChange
   Detail: { filters }   (current filter value per field)
-  Fires when a column filter changes. With filterMode = 'server'
+  Fires when a column filter changes through the filter row or
+  setFilter() (not with { isSilent: true }). Assigning grid.filters is
+  silent (like a native input.value). With filterMode = 'server'
   (attribute filter-mode="server") the grid does not filter locally -
   the consumer filters and sets items.
 
@@ -85,7 +87,9 @@ row-delete / onRowDelete
 
 focus-change / onFocusChange
   Detail: { rowIndex, row, oldRowIndex }
-  Fires when a different row is focused (useful for master/detail patterns).
+  Fires when a different row is focused by the user (click, keyboard)
+  - useful for master/detail patterns. Assigning grid.focusedRowIndex is
+  silent (like a native input.value).
 
 row-lock-change / onRowLockChange
   Detail: { rowId, row, rowIndex, lockInfo, source }

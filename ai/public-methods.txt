@@ -301,7 +301,7 @@ Data
   columns: Column<T>[]
   sort: SortState[]
   filters: Record<string, string>
-  setFilter(field: string, value: string): void
+  setFilter(field: string, value: string, options?: { isSilent?: boolean }): void
 
 Rows (what the add / delete / duplicate / move-up / move-down built-ins use)
   insertRow(row: T, afterRow?: T | null): void    insert after afterRow (items order), or at the end

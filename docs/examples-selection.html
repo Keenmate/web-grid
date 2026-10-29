@@ -228,7 +228,7 @@ cellSelectionMode: 'shift'  // Avoids conflict</code></pre>
                     <li><strong>Click cell</strong> — Focuses that row, fires <code>focus-change</code> / <code>onFocusChange</code></li>
                     <li><strong>Click row number</strong> — Selects row (does NOT focus)</li>
                     <li><strong>Click outside</strong> — Clears row focus</li>
-                    <li><strong>grid.focusedRowIndex</strong> — Get/set focused row programmatically</li>
+                    <li><strong>grid.focusedRowIndex</strong> — Get/set focused row programmatically (assignment is silent — no <code>focus-change</code>)</li>
                 </ul>
                 <pre style="background: #f8fafc; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.85rem; margin-top: 0.5rem;"><code>grid.onFocusChange = ({ rowIndex, row, oldRowIndex }) => {
     detailPanel.innerHTML = renderDetail(row)
@@ -236,7 +236,7 @@ cellSelectionMode: 'shift'  // Avoids conflict</code></pre>
 }
 
 // Programmatic control
-grid.focusedRowIndex = 3    // Focus row 3
+grid.focusedRowIndex = 3    // Focus row 3 (silent: no focus-change)
 grid.focusedRowIndex = null // Clear focus</code></pre>
             </div>
         </div>

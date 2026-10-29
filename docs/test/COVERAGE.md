@@ -46,6 +46,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | `isFilteringEnabled` / `filters` / `setFilter` narrows rows (API) | ✓ | `filtering.spec.ts` | `filtering.html` |
 | Filter row (#4): inputs for `column.isFilterable`, label i18n, debounce / Enter / Escape → page 1, focus + caret + typed text survive re-renders, grid keys not reached, Tab order, `.invalid` for `filterCallback` null, sticky + frozen cells, server pagination → `beforePageChangeCallback` / `data-request` trigger `'filter'` | ✓ | `filter-row.spec.ts` | `filter-row.html` |
 | `filter-change` event detail + `onFilterChange` twin | ✓ | `filtering.spec.ts` | `filtering.html` |
+| Assigning `filters` / `setFilter(…, { isSilent: true })` is silent (no `filter-change`) | ✓ | `filtering.spec.ts` | `filtering.html` |
 | Filter change → page 1, same-task page + filter keep the page, shorter `items` clamps (NOTES #5) | ✓ | `filtering.spec.ts` | `filtering.html` |
 | `beforePageChangeCallback`: pager / page size / server sort, ctx, `false` / number / async (pager disabled, 2nd click ignored), skipped by programmatic page + client sort, `ctx.drafts` | ✓ | `pagination.spec.ts` | `pagination.html` |
 | Column `filterCallback` (incl. null = incomplete) | ✓ | `filtering.spec.ts` | `filtering.html` |
@@ -159,6 +160,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Feature | Status | Spec | Fixture |
 | --- | :-: | --- | --- |
 | Row focus event (`focus-change`) | ✓ | `basic.spec.ts`, `selection.spec.ts` | `basic.html`, `selection.html` |
+| Assigning `focusedRowIndex` is silent; a cell click fires `focus-change` | ✓ | `events.spec.ts` | `events.html` |
 | Paste events | ✓ | `paste.spec.ts` | `paste.html` |
 | `cell-edit-start`, `cell-edit-cancel`, `cell-selection-change`, `row-delete`, `expanded-change` — once each, twin first, same detail | ✓ | `events.spec.ts` | `events.html` |
 | `row-delete` after the fact: Ctrl/Cmd+Delete runs the `delete` built-in `{ rows, rowIndices }`; `beforeActionCallback` veto | ✓ | `events.spec.ts`, `interaction-model.spec.ts` | `events.html`, `interaction-model.html` |

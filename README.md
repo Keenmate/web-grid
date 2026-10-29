@@ -312,7 +312,7 @@ This architecture separates mode detection (the adapter decides *what* action a 
 | `preset` | `GridPreset` | `'excel'` | Preset: `'read-only'`, `'excel'`, `'input-matrix'` (see [Presets](#presets)) |
 | `isReadonly` | `boolean` | `false` | Attribute `readonly`. Values can't change (no edit / paste / fill / row add-delete-move); still focusable, selectable, copyable. The `read-only` preset sets it |
 | `isDisabled` | `boolean` | `false` | Attribute `disabled`. No interaction at all (container `inert`, dimmed) |
-| `focusedRowIndex` | `number \| null` | `null` | Currently focused row index (readable/writable) |
+| `focusedRowIndex` | `number \| null` | `null` | Currently focused row index (readable/writable; assigning it is silent — no `focus-change`) |
 
 ### Editing
 
@@ -487,7 +487,7 @@ This architecture separates mode detection (the adapter decides *what* action a 
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `filters` | `Record<string, string>` | `{}` | Current filter value per field |
+| `filters` | `Record<string, string>` | `{}` | Current filter value per field. Assigning it is silent (no `filter-change`, like a native `input.value`); `setFilter(field, text, { isSilent? })` fires it |
 | `filterMode` | `'client' \| 'server'` | `'client'` | `'server'`: the grid doesn't filter `items` — listen to `filter-change` (`{ filters }`) and load the rows. Attribute `filter-mode` |
 
 **Filter row.** With `isFilteringEnabled`, a row under the header gets a text input for every column with `isFilterable: true` (labelled "Filter &lt;column&gt;" via `labels.filterColumn`; Tab-reachable). Typing is debounced (300 ms; Enter applies at once, Escape clears) → `setFilter(field, text)` → page 1. A `filterCallback` returning `null` marks the input `.invalid` (red border, `aria-invalid`) and ignores that filter. In server pagination a filter change runs `beforePageChangeCallback` (trigger `'filter'`) and fires `data-request` (trigger `'filter'`). Styled by the `--wg-filter-*` variables. A filter change (UI or `setFilter` / `filters`) resets `currentPage` to 1.
@@ -984,13 +984,13 @@ grid.onRowChange = (detail) => save(detail.draftRow)
 | `cell-edit-start` | `onCellEditStart` | A cell editor opened: `{ row, rowIndex, field }` |
 | `cell-edit-cancel` | `onCellEditCancel` | A cell edit was cancelled: `{ row, rowIndex, field }` |
 | `validation-error` | `onValidationError` | `validateCallback` rejected a value: `{ row, rowIndex, field, error, source: 'edit' \| 'paste' }` |
-| `focus-change` | `onFocusChange` | The focused row changed: `{ row, rowIndex, oldRowIndex }` |
+| `focus-change` | `onFocusChange` | The user focused a different row (click / keyboard): `{ row, rowIndex, oldRowIndex }`. Assigning `focusedRowIndex` is silent |
 | `row-delete` | `onRowDelete` | The `delete` built-in removed rows (menu / toolbar / Ctrl+Delete) — after the fact; veto with `beforeActionCallback`: `{ rows, rowIndices }` |
 | `cell-selection-change` | `onCellSelectionChange` | The selected cell range changed: `{ range, cellCount, fields, rows }` — `range.startColIndex` / `endColIndex` are on-screen (visual) positions, not `columns` indices; `fields` = the range's columns in on-screen order; `rows` = the row objects in the range (display order). Cleared: `{ range: null, cellCount: 0, fields: [], rows: [] }` |
 | `row-selection-change` | `onRowSelectionChange` | The row selection changed (row-number click / Ctrl / Shift / drag, `selectRow` / `selectRowRange` / `clearSelection`, or cleared by a cell / column selection): `{ rows, rowIndices }` |
 | `column-selection-change` | `onColumnSelectionChange` | The column selection changed (header click / Ctrl / Shift / drag, `controller.selectColumn` / `selectColumnRange` / `clearColumnSelection`, or cleared by another selection): `{ fields }` (on-screen order) |
 | `data-request` | `onDataRequest` | Sort / page / page size changed or more rows are needed (server-side data): `{ sort, page, pageSize, trigger, mode, skip }` |
-| `filter-change` | `onFilterChange` | A column filter changed: `{ filters }`. With `filterMode: 'server'` the consumer filters |
+| `filter-change` | `onFilterChange` | A column filter changed via the filter row or `setFilter()` (not `{ isSilent: true }`): `{ filters }`. Assigning `filters` is silent. With `filterMode: 'server'` the consumer filters |
 | `column-resize` | `onColumnResize` | A column was resized: `{ field, oldWidth, newWidth, allWidths }` |
 | `column-reorder` | `onColumnReorder` | A column was moved: `{ field, fromIndex, toIndex, allOrder }` |
 | `row-expand` / `row-collapse` | `onRowExpand` / `onRowCollapse` | One tree row expanded / collapsed (chevron, keyboard, `toggleRowExpanded`, `expandRows` / `collapseRows`; not `expandAll` / `collapseAll`): `{ row, path }` |

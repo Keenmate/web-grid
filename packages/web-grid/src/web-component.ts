@@ -727,8 +727,10 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	set columnMinWidth(value: string | undefined) { this.engine.columnMinWidth = value }
 
 	get filters(): Record<string, string> { this.flush(); return this.engine.filters }
+	/** Assignment is silent (no `filter-change`), like a native `input.value`; use `setFilter()` to fire it. */
 	set filters(value: Record<string, string>) { this.engine.filters = value }
-	setFilter(field: string, value: string): void { this.flush(); this.engine.setFilter(field, value) }
+	/** Set (or clear, with `''`) one column filter; fires `filter-change` unless `{ isSilent: true }`. */
+	setFilter(field: string, value: string, options?: { isSilent?: boolean }): void { this.flush(); this.engine.setFilter(field, value, options) }
 
 	get isPagingEnabled(): boolean { return this.engine.isPagingEnabled }
 	set isPagingEnabled(value: boolean) { this.engine.isPagingEnabled = value }
@@ -1005,6 +1007,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	}
 
 	get focusedRowIndex(): number | null { return this.engine.focusedRowIndex }
+	/** Assignment is silent (no `focus-change`), like a native `input.value`. */
 	set focusedRowIndex(value: number | null) { this.engine.focusedRowIndex = value }
 
 	// Sorting & Pagination
