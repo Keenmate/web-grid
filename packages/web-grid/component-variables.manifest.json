@@ -29,6 +29,8 @@
     { "name": "base-shadow-color", "required": false, "usage": "Shadow colour for dialogs, tooltip, frozen-column edge (one tone with pure-admin)" },
     { "name": "base-danger-color", "required": false, "usage": "Validation error text, error indicator icon, danger button text" },
     { "name": "base-danger-bg-subtle", "required": false, "usage": "Invalid cell background, danger button hover" },
+    { "name": "base-drop-target-border-color", "required": false, "usage": "Column-reorder drop indicator (line + arrow)" },
+    { "name": "base-success-color", "required": false, "usage": "Standalone fallback of the drop indicator when the contract has no --base-drop-target-border-color" },
     { "name": "base-tooltip-bg", "required": false, "usage": "Tooltip and validation message background" },
     { "name": "base-tooltip-text-color", "required": false, "usage": "Tooltip and validation message text" },
     { "name": "base-font-family", "required": false, "usage": "All text in grid (cells, headers, buttons)" },
@@ -82,6 +84,7 @@
 
     { "name": "wg-danger-color", "category": "danger", "usage": "Validation error text, error indicator triangle, delete button" },
     { "name": "wg-danger-bg-light", "category": "danger", "usage": "Invalid cell background tint, danger button hover" },
+    { "name": "wg-drop-indicator-color", "category": "reorder", "usage": "Column-reorder drop indicator line and arrow (chains --base-drop-target-border-color)" },
 
     { "name": "wg-hover-bg", "category": "state", "usage": "Generic hover background for buttons, rows, cells" },
     { "name": "wg-active-bg", "category": "state", "usage": "Generic active/pressed background for buttons" },

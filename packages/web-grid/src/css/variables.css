@@ -93,6 +93,10 @@
   --wg-danger-color: var(--base-danger-color, #dc2626);
   --wg-danger-bg-light: var(--base-danger-bg-subtle, light-dark(color-mix(in srgb, var(--wg-danger-color) 10%, transparent), color-mix(in srgb, var(--wg-danger-color) 20%, transparent)));
 
+  /* Drop target: the column-reorder drop indicator (line + arrow) - the contract's drop-target
+     look (success role), told apart from the accent-tinted selection. */
+  --wg-drop-indicator-color: var(--base-drop-target-border-color, var(--base-success-color, #10b981));
+
   /* Hover/Active States: the contract's translucent overlay of the main bg's hue, so it
      shows on any surface in both modes. */
   --wg-hover-bg: var(--base-hover-bg, light-dark(color-mix(in oklch, oklch(from var(--wg-main-bg) calc(l - 0.45) c h) 14%, transparent), color-mix(in oklch, oklch(from var(--wg-main-bg) calc(l + 0.45) c h) 28%, transparent)));

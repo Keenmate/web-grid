@@ -48,6 +48,13 @@ text-mixed hover). Standalone it now looks the same as with the contract:
   inherited font. `e2e/contract-parity.spec.ts` compares every color token standalone vs. with
   the contract (light, dark, custom accent). The e2e color parser reads `oklch()`.
 
+### Changed (visual) — column-reorder drop indicator uses the drop-target look
+
+- The column-reorder **drop indicator** (line + arrow) draws in the new `--wg-drop-indicator-color` =
+  `var(--base-drop-target-border-color, var(--base-success-color, #10b981))` — **green (success role),
+  was the accent blue**, one drop-target look with the treeviews and the dropzone. The dashed outline
+  of the dragged header (the source, not a target) and the ghost keep the accent.
+
 ### Changed (visual) — tree indent and scrolling follow the contract
 
 - **Tree indent:** `--wg-tree-indent` is `calc(var(--base-tree-indent, 1.6) * var(--wg-rem))` —

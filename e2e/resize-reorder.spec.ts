@@ -212,6 +212,25 @@ test.describe('column reorder — #gridReorder', () => {
 		await expect(log).toContainText('salary')
 	})
 
+	test('the drop indicator follows the page-wide --base-drop-target-border-color', async ({ page }) => {
+		await page.evaluate(() => document.documentElement.style.setProperty('--base-drop-target-border-color', 'rgb(1, 2, 3)'))
+		const src = header(page, 'gridReorder', 'email')
+		const dst = header(page, 'gridReorder', 'status')
+		await src.scrollIntoViewIfNeeded()
+		const sbox = (await src.boundingBox())!
+		const dbox = (await dst.boundingBox())!
+		const sy = sbox.y + sbox.height / 2
+		await page.mouse.move(sbox.x + 20, sy)
+		await page.mouse.down()
+		await page.mouse.move(sbox.x + 30, sy, { steps: 4 })
+		await page.mouse.move(dbox.x + dbox.width / 2, dbox.y + dbox.height / 2, { steps: 10 })
+		const indicator = gridLocator(page, 'gridReorder').locator('.wg__drop-indicator')
+		await expect(indicator).toBeVisible()
+		await expect(indicator).toHaveCSS('background-color', 'rgb(1, 2, 3)')
+		expect(await indicator.evaluate(el => getComputedStyle(el, '::before').borderTopColor)).toBe('rgb(1, 2, 3)')
+		await page.mouse.up()
+	})
+
 	test('frozen columns (id, name) cannot be drag-reordered', async ({ page }) => {
 		// gridReorder has frozenColumnCount=2 so id/name are frozen — handleReorderStart
 		// returns early for them, so no ghost element ever appears.

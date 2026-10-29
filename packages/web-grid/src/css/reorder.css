@@ -33,7 +33,7 @@
 .wg__drop-indicator {
   position: absolute;
   width: 3px;
-  background: var(--wg-accent-color);
+  background: var(--wg-drop-indicator-color);
   z-index: var(--wg-z-reorder-indicator);
   pointer-events: none;
   display: none;
@@ -48,7 +48,7 @@
   transform: translateX(-50%);
   border-left: 6px solid transparent;
   border-right: 6px solid transparent;
-  border-top: 8px solid var(--wg-accent-color);
+  border-top: 8px solid var(--wg-drop-indicator-color);
 }
 
 /* Container during reorder */
