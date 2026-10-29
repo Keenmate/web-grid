@@ -154,7 +154,8 @@ test.describe('every input (table-driven)', () => {
 			}
 			const el = document.getElementById('t') as any
 			const out: any[] = []
-			for (const d of (customElements.get('web-grid') as any).inputs) {
+			// Property-only inputs (no attribute, e.g. renderLoadingCallback) are covered by their own specs
+			for (const d of (customElements.get('web-grid') as any).inputs.filter((d: any) => d.attribute)) {
 				const s = sample(d)
 				if (!s) { out.push({ key: d.configKey, skipped: true }); continue }
 				const [raw, parsed] = s
