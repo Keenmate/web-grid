@@ -74,9 +74,7 @@ text-mixed hover). Standalone it now looks the same as with the contract:
   (manifest category `loader`); reduced motion slows the loader to 1.5s, it never stops.
 - **Removed:** the ⏳ pulse of the autocomplete search indicator, `@keyframes wg-pulse` and
   `--wg-loading-pulse-duration`.
-- **Dependency:** `@keenmate/base-css-variables` points to `file:../../../base-css-variables`
-  (2.0.0-rc06 with `--base-loader-*` is not on npm yet) — **switch back to `^2.0.0-rc06` before
-  publishing**.
+- **Dependency:** requires `@keenmate/base-css-variables` `^2.0.0-rc06`.
 
 ### Changed — BREAKING (motion and disabled dimming follow the contract)
 
