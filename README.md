@@ -13,6 +13,7 @@ A major release — see the CHANGELOG for every rename (no aliases).
 - **Core lifecycle**: `defer` / `release()` hold the first render, then `ready` / `:state(ready)` / `whenReady()`; `destroy()`.
 - **`labels`** is also a JSON attribute, with `labels.noData` / `labels.noResults` for the empty table (`''` = blank), `labels.loading` for a pending infinite-scroll load; `scrollToRow(rowIndex)` resolves when the row is in view.
 - **Dropdowns**: `editorOptions.isEmptyAllowed` adds an empty first item (→ `null`); "no options" vs "no matching options" texts.
+- **Shared loader**: the infinite-scroll row and async dropdown search draw one loader (`--base-loader-*` tokens); swap it with `renderLoadingCallback` or page-wide `window.components.renderLoaderCallback`.
 - **Lookups**: `getRowById(id)` → row or `null`, `getRowIndex(row)` → display index or `-1`.
 
 ## What's New in v1.2.0-rc02
@@ -466,6 +467,30 @@ This architecture separates mode detection (the adapter decides *what* action a 
 | `isInfiniteScrollEnabled` | `boolean` | `false` | Enable infinite scroll |
 | `infiniteScrollThreshold` | `number` | `100` | Distance from bottom (px) to trigger load |
 | `hasMoreItems` | `boolean` | `true` | Set to `false` when no more data |
+
+While a `load-more` request is pending, a row at the bottom shows the loader + `labels.loading` (see [Loading states](#loading-states)).
+
+### Loading states
+
+Every loader draws through one shared hook (core `renderLoader`): the infinite-scroll row
+(`context: 'row'`, label `labels.loading`) and the autocomplete's async search (`context: 'search'`,
+label `labels.dropdownSearching` — in the editor and in the dropdown). The container gets
+`role="status"` + `aria-label`.
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `renderLoadingCallback` | `(ctx: LoaderRenderContext) => void \| (() => void)` | `null` | Draws the grid's loaders: fill `ctx.containerElement` (`ctx`: `{ component, context, containerElement, element, label }`); may return a cleanup. Beats the page-wide `window.components.renderLoaderCallback` |
+
+Precedence: `renderLoadingCallback` > `window.components.renderLoaderCallback` (one hook for every
+KeenMate component on the page) > the default `<span class="wg-loader">`, a mask drawn in
+`currentColor` from `--wg-loader-icon` / `-rotate` / `-duration` / `-size` (→ `--base-loader-*`).
+Change the shape page-wide with `--base-loader-icon`; reduced motion slows it (1.5s), it never stops.
+
+```js
+window.components.renderLoaderCallback = ({ context, containerElement }) => {
+  containerElement.innerHTML = '<span class="my-dots"></span>'
+}
+```
 
 ### Tooltip
 
@@ -1162,11 +1187,12 @@ Motion uses the contract's speeds and easing only: `--wg-transition-fast`
 `--wg-easing` (`--base-ease-standard`). To turn motion off:
 
 ```css
-web-grid { --wg-transition-fast: 0s; --wg-transition-normal: 0s; --wg-loading-pulse-duration: 0s; }
+web-grid { --wg-transition-fast: 0s; --wg-transition-normal: 0s; }
 :root { --base-duration-fast: 0s; --base-duration-normal: 0s; --base-duration-medium: 0s; --base-duration-slow: 0s; } /* page-wide */
 ```
 
-`prefers-reduced-motion: reduce` does the same. Disabled parts (the disabled grid, toolbar and
+`prefers-reduced-motion: reduce` does the same; the loader slows to 1.5s instead of stopping
+([Loading states](#loading-states)). Disabled parts (the disabled grid, toolbar and
 pagination buttons, dropdown options) fade by `--wg-disabled-opacity`
 (`--base-disabled-opacity`, 0.65).
 

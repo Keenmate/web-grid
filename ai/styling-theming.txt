@@ -101,12 +101,22 @@ MOTION AND DISABLED DIMMING
   --wg-transition-fast        var(--base-duration-fast, 0.1s)   hover fades, chevron, tooltip, pagination
   --wg-transition-normal      var(--base-duration-normal, 0.15s)
   --wg-easing                 var(--base-ease-standard, cubic-bezier(0.4, 0, 0.2, 1))
-  --wg-loading-pulse-duration 1s   loading pulse cycle of autocomplete / combobox editors
   --wg-disabled-opacity       var(--base-disabled-opacity, 0.65)   disabled grid, buttons, options
 
-Motion off (CSS only, no attribute): set --wg-transition-*: 0s and --wg-loading-pulse-duration: 0s
-on the grid, or --base-duration-*: 0s on :root for all components. prefers-reduced-motion: reduce
-does this automatically.
+Motion off (CSS only, no attribute): set --wg-transition-*: 0s on the grid, or --base-duration-*: 0s
+on :root for all components. prefers-reduced-motion: reduce does this automatically; the loader
+slows to 1.5s instead of stopping.
+
+LOADER
+------
+  --wg-loader-icon      var(--base-loader-icon, arc SVG)   shape, a mask in currentColor
+  --wg-loader-rotate    var(--base-loader-rotate, 1turn)   0 = the SVG animates itself
+  --wg-loader-duration  var(--base-loader-duration, 0.8s)  1.5s under reduced motion
+  --wg-loader-size      var(--base-loader-size, 1.25em)
+
+The default loader is <span class="wg-loader"> (infinite-scroll row, async dropdown search).
+Richer loaders: renderLoadingCallback (instance) or window.components.renderLoaderCallback
+(page-wide) -> callbacks-events.txt.
 
 
 DARK MODE

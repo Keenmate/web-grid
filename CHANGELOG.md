@@ -48,6 +48,26 @@ text-mixed hover). Standalone it now looks the same as with the contract:
   inherited font. `e2e/contract-parity.spec.ts` compares every color token standalone vs. with
   the contract (light, dark, custom accent). The e2e color parser reads `oklch()`.
 
+### Changed — BREAKING (loading states draw through the shared loader)
+
+- **One loader, core `renderLoader()`** (web-components-core SPEC §12.14): the infinite-scroll
+  load-more row (`context: 'row'`, `labels.loading`) and the autocomplete's async search
+  (`context: 'search'`, `labels.dropdownSearching` — the editor indicator in the toggle's place and
+  the dropdown's "Searching…" message) draw the default `<span class="wg-loader">`; its container
+  carries `role="status"` + `aria-label` (the load-more row's text is now `aria-hidden`, the
+  `role="status"` moved from the `td` to `.wg__loading-more-indicator`).
+- **New `renderLoadingCallback`** property (`(ctx: LoaderRenderContext) => void | cleanup`, `ctx`:
+  `{ component, context, containerElement, element, label }`) — draws every grid loader; beats the
+  page-wide `window.components.renderLoaderCallback`. `RenderLoaderCallback` / `LoaderRenderContext`
+  types are re-exported.
+- **New `--wg-loader-icon` / `-rotate` / `-duration` / `-size`** chained to `--base-loader-*`
+  (manifest category `loader`); reduced motion slows the loader to 1.5s, it never stops.
+- **Removed:** the ⏳ pulse of the autocomplete search indicator, `@keyframes wg-pulse` and
+  `--wg-loading-pulse-duration`.
+- **Dependency:** `@keenmate/base-css-variables` points to `file:../../../base-css-variables`
+  (2.0.0-rc06 with `--base-loader-*` is not on npm yet) — **switch back to `^2.0.0-rc06` before
+  publishing**.
+
 ### Changed — BREAKING (motion and disabled dimming follow the contract)
 
 - **Durations chain to `--base-duration-*`:** `--wg-transition-fast: var(--base-duration-fast, 0.1s)`,
@@ -57,9 +77,7 @@ text-mixed hover). Standalone it now looks the same as with the contract:
 - **No hard-coded durations left:** the resize handle and toolbar button fades (`0.1s`) and the tree
   chevron (`0.12s` rotation → `0.1s`, snapped to the fast speed) go through `--wg-transition-fast`.
 - **Motion off is CSS only:** `--wg-transition-*: 0s` on the grid, or `--base-duration-*: 0s` page-wide.
-  `prefers-reduced-motion: reduce` sets them to `0s`. The autocomplete / combobox loading pulse keeps
-  its own 1s cycle (`--wg-loading-pulse-duration`, it shows that options are loading); `0s` stops it,
-  and reduced motion does.
+  `prefers-reduced-motion: reduce` sets them to `0s`; the loader slows instead (see Loading states).
 - **One disabled fade:** new `--wg-disabled-opacity: var(--base-disabled-opacity, 0.65)` dims the
   disabled grid (was `0.6`), disabled dropdown options and toolbar / inline action buttons (were
   `0.5`), and the pagination buttons (`--wg-pagination-btn-disabled-opacity` now defaults to it, was
