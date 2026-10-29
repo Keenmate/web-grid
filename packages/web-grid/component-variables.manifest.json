@@ -42,6 +42,8 @@
     { "name": "base-duration-fast", "required": false, "usage": "Hover fades, tree chevron, tooltip, pagination (0.1s; 0s = motion off)" },
     { "name": "base-duration-normal", "required": false, "usage": "Standard transition speed (0.15s; 0s = motion off)" },
     { "name": "base-ease-standard", "required": false, "usage": "Easing of every grid transition" },
+    { "name": "base-scroll-behavior", "required": false, "usage": "Datepicker rolling month/year lists (smooth; auto under reduced motion)" },
+    { "name": "base-tree-indent", "required": false, "usage": "Tree column indent per level — unitless multiplier of --wg-rem (1.6 = 16px)" },
     { "name": "base-line-height-normal", "required": false, "usage": "Base line height multiplier (1.5)" },
     { "name": "base-border-radius-sm", "required": false, "usage": "Buttons, inputs, toolbar corners (4px scale)" },
     { "name": "base-border-radius-md", "required": false, "usage": "Dialogs, cards (6px scale)" },
@@ -297,7 +299,9 @@
     { "name": "wg-loader-icon", "category": "loader", "usage": "Loader shape — an SVG used as a mask, drawn in currentColor (→ --base-loader-icon, an arc)" },
     { "name": "wg-loader-rotate", "category": "loader", "usage": "Loader rotation per cycle (→ --base-loader-rotate, 1turn; 0 = the SVG animates itself)" },
     { "name": "wg-loader-duration", "category": "loader", "usage": "Loader cycle (→ --base-loader-duration, 0.8s; reduced motion slows it, never stops)" },
-    { "name": "wg-loader-size", "category": "loader", "usage": "Loader size (→ --base-loader-size, 1.25em — scales with text)" },
+    { "name": "wg-loader-size", "category": "loader", "usage": "Loader size (→ --base-loader-size, 1.25em — scales with text): infinite-scroll row and autocomplete search" },
+
+    { "name": "wg-tree-indent", "category": "tree", "usage": "Tree column indent per level (→ --base-tree-indent × --wg-rem, 16px)" },
 
     { "name": "wg-z-dropdown", "category": "z-index", "usage": "Dropdown/combobox popup stacking (9999)" },
     { "name": "wg-z-toolbar", "category": "z-index", "usage": "Floating row toolbar stacking (1000)" },

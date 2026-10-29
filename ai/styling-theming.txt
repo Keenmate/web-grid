@@ -106,6 +106,12 @@ MOTION AND DISABLED DIMMING
 Motion off (CSS only, no attribute): set --wg-transition-*: 0s on the grid, or --base-duration-*: 0s
 on :root for all components. prefers-reduced-motion: reduce does this automatically; the loader
 slows to 1.5s instead of stopping.
+The datepicker's rolling month/year lists scroll with --wg-dp-scroll-behavior
+(var(--base-scroll-behavior, smooth); auto under reduced motion).
+
+TREE
+----
+  --wg-tree-indent      calc(var(--base-tree-indent, 1.6) * var(--wg-rem))   16px per level
 
 LOADER
 ------

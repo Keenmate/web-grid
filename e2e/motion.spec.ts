@@ -41,3 +41,21 @@ test('--base-duration-*: 0s on the page turns grid motion off', async ({ page })
     const r = await read(page);
     expect([r.fast, r.normal]).toEqual(['0s', '0s']);
 });
+
+const rollingScroll = async (page: import('@playwright/test').Page) => {
+    await page.goto('/test/datepicker.html');
+    const grid = page.locator('web-grid#grid');
+    await grid.locator('.wg__cell[data-row="0"][data-col="2"]').click();
+    await page.keyboard.press('F2');
+    await page.locator('.wg-datepicker').waitFor();
+    return page.locator('.wg-datepicker__rolling-list').first().evaluate((el) => getComputedStyle(el).scrollBehavior);
+};
+
+test('datepicker rolling lists scroll smoothly (--base-scroll-behavior)', async ({ page }) => {
+    expect(await rollingScroll(page)).toBe('smooth');
+});
+
+test('reduced motion makes the datepicker rolling lists scroll instantly', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    expect(await rollingScroll(page)).toBe('auto');
+});

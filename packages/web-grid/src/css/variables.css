@@ -387,7 +387,7 @@
   /* ==========================================================================
      TREE
      ========================================================================== */
-  --wg-tree-indent: 1.25rem;             /* per-level indent */
+  --wg-tree-indent: calc(var(--base-tree-indent, 1.6) * var(--wg-rem)); /* per-level indent (16px at the 10px rem) */
   --wg-tree-chevron-size: 1rem;          /* chevron width/height (also used for leaf spacer) */
   --wg-tree-chevron-color: var(--wg-text-color-2);
   --wg-tree-chevron-gap: 4px;            /* gap between chevron and content */

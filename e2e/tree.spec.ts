@@ -397,3 +397,16 @@ test.describe('column visibility — tree column locked (#cvGrid)', () => {
 		await expect(menu.locator('text=Hide column')).toBeVisible()
 	})
 })
+
+test('one tree level indents by --base-tree-indent (1.6 × the 10px rem = 16px)', async ({ page }) => {
+	await gotoTreeDemo(page)
+	const pads = await gridLocator(page).locator('.wg__tree-cell').evaluateAll((els) =>
+		els.map((el) => parseFloat(getComputedStyle(el).paddingInlineStart)))
+	expect(pads).toContain(0)
+	expect(pads).toContain(16)
+	// The page-wide contract variable drives the step
+	await page.evaluate(() => document.documentElement.style.setProperty('--base-tree-indent', '2'))
+	const after = await gridLocator(page).locator('.wg__tree-cell').evaluateAll((els) =>
+		els.map((el) => parseFloat(getComputedStyle(el).paddingInlineStart)))
+	expect(after).toContain(20)
+})

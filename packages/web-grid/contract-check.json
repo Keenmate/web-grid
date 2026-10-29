@@ -5,11 +5,6 @@
       "token": "--base-font-family",
       "rule": "C2",
       "reason": "Standalone the grid (and its datepicker popup) inherits the page font instead of imposing the contract's system stack."
-    },
-    {
-      "token": "--base-loader-duration",
-      "rule": "C2",
-      "reason": "The reduced-motion fallback is 1.5s — the contract's own reduced-motion value, so the loader slows without the contract too (the normal fallback is 0.8s)."
     }
   ]
 }

@@ -55,6 +55,15 @@ const DATEPICKER_STYLES = `
 	/* Shadow */
 	--wg-dp-shadow: var(--wg-shadow-lg, 0 4px 16px var(--wg-dp-shadow-color));
 	--wg-dp-disabled-opacity: var(--base-disabled-opacity, 0.65);
+
+	/* Rolling month/year lists (auto under reduced motion) */
+	--wg-dp-scroll-behavior: var(--base-scroll-behavior, smooth);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.wg-datepicker-container {
+		--wg-dp-scroll-behavior: var(--base-scroll-behavior, auto);
+	}
 }
 
 .wg-datepicker {
@@ -145,7 +154,7 @@ const DATEPICKER_STYLES = `
 	overflow-y: auto;
 	border: 1px solid var(--wg-dp-border-color);
 	border-radius: var(--wg-dp-border-radius);
-	scroll-behavior: smooth;
+	scroll-behavior: var(--wg-dp-scroll-behavior);
 }
 
 .wg-datepicker__rolling-item {

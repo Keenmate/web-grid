@@ -48,6 +48,16 @@ text-mixed hover). Standalone it now looks the same as with the contract:
   inherited font. `e2e/contract-parity.spec.ts` compares every color token standalone vs. with
   the contract (light, dark, custom accent). The e2e color parser reads `oklch()`.
 
+### Changed (visual) — tree indent and scrolling follow the contract
+
+- **Tree indent:** `--wg-tree-indent` is `calc(var(--base-tree-indent, 1.6) * var(--wg-rem))` —
+  **16px per level (was `1.25rem` = 20px)**, one step with both treeviews and the multiselect tree.
+- **Datepicker rolling lists:** `scroll-behavior` reads the new `--wg-dp-scroll-behavior`
+  (`var(--base-scroll-behavior, smooth)`; `auto` under `prefers-reduced-motion: reduce`, was always
+  `smooth`). The popup lives outside the grid's shadow root, so it chains straight to the contract.
+- `contract-check.json` no longer needs the `--base-loader-duration` allowance (the checker knows the
+  reduced-motion value since base-css-variables rc06).
+
 ### Changed — BREAKING (loading states draw through the shared loader)
 
 - **One loader, core `renderLoader()`** (web-components-core SPEC §12.14): the infinite-scroll
