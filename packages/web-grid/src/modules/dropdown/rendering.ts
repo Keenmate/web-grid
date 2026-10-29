@@ -8,6 +8,7 @@ import type { EditorOption, EditorOptions } from '../../types.js'
 import type { GridHost } from '../grid-context.js'
 import { getOptionLabel, getOptionValue, getOptionIcon, getOptionSubtitle, isOptionDisabled, isEmptyOption, optionCtx } from './options.js'
 import { removeFillHandle } from '../fill-handle/index.js'
+import { syncLoader, pruneDetachedLoaders } from '../rendering/loader.js'
 
 /**
  * Render dropdown overlay using Floating UI for positioning
@@ -44,7 +45,13 @@ export function renderDropdown<T>(
 		const isNoResults = hasSource || (!!opts.searchCallback && typed !== '')
 		const key = ctx.autocomplete.isSearching ? 'dropdownSearching' : isNoResults ? 'dropdownNoResults' : 'dropdownNoData'
 		const message = opts.labels?.[key] ?? ctx.engine.labels[key]
-		dropdown.innerHTML = message ? `<div class="wg__dropdown-empty">${ctx.escapeHtml(message)}</div>` : ''
+		if (key === 'dropdownSearching') {
+			// Typed search in flight: the loader (core renderLoader, context 'search') + the text
+			dropdown.innerHTML = `<div class="wg__dropdown-empty wg__dropdown-searching"><span class="wg__dropdown-searching-indicator"></span>${message ? `<span aria-hidden="true">${ctx.escapeHtml(message)}</span>` : ''}</div>`
+			syncLoader(ctx, 'search-dropdown', dropdown.querySelector('.wg__dropdown-searching-indicator') as HTMLElement, message)
+		} else {
+			dropdown.innerHTML = message ? `<div class="wg__dropdown-empty">${ctx.escapeHtml(message)}</div>` : ''
+		}
 	} else {
 		// Get current value for isSelected check
 		const editingCell = ctx.engine.editingCell
@@ -129,6 +136,8 @@ export function renderDropdown<T>(
 export function removeDropdown<T>(ctx: GridHost<T>): void {
 	const existing = ctx.shadow.querySelector('.wg__dropdown')
 	existing?.remove()
+	syncLoader(ctx, 'search-dropdown', null, '')
+	pruneDetachedLoaders(ctx)  // e.g. the editor's search loader when the editor closed mid-search
 	ctx.dropdown.setIsOpen(false)
 	ctx.dropdown.setHighlightedIndex(-1)
 	ctx.dropdown.setFilterText('')  // Clear filter when dropdown closes

@@ -10,6 +10,8 @@ export { GridEngine } from './grid.js'
 
 // Divider factory for toolbar / menu entry lists (web-components-core /actions)
 export { menuDivider } from '@keenmate/web-components-core/actions'
+// Loader render hook types (renderLoadingCallback, window.components.renderLoaderCallback — core SPEC §12.14)
+export type { RenderLoaderCallback, LoaderRenderContext } from '@keenmate/web-components-core'
 
 // Interaction model: controller, contexts, action items, event details
 export type * from './interaction.js'

@@ -3,6 +3,7 @@
 // Selection, highlighting, scrolling, toggle, open for current editor
 // =============================================================================
 
+import { syncLoader } from '../rendering/loader.js'
 import type { EditorOptions } from '../../types.js'
 import type { GridHost } from '../grid-context.js'
 import { getOptionValue, getOptionLabel, isOptionDisabled, withEmptyOption } from './options.js'
@@ -92,13 +93,13 @@ export function scrollHighlightedIntoView<T>(ctx: GridHost<T>): void {
 }
 
 /**
- * Update loading indicator visibility
+ * Show / hide the autocomplete editor's search loader (core renderLoader, context
+ * 'search', `label` = `labels.dropdownSearching`). It takes the toggle's place.
  */
-export function updateLoadingIndicator<T>(ctx: GridHost<T>, show: boolean): void {
-	const indicator = ctx.shadow.querySelector('.wg__loading-indicator') as HTMLElement
-	if (indicator) {
-		indicator.style.display = show ? 'inline' : 'none'
-	}
+export function updateLoadingIndicator<T>(ctx: GridHost<T>, show: boolean, label = ''): void {
+	const indicator = ctx.shadow.querySelector('.wg__loading-indicator') as HTMLElement | null
+	if (indicator) indicator.hidden = !show
+	syncLoader(ctx, 'search-editor', show ? indicator : null, label)
 	// Hide toggle when loading (they occupy same position)
 	const toggle = ctx.shadow.querySelector('.wg__editor--autocomplete .wg__combobox-toggle') as HTMLElement
 	if (toggle) {

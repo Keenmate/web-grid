@@ -148,7 +148,7 @@ test.describe('tree + infinite scroll (#isGrid)', () => {
 		await scrollInner(page, 'web-grid#isGrid', 2800)
 		const row = page.locator('web-grid#isGrid .wg__loading-more')
 		await expect(row).toHaveText('Loading…')
-		await expect(row).toHaveAttribute('role', 'status')
+		await expect(row.locator('.wg__loading-more-indicator')).toHaveAttribute('role', 'status')
 		// Answered with "nothing more" (an items assignment clears it the same way)
 		await page.locator('web-grid#isGrid').evaluate((el: any) => { el.hasMoreItems = false })
 		await expect(row).toHaveCount(0)

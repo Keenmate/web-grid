@@ -245,6 +245,7 @@ import {
 } from './modules/actions/index.js'
 
 import type { GridHost } from './modules/grid-context.js'
+import { syncLoadingMoreLoader, removeAllLoaders } from './modules/rendering/loader.js'
 
 // Core: reactive base class + the input-table converters. web-grid keeps its
 // rich config-object/property API (columns, items, callbacks stay properties);
@@ -260,8 +261,10 @@ import {
 	toEnum,
 	toCustom,
 	toObject,
+	toFunction,
 	type InputDef,
 	type EventDef,
+	type RenderLoaderCallback,
 } from '@keenmate/web-components-core'
 import type { MenuHandle } from '@keenmate/web-components-core/menu'
 
@@ -451,6 +454,10 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		// UI strings (i18n): a partial object (also a JSON attribute) merged per key over the
 		// English defaults — `noData` / `noResults`, `loading`, `dropdownNoData`, pagination / go-to-row / menu texts, … (see labels.ts)
 		{ configKey: 'labels', attribute: 'labels', converter: toObject(), on: 'update', type: 'GridLabelsInput' },
+		// Loading states (core SPEC §12.14): draws every grid loader — `ctx.context` is 'row'
+		// (infinite-scroll load-more row) or 'search' (async dropdown search). Beats the page-wide
+		// `window.components.renderLoaderCallback`; may return a cleanup function.
+		{ configKey: 'renderLoadingCallback', converter: toFunction<RenderLoaderCallback>(), default: null, on: 'update', type: 'RenderLoaderCallback | null', description: "Custom render for the grid's loading states (`ctx.context`: 'row' | 'search'); fills `ctx.containerElement`, may return a cleanup." },
 		// Tooltip timing (element-local, not on grid — the bridge's `in this.engine`
 		// guard skips them; readers use the config-backed getter)
 		{ configKey: 'tooltipShowDelay', attribute: 'tooltip-show-delay', converter: toInt({ min: 0, default: 200 }), default: 200, on: 'update' },
@@ -480,6 +487,9 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	declare onRowLockChange: ((detail: GridEventMap<T>['row-lock-change']) => void) | null
 	declare onCellPaste: ((detail: GridEventMap<T>['cell-paste']) => void) | null
 	declare onAction: ((detail: GridEventMap<T>['action']) => void) | null
+
+	/** Custom render for the grid's loading states (`ctx.context`: 'row' | 'search'); beats `window.components.renderLoaderCallback`. Core property (input table). */
+	declare renderLoadingCallback: RenderLoaderCallback | null
 
 	/**
 	 * The internal state engine (composition) — module plumbing. Not public API:
@@ -676,6 +686,11 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		this.addEventListener('paste', this.handlePaste as EventListener)
 	}
 
+	protected override destroyCallback(): void {
+		// Loader render hooks may hold resources (their returned cleanup)
+		removeAllLoaders(this)
+	}
+
 	protected disconnect(): void {
 		initLogger.debug('disconnect — grid deactivated')
 		// Cleanup event managers
@@ -710,6 +725,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		// `labels.loading` row goes away with it)
 		this.virtualScroll.setIsLoadingMore(false)
 		this.shadow?.querySelector('.wg__loading-more-row')?.remove()
+		if (this.shadow) syncLoadingMoreLoader(this)
 		this.engine.items = value
 	}
 
@@ -1161,6 +1177,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		if (!value) {
 			this.virtualScroll.setIsLoadingMore(false)
 			this.shadow?.querySelector('.wg__loading-more-row')?.remove()
+			if (this.shadow) syncLoadingMoreLoader(this)
 		}
 	}
 
@@ -1853,6 +1870,9 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		} else {
 			removeColumnSelectionBorders()
 		}
+
+		// The infinite-scroll row's loader (core renderLoader) — redrawn into the new row
+		syncLoadingMoreLoader(this)
 
 		perfLogger.debug('render() body:', (performance.now() - __renderStartT).toFixed(2), 'ms |', gridPerf.summary())
 	}

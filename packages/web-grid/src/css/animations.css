@@ -6,9 +6,5 @@
    floating.css).
 */
 
-/* Loading indicator pulse — used on autocomplete/combobox editors while
-   options are being fetched. */
-@keyframes wg-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
-}
+/* The loader (.wg-loader in states.css) — the contract's drawing rule. */
+@keyframes wg-loader-spin { to { transform: rotate(var(--wg-loader-rotate)); } }

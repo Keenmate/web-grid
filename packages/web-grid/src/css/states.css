@@ -38,10 +38,29 @@
 /* ==============================================================================
    LOADING STATE
    ============================================================================== */
-/* Loading indicator at the bottom (optional - consumer can style their own) */
+/* The infinite-scroll "loading more" row: loader + labels.loading */
 .wg__loading-more {
   text-align: center;
   padding: var(--wg-cell-padding);
   color: var(--wg-text-color-2);
   font-size: var(--wg-font-size-sm);
+}
+.wg__loading-more-indicator {
+  display: inline-flex;
+  vertical-align: middle;
+  margin-inline-end: 0.5em;
+}
+.wg__loading-more-text {
+  vertical-align: middle;
+}
+
+/* The loader — every loading state draws it (core renderLoader; the contract's
+   drawing rule, @keyframes wg-loader-spin in animations.css) */
+.wg-loader {
+  display: inline-block;
+  inline-size: var(--wg-loader-size);
+  block-size: var(--wg-loader-size);
+  mask: var(--wg-loader-icon) center / contain no-repeat;
+  background: currentColor;
+  animation: wg-loader-spin var(--wg-loader-duration) linear infinite;
 }

@@ -11,7 +11,7 @@ const read = (page: import('@playwright/test').Page) => page.evaluate(() => {
     const v = (n: string) => cs.getPropertyValue(n).trim();
     return {
         fast: v('--wg-transition-fast'), normal: v('--wg-transition-normal'),
-        pulse: v('--wg-loading-pulse-duration'), disabled: v('--wg-disabled-opacity'),
+        loader: v('--wg-loader-duration'), disabled: v('--wg-disabled-opacity'),
         pagination: v('--wg-pagination-btn-disabled-opacity'),
     };
 });
@@ -19,15 +19,17 @@ const read = (page: import('@playwright/test').Page) => page.evaluate(() => {
 test('durations are the contract speeds; disabled fade is 0.65', async ({ page }) => {
     await page.goto('/test/contract-parity.html');
     await page.locator('#parity').waitFor();
-    expect(await read(page)).toEqual({ fast: '0.1s', normal: '0.15s', pulse: '1s', disabled: '0.65', pagination: '0.65' });
+    expect(await read(page)).toEqual({ fast: '0.1s', normal: '0.15s', loader: '0.8s', disabled: '0.65', pagination: '0.65' });
 });
 
-test('reduced motion turns every duration off', async ({ page }) => {
+test('reduced motion turns every duration off; the loader slows', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/test/contract-parity.html');
     await page.locator('#parity').waitFor();
     const r = await read(page);
-    expect([r.fast, r.normal, r.pulse]).toEqual(['0s', '0s', '0s']);
+    expect([r.fast, r.normal]).toEqual(['0s', '0s']);
+    // The loader slows instead of stopping
+    expect(r.loader).toBe('1.5s');
 });
 
 test('--base-duration-*: 0s on the page turns grid motion off', async ({ page }) => {

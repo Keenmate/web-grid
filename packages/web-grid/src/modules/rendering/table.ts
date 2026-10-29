@@ -233,11 +233,14 @@ function renderEmptyRow<T>(ctx: GridHost<T>, colspan: number): string {
 
 /**
  * The infinite-scroll "loading more" row (`labels.loading`; '' = no row), shown
- * while a `load-more` data request is in flight.
+ * while a `load-more` data request is in flight. The loader itself is drawn into
+ * `.wg__loading-more-indicator` by syncLoadingMoreLoader() (core renderLoader:
+ * `role="status"` + `aria-label` = `labels.loading`), so the visible text is
+ * aria-hidden.
  */
 export function renderLoadingMoreRow<T>(ctx: GridHost<T>): string {
 	if (!ctx.virtualScroll.isLoadingMore || !ctx.engine.labels.loading) return ''
-	return `<tr class="wg__loading-more-row"><td class="wg__loading-more" colspan="999" role="status">${ctx.escapeHtml(ctx.engine.labels.loading)}</td></tr>`
+	return `<tr class="wg__loading-more-row"><td class="wg__loading-more" colspan="999"><span class="wg__loading-more-indicator"></span><span class="wg__loading-more-text" aria-hidden="true">${ctx.escapeHtml(ctx.engine.labels.loading)}</span></td></tr>`
 }
 
 /**

@@ -196,6 +196,17 @@
   text-align: center;
 }
 
+/* Typed search in flight: the loader (core renderLoader) + labels.dropdownSearching */
+.wg__dropdown-searching {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
+}
+.wg__dropdown-searching-indicator {
+  display: inline-flex;
+}
+
 /* Dropdown option alignment modifiers - inherit from column.align */
 .wg__dropdown-option--align-left {
   justify-content: flex-start;

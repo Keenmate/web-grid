@@ -11,6 +11,7 @@ import type { GridHost } from '../grid-context.js'
 import { clearEditingVisual, updateFocusVisual } from '../navigation/focus.js'
 import { renderCell } from '../rendering/cell.js'
 import { renderDataRowsVirtual, renderLoadingMoreRow, type VirtualScrollParams } from '../rendering/table.js'
+import { syncLoadingMoreLoader } from '../rendering/loader.js'
 import { removeDropdown } from '../dropdown/rendering.js'
 import { calculateVisibleRange, shouldTriggerInfiniteScroll } from './calculations.js'
 
@@ -59,6 +60,7 @@ export function renderVirtualRows<T>(ctx: GridHost<T>, container: HTMLElement): 
 	const focusedCell = ctx.engine.focusedCell
 
 	tbody.innerHTML = renderDataRowsVirtual(ctx, params)
+	syncLoadingMoreLoader(ctx)
 
 	// Re-focus the focusedCell after re-render (if it's in the rendered range).
 	// Use the saved value since blur event may have cleared it.
@@ -94,6 +96,7 @@ export function handleInfiniteScroll<T>(ctx: GridHost<T>, container: HTMLElement
 		// The `labels.loading` row at the bottom (gone with the next render / items set)
 		const tbody = container.querySelector('tbody')
 		if (tbody && !tbody.querySelector('.wg__loading-more-row')) tbody.insertAdjacentHTML('beforeend', renderLoadingMoreRow(ctx))
+		syncLoadingMoreLoader(ctx)
 
 		// Fire data request with loadMore trigger
 		ctx.engine.fireDataRequest('load-more')

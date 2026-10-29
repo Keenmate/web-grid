@@ -293,7 +293,11 @@
     { "name": "wg-transition-fast", "category": "transition", "usage": "Duration of hover fades, tree chevron, tooltip, pagination (→ --base-duration-fast, 0.1s; 0s = off, reduced motion = 0s)" },
     { "name": "wg-transition-normal", "category": "transition", "usage": "Standard duration (→ --base-duration-normal, 0.15s; 0s = off, reduced motion = 0s)" },
     { "name": "wg-easing", "category": "transition", "usage": "Easing of every transition (→ --base-ease-standard)" },
-    { "name": "wg-loading-pulse-duration", "category": "transition", "usage": "Loading pulse cycle of autocomplete / combobox editors (1s; 0s stops it, reduced motion = 0s)" },
+
+    { "name": "wg-loader-icon", "category": "loader", "usage": "Loader shape — an SVG used as a mask, drawn in currentColor (→ --base-loader-icon, an arc)" },
+    { "name": "wg-loader-rotate", "category": "loader", "usage": "Loader rotation per cycle (→ --base-loader-rotate, 1turn; 0 = the SVG animates itself)" },
+    { "name": "wg-loader-duration", "category": "loader", "usage": "Loader cycle (→ --base-loader-duration, 0.8s; reduced motion slows it, never stops)" },
+    { "name": "wg-loader-size", "category": "loader", "usage": "Loader size (→ --base-loader-size, 1.25em — scales with text)" },
 
     { "name": "wg-z-dropdown", "category": "z-index", "usage": "Dropdown/combobox popup stacking (9999)" },
     { "name": "wg-z-toolbar", "category": "z-index", "usage": "Floating row toolbar stacking (1000)" },

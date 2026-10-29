@@ -223,12 +223,16 @@
   height: var(--wg-editor-hitbox-height);
 }
 
+/* The async search loader (core renderLoader, context 'search') in the toggle's place */
 .wg__loading-indicator {
   position: absolute;
   right: var(--wg-dropdown-toggle-right);
   top: 50%;
   transform: translateY(-50%);
+  display: inline-flex;
   font-size: var(--wg-font-size-sm);
-  animation: wg-pulse var(--wg-loading-pulse-duration) infinite;
-  /* @keyframes wg-pulse defined in animations.css */
+  line-height: 1;
+}
+.wg__loading-indicator[hidden] {
+  display: none;
 }

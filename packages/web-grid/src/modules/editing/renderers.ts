@@ -355,7 +355,7 @@ export function renderAutocompleteEditor<T>(
 				data-field="${field}"
 			/>
 			<span class="wg__combobox-toggle">▼</span>
-			<span class="wg__loading-indicator" style="display: none;">⏳</span>
+			<span class="wg__loading-indicator" hidden></span>
 		</div>
 	`
 }

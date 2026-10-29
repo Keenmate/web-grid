@@ -160,7 +160,7 @@ export async function performAutocompleteSearch<T>(
 
 	// Show loading
 	ctx.autocomplete.setIsSearching(true)
-	updateLoadingIndicator(ctx, true)
+	updateLoadingIndicator(ctx, true, opts.labels?.dropdownSearching ?? ctx.engine.labels.dropdownSearching)
 
 	try {
 		const editingCell = ctx.engine.editingCell
