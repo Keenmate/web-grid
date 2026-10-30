@@ -265,6 +265,8 @@ import {
 	type InputDef,
 	type EventDef,
 	type RenderLoaderCallback,
+	type ResponsiveMap,
+	type ResponsiveCallback,
 } from '@keenmate/web-components-core'
 import type { MenuHandle } from '@keenmate/web-components-core/menu'
 
@@ -366,7 +368,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	// (columns/items/callbacks), self-mutated UI state (currentPage, sort,
 	// filters, focusedRowIndex, totalItems, expandedPaths, hasMoreItems) and the
 	// two persist flags (side-effect setters) deliberately stay property-only.
-	static inputs: readonly InputDef[] = [
+	// `as const` keeps the configKey literals: they type GridResponsiveConfig.
+	static inputs = [
 		// Filtering & pagination
 		{ configKey: 'isFilteringEnabled', attribute: 'enable-filtering', converter: toBool('default-false'), default: false, on: 'update' },
 		{ configKey: 'filterMode', attribute: 'filter-mode', converter: toEnum(FILTER_MODES, { default: 'client' }), default: 'client', on: 'update' },
@@ -462,7 +465,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		// guard skips them; readers use the config-backed getter)
 		{ configKey: 'tooltipShowDelay', attribute: 'tooltip-show-delay', converter: toInt({ min: 0, default: 200 }), default: 200, on: 'update' },
 		{ configKey: 'tooltipHideDelay', attribute: 'tooltip-hide-delay', converter: toInt({ min: 0, default: 100 }), default: 100, on: 'update' },
-	]
+	] as const satisfies readonly InputDef[]
 
 	static events = EVENTS
 
@@ -1931,5 +1934,23 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		return createGridController<T>(this)
 	}
 }
+
+// ── Responsive rules (core SPEC §6.7) ────────────────────────────────────────
+
+/** The `configKey`s of the grid's input table — the only keys a responsive rule can set. */
+export type GridInputKey = (typeof GridElement.inputs)[number]['configKey']
+
+/**
+ * The grid's input config as a responsive rule sees it (typed from the element
+ * properties). Complex properties — `columns`, `items`, callbacks, UI state —
+ * are not inputs, so a rule cannot set them (core warns and skips the key).
+ */
+export type GridResponsiveConfig = Pick<GridElement, GridInputKey>
+
+/** Partial grid configs per device class — `el.responsive`, `window.components['web-grid'].responsive`. */
+export type GridResponsiveMap = ResponsiveMap<GridResponsiveConfig>
+
+/** Computed responsive rule — `el.responsiveCallback`, `window.components['web-grid'].responsiveCallback`. */
+export type GridResponsiveCallback = ResponsiveCallback<GridResponsiveConfig>
 
 export default GridElement

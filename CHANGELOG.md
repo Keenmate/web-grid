@@ -446,6 +446,15 @@ The cell and column-header menus are the shared KeenMate menu, core `openMenu()`
 
 ### Added
 
+- **Responsive rules** (web-components-core SPEC §6.7): partial grid configs per device class
+  from the page (`window.components.responsive` / `responsiveCallback`), the tag
+  (`window.components['web-grid'].responsive` / `responsiveCallback`) or the instance
+  (`el.responsive` / JSON attribute `responsive`, `el.responsiveCallback`) — e.g.
+  `{ mobile: { pageSize: 10, isRowNumbersShown: false } }`. Attributes / properties set on the grid
+  beat page rules; the grid's own rules beat both. Covers the input table only (`columns`, `items`
+  and other plain properties are not settable by a rule). Typed aliases `GridResponsiveMap`,
+  `GridResponsiveCallback`, `GridResponsiveConfig`, `GridInputKey` (+ `ResponsiveContext`
+  re-export); the `static inputs` table is now `as const` so the config keys are literal types.
 - **`fill-direction` input** (`fillDirection` property): the grid-wide fill-handle direction,
   `'vertical'` (default) or `'all'` — the engine setting was not reachable from the element. A
   column's own `fillDirection` still wins.

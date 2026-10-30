@@ -4,6 +4,9 @@
 
 // Web component (auto-registers <web-grid>)
 export { GridElement } from './web-component.js'
+// Responsive rules (web-components-core SPEC §6.7): typed over the grid's input config keys
+export type { GridInputKey, GridResponsiveConfig, GridResponsiveMap, GridResponsiveCallback } from './web-component.js'
+export type { ResponsiveContext } from '@keenmate/web-components-core'
 
 // Core state engine (standalone / advanced usage — not the element's public API)
 export { GridEngine } from './grid.js'

@@ -527,6 +527,48 @@ window.components.renderLoaderCallback = ({ context, containerElement }) => {
 | `getValidationTooltipCallback` | `(ctx: CellContext<T> & { error }) => string \| null` | — | Custom HTML for validation error tooltip (grid-level default) |
 | `invalidCells` | `CellValidationState[]` | `[]` | External validation state for cells |
 
+### Responsive rules
+
+Partial configs per device class (`mobile` / `tablet` / `desktop`), applied by
+`@keenmate/web-components-core` ([SPEC §6.7](https://github.com/KeenMate/web-components-core/blob/main/docs/SPEC.md#67-responsive-rules--partial-configs-per-device-class-page--tag--instance)).
+A rule is a **map** (`{ mobile: { … } }`) or a **callback** (`(ctx) => partial | undefined`), set at
+three levels:
+
+```js
+// page — every KeenMate component (keys a component doesn't have are skipped)
+window.components.responsive = { mobile: { pageSize: 10 } }
+// tag — every <web-grid>
+window.components['web-grid'].responsive = {
+  mobile: { pageSize: 10, isRowNumbersShown: false, editTrigger: 'click', isRowToolbarShown: false },
+  tablet: { pageSize: 20 },
+}
+window.components['web-grid'].responsiveCallback = (ctx) =>
+  ctx.breakpoint === 'mobile' ? { frozenColumnCount: 0 } : undefined
+// instance — property, or the JSON attribute `responsive`
+grid.responsive = { mobile: { pageSize: 5 } }
+grid.responsiveCallback = ({ deviceClass }) => (deviceClass === 'tablet' ? { isStriped: false } : undefined)
+```
+
+```html
+<web-grid page-size="25" responsive='{"mobile":{"pageSize":5}}'></web-grid>
+```
+
+**Precedence** (later wins, key by key): page map → page callback → tag map → tag callback →
+**instance attributes / properties** → instance map → instance callback. A value written on the
+grid always beats a page rule; the grid's own rules beat everything. An instance rule returning
+`null` ignores all page rules. Overrides never reflect to attributes; a key a rule stops returning
+goes back to its base value. Rules re-run on a device class / breakpoint / orientation change and
+when any rule changes.
+
+- `deviceClass` comes from `classifyDevice` (touch-primary + short side) — a narrowed desktop
+  browser stays `desktop`. For width rules use a callback on `ctx.breakpoint` (`mobile` < 768 px ≤
+  `tablet` < 1024 px, from `--base-breakpoint-mobile` / `-tablet`). `ctx.config` is the base config.
+- Only the grid's **inputs** (the attribute flags above, plus `labels` and `renderLoadingCallback`)
+  can be set. `columns`, `items`, the other callbacks and UI state (`currentPage`, `sort`,
+  `filters`, …) are properties, not inputs — a tag / instance rule naming them warns and skips the key.
+- Types: `GridResponsiveMap`, `GridResponsiveCallback` (over `GridResponsiveConfig` /
+  `GridInputKey`), `ResponsiveContext`.
+
 ## Column Definition
 
 The `Column<T>` interface defines how each column renders, edits, and behaves.
