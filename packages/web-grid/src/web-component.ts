@@ -1947,7 +1947,7 @@ export type GridInputKey = (typeof GridElement.inputs)[number]['configKey']
  */
 export type GridResponsiveConfig = Pick<GridElement, GridInputKey>
 
-/** Partial grid configs per device class — `el.responsive`, `window.components['web-grid'].responsive`. */
+/** Partial grid configs per `device` class / width `breakpoint` (`{ device?, breakpoint? }`) — `el.responsive`, `window.components['web-grid'].responsive`. */
 export type GridResponsiveMap = ResponsiveMap<GridResponsiveConfig>
 
 /** Computed responsive rule — `el.responsiveCallback`, `window.components['web-grid'].responsiveCallback`. */

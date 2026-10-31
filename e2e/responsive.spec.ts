@@ -8,7 +8,9 @@ import { test, expect, type Page } from './fixtures'
  * (columns / items are properties, not inputs).
  *
  * Fixture: docs/test/inputs.html (module only) — grids are created on the fly.
- * Viewport 1440 px → device class `desktop`.
+ * Viewport 1440 px, no touch → device class `desktop`, breakpoint `desktop`.
+ * Maps have two axes: `device` (classifyDevice — touch capability, then short
+ * side) and `breakpoint` (window width).
  */
 
 const PAGE = '/test/inputs.html'
@@ -40,8 +42,7 @@ test.beforeEach(async ({ page }) => {
 	await page.waitForFunction(() => !!customElements.get('web-grid'))
 	await page.evaluate(() => {
 		;(window as any).components['web-grid'].responsive = {
-			mobile: { pageSize: 3 },
-			desktop: { pageSize: 5, isStriped: false },
+			device: { mobile: { pageSize: 3 }, desktop: { pageSize: 5, isStriped: false } },
 		}
 	})
 })
@@ -60,9 +61,24 @@ test('an instance attribute beats the page rule; the rest of the rule still appl
 })
 
 test('the instance map beats the attribute', async ({ page }) => {
-	await mount(page, `page-size="20" responsive='{"desktop":{"pageSize":8}}'`)
+	await mount(page, `page-size="20" responsive='{"device":{"desktop":{"pageSize":8}}}'`)
 	expect(await read(page, el => [el.pageSize, el.isStriped, el.getAttribute('page-size')])).toEqual([8, false, '20'])
 	await expect(bodyRows(page)).toHaveCount(8)
+})
+
+test('a breakpoint-axis map flips when a desktop window narrows; the device class stays desktop', async ({ page }) => {
+	await page.evaluate(() => {
+		;(window as any).components['web-grid'].responsive = { breakpoint: { mobile: { pageSize: 3 } } }
+	})
+	await mount(page, '')
+	expect(await read(page, el => el.pageSize)).toBe(10)
+
+	await page.setViewportSize({ width: 700, height: 900 })
+	await expect.poll(() => read(page, el => el.pageSize)).toBe(3)
+	await expect(bodyRows(page)).toHaveCount(3)
+
+	await page.setViewportSize({ width: 1440, height: 1024 })
+	await expect.poll(() => read(page, el => el.pageSize)).toBe(10)
 })
 
 test('a page callback keyed on ctx.breakpoint re-runs on a viewport change', async ({ page }) => {
@@ -89,9 +105,25 @@ test('a rule naming a non-input (columns) warns and skips that key only', async 
 	const warnings: string[] = []
 	page.on('console', (m) => { if (m.type() === 'warning') warnings.push(m.text()) })
 	await page.evaluate(() => {
-		;(window as any).components['web-grid'].responsive = { desktop: { columns: [], pageSize: 5 } }
+		;(window as any).components['web-grid'].responsive = { device: { desktop: { columns: [], pageSize: 5 } } }
 	})
 	await mount(page, '')
 	expect(await read(page, el => [el.pageSize, el.columns.length])).toEqual([5, 2])
 	expect(warnings.some((w) => w.includes('columns'))).toBe(true)
+})
+
+test.describe('on a touch phone (device axis)', () => {
+	test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true })
+
+	test('device.mobile applies and beats breakpoint.mobile on the same key', async ({ page }) => {
+		await page.evaluate(() => {
+			;(window as any).components['web-grid'].responsive = {
+				device: { mobile: { pageSize: 3 } },
+				breakpoint: { mobile: { pageSize: 7, isStriped: false } },
+			}
+		})
+		await mount(page, '')
+		expect(await read(page, el => [el.pageSize, el.isStriped])).toEqual([3, false])
+		await expect(bodyRows(page)).toHaveCount(3)
+	})
 })
