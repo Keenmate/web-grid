@@ -258,6 +258,21 @@ export function menuRoot(page: Page): Locator {
 }
 
 /**
+ * Dispatch a real `contextmenu` MouseEvent at viewport point (x, y) on `target`. Playwright's
+ * `locator.dispatchEvent('contextmenu', …)` builds a plain `Event` (it maps only the click / mouse*
+ * types to `MouseEvent`), so `clientX` / `clientY` were `undefined` and a right-click menu opened
+ * at a non-point.
+ */
+export async function dispatchContextMenu(target: Locator, x: number, y: number): Promise<void> {
+	await target.evaluate((el, [cx, cy]) => {
+		el.dispatchEvent(new MouseEvent('contextmenu', {
+			bubbles: true, cancelable: true, composed: true, button: 2, buttons: 2,
+			clientX: cx, clientY: cy, screenX: cx, screenY: cy, view: window
+		}))
+	}, [x, y] as const)
+}
+
+/**
  * Open a cell / header context menu: move the mouse there, then dispatch a full
  * `contextmenu` event (Playwright's right-click was flaky through shadow DOM).
  */
@@ -268,9 +283,6 @@ export async function openContextMenu(page: Page, target: Locator): Promise<void
 	const x = box.x + box.width / 2
 	const y = box.y + box.height / 2
 	await page.mouse.move(x, y)
-	await target.dispatchEvent('contextmenu', {
-		bubbles: true, cancelable: true, button: 2, buttons: 2,
-		clientX: x, clientY: y, screenX: x, screenY: y
-	})
+	await dispatchContextMenu(target, x, y)
 	await expect(menuRoot(page)).toBeVisible()
 }

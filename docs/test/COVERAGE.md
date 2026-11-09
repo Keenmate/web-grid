@@ -15,9 +15,9 @@ pin one are `test.fail(true, 'NOTES.md #N')`.
 
 Run: `npx playwright test -c node_modules/.pw-12530.config.mjs --workers=2`
 (private port 12530; the default config uses the dev server on 12400). Projects: chromium,
-firefox, webkit (run webkit in its own invocation on Windows). Platform skips: `copy.spec.ts`
-outside Chromium (Playwright grants `clipboard-read` only there), the responsive phone describe
-in Firefox (no `isMobile`).
+firefox, webkit (run webkit in its own invocation on Windows). `copy.spec.ts` uses the real
+clipboard in Chromium only (Playwright grants `clipboard-read` only there); Firefox / WebKit get an
+in-page `navigator.clipboard`. Platform skip: the responsive phone describe in Firefox (no `isMobile`).
 Every spec imports `test`/`expect` from `e2e/fixtures.ts`, which fails a test on
 any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 
@@ -128,7 +128,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | --- | :-: | --- | --- |
 | Cell context menu (labels, visible/disabled/danger/divider/shortcut, offsets) | ✓ | `contextmenu.spec.ts`, `editors.spec.ts` | `contextmenu.html`, `editors.html` |
 | Header context menu (predefined + custom) | ✓ | `contextmenu.spec.ts`, `resize-reorder.spec.ts` | `contextmenu.html`, `resize-reorder.html` |
-| Menu keyboard on core `openMenu()` (Shift+F10 / ContextMenu key on the focused cell, arrows skip disabled, Home/End, Enter/Space, Escape returns focus, submenu → / ←), `menuitemcheckbox` + `aria-checked` column toggles, `wg-context-menu` / `wg-header-menu` hooks, dismiss on page scroll (grid-container scroll of a right-click menu: `test.fail`, core finding C-1) | △ | `context-menu-keyboard.spec.ts` | `contextmenu.html`, `column-visibility.html` |
+| Menu keyboard on core `openMenu()` (Shift+F10 / ContextMenu key on the focused cell, arrows skip disabled, Home/End, Enter/Space, Escape returns focus, submenu → / ←), `menuitemcheckbox` + `aria-checked` column toggles, `wg-context-menu` / `wg-header-menu` hooks, dismiss on page scroll and on the grid container's scroll (right-click menu: core rc21 point-menu rule) | ✓ | `context-menu-keyboard.spec.ts` | `contextmenu.html`, `column-visibility.html` |
 | Menu CSS-variable chain (`--wg-context-menu-*` → `--km-menu-*` → `--base-*` → default; per instance, both menus; hover colour; z-index) | ✓ | `context-menu-theming.spec.ts` | `contextmenu.html` |
 | Row toolbar (floating / multi-row / inline / cell-aware) | ✓ | `toolbar.spec.ts` | `toolbar.html` |
 | `toolbarTrigger` click / button, `toolbarPosition` left / right / top / inline, `toolbarHorizontalAlign`, `toolbarColumn`, `labels.inlineActionsHeader` | ✓ | `toolbar-options.spec.ts` | `toolbar-options.html` |

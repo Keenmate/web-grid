@@ -9,10 +9,28 @@ import { test, expect, type Page, gridLocator, cell, header, onGrid, waitForRows
  * getCopyValueCallback rendering "12.50 EUR"; Banana's note is null.
  */
 
-// Reading the clipboard back needs the clipboard-read permission, which Playwright grants
-// only in Chromium (Firefox / WebKit: "Unknown permission: clipboard-read").
-test.skip(({ browserName }) => browserName !== 'chromium', 'Playwright grants clipboard-read only in Chromium')
-test.use({ permissions: ['clipboard-read', 'clipboard-write'] })
+// Reading the clipboard back needs the clipboard-read permission, which Playwright grants only in
+// Chromium (Firefox / WebKit: "Unknown permission: clipboard-read"). There the system clipboard is
+// replaced by an in-page one (navigator.clipboard.writeText / readText), so the grid's copy path —
+// what it writes and when — is still covered; Chromium keeps the real clipboard.
+test.use({
+	permissions: async ({ browserName }, use) => {
+		await use(browserName === 'chromium' ? ['clipboard-read', 'clipboard-write'] : [])
+	}
+})
+test.beforeEach(async ({ page, browserName }) => {
+	if (browserName === 'chromium') return
+	await page.addInitScript(() => {
+		let text = ''
+		Object.defineProperty(navigator, 'clipboard', {
+			configurable: true,
+			value: {
+				writeText: async (value: string) => { text = String(value) },
+				readText: async () => text
+			}
+		})
+	})
+})
 
 const PAGE = '/test/copy.html'
 const rowNumber = (page: Page, r: number) => gridLocator(page).locator(`.wg__row-number[data-row-number="${r}"]`)

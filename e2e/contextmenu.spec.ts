@@ -1,4 +1,4 @@
-import { test, expect, Page, Locator, gridLocator, cell, header, clickMenuItem } from './fixtures'
+import { test, expect, Page, Locator, gridLocator, cell, header, clickMenuItem, dispatchContextMenu as dispatchContextMenuAt } from './fixtures'
 
 /**
  * E2E coverage for the context menu module (docs/test/contextmenu.html).
@@ -38,10 +38,7 @@ async function dispatchContextMenu(page: Page, locator: Locator) {
 	const x = box.x + box.width / 2
 	const y = box.y + box.height / 2
 	await page.mouse.move(x, y)
-	await locator.dispatchEvent('contextmenu', {
-		bubbles: true, cancelable: true, button: 2, buttons: 2,
-		clientX: x, clientY: y, screenX: x, screenY: y
-	})
+	await dispatchContextMenuAt(locator, x, y)
 	return { x, y }
 }
 

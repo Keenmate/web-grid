@@ -65,12 +65,15 @@ async function focusCellProgrammatic(page: Page, gridId: string, rowIndex: numbe
  */
 async function dragFillTo(page: Page, gridId: string, toRowIndex: number, toColIndex: number) {
 	const handle = fillHandle(page, gridId)
+	const destCell = cell(page, gridId, toRowIndex, toColIndex)
+	// The whole gesture must stay inside the viewport: Firefox delivers no mousemove / mouseup
+	// for a point outside it (a grid near the page bottom had its target row below the fold).
+	await destCell.scrollIntoViewIfNeeded()
 	const handleBox = await handle.boundingBox()
 	if (!handleBox) throw new Error('Fill handle has no bounding box')
 	const sx = handleBox.x + handleBox.width / 2
 	const sy = handleBox.y + handleBox.height / 2
 
-	const destCell = cell(page, gridId, toRowIndex, toColIndex)
 	const destBox = await destCell.boundingBox()
 	if (!destBox) throw new Error('Destination cell has no bounding box')
 	const dx = destBox.x + destBox.width / 2

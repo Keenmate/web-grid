@@ -1,4 +1,4 @@
-import { test, expect, Page, Locator, gridLocator, cell, header, menuRoot } from './fixtures'
+import { test, expect, Page, Locator, gridLocator, cell, header, menuRoot, dispatchContextMenu } from './fixtures'
 
 /**
  * Keyboard, ARIA and dismiss behaviour of the cell / header menus (core
@@ -44,7 +44,7 @@ async function rightClick(page: Page, locator: Locator) {
 	const x = box.x + box.width / 2
 	const y = box.y + box.height / 2
 	await page.mouse.move(x, y)
-	await locator.dispatchEvent('contextmenu', { bubbles: true, cancelable: true, button: 2, buttons: 2, clientX: x, clientY: y })
+	await dispatchContextMenu(locator, x, y)
 }
 
 test.describe('cell menu — keyboard (contextmenu.html #grid)', () => {
@@ -141,11 +141,8 @@ test.describe('cell menu — keyboard (contextmenu.html #grid)', () => {
 	})
 
 	test("a scroll of the grid's own scroll container closes the menu", async ({ page }) => {
-		// Core rc20 menu scroll rule: a POINT menu (right-click) watches scrollers around the host only,
-		// so a scroll of the grid's inner container (which moves the clicked cell) no longer closes it.
-		// Core finding C-1 in _agent-progress/web-grid-core-final-pass1.md — flips to a pass once core
-		// lets a point menu name the element it belongs to.
-		test.fail(true, 'core C-1: openMenu point menu ignores a scroller inside the host')
+		// Core menu scroll rule: a POINT menu (right-click) belongs to the element under the point inside the
+		// host (the clicked cell), so a scroll of the grid's own container — which moves that cell — closes it.
 		const grid = gridLocator(page, 'grid')
 		await grid.evaluate(async (el: any) => {
 			el.style.maxHeight = '140px'

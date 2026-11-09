@@ -1,4 +1,4 @@
-import { test, expect, Page, Locator, gridLocator, clickMenuItem, menuRoot } from './fixtures'
+import { test, expect, Page, Locator, gridLocator, clickMenuItem, menuRoot, dispatchContextMenu } from './fixtures'
 
 /**
  * Smoke tests for tree mode against the tree fixture (docs/test/tree.html).
@@ -169,16 +169,7 @@ test.describe('cellContextMenu — predefined tree items', () => {
 		const x = box.x + box.width / 2
 		const y = box.y + box.height / 2
 		await page.mouse.move(x, y)
-		await locator.dispatchEvent('contextmenu', {
-			bubbles: true,
-			cancelable: true,
-			button: 2,
-			buttons: 2,
-			clientX: x,
-			clientY: y,
-			screenX: x,
-			screenY: y
-		})
+		await dispatchContextMenu(locator, x, y)
 	}
 
 	test('"Expand" / "Collapse" (row + subtree) appear on parent rows with children', async ({ page }) => {
@@ -368,11 +359,7 @@ test.describe('column visibility — tree column locked (#cvGrid)', () => {
 		const x = box.x + box.width / 2
 		const y = box.y + box.height / 2
 		await page.mouse.move(x, y)
-		await header.dispatchEvent('contextmenu', {
-			bubbles: true, cancelable: true,
-			button: 2, buttons: 2,
-			clientX: x, clientY: y, screenX: x, screenY: y
-		})
+		await dispatchContextMenu(header, x, y)
 	}
 
 	test('right-clicking the tree column header does NOT show "Hide column"', async ({ page }) => {

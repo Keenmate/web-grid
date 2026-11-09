@@ -1,4 +1,4 @@
-import { test, expect, Page, gridLocator, cell, header, menuRoot } from './fixtures'
+import { test, expect, Page, gridLocator, cell, header, menuRoot, dispatchContextMenu } from './fixtures'
 
 /**
  * The context menus' CSS-variable chain (web-components-core SPEC §12.13):
@@ -20,7 +20,7 @@ async function openCellMenu(page: Page) {
 	// Let the scroll from scrollIntoViewIfNeeded land first — a scroll closes an open menu
 	await page.mouse.move(box.x + 20, box.y + 10)
 	await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))))
-	await target.dispatchEvent('contextmenu', { bubbles: true, cancelable: true, button: 2, clientX: box.x + 20, clientY: box.y + 10 })
+	await dispatchContextMenu(target, box.x + 20, box.y + 10)
 	await expect(menuRoot(page)).toBeVisible()
 }
 
@@ -32,7 +32,7 @@ async function openHeaderMenu(page: Page) {
 	// Let the scroll from scrollIntoViewIfNeeded land first — a scroll closes an open menu
 	await page.mouse.move(box.x + 20, box.y + 10)
 	await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))))
-	await target.dispatchEvent('contextmenu', { bubbles: true, cancelable: true, button: 2, clientX: box.x + 20, clientY: box.y + 10 })
+	await dispatchContextMenu(target, box.x + 20, box.y + 10)
 	await expect(menuRoot(page)).toBeVisible()
 }
 

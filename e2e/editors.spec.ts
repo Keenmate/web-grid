@@ -1,4 +1,4 @@
-import { test, expect, Page, Locator, gridLocator, cell } from './fixtures'
+import { test, expect, Page, Locator, gridLocator, cell, dispatchContextMenu } from './fixtures'
 
 /**
  * E2E coverage for the editors fixture (docs/test/editors.html), which exercises:
@@ -39,10 +39,7 @@ async function openContextMenuOn(locator: Locator, page: Page) {
 	const x = box.x + box.width / 2
 	const y = box.y + box.height / 2
 	await page.mouse.move(x, y)
-	await locator.dispatchEvent('contextmenu', {
-		bubbles: true, cancelable: true, button: 2, buttons: 2,
-		clientX: x, clientY: y, screenX: x, screenY: y
-	})
+	await dispatchContextMenu(locator, x, y)
 }
 
 // =============================================================================

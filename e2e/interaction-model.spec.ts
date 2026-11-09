@@ -1,5 +1,5 @@
 import { test, expect, type Page, type Locator } from './fixtures'
-import { openToolbarOn as hoverToolbarTrigger } from './helpers'
+import { openToolbarOn as hoverToolbarTrigger, dispatchContextMenu } from './helpers'
 
 /**
  * The core interaction model (web-components-core `/actions`, SPEC §12.5 / §12.12):
@@ -38,7 +38,7 @@ async function contextMenuOn(page: Page, locator: Locator): Promise<void> {
 	const x = box.x + box.width / 2
 	const y = box.y + box.height / 2
 	await page.mouse.move(x, y)
-	await locator.dispatchEvent('contextmenu', { bubbles: true, cancelable: true, button: 2, clientX: x, clientY: y })
+	await dispatchContextMenu(locator, x, y)
 }
 
 test.beforeEach(async ({ page }) => {

@@ -1,4 +1,4 @@
-import { test, expect, Page, Locator, gridLocator, header, clickMenuItem } from './fixtures'
+import { test, expect, Page, Locator, gridLocator, header, clickMenuItem, dispatchContextMenu } from './fixtures'
 
 /**
  * E2E coverage for column visibility (docs/test/column-visibility.html).
@@ -41,10 +41,7 @@ async function rightClickHeader(page: Page, field: string) {
 	const x = box.x + box.width / 2
 	const y = box.y + box.height / 2
 	await page.mouse.move(x, y)
-	await h.dispatchEvent('contextmenu', {
-		bubbles: true, cancelable: true, button: 2, buttons: 2,
-		clientX: x, clientY: y, screenX: x, screenY: y
-	})
+	await dispatchContextMenu(h, x, y)
 }
 
 /**
