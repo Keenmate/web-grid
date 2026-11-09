@@ -96,6 +96,25 @@ test.describe('select editor with custom member mapping (country)', () => {
 	})
 })
 
+test('the cell → editor dropdown gap is --base-dropdown-offset (4 by default, follows the host)', async ({ page }) => {
+	await gotoDropdowns(page)
+	const gap = async () => {
+		const field = (await cell(page, 0, COL.country).locator('.wg__editor').first().boundingBox())!
+		const panel = (await dropdown(page).boundingBox())!
+		return Math.round(panel.y - (field.y + field.height))
+	}
+	await openEditor(page, 0, COL.country)
+	await expect(dropdown(page)).toBeVisible()
+	await expect.poll(gap).toBe(4)
+	await page.keyboard.press('Escape')
+	await expect(dropdown(page)).toHaveCount(0)
+
+	await gridLocator(page).evaluate((el) => (el as HTMLElement).style.setProperty('--base-dropdown-offset', '12px'))
+	await openEditor(page, 0, COL.country)
+	await expect(dropdown(page)).toBeVisible()
+	await expect.poll(gap).toBe(12)
+})
+
 // =============================================================================
 // select — renderOptionCallback
 // =============================================================================

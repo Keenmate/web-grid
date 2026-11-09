@@ -73,7 +73,7 @@
 	},
 	"homepage": "https://github.com/KeenMate/web-grid#readme",
 	"devDependencies": {
-		"@keenmate/base-css-variables": "^2.0.0-rc06",
+		"@keenmate/base-css-variables": "^2.0.1",
 		"@vitest/ui": "^4.1.10",
 		"happy-dom": "^20.10.6",
 		"rimraf": "^5.0.5",

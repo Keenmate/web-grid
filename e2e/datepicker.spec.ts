@@ -100,6 +100,23 @@ test.describe('open / close', () => {
 	})
 })
 
+test('the cell → datepicker gap is --base-dropdown-offset (4 by default, follows the host)', async ({ page }) => {
+	await gotoDp(page)
+	const gap = async () => {
+		const field = (await cell(page, 0, COL.iso).locator('.wg__editor--date').boundingBox())!
+		const panel = (await picker(page).boundingBox())!
+		return Math.round(panel.y - (field.y + field.height))
+	}
+	await openPicker(page, 0, COL.iso)
+	await expect.poll(gap).toBe(4)
+	await page.keyboard.press('Escape')
+	await expect(picker(page)).toBeHidden()
+
+	await gridLocator(page).evaluate((el) => (el as HTMLElement).style.setProperty('--base-dropdown-offset', '12px'))
+	await openPicker(page, 0, COL.iso)
+	await expect.poll(gap).toBe(12)
+})
+
 // =============================================================================
 // Selecting a day
 // =============================================================================

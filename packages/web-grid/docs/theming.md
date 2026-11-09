@@ -171,6 +171,11 @@ The full table lives in [the manifest](../component-variables.manifest.json).
 - **Typography**: `--base-font-family`, `--base-font-size-base` / `-sm` / `-xs` / `-2xs`, `--base-font-weight-normal` / `-semibold`, `--base-line-height-*`.
 - **Other**: `--base-border-radius-*`, `--base-dropdown-box-shadow`, `--base-shadow-color`.
 
+**Editor panel gap:** the cell editor's dropdown and datepicker open `--base-dropdown-offset` away from
+the cell (`@keenmate/base-css-variables` 2.0.1+, `4px` when unset) — the one field → panel gap every
+KeenMate component shares; core reads it on the cell when the panel opens (JS, not in the grid's CSS).
+Set it page-wide, per section, or per component: `web-grid { --base-dropdown-offset: 2px; }`.
+
 ## Color-scheme contract
 
 Dark / light mode is driven by **five signals**. Each one is honored at the right precedence so the consumer's intent always wins.

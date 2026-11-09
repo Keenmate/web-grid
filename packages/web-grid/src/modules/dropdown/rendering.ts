@@ -113,8 +113,7 @@ export function renderDropdown<T>(
 	placements.set(dropdown, anchorTo(dropdown, anchor, {
 		strategy: 'absolute',
 		placement: 'bottom-start',
-		// 1px gap to prevent sub-pixel overlap with the cell border
-		offset: 1,
+		// No `offset`: core's default is the page's field → panel gap `--base-dropdown-offset`
 		shift: false,
 		fallbackPlacements: ['top-start'],
 		matchWidth: opts.dropdownMinWidth ? false : 'min',

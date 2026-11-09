@@ -515,7 +515,7 @@ export class DatePicker {
 		const handle = anchorTo(picker, anchorEl, {
 			strategy: 'absolute',
 			placement: 'bottom-start',
-			offset: 4,
+			// No `offset`: core's default is the page's field → panel gap `--base-dropdown-offset`
 			fallbackPlacements: ['top-start', 'bottom-end', 'top-end'],
 			shift: 8,
 			// Close datepicker silently if anchor is no longer valid

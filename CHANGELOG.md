@@ -73,6 +73,14 @@ Target: **2.0.0-rc01** — a major: the callback, event and item API below is br
 - 64 property accessors on the element were dead code (core's input accessors replaced them, rc20
   warned about each); removed — reads and writes already went through core.
 
+#### Changed (visual) — editor panel gap is `--base-dropdown-offset`
+
+- **The cell editor's dropdown opens 4px below the cell instead of 1px** (the datepicker stays at 4px): both
+  gaps are now the page token `--base-dropdown-offset` (`@keenmate/base-css-variables` ^2.0.1), the one
+  field → panel gap of every KeenMate component; core's anchor reads it on the cell (no hard-coded offset
+  left). To set it: `web-grid { --base-dropdown-offset: 1px; }` (page-wide, per section or per element).
+  The row toolbar (0), tooltips and right-click menus keep their own spacing.
+
 #### Internal
 
 - Tooltip, dropdown, row toolbar and datepicker are placed by core `anchor()`; one core
