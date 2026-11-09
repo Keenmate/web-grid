@@ -139,7 +139,8 @@ test.describe('every input (table-driven)', () => {
 				newRowIndicator: ['*', '*'],
 				treeExpandedGlyph: ['-', '-'],
 				treeCollapsedGlyph: ['+', '+'],
-				labels: ['{"noData":"Nic"}', { noData: 'Nic' }]
+				labels: ['{"noData":"Nic"}', { noData: 'Nic' }],
+				customStyles: ['.wg { outline: 1px solid red; }', '.wg { outline: 1px solid red; }']
 			}
 			const sample = (d: any): [string, unknown] | null => {
 				if (SPECIAL[d.configKey]) return SPECIAL[d.configKey]
@@ -227,6 +228,103 @@ test.describe('readonly / disabled (C5)', () => {
 		await page.evaluate(() => { (document.getElementById('t') as any).isDisabled = false })
 		await expect(container).not.toHaveAttribute('inert', '')
 		await expect(container).not.toHaveClass(/wg--disabled/)
+	})
+})
+
+test.describe('readonly / disabled — native presence rule, reflected (core SPEC §6.4)', () => {
+	test('readonly="false" / disabled="false" still count (presence); the properties reflect', async ({ page }) => {
+		await mount(page, 'readonly="false" disabled="false"')
+		expect(await read(page, el => [el.isReadonly, el.isDisabled])).toEqual([true, true])
+		expect(await read(page, el => {
+			el.isReadonly = false
+			el.isDisabled = false
+			return [el.hasAttribute('readonly'), el.hasAttribute('disabled')]
+		})).toEqual([false, false])
+		expect(await read(page, el => {
+			el.isReadonly = true
+			el.isDisabled = true
+			return [el.getAttribute('readonly'), el.getAttribute('disabled')]
+		})).toEqual(['', ''])
+	})
+
+	test('the read-only preset reflects readonly; excel removes it', async ({ page }) => {
+		await mount(page, 'preset="read-only"')
+		expect(await read(page, el => [el.isReadonly, el.hasAttribute('readonly')])).toEqual([true, true])
+		expect(await read(page, el => { el.preset = 'excel'; el.flush(); return [el.isReadonly, el.hasAttribute('readonly')] }))
+			.toEqual([false, false])
+	})
+})
+
+test.describe('validated inputs (core rejection, previous value kept)', () => {
+	test('pagination / summary positions and the pager layout accept only their parts', async ({ page }) => {
+		await mount(page, 'enable-paging pagination-position="top-right | bottom-left" summary-position="bottom-right"')
+		expect(await read(page, el => [el.paginationPosition, el.summaryPosition])).toEqual(['top-right|bottom-left', 'bottom-right'])
+		const rejected = await read(page, el => {
+			const keys: string[] = []
+			el.addEventListener('input-rejected', (e: any) => keys.push(e.detail.configKey))
+			el.setAttribute('pagination-position', 'middle')
+			el.paginationLayout = 'previous|bogus'
+			el.summaryPosition = 'top-left|'
+			el.flush()
+			return [keys, el.paginationPosition, el.paginationLayout, el.summaryPosition]
+		})
+		expect(rejected).toEqual([['paginationPosition', 'paginationLayout', 'summaryPosition'], 'top-right|bottom-left', 'page-size|previous|page-info|next', 'bottom-right'])
+		expect(await read(page, el => { el.summaryPosition = null; el.paginationLayout = 'first|previous|page-info|next|last'; return [el.summaryPosition, el.paginationLayout] }))
+			.toEqual([null, 'first|previous|page-info|next|last'])
+	})
+
+	test('CSS lengths: a number means pixels, an invalid length is refused', async ({ page }) => {
+		await mount(page, 'scrollable column-min-width="80"')
+		expect(await read(page, el => [el.columnMinWidth, el.engine.columnMinWidth])).toEqual(['80px', '80px'])
+		const r = await read(page, el => {
+			const keys: string[] = []
+			el.addEventListener('input-rejected', (e: any) => keys.push(e.detail.configKey))
+			el.scrollMaxHeight = 240
+			el.columnMinWidth = 'wide'
+			el.scrollMaxHeight = 'tall'
+			el.flush()
+			return [keys, el.scrollMaxHeight, el.columnMinWidth]
+		})
+		expect(r).toEqual([['columnMinWidth', 'scrollMaxHeight'], '240px', '80px'])
+		// the grid renders on the next microtask
+		await expect.poll(() => read(page, el => el.shadowRoot.querySelector('.wg').style.getPropertyValue('--wg-scroll-max-height'))).toBe('240px')
+	})
+
+	test('cellToolbarOffset: a number or a CSS length; anything else is refused', async ({ page }) => {
+		await mount(page, 'cell-toolbar-offset="2rem"')
+		expect(await read(page, el => el.cellToolbarOffset)).toBe('2rem')
+		expect(await read(page, el => {
+			let rejected = 0
+			el.addEventListener('input-rejected', () => { rejected++ })
+			el.cellToolbarOffset = 'far'
+			el.setAttribute('cell-toolbar-offset', 'nope')
+			el.cellToolbarOffset = 0.5
+			return [rejected, el.cellToolbarOffset]
+		})).toEqual([2, 0.5])
+	})
+
+	test('show-pagination: a boolean or "auto" on the property path', async ({ page }) => {
+		await mount(page, 'enable-paging show-pagination="auto"')
+		expect(await read(page, el => {
+			let rejected = 0
+			el.addEventListener('input-rejected', () => { rejected++ })
+			el.isPaginationShown = 'sometimes'
+			const kept = el.isPaginationShown
+			el.isPaginationShown = false
+			return [rejected, kept, el.isPaginationShown]
+		})).toEqual([1, 'auto', false])
+	})
+})
+
+test.describe('typed input properties (C-CA-16): no dead class accessors', () => {
+	test('no input-table warning on construction; every input is an own accessor', async ({ page }) => {
+		const warnings: string[] = []
+		page.on('console', m => { if (m.type() === 'warning') warnings.push(m.text()) })
+		await mount(page, '')
+		const own = await read(page, el => (customElements.get('web-grid') as any).inputs
+			.filter((d: any) => !Object.getOwnPropertyDescriptor(el, d.configKey)?.get).map((d: any) => d.configKey))
+		expect(own).toEqual([])
+		expect(warnings.filter(w => w.includes('invalid input table'))).toEqual([])
 	})
 })
 

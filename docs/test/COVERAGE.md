@@ -14,7 +14,10 @@ docs example pages). Known component bugs are tracked in `NOTES.md`; tests that
 pin one are `test.fail(true, 'NOTES.md #N')`.
 
 Run: `npx playwright test -c node_modules/.pw-12530.config.mjs --workers=2`
-(private port 12530; the default config uses the dev server on 12400).
+(private port 12530; the default config uses the dev server on 12400). Projects: chromium,
+firefox, webkit (run webkit in its own invocation on Windows). Platform skips: `copy.spec.ts`
+outside Chromium (Playwright grants `clipboard-read` only there), the responsive phone describe
+in Firefox (no `isMobile`).
 Every spec imports `test`/`expect` from `e2e/fixtures.ts`, which fails a test on
 any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 
@@ -125,7 +128,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | --- | :-: | --- | --- |
 | Cell context menu (labels, visible/disabled/danger/divider/shortcut, offsets) | ✓ | `contextmenu.spec.ts`, `editors.spec.ts` | `contextmenu.html`, `editors.html` |
 | Header context menu (predefined + custom) | ✓ | `contextmenu.spec.ts`, `resize-reorder.spec.ts` | `contextmenu.html`, `resize-reorder.html` |
-| Menu keyboard on core `openMenu()` (Shift+F10 / ContextMenu key on the focused cell, arrows skip disabled, Home/End, Enter/Space, Escape returns focus, submenu → / ←), `menuitemcheckbox` + `aria-checked` column toggles, `wg-context-menu` / `wg-header-menu` hooks, dismiss on page / grid scroll | ✓ | `context-menu-keyboard.spec.ts` | `contextmenu.html`, `column-visibility.html` |
+| Menu keyboard on core `openMenu()` (Shift+F10 / ContextMenu key on the focused cell, arrows skip disabled, Home/End, Enter/Space, Escape returns focus, submenu → / ←), `menuitemcheckbox` + `aria-checked` column toggles, `wg-context-menu` / `wg-header-menu` hooks, dismiss on page scroll (grid-container scroll of a right-click menu: `test.fail`, core finding C-1) | △ | `context-menu-keyboard.spec.ts` | `contextmenu.html`, `column-visibility.html` |
 | Menu CSS-variable chain (`--wg-context-menu-*` → `--km-menu-*` → `--base-*` → default; per instance, both menus; hover colour; z-index) | ✓ | `context-menu-theming.spec.ts` | `contextmenu.html` |
 | Row toolbar (floating / multi-row / inline / cell-aware) | ✓ | `toolbar.spec.ts` | `toolbar.html` |
 | `toolbarTrigger` click / button, `toolbarPosition` left / right / top / inline, `toolbarHorizontalAlign`, `toolbarColumn`, `labels.inlineActionsHeader` | ✓ | `toolbar-options.spec.ts` | `toolbar-options.html` |
@@ -192,6 +195,12 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Validation tooltip right after the commit, cleared by a valid one (#22 fixed) | ✓ | `tooltip.spec.ts` | `tooltip.html` |
 | `tooltipHideDelay` (#23 fixed) | ✓ | `tooltip.spec.ts` | `tooltip.html` |
 | `shortcutsHelpPosition`, `renderShortcutsHelpCallback`, help visibility | ✓ | `display-options.spec.ts` | `display-options.html` |
+| `readonly` / `disabled`: presence rule (`="false"` still counts), reflected, the read-only preset reflects `readonly` | ✓ | `inputs.spec.ts` | `inputs.html` |
+| Validated inputs: pagination / summary positions + pager layout (pipe lists), CSS lengths (`scrollMaxHeight`, `columnMinWidth`; number = px), `cellToolbarOffset`, `show-pagination` → `input-rejected` | ✓ | `inputs.spec.ts` | `inputs.html` |
+| Typed inputs: every input an own core accessor, no input-table warning (C-CA-16) | ✓ | `inputs.spec.ts` | `inputs.html` |
+| `customStyles` / `getCustomStylesCallback` (core `createCustomStyles`): attribute + property, callback wins + ctx, page-wide `window.components['web-grid'].customStyles` (order, live update, instance override), `@import` linked once in head and released by `destroy()` | ✓ | `custom-styling.spec.ts` | `custom-styling.html` |
+| Properties set before `<web-grid>` is defined (`columns`, `items`, `pageSize`) applied at upgrade (core rc20) | ✓ | `pre-upgrade.spec.ts` | `pre-upgrade.html` |
+| Self-initiated scrolls via core `scrollIntoContainer` + `beforeScrollCallback` (keyboard: `nearest`, page stays put; `scrollToRow`: centre + reveal; `false` skips, partial options replace; virtual-scroll jump) | ✓ | `scroll.spec.ts` | `scroll.html` |
 
 ## Not covered yet
 

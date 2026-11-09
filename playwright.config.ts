@@ -46,9 +46,12 @@ export default defineConfig({
 				// far enough to confuse Playwright's scroll-into-view checks.
 				viewport: { width: 1440, height: 1024 }
 			}
-		}
-		// Add 'firefox' / 'webkit' here later if cross-browser coverage matters.
-		// Each adds ~10-15s to a full test run.
+		},
+		// Cross-browser (rulebook: e2e in chromium + firefox + webkit). Platform limits are
+		// skipped per spec with the reason (clipboard-read only in Chromium, no isMobile in
+		// Firefox). WebKit on Windows can hang a combined run at teardown — run it on its own.
+		{ name: 'firefox', use: { ...devices['Desktop Firefox'], viewport: { width: 1440, height: 1024 } } },
+		{ name: 'webkit', use: { ...devices['Desktop Safari'], viewport: { width: 1440, height: 1024 } } }
 	],
 
 	// Auto-start the docs dev server. `reuseExistingServer: true` means an

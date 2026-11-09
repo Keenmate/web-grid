@@ -70,7 +70,7 @@ export async function clickMenuItem(page: Page, label: string): Promise<void> {
  * `page.mouse.move` alone doesn't reliably deliver into shadow DOM.
  */
 export async function openToolbarOn(page: Page, locator: Locator): Promise<void> {
-	await locator.evaluate((el: Element) => el.scrollIntoView({ block: 'center' }))
+	await locator.evaluate((el: Element) => el.scrollIntoView({ block: 'center' })) // core-adoption: allow — the test positions the page, not component code
 	const box = await locator.boundingBox()
 	if (!box) throw new Error('Could not get bounding box for toolbar trigger')
 	const x = box.x + box.width / 2

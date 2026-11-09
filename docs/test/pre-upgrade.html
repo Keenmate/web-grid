@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — pre-upgrade fixture</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>pre-upgrade fixture</h1>
+	<p>Targeted by <code>e2e/pre-upgrade.spec.ts</code>. A classic script assigns <code>columns</code>,
+	<code>items</code> (the grid's own properties) and <code>pageSize</code> (an input) BEFORE the grid
+	module defines <code>&lt;web-grid&gt;</code> — core rescues them at upgrade (core rc20).</p>
+
+	<web-grid id="grid" enable-paging style="max-width: 600px;"></web-grid>
+
+	<script>
+		const el = document.getElementById('grid')
+		el.columns = [{ field: 'id', title: 'ID' }, { field: 'name', title: 'Name' }]
+		el.items = Array.from({ length: 12 }, (_, i) => ({ id: i + 1, name: 'Early ' + (i + 1) }))
+		el.pageSize = 5
+	</script>
+	<script type="module">
+		import '@keenmate/web-grid'
+	</script>
+</body>
+</html>

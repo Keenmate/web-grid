@@ -113,6 +113,7 @@ test('a rule naming a non-input (columns) warns and skips that key only', async 
 })
 
 test.describe('on a touch phone (device axis)', () => {
+	test.skip(({ browserName }) => browserName === 'firefox', 'Firefox has no isMobile emulation (Playwright)')
 	test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true })
 
 	test('device.mobile applies and beats breakpoint.mobile on the same key', async ({ page }) => {

@@ -127,3 +127,77 @@ test.describe('renderCellCallback renders custom cell HTML', () => {
 		expect(color).toBe('rgb(245, 158, 11)')
 	})
 })
+
+// =============================================================================
+// customStyles / getCustomStylesCallback — core createCustomStyles() (C-CA-15)
+// =============================================================================
+
+/** A second grid on the custom-styling page, with the given attributes. */
+async function addGrid(page: Page, id: string, attrs = ''): Promise<void> {
+	await page.evaluate(({ id, attrs }) => {
+		const host = document.createElement('div')
+		host.innerHTML = `<web-grid id="${id}" ${attrs}></web-grid>`
+		const el = host.firstElementChild as any
+		el.columns = [{ field: 'name', title: 'Name' }]
+		el.items = [{ name: 'Zed' }]
+		document.body.appendChild(host)
+	}, { id, attrs })
+	await expect(gridLocator(page, id).locator('tbody tr').first()).toBeVisible()
+}
+
+/** The text of the grid's custom-style slots, in shadow-root order. */
+async function styleSlots(page: Page, id: string): Promise<{ cls: string; css: string }[]> {
+	return gridLocator(page, id).evaluate((el: Element) =>
+		Array.from(el.shadowRoot!.querySelectorAll('style[class*="wg-custom-styles"]'))
+			.map(s => ({ cls: s.className, css: s.textContent ?? '' })))
+}
+
+test.describe('customStyles (instance + page-wide layers)', () => {
+	test('the custom-styles attribute / customStyles property style the shadow root', async ({ page }) => {
+		await gotoCustomStyling(page)
+		await addGrid(page, 'cs', 'custom-styles=".wg__cell { color: rgb(1, 2, 3); }"')
+		const name = gridLocator(page, 'cs').locator('td.wg__cell').first()
+		await expect(name).toHaveCSS('color', 'rgb(1, 2, 3)')
+		await gridLocator(page, 'cs').evaluate((el: any) => { el.customStyles = '.wg__cell { color: rgb(4, 5, 6); }' })
+		await expect(name).toHaveCSS('color', 'rgb(4, 5, 6)')
+		await gridLocator(page, 'cs').evaluate((el: any) => { el.customStyles = undefined })
+		await expect(name).not.toHaveCSS('color', 'rgb(4, 5, 6)')
+	})
+
+	test('getCustomStylesCallback wins over customStyles and gets the grid context', async ({ page }) => {
+		await gotoCustomStyling(page)
+		await addGrid(page, 'cs', 'custom-styles=".wg__cell { color: rgb(1, 2, 3); }"')
+		const hasController = await gridLocator(page, 'cs').evaluate((el: any) => {
+			let seen = false
+			el.getCustomStylesCallback = (ctx: any) => { seen = !!ctx.controller && ctx.element === el; return '.wg__cell { color: rgb(7, 8, 9); }' }
+			return el.whenSettled().then(() => seen)
+		})
+		expect(hasController).toBe(true)
+		await expect(gridLocator(page, 'cs').locator('td.wg__cell').first()).toHaveCSS('color', 'rgb(7, 8, 9)')
+	})
+
+	test('page-wide window.components["web-grid"].customStyles styles every grid; an instance overrides it', async ({ page }) => {
+		await gotoCustomStyling(page)
+		await page.evaluate(() => { (window as any).components['web-grid'].customStyles = '.wg__cell { color: rgb(10, 20, 30); }' })
+		await addGrid(page, 'p1')
+		await addGrid(page, 'p2', 'custom-styles=".wg__cell { color: rgb(40, 50, 60); }"')
+		await expect(gridLocator(page, 'p1').locator('td.wg__cell').first()).toHaveCSS('color', 'rgb(10, 20, 30)')
+		await expect(gridLocator(page, 'p2').locator('td.wg__cell').first()).toHaveCSS('color', 'rgb(40, 50, 60)')
+		// the page layer sits before the instance layer
+		expect((await styleSlots(page, 'p2')).map(s => s.cls)).toEqual(['wg-custom-styles--page', 'wg-custom-styles'])
+		// a later page assignment reaches live grids
+		await page.evaluate(() => { (window as any).components['web-grid'].customStyles = '.wg__cell { color: rgb(11, 21, 31); }' })
+		await expect(gridLocator(page, 'p1').locator('td.wg__cell').first()).toHaveCSS('color', 'rgb(11, 21, 31)')
+	})
+
+	test('an @import is linked once in the document head; destroy() releases it', async ({ page }) => {
+		await gotoCustomStyling(page)
+		const href = 'data:text/css,.x%7Bcolor:red%7D'
+		await addGrid(page, 'i1', `custom-styles="@import url('${href}');"`)
+		await addGrid(page, 'i2', `custom-styles="@import url('${href}');"`)
+		await expect(page.locator('head link[data-km-custom-styles]')).toHaveCount(1)
+		await page.evaluate(() => { (document.getElementById('i1') as any).destroy(); (document.getElementById('i2') as any).destroy() })
+		await expect(page.locator('head link[data-km-custom-styles]')).toHaveCount(0)
+		expect(await styleSlots(page, 'i1')).toEqual([])
+	})
+})

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — scroll fixture</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>scroll fixture</h1>
+	<p>Targeted by <code>e2e/scroll.spec.ts</code>: the grid's own scrolls (keyboard moves,
+	<code>scrollToRow()</code>) go through core <code>scrollIntoContainer()</code> and
+	<code>beforeScrollCallback</code>. <code>#grid</code> sits at the top (a 200px scroll container),
+	<code>#below</code> below the fold, <code>#virtual</code> uses virtual scroll.</p>
+
+	<web-grid id="grid" style="max-width: 600px; max-height: 200px;"></web-grid>
+	<div style="height: 1600px"></div>
+	<web-grid id="below" style="max-width: 600px; max-height: 200px;"></web-grid>
+	<div style="height: 400px"></div>
+	<web-grid id="virtual" enable-virtual-scroll virtual-scroll-threshold="10" style="max-width: 600px; max-height: 200px;"></web-grid>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+
+		// 60 rows x 2 columns (id, name) — row i: { id: i + 1, name: 'Row ' + (i + 1) }
+		const items = Array.from({ length: 60 }, (_, i) => ({ id: i + 1, name: 'Row ' + (i + 1) }))
+		const columns = [{ field: 'id', title: 'ID', width: '80px' }, { field: 'name', title: 'Name', width: '200px' }]
+		for (const id of ['grid', 'below', 'virtual']) {
+			const el = document.getElementById(id)
+			el.columns = columns
+			el.items = items.map(r => ({ ...r }))
+		}
+	</script>
+</body>
+</html>
