@@ -300,10 +300,19 @@ Both menus are the shared KeenMate menu (core `openMenu()`, `@keenmate/web-compo
 
 | Property | Type | Default | Description |
 |---|---|---|---|
-| `gridName` | `string \| null` | `null` | Unique name for localStorage persistence |
-| `shouldPersistColumnWidths` | `boolean` | `false` | Persist column widths (requires `gridName`) |
+| `storageKey` (`storage-key`) | `string \| null` | `null` | Key of the persisted column state (core state store, SPEC §12.17); unset = off. Default store: localStorage `km-state:web-grid:<key>` |
+| `shouldPersistColumnWidths` (`persist-column-widths`) | `boolean` | `false` | Persist the column widths the user resized to (needs `storageKey`) |
 | `isColumnReorderAllowed` | `boolean` | `false` | Enable drag-to-reorder columns |
-| `shouldPersistColumnOrder` | `boolean` | `false` | Persist column order (requires `gridName`) |
+| `shouldPersistColumnOrder` (`persist-column-order`) | `boolean` | `false` | Persist the column order the user dragged to (needs `storageKey`) |
+| `loadStateCallback` | `LoadStateCallback<GridPersistenceState>` | — | `(ctx) => GridPersistenceState \| null` (may be async), `ctx`: `{ key }` + context — the page keeps the state |
+| `saveStateCallback` | `SaveStateCallback<GridPersistenceState>` | — | `ctx`: `{ key, state }` + context, `state` = the WHOLE `{ columnWidths?, columnOrder? }`. Set both callbacks; either one alone switches localStorage off |
+
+```html
+<web-grid storage-key="orders" persist-column-widths persist-column-order allow-column-reorder></web-grid>
+```
+
+Stored entries of columns that no longer exist are dropped on load (and saved back); a load
+requested before `columns` are set waits for them.
 
 ### Fill handle
 

@@ -243,7 +243,7 @@ setColumnWidths(widths: ColumnWidthState[]): void
 
 getColumnWidthsState(): ColumnWidthState[]
   Get current widths of all columns. Returns array of { field, width }.
-  Same format used by localStorage persistence and setColumnWidths.
+  Same format as the persisted state (GridPersistenceState) and setColumnWidths.
 
 
 ----------------------------------------------------------------------
@@ -262,7 +262,7 @@ setColumnOrder(order: ColumnOrderState[]): void
 
 getColumnOrderState(): ColumnOrderState[]
   Get current column order. Returns array of { field, order }.
-  Same format used by localStorage persistence and setColumnOrder.
+  Same format as the persisted state (GridPersistenceState) and setColumnOrder.
 
 
 ----------------------------------------------------------------------

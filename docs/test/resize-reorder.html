@@ -52,7 +52,7 @@
 		 *
 		 * Per-grid setup the spec relies on:
 		 *  #grid           — basic resize + multi-sort. `name` is 150px.
-		 *  #grid2          — resize + persistence: gridName='resize-test-grid2',
+		 *  #grid2          — resize + persistence: storageKey='resize-test-grid2',
 		 *                    shouldPersistColumnWidths=true, onColumnResize logs to
 		 *                    [data-testid="resize-log"]. `name` is 150px so the spec
 		 *                    can assert "from 150px".
@@ -109,7 +109,7 @@
 			{ field: 'phone', title: 'Phone', width: '120px' }
 		]
 		grid2.isRowNumbersShown = true
-		grid2.gridName = 'resize-test-grid2'
+		grid2.storageKey = 'resize-test-grid2'
 		grid2.shouldPersistColumnWidths = true
 		grid2.onColumnResize = (detail) => {
 			document.querySelector('[data-testid="resize-log"]').textContent =

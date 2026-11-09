@@ -353,10 +353,8 @@ function handleDocumentMouseUp(e: MouseEvent): void {
 			allOrder: ctx.engine.getColumnOrderState()
 		})
 
-		// Persist to localStorage if enabled
-		if (ctx.engine.shouldPersistColumnOrder && ctx.engine.gridName) {
-			ctx.engine.savePersistedState()
-		}
+		// Persisted UI state (storage-key + persist-column-order; core state store)
+		if (ctx.engine.shouldPersistColumnOrder) ctx.engine.savePersistedState()
 	}
 
 	// Set flag to block the subsequent click event from triggering sort

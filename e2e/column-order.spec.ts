@@ -1,18 +1,20 @@
 import { test, expect, type Page, gridLocator, header, onGrid, domEvents, clearEvents, waitForRows } from './fixtures'
 
 /**
- * Column order — drag reorder + `column-reorder`, `gridName` +
- * `shouldPersistColumnOrder` (localStorage `wg-<gridName>-state`, restored on
- * reload), `setColumnOrder` / `getColumnOrderState`, `isColumnReorderAllowed`
- * off → no drag.
+ * Column order — drag reorder + `column-reorder`, `storage-key` +
+ * `persist-column-order` (core state store: localStorage
+ * `km-state:web-grid:<key>`, restored on reload; or `loadStateCallback` /
+ * `saveStateCallback`), `setColumnOrder` / `getColumnOrderState`,
+ * `isColumnReorderAllowed` off → no drag.
  *
- * Fixture: docs/test/column-order.html — #persist (gridName 'co-test', persist
- * order, reorder allowed) and #locked (reorder not allowed); columns
- * id / name / city / qty.
+ * Fixture: docs/test/column-order.html — #persist (storage-key 'co-test',
+ * persist order, reorder allowed), #late (key set after the columns), #cb
+ * (callbacks, in-memory sink), #nokey (no key) and #locked (reorder not
+ * allowed); columns id / name / city / qty.
  */
 
 const PAGE = '/test/column-order.html'
-const KEY = 'wg-co-test-state'
+const KEY = 'km-state:web-grid:co-test'
 
 async function order(page: Page, id: string): Promise<string[]> {
 	return gridLocator(page, id)
@@ -36,6 +38,8 @@ async function dragHeader(page: Page, id: string, field: string, target: string)
 async function load(page: Page) {
 	await waitForRows(page, 'persist')
 	await waitForRows(page, 'late')
+	await waitForRows(page, 'cb')
+	await waitForRows(page, 'nokey')
 	await waitForRows(page, 'locked')
 	await clearEvents(page, 'column-order')
 }
@@ -57,7 +61,7 @@ test('dragging a header reorders, fires column-reorder, and persists to localSto
 	expect(stored.columnOrder.map((c: any) => c.field)).toEqual(['id', 'qty', 'name', 'city'])
 })
 
-test('the persisted order is restored after a reload (columns set before gridName)', async ({ page }) => {
+test('the persisted order is restored after a reload (columns set before storageKey)', async ({ page }) => {
 	await dragHeader(page, 'late', 'city', 'id')
 	const after = await order(page, 'late')
 	expect(after[0]).toBe('city')
@@ -66,7 +70,7 @@ test('the persisted order is restored after a reload (columns set before gridNam
 	expect(await order(page, 'late')).toEqual(after)
 })
 
-test('the persisted order is restored when gridName is set before the columns', async ({ page }) => {
+test('the persisted order is restored when storage-key is set before the columns', async ({ page }) => {
 	await dragHeader(page, 'persist', 'city', 'id')
 	const after = await order(page, 'persist')
 	expect(after[0]).toBe('city')
@@ -94,14 +98,43 @@ test('setColumnOrder is persisted too (survives a reload)', async ({ page }) => 
 })
 
 test('a stored entry for a removed column is dropped on load', async ({ page }) => {
-	await page.evaluate(() => localStorage.setItem('wg-co-late-state', JSON.stringify({
+	await page.evaluate(() => localStorage.setItem('km-state:web-grid:co-late', JSON.stringify({
 		columnOrder: [{ field: 'gone', order: 0 }, { field: 'qty', order: 1 }, { field: 'id', order: 2 }, { field: 'name', order: 3 }, { field: 'city', order: 4 }]
 	})))
 	await page.reload()
 	await load(page)
 	expect(await order(page, 'late')).toEqual(['qty', 'id', 'name', 'city'])
-	const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('wg-co-late-state') || 'null'))
+	const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('km-state:web-grid:co-late') || 'null'))
 	expect(stored.columnOrder.map((c: any) => c.field)).not.toContain('gone')
+})
+
+test('no storage-key: persist-column-order stores nothing', async ({ page }) => {
+	await dragHeader(page, 'nokey', 'qty', 'name')
+	await expect.poll(() => order(page, 'nokey')).toEqual(['id', 'qty', 'name', 'city'])
+	await page.waitForTimeout(100)
+	expect(await page.evaluate(() => Object.keys(localStorage))).toEqual([])
+})
+
+test('loadStateCallback gets { key } (+ context) and its state orders the columns', async ({ page }) => {
+	await expect.poll(() => order(page, 'cb')).toEqual(['city', 'id', 'name', 'qty'])
+	expect(await page.evaluate(() => (window as any).__loadCalls[0])).toEqual({ key: 'co-cb', hasContext: true })
+})
+
+test('saveStateCallback gets { key, state } = the WHOLE state; localStorage untouched; a reload restores it', async ({ page }) => {
+	await expect.poll(() => order(page, 'cb')).toEqual(['city', 'id', 'name', 'qty'])
+	await dragHeader(page, 'cb', 'qty', 'city')
+	await expect.poll(() => order(page, 'cb')).toEqual(['qty', 'city', 'id', 'name'])
+	const last = await page.evaluate(() => (window as any).__saveCalls.at(-1))
+	expect(last.key).toBe('co-cb')
+	expect(last.state.note).toBe('kept')
+	expect(last.state.columnOrder.map((c: any) => c.field)).toEqual(['qty', 'city', 'id', 'name'])
+	expect(await page.evaluate(() => Object.keys(localStorage))).toEqual([])
+
+	// the page's store survives the reload (seeded before the fixture script runs)
+	await page.addInitScript((seed) => { (window as any).__seed = seed }, last.state)
+	await page.reload()
+	await load(page)
+	await expect.poll(() => order(page, 'cb')).toEqual(['qty', 'city', 'id', 'name'])
 })
 
 test('isColumnReorderAllowed off: a header drag does not reorder (no event)', async ({ page }) => {

@@ -264,7 +264,7 @@ const columns: Column<Employee>[] = [
 - **Row Toolbar** — Floating, inline, or cell-specific action buttons
 - **Context Menu** — Right-click menu for cells and column headers (with predefined actions)
 - **Keyboard Shortcuts** — Per-row and per-range custom shortcuts with help overlay
-- **Column Reordering** — Drag-to-reorder with optional localStorage persistence
+- **Column Reordering** — Drag-to-reorder with optional persistence (`storage-key`)
 - **Column Resizing** — Drag column borders with min/max constraints and persistence
 - **Frozen Columns** — Stick columns to the left during horizontal scroll
 - **Fill Handle** — Excel-like autofill by dragging a cell's corner
@@ -408,10 +408,12 @@ This architecture separates mode detection (the adapter decides *what* action a 
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `gridName` | `string \| null` | `null` | Unique name for localStorage persistence |
-| `shouldPersistColumnWidths` | `boolean` | `false` | Persist column widths to localStorage (requires `gridName`) |
+| `storageKey` (`storage-key`) | `string \| null` | `null` | Key of the persisted column state (core state store, SPEC §12.17); unset = off. Default store: localStorage `km-state:web-grid:<key>` |
+| `shouldPersistColumnWidths` (`persist-column-widths`) | `boolean` | `false` | Persist the column widths the user resized to (needs `storageKey`) |
 | `isColumnReorderAllowed` | `boolean` | `false` | Enable drag-to-reorder columns |
-| `shouldPersistColumnOrder` | `boolean` | `false` | Persist column order to localStorage (requires `gridName`) |
+| `shouldPersistColumnOrder` (`persist-column-order`) | `boolean` | `false` | Persist the column order the user dragged to (needs `storageKey`) |
+| `loadStateCallback` | `LoadStateCallback<GridPersistenceState>` | — | `(ctx) => GridPersistenceState \| null` (may be async), `ctx`: `{ key }` + context — the page keeps the state |
+| `saveStateCallback` | `SaveStateCallback<GridPersistenceState>` | — | `ctx`: `{ key, state }` + context, `state` = the WHOLE `{ columnWidths?, columnOrder? }`. Set both callbacks; either one alone switches localStorage off |
 
 ### Fill Handle
 

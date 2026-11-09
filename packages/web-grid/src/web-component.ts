@@ -26,6 +26,7 @@ import type {
 	RowLockingOptions,
 	ColumnWidthState,
 	ColumnOrderState,
+	GridPersistenceState,
 	PasteMode,
 	FillDirection,
 	CreateRowCallback,
@@ -269,7 +270,10 @@ import {
 	toFunction,
 	toCssLength,
 	createCustomStyles,
+	createStateStore,
 	type CustomStylesHandle,
+	type LoadStateCallback,
+	type SaveStateCallback,
 	type InputDef,
 	type EventDef,
 	type RenderLoaderCallback,
@@ -400,6 +404,17 @@ export interface GridElementConfig<T = unknown> {
 	columnMinWidth: string | number | undefined
 	isColumnReorderAllowed: boolean
 	sortMode: SortMode
+	// Persisted UI state (core SPEC §12.17)
+	/** Key of the persisted column state; unset / empty = off. Default store: `localStorage['km-state:web-grid:<key>']`. */
+	storageKey: string | null
+	/** Persist the user's column widths (needs `storageKey`). */
+	shouldPersistColumnWidths: boolean
+	/** Persist the user's column order (needs `storageKey`). */
+	shouldPersistColumnOrder: boolean
+	/** The persisted state for `ctx.key` (`{ columnWidths?, columnOrder? }`) or `null`; may be async. Set both callbacks; either one alone switches localStorage off. */
+	loadStateCallback: LoadStateCallback<GridPersistenceState> | null
+	/** Store `ctx.state` — the WHOLE `GridPersistenceState` — for `ctx.key`; may be async. Set both callbacks; either one alone switches localStorage off. */
+	saveStateCallback: SaveStateCallback<GridPersistenceState> | null
 	// Summary
 	/** Summary position(s), `|`-separated like `paginationPosition`; `null` = no summary. */
 	summaryPosition: string | null
@@ -466,8 +481,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	// element behaves identically. `on: 'update'` → each change is bridged into
 	// `this.engine` (see `update()`), whose setter re-renders. Structured config
 	// (columns/items/callbacks), self-mutated UI state (currentPage, sort,
-	// filters, focusedRowIndex, totalItems, expandedPaths, hasMoreItems) and the
-	// two persist flags (side-effect setters) deliberately stay property-only.
+	// filters, focusedRowIndex, totalItems, expandedPaths, hasMoreItems)
+	// deliberately stay property-only.
 	// `as const` keeps the configKey literals: they type GridResponsiveConfig.
 	static inputs = [
 		// Filtering & pagination
@@ -530,6 +545,13 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		{ configKey: 'columnMinWidth', attribute: 'column-min-width', converter: toCssLength(), on: 'update', type: 'string | number | undefined' },
 		{ configKey: 'isColumnReorderAllowed', attribute: 'allow-column-reorder', converter: toBool('default-false'), default: false, on: 'update' },
 		{ configKey: 'sortMode', attribute: 'sort-mode', converter: toEnum(SORT_MODES, { default: 'none' }), default: 'none', on: 'update' },
+		// Persisted UI state (core createStateStore(), SPEC §12.17 / rulebook C-CA-17): column widths / order
+		// the user arranged, kept under `storage-key` (localStorage `km-state:web-grid:<key>`, or the callbacks).
+		{ configKey: 'storageKey', attribute: 'storage-key', converter: toText({ isNullable: true }), default: null, on: 'update', type: 'string | null', description: 'Key of the persisted column state (widths / order the user arranged; core SPEC §12.17). Unset / empty = off; set = localStorage `km-state:web-grid:<key>`, or `loadStateCallback` / `saveStateCallback`.' },
+		{ configKey: 'shouldPersistColumnWidths', attribute: 'persist-column-widths', converter: toBool('default-false'), default: false, on: 'update', description: 'Persist the column widths the user resized to (needs `storage-key`).' },
+		{ configKey: 'shouldPersistColumnOrder', attribute: 'persist-column-order', converter: toBool('default-false'), default: false, on: 'update', description: 'Persist the column order the user dragged to (needs `storage-key`).' },
+		{ configKey: 'loadStateCallback', converter: toFunction<LoadStateCallback<GridPersistenceState>>(), on: 'update', type: 'LoadStateCallback<GridPersistenceState> | null', description: 'Persisted column state source: `(ctx) => GridPersistenceState | null | Promise<…>`, `ctx`: `{ key }` + context. Set both callbacks; either one alone switches localStorage off.' },
+		{ configKey: 'saveStateCallback', converter: toFunction<SaveStateCallback<GridPersistenceState>>(), on: 'none', type: 'SaveStateCallback<GridPersistenceState> | null', description: 'Persisted column state sink: `ctx`: `{ key, state }` + context, `state` = the WHOLE `GridPersistenceState` (`{ columnWidths?, columnOrder? }`). Set both callbacks; either one alone switches localStorage off.' },
 		// Summary
 		{ configKey: 'summaryPosition', attribute: 'summary-position', converter: toPipeList(AREA_POSITIONS, { isNullable: true }), default: null, on: 'update', type: 'string | null' },
 		{ configKey: 'isSummaryInline', attribute: 'summary-inline', converter: toBool('default-true'), default: true, on: 'update' },
@@ -677,6 +699,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		super()
 		this.shadow = this.attachShadow({ mode: 'open' })
 		this.engine = new GridEngine<T>()
+		this.engine.setStateStore(this.#stateStore)
 		// Every ctx / detail carries `controller` + `element`; the engine's
 		// notifications become events (emit → `on*` twin + DOM event).
 		this.engine.attachHost(this, () => this.controller, (name, detail) => {
@@ -745,6 +768,17 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		}
 	}
 
+	/**
+	 * Persisted UI state (core SPEC §12.17, rulebook C-CA-17): the column widths / order the user
+	 * arranged, under `storage-key`. The engine applies / collects the state; this store does the I/O.
+	 */
+	readonly #stateStore = createStateStore<GridPersistenceState>(this, {
+		getKey: () => this.config.storageKey as string | null,
+		getLoadCallback: () => this.config.loadStateCallback as LoadStateCallback<GridPersistenceState> | null,
+		getSaveCallback: () => this.config.saveStateCallback as SaveStateCallback<GridPersistenceState> | null,
+		toContext: (data) => this.withContext(data),
+	})
+
 	/** First build done — before it, engine setters don't render (`defer` holds the first render). */
 	#isBuilt = false
 
@@ -765,6 +799,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		this.#applyConfig(this.config as Record<string, unknown>)
 		this.engine.isDisabled = this.isEffectivelyDisabled
 		this.#applyCustomStyles()
+		// Persisted column widths / order (async; waits for `columns` when there are none yet)
+		this.engine.loadPersistedState()
 		this.#isBuilt = true
 	}
 
@@ -779,15 +815,15 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	protected update(partial: Record<string, unknown>): void {
 		// Later attribute/property changes: apply just the changed inputs.
 		this.#applyConfig(partial)
+		// A new key / persist flag / source: load its persisted column state
+		if ('storageKey' in partial || 'shouldPersistColumnWidths' in partial || 'shouldPersistColumnOrder' in partial || 'loadStateCallback' in partial) {
+			this.engine.loadPersistedState()
+		}
 		if ('customStyles' in partial || 'getCustomStylesCallback' in partial) this.#customStyles?.refresh()
 	}
 
 	protected connect(): void {
 		initLogger.debug('connect — grid activated')
-		// Load persisted column widths before initial render
-		if (this.engine.gridName && this.engine.shouldPersistColumnWidths) {
-			this.engine.loadPersistedWidths()
-		}
 		// Initialize action pipeline adapter for 'always' editTrigger mode
 		this.pipelineAdapter = createActionPipelineAdapter(this)
 		this.render()
@@ -1027,43 +1063,6 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	get rowLocking(): RowLockingOptions<T> | undefined { return this.engine.rowLocking }
 	set rowLocking(value: RowLockingOptions<T> | undefined) { this.engine.rowLocking = value }
 
-	// Column resize & persistence
-	get gridName(): string | null { return this.engine.gridName }
-	set gridName(value: string | null) {
-		this.engine.gridName = value
-		// Load persisted widths if both gridName and persistColumnWidths are set
-		this.tryLoadPersistedWidths()
-	}
-
-	get shouldPersistColumnWidths(): boolean { return this.engine.shouldPersistColumnWidths }
-	set shouldPersistColumnWidths(value: boolean) {
-		this.engine.shouldPersistColumnWidths = value
-		this.tryLoadPersistedState()
-	}
-
-	get shouldPersistColumnOrder(): boolean { return this.engine.shouldPersistColumnOrder }
-	set shouldPersistColumnOrder(value: boolean) {
-		this.engine.shouldPersistColumnOrder = value
-		this.tryLoadPersistedState()
-	}
-
-	/**
-	 * Try to load persisted state (widths/order) if conditions are met
-	 */
-	private tryLoadPersistedState(): void {
-		if (this.engine.gridName && (this.engine.shouldPersistColumnWidths || this.engine.shouldPersistColumnOrder)) {
-			this.engine.loadPersistedState()
-			// Re-render if we're connected to DOM
-			if (this.isConnected) {
-				this.render()
-			}
-		}
-	}
-
-	// Keep old method for backwards compatibility
-	private tryLoadPersistedWidths(): void {
-		this.tryLoadPersistedState()
-	}
 
 	// Fill handle: `false` cancels the fill (async OK)
 	/**

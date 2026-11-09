@@ -10,6 +10,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Persisted UI state the core way (SPEC §12.17, rulebook C-CA-17)
+
+#### Changed — BREAKING
+
+- **`gridName` is gone → `storage-key` / `storageKey`** (an input row, nullable text; unset = off). It
+  only ever scoped persistence.
+- **`shouldPersistColumnWidths` / `shouldPersistColumnOrder` are input rows** — attributes
+  `persist-column-widths` / `persist-column-order` (`toBool('default-false')`), reactive like every
+  other input (they were plain properties).
+- **localStorage key `wg-<gridName>-state` → `km-state:web-grid:<storage-key>`** (core
+  `createStateStore()`): saved widths / orders are not carried over.
+- **New `loadStateCallback` / `saveStateCallback`** (core `LoadStateCallback` /
+  `SaveStateCallback<GridPersistenceState>`): the page keeps the state (per user, on the server);
+  `saveStateCallback` gets the WHOLE `{ columnWidths?, columnOrder? }`. Set both callbacks; either
+  one alone switches localStorage off.
+- Loading is asynchronous (the store may be a server callback): saved widths / order apply on the
+  render after the first one. Orphan pruning and the "wait for `columns`" load are unchanged.
+- Internal: the engine's own localStorage code and `loadPersistedWidths()` / `savePersistedWidths()`
+  are gone; the element makes the store and injects it (`engine.setStateStore()`).
+
 ### Core 1.0.0-rc20 / rc21 alignment
 
 #### Changed — BREAKING

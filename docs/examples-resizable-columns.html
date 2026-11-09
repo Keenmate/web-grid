@@ -32,8 +32,8 @@
         </div>
 
         <div class="card">
-            <h2>With Persistence (localStorage)</h2>
-            <p>Column widths are saved to localStorage and restored on page reload. Try resizing a column, then refresh the page.</p>
+            <h2>With Persistence (storage-key)</h2>
+            <p>Column widths (and order) are saved under <code>storage-key</code> and restored on page reload — by default in localStorage <code>km-state:web-grid:resize-demo-grid</code>; <code>loadStateCallback</code> / <code>saveStateCallback</code> keep them on your server instead. Try resizing a column, then refresh the page.</p>
 
             <div class="controls">
                 <label>
@@ -42,7 +42,7 @@
                 <button id="clearStorage" class="btn">Clear Saved Widths</button>
             </div>
 
-            <web-grid id="grid2" style="max-width: 100%; max-height: 300px;"></web-grid>
+            <web-grid id="grid2" storage-key="resize-demo-grid" persist-column-widths persist-column-order allow-column-reorder style="max-width: 100%; max-height: 300px;"></web-grid>
 
             <div id="resizeLog" style="margin-top: 1rem; font-family: monospace; font-size: 0.85rem; color: #666;">
                 Resize a column to see the callback data...
@@ -51,8 +51,9 @@
             <div class="note" style="margin-top: 1rem;">
                 <div class="note-title">Configuration</div>
                 <ul>
-                    <li><code>gridName: "my-grid"</code> - Unique name for localStorage key</li>
-                    <li><code>shouldPersistColumnWidths: true</code> - Enable automatic persistence</li>
+                    <li><code>storage-key="my-grid"</code> / <code>storageKey</code> - Key of the persisted state (unset = off)</li>
+                    <li><code>persist-column-widths</code> / <code>shouldPersistColumnWidths</code> - Enable automatic width persistence</li>
+                    <li><code>loadStateCallback</code> / <code>saveStateCallback</code> - Keep the state yourself (<code>{ key }</code> / <code>{ key, state }</code>, the whole state); set both — either one alone switches localStorage off</li>
                     <li><code>column-resize</code> event / <code>onColumnResize</code> - Fired after resize with all column widths</li>
                 </ul>
             </div>
@@ -178,11 +179,11 @@
                     <h3>Grid-Level Properties</h3>
                     <table class="props-table">
                         <tr>
-                            <td><code>gridName</code></td>
-                            <td>Unique identifier for localStorage key</td>
+                            <td><code>storageKey</code> (<code>storage-key</code>)</td>
+                            <td>Key of the persisted column state (localStorage <code>km-state:web-grid:&lt;key&gt;</code>, or the state callbacks)</td>
                         </tr>
                         <tr>
-                            <td><code>shouldPersistColumnWidths</code></td>
+                            <td><code>shouldPersistColumnWidths</code> (<code>persist-column-widths</code>)</td>
                             <td>Enable automatic width persistence</td>
                         </tr>
                         <tr>
@@ -190,7 +191,7 @@
                             <td>Enable drag-to-reorder columns</td>
                         </tr>
                         <tr>
-                            <td><code>shouldPersistColumnOrder</code></td>
+                            <td><code>shouldPersistColumnOrder</code> (<code>persist-column-order</code>)</td>
                             <td>Enable automatic order persistence</td>
                         </tr>
                         <tr>
@@ -334,10 +335,6 @@
         grid2.isRowNumbersShown = true
         grid2.isStriped = true
         grid2.isHoverable = true
-        grid2.gridName = 'resize-demo-grid'
-        grid2.shouldPersistColumnWidths = true
-        grid2.isColumnReorderAllowed = true
-        grid2.shouldPersistColumnOrder = true
 
         // Callback to show resize data
         grid2.onColumnResize = (detail) => {
@@ -353,7 +350,7 @@
 
         // Clear storage button
         document.getElementById('clearStorage').addEventListener('click', () => {
-            localStorage.removeItem('wg-resize-demo-grid-state')
+            localStorage.removeItem('km-state:web-grid:resize-demo-grid')
             alert('Saved widths cleared! Refresh to see default widths.')
         })
 
@@ -457,7 +454,7 @@
         gridReorder.frozenColumnCount = 2  // First 2 columns are frozen
         gridReorder.isStriped = true
         gridReorder.isHoverable = true
-        gridReorder.gridName = 'reorder-demo-grid'
+        gridReorder.storageKey = 'reorder-demo-grid'
         gridReorder.isColumnReorderAllowed = true
         gridReorder.shouldPersistColumnOrder = true
 
@@ -475,7 +472,7 @@
 
         // Clear storage button
         document.getElementById('clearOrderStorage').addEventListener('click', () => {
-            localStorage.removeItem('wg-reorder-demo-grid-state')
+            localStorage.removeItem('km-state:web-grid:reorder-demo-grid')
             alert('Saved order cleared! Refresh to see default order.')
         })
 

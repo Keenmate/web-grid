@@ -54,7 +54,7 @@ RENDERING:
 PURPOSE:
 - Drag the edge of a column header to resize the column width
 - Visual feedback during resize
-- Persists to localStorage if gridName is set
+- Persists (core state store) if storage-key + persist-column-widths are set
 
 FILES:
 - modules/resize/index.ts - main logic
@@ -101,7 +101,7 @@ COLUMN DEFINITION OPTIONS:
 - maxWidth: string (e.g., "300px") - maximum width (optional)
 
 PERSISTENCE:
-- If shouldPersistColumnWidths=true and gridName is set
+- If shouldPersistColumnWidths=true and storageKey is set
 - Saves to localStorage via savePersistedWidths()
 
 CSS:

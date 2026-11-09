@@ -75,6 +75,7 @@ type TreeIndex = {
 	rootPaths: string[]
 }
 
+import type { StateStore } from '@keenmate/web-components-core'
 // Date formatting utilities for auto-formatting date columns
 import { parseFormat, formatDate } from './modules/datepicker/index.js'
 import { bindOptionContext } from './modules/dropdown/options.js'
@@ -174,7 +175,10 @@ export class GridEngine<T = unknown> {
 	protected _externalLocks: Map<unknown, RowLock> = new Map()
 
 	// Column resize & persistence
-	protected _gridName: string | null = null
+	/** Persisted UI state (core createStateStore(), SPEC §12.17) — injected by the element. */
+	protected _stateStore: StateStore<GridPersistenceState> | null = null
+	/** Bumped per load: a slower earlier load never applies over a newer one. */
+	protected _persistLoadToken = 0
 	protected _shouldPersistColumnWidths: boolean = false
 	protected _columnWidths: Map<string, string> = new Map()  // Runtime width overrides
 
@@ -1019,11 +1023,6 @@ export class GridEngine<T = unknown> {
 	}
 
 	// Column resize & persistence
-	get gridName(): string | null { return this._gridName }
-	set gridName(value: string | null) {
-		this._gridName = value
-	}
-
 	get shouldPersistColumnWidths(): boolean { return this._shouldPersistColumnWidths }
 	set shouldPersistColumnWidths(value: boolean) {
 		this._shouldPersistColumnWidths = value
@@ -3966,93 +3965,92 @@ export class GridEngine<T = unknown> {
 	}
 
 	/**
-	 * Load column widths from localStorage
+	 * The persisted-state handle (core `createStateStore()`): `storage-key` +
+	 * `loadStateCallback` / `saveStateCallback`, default
+	 * `localStorage['km-state:web-grid:<storage-key>']`. Set by the element.
 	 */
-	loadPersistedWidths(): void {
-		this.loadPersistedState()
+	setStateStore(store: StateStore<GridPersistenceState> | null): void {
+		this._stateStore = store
+	}
+
+	/** Persisting anything at all (a store + at least one persist flag). */
+	protected get isPersistenceOn(): boolean {
+		return !!this._stateStore && (this._shouldPersistColumnWidths || this._shouldPersistColumnOrder)
 	}
 
 	/**
-	 * Save column widths to localStorage
-	 */
-	savePersistedWidths(): void {
-		this.savePersistedState()
-	}
-
-	/**
-	 * Load persisted state (widths, order) from localStorage
-	 * Automatically cleans up orphaned entries for columns that no longer exist
+	 * Load the persisted state (widths, order) and apply it. Asynchronous (the
+	 * store may be a server callback): the grid renders again once it arrives.
+	 * Entries for columns that no longer exist are dropped and the cleaned
+	 * state is saved back. Without columns yet the load waits for `columns`
+	 * (every entry would look orphaned and be pruned).
 	 */
 	loadPersistedState(): void {
-		if (!this._gridName || typeof localStorage === 'undefined') return
-		// No columns yet (e.g. gridName / persist flags set before `columns`): every stored
-		// entry would look orphaned and be pruned. Defer until the columns arrive.
+		const store = this._stateStore
+		if (!store || !this.isPersistenceOn) return
 		if (this._columns.length === 0) {
 			this._isPersistedStateLoadPending = true
 			return
 		}
 		this._isPersistedStateLoadPending = false
+		const token = ++this._persistLoadToken
+		void store.load().then((state) => {
+			if (token !== this._persistLoadToken || !state) return
+			if (this._columns.length === 0) {
+				this._isPersistedStateLoadPending = true
+				return
+			}
+			this.applyPersistedState(state)
+		})
+	}
 
-		try {
-			const key = `wg-${this._gridName}-state`
-			const stored = localStorage.getItem(key)
-			if (!stored) return
+	/** Apply a loaded state; prune (and re-save) entries of columns that no longer exist. */
+	protected applyPersistedState(state: GridPersistenceState): void {
+		const validFields = new Set(this._columns.map(c => String(c.field)))
+		const cleaned: GridPersistenceState = {}
+		let needsCleanup = false
 
-			const state: GridPersistenceState = JSON.parse(stored)
-
-			// Get set of valid field names from current columns
-			const validFields = new Set(this._columns.map(c => String(c.field)))
-			let needsCleanup = false
-
-			if (state.columnWidths) {
-				this._columnWidths.clear()
-				for (const cw of state.columnWidths) {
-					if (validFields.has(cw.field)) {
-						this._columnWidths.set(cw.field, cw.width)
-					} else {
-						needsCleanup = true
-					}
+		if (Array.isArray(state.columnWidths)) {
+			this._columnWidths.clear()
+			cleaned.columnWidths = []
+			for (const cw of state.columnWidths) {
+				if (validFields.has(cw.field)) {
+					this._columnWidths.set(cw.field, cw.width)
+					cleaned.columnWidths.push(cw)
+				} else {
+					needsCleanup = true
 				}
 			}
-			if (state.columnOrder) {
-				this._columnOrder.clear()
-				for (const co of state.columnOrder) {
-					if (validFields.has(co.field)) {
-						this._columnOrder.set(co.field, co.order)
-					} else {
-						needsCleanup = true
-					}
-				}
-			}
-
-			// Re-save cleaned state if orphaned entries were removed
-			if (needsCleanup) {
-				this.savePersistedState()
-			}
-		} catch (e) {
-			dataLogger.warn('Failed to load persisted state', e)
 		}
+		if (Array.isArray(state.columnOrder)) {
+			this._columnOrder.clear()
+			cleaned.columnOrder = []
+			for (const co of state.columnOrder) {
+				if (validFields.has(co.field)) {
+					this._columnOrder.set(co.field, co.order)
+					cleaned.columnOrder.push(co)
+				} else {
+					needsCleanup = true
+				}
+			}
+		}
+
+		if (needsCleanup) void this._stateStore?.save(cleaned)
+		this.requestUpdate()
 	}
 
 	/**
-	 * Save persisted state (widths, order) to localStorage
+	 * Save the persisted state: the enabled parts (widths and / or order) are
+	 * merged into the whole state, which goes to the store (no-op without a
+	 * `storage-key`).
 	 */
 	savePersistedState(): void {
-		if (!this._gridName || typeof localStorage === 'undefined') return
-
-		try {
-			const key = `wg-${this._gridName}-state`
-			const state: GridPersistenceState = {}
-			if (this._shouldPersistColumnWidths) {
-				state.columnWidths = this.getColumnWidthsState()
-			}
-			if (this._shouldPersistColumnOrder) {
-				state.columnOrder = this.getColumnOrderState()
-			}
-			localStorage.setItem(key, JSON.stringify(state))
-		} catch (e) {
-			dataLogger.warn('Failed to save persisted state', e)
-		}
+		const store = this._stateStore
+		if (!store || !this.isPersistenceOn) return
+		const state: GridPersistenceState = {}
+		if (this._shouldPersistColumnWidths) state.columnWidths = this.getColumnWidthsState()
+		if (this._shouldPersistColumnOrder) state.columnOrder = this.getColumnOrderState()
+		void store.save(state)
 	}
 
 	// ==========================================================================

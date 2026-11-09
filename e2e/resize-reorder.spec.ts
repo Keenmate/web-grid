@@ -4,7 +4,7 @@ import { test, expect, Page, Locator, gridLocator, header, dispatchContextMenu }
  * E2E coverage for column resize + drag-to-reorder
  * (docs/test/resize-reorder.html). The page hosts six grids:
  *   #grid           — basic resize + multi-sort.
- *   #grid2          — resize + persistence (gridName + shouldPersistColumnWidths)
+ *   #grid2          — resize + persistence (storageKey + shouldPersistColumnWidths)
  *                     and onColumnResize logging to [data-testid="resize-log"].
  *   #grid3          — Status column has `isResizable: false`; its handle gets
  *                     `wg__resize-handle--disabled`.

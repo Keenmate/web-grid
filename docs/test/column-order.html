@@ -8,15 +8,20 @@
 </head>
 <body>
 	<h1>column-order fixture</h1>
-	<p>Targeted by <code>e2e/column-order.spec.ts</code>. <code>#persist</code>: gridName 'co-test',
-	shouldPersistColumnOrder, isColumnReorderAllowed. <code>#late</code>: the same with columns assigned before <code>gridName</code> (NOTES.md #29 — property order matters).
+	<p>Targeted by <code>e2e/column-order.spec.ts</code>. <code>#persist</code>: <code>storage-key="co-test"</code>,
+	<code>persist-column-order</code>, reorder allowed (key set before the columns). <code>#late</code>: the same with columns assigned before <code>storageKey</code> (NOTES.md #29 — property order matters).
+	<code>#cb</code>: <code>loadStateCallback</code> / <code>saveStateCallback</code> (in-memory sink). <code>#nokey</code>: <code>persist-column-order</code> without a key.
 	<code>#locked</code>: reorder not allowed (default).
 	Events in <code>column-order-log</code>.</p>
 
 	<h2>#persist</h2>
-	<web-grid id="persist" allow-column-reorder style="max-width: 600px;"></web-grid>
-	<h2>#late — same, but columns are set BEFORE gridName (gridName 'co-late')</h2>
+	<web-grid id="persist" storage-key="co-test" persist-column-order allow-column-reorder style="max-width: 600px;"></web-grid>
+	<h2>#late — same, but columns are set BEFORE storageKey (storageKey 'co-late')</h2>
 	<web-grid id="late" allow-column-reorder style="max-width: 600px;"></web-grid>
+	<h2>#cb — loadStateCallback / saveStateCallback (storage-key="co-cb")</h2>
+	<web-grid id="cb" storage-key="co-cb" persist-column-order allow-column-reorder style="max-width: 600px;"></web-grid>
+	<h2>#nokey — persist-column-order without storage-key</h2>
+	<web-grid id="nokey" persist-column-order allow-column-reorder style="max-width: 600px;"></web-grid>
 	<h2>#locked</h2>
 	<web-grid id="locked" style="max-width: 600px;"></web-grid>
 	<pre data-testid="column-order-log"></pre>
@@ -36,8 +41,6 @@
 			{ id: 2, name: 'Beta', city: 'Brno', qty: 2 }
 		]
 		const persist = document.getElementById('persist')
-		persist.gridName = 'co-test'
-		persist.shouldPersistColumnOrder = true
 		persist.columns = columns()
 		persist.items = items()
 		installEventLog(persist, 'column-order', ['column-reorder'])
@@ -45,9 +48,23 @@
 		const late = document.getElementById('late')
 		late.columns = columns()
 		late.items = items()
-		late.gridName = 'co-late'
+		late.storageKey = 'co-late'
 		late.shouldPersistColumnOrder = true
 		installEventLog(late, 'column-order', ['column-reorder'])
+
+		// #cb — the page keeps the state (in-memory sink, pre-seeded: city first + a foreign key)
+		window.__loadCalls = []
+		window.__saveCalls = []
+		window.__sink = window.__seed ?? { columnOrder: [{ field: 'city', order: 0 }, { field: 'id', order: 1 }, { field: 'name', order: 2 }, { field: 'qty', order: 3 }], note: 'kept' }
+		const cb = document.getElementById('cb')
+		cb.loadStateCallback = (ctx) => { window.__loadCalls.push({ key: ctx.key, hasContext: ctx.element === cb && !!ctx.controller }); return window.__sink }
+		cb.saveStateCallback = (ctx) => { window.__saveCalls.push({ key: ctx.key, state: ctx.state }); window.__sink = ctx.state }
+		cb.columns = columns()
+		cb.items = items()
+
+		const nokey = document.getElementById('nokey')
+		nokey.columns = columns()
+		nokey.items = items()
 
 		const locked = document.getElementById('locked')
 		locked.columns = columns()

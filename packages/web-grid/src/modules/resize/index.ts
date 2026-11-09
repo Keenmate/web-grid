@@ -173,10 +173,8 @@ function handleDocumentMouseUp(e: MouseEvent): void {
 		allWidths: ctx.engine.getColumnWidthsState()
 	})
 
-	// Persist to localStorage if enabled
-	if (ctx.engine.shouldPersistColumnWidths && ctx.engine.gridName) {
-		ctx.engine.savePersistedWidths()
-	}
+	// Persisted UI state (storage-key + persist-column-widths; core state store)
+	if (ctx.engine.shouldPersistColumnWidths) ctx.engine.savePersistedState()
 
 	// Clean up
 	document.removeEventListener('mousemove', handleDocumentMouseMove)

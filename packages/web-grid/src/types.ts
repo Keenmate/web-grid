@@ -2,6 +2,7 @@
 // QuickGrid Types - Ported from QuickGrid.svelte lines 17-245
 // =============================================================================
 
+import type { LoadStateCallback, SaveStateCallback } from '@keenmate/web-components-core'
 import type {
 	GridContext,
 	HeaderMenuContext,
@@ -442,12 +443,14 @@ export type QuickGridProps<T> = {
 	// Validation tooltip - return HTML string for rich error display (column-level overrides this)
 	getValidationTooltipCallback?: (ctx: ValidationTooltipContext<T>) => string | null
 	// Column resize & persistence
-	gridName?: string                                    // Unique name for localStorage persistence
-	shouldPersistColumnWidths?: boolean                  // Persist column widths to localStorage (requires gridName)
+	storageKey?: string | null                           // Key of the persisted column state (core state store; unset = off)
+	shouldPersistColumnWidths?: boolean                  // Persist column widths (requires storageKey)
+	loadStateCallback?: LoadStateCallback<GridPersistenceState> | null  // Persisted state source (set both callbacks; either alone switches localStorage off)
+	saveStateCallback?: SaveStateCallback<GridPersistenceState> | null  // Persisted state sink, gets the WHOLE state
 
 	// Column reorder & persistence
 	isColumnReorderAllowed?: boolean                     // Enable drag-to-reorder columns (default: false)
-	shouldPersistColumnOrder?: boolean                   // Persist column order to localStorage (requires gridName)
+	shouldPersistColumnOrder?: boolean                   // Persist column order (requires storageKey)
 
 	// Fill handle (Excel-like autofill): `false` cancels the fill (async OK)
 	beforeFillCallback?: (ctx: FillContext<T>) => boolean | void | Promise<boolean | void>
@@ -733,7 +736,8 @@ export type ColumnWidthState = {
 	width: string
 }
 
-// Persisted grid state (stored in localStorage)
+// Persisted grid state (core createStateStore(): localStorage `km-state:web-grid:<storage-key>` or
+// loadStateCallback / saveStateCallback). Entries of columns that no longer exist are dropped on load.
 export type GridPersistenceState = {
 	columnWidths?: ColumnWidthState[]
 	columnOrder?: ColumnOrderState[]
@@ -744,7 +748,7 @@ export type ColumnResizeDetail = {
 	field: string
 	oldWidth: string
 	newWidth: string
-	allWidths: ColumnWidthState[]  // Same format as localStorage - can be sent to server
+	allWidths: ColumnWidthState[]  // Same format as the persisted state - can be sent to server
 }
 
 // Order state for a single column
@@ -758,7 +762,7 @@ export type ColumnReorderDetail = {
 	field: string
 	fromIndex: number
 	toIndex: number
-	allOrder: ColumnOrderState[]  // Same format as localStorage - can be sent to server
+	allOrder: ColumnOrderState[]  // Same format as the persisted state - can be sent to server
 }
 
 // =============================================================================
