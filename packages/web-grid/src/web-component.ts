@@ -105,7 +105,6 @@ import {
 	tryStartEdit,
 	getCursorPositionFromClick,
 	handleTableFocusOut,
-	scrollToRowPosition,
 	handleCellKeyDown,
 	restoreFocusAfterRender,
 	openGoToRowDialog as openGoToRowDialogModule

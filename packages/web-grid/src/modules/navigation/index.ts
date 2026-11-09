@@ -13,8 +13,7 @@ export {
 	moveFocus,
 	tryStartEdit,
 	getCursorPositionFromClick,
-	handleTableFocusOut,
-	scrollToRowPosition
+	handleTableFocusOut
 } from './focus.js'
 
 export { handleCellKeyDown } from './cell-keydown.js'

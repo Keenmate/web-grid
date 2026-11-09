@@ -72,6 +72,12 @@ Target: **2.0.0-rc01** — a major: the callback, event and item API below is br
   (`--wg-resize-handle-offset` defaults to `0px`, was `-6px`); the line stays on the border.
 - 64 property accessors on the element were dead code (core's input accessors replaced them, rc20
   warned about each); removed — reads and writes already went through core.
+- **Virtual scroll: `scrollToRow()` / the go-to-row dialog now honour the block** — they centre the row as
+  documented (and as without virtual scroll); they used to always put it second from the top and ignored a
+  `block` from `beforeScrollCallback`. The keyboard / edit moves that bring an unrendered row into view (`nearest`)
+  measure the row where it really sits — below the sticky header — so it lands flush under the header / at the
+  bottom edge (it used to stop one header height short going up, and could stay one header height below the
+  view going down). A `scroll-padding` on the container is honoured.
 
 #### Changed (visual) — editor panel gap is `--base-dropdown-offset`
 
@@ -86,6 +92,10 @@ Target: **2.0.0-rc01** — a major: the callback, event and item API below is br
 - Tooltip, dropdown, row toolbar and datepicker are placed by core `anchor()`; one core
   `escapeHtml()` replaces the grid's `escapeHtml` / toolbar `escapeAttr` copies.
 - e2e runs in chromium, firefox and webkit (`playwright.config.ts`); platform skips carry the reason.
+- Virtual-scroll index → `scrollTop` math is core's `getScrollTopForBox()` (core rc21, SPEC §12.15) with the
+  sticky header as `insetTop` (`virtualRowScrollTop()` in `modules/scroll/reveal.ts`); still computed before the
+  window renders, then applied. `calculateScrollToRow()` and the unused `scrollToRowPosition()` (PageUp/PageDown
+  helper nothing called) are gone. e2e: the virtual index jump follows the block, below the sticky header.
 
 ### Changed — BREAKING (assigning state is silent)
 

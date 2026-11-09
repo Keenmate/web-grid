@@ -82,6 +82,23 @@ test.describe('scrollToRow — a jump', () => {
 		}, 'virtual')
 		expect(r).toEqual({ sources: ['scroll-to-row'], resolved: false, top: 0 })
 	})
+
+	test('virtual scroll: the index jump follows the block too, below the sticky header', async ({ page }) => {
+		const header = await gridLocator(page, 'virtual').evaluate((el: any) =>
+			(el.shadowRoot.querySelector('thead th') as HTMLElement).getBoundingClientRect().bottom
+			- (el.shadowRoot.querySelector('.wg') as HTMLElement).getBoundingClientRect().top)
+		// default (centre): the row sits in the middle of the area under the header
+		expect(await onGrid(page, (el: any) => el.scrollToRow(40), 'virtual')).toBe(true)
+		let off = (await rowOffset(page, 'virtual', 40))!
+		expect(Math.abs((off.top - header) - off.bottom)).toBeLessThan(6)
+		// 'start': right under the sticky header, not hidden behind it
+		await onGrid(page, async (el: any) => {
+			el.beforeScrollCallback = () => ({ block: 'start' })
+			await el.scrollToRow(20)
+		}, 'virtual')
+		off = (await rowOffset(page, 'virtual', 20))!
+		expect(Math.abs(off.top - header)).toBeLessThan(3)
+	})
 })
 
 test.describe('keyboard moves', () => {

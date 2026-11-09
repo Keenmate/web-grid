@@ -6,12 +6,13 @@
 // the go-to-row dialog. It runs `beforeScrollCallback` (core runBeforeCallbackSync:
 // `false` skips the scroll, a partial `options` replaces the defaults) and then
 // scrolls through core `scrollIntoContainer()` — the one container around the cell
-// or row, never the page (core SPEC §12.15). A virtual-scroll jump scrolls by index
-// itself (`gateScroll()` only); there `false` still skips it.
+// or row, never the page (core SPEC §12.15). A virtual-scroll jump (the row isn't
+// rendered) computes its scrollTop by index — core `getScrollTopForBox()` with the gated
+// `block` — renders that window, then scrolls (`gateScroll()` + `virtualRowScrollTop()`).
 
-import { scrollIntoContainer, findScrollContainer, runBeforeCallbackSync } from '@keenmate/web-components-core'
+import { scrollIntoContainer, findScrollContainer, getScrollTopForBox, runBeforeCallbackSync } from '@keenmate/web-components-core'
 import type { GridHost } from '../grid-context.js'
-import { calculateScrollToRow } from './calculations.js'
+import { calculateVisibleRange } from './calculations.js'
 import { renderVirtualRows } from './element-handlers.js'
 import type { GridBeforeScrollContext, GridScrollOptions, GridScrollSource } from '../../interaction.js'
 
@@ -80,6 +81,22 @@ export function revealElement<T>(
 	return true
 }
 
+/**
+ * Virtual scroll: the `.wg` scrollTop that shows the displayed row `rowIndex` per `block`
+ * (core `getScrollTopForBox`, SPEC §12.15 — the row may not be rendered), or `null` when
+ * nothing has to move. The row's box is in the container's content coordinates (below the
+ * header: rows start at the tbody's top); the sticky header is the top inset.
+ */
+export function virtualRowScrollTop<T>(ctx: GridHost<T>, container: HTMLElement, rowIndex: number, block: ScrollLogicalPosition): number | null {
+	const rowHeight = ctx.engine.virtualScrollItemHeight
+	const tbody = container.querySelector('tbody')
+	const bodyTop = tbody
+		? tbody.getBoundingClientRect().top - container.getBoundingClientRect().top - container.clientTop + container.scrollTop
+		: 0
+	const header = container.querySelector('thead') as HTMLElement | null
+	return getScrollTopForBox(container, { top: bodyTop + rowIndex * rowHeight, height: rowHeight }, { block, insetTop: header?.offsetHeight ?? 0 })
+}
+
 /** The field of the column at `colIndex` (an index into `columns`), or `null`. */
 export function fieldAt<T>(ctx: GridHost<T>, colIndex: number): string | null {
 	const column = ctx.engine.columns[colIndex]
@@ -106,16 +123,18 @@ export function scrollRowIntoView<T>(ctx: GridHost<T>, rowIndex: number, source:
 		return nextFrame()
 	}
 
-	// Virtual scroll: an index jump — only `false` from beforeScrollCallback applies
-	if (!gateScroll(ctx, { rowIndex, field: null }, source, container, JUMP_SCROLL)) return Promise.resolve(false)
-	const { scrollTop, startIndex, endIndex } = calculateScrollToRow({
-		targetRow: rowIndex,
+	// Virtual scroll: an index jump (instant — the window is rendered for it first)
+	const options = gateScroll(ctx, { rowIndex, field: null }, source, container, JUMP_SCROLL)
+	if (!options) return Promise.resolve(false)
+	const scrollTop = virtualRowScrollTop(ctx, container, rowIndex, options.block) ?? container.scrollTop
+	// The window for that scrollTop, stretched to hold the target row
+	const { startIndex, endIndex } = calculateVisibleRange({
+		scrollTop,
+		viewportHeight: container.clientHeight,
 		rowHeight: ctx.engine.virtualScrollItemHeight,
 		buffer: ctx.engine.virtualScrollOverscan,
 		totalItems: ctx.engine.displayItems.length,
-		viewportHeight: container.clientHeight,
-		scrollHeight: container.scrollHeight,
-		clientHeight: container.clientHeight
+		editingRowIndex: rowIndex
 	})
 	// Update range and render ONCE (before scroll)
 	if (ctx.virtualScroll.setRange(startIndex, endIndex)) renderVirtualRows(ctx, container)

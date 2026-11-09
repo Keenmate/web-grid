@@ -9,7 +9,7 @@ import { renderCell } from '../rendering/index.js'
 import { removeDropdown } from '../dropdown/rendering.js'
 import { removeFillHandle } from '../fill-handle/index.js'
 import { isInGridMenu } from '../contextmenu/index.js'
-import { revealElement, gateScroll, fieldAt, KEYBOARD_SCROLL } from '../scroll/reveal.js'
+import { revealElement, gateScroll, fieldAt, virtualRowScrollTop, KEYBOARD_SCROLL } from '../scroll/reveal.js'
 
 /**
  * Focus the appropriate element within a cell.
@@ -126,57 +126,21 @@ export function ensureCellNotBehindFrozen<T>(
 
 /**
  * Ensure a row is visible with minimal scrolling (only if outside viewport)
- * Used for arrow key navigation - doesn't reposition, just ensures visibility
+ * Used for arrow key navigation - doesn't reposition, just ensures visibility.
+ * Core's box math (`virtualRowScrollTop` → `getScrollTopForBox`): the row's real position
+ * below the header, the sticky header as the top inset.
  */
 function ensureRowVisibleMinimal<T>(ctx: GridHost<T>, rowIndex: number): void {
 	const container = ctx.shadow.querySelector('.wg') as HTMLElement
 	if (!container) return
 
-	const rowHeight = ctx.engine.virtualScrollItemHeight
-	const scrollTop = container.scrollTop
-	const viewportHeight = container.clientHeight
-
-	// Account for sticky header
-	const header = ctx.shadow.querySelector('thead') as HTMLElement
-	const headerHeight = header?.offsetHeight || 0
-
-	const rowTop = rowIndex * rowHeight
-	const rowBottom = rowTop + rowHeight
-	const visibleTop = scrollTop + headerHeight
-	const visibleBottom = scrollTop + viewportHeight
-
-	// Only scroll if row is outside viewport (a keyboard move — beforeScrollCallback may skip it)
-	if ((rowTop < visibleTop || rowBottom > visibleBottom)
-		&& !gateScroll(ctx, { rowIndex, field: null }, 'keyboard', container, KEYBOARD_SCROLL)) return
-	if (rowTop < visibleTop) {
-		// Row is above viewport - scroll up to show it
-		container.scrollTop = rowTop - headerHeight
-	} else if (rowBottom > visibleBottom) {
-		// Row is below viewport - scroll down to show it
-		container.scrollTop = rowBottom - viewportHeight
-	}
-	// If row is visible, don't scroll at all
-}
-
-/**
- * Scroll to position a row as the second visible row (for PageUp/PageDown)
- * Exported so keyboard handlers can use it directly
- */
-export function scrollToRowPosition<T>(ctx: GridHost<T>, rowIndex: number): void {
-	const container = ctx.shadow.querySelector('.wg') as HTMLElement
-	if (!container) return
-
-	const rowHeight = ctx.engine.virtualScrollItemHeight
-	// PageUp / PageDown — a keyboard move (beforeScrollCallback may skip it)
-	if (!gateScroll(ctx, { rowIndex, field: null }, 'keyboard', container, KEYBOARD_SCROLL)) return
-
-	// Position target row as second visible row (rowIndex - 1 at top)
-	// This gives one row of context above the target
-	const targetScrollTop = Math.max(0, (rowIndex - 1) * rowHeight)
-
-	// Clamp to valid range
-	const maxScroll = Math.max(0, container.scrollHeight - container.clientHeight)
-	container.scrollTop = Math.min(targetScrollTop, maxScroll)
+	// Row fully visible → no scroll, no beforeScrollCallback
+	if (virtualRowScrollTop(ctx, container, rowIndex, 'nearest') === null) return
+	// A keyboard move — beforeScrollCallback may skip it or replace the block
+	const options = gateScroll(ctx, { rowIndex, field: null }, 'keyboard', container, KEYBOARD_SCROLL)
+	if (!options) return
+	const scrollTop = virtualRowScrollTop(ctx, container, rowIndex, options.block)
+	if (scrollTop !== null) container.scrollTop = scrollTop
 }
 
 // Track last focus visual update to debounce rapid changes during double-click

@@ -4,12 +4,9 @@
 
 export {
 	calculateVisibleRange,
-	calculateScrollToRow,
 	shouldTriggerInfiniteScroll,
 	type VisibleRangeParams,
-	type VisibleRange,
-	type ScrollToRowParams,
-	type ScrollToRowResult
+	type VisibleRange
 } from './calculations.js'
 
 export { VirtualScrollService } from './virtual-scroll-service.js'
