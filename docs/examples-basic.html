@@ -93,6 +93,23 @@
             </div>
         </div>
 
+        <div class="card">
+            <h2>Disabled / Readonly States</h2>
+            <div class="grid">
+                <div class="form-group">
+                    <label>Disabled Grid</label>
+                    <web-grid id="grid-disabled" disabled style="border: 1px solid #e2e8f0;"></web-grid>
+                    <small>No interaction, not focusable</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Readonly Grid</label>
+                    <web-grid id="grid-readonly" readonly style="border: 1px solid #e2e8f0;"></web-grid>
+                    <small>The value can't change; still focusable and copyable</small>
+                </div>
+            </div>
+        </div>
+
         <footer>
             <p>WebGrid Component by <a href="https://github.com/keenmate">Keenmate</a></p>
         </footer>
@@ -327,6 +344,18 @@
                     </span>`
                 ).join('')
             }
+        }
+
+        // Disabled / Readonly States — a few editable rows (the attribute blocks the edits)
+        for (const id of ['grid-disabled', 'grid-readonly']) {
+            const stateGrid = document.getElementById(id)
+            stateGrid.items = sampleData.slice(0, 4).map(row => ({ ...row }))
+            stateGrid.columns = [
+                { field: 'name', title: 'Name', editor: 'text' },
+                { field: 'department', title: 'Department', editor: 'text' },
+                { field: 'salary', title: 'Salary', horizontalAlign: 'right', editor: 'number' },
+            ]
+            stateGrid.isEditingEnabled = true
         }
 
         // Wire up controls
