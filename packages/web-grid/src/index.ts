@@ -5,15 +5,15 @@
 // Web component (auto-registers <web-grid>)
 export { GridElement } from './web-component.js'
 // Responsive rules (web-components-core SPEC §6.7): typed over the grid's input config keys
-export type { GridInputKey, GridResponsiveConfig, GridResponsiveMap, GridResponsiveCallback } from './web-component.js'
+export type { GridElementConfig, GridInputKey, GridResponsiveConfig, GridResponsiveMap, GridResponsiveCallback } from './web-component.js'
 export type { ResponsiveContext } from '@keenmate/web-components-core'
 
 // Core state engine (standalone / advanced usage — not the element's public API)
 export { GridEngine } from './grid.js'
 
 // Divider factory for toolbar / menu entry lists (web-components-core /actions)
-export { menuDivider } from '@keenmate/web-components-core/actions'
-// Loader render hook types (renderLoadingCallback, window.components.renderLoaderCallback — core SPEC §12.14)
+export { createMenuDivider } from '@keenmate/web-components-core/actions'
+// Loader render hook types (renderLoadingCallback, window.components.renderLoadingCallback — core SPEC §12.14)
 export type { RenderLoaderCallback, LoaderRenderContext } from '@keenmate/web-components-core'
 
 // Interaction model: controller, contexts, action items, event details

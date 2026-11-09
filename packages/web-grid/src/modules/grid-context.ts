@@ -53,6 +53,9 @@ export interface GridHost<T = unknown> {
 	readonly tooltipShowDelay: number
 	readonly tooltipHideDelay: number
 
+	/** Gate of every scroll the grid makes on its own (input; see modules/scroll/reveal.ts). */
+	readonly beforeScrollCallback: ((ctx: import('../interaction.js').GridBeforeScrollContext<T>) => false | Partial<import('../interaction.js').GridScrollOptions> | void) | null
+
 	// Virtual-scroll runtime state — owned by VirtualScrollService (visible range,
 	// loading-more flag, programmatic-scroll guard).
 	readonly virtualScroll: VirtualScrollService
@@ -77,9 +80,6 @@ export interface GridHost<T = unknown> {
 	// to drop row / cell-range / column selections through the pipeline. Null
 	// when the pipeline isn't installed (non-'always' edit-trigger modes).
 	readonly pipelineAdapter: ActionPipelineAdapter<T> | null
-
-	// Utility methods
-	escapeHtml(text: string): string
 
 	// Helper methods that modules may need
 	getCurrentEditingColumn(): Column<T> | null

@@ -56,7 +56,7 @@
 
 /* The loader — every loading state draws it (core renderLoader; the contract's
    drawing rule, @keyframes wg-loader-spin in animations.css) */
-.wg-loader {
+.wg__loader {
   display: inline-block;
   inline-size: var(--wg-loader-size);
   block-size: var(--wg-loader-size);

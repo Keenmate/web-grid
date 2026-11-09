@@ -6,6 +6,7 @@
 import type { GridHost } from '../grid-context.js'
 import type { CellRange, Column } from '../../types.js'
 import { updateFocusVisual, focusCellElement } from '../navigation/index.js'
+import { revealElement, fieldAt } from '../scroll/reveal.js'
 
 /** Minimum distance (px) mouse must move before drag starts */
 const DRAG_THRESHOLD = 5
@@ -720,7 +721,7 @@ export function extendCellRangeByKey<T>(ctx: GridHost<T>, e: KeyboardEvent): boo
 	// Keep the moving corner in view (the anchor keeps focus)
 	requestAnimationFrame(() => {
 		const cell = ctx.shadow.querySelector(`td.wg__cell[data-row="${row}"][data-col="${col}"]`) as HTMLElement | null
-		cell?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+		if (cell) revealElement(ctx, cell, { rowIndex: row, field: fieldAt(ctx, col) }, 'keyboard')
 	})
 	return true
 }

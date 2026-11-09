@@ -3,6 +3,7 @@
 // Render cells in display (non-editing) mode
 // =============================================================================
 
+import { escapeHtml } from '@keenmate/web-components-core'
 import type { Column } from '../../types.js'
 import type { GridHost } from '../grid-context.js'
 import { getOptionDisplayValue } from '../dropdown/options.js'
@@ -43,7 +44,7 @@ function renderCellDisplayContent<T>(
 	if (isCheckbox) {
 		// If getDisplayValueCallback is provided, use its output instead of default checkbox
 		if (column.getDisplayValueCallback) {
-			return `<span class="wg__cell-text">${ctx.escapeHtml(value)}</span>`
+			return `<span class="wg__cell-text">${escapeHtml(value)}</span>`
 		}
 		// Default: render checkbox
 		gridPerf.counters.cellDisplayItemsLookup++
@@ -85,7 +86,7 @@ function renderCellDisplayContent<T>(
 		const toggleHtml = isEditable ? '<span class="wg__select-toggle">▼</span>' : ''
 		return `
 			<div class="wg__cell-dropdown-display ${toggleClass}" data-row="${rowIndex}" data-field="${field}">
-				<span class="wg__select-value">${ctx.escapeHtml(displayValue)}</span>
+				<span class="wg__select-value">${escapeHtml(displayValue)}</span>
 				${toggleHtml}
 			</div>
 		`
@@ -103,7 +104,7 @@ function renderCellDisplayContent<T>(
 			: ''
 		return `
 			<div class="wg__cell-date-display ${toggleClass}" data-row="${rowIndex}" data-field="${field}">
-				<span class="wg__date-value">${ctx.escapeHtml(value)}</span>
+				<span class="wg__date-value">${escapeHtml(value)}</span>
 				${toggleHtml}
 			</div>
 		`
@@ -117,5 +118,5 @@ function renderCellDisplayContent<T>(
 		return `<span class="wg__cell-text" ${lineClampStyle}>${value}</span>`
 	}
 
-	return `<span class="wg__cell-text" ${lineClampStyle}>${ctx.escapeHtml(value)}</span>`
+	return `<span class="wg__cell-text" ${lineClampStyle}>${escapeHtml(value)}</span>`
 }

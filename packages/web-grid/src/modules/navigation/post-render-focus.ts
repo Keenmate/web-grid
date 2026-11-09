@@ -88,8 +88,10 @@ export function restoreFocusAfterRender<T>(
 			`td[data-row="${focusedCell.rowIndex}"][data-col="${focusedCell.colIndex}"]`
 		) as HTMLElement
 		if (cell) {
-			// Use setTimeout to ensure DOM is ready
-			setTimeout(() => cell.focus(), 0)
+			// Now, not on a timer: the render just replaced the focused cell, and a key pressed
+			// before a deferred focus() landed on nothing (two quick Shift+Arrows grew the range
+			// by one). The new cell is in the DOM already.
+			if (ctx.shadow.activeElement !== cell) cell.focus({ preventScroll: true })
 		}
 	}
 }

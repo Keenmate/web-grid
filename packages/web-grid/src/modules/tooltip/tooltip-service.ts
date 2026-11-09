@@ -6,8 +6,11 @@
 // that drive the open/close delay. Configuration delays (showDelay /
 // hideDelay) live on GridElement as accessors and are passed in by callers.
 
+import type { AnchorHandle } from '@keenmate/web-components-core/positioning'
+
 export class TooltipService {
 	private _element: HTMLElement | null = null
+	private _positioning: AnchorHandle | null = null
 	private _arrowElement: HTMLElement | null = null
 	private _anchor: HTMLElement | null = null
 	private _showTimer: ReturnType<typeof setTimeout> | null = null
@@ -16,6 +19,12 @@ export class TooltipService {
 	/** The rendered tooltip element, or null when no tooltip is mounted. */
 	get element(): HTMLElement | null { return this._element }
 	setElement(value: HTMLElement | null): void { this._element = value }
+
+	/** The core `anchor()` placing the rendered tooltip (destroyed with it). */
+	setPositioning(value: AnchorHandle | null): void {
+		this._positioning?.destroy()
+		this._positioning = value
+	}
 
 	/** The arrow element inside the rendered tooltip, or null. */
 	get arrowElement(): HTMLElement | null { return this._arrowElement }
@@ -54,6 +63,7 @@ export class TooltipService {
 	 * node has been removed by the caller. Does not touch timers.
 	 */
 	clearMounted(): void {
+		this.setPositioning(null)
 		this._element = null
 		this._arrowElement = null
 		this._anchor = null

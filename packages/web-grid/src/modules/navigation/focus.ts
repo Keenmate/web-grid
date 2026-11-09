@@ -9,6 +9,7 @@ import { renderCell } from '../rendering/index.js'
 import { removeDropdown } from '../dropdown/rendering.js'
 import { removeFillHandle } from '../fill-handle/index.js'
 import { isInGridMenu } from '../contextmenu/index.js'
+import { revealElement, gateScroll, fieldAt, KEYBOARD_SCROLL } from '../scroll/reveal.js'
 
 /**
  * Focus the appropriate element within a cell.
@@ -77,10 +78,10 @@ export function focusCellElement<T>(
 
 	focusElementInCell(cell, isAlwaysEditMode)
 
-	// Let scrollIntoView handle the main scrolling (both axes)
-	cell.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+	// Core container scroll (both axes, the grid's container only), gated by beforeScrollCallback
+	if (!revealElement(ctx, cell, { rowIndex, field: fieldAt(ctx, colIndex) }, 'keyboard')) return
 
-	// After scrollIntoView, adjust for sticky elements it doesn't account for
+	// Then adjust for the sticky elements it doesn't account for
 	// The sticky band is the header row, plus the filter row under it when shown
 	const header = (ctx.shadow.querySelector('.wg__filter-row th') ?? ctx.shadow.querySelector('.wg__header')) as HTMLElement
 	const scrollContainer = ctx.shadow.querySelector('.wg') as HTMLElement
@@ -144,7 +145,9 @@ function ensureRowVisibleMinimal<T>(ctx: GridHost<T>, rowIndex: number): void {
 	const visibleTop = scrollTop + headerHeight
 	const visibleBottom = scrollTop + viewportHeight
 
-	// Only scroll if row is outside viewport
+	// Only scroll if row is outside viewport (a keyboard move — beforeScrollCallback may skip it)
+	if ((rowTop < visibleTop || rowBottom > visibleBottom)
+		&& !gateScroll(ctx, { rowIndex, field: null }, 'keyboard', container, KEYBOARD_SCROLL)) return
 	if (rowTop < visibleTop) {
 		// Row is above viewport - scroll up to show it
 		container.scrollTop = rowTop - headerHeight
@@ -164,6 +167,8 @@ export function scrollToRowPosition<T>(ctx: GridHost<T>, rowIndex: number): void
 	if (!container) return
 
 	const rowHeight = ctx.engine.virtualScrollItemHeight
+	// PageUp / PageDown — a keyboard move (beforeScrollCallback may skip it)
+	if (!gateScroll(ctx, { rowIndex, field: null }, 'keyboard', container, KEYBOARD_SCROLL)) return
 
 	// Position target row as second visible row (rowIndex - 1 at top)
 	// This gives one row of context above the target

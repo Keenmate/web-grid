@@ -7,6 +7,7 @@ import type { ActionExecutor, ExecutorContext } from '../pipeline.js'
 import type { GridAction, FocusCellAction, BlurCellAction } from '../types.js'
 import { updateFocusVisual } from '../../navigation/index.js'
 import { updateFillHandle } from '../../fill-handle/index.js'
+import { revealElement, fieldAt } from '../../scroll/reveal.js'
 
 /**
  * Focus executor - handles cell focus/blur actions
@@ -108,8 +109,8 @@ function executeFocusCell(ctx: ExecutorContext, action: FocusCellAction): GridAc
 		cell.focus({ preventScroll: true })
 	}
 
-	// Scroll into view if needed
-	cell.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+	// Scroll into view if needed (core container scroll, gated by beforeScrollCallback)
+	revealElement(ctx, cell, { rowIndex, field: fieldAt(ctx, colIndex) }, 'keyboard')
 
 	// Update fill handle position for the newly focused cell
 	updateFillHandle(ctx)

@@ -3,7 +3,7 @@
 // =============================================================================
 //
 // Precedence (core): the instance `renderLoadingCallback` > page-wide
-// `window.components.renderLoaderCallback` > the default `<span class="wg-loader">`
+// `window.components.renderLoadingCallback` > the default `<span class="wg__loader">`
 // (drawn from the --wg-loader-* tokens in states.css).
 //
 // The grid renders by innerHTML, so a loader's container can be replaced at any

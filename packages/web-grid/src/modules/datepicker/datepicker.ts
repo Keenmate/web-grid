@@ -3,7 +3,7 @@
 // Main date picker implementation
 // =============================================================================
 
-import { computePosition, flip, shift, offset, autoUpdate } from '@floating-ui/dom'
+import { anchor as anchorTo } from '@keenmate/web-components-core/positioning'
 import type { DatePickerOptions, DatePickerState, LocaleStrings, FormatSpec } from './types.js'
 import { DEFAULT_LOCALE_STRINGS } from './types.js'
 import { parseFormat, formatDate, normalizeDate, toISODateString } from './formatting.js'
@@ -502,7 +502,7 @@ export class DatePicker {
 	}
 
 	/**
-	 * Position the picker using Floating UI
+	 * Position the picker (core anchor())
 	 */
 	private position(): void {
 		if (!this.element || !this.anchor) return
@@ -510,29 +510,21 @@ export class DatePicker {
 		const picker = this.element.querySelector('.wg-datepicker') as HTMLElement
 		if (!picker) return
 
-		// Setup auto-update for repositioning
-		this.cleanupAutoUpdate = autoUpdate(this.anchor, picker, () => {
+		// Core anchor(): kept in place on scroll / resize (autoUpdate) until close()
+		const anchorEl = this.anchor
+		const handle = anchorTo(picker, anchorEl, {
+			strategy: 'absolute',
+			placement: 'bottom-start',
+			offset: 4,
+			fallbackPlacements: ['top-start', 'bottom-end', 'top-end'],
+			shift: 8,
 			// Close datepicker silently if anchor is no longer valid
 			// Silent because something else (cell transition) already handled the edit state
-			if (!this.anchor!.isConnected) {
-				this.close(true)
-				return
+			beforeComputeCallback: () => {
+				if (!anchorEl.isConnected) this.close(true)
 			}
-
-			computePosition(this.anchor!, picker, {
-				placement: 'bottom-start',
-				middleware: [
-					offset(4),
-					flip({ fallbackPlacements: ['top-start', 'bottom-end', 'top-end'] }),
-					shift({ padding: 8 })
-				]
-			}).then(({ x, y }) => {
-				Object.assign(picker.style, {
-					left: `${x}px`,
-					top: `${y}px`
-				})
-			})
 		})
+		this.cleanupAutoUpdate = () => handle.destroy()
 	}
 
 	/**

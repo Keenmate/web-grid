@@ -347,7 +347,8 @@ export type QuickGridProps<T> = {
 	frozenColumnCount?: number  // Freeze first N columns (after visual reorder from isFrozen: true)
 	class?: string
 	style?: string
-	getCustomStylesCallback?: (ctx: GridContext<T>) => string  // Custom CSS to inject into shadow DOM
+	customStyles?: string | null  // CSS for the shadow root (after the page-wide window.components['web-grid'].customStyles)
+	getCustomStylesCallback?: ((ctx: GridContext<T>) => string | null | undefined) | null  // Computes the instance CSS; wins over customStyles
 	getRowClassCallback?: (ctx: RowContext<T>) => string | null  // Dynamic CSS class for rows
 	// Field on each row uniquely identifying it (default: 'id'; `null` = none). The only row-id
 	// member: getRowId / getRowById / updateRowById / replaceRowById / lockRowById read it

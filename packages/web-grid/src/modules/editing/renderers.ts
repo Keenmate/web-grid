@@ -3,6 +3,7 @@
 // Render HTML for each editor type
 // =============================================================================
 
+import { escapeHtml } from '@keenmate/web-components-core'
 import type { Column } from '../../types.js'
 import type { GridHost } from '../grid-context.js'
 import { getOptionDisplayValue, getOptionValue, withEmptyOption } from '../dropdown/index.js'
@@ -70,12 +71,12 @@ export function renderTextEditor<T>(
 		<input
 			type="text"
 			class="wg__editor wg__editor--text ${vAlignClass}"
-			value="${ctx.escapeHtml(strValue)}"
+			value="${escapeHtml(strValue)}"
 			data-row="${rowIndex}"
 			data-field="${field}"
 			${opts.maxLength ? `maxlength="${opts.maxLength}"` : ''}
-			${opts.placeholder ? `placeholder="${ctx.escapeHtml(opts.placeholder)}"` : ''}
-			${opts.pattern ? `pattern="${ctx.escapeHtml(opts.pattern)}"` : ''}
+			${opts.placeholder ? `placeholder="${escapeHtml(opts.placeholder)}"` : ''}
+			${opts.pattern ? `pattern="${escapeHtml(opts.pattern)}"` : ''}
 		/>
 	`
 }
@@ -107,7 +108,7 @@ export function renderNumberEditor<T>(
 			type="text"
 			inputmode="numeric"
 			class="wg__editor wg__editor--number ${vAlignClass}"
-			value="${ctx.escapeHtml(numValue)}"
+			value="${escapeHtml(numValue)}"
 			data-row="${rowIndex}"
 			data-field="${field}"
 			${min != null ? `min="${min}"` : ''}
@@ -140,7 +141,7 @@ export function renderDateEditor<T>(
 			<input
 				type="text"
 				class="wg__date-input"
-				value="${ctx.escapeHtml(displayValue)}"
+				value="${escapeHtml(displayValue)}"
 				data-row="${rowIndex}"
 				data-field="${field}"
 				data-date-value="${dateValue}"
@@ -148,7 +149,7 @@ export function renderDateEditor<T>(
 				data-date-format="${opts.dateFormat || 'YYYY-MM-DD'}"
 				${opts.minDate ? `data-min-date="${toDateInputValue(opts.minDate)}"` : ''}
 				${opts.maxDate ? `data-max-date="${toDateInputValue(opts.maxDate)}"` : ''}
-				placeholder="${ctx.escapeHtml(opts.dateFormat || 'YYYY-MM-DD')}"
+				placeholder="${escapeHtml(opts.dateFormat || 'YYYY-MM-DD')}"
 			/>
 			<button type="button" class="wg__date-trigger" tabindex="-1">
 				<svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM9 10H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm-8 4H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2z"/></svg>
@@ -238,8 +239,8 @@ export function renderCheckboxEditor<T>(
 			${isChecked ? 'checked' : ''}
 			data-row="${rowIndex}"
 			data-field="${field}"
-			data-true-value="${ctx.escapeHtml(JSON.stringify(opts.trueValue ?? true))}"
-			data-false-value="${ctx.escapeHtml(JSON.stringify(opts.falseValue ?? false))}"
+			data-true-value="${escapeHtml(JSON.stringify(opts.trueValue ?? true))}"
+			data-false-value="${escapeHtml(JSON.stringify(opts.falseValue ?? false))}"
 		/>
 	`
 }
@@ -276,9 +277,9 @@ export function renderSelectEditor<T>(
 			aria-haspopup="listbox"
 			data-row="${rowIndex}"
 			data-field="${field}"
-			data-value="${ctx.escapeHtml(String(value ?? ''))}"
+			data-value="${escapeHtml(String(value ?? ''))}"
 		>
-			<span class="wg__select-value">${ctx.escapeHtml(displayValue)}</span>
+			<span class="wg__select-value">${escapeHtml(displayValue)}</span>
 			<span class="wg__select-toggle">▼</span>
 		</div>
 	`
@@ -312,7 +313,7 @@ export function renderComboboxEditor<T>(
 			<input
 				type="text"
 				class="wg__combobox-input"
-				value="${ctx.escapeHtml(inputValue)}"
+				value="${escapeHtml(inputValue)}"
 				data-row="${rowIndex}"
 				data-field="${field}"
 			/>
@@ -349,8 +350,8 @@ export function renderAutocompleteEditor<T>(
 			<input
 				type="text"
 				class="wg__autocomplete-input"
-				value="${ctx.escapeHtml(inputValue)}"
-				placeholder="${ctx.escapeHtml(opts.placeholder || '')}"
+				value="${escapeHtml(inputValue)}"
+				placeholder="${escapeHtml(opts.placeholder || '')}"
 				data-row="${rowIndex}"
 				data-field="${field}"
 			/>
@@ -384,7 +385,7 @@ export function renderCustomEditor<T>(
 			data-row="${rowIndex}"
 			data-field="${field}"
 		>
-			<span class="wg__custom-value">${ctx.escapeHtml(displayValue)}</span>
+			<span class="wg__custom-value">${escapeHtml(displayValue)}</span>
 		</div>
 	`
 }

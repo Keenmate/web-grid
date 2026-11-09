@@ -226,8 +226,6 @@ export class GridEngine<T = unknown> {
 	protected _summaryMetadata: unknown = undefined
 	protected _isSummaryInline: boolean = true
 
-	// Custom styles
-	protected _getCustomStylesCallback?: (ctx: GridContext<T>) => string
 	protected _getRowClassCallback?: (ctx: RowContext<T>) => string | null
 
 	// Labels/i18n
@@ -885,12 +883,6 @@ export class GridEngine<T = unknown> {
 	set isSummaryInline(value: boolean) {
 		this._isSummaryInline = value
 		this.requestUpdate()
-	}
-
-	get getCustomStylesCallback(): ((ctx: GridContext<T>) => string) | undefined { return this._getCustomStylesCallback }
-	set getCustomStylesCallback(value: ((ctx: GridContext<T>) => string) | undefined) {
-		this._getCustomStylesCallback = value
-		// Note: requestUpdate not needed - styles are handled by web-component
 	}
 
 	get getRowClassCallback(): ((ctx: RowContext<T>) => string | null) | undefined { return this._getRowClassCallback }

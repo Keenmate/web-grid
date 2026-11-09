@@ -7,15 +7,17 @@
 //
 //  - Virtual-scroll mode: programmatic scroll to the target, then a double-
 //    RAF focus on the new cell once the virtual range has rendered.
-//  - Non-virtual: scrollIntoView({block:'nearest'}) + immediate focus +
+//  - Non-virtual: core scrollIntoContainer (center, gated by beforeScrollCallback) + immediate focus +
 //    surgical updateFocusVisual call.
 //
 // Cancel paths: Cancel button, Escape, click on the overlay backdrop.
 // Validation: numeric, in-range, otherwise the input is refocused + selected.
 
+import { escapeHtml } from '@keenmate/web-components-core'
 import type { GridHost } from '../grid-context.js'
 import { updateFocusVisual, moveFocus } from './focus.js'
 import { formatLabel } from '../../labels.js'
+import { revealElement, scrollRowIntoView, fieldAt, JUMP_SCROLL } from '../scroll/reveal.js'
 
 /**
  * Render and open the Ctrl+G dialog. `colIndex` is the column the user was
@@ -32,11 +34,11 @@ export function openGoToRowDialog<T>(ctx: GridHost<T>, colIndex: number): void {
 	const labels = ctx.engine.labels
 	overlay.innerHTML = `
 		<div class="wg__goto-dialog">
-			<label class="wg__goto-label">${ctx.escapeHtml(formatLabel(labels.goToRow, { max: displayItems.length }))}</label>
+			<label class="wg__goto-label">${escapeHtml(formatLabel(labels.goToRow, { max: displayItems.length }))}</label>
 			<input type="number" class="wg__goto-input" min="1" max="${displayItems.length}" value="1" />
 			<div class="wg__goto-buttons">
-				<button type="button" class="wg__goto-btn wg__goto-btn--cancel">${ctx.escapeHtml(labels.goToRowCancel)}</button>
-				<button type="button" class="wg__goto-btn wg__goto-btn--go">${ctx.escapeHtml(labels.goToRowGo)}</button>
+				<button type="button" class="wg__goto-btn wg__goto-btn--cancel">${escapeHtml(labels.goToRowCancel)}</button>
+				<button type="button" class="wg__goto-btn wg__goto-btn--go">${escapeHtml(labels.goToRowGo)}</button>
 			</div>
 		</div>
 	`
@@ -74,7 +76,7 @@ export function openGoToRowDialog<T>(ctx: GridHost<T>, colIndex: number): void {
 
 		if (ctx.engine.shouldUseVirtualScroll()) {
 			// Virtual scroll: scroll to position (programmatic flag prevents redundant handleVirtualScroll)
-			void ctx.scrollToRow(targetRow)
+			void scrollRowIntoView(ctx, targetRow, 'go-to-row')
 			// After scroll settles, focus the cell
 			requestAnimationFrame(() => {
 				requestAnimationFrame(() => {
@@ -90,7 +92,7 @@ export function openGoToRowDialog<T>(ctx: GridHost<T>, colIndex: number): void {
 				`td[data-row="${targetRow}"][data-col="${colIndex}"]`
 			) as HTMLElement
 			if (cell) {
-				cell.scrollIntoView({ block: 'nearest', behavior: 'auto' })
+				revealElement(ctx, cell, { rowIndex: targetRow, field: fieldAt(ctx, colIndex) }, 'go-to-row', JUMP_SCROLL)
 				cell.focus()
 				updateFocusVisual(ctx, oldFocus, { rowIndex: targetRow, colIndex })
 			}

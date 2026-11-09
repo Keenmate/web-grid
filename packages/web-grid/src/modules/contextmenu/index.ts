@@ -4,9 +4,10 @@
 // The cell and column-header menus are core `openMenu()`
 // (web-components-core `/menu`): rendering, submenus (static `children` or a
 // lazy `getChildrenCallback`), positioning, dismiss (outside press, scroll —
-// the grid's shadow scroll container included —, blur, another overlay) and
+// of the page or a scroller around the opener once it has moved — core's
+// shared scroll rule —, blur, another overlay) and
 // the WAI-ARIA keyboard. The grid only builds the entries (built-in defaults,
-// the `column-visibility` submenu via `prepareItem`) and runs activations.
+// the `column-visibility` submenu via `prepareItemCallback`) and runs activations.
 //
 // The menu is appended to the grid's shadow root, so the `--wg-context-menu-*`
 // → `--_km-menu-*` mapping on `:host` reaches it (css/variables.css). One menu
@@ -57,11 +58,11 @@ export function openGridMenu<T, Ctx>(host: GridHost<T>, spec: GridMenuSpec<Ctx>)
 		cssClass: MENU_CLASS[spec.kind],
 		offset: spec.offset ? { mainAxis: spec.offset.y, alignmentAxis: spec.offset.x } : undefined,
 		defaults: spec.defaults,
-		prepareItem: spec.prepareItem,
+		prepareItemCallback: spec.prepareItem,
 		runAction: (item, { triggerElement, sourceEvent }) => spec.activate(item, triggerElement, sourceEvent),
 		returnFocusTo: spec.returnFocusTo ?? null,
 		shouldFocusFirst: spec.shouldFocusFirst,
-		closeCallback: () => {
+		onClose: () => {
 			if (host.menu === menu) host.menu = null
 		}
 	})

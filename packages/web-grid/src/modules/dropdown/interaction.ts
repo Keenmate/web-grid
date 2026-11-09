@@ -9,6 +9,7 @@ import type { GridHost } from '../grid-context.js'
 import { getOptionValue, getOptionLabel, isOptionDisabled, withEmptyOption } from './options.js'
 import { renderDropdown, removeDropdown } from './rendering.js'
 import { renderCell } from '../rendering/index.js'
+import { scrollIntoContainer } from '@keenmate/web-components-core'
 
 /**
  * Select dropdown option by index
@@ -88,8 +89,10 @@ export function updateDropdownHighlight<T>(ctx: GridHost<T>): void {
  * Scroll highlighted option into view
  */
 export function scrollHighlightedIntoView<T>(ctx: GridHost<T>): void {
+	// Inside the dropdown's own list only (core container scroll) — never the grid or the page
 	const highlighted = ctx.shadow.querySelector('.wg__dropdown-option--highlighted')
-	highlighted?.scrollIntoView({ block: 'nearest' })
+	const list = highlighted?.closest('.wg__dropdown') as HTMLElement | null | undefined
+	if (highlighted && list) scrollIntoContainer(highlighted, { block: 'nearest', container: list })
 }
 
 /**

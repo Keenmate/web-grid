@@ -3,9 +3,10 @@
 // Floating toolbar with row actions
 // =============================================================================
 
+import { escapeHtml } from '@keenmate/web-components-core'
 import type { GridHost } from '../grid-context.js'
 import type { GridAction, GridToolbarEntry, GridToolbarItem } from '../../interaction.js'
-import { computePosition, flip, shift, type Placement } from '@floating-ui/dom'
+import { anchor as anchorTo, type AnchorHandle, type Placement } from '@keenmate/web-components-core/positioning'
 import { isMenuDivider, resolveActionItem, type ResolvedActionItem } from '@keenmate/web-components-core/actions'
 import { normalizeEntry, rowActionDefaults } from '../items/index.js'
 
@@ -111,10 +112,6 @@ export function maxToolbarRowLength<T>(entries: readonly GridToolbarEntry<T>[] |
 	return Math.max(0, ...perRow.values())
 }
 
-function escapeAttr(text: string): string {
-	return text.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-}
-
 /**
  * One button. `data-action` (built-in name or `custom`) + `data-id` identify the item;
  * `data-wg-index` points into the resolved list the click handler holds.
@@ -128,12 +125,12 @@ export function renderToolbarButton<T>(button: ToolbarButton<T>, index: number, 
 		r.isDisabled ? `${baseClass}--disabled` : '',
 		r.cssClass
 	].filter(Boolean).join(' ')
-	const text = escapeAttr(r.text)
+	const text = escapeHtml(r.text)
 	const showText = !r.icon || button.item.isTextVisible === true
 	const labelHtml = showText && r.text ? `<span class="wg__toolbar-label">${text}</span>` : ''
-	const idAttr = r.id !== undefined ? ` data-id="${escapeAttr(r.id)}"` : ''
+	const idAttr = r.id !== undefined ? ` data-id="${escapeHtml(r.id)}"` : ''
 	const pressed = r.isToggled ? ' aria-pressed="true"' : ''
-	return `<button type="button" class="${classes}" data-action="${escapeAttr(r.action)}"${idAttr} data-wg-index="${index}" title="${text}" aria-label="${text}"${pressed}${r.isDisabled ? ' disabled' : ''}>${r.icon ?? ''}${labelHtml}</button>`
+	return `<button type="button" class="${classes}" data-action="${escapeHtml(r.action)}"${idAttr} data-wg-index="${index}" title="${text}" aria-label="${text}"${pressed}${r.isDisabled ? ' disabled' : ''}>${r.icon ?? ''}${labelHtml}</button>`
 }
 
 /**
@@ -149,7 +146,7 @@ function formatShortcut(key: string): string {
  */
 export function buildToolbarTooltipHtml<T>(button: ToolbarButton<T>, shortcutKey?: string): string {
 	const r = button.resolved
-	const lines: string[] = [`<span class="wg__tooltip-title">${escapeAttr(r.text)}</span>`]
+	const lines: string[] = [`<span class="wg__tooltip-title">${escapeHtml(r.text)}</span>`]
 	if (r.tooltip) lines.push(`<div class="wg__tooltip-desc">${r.tooltip}</div>`)
 	const shortcut = r.shortcut || shortcutKey
 	if (shortcut) lines.push(`<div class="wg__tooltip-shortcut">${formatShortcut(shortcut)}</div>`)
@@ -222,18 +219,20 @@ export function openToolbar<T>(
 	ctx.shadow.appendChild(container)
 
 	const toolbar = container.querySelector('.wg__toolbar') as HTMLElement
-	// Initialize position based on preferred position (will be updated by computePosition if it flips)
+	// Initialize position based on preferred position (updated by anchor() if it flips)
 	const preferredPos = ctx.engine.toolbarPosition
 	let toolbarPosition: 'left' | 'right' | 'top' =
 		preferredPos === 'top' ? 'top' :
 		preferredPos === 'right' ? 'right' : 'left'
 
-	// Set initial fixed positioning (will be updated by computePosition)
+	// Set initial fixed positioning (updated by anchor())
 	toolbar.style.position = 'fixed'
 	toolbar.style.visibility = 'hidden'  // Hide until positioned
 
-	// Position toolbar using floating-ui
+	// Position toolbar with core anchor() (one placement; destroyed with the toolbar)
+	let placementHandle: AnchorHandle | null = null
 	requestAnimationFrame(() => {
+		if (!container.isConnected) return
 		// Re-query row element fresh from shadow DOM (original might be stale)
 		const freshRow = ctx.shadow.querySelector(`tr[data-row-index="${rowIndex}"]`) as HTMLElement
 		if (!freshRow) {
@@ -348,46 +347,44 @@ export function openToolbar<T>(
 			}
 		}
 
-		computePosition(anchor, toolbar, {
+		placementHandle = anchorTo(toolbar, anchor, {
 			strategy: 'fixed',
 			placement,
-			middleware: [
-				flip({ fallbackPlacements: fallbacks }),
-				shift({ padding: 8 })  // Keep within viewport
-			]
-		}).then(({ x, y, placement: finalPlacement }) => {
-			let initialX = x
+			offset: 0,
+			fallbackPlacements: fallbacks,
+			shift: 8,  // Keep within viewport
+			shouldAutoUpdate: false,
+			onComputed: ({ x, y, placement: finalPlacement }) => {
+				let initialX = x
 
-			// When followsCursor or a cell toolbar is active with top placement,
-			// compute cell-based X position to avoid flash on row boundaries.
-			// Skip when toolbarColumn is set — floating-ui already computed correct X from the column anchor.
-			if ((ctx.engine.shouldToolbarFollowCursor || ctx.engine.getCellToolbarItemsCallback) && finalPlacement.startsWith('top') && cursorX !== undefined && ctx.engine.toolbarColumn === undefined) {
-				const cells = freshRow.querySelectorAll('.wg__cell:not(.wg__row-number):not(.wg__inline-actions-cell)')
-				for (const cell of cells) {
-					const cellRect = cell.getBoundingClientRect()
-					if (cursorX >= cellRect.left && cursorX <= cellRect.right) {
-						initialX = resolveToolbarOffset(cellRect, ctx.engine.cellToolbarOffset)
-						break
+				// When followsCursor or a cell toolbar is active with top placement,
+				// compute cell-based X position to avoid flash on row boundaries.
+				// Skip when toolbarColumn is set — anchor() already computed correct X from the column anchor.
+				if ((ctx.engine.shouldToolbarFollowCursor || ctx.engine.getCellToolbarItemsCallback) && finalPlacement.startsWith('top') && cursorX !== undefined && ctx.engine.toolbarColumn === undefined) {
+					const cells = freshRow.querySelectorAll('.wg__cell:not(.wg__row-number):not(.wg__inline-actions-cell)')
+					for (const cell of cells) {
+						const cellRect = cell.getBoundingClientRect()
+						if (cursorX >= cellRect.left && cursorX <= cellRect.right) {
+							initialX = resolveToolbarOffset(cellRect, ctx.engine.cellToolbarOffset)
+							break
+						}
 					}
 				}
+
+				Object.assign(toolbar.style, {
+					left: `${initialX}px`,
+					top: `${y}px`,
+					visibility: 'visible'
+				})
+
+				// Extract position from placement (e.g., 'left-start' -> 'left')
+				toolbarPosition = finalPlacement.split('-')[0] as 'left' | 'right' | 'top'
+
+				// Store position for connector calculations
+				if (activeToolbar) {
+					activeToolbar.position = toolbarPosition
+				}
 			}
-
-			Object.assign(toolbar.style, {
-				left: `${initialX}px`,
-				top: `${y}px`,
-				visibility: 'visible'
-			})
-
-			// Extract position from placement (e.g., 'left-start' -> 'left')
-			toolbarPosition = finalPlacement.split('-')[0] as 'left' | 'right' | 'top'
-
-			// Store position for connector calculations
-			if (activeToolbar) {
-				activeToolbar.position = toolbarPosition
-			}
-		}).catch(() => {
-			// Fallback if computePosition fails
-			toolbar.style.visibility = 'visible'
 		})
 	})
 
@@ -413,6 +410,7 @@ export function openToolbar<T>(
 		hasRowMoved: false,
 		cursorX,
 		cleanup: () => {
+			placementHandle?.destroy()
 			container.removeEventListener('click', handleClick)
 			container.remove()
 		}

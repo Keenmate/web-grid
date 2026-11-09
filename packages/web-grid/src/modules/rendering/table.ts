@@ -3,6 +3,7 @@
 // Render header row, data rows, pagination
 // =============================================================================
 
+import { escapeHtml } from '@keenmate/web-components-core'
 import type { GridHost } from '../grid-context.js'
 import type { Column } from '../../types.js'
 import { formatLabel } from '../../labels.js'
@@ -96,7 +97,7 @@ export function renderHeaderRow<T>(ctx: GridHost<T>): string {
 		// Width = buttons * btnWidth + (buttons-1) * gap + 2 * paddingSm
 		// Using calc with CSS vars so it respects theming
 		const colWidth = `calc(${maxBtns} * var(--wg-toolbar-btn-min-width) + ${Math.max(0, maxBtns - 1)} * var(--wg-inline-actions-gap) + 2 * var(--wg-spacing-sm))`
-		inlineActionsHeaderHtml = `<th class="wg__header wg__inline-actions-header" style="width: ${colWidth}">${ctx.escapeHtml(ctx.engine.labels.inlineActionsHeader)}</th>`
+		inlineActionsHeaderHtml = `<th class="wg__header wg__inline-actions-header" style="width: ${colWidth}">${escapeHtml(ctx.engine.labels.inlineActionsHeader)}</th>`
 		filterLeadHtml += '<th class="wg__filter-cell"></th>'
 	}
 
@@ -163,7 +164,7 @@ export function renderHeaderRow<T>(ctx: GridHost<T>): string {
 				const isInvalid = invalidFilterFields.has(field)
 				const value = ctx.filterInputText(field) ?? filters[field] ?? ''
 				const label = formatLabel(ctx.engine.labels.filterColumn, { column: column.title ?? field })
-				filterCells.push(`<th class="wg__filter-cell${frozenClass}" style="${filterStyle}" data-field="${ctx.escapeHtml(field)}"><input type="text" class="wg__filter-input${isInvalid ? ' invalid' : ''}" data-field="${ctx.escapeHtml(field)}" value="${ctx.escapeHtml(value)}" aria-label="${ctx.escapeHtml(label)}"${isInvalid ? ' aria-invalid="true"' : ''} autocomplete="off" spellcheck="false"></th>`)
+				filterCells.push(`<th class="wg__filter-cell${frozenClass}" style="${filterStyle}" data-field="${escapeHtml(field)}"><input type="text" class="wg__filter-input${isInvalid ? ' invalid' : ''}" data-field="${escapeHtml(field)}" value="${escapeHtml(value)}" aria-label="${escapeHtml(label)}"${isInvalid ? ' aria-invalid="true"' : ''} autocomplete="off" spellcheck="false"></th>`)
 			} else {
 				filterCells.push(`<th class="wg__filter-cell${frozenClass}" style="${filterStyle}"></th>`)
 			}
@@ -188,7 +189,7 @@ export function renderHeaderRow<T>(ctx: GridHost<T>): string {
 
 		let headerInfo = ''
 		if (column.headerInfo) {
-			headerInfo = `<span class="wg__header-info" data-tooltip="${ctx.escapeHtml(column.headerInfo)}"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span>`
+			headerInfo = `<span class="wg__header-info" data-tooltip="${escapeHtml(column.headerInfo)}"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span>`
 		}
 
 		// Resize handle (always rendered, but disabled class for non-resizable columns)
@@ -199,7 +200,7 @@ export function renderHeaderRow<T>(ctx: GridHost<T>): string {
 			<th class="${classes.join(' ')}" ${styleAttr} data-field="${field}">
 				<div class="wg__header-container">
 					<div class="wg__header-content wg__header-content--align-${hAlign} wg__header-content--valign-${vAlign}">
-						<span class="wg__header-title">${ctx.escapeHtml(column.title)}</span>
+						<span class="wg__header-title">${escapeHtml(column.title)}</span>
 						${headerInfo}
 					</div>
 					<div class="wg__header-controls">
@@ -226,7 +227,7 @@ function renderEmptyRow<T>(ctx: GridHost<T>, colspan: number): string {
 	const kind = ctx.engine.items.length > 0 || hasActiveFilter ? 'no-results' : 'no-data'
 	return `
 			<tr>
-				<td class="wg__empty" colspan="${colspan}" data-empty="${kind}">${ctx.escapeHtml(text)}</td>
+				<td class="wg__empty" colspan="${colspan}" data-empty="${kind}">${escapeHtml(text)}</td>
 			</tr>
 		`
 }
@@ -240,7 +241,7 @@ function renderEmptyRow<T>(ctx: GridHost<T>, colspan: number): string {
  */
 export function renderLoadingMoreRow<T>(ctx: GridHost<T>): string {
 	if (!ctx.virtualScroll.isLoadingMore || !ctx.engine.labels.loading) return ''
-	return `<tr class="wg__loading-more-row"><td class="wg__loading-more" colspan="999"><span class="wg__loading-more-indicator"></span><span class="wg__loading-more-text" aria-hidden="true">${ctx.escapeHtml(ctx.engine.labels.loading)}</span></td></tr>`
+	return `<tr class="wg__loading-more-row"><td class="wg__loading-more" colspan="999"><span class="wg__loading-more-indicator"></span><span class="wg__loading-more-text" aria-hidden="true">${escapeHtml(ctx.engine.labels.loading)}</span></td></tr>`
 }
 
 /**
@@ -291,7 +292,7 @@ export function renderDataRows<T>(ctx: GridHost<T>): string {
 
 			if (isLocked) {
 				const lockTooltip = ctx.engine.getLockTooltip(lockInfo)
-				rowNumberCell = `<td class="wg__cell wg__row-number wg__row-number--locked${frozenClass}" style="${stickyStyle}" data-tooltip="${ctx.escapeHtml(lockTooltip)}" data-row-number="${rowIndex}">🔒</td>`
+				rowNumberCell = `<td class="wg__cell wg__row-number wg__row-number--locked${frozenClass}" style="${stickyStyle}" data-tooltip="${escapeHtml(lockTooltip)}" data-row-number="${rowIndex}">🔒</td>`
 			} else if (isEmptyRow) {
 				rowNumberCell = `<td class="wg__cell wg__row-number wg__empty-row-indicator${frozenClass}" style="${stickyStyle}" data-row-number="${rowIndex}">${ctx.engine.newRowIndicator}</td>`
 			} else {
@@ -391,7 +392,7 @@ export function renderDataRows<T>(ctx: GridHost<T>): string {
 
 			// Cell tooltip: getTooltipCallback > tooltipMember > validation error
 			const tooltip = getCellTooltip(ctx, item, rowIndex, column)
-			const tooltipAttr = tooltip ? `${tooltip.attr}="${ctx.escapeHtml(tooltip.text)}"` : ''
+			const tooltipAttr = tooltip ? `${tooltip.attr}="${escapeHtml(tooltip.text)}"` : ''
 
 			const innerHtml = shouldShowEditor
 				? renderCellEditor(ctx, rowIndex, originalIndex, column)
@@ -426,7 +427,7 @@ export function renderDataRows<T>(ctx: GridHost<T>): string {
 
 		// Row tooltip for locked rows (when no row numbers visible)
 		const rowTooltipAttr = isLocked && !showRowNumbers
-			? `data-tooltip="${ctx.escapeHtml(ctx.engine.getLockTooltip(lockInfo))}"`
+			? `data-tooltip="${escapeHtml(ctx.engine.getLockTooltip(lockInfo))}"`
 			: ''
 
 		return `<tr class="${rowClasses.join(' ')}" data-row-index="${rowIndex}" ${rowTooltipAttr}>${rowNumberCell}${inlineActionsCell}${actionsCell}${cells}<td class="wg__cell wg__filler" data-row="${rowIndex}"></td></tr>`
@@ -529,7 +530,7 @@ export function renderDataRowsVirtual<T>(ctx: GridHost<T>, params: VirtualScroll
 
 			if (isLocked) {
 				const lockTooltip = ctx.engine.getLockTooltip(lockInfo)
-				rowNumberCell = `<td class="wg__cell wg__row-number wg__row-number--locked${frozenClass}" style="${stickyStyle}" data-tooltip="${ctx.escapeHtml(lockTooltip)}" data-row-number="${rowIndex}">🔒</td>`
+				rowNumberCell = `<td class="wg__cell wg__row-number wg__row-number--locked${frozenClass}" style="${stickyStyle}" data-tooltip="${escapeHtml(lockTooltip)}" data-row-number="${rowIndex}">🔒</td>`
 			} else if (isEmptyRow) {
 				rowNumberCell = `<td class="wg__cell wg__row-number wg__empty-row-indicator${frozenClass}" style="${stickyStyle}" data-row-number="${rowIndex}">${ctx.engine.newRowIndicator}</td>`
 			} else {
@@ -629,7 +630,7 @@ export function renderDataRowsVirtual<T>(ctx: GridHost<T>, params: VirtualScroll
 
 			// Cell tooltip: getTooltipCallback > tooltipMember > validation error
 			const tooltip = getCellTooltip(ctx, item, rowIndex, column)
-			const tooltipAttr = tooltip ? `${tooltip.attr}="${ctx.escapeHtml(tooltip.text)}"` : ''
+			const tooltipAttr = tooltip ? `${tooltip.attr}="${escapeHtml(tooltip.text)}"` : ''
 
 			const innerHtml = shouldShowEditor
 				? renderCellEditor(ctx, rowIndex, originalIndex, column)
@@ -664,7 +665,7 @@ export function renderDataRowsVirtual<T>(ctx: GridHost<T>, params: VirtualScroll
 
 		// Row tooltip for locked rows (when no row numbers visible)
 		const rowTooltipAttr = isLocked && !showRowNumbers
-			? `data-tooltip="${ctx.escapeHtml(ctx.engine.getLockTooltip(lockInfo))}"`
+			? `data-tooltip="${escapeHtml(ctx.engine.getLockTooltip(lockInfo))}"`
 			: ''
 
 		visibleRows.push(`<tr class="${rowClasses.join(' ')}" data-row-index="${rowIndex}" ${rowTooltipAttr}>${rowNumberCell}${inlineActionsCell}${actionsCell}${cells}<td class="wg__cell wg__filler" data-row="${rowIndex}"></td></tr>`)

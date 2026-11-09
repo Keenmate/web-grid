@@ -1,9 +1,9 @@
 // =============================================================================
 // Tooltip Module
-// Show/hide/create tooltips using Floating UI for positioning
+// Show/hide/create tooltips, placed by core anchor() (/positioning)
 // =============================================================================
 
-import { computePosition, flip, offset, arrow } from '@floating-ui/dom'
+import { anchor as anchorTo } from '@keenmate/web-components-core/positioning'
 import type { GridHost } from '../grid-context.js'
 
 /**
@@ -72,6 +72,7 @@ export function createTooltip<T>(
 ): void {
 	// Remove existing
 	ctx.tooltip.element?.remove()
+	ctx.tooltip.clearMounted()
 
 	// Create tooltip
 	const tooltip = document.createElement('div')
@@ -97,30 +98,24 @@ export function createTooltip<T>(
 	ctx.tooltip.setArrowElement(arrowEl)
 	ctx.tooltip.setAnchor(anchor)
 
-	// Position with Floating UI
-	computePosition(anchor, tooltip, {
+	// Position with core anchor() — one placement (the tooltip is rebuilt per anchor)
+	let isShown = false
+	ctx.tooltip.setPositioning(anchorTo(tooltip, anchor, {
 		strategy: 'absolute',
 		placement: 'top',
-		middleware: [
-			offset(8),
-			flip({ fallbackPlacements: ['bottom', 'left', 'right'] }),
-			arrow({ element: arrowEl })
-		]
-	}).then(({ x, y, placement, middlewareData }) => {
-		tooltip.style.left = `${x}px`
-		tooltip.style.top = `${y}px`
-		tooltip.setAttribute('data-placement', placement)
-
-		// Position arrow
-		if (middlewareData.arrow) {
-			const { x: arrowX, y: arrowY } = middlewareData.arrow
-			if (arrowX != null) arrowEl.style.left = `${arrowX}px`
-			if (arrowY != null) arrowEl.style.top = `${arrowY}px`
+		offset: 8,
+		shift: false,
+		fallbackPlacements: ['bottom', 'left', 'right'],
+		arrow: { element: arrowEl },
+		shouldAutoUpdate: false,
+		onPlaced: (placement) => {
+			tooltip.setAttribute('data-placement', placement)
+			if (isShown) return
+			isShown = true
+			// Show with animation
+			requestAnimationFrame(() => {
+				tooltip.classList.add('wg__tooltip--visible')
+			})
 		}
-
-		// Show with animation
-		requestAnimationFrame(() => {
-			tooltip.classList.add('wg__tooltip--visible')
-		})
-	})
+	}))
 }

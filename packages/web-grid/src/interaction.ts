@@ -189,6 +189,41 @@ export interface CellContext<T = any> extends RowContext<T> {
 	value: unknown
 }
 
+/** What made the grid scroll a cell / row into view on its own — `beforeScrollCallback`'s `source`. */
+export type GridScrollSource = 'keyboard' | 'scroll-to-row' | 'go-to-row'
+
+/** The scroll the grid is about to make (`beforeScrollCallback`'s `options`; a returned partial is merged over it). */
+export interface GridScrollOptions {
+	/** Vertical alignment: `'nearest'` scrolls only as far as needed; `'start'` / `'center'` / `'end'` align. */
+	block: ScrollLogicalPosition
+	/** Horizontal alignment (same values). */
+	inline: ScrollLogicalPosition
+	/** `'auto'` (instant) or `'smooth'`. */
+	behavior: ScrollBehavior
+	/** Also bring the grid's scroll container into the viewport when it isn't fully visible. */
+	shouldRevealContainer: boolean
+}
+
+/**
+ * ctx of `beforeScrollCallback` — the grid is about to scroll a cell (or a whole row) into view
+ * on its own. Return `false` to skip the scroll, or a partial `options` to replace the defaults.
+ * Synchronous. With virtual scroll a jump scrolls by row index, so only `false` applies there.
+ */
+export interface GridBeforeScrollContext<T = any> extends GridContext<T> {
+	/** The displayed row (`null` when the index is outside the displayed rows). */
+	row: T | null
+	/** Displayed index. */
+	rowIndex: number
+	/** The cell's field — `null` for a whole row (`scrollToRow`). */
+	field: string | null
+	/** `'keyboard'` (a keyboard / range move), `'scroll-to-row'` (`scrollToRow()`), `'go-to-row'` (the Ctrl+G dialog). */
+	source: GridScrollSource
+	/** The scroll container around the cell (the grid's own, or a wrapper) — `null` = only the page scrolls. */
+	container: HTMLElement | null
+	/** What the grid is about to use (keyboard: `nearest`; jumps: `center` + `shouldRevealContainer`). */
+	options: GridScrollOptions
+}
+
 /** A selected column (`getSelectedColumns()`) — the column fields of a `CellContext`. */
 export interface SelectedColumn<T = any> {
 	/** Index in `columns`. */

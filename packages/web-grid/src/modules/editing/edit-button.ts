@@ -6,6 +6,7 @@
 // F2 / Enter work as usual. The icon is HTML (`editButtonIcon`, e.g.
 // `<span class="lucide-pencil"></span>`), the accessible name `labels.editCell`.
 
+import { escapeHtml } from '@keenmate/web-components-core'
 import type { GridHost } from '../grid-context.js'
 import type { Column } from '../../types.js'
 import { tryStartEdit } from '../navigation/index.js'
@@ -19,7 +20,7 @@ export function hasEditButton<T>(ctx: GridHost<T>, column: Column<T>, isEditable
 }
 
 export function renderEditButton<T>(ctx: GridHost<T>, rowIndex: number, colIndex: number): string {
-	const label = ctx.escapeHtml(ctx.engine.labels.editCell)
+	const label = escapeHtml(ctx.engine.labels.editCell)
 	return `<button type="button" class="wg__edit-button" tabindex="-1" data-row="${rowIndex}" data-col="${colIndex}" aria-label="${label}" title="${label}">${ctx.engine.editButtonIcon}</button>`
 }
 

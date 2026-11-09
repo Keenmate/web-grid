@@ -1,17 +1,21 @@
 // =============================================================================
 // Dropdown Rendering
-// Render dropdown overlay using Floating UI for positioning
+// Render dropdown overlay, placed by core anchor() (/positioning)
 // =============================================================================
 
-import { computePosition, flip, offset, size } from '@floating-ui/dom'
+import { escapeHtml } from '@keenmate/web-components-core'
+import { anchor as anchorTo, type AnchorHandle } from '@keenmate/web-components-core/positioning'
 import type { EditorOption, EditorOptions } from '../../types.js'
 import type { GridHost } from '../grid-context.js'
 import { getOptionLabel, getOptionValue, getOptionIcon, getOptionSubtitle, isOptionDisabled, isEmptyOption, optionCtx } from './options.js'
 import { removeFillHandle } from '../fill-handle/index.js'
 import { syncLoader, pruneDetachedLoaders } from '../rendering/loader.js'
 
+/** The core anchor() placing each open dropdown (destroyed in removeDropdown()). */
+const placements = new WeakMap<Element, AnchorHandle>()
+
 /**
- * Render dropdown overlay using Floating UI for positioning
+ * Render dropdown overlay, placed by core anchor()
  * Returns the dropdown element so caller can attach listeners
  */
 export function renderDropdown<T>(
@@ -26,7 +30,7 @@ export function renderDropdown<T>(
 	const dropdown = document.createElement('div')
 	dropdown.className = 'wg__dropdown'
 
-	// Set base styles (position will be set by Floating UI)
+	// Set base styles (position will be set by anchor())
 	dropdown.style.cssText = `
 		position: absolute;
 		top: 0;
@@ -47,10 +51,10 @@ export function renderDropdown<T>(
 		const message = opts.labels?.[key] ?? ctx.engine.labels[key]
 		if (key === 'dropdownSearching') {
 			// Typed search in flight: the loader (core renderLoader, context 'search') + the text
-			dropdown.innerHTML = `<div class="wg__dropdown-empty wg__dropdown-searching"><span class="wg__dropdown-searching-indicator"></span>${message ? `<span aria-hidden="true">${ctx.escapeHtml(message)}</span>` : ''}</div>`
+			dropdown.innerHTML = `<div class="wg__dropdown-empty wg__dropdown-searching"><span class="wg__dropdown-searching-indicator"></span>${message ? `<span aria-hidden="true">${escapeHtml(message)}</span>` : ''}</div>`
 			syncLoader(ctx, 'search-dropdown', dropdown.querySelector('.wg__dropdown-searching-indicator') as HTMLElement, message)
 		} else {
-			dropdown.innerHTML = message ? `<div class="wg__dropdown-empty">${ctx.escapeHtml(message)}</div>` : ''
+			dropdown.innerHTML = message ? `<div class="wg__dropdown-empty">${escapeHtml(message)}</div>` : ''
 		}
 	} else {
 		// Get current value for isSelected check
@@ -85,13 +89,13 @@ export function renderDropdown<T>(
 			if (disabled) classes.push('wg__dropdown-option--disabled')
 			if (isEmpty) classes.push('wg__dropdown-option--empty')
 
-			const iconHtml = icon ? `<span class="wg__dropdown-option-icon">${ctx.escapeHtml(icon)}</span>` : ''
-			const subtitleHtml = subtitle ? `<span class="wg__dropdown-option-subtitle">${ctx.escapeHtml(subtitle)}</span>` : ''
+			const iconHtml = icon ? `<span class="wg__dropdown-option-icon">${escapeHtml(icon)}</span>` : ''
+			const subtitleHtml = subtitle ? `<span class="wg__dropdown-option-subtitle">${escapeHtml(subtitle)}</span>` : ''
 
 			return `<div class="${classes.join(' ')}" data-index="${i}" ${disabled ? 'data-disabled="true"' : ''}>
 				${iconHtml}
 				<div class="wg__dropdown-option-content">
-					<span class="wg__dropdown-option-label">${ctx.escapeHtml(label)}</span>
+					<span class="wg__dropdown-option-label">${escapeHtml(label)}</span>
 					${subtitleHtml}
 				</div>
 			</div>`
@@ -103,29 +107,19 @@ export function renderDropdown<T>(
 	ctx.dropdown.setIsOpen(true)
 	removeFillHandle()  // Hide fill handle when dropdown opens
 
-	// Use Floating UI to position the dropdown
-	computePosition(anchor, dropdown, {
+	// Core anchor(): one placement below the cell (flip to above), at least the cell's width
+	// unless the column sets `dropdownMinWidth`
+	if (opts.dropdownMinWidth) dropdown.style.minWidth = opts.dropdownMinWidth
+	placements.set(dropdown, anchorTo(dropdown, anchor, {
 		strategy: 'absolute',
 		placement: 'bottom-start',
-		middleware: [
-			// Add 1px gap to prevent sub-pixel overlap with cell border
-			offset(1),
-			flip({ fallbackPlacements: ['top-start'] }),
-			size({
-				apply({ rects }) {
-					// Use minWidth to allow dropdown to be wider than anchor if needed
-					Object.assign(dropdown.style, {
-						minWidth: opts.dropdownMinWidth || `${rects.reference.width}px`
-					})
-				}
-			})
-		]
-	}).then(({ x, y }) => {
-		Object.assign(dropdown.style, {
-			left: `${x}px`,
-			top: `${y}px`
-		})
-	})
+		// 1px gap to prevent sub-pixel overlap with the cell border
+		offset: 1,
+		shift: false,
+		fallbackPlacements: ['top-start'],
+		matchWidth: opts.dropdownMinWidth ? false : 'min',
+		shouldAutoUpdate: false,
+	}))
 
 	return dropdown
 }
@@ -135,7 +129,11 @@ export function renderDropdown<T>(
  */
 export function removeDropdown<T>(ctx: GridHost<T>): void {
 	const existing = ctx.shadow.querySelector('.wg__dropdown')
-	existing?.remove()
+	if (existing) {
+		placements.get(existing)?.destroy()
+		placements.delete(existing)
+		existing.remove()
+	}
 	syncLoader(ctx, 'search-dropdown', null, '')
 	pruneDetachedLoaders(ctx)  // e.g. the editor's search loader when the editor closed mid-search
 	ctx.dropdown.setIsOpen(false)

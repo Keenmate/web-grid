@@ -6,5 +6,5 @@
    floating.css).
 */
 
-/* The loader (.wg-loader in states.css) — the contract's drawing rule. */
+/* The loader (.wg__loader in states.css) — the contract's drawing rule. */
 @keyframes wg-loader-spin { to { transform: rotate(var(--wg-loader-rotate)); } }
