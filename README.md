@@ -391,7 +391,7 @@ This architecture separates mode detection (the adapter decides *what* action a 
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `cellSelectionMode` | `CellSelectionMode` | `'click'` | How to select cell ranges: `'none'`, `'click'` (drag; Shift+click extends from the focused cell), `'shift'` (Shift+click twice / Shift+drag). In every mode but `'disabled'`, Shift+Arrow grows / shrinks the range from the focused cell (the anchor keeps focus), Shift+Home / End go to the row start / end, Ctrl+Shift+Arrow to the data edge; while editing, Shift+Arrow selects text in the editor |
+| `cellSelectionMode` | `CellSelectionMode` | `'click'` | How to select cell ranges: `'none'`, `'click'` (drag; Shift+click extends from the focused cell), `'shift'` (Shift+click twice / Shift+drag). In every mode but `'none'`, Shift+Arrow grows / shrinks the range from the focused cell (the anchor keeps focus), Shift+Home / End go to the row start / end, Ctrl+Shift+Arrow to the data edge; while editing, Shift+Arrow selects text in the editor |
 | `shouldCopyWithHeaders` | `boolean` | `false` | Include column headers when copying cell selection to clipboard |
 
 ### Keyboard Shortcuts
