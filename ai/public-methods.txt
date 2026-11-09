@@ -23,8 +23,10 @@ focusCell(rowIndex: number, colIndex: number): void
   editing.
 
 scrollToRow(rowIndex: number): Promise<boolean>
-  Scroll the displayed row into view (virtual scroll aware). Resolves true
-  once it is in view, false when the index is out of range / not rendered.
+  Scroll the displayed row into view (virtual scroll aware): centred in the
+  grid's own container, the grid brought on screen (core scrollIntoContainer).
+  Resolves true once it is in view, false when the index is out of range / not
+  rendered / beforeScrollCallback returned false.
 
 startEditing(rowIndex: number, colIndex: number): void
   Programmatically start editing a cell. The cell must be editable

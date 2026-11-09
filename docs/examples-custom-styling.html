@@ -252,7 +252,7 @@
                 <div>
                     <h3 style="margin-bottom: 0.5rem; font-size: 0.9rem; color: #666;">isTableBorderOnly={true}</h3>
                     <div style="border: 2px solid #3b82f6; border-radius: 8px; padding: 1rem; background: var(--wg-elevated-bg, #f9fafb);">
-                        <web-grid id="gridTableBorderOnly" isTableBorderOnly style="max-height: 200px;"></web-grid>
+                        <web-grid id="gridTableBorderOnly" table-border-only style="max-height: 200px;"></web-grid>
                     </div>
                 </div>
             </div>
@@ -261,7 +261,7 @@
 &lt;web-grid ...&gt;&lt;/web-grid&gt;
 
 // Table border only - pagination floats outside the border
-&lt;web-grid isTableBorderOnly ...&gt;&lt;/web-grid&gt;</code></pre>
+&lt;web-grid table-border-only ...&gt;&lt;/web-grid&gt;</code></pre>
         </div>
 
         <div class="card">
@@ -293,6 +293,37 @@
     .salary-2 { background: #ffedd5 !important; }
     .row-inactive { opacity: 0.5; }
 `</code></pre>
+        </div>
+
+        <div class="card">
+            <h2>customStyles — instance and page-wide CSS</h2>
+            <p><code>customStyles</code> (attribute <code>custom-styles</code>) puts CSS into one grid's shadow root;
+               <code>getCustomStylesCallback(ctx)</code> computes it and wins. <code>window.components['web-grid'].customStyles</code>
+               styles <em>every</em> grid on the page; it is applied first, so a grid's own CSS overrides it. Assigning it
+               updates live grids. An <code>@import</code> (an icon font) is also linked once in the document head.</p>
+            <p>
+                <button type="button" id="pageCssOn">Set page-wide CSS</button>
+                <button type="button" id="pageCssOff">Clear page-wide CSS</button>
+            </p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1rem;">
+                <div>
+                    <h3 style="margin-bottom: 0.5rem; font-size: 0.9rem;">Page-wide CSS only</h3>
+                    <web-grid id="gridPageCss" style="max-height: 220px;"></web-grid>
+                </div>
+                <div>
+                    <h3 style="margin-bottom: 0.5rem; font-size: 0.9rem;">+ its own <code>custom-styles</code> (wins)</h3>
+                    <web-grid id="gridOwnCss" style="max-height: 220px;"
+                        custom-styles=".wg__header { background: #fef3c7; } .wg__cell { color: #92400e; }"></web-grid>
+                </div>
+            </div>
+            <pre style="margin-top: 1rem;"><code>// every grid on the page
+window.components['web-grid'].customStyles = `
+    .wg__header { background: #dbeafe; }
+    .wg__cell { color: #1e3a8a; }
+`
+// one grid — applied after the page layer, so it wins
+&lt;web-grid custom-styles=".wg__header { background: #fef3c7; }"&gt;&lt;/web-grid&gt;
+grid.customStyles = '.wg__cell { color: #92400e; }'</code></pre>
         </div>
 
         <footer>
@@ -677,6 +708,24 @@
         gridTableBorderOnly.paginationPosition = 'bottom-right'
         gridTableBorderOnly.paginationLayout = 'previous|page-info|next'
         gridTableBorderOnly.isTableBorderOnly = true
+
+        // customStyles — instance + page-wide layers
+        for (const id of ['gridPageCss', 'gridOwnCss']) {
+            const g = document.getElementById(id)
+            g.items = borderDemoData
+            g.columns = borderDemoColumns
+        }
+        const PAGE_CSS = `
+            .wg__header { background: #dbeafe; }
+            .wg__cell { color: #1e3a8a; }
+        `
+        document.getElementById('pageCssOn').addEventListener('click', () => {
+            window.components['web-grid'].customStyles = PAGE_CSS
+        })
+        document.getElementById('pageCssOff').addEventListener('click', () => {
+            window.components['web-grid'].customStyles = null
+        })
+        window.components['web-grid'].customStyles = PAGE_CSS
     </script>
 </body>
 </html>

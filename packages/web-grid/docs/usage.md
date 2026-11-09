@@ -83,9 +83,9 @@ The `QuickGridProps<T>` type defined in `src/types.ts` is the canonical source o
 | `isDirtyIndicatorShown` | `boolean` | `true` | Visual indicator on cells with unsaved changes |
 | `frozenColumnCount` | `number` | `0` | Freeze first N columns (applied after visual reorder from `isFrozen`) |
 | `preset` | `GridPreset` | `'excel'` | `'read-only'`, `'excel'`, or `'input-matrix'` (see [Presets](#presets)) |
-| `isReadonly` | `boolean` | `false` | Attribute `readonly` — values can't change; still focusable / selectable / copyable |
-| `isDisabled` | `boolean` | `false` | Attribute `disabled` — no interaction |
-| `columnMinWidth` | `string` | — | Default min-width applied to every column header that doesn't set its own `minWidth` |
+| `isReadonly` | `boolean` | `false` | Attribute `readonly` (presence rule, reflects) — values can't change; still focusable / selectable / copyable |
+| `isDisabled` | `boolean` | `false` | Attribute `disabled` (presence rule, reflects) — no interaction |
+| `columnMinWidth` | `string \| number` | — | Default min-width (CSS length; a number = px) applied to every column header that doesn't set its own `minWidth`; an invalid length is refused |
 | `focusedRowIndex` | `number \| null` | `null` | Currently focused row index (readable/writable) |
 | `class` / `style` | `string` | — | Pass-through host element class and inline style |
 
@@ -171,7 +171,7 @@ Toolbar buttons, context-menu items and shortcuts share one shape (web-component
 | `row`, `isTextVisible` | Toolbar only — toolbar row (1 = closest to the grid row); show the text next to the icon |
 | `children` / `getChildrenCallback(ctx)`, `shouldCloseOnClick` | Menus only — submenu (static / lazy, sync or async); keep the menu open |
 
-A divider is an entry `{ divider: true, text? }` — or `menuDivider(text)`, exported from the package.
+A divider is an entry `{ divider: true, text? }` — or `createMenuDivider(text)`, exported from the package.
 
 #### Built-in row actions
 
@@ -414,7 +414,8 @@ For full-height mode, also set `isTableBorderOnly = true`.
 
 | Property | Type | Default | Description |
 |---|---|---|---|
-| `getCustomStylesCallback` | `(ctx) => string` | — | CSS string injected into shadow DOM |
+| `customStyles` | `string \| null` | `null` | Attribute `custom-styles`: CSS for the shadow root, after the page-wide `window.components['web-grid'].customStyles` (raw CSS) |
+| `getCustomStylesCallback` | `(ctx: GridContext) => string \| null` | `null` | Computes the instance CSS; wins over `customStyles` |
 | `getRowClassCallback` | `(ctx: { row, rowIndex }) => string \| null` | — | Dynamic CSS class for rows |
 | `labels` | `GridLabelsInput` (partial `GridLabels`, nested groups too) | — | Override UI labels for i18n (see [Labels / i18n](#labels--i18n)) |
 | `getValidationTooltipCallback` | `(ctx: CellContext<T> & { error }) => string \| null` | — | Custom HTML for the validation error tooltip (grid-level default) |
@@ -648,7 +649,8 @@ grid.getRowClassCallback = ({ row, controller }) =>
 | Callback | ctx | Returns |
 |---|---|---|
 | `getRowClassCallback` | `{ row, rowIndex }` | CSS class for the row, or `null` |
-| `getCustomStylesCallback` | `{}` | CSS injected into the shadow DOM |
+| `getCustomStylesCallback` | `{}` | CSS injected into the shadow DOM (wins over `customStyles`) |
+| `beforeScrollCallback` | `{ row, rowIndex, field, source, container, options }` | `false` skips the grid's own scroll; a partial `options` replaces the defaults (sync) |
 | `getPaginationLabelsCallback` | `{ currentPage, totalPages, totalItems, pageSize }` | `Partial<PaginationLabels>` |
 | `renderSummaryCallback` | `{ items, allItems, totalItems, currentPage, pageSize, metadata, drafts }` | Summary HTML |
 | `renderShortcutsHelpCallback` | `{}` | HTML shown with the shortcuts list |
@@ -726,7 +728,7 @@ grid.onAction = ({ action, id, row }) => {
 Every selection output lists entries in **on-screen order** and identifies a column by its index in `columns` (`colIndex`) + `field`: `getSelectedCells()` → `CellContext[]`, `getSelectedColumns()` → `[{ colIndex, field, column }]`. Column selection inputs (`selectColumn(colIndex)`, `selectColumnRange`, `isColumnSelected`) take the index in `columns`.
 | Tree | `isPathExpanded`, `toggleRowExpanded`, `expandRows`, `collapseRows`, `expandAll(paths?, options?)`, `collapseAll(paths?, options?)`, `getRowTreeInfo` |
 | Columns | `setColumnWidth`, `setColumnWidths`, `getColumnWidthsState`, `setColumnOrder`, `getColumnOrderState` |
-| Focus / editing | `focusCell`, `startEditing`, `scrollToRow(rowIndex)` → `Promise<boolean>` |
+| Focus / editing | `focusCell`, `startEditing`, `scrollToRow(rowIndex)` → `Promise<boolean>` (centres the row, brings the grid on screen; gated by `beforeScrollCallback`) |
 | Menus | `closeContextMenu`, `closeToolbar` |
 
 ## Keyboard shortcuts

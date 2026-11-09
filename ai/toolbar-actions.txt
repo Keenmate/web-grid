@@ -104,16 +104,16 @@ controller, element }):
     }
 
 Dividers: an entry { divider: true } (optionally { divider: true, text: 'Group' })
-separates buttons; `menuDivider(text?)` (exported) builds one.
+separates buttons; `createMenuDivider(text?)` (exported) builds one.
 
 Example with built-ins, custom items and a divider:
 
-    import { menuDivider } from '@keenmate/web-grid'
+    import { createMenuDivider } from '@keenmate/web-grid'
 
     grid.rowToolbar = [
       'move-up',
       'move-down',
-      menuDivider(),
+      createMenuDivider(),
       'add',
       { action: 'delete', icon: '🗑️', text: 'Delete' },
       {

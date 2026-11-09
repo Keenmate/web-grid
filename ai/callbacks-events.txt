@@ -208,12 +208,23 @@ renderLoadingCallback
   (label = labels.loading), 'search' = the autocomplete's async search (label =
   labels.dropdownSearching). Fill ctx.containerElement (it already has role="status"
   + aria-label); return a cleanup function if needed. Beats the page-wide
-  window.components.renderLoaderCallback (same signature, every KeenMate component);
-  neither set -> the default <span class="wg-loader"> (--wg-loader-* tokens).
+  window.components.renderLoadingCallback (same signature, every KeenMate component);
+  neither set -> the default <span class="wg__loader"> (--wg-loader-* tokens).
 
 getCustomStylesCallback
-  Signature: (ctx: GridContext<T>) => string
-  Returns CSS string injected into the shadow DOM.
+  Signature: (ctx: GridContext<T>) => string | null
+  Returns CSS injected into the shadow DOM; wins over customStyles (attribute
+  custom-styles). Page-wide: window.components['web-grid'].customStyles /
+  .getCustomStylesCallback come first, the instance layer overrides them.
+
+beforeScrollCallback
+  Signature: (ctx: GridBeforeScrollContext<T>) => false | Partial<GridScrollOptions> | void
+  ctx: { row, rowIndex, field (null = whole row), source: 'keyboard' | 'scroll-to-row'
+  | 'go-to-row', container (scroller found, null = page), options: { block, inline,
+  behavior, shouldRevealContainer } }
+  Runs before every scroll the grid makes on its own; false skips it, a partial
+  options object replaces the defaults (keyboard: nearest; jumps: center + reveal).
+  Synchronous. Virtual scroll jumps by index: only false applies.
 
 getRowClassCallback
   Signature: (ctx: RowContext<T>) => string | null

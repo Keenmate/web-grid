@@ -13,8 +13,9 @@ A major release — see the CHANGELOG for every rename (no aliases).
 - **Core lifecycle**: `defer` / `release()` hold the first render, then `ready` / `:state(ready)` / `whenReady()`; `destroy()`.
 - **`labels`** is also a JSON attribute, with `labels.noData` / `labels.noResults` for the empty table (`''` = blank), `labels.loading` for a pending infinite-scroll load; `scrollToRow(rowIndex)` resolves when the row is in view.
 - **Dropdowns**: `editorOptions.isEmptyAllowed` adds an empty first item (→ `null`); "no options" vs "no matching options" texts.
-- **Shared loader**: the infinite-scroll row and async dropdown search draw one loader (`--base-loader-*` tokens); swap it with `renderLoadingCallback` or page-wide `window.components.renderLoaderCallback`.
+- **Shared loader**: the infinite-scroll row and async dropdown search draw one loader (`--base-loader-*` tokens); swap it with `renderLoadingCallback` or page-wide `window.components.renderLoadingCallback`.
 - **Lookups**: `getRowById(id)` → row or `null`, `getRowIndex(row)` → display index or `-1`.
+- **Core 1.0.0-rc20/rc21**: every input is a typed property (`GridElementConfig`); `customStyles` / `custom-styles` next to `getCustomStylesCallback`, plus page-wide `window.components['web-grid'].customStyles`; `beforeScrollCallback` gates every scroll the grid makes on its own (keyboard, `scrollToRow`, go-to-row), which now scrolls only the grid's container (`scrollToRow` centres the row and brings the grid on screen); `readonly` / `disabled` follow the native presence rule and reflect; position / layout / CSS-length inputs are validated (`input-rejected`).
 
 ## What's New in v1.2.0-rc02
 
@@ -311,8 +312,8 @@ This architecture separates mode detection (the adapter decides *what* action a 
 | `isStickyRowNumbers` | `boolean` | `false` | Freeze row number column during horizontal scroll |
 | `frozenColumnCount` | `number` | `0` | Freeze first N columns (applied after visual reorder from `isFrozen`) |
 | `preset` | `GridPreset` | `'excel'` | Preset: `'read-only'`, `'excel'`, `'input-matrix'` (see [Presets](#presets)) |
-| `isReadonly` | `boolean` | `false` | Attribute `readonly`. Values can't change (no edit / paste / fill / row add-delete-move); still focusable, selectable, copyable. The `read-only` preset sets it |
-| `isDisabled` | `boolean` | `false` | Attribute `disabled`. No interaction at all (container `inert`, dimmed) |
+| `isReadonly` | `boolean` | `false` | Attribute `readonly` (presence: `readonly="false"` is still read-only; reflects). Values can't change (no edit / paste / fill / row add-delete-move); still focusable, selectable, copyable. The `read-only` preset sets it |
+| `isDisabled` | `boolean` | `false` | Attribute `disabled` (presence; reflects). No interaction at all (container `inert`, dimmed) |
 | `focusedRowIndex` | `number \| null` | `null` | Currently focused row index (readable/writable; assigning it is silent — no `focus-change`) |
 
 ### Editing
@@ -349,7 +350,7 @@ This architecture separates mode detection (the adapter decides *what* action a 
 | `beforePageChangeCallback` | `(ctx: { trigger, fromPage, toPage, drafts }) => boolean \| number \| void \| Promise<…>` | — | Runs before a user action swaps the rows — pager buttons, page-size change, header sort / filter-row change in server mode (`trigger`: `'page'` / `'page-size'` / `'sort'` / `'filter'`). `false` → stay, a number → go to that page instead; async OK (the pager is disabled meanwhile). Programmatic `currentPage` writes and `load-more` skip it |
 | `totalItems` | `number \| null` | `null` | Total item count for server-side pagination |
 | `isPaginationShown` | `boolean \| 'auto'` | `'auto'` | `true` = always show, `false` = never, `'auto'` = hide when ≤1 page (`showPagination` is a deprecated alias) |
-| `paginationPosition` | `string` | `'bottom-center'` | Position(s): `'bottom-center'`, `'top-right\|bottom-right'` for multiple |
+| `paginationPosition` | `string` | `'bottom-center'` | Position(s): `'bottom-center'`, `'top-right\|bottom-right'` for multiple (`top-` / `bottom-` + `left` / `center` / `right`; anything else is refused) |
 | `getPaginationLabelsCallback` | `(ctx: { currentPage, totalPages, totalItems, pageSize }) => Partial<PaginationLabels>` | — | Customize/translate pagination text |
 | `paginationLayout` | `string` | — | Element order: `'page-size\|previous\|page-info\|next'` or `'first\|previous\|page-info\|next\|last'` |
 
@@ -448,7 +449,8 @@ This architecture separates mode detection (the adapter decides *what* action a 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
 | `isScrollable` | `boolean` | `false` | Enable scroll container with max-height |
-| `scrollMaxHeight` | `string` | `'100vh'` | Max-height when `isScrollable` is `true` |
+| `scrollMaxHeight` | `string \| number` | `'100vh'` | Max-height when `isScrollable` is `true` — a CSS length; a number means pixels (`240` → `'240px'`); an invalid length is refused |
+| `beforeScrollCallback` | `(ctx: GridBeforeScrollContext) => false \| Partial<GridScrollOptions> \| void` | `null` | Runs before every scroll the grid makes on its own: `ctx.source` `'keyboard'` / `'scroll-to-row'` / `'go-to-row'`, `row`, `rowIndex`, `field` (`null` for a whole row), `container` (the scroller core found, `null` = page), `options` (`block` / `inline` / `behavior` / `shouldRevealContainer`). `false` skips the scroll, a partial `options` replaces the defaults. Synchronous. With virtual scroll a jump scrolls by index, so only `false` applies |
 | `isTableBorderOnly` | `boolean` | `false` | Border only around table, not pagination/toolbar (`tableBorderOnly` is a deprecated alias) |
 
 ### Virtual Scroll
@@ -479,15 +481,15 @@ label `labels.dropdownSearching` — in the editor and in the dropdown). The con
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `renderLoadingCallback` | `(ctx: LoaderRenderContext) => void \| (() => void)` | `null` | Draws the grid's loaders: fill `ctx.containerElement` (`ctx`: `{ component, context, containerElement, element, label }`); may return a cleanup. Beats the page-wide `window.components.renderLoaderCallback` |
+| `renderLoadingCallback` | `(ctx: LoaderRenderContext) => void \| (() => void)` | `null` | Draws the grid's loaders: fill `ctx.containerElement` (`ctx`: `{ component, context, containerElement, element, label }`); may return a cleanup. Beats the page-wide `window.components.renderLoadingCallback` |
 
-Precedence: `renderLoadingCallback` > `window.components.renderLoaderCallback` (one hook for every
-KeenMate component on the page) > the default `<span class="wg-loader">`, a mask drawn in
+Precedence: `renderLoadingCallback` > `window.components.renderLoadingCallback` (one hook for every
+KeenMate component on the page) > the default `<span class="wg__loader">`, a mask drawn in
 `currentColor` from `--wg-loader-icon` / `-rotate` / `-duration` / `-size` (→ `--base-loader-*`).
 Change the shape page-wide with `--base-loader-icon`; reduced motion slows it (1.5s), it never stops.
 
 ```js
-window.components.renderLoaderCallback = ({ context, containerElement }) => {
+window.components.renderLoadingCallback = ({ context, containerElement }) => {
   containerElement.innerHTML = '<span class="my-dots"></span>'
 }
 ```
@@ -521,11 +523,19 @@ window.components.renderLoaderCallback = ({ context, containerElement }) => {
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `getCustomStylesCallback` | `(ctx) => string` | — | Returns CSS string injected into shadow DOM |
+| `customStyles` | `string \| null` | `null` | Attribute `custom-styles`. CSS for the grid's shadow root (raw — never pass user input). Applied after the page-wide layer, so it overrides it |
+| `getCustomStylesCallback` | `(ctx: GridContext) => string \| null` | `null` | Computes the instance CSS from the grid context; wins over `customStyles` |
 | `getRowClassCallback` | `(ctx: { row, rowIndex }) => string \| null` | — | Dynamic CSS class for rows |
 | `labels` | `GridLabelsInput` (partial `GridLabels`, nested groups too) | — | Override UI labels for i18n (see [i18n](#i18n)) |
 | `getValidationTooltipCallback` | `(ctx: CellContext<T> & { error }) => string \| null` | — | Custom HTML for validation error tooltip (grid-level default) |
 | `invalidCells` | `CellValidationState[]` | `[]` | External validation state for cells |
+
+**Page-wide custom CSS.** `window.components['web-grid'].customStyles` (or `.getCustomStylesCallback(ctx)`, which wins) styles every grid on the page from one place; it sits in its own `<style>` before the instance's `customStyles` / `getCustomStylesCallback`, so an instance still overrides it, and assigning it updates live grids. An `@import` (an icon font) in either layer is also linked once in the document `<head>` — Chromium ignores `@font-face` inside a shadow root; `window.components['web-grid'].shouldHoistImports = false` turns that off.
+
+```js
+window.components['web-grid'].customStyles = `.wg__cell.price { font-variant-numeric: tabular-nums; }`
+grid.customStyles = `.wg__cell.price { color: var(--base-success-color); }`   // this grid only, wins
+```
 
 ### Responsive rules
 
@@ -846,7 +856,7 @@ Callbacks, events and clickable items follow the shared KeenMate interaction mod
 | `children` / `getChildrenCallback(ctx)` | entries | Menus only — static / lazy (sync or async) submenu |
 | `shouldCloseOnClick` | `boolean` | Menus only — default `true` |
 
-A **divider** is an entry `{ divider: true, text? }` (a labelled one is a group heading), or `menuDivider(text)` exported from the package.
+A **divider** is an entry `{ divider: true, text? }` (a labelled one is a group heading), or `createMenuDivider(text)` exported from the package.
 
 `beforeActionCallback(detail)` runs before any item activates (toolbar, menu, shortcut, built-in or custom) — return `false` to cancel (async OK, e.g. a confirm dialog). Then the item's `onClick` runs, then the built-in does its work, then the `action` event fires — so an `action` listener sees the result (the deleted row gone, the added row present, the new order).
 
@@ -1088,7 +1098,7 @@ grid.onRowChange = (detail) => save(detail.draftRow)
 | Method | Description |
 |--------|-------------|
 | `focusCell(rowIndex, colIndex)` | Programmatically focus a cell |
-| `scrollToRow(rowIndex)` | Scroll a displayed row into view; `Promise<boolean>` (`false` when out of range) |
+| `scrollToRow(rowIndex)` | Scroll a displayed row into view — centred in the grid's container, the grid brought on screen; `Promise<boolean>` (`false` when out of range or `beforeScrollCallback` skipped it) |
 | `startEditing(rowIndex, colIndex)` | Programmatically start editing a cell |
 | `openCustomEditor(rowIndex, colIndex)` | Open the custom editor for a cell with `editor: 'custom'` |
 

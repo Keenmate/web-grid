@@ -120,8 +120,8 @@ LOADER
   --wg-loader-duration  var(--base-loader-duration, 0.8s)  1.5s under reduced motion
   --wg-loader-size      var(--base-loader-size, 1.25em)
 
-The default loader is <span class="wg-loader"> (infinite-scroll row, async dropdown search).
-Richer loaders: renderLoadingCallback (instance) or window.components.renderLoaderCallback
+The default loader is <span class="wg__loader"> (infinite-scroll row, async dropdown search).
+Richer loaders: renderLoadingCallback (instance) or window.components.renderLoadingCallback
 (page-wide) -> callbacks-events.txt.
 
 
@@ -196,9 +196,10 @@ these classes. Without it, the classes are added to elements but have no effect.
 
 CUSTOM STYLES INJECTION
 ------------------------
-The getCustomStylesCallback property returns a CSS string that gets injected into the
-Shadow DOM. This is the ONLY way to style custom classes from getCellClassCallback or
-getRowClassCallback.
+customStyles (attribute custom-styles) or getCustomStylesCallback (wins) inject CSS into
+the Shadow DOM — the ONLY way to style custom classes from getCellClassCallback or
+getRowClassCallback. Page-wide: window.components['web-grid'].customStyles styles every
+grid (applied first; an instance overrides it). An @import is also linked once in <head>.
 
   grid.getCustomStylesCallback = () => `
     .high-value {

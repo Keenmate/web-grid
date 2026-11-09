@@ -7,7 +7,7 @@ Types are exported from the package entry point:
 
 Runtime exports: GridElement (also the default export; auto-registers
 <web-grid>), GridEngine (the state engine, for standalone / advanced use -
-not the element's public API) and menuDivider (divider factory for
+not the element's public API) and createMenuDivider (divider factory for
 toolbar / menu entry lists).
 
 
@@ -372,7 +372,7 @@ MenuDivider). See toolbar-actions.txt.
     shouldCloseOnClick?: boolean   default true
   }
 
-  type MenuDivider = { divider: true, text?: string }     (menuDivider(text?) builds one)
+  type MenuDivider = { divider: true, text?: string }     (createMenuDivider(text?) builds one)
 
   interface GridToolbarItem<T> extends ActionItem<RowContext<T>, GridRowAction> {
     row?: number                   toolbar row, 1 = closest (default 1)

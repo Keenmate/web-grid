@@ -10,6 +10,71 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Core 1.0.0-rc20 / rc21 alignment
+
+#### Changed — BREAKING
+
+- **Requires `@keenmate/web-components-core` `^1.0.0-rc20`** from npm (was a `file:` link); the direct
+  `@floating-ui/dom` dependency is gone (positioning goes through core `/positioning`).
+- **`readonly` / `disabled` follow the native presence rule and reflect** (core SPEC §6.4):
+  `readonly="false"` / `disabled="false"` now mean read-only / disabled; `el.isReadonly = true`
+  writes `readonly=""`, `false` removes it. The `read-only` preset reflects `readonly` too.
+- **`menuDivider()` is `createMenuDivider()`** (core rc18 rename, re-exported by the package).
+- **Page-wide loader hook `window.components.renderLoadingCallback`** (was `renderLoaderCallback`),
+  default loader class **`.wg__loader`** (was `.wg-loader`; the `--wg-loader-*` tokens keep their names).
+- **Validated inputs** — a refused value warns, fires `input-rejected` and keeps the previous one:
+  - `pagination-position` / `summary-position`: `|`-separated `top-` / `bottom-` + `left` / `center` /
+    `right`; `pagination-layout`: `|`-separated `first`, `previous`, `page-info`, `next`, `last`,
+    `page-size` (an unknown part used to render nothing silently).
+  - `scroll-max-height`, `column-min-width`: CSS lengths (core `toCssLength`) — a number means pixels
+    (`el.scrollMaxHeight = 240` → `'240px'`); `null` is refused (`undefined` / removing the attribute
+    resets). `summaryPosition` is `null` when unset (was `undefined`).
+  - `cell-toolbar-offset`: a number or a CSS length; `show-pagination`: a boolean or `'auto'` on the
+    property path.
+- **`scrollToRow(rowIndex)` centres the row** in the grid's container and brings the grid itself on
+  screen (was `nearest`), and resolves `false` when `beforeScrollCallback` skipped it.
+- **The grid's own scrolls no longer move the page**: keyboard moves, `scrollToRow()` and the go-to-row
+  dialog scroll the one container around the cell (core `scrollIntoContainer()`), not every ancestor
+  (`scrollIntoView()`); a grid without its own scroller still has the page brought to the cell.
+- **The cell / header menu closes on scroll by core's shared rule** (core rc20 `/menu`): only a scroll
+  of the page or of a scroller around what the menu belongs to, once it has moved; never a wheel over
+  nothing or an unrelated scroller. A right-click menu stays open while the grid's own container
+  scrolls (core finding, reported) — a keyboard-opened menu (anchored to the cell) closes.
+
+#### Added
+
+- **Every input is a typed property**: `GridElementConfig` (exported) lists the input rows and is
+  merged into `GridElement`, so `el.pageSize`, `el.editTrigger`, … type-check; `GridResponsiveConfig`
+  is the same type.
+- **`customStyles` / `custom-styles`** next to `getCustomStylesCallback` (core `createCustomStyles()`):
+  the callback wins; **page-wide** `window.components['web-grid'].customStyles` /
+  `.getCustomStylesCallback(ctx)` style every grid and are applied first (an instance overrides them;
+  assigning updates live grids); an `@import` (an icon font) is also linked once in `<head>`
+  (`shouldHoistImports = false` opts out). `destroy()` releases both layers.
+- **`beforeScrollCallback(ctx)`** — runs before every scroll the grid makes on its own: `ctx.source`
+  (`'keyboard'` | `'scroll-to-row'` | `'go-to-row'`), `row`, `rowIndex`, `field`, `container`,
+  `options` (`block`, `inline`, `behavior`, `shouldRevealContainer`). `false` skips the scroll, a
+  partial `options` replaces the defaults. Types `GridBeforeScrollContext`, `GridScrollOptions`,
+  `GridScrollSource`.
+- `columns` / `items` / inputs assigned before `<web-grid>` is defined are applied at upgrade (core rc20).
+
+#### Fixed
+
+- **Two quick Shift+Arrows grew the cell range by one**: after a render the focused cell was
+  re-focused on a timer, and a key pressed in between went nowhere. It is focused at once now.
+- **A fast drag selected a stale range** (WebKit: 6 cells dragged, 2 selected): the rAF-throttled
+  drag now applies its release point on mouseup.
+- The cell / header menu's close hook never ran (`closeCallback` was renamed `onClose` in core rc18),
+  so `el.menu` kept a closed menu until the next open.
+- 64 property accessors on the element were dead code (core's input accessors replaced them, rc20
+  warned about each); removed — reads and writes already went through core.
+
+#### Internal
+
+- Tooltip, dropdown, row toolbar and datepicker are placed by core `anchor()`; one core
+  `escapeHtml()` replaces the grid's `escapeHtml` / toolbar `escapeAttr` copies.
+- e2e runs in chromium, firefox and webkit (`playwright.config.ts`); platform skips carry the reason.
+
 ### Changed — BREAKING (assigning state is silent)
 
 Suite rule: assigning a value / selection / state property never fires the component's events
