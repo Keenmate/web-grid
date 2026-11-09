@@ -313,6 +313,12 @@ function handleDocumentMouseUp(e: MouseEvent): void {
 	// If not dragging, nothing to do
 	if (!selectionState.isDragging) return
 
+	// The release point is final: apply the last move now — a mouseup in the same frame as
+	// the moves before it (a fast drag; WebKit batches them) left the range at a stale cell
+	pendingMouseEvent = e
+	if (dragRafId) cancelAnimationFrame(dragRafId)
+	processDragUpdate()
+
 	// Check if user returned to starting cell (no actual selection made)
 	const returnedToStart =
 		selectionState.startRowIndex === selectionState.currentRowIndex &&
