@@ -283,7 +283,7 @@
     { "name": "wg-frozen-column-shadow-width", "category": "freeze", "usage": "Width of gradient shadow pseudo-element (8px)" },
 
     { "name": "wg-resize-handle-width", "category": "resize", "usage": "Column resize handle hitbox width (12px)" },
-    { "name": "wg-resize-handle-offset", "category": "resize", "usage": "Resize handle position offset, centered on border (-6px)" },
+    { "name": "wg-resize-handle-offset", "category": "resize", "usage": "Resize handle offset from the header cell's right edge (0px — inside the cell; the header clips overflow)" },
     { "name": "wg-resize-handle-line-width", "category": "resize", "usage": "Resize handle visible line width (2px)" },
     { "name": "wg-resize-handle-color", "category": "resize", "usage": "Resize handle default color (border color)" },
     { "name": "wg-resize-handle-active-color", "category": "resize", "usage": "Resize handle color when dragging (accent)" },

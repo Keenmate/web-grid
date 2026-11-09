@@ -1,4 +1,4 @@
-import { test, expect, Page, Locator, gridLocator, header } from './fixtures'
+import { test, expect, Page, Locator, gridLocator, header, dispatchContextMenu } from './fixtures'
 
 /**
  * E2E coverage for column resize + drag-to-reorder
@@ -133,6 +133,23 @@ test.describe('column resize — #grid', () => {
 
 		await page.mouse.up()
 		await expect(handle).not.toHaveClass(/wg__resize-handle--active/)
+	})
+
+	test('the whole resize handle is grabbable (inside its header cell, not under the next one)', async ({ page }) => {
+		// The header clips overflow and the next sticky header paints over anything sticking out, so
+		// a handle straddling the border had a dead outer half (Firefox's drag landed on the next header).
+		const grid = gridLocator(page, 'grid')
+		await grid.scrollIntoViewIfNeeded()
+		const hits = await grid.evaluate((el: Element) => {
+			const sr = el.shadowRoot!
+			const handle = sr.querySelector('.wg__resize-handle[data-field="name"]') as HTMLElement
+			const th = handle.closest('th')!.getBoundingClientRect()
+			const r = handle.getBoundingClientRect()
+			const y = r.top + r.height / 2
+			const xs = [r.left + 1, r.left + r.width / 2, r.right - 1]
+			return { isInside: r.left >= th.left && r.right <= th.right, hits: xs.map((x) => sr.elementFromPoint(x, y) === handle) }
+		})
+		expect(hits).toEqual({ isInside: true, hits: [true, true, true] })
 	})
 })
 
@@ -289,10 +306,7 @@ test.describe('header context menu — #gridHeaderMenu', () => {
 		const x = box.x + box.width / 2
 		const y = box.y + box.height / 2
 		await page.mouse.move(x, y)
-		await h.dispatchEvent('contextmenu', {
-			bubbles: true, cancelable: true, button: 2, buttons: 2,
-			clientX: x, clientY: y, screenX: x, screenY: y
-		})
+		await dispatchContextMenu(h, x, y)
 	}
 
 	/**

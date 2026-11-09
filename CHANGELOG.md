@@ -38,8 +38,8 @@ Target: **2.0.0-rc01** — a major: the callback, event and item API below is br
   (`scrollIntoView()`); a grid without its own scroller still has the page brought to the cell.
 - **The cell / header menu closes on scroll by core's shared rule** (core rc20 `/menu`): only a scroll
   of the page or of a scroller around what the menu belongs to, once it has moved; never a wheel over
-  nothing or an unrelated scroller. A right-click menu stays open while the grid's own container
-  scrolls (core finding, reported) — a keyboard-opened menu (anchored to the cell) closes.
+  nothing or an unrelated scroller. A right-click menu belongs to the cell under the pointer (core
+  rc21), so a scroll of the grid's own container closes it too, like a keyboard-opened one.
 
 #### Added
 
@@ -66,6 +66,10 @@ Target: **2.0.0-rc01** — a major: the callback, event and item API below is br
   drag now applies its release point on mouseup.
 - The cell / header menu's close hook never ran (`closeCallback` was renamed `onClose` in core rc18),
   so `el.menu` kept a closed menu until the next open.
+- **The column resize handle had a dead outer half**: it straddled the column border, but the header
+  clips overflow and the next header paints over it, so grabbing it right of the border started a
+  reorder / sort on the next column (Firefox drags failed outright). It sits inside its header cell now
+  (`--wg-resize-handle-offset` defaults to `0px`, was `-6px`); the line stays on the border.
 - 64 property accessors on the element were dead code (core's input accessors replaced them, rc20
   warned about each); removed — reads and writes already went through core.
 

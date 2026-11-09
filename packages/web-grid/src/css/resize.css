@@ -8,7 +8,9 @@
    creates a containing block for absolutely positioned children.
    Do NOT add position: relative here - it would break sticky headers! */
 
-/* Resize handle - invisible by default, appears on hover */
+/* Resize handle - invisible by default, appears on hover. It sits INSIDE its header cell
+   (offset 0): the header clips overflow (overflow: hidden) and the next sticky header paints
+   over anything that sticks out, so a part outside the cell can't be grabbed. */
 .wg__resize-handle {
   position: absolute;
   top: 0;
@@ -32,10 +34,10 @@
   position: absolute;
   top: 25%;
   bottom: 25%;
-  left: 50%;
+  /* On the column border, whatever the offset (offset 0 → the handle's right edge) */
+  right: max(0px, calc(0px - var(--wg-resize-handle-offset)));
   width: var(--wg-resize-handle-line-width);
   background: var(--wg-resize-handle-color);
-  transform: translateX(-50%);
   border-radius: 1px;
 }
 
