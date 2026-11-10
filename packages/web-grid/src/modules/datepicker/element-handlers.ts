@@ -27,8 +27,19 @@ import { parseFormat, formatDate, toISODateString, parseDateInput } from './form
 
 export { parseDateInput }
 
+/** What a pick does: save `date` from the cell's date `input`, then move per `direction`. */
+type DatePickerSelect = (date: Date, direction: 'down' | 'next' | 'prev' | undefined, input: HTMLInputElement) => void
+
 /** The cell a date picker opened on, captured at open (the grid may have moved on by the close). */
-type PickerCell = { rowIndex: number; colIndex: number; field: string; isAlwaysMode: boolean }
+type PickerCell = {
+	rowIndex: number
+	colIndex: number
+	field: string
+	isAlwaysMode: boolean
+	/** The cell's date input at open (a re-render replaces it; the old one keeps the typed text). */
+	input: HTMLInputElement
+	onSelect: DatePickerSelect
+}
 
 /**
  * The one close handler of the date picker. Each close path is wired ONCE: either the grid drives
@@ -50,7 +61,8 @@ type PickerCell = { rowIndex: number; colIndex: number; field: string; isAlwaysM
  * | 'overlay' / 'parent'   | another overlay of the group opened (or                  | SAVE the edit, focus back to the cell if |
  * |                        | dismissAllOverlays()), the overlay the grid lives in     | it was in the editor                     |
  * |                        | closed                                                   |                                          |
- * | 'reference-removed'    | the cell re-rendered while open (items replaced)         | nothing: the edit goes on, picker closed |
+ * | 'reference-removed'    | the cell re-rendered while open (items replaced)         | REOPEN on the re-rendered cell (typed    |
+ * |                        |                                                          | text kept); the row gone → nothing       |
  * | 'resize'               | off (`shouldCloseOnResize: false`; stays open, placed)   | —                                        |
  *
  * Only the edit the picker opened with is saved / cancelled (the grid may have moved on).
@@ -58,7 +70,11 @@ type PickerCell = { rowIndex: number; colIndex: number; field: string; isAlwaysM
  */
 function onDatePickerClose<T>(ctx: GridHost<T>, picker: DatePicker, reason: DatePickerCloseReason, at: PickerCell): void {
 	if (ctx.datepicker === picker) ctx.datepicker = null
-	if (reason === 'api' || reason === 'reference-removed' || reason === 'resize') return
+	if (reason === 'reference-removed') {
+		reopenOnRerenderedCell(ctx, at)
+		return
+	}
+	if (reason === 'api' || reason === 'resize') return
 	if (at.isAlwaysMode) {
 		renderCell(ctx, at.rowIndex, at.colIndex)
 		return
@@ -81,6 +97,32 @@ function onDatePickerClose<T>(ctx: GridHost<T>, picker: DatePicker, reason: Date
 }
 
 /**
+ * The edited cell was re-rendered while its picker was open (`items` replaced): the edit goes on,
+ * so the picker reopens on the new cell's editor with the text typed so far (and the date it
+ * stands for), the caret where it was. Nothing when the edit ended or its row is no longer
+ * rendered (the row is gone: no editor to reopen on).
+ */
+function reopenOnRerenderedCell<T>(ctx: GridHost<T>, at: PickerCell): void {
+	if (!at.isAlwaysMode) {
+		const editing = ctx.engine.editingCell
+		if (!editing || editing.rowIndex !== at.rowIndex || editing.field !== at.field) return
+	}
+	const cell = ctx.shadow.querySelector(`td[data-row="${at.rowIndex}"][data-col="${at.colIndex}"]`)
+	const input = cell?.querySelector('.wg__date-input') as HTMLInputElement | null
+	const anchor = cell?.querySelector('.wg__editor--date') as HTMLElement | null
+	if (!input || !anchor) return
+	const old = at.input
+	if (input !== old) {
+		input.value = old.value
+		input.dataset.dateValue = old.dataset.dateValue ?? ''
+		if (ctx.shadow.activeElement === input && old.selectionStart !== null && old.selectionEnd !== null) {
+			input.setSelectionRange(old.selectionStart, old.selectionEnd, old.selectionDirection ?? undefined)
+		}
+	}
+	openCellDatePicker(ctx, input, anchor, at.rowIndex, at.colIndex, at.onSelect)
+}
+
+/**
  * Create + open the date picker for a cell's date input. The picker reads its config from the
  * input's `data-*` attributes (`dateFormat`, `minDate`, `maxDate`, current `dateValue`), follows
  * what is typed into the input, and reports every close to onDatePickerClose().
@@ -91,7 +133,7 @@ export function openCellDatePicker<T>(
 	anchor: HTMLElement,
 	rowIndex: number,
 	colIndex: number,
-	onSelect: (date: Date, direction?: 'down' | 'next' | 'prev') => void
+	onSelect: DatePickerSelect
 ): void {
 	// Close any existing datepicker ('api': opening a new one)
 	if (ctx.datepicker) {
@@ -105,6 +147,8 @@ export function openCellDatePicker<T>(
 		colIndex,
 		field: String(column?.field ?? input.dataset.field ?? ''),
 		isAlwaysMode: (column?.editTrigger ?? ctx.engine.editTrigger) === 'always',
+		input,
+		onSelect,
 	}
 
 	const picker: DatePicker = new DatePicker({
@@ -118,7 +162,7 @@ export function openCellDatePicker<T>(
 		// The page-wide overlay tree, in the `overlay-group` input's group (unset = the default)
 		overlayGroup: ctx.overlayGroup || undefined,
 		onSelect: (date, direction) => {
-			if (date) onSelect(date, direction)
+			if (date) onSelect(date, direction, input)
 		},
 		onClose: (reason) => onDatePickerClose(ctx, picker, reason, at),
 	})
@@ -139,8 +183,8 @@ export function openDatePicker<T>(
 	const rowIndex = parseInt(input.dataset.row || '0', 10)
 	const field = input.dataset.field || ''
 	const colIndex = ctx.engine.columns.findIndex(c => String(c.field) === field)
-	openCellDatePicker(ctx, input, anchor, rowIndex, colIndex, (date, direction) => {
-		handleDatePickerSelect(ctx, input, date, direction)
+	openCellDatePicker(ctx, input, anchor, rowIndex, colIndex, (date, direction, at) => {
+		handleDatePickerSelect(ctx, at, date, direction)
 	})
 }
 

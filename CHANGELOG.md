@@ -28,8 +28,11 @@ Target: **2.0.0-rc01** — a major: the callback, event and item API below is br
   click outside / `startEditing()` saved the old value); the typed date is now the picked day and is saved.
 - **Fixed:** Shift+Tab in the picker moved to the NEXT cell; it moves to the previous one.
 - **Fixed:** clicking another (read-only) cell while the picker was open left focus on the edited cell.
-- Unchanged: a window resize keeps it open (placed); a re-render of the cell (`items` replaced) closes it
-  and the edit goes on.
+- **Changed: `items` replaced while the picker is open reopens it on the re-rendered cell** (D7), with the
+  text typed so far, the date it stands for and the caret kept (was: the picker closed, the typed text was
+  lost and the edit went on without a picker). When the edited row no longer exists, nothing reopens (as
+  before: no editor, the edit stays pending in the engine).
+- Unchanged: a window resize keeps it open (placed).
 
 ### Added — `overlay-group` (2026-11-10)
 - **`overlay-group` attribute / `overlayGroup` property** (`string | null`, default unset): scopes the
