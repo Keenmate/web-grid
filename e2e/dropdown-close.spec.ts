@@ -227,3 +227,93 @@ test.describe('the edited row gone, any editor', () => {
 		expect(await snap(page, 'grid', 3, 4)).toEqual({ dropdown: 0, editing: [], focus: 'grid', value: '', events: ['cell-edit-start(3.note)', 'cell-edit-cancel(3.note)'] })
 	})
 })
+
+/**
+ * A scroll caused by moving to another cell doesn't cancel: the move SAVES the edit (Excel rule) and
+ * closes the dropdown before the grid / browser scrolls the target into view; a user scroll with no
+ * move still cancels. The clicks hit the visible part of a partly visible cell with `page.mouse` (no
+ * Playwright scroll-into-view); the scroll position proves the move scrolled. Combobox `product`
+ * with 'Tablet' typed (saves the value 'tablet').
+ */
+test.describe("dropdown: a move's scroll saves, a user scroll cancels", () => {
+	/** Open row `row`'s product combobox (F2) in #grid after `setup` (grid scrollTop / max-width), type 'Tablet'. */
+	async function openTyped(page: Page, row: number, setup: { scrollTop?: number; maxWidth?: string }): Promise<void> {
+		await page.goto(PAGE)
+		await expect(gridLocator(page, 'grid').locator('tbody tr.wg__row').first()).toBeVisible()
+		await page.evaluate(({ scrollTop, maxWidth }) => {
+			const g = document.getElementById('grid')!
+			if (maxWidth) g.style.maxWidth = maxWidth
+			if (scrollTop) (g.shadowRoot!.querySelector('.wg') as HTMLElement).scrollTop = scrollTop
+		}, setup)
+		await page.waitForTimeout(100)
+		await cell(page, 'grid', row, COL.product).click()
+		await page.keyboard.press('F2')
+		await expect(gridLocator(page, 'grid').locator('.wg__dropdown')).toBeVisible()
+		await page.waitForTimeout(100)
+		await page.keyboard.press('ControlOrMeta+a')
+		await page.keyboard.type(TYPED.product)
+		await page.waitForTimeout(150)
+	}
+
+	/** The grid body's scroll position. */
+	const scrollPos = (page: Page) => page.evaluate(() => {
+		const sc = document.getElementById('grid')!.shadowRoot!.querySelector('.wg') as HTMLElement
+		return { top: sc.scrollTop, left: sc.scrollLeft }
+	})
+
+	/** Click the visible part of a partly visible cell (asserts it IS partly visible). */
+	async function clickVisiblePart(page: Page, row: number, col: number): Promise<void> {
+		const at = await page.evaluate(([row, col]) => {
+			const root = document.getElementById('grid')!.shadowRoot!
+			const view = (root.querySelector('.wg') as HTMLElement).getBoundingClientRect()
+			const r = root.querySelector(`td[data-row="${row}"][data-col="${col}"]`)!.getBoundingClientRect()
+			const top = Math.max(r.top, view.top), bottom = Math.min(r.bottom, view.bottom)
+			return { x: (r.left + r.right) / 2, y: (top + bottom) / 2, visible: (bottom - top) / r.height }
+		}, [row, col])
+		expect(at.visible).toBeGreaterThan(0.2)
+		expect(at.visible).toBeLessThan(0.8)
+		await page.mouse.click(at.x, at.y)
+	}
+
+	test('clicking a partly visible cell that starts its own edit saves, the grid scrolls it in', async ({ page }) => {
+		await openTyped(page, 3, { scrollTop: 18 }) // row 7 half visible
+		await clickVisiblePart(page, 7, 5) // tag: a select, its dropdown opens
+		await page.waitForTimeout(300)
+		expect((await scrollPos(page)).top).toBeGreaterThan(18)
+		expect(await snap(page, 'grid', 3, COL.product)).toEqual({ dropdown: 1, editing: ['7:5'], focus: '7:5/editor', value: 'Tablet', events: ['cell-edit-start(3.product)', 'row-change(3.product=tablet)', 'cell-edit-start(7.tag)'] })
+	})
+
+	test('clicking a partly visible read-only cell saves, the grid scrolls it in', async ({ page }) => {
+		await openTyped(page, 3, { scrollTop: 18 })
+		await clickVisiblePart(page, 7, 0)
+		await page.waitForTimeout(300)
+		expect((await scrollPos(page)).top).toBeGreaterThan(18)
+		expect(await snap(page, 'grid', 3, COL.product)).toEqual({ dropdown: 0, editing: [], focus: '7:0', value: 'Tablet', events: ['cell-edit-start(3.product)', 'row-change(3.product=tablet)'] })
+	})
+
+	test('Tab into a column out of view saves, the grid scrolls it in (its dropdown stays open)', async ({ page }) => {
+		await openTyped(page, 3, { maxWidth: '420px' }) // the assignee column is cut off
+		await page.keyboard.press('Tab')
+		await page.waitForTimeout(300)
+		expect((await scrollPos(page)).left).toBeGreaterThan(0)
+		expect(await snap(page, 'grid', 3, COL.product)).toEqual({ dropdown: 1, editing: ['3:3'], focus: '3:3/editor', value: 'Tablet', events: ['cell-edit-start(3.product)', 'row-change(3.product=tablet)', 'cell-edit-start(3.assignee)'] })
+	})
+
+	test('Enter into a row out of view saves, the grid scrolls it in', async ({ page }) => {
+		await openTyped(page, 6, {}) // row 7 is below the fold
+		await page.keyboard.press('Enter')
+		await page.waitForTimeout(300)
+		expect((await scrollPos(page)).top).toBeGreaterThan(0)
+		expect(await snap(page, 'grid', 6, COL.product)).toEqual({ dropdown: 0, editing: [], focus: '7:2', value: 'Tablet', events: ['cell-edit-start(6.product)', 'row-change(6.product=tablet)'] })
+	})
+
+	test('a user wheel scroll with no move cancels', async ({ page }) => {
+		await openTyped(page, 3, {})
+		const box = (await cell(page, 'grid', 2, 4).boundingBox())!
+		await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+		await page.mouse.wheel(0, 150)
+		await page.waitForTimeout(300)
+		expect((await scrollPos(page)).top).toBeGreaterThan(0)
+		expect(await snap(page, 'grid', 3, COL.product)).toEqual({ dropdown: 0, editing: [], focus: '3:2', value: 'Phone', events: ['cell-edit-start(3.product)', 'cell-edit-cancel(3.product)'] })
+	})
+})

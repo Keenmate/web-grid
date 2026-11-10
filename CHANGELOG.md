@@ -19,7 +19,10 @@ Target: **2.0.0-rc01** — a major: the callback, event and item API below is br
   Every close path is pinned by `e2e/datepicker-close.spec.ts`.
 - **Changed: a click outside the picker saves the edit** (was: cancel), like every other editor since WP1b.
 - **Changed: a scroll that moves the edited cell cancels the edit** (was: the picker stayed open; in a
-  virtual grid it vanished and the edit went on), like the cell dropdown.
+  virtual grid it vanished and the edit went on), like the cell dropdown. Only a user scroll (wheel,
+  scrollbar, page scroll) with no move: the scroll that comes with moving to another cell (a click on a
+  partly visible cell, Tab / Enter into one out of view) never cancels — the move saves the edit and
+  closes the picker / dropdown before the grid scrolls the target in (pinned for both, e2e).
 - **Changed: the date editor joins the page-wide overlay tree** in the `overlay-group` group: another
   overlay of the group opening (or `dismissAllOverlays()`) closes it and saves the edit; it opening closes
   the others.

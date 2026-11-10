@@ -96,8 +96,15 @@ const ACTIONS: Record<string, (page: Page, id: string) => Promise<void>> = {
 	outsideClick: async (page) => { await page.locator('#outside').click() },
 	/** Another cell, read-only (id column): just moves focus. */
 	otherCell: async (page, id) => { await cell(page, id, 5, 0).click() },
-	/** Another cell that starts its own edit on click: a text editor (note). */
-	otherCellEdits: async (page, id) => { await cell(page, id, 5, 2).click() },
+	/**
+	 * Another cell that starts its own edit on click: a text editor (note). Clicked at its right edge:
+	 * the picker (below row 3) covers the cell's centre, and Playwright's actionability retry then
+	 * SCROLLED the grid before clicking — a scroll with no move yet, which cancels (the old flake).
+	 */
+	otherCellEdits: async (page, id) => {
+		const box = (await cell(page, id, 5, 2).boundingBox())!
+		await cell(page, id, 5, 2).click({ position: { x: box.width - 6, y: box.height / 2 } })
+	},
 	/** Another cell that starts its own edit on click: a select, its dropdown opens (tag). */
 	otherDropdownCellEdits: async (page, id) => { await cell(page, id, 5, 3).click() },
 	/** The grid body scrolls (#vgrid: 2000px — the edited row leaves the rendered window). */
@@ -227,4 +234,92 @@ test.describe('date editor close paths (characterization)', () => {
 			expect(await snap(page, id, row, col)).toEqual(want)
 		})
 	}
+})
+
+/**
+ * A scroll caused by moving to another cell doesn't cancel: the move SAVES the edit (Excel rule) and
+ * closes the picker before the grid / browser scrolls the target into view; a user scroll with no move
+ * still cancels. The clicks hit the visible part of a partly visible cell with `page.mouse` (no
+ * Playwright scroll-into-view); `scrolled` proves the move scrolled.
+ */
+test.describe("date editor: a move's scroll saves, a user scroll cancels", () => {
+	/** Open row `row`'s date editor (F2) in #grid after `setup` (grid scrollTop / max-width), type TYPED. */
+	async function openTyped(page: Page, row: number, setup: { scrollTop?: number; maxWidth?: string }): Promise<void> {
+		await page.goto(PAGE)
+		await expect(gridLocator(page, 'grid').locator('tbody tr.wg__row').first()).toBeVisible()
+		await page.evaluate(({ scrollTop, maxWidth }) => {
+			const g = document.getElementById('grid')!
+			if (maxWidth) g.style.maxWidth = maxWidth
+			if (scrollTop) (g.shadowRoot!.querySelector('.wg') as HTMLElement).scrollTop = scrollTop
+		}, setup)
+		await page.waitForTimeout(100)
+		await cell(page, 'grid', row, 1).click()
+		await page.keyboard.press('F2')
+		await expect(gridLocator(page, 'grid').locator('.wg-datepicker')).toBeVisible()
+		await page.waitForTimeout(100)
+		await gridLocator(page, 'grid').locator('.wg__date-input').fill(TYPED)
+		await page.waitForTimeout(100)
+	}
+
+	/** The grid body's scroll position. */
+	const scrollPos = (page: Page) => page.evaluate(() => {
+		const sc = document.getElementById('grid')!.shadowRoot!.querySelector('.wg') as HTMLElement
+		return { top: sc.scrollTop, left: sc.scrollLeft }
+	})
+
+	/** Click the visible part of a partly visible cell (asserts it IS partly visible). */
+	async function clickVisiblePart(page: Page, row: number, col: number): Promise<void> {
+		const at = await page.evaluate(([row, col]) => {
+			const root = document.getElementById('grid')!.shadowRoot!
+			const view = (root.querySelector('.wg') as HTMLElement).getBoundingClientRect()
+			const r = root.querySelector(`td[data-row="${row}"][data-col="${col}"]`)!.getBoundingClientRect()
+			const top = Math.max(r.top, view.top), bottom = Math.min(r.bottom, view.bottom)
+			return { x: (r.left + r.right) / 2, y: (top + bottom) / 2, visible: (bottom - top) / r.height }
+		}, [row, col])
+		expect(at.visible).toBeGreaterThan(0.2)
+		expect(at.visible).toBeLessThan(0.8)
+		await page.mouse.click(at.x, at.y)
+	}
+
+	test('clicking a partly visible cell that starts its own edit saves, the grid scrolls it in', async ({ page }) => {
+		await openTyped(page, 3, { scrollTop: 18 }) // row 7 half visible
+		await clickVisiblePart(page, 7, 3) // tag: a select, its dropdown opens
+		await page.waitForTimeout(300)
+		expect((await scrollPos(page)).top).toBeGreaterThan(18)
+		expect(await snap(page, 'grid', 3, 1)).toEqual({ picker: 0, editing: ['7:3'], focus: '7:3/editor', value: TYPED, events: ['cell-edit-start(3.due)', `row-change(3.due=${TYPED})`, 'cell-edit-start(7.tag)'] })
+	})
+
+	test('clicking a partly visible read-only cell saves, the grid scrolls it in', async ({ page }) => {
+		await openTyped(page, 3, { scrollTop: 18 })
+		await clickVisiblePart(page, 7, 0)
+		await page.waitForTimeout(300)
+		expect((await scrollPos(page)).top).toBeGreaterThan(18)
+		expect(await snap(page, 'grid', 3, 1)).toEqual({ picker: 0, editing: [], focus: '7:0', value: TYPED, events: ['cell-edit-start(3.due)', `row-change(3.due=${TYPED})`] })
+	})
+
+	test('Tab into a column out of view saves, the grid scrolls it in', async ({ page }) => {
+		await openTyped(page, 3, { maxWidth: '280px' }) // the note column is cut off
+		await page.keyboard.press('Tab')
+		await page.waitForTimeout(300)
+		expect((await scrollPos(page)).left).toBeGreaterThan(0)
+		expect(await snap(page, 'grid', 3, 1)).toEqual({ picker: 0, editing: [], focus: '3:2', value: TYPED, events: ['cell-edit-start(3.due)', `row-change(3.due=${TYPED})`] })
+	})
+
+	test('Enter into a row out of view saves, the grid scrolls it in', async ({ page }) => {
+		await openTyped(page, 6, {}) // row 7 is below the fold
+		await page.keyboard.press('Enter')
+		await page.waitForTimeout(300)
+		expect((await scrollPos(page)).top).toBeGreaterThan(0)
+		expect(await snap(page, 'grid', 6, 1)).toEqual({ picker: 0, editing: [], focus: '7:1', value: TYPED, events: ['cell-edit-start(6.due)', `row-change(6.due=${TYPED})`] })
+	})
+
+	test('a user wheel scroll with no move cancels', async ({ page }) => {
+		await openTyped(page, 3, {})
+		const box = (await cell(page, 'grid', 2, 3).boundingBox())!
+		await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+		await page.mouse.wheel(0, 150)
+		await page.waitForTimeout(300)
+		expect((await scrollPos(page)).top).toBeGreaterThan(0)
+		expect(await snap(page, 'grid', 3, 1)).toEqual({ picker: 0, editing: [], focus: '3:1', value: '2026-06-13', events: ['cell-edit-start(3.due)', 'cell-edit-cancel(3.due)'] })
+	})
 })
