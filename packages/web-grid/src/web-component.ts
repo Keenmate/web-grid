@@ -1394,7 +1394,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 			// Initialize click event manager for outside-click detection
 			// Only subscribe once (attachEventListeners is called on every render)
 			if (!this.clickEventsSubscribed) {
-				// Treat clicks inside our document.body-hosted popovers as
+				// Treat clicks inside our popovers (the datepicker, outside the table) as
 				// inside the grid — otherwise outsideClick fires while the user
 				// is interacting with the picker/menu and tears down editing.
 				const isPathInOwnedScope = (path: EventTarget[]): boolean => {

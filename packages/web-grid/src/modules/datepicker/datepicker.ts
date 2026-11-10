@@ -3,20 +3,20 @@
 // Main date picker implementation
 // =============================================================================
 
+import { adoptStyles } from '@keenmate/web-components-core'
 import { anchor as anchorTo } from '@keenmate/web-components-core/positioning'
 import type { DatePickerOptions, DatePickerState, LocaleStrings, FormatSpec } from './types.js'
 import { DEFAULT_LOCALE_STRINGS } from './types.js'
 import { parseFormat, formatDate, normalizeDate, toISODateString } from './formatting.js'
 
-// Datepicker styles (injected into document.head)
+// Datepicker styles (adopted into the mount root: the grid's shadow root, else document.head)
 const DATEPICKER_STYLES = `
 .wg-datepicker-container {
 	position: fixed;
 	z-index: var(--wg-dp-z-index, 9999);
 
-	/* Colors — the popup lives in the document (outside the grid's shadow root), so it
-	   carries its own inputs (contract defaults) and the contract's formulas on them;
-	   light-dark() follows the page's color-scheme. */
+	/* Colors — contract inputs with their defaults and the contract's formulas on them;
+	   light-dark() follows the color-scheme of the mount root (the grid host in its shadow root). */
 	--wg-dp-background: var(--base-main-bg, light-dark(#ffffff, #1e293b));
 	--wg-dp-text-color: var(--base-text-color-1, light-dark(#334155, #f1f5f9));
 	--wg-dp-accent-color: var(--base-primary-color, #3b82f6);
@@ -274,6 +274,9 @@ const DATEPICKER_STYLES = `
 }
 `
 
+// In a shadow root the picker sits next to the grid's own CSS: same `component` layer.
+const LAYERED_DATEPICKER_STYLES = `@layer component {\n${DATEPICKER_STYLES}\n}`
+
 let stylesInjected = false
 import {
 	renderDatePicker,
@@ -309,7 +312,7 @@ export class DatePicker {
 	private input: HTMLInputElement | null = null
 	private cleanupAutoUpdate: (() => void) | null = null
 
-	/** The picker's outer container (mounted in document.body), or null when closed. */
+	/** The picker's outer container (mounted in `options.container`, default document.body), or null when closed. */
 	getElement(): HTMLElement | null { return this.element }
 
 	private previousInputValue = ''
@@ -386,9 +389,14 @@ export class DatePicker {
 	}
 
 	/**
-	 * Inject datepicker styles into document head (once)
+	 * Styles for the mount root: adopted once per shadow root (core adoptStyles, in the grid's
+	 * `component` layer so custom CSS still wins), else one <style> in document.head.
 	 */
-	private static injectStyles(): void {
+	private static injectStyles(root: ShadowRoot | HTMLElement): void {
+		if (root instanceof ShadowRoot) {
+			adoptStyles(root, LAYERED_DATEPICKER_STYLES)
+			return
+		}
 		if (stylesInjected) return
 
 		const style = document.createElement('style')
@@ -402,8 +410,8 @@ export class DatePicker {
 	 * Open the date picker
 	 */
 	open(anchor: HTMLElement, value: Date | string | null = null): void {
-		// Inject styles on first use
-		DatePicker.injectStyles()
+		const root = this.options.container ?? document.body
+		DatePicker.injectStyles(root)
 
 		if (this.state.isOpen) {
 			this.close()
@@ -430,8 +438,7 @@ export class DatePicker {
 		this.element.className = 'wg-datepicker-container'
 		this.element.innerHTML = renderDatePicker(this.state, this.options, this.localeStrings)
 
-		// Append to body
-		document.body.appendChild(this.element)
+		root.appendChild(this.element)
 
 		// Position with Floating UI
 		this.position()

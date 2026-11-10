@@ -519,7 +519,7 @@ export function handleTableFocusOut<T>(ctx: GridHost<T>, e: FocusEvent): void {
 
 /**
  * Returns true if `node` is inside one of this grid's popovers: the
- * document.body-hosted datepicker, or the cell / header menu (core openMenu(),
+ * datepicker, or the cell / header menu (core openMenu(),
  * in the shadow root but outside the table).
  */
 function isInsideOwnedPopover<T>(ctx: GridHost<T>, node: Node | null): boolean {

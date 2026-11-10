@@ -10,6 +10,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Theme (2026-11-10)
+- **Fixed: the date cell editor follows the grid's scheme.** It mounted in `document.body` with its styles in
+  `<head>`, so a dark grid (`data-theme="dark"`, a page signal, a `theme-source` section) opened a light
+  calendar, and `--wg-*` / `--base-*` set on the grid didn't reach it. It now mounts in the grid's shadow root like
+  the cell dropdown (styles adopted there, in the `component` layer).
+- **BREAKING:** `data-bs-theme` on the `<web-grid>` element itself no longer forces its scheme; use `data-theme`
+  (the switch every KeenMate component shares). `data-bs-theme` on `<html>`, `<body>` or a `theme-source`
+  section is unchanged.
+- Theming playground: the ancestor-signal radios did nothing (the demo grid lacked `theme-source="closest"`), and the
+  precedence text still named `:host-context()`.
+
 ### Persisted UI state the core way (SPEC §12.17, rulebook C-CA-17)
 
 #### Changed — BREAKING

@@ -45,6 +45,7 @@ export function openDatePicker<T>(
 	const currentValue = input.dataset.dateValue || ''
 
 	ctx.datepicker = new DatePicker({
+		container: ctx.shadow,
 		dateFormat,
 		minDate: minDateStr || undefined,
 		maxDate: maxDateStr || undefined,

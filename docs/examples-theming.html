@@ -224,7 +224,8 @@
 
 			<!-- Demo grid -->
 			<div class="demo-grid-wrapper" id="demoGridWrapper">
-				<web-grid id="demoGrid"></web-grid>
+				<!-- theme-source="closest": the grid reads the wrapper's signal (signal 2), not only <html> / <body> -->
+				<web-grid id="demoGrid" theme-source="closest"></web-grid>
 			</div>
 		</div>
 
@@ -233,7 +234,7 @@
 			<p>The grid resolves its rendered theme by walking signals in this order, highest priority first:</p>
 			<ol style="margin-left: 1.5rem; color: #4a5568; line-height: 1.8;">
 				<li><strong>Per-instance <code>data-theme</code></strong> on the <code>&lt;web-grid&gt;</code> element — always wins if set.</li>
-				<li><strong>Framework theme class/attribute</strong> on any ancestor (<code>data-theme</code>, <code>data-bs-theme</code>, <code>.dark</code>, <code>.light</code>) — caught by <code>:host-context()</code>.</li>
+				<li><strong>Theme signal</strong> (<code>data-theme</code>, <code>data-bs-theme</code>, <code>.dark</code>, <code>.light</code>) on <code>&lt;html&gt;</code> / <code>&lt;body&gt;</code>, or on the nearest ancestor that has one when the grid sets <code>theme-source="closest"</code> (as the demo grid does) — detected by <code>@keenmate/web-components-core</code> and mirrored onto the grid as <code>data-context-theme</code>.</li>
 				<li><strong>Page <code>color-scheme</code></strong> — when set to <code>dark</code> or <code>light</code>, the <code>light-dark()</code> fallbacks in <code>variables.css</code> resolve accordingly via inheritance.</li>
 				<li><strong>OS preference</strong> — only takes effect when the page declares <code>color-scheme: light dark</code> and no other signal above is set.</li>
 			</ol>

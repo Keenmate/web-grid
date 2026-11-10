@@ -22,6 +22,10 @@ export interface DatePickerOptions {
 	// Rolling selector year range
 	rollingYearRange?: string  // e.g., '2020-2030' (default: current year ± 10)
 
+	// Where the picker mounts: the grid passes its shadow root, so the picker inherits the grid's
+	// color-scheme (data-theme / data-context-theme) and --wg-* / --base-* (default: document.body)
+	container?: ShadowRoot | HTMLElement
+
 	// Callbacks
 	onSelect?: (date: Date | null, direction?: 'down' | 'next') => void
 	onClose?: () => void

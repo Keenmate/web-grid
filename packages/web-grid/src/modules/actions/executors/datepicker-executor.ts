@@ -73,6 +73,7 @@ function executeOpenDatePicker(ctx: ExecutorContext): void {
 
 	// Create and open the date picker
 	ctx.datepicker = new DatePicker({
+		container: ctx.shadow,
 		dateFormat,
 		minDate: minDateStr || undefined,
 		maxDate: maxDateStr || undefined,

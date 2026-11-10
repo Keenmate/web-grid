@@ -3,7 +3,7 @@ import { test, expect, Page, gridLocator, cell } from './fixtures'
 /**
  * E2E coverage for the date editor (docs/test/datepicker.html).
  *
- * The picker renders in document.body (light DOM, NOT inside the shadow root)
+ * The picker renders in the grid's shadow root (next to the table, like the cell dropdown)
  * with the class prefix `wg-datepicker` (single hyphen, like the context menu).
  * The grid is in navigate mode, so F2 starts editing + opens the picker.
  *
@@ -22,7 +22,7 @@ const GRID = 'web-grid#grid'
 const COL = { id: 0, name: 1, iso: 2, eu: 3, ts: 4 } as const
 
 /**
- * The picker mounts in document.body as <div class="wg-datepicker-container">
+ * The picker mounts in the grid's shadow root as <div class="wg-datepicker-container">
  * containing <div class="wg-datepicker">. The container itself has no size
  * (it's a position:fixed positioner), so we target the inner element for
  * visibility assertions.
@@ -259,7 +259,7 @@ test.describe('month navigation', () => {
 	})
 
 	// Clicking the picker's own chevrons / month-year button used to silently
-	// close the picker — focus would shift to the button (the picker mounts in
+	// close the picker — focus would shift to the button (the picker then lived in
 	// document.body, outside the shadow root), the date input fired focusout,
 	// handleTableFocusOut re-rendered the cell, and Floating UI's autoUpdate
 	// detected the anchor disconnection. Fixed by having the picker
@@ -285,5 +285,50 @@ test.describe('month navigation', () => {
 			.toHaveClass(/wg-datepicker__calendar--hidden/)
 		await expect(picker(page).locator('[data-month="5"]')).toHaveCount(1)
 		await expect(picker(page).locator('[data-year="2026"]')).toHaveCount(1)
+	})
+})
+
+// ---------------------------------------------------------------------------
+// Theme: the picker lives in the grid's shadow root, so it takes the grid's scheme
+// ---------------------------------------------------------------------------
+
+test.describe('theme', () => {
+	/** Relative luminance (0..1) of the picker's computed background. */
+	async function pickerLuminance(page: Page): Promise<number> {
+		return picker(page).evaluate((el) => {
+			const m = getComputedStyle(el).backgroundColor.match(/[\d.]+/g)!.map(Number)
+			return (0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2]) / 255
+		})
+	}
+
+	test('mounts in the grid\'s shadow root', async ({ page }) => {
+		await gotoDp(page)
+		await openPicker(page, 0, COL.iso)
+		const inShadow = await page.locator(GRID).evaluate((grid) =>
+			!!grid.shadowRoot!.querySelector('.wg-datepicker-container'))
+		expect(inShadow).toBe(true)
+	})
+
+	test('a per-instance data-theme="dark" grid on a light page opens a dark picker', async ({ page }) => {
+		await gotoDp(page)
+		await page.evaluate(() => document.documentElement.style.colorScheme = 'light')
+		await page.locator(GRID).evaluate((grid) => grid.setAttribute('data-theme', 'dark'))
+		await openPicker(page, 0, COL.iso)
+		expect(await pickerLuminance(page)).toBeLessThan(0.3)
+	})
+
+	test('a page signal reaches the picker (data-theme="dark" on <html>)', async ({ page }) => {
+		await gotoDp(page)
+		await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'))
+		await openPicker(page, 0, COL.iso)
+		expect(await pickerLuminance(page)).toBeLessThan(0.3)
+	})
+
+	test('a per-instance data-theme="light" grid on a dark page opens a light picker', async ({ page }) => {
+		await gotoDp(page)
+		await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'))
+		await page.locator(GRID).evaluate((grid) => grid.setAttribute('data-theme', 'light'))
+		await openPicker(page, 0, COL.iso)
+		expect(await pickerLuminance(page)).toBeGreaterThan(0.7)
 	})
 })

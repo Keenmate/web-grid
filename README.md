@@ -1280,7 +1280,7 @@ The manifest follows the [component-variables schema](https://raw.githubusercont
 
 Dark mode follows the page:
 - Page signal: `data-theme="dark"`, `data-bs-theme="dark"` or `.dark` (Tailwind) on `<html>` or `<body>` — detected once per page by `@keenmate/web-components-core` and mirrored onto the grid as `data-context-theme`, so it works in Firefox and Safari too. For a themed section, add `theme-source="closest"` (or a selector) to the grid.
-- Per instance: `data-theme="dark"` / `data-bs-theme="dark"` on the `<web-grid>` itself (wins).
+- Per instance: `data-theme="dark"` / `"light"` on the `<web-grid>` itself (wins).
 - OS preference: only through the page — declare `html { color-scheme: light dark }` and the grid follows the OS, live. There is no `prefers-color-scheme` rule in the component, so a grid never turns dark on a light page.
 
 The `light` versions of the same signals force light mode, e.g. for an app toggle that overrides the OS.
