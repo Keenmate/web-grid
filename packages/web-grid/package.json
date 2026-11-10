@@ -82,6 +82,6 @@
 		"vitest": "^4.1.10"
 	},
 	"dependencies": {
-		"@keenmate/web-components-core": "^1.0.0-rc20"
+		"@keenmate/web-components-core": "^1.0.0-rc21"
 	}
 }

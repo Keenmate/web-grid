@@ -34,7 +34,7 @@ Target: **2.0.0-rc01** — a major: the callback, event and item API below is br
 
 #### Changed — BREAKING
 
-- **Requires `@keenmate/web-components-core` `^1.0.0-rc20`** from npm (was a `file:` link); the direct
+- **Requires `@keenmate/web-components-core` `^1.0.0-rc21`** from npm (was a `file:` link); the direct
   `@floating-ui/dom` dependency is gone (positioning goes through core `/positioning`).
 - **`readonly` / `disabled` follow the native presence rule and reflect** (core SPEC §6.4):
   `readonly="false"` / `disabled="false"` now mean read-only / disabled; `el.isReadonly = true`
