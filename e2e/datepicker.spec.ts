@@ -80,7 +80,7 @@ test.describe('open / close', () => {
 		await expect(cell(page, 0, COL.iso)).toContainText('2026-06-15')
 	})
 
-	test('clicking outside the picker closes it without committing', async ({ page }) => {
+	test('clicking outside the picker closes it and saves the edit (unchanged value)', async ({ page }) => {
 		await gotoDp(page)
 		await openPicker(page, 0, COL.iso)
 
