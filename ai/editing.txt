@@ -483,7 +483,8 @@ cell-edit-start / onCellEditStart
   Detail: { row, rowIndex, field }
 
 cell-edit-cancel / onCellEditCancel
-  Fires when editing is cancelled (Escape key).
+  Fires when editing is cancelled (Escape key; a scroll that moves the edited cell; `items`
+  replaced without the edited row — then `row` is the row it was on).
   Detail: { row, rowIndex, field }
 
 row-change / onRowChange

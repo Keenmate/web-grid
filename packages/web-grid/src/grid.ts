@@ -386,6 +386,9 @@ export class GridEngine<T = unknown> {
 	get items(): T[] { return this._items }
 	set items(value: T[]) {
 		dataLogger.debug('items set:', value.length, 'rows')
+		// The edited row (read before the replace: `cell-edit-cancel` carries it if it goes)
+		const editing = this._editingCell
+		const editedRow = editing ? this.displayItems[editing.rowIndex] : undefined
 		// Drafts are never pruned here: with server paging a missing row is "another
 		// page". They leave via replaceRowById / discardDraft / discardAllDrafts.
 		this._items = value
@@ -393,6 +396,11 @@ export class GridEngine<T = unknown> {
 		this.invalidateDisplayCache()
 		this._treeChevronCache = new WeakMap()  // rows replaced → drop cached glyphs
 		this.rebuildTreeState()
+		// The edited row is gone (the new data has no row at its index): the edit can't go on —
+		// cancel it (closes its dropdown / date picker), not a dangling edit with no editor
+		if (editing && this._editingCell === editing && editing.rowIndex >= this.displayItems.length) {
+			this.cancelEditOn(editedRow)
+		}
 		this.requestUpdate()
 	}
 
@@ -3106,10 +3114,14 @@ export class GridEngine<T = unknown> {
 	 * Cancel editing without saving
 	 */
 	cancelEdit(): void {
+		this.cancelEditOn(this._editingCell ? this.displayItems[this._editingCell.rowIndex] : undefined)
+	}
+
+	/** Cancel editing without saving; `item` = the row being edited (`cell-edit-cancel`'s `row`). */
+	private cancelEditOn(item: T | undefined): void {
 		if (this._editingCell) {
 			const prev = this._editingCell
 			const { rowIndex, field } = prev
-			const item = this.displayItems[rowIndex]
 			if (item) {
 				this.notify('cell-edit-cancel', { row: item, rowIndex, field })
 			}

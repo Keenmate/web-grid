@@ -65,7 +65,8 @@ type PickerCell = {
  * |                        | dismissAllOverlays()), the overlay the grid lives in     | it was in the editor                     |
  * |                        | closed                                                   |                                          |
  * | 'reference-removed'    | the cell re-rendered while open (items replaced)         | REOPEN on the re-rendered cell (typed    |
- * |                        |                                                          | text kept); the row gone → nothing       |
+ * |                        |                                                          | text kept); the row gone → nothing (the  |
+ * |                        |                                                          | engine cancelled the edit)               |
  * | 'resize'               | off (`shouldCloseOnResize: false`; stays open, placed)   | —                                        |
  *
  * Only the edit the picker opened with is saved / cancelled (the grid may have moved on).

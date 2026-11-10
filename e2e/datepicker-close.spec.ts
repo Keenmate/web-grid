@@ -46,12 +46,15 @@ async function snap(page: Page, id: string, row: number, col: number): Promise<E
 			? `${td.dataset.row}:${td.dataset.col}${a === td ? '' : '/editor'}`
 			: a?.classList.contains('wg') ? 'grid' : `${a?.tagName.toLowerCase()}${a?.id ? '#' + a.id : ''}`
 		type Logged = { type: string; via: string; grid: string; detail: { rowIndex: number; field: string; newValue?: unknown; error?: string } }
+		const pending = (g as unknown as { engine: { editingCell: { rowIndex: number; field: string } | null } }).engine.editingCell
 		const invalid = [...(root?.querySelectorAll<HTMLElement>('.wg__cell--invalid') ?? [])].map((c) => `${c.dataset.row}:${c.dataset.col}`)
 		const td2 = root?.querySelector(`td.wg__cell[data-row="${row}"][data-col="${col}"]`)
 		const input = td2?.querySelector('input') as HTMLInputElement | null
 		const state: Expected = {
 			picker: document.querySelectorAll('.wg-datepicker').length + (root?.querySelectorAll('.wg-datepicker').length ?? 0),
-			editing: [...(root?.querySelectorAll<HTMLElement>('.wg__cell--editing') ?? [])].map((c) => `${c.dataset.row}:${c.dataset.col}`),
+			editing: [...(root?.querySelectorAll<HTMLElement>('.wg__cell--editing') ?? [])].map((c) => `${c.dataset.row}:${c.dataset.col}`)
+				// an edit the engine still holds with no editor rendered for it (a dangling edit)
+				.concat(pending && !root?.querySelector('.wg__cell--editing') ? [`pending:${pending.rowIndex}.${pending.field}`] : []),
 			focus,
 			value: input ? `input:${input.value}` : (td2?.textContent ?? '').trim(),
 			events: (((window as unknown as { __events?: Logged[] }).__events) ?? [])
@@ -119,11 +122,11 @@ const ACTIONS: Record<string, (page: Page, id: string) => Promise<void>> = {
 		await page.waitForTimeout(300)
 		await page.keyboard.press('Enter')
 	},
-	/** `el.items` replaced by 2 rows while open: the edited row (index 3) no longer exists. */
+	/** `el.items` replaced by 2 rows (#vgrid: 1) while open: the edited row (index 3 / 1) no longer exists. */
 	itemsShrunk: async (page, id) => {
 		await page.evaluate((id) => {
 			const g = document.getElementById(id) as unknown as { items: unknown[] }
-			g.items = (window as unknown as { __seed(n: number): unknown[] }).__seed(2)
+			g.items = (window as unknown as { __seed(n: number): unknown[] }).__seed(id === 'vgrid' ? 1 : 2)
 		}, id)
 	},
 	/** Another overlay opens (core overlay tree, default group) — what `dismissAllOverlays()` / a page popover does. */
@@ -152,7 +155,7 @@ const CASES: [string, string, Expected][] = [
 	['grid', 'escape', { picker: 0, editing: [], focus: '3:1', value: '2026-06-13', events: ['cell-edit-start(3.due)', 'cell-edit-cancel(3.due)'] }],
 	['grid', 'gridScroll', { picker: 0, editing: [], focus: '3:1', value: '2026-06-13', events: ['cell-edit-start(3.due)', 'cell-edit-cancel(3.due)'] }], // D5 a scroll that moves the cell cancels (was: stayed open)
 	['grid', 'itemsReplaced', { picker: 1, editing: ['3:1'], focus: '3:1/editor', value: 'input:2026-06-13', events: ['cell-edit-start(3.due)'] }], // D7 the picker reopens on the re-rendered cell, the edit goes on (was: closed)
-	['grid', 'itemsShrunk', { picker: 0, editing: [], focus: 'body', value: '', events: ['cell-edit-start(3.due)'] }], // D7 the edited row is gone: no reopen (today's behaviour, pinned: no editor, focus falls to <body>, no cancel event, the engine keeps editingCell)
+	['grid', 'itemsShrunk', { picker: 0, editing: [], focus: 'grid', value: '', events: ['cell-edit-start(3.due)', 'cell-edit-cancel(3.due)'] }], // the edited row is gone: the edit is cancelled, focus on the grid (was: a dangling edit in the engine, no cancel event, focus on <body>)
 	['grid', 'otherCell', { picker: 0, editing: [], focus: '5:0', value: '2026-06-13', events: ['cell-edit-start(3.due)'] }], // D4 focus on the clicked cell (was: stayed on the edited one)
 	['grid', 'otherCellEdits', { picker: 0, editing: ['5:2'], focus: '5:2/editor', value: '2026-06-13', events: ['cell-edit-start(3.due)', 'cell-edit-start(5.note)'] }],
 	['grid', 'otherDropdownCellEdits', { picker: 0, editing: ['5:3'], focus: '5:3/editor', value: '2026-06-13', events: ['cell-edit-start(3.due)', 'cell-edit-start(5.tag)'] }],
@@ -180,6 +183,8 @@ const CASES: [string, string, Expected][] = [
 	['vgrid', 'enter', { picker: 0, editing: [], focus: '2:1', value: '2026-06-11', events: ['cell-edit-start(1.due)'] }],
 	['vgrid', 'escape', { picker: 0, editing: [], focus: '1:1', value: '2026-06-11', events: ['cell-edit-start(1.due)', 'cell-edit-cancel(1.due)'] }],
 	['vgrid', 'gridScroll', { picker: 0, editing: [], focus: 'grid', value: '', events: ['cell-edit-start(1.due)', 'cell-edit-cancel(1.due)'] }], // D5 the row scrolled out: cancel, focus on the grid (was: the edit went on)
+	['vgrid', 'itemsShrunk', { picker: 0, editing: [], focus: 'grid', value: '', events: ['cell-edit-start(1.due)', 'cell-edit-cancel(1.due)'] }], // the edited row is gone: cancelled (was: dangling)
+	['grid', 'typed:itemsShrunk', { picker: 0, editing: [], focus: 'grid', value: '', events: ['cell-edit-start(3.due)', 'cell-edit-cancel(3.due)'] }], // the typed date goes with the row (was: dangling)
 	['vgrid', 'itemsReplaced', { picker: 1, editing: ['1:1'], focus: '1:1/editor', value: 'input:2026-06-11', events: ['cell-edit-start(1.due)'] }], // D7 reopens (was: closed)
 	['vgrid', 'otherCell', { picker: 0, editing: [], focus: '5:0', value: '2026-06-11', events: ['cell-edit-start(1.due)'] }], // D4
 	['vgrid', 'outsideClick', { picker: 0, editing: [], focus: 'OUTSIDE', value: '2026-06-11', events: ['cell-edit-start(1.due)'] }], // D3

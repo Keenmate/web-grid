@@ -42,7 +42,8 @@ cell-edit-start / onCellEditStart
 
 cell-edit-cancel / onCellEditCancel
   Detail: { row, rowIndex, field }
-  Fires when the user cancels an edit (Escape key).
+  Fires when an edit is cancelled (Escape key; a scroll that moves the edited cell; `items`
+  replaced without the edited row — then `row` is the row it was on).
 
 validation-error / onValidationError
   Detail: { row, rowIndex, field, error, source: 'edit' | 'paste' }

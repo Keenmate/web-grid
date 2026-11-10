@@ -30,9 +30,14 @@ Target: **2.0.0-rc01** — a major: the callback, event and item API below is br
 - **Fixed:** clicking another (read-only) cell while the picker was open left focus on the edited cell.
 - **Changed: `items` replaced while the picker is open reopens it on the re-rendered cell** (D7), with the
   text typed so far, the date it stands for and the caret kept (was: the picker closed, the typed text was
-  lost and the edit went on without a picker). When the edited row no longer exists, nothing reopens (as
-  before: no editor, the edit stays pending in the engine).
+  lost and the edit went on without a picker). When the edited row no longer exists, the edit is
+  cancelled (below).
 - Unchanged: a window resize keeps it open (placed).
+- **Fixed: `items` replaced without the edited row cancels the edit** — any editor (text, number, select,
+  combobox, autocomplete, date): `cell-edit-cancel` fires once (with the row it was on), its dropdown / date
+  picker closes and keyboard focus moves to the grid. Was: the engine kept a dangling edit with no editor
+  (no event, an open dropdown stayed on the vanished cell, focus fell to `<body>`, and a later `items`
+  bringing the index back showed the editor again).
 - **Changed: an invalid or incomplete typed date is saved on leave, marked invalid** (D9), like a pasted
   one: leaving the cell any way but Escape (Enter / Tab / Shift+Tab, another cell, a click outside,
   another overlay, `startEditing()`) keeps the typed text in the draft with the parse error

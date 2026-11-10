@@ -37,9 +37,12 @@ async function snap(page: Page, id: string, row: number, col: number): Promise<E
 			? `${td.dataset.row}:${td.dataset.col}${a === td ? '' : '/editor'}`
 			: a?.classList.contains('wg') ? 'grid' : `${a?.tagName.toLowerCase()}${a?.id ? '#' + a.id : ''}`
 		type Logged = { type: string; via: string; grid: string; detail: { rowIndex: number; field: string; newValue?: unknown } }
+		const pending = (g as unknown as { engine: { editingCell: { rowIndex: number; field: string } | null } }).engine.editingCell
 		return {
 			dropdown: root.querySelectorAll('.wg__dropdown').length,
-			editing: [...root.querySelectorAll<HTMLElement>('.wg__cell--editing')].map((c) => `${c.dataset.row}:${c.dataset.col}`),
+			editing: [...root.querySelectorAll<HTMLElement>('.wg__cell--editing')].map((c) => `${c.dataset.row}:${c.dataset.col}`)
+				// an edit the engine still holds with no editor rendered for it (a dangling edit)
+				.concat(pending && !root.querySelector('.wg__cell--editing') ? [`pending:${pending.rowIndex}.${pending.field}`] : []),
 			focus,
 			value: (root.querySelector(`td.wg__cell[data-row="${row}"][data-col="${col}"]`)?.textContent ?? '').replace('▼', '').trim(),
 			events: (((window as unknown as { __events?: Logged[] }).__events) ?? [])
@@ -97,6 +100,13 @@ const ACTIONS: Record<string, (page: Page, id: string) => Promise<void>> = {
 		await page.evaluate((id) => {
 			const g = document.getElementById(id) as unknown as { items: unknown[] }
 			g.items = (window as unknown as { __seed(n: number): unknown[] }).__seed(id === 'grid' ? 40 : 1000)
+		}, id)
+	},
+	/** `el.items` replaced by 2 rows (#vgrid: 1) while open: the edited row (index 3 / 1) no longer exists. */
+	itemsShrunk: async (page, id) => {
+		await page.evaluate((id) => {
+			const g = document.getElementById(id) as unknown as { items: unknown[] }
+			g.items = (window as unknown as { __seed(n: number): unknown[] }).__seed(id === 'vgrid' ? 1 : 2)
 		}, id)
 	},
 	/** Another overlay opens (core overlay tree, default group) — what `dismissAllOverlays()` / a page popover does. */
@@ -175,6 +185,12 @@ const CASES: [string, string, string, Expected][] = [
 	['grid', 'product', 'typed:tab', { dropdown: 1, editing: ['3:3'], focus: '3:3/editor', value: 'Tablet', events: ['cell-edit-start(3.product)', 'row-change(3.product=tablet)', 'cell-edit-start(3.assignee)'] }], // Q8 Tab saves the option value
 	['grid', 'status', 'overlayDismiss', { dropdown: 0, editing: [], focus: '3:1', value: 'Open', events: ['cell-edit-start(3.status)', 'cell-edit-cancel(3.status)'] }], // Q7 + Q2 no pick: cancel, focus on the cell
 	['vgrid', 'status', 'overlayDismiss', { dropdown: 0, editing: [], focus: '1:1', value: 'Done', events: ['cell-edit-start(1.status)', 'cell-edit-cancel(1.status)'] }], // Q7 + Q2
+	// The edited row gone (`items` replaced without it): the edit is cancelled once, the dropdown closed, focus on the
+	// grid (was: a dangling edit kept by the engine, no `cell-edit-cancel`, focus on <body>)
+	['grid', 'status', 'itemsShrunk', { dropdown: 0, editing: [], focus: 'grid', value: '', events: ['cell-edit-start(3.status)', 'cell-edit-cancel(3.status)'] }],
+	['grid', 'product', 'typed:itemsShrunk', { dropdown: 0, editing: [], focus: 'grid', value: '', events: ['cell-edit-start(3.product)', 'cell-edit-cancel(3.product)'] }],
+	['grid', 'assignee', 'itemsShrunk', { dropdown: 0, editing: [], focus: 'grid', value: '', events: ['cell-edit-start(3.assignee)', 'cell-edit-cancel(3.assignee)'] }],
+	['vgrid', 'status', 'itemsShrunk', { dropdown: 0, editing: [], focus: 'grid', value: '', events: ['cell-edit-start(1.status)', 'cell-edit-cancel(1.status)'] }],
 ]
 
 test.describe('dropdown close paths (characterization)', () => {
@@ -197,4 +213,17 @@ test.describe('dropdown close paths (characterization)', () => {
 			expect(await snap(page, id, row, col)).toEqual(want)
 		})
 	}
+})
+
+test.describe('the edited row gone, any editor', () => {
+	test('grid note (text editor): items replaced without its row cancels the edit, focus on the grid', async ({ page }) => {
+		await page.goto(PAGE)
+		await expect(gridLocator(page, 'grid').locator('tbody tr.wg__row').first()).toBeVisible()
+		await cell(page, 'grid', 3, 4).click() // note: click-to-edit
+		await expect(gridLocator(page, 'grid').locator('.wg__cell--editing')).toHaveCount(1)
+		await page.keyboard.type('xyz')
+		await ACTIONS.itemsShrunk(page, 'grid')
+		await page.waitForTimeout(300)
+		expect(await snap(page, 'grid', 3, 4)).toEqual({ dropdown: 0, editing: [], focus: 'grid', value: '', events: ['cell-edit-start(3.note)', 'cell-edit-cancel(3.note)'] })
+	})
 })

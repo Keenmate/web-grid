@@ -797,6 +797,9 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	/** First build done — before it, engine setters don't render (`defer` holds the first render). */
 	#isBuilt = false
 
+	/** `items` replaced without the edited row while focus was in the grid: the next render focuses the grid. */
+	#isEditedRowGone = false
+
 	/** The instance + page-wide custom CSS layers (core createCustomStyles(), rulebook C-CA-15). */
 	#customStyles: CustomStylesHandle | null = null
 
@@ -890,7 +893,12 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		this.virtualScroll.setIsLoadingMore(false)
 		this.shadow?.querySelector('.wg__loading-more-row')?.remove()
 		if (this.shadow) syncLoadingMoreLoader(this)
+		const wasEditing = !!this.engine.editingCell
+		const hadFocus = !!this.shadow?.activeElement
 		this.engine.items = value
+		// The edited row is gone (the engine cancelled the edit): its editor goes with the
+		// render, so keyboard focus moves to the grid instead of falling to <body>
+		if (wasEditing && !this.engine.editingCell && hadFocus) this.#isEditedRowGone = true
 	}
 
 	get columns(): Column<T>[] { return this.engine.columns }
@@ -1715,6 +1723,10 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		// (a focused filter-row input keeps the focus — the cell isn't re-focused)
 		restoreFocusAfterRender(this, container, filterFocus ? null : focusedCell)
 		restoreFilterFocus(this, filterFocus)
+		if (this.#isEditedRowGone) {
+			this.#isEditedRowGone = false
+			if (!this.shadow.activeElement) (this.shadow.querySelector('.wg') as HTMLElement | null)?.focus({ preventScroll: true })
+		}
 		positionFilterRow(this)
 
 		// Fix wheel scroll after DOM replacement - force browser to recalculate element under cursor
