@@ -260,6 +260,9 @@ validateCallback
         if (exists) return 'Value already exists'
         return true
       }
+    An async result never holds the edit: leaving the cell ends the edit at
+    once (the cell shows the typed value); the result is applied when the
+    promise settles, in commit order (one row-change per commit).
 
     When validation fails:
       - The cell shows a red border (invalid state)

@@ -45,14 +45,16 @@ export function openCustomEditor<T>(
 			// Same order as the canonical edit-executor commit path:
 			//   1. clearEditingVisual BEFORE commitEdit (so editingCell is still
 			//      set and the wg__cell--editing class can be located and removed)
-			//   2. await commitEdit (it's async — may run validateCallback)
+			//   2. commitEdit — the edit ends synchronously; an async validateCallback's
+			//      result re-renders the cell when it arrives
 			//   3. renderCell so the cell picks up the committed draft value
 			clearEditingVisual(ctx)
-			await ctx.engine.commitEdit(rowIndex, field, newValue)
+			const committed = ctx.engine.commitEdit(rowIndex, field, newValue)
 			renderCell(ctx, rowIndex, colIndex)
 			requestAnimationFrame(() => {
 				moveFocus(ctx, rowIndex, colIndex)
 			})
+			await committed
 		},
 		cancel: () => {
 			// Cancel edit mode without saving

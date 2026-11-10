@@ -144,13 +144,15 @@ async function executeCommitEdit(
 	// Clear visual state
 	clearEditingVisual(ctx)
 
-	// Commit the edit and await it (may be async with validation callbacks)
-	await ctx.engine.commitEdit(rowIndex, field, value, commitEmptyRow, 'edit', parseError)
+	// Commit: the edit ends synchronously; an async validateCallback's result re-renders the cell
+	// when it arrives (engine `_onCommitApplied`)
+	const committed = ctx.engine.commitEdit(rowIndex, field, value, commitEmptyRow, 'edit', parseError)
 
-	// Re-render the cell (now has correct value with getDisplayValueCallback applied)
+	// Re-render the cell now (the committed draft value, getDisplayValueCallback applied)
 	renderCell(ctx, rowIndex, colIndex)
 
 	if (focusEmptyRowColIndex !== undefined) {
+		await committed
 		// An empty-row commit re-renders the grid, and the render restores focus to
 		// the pre-render cell on a timeout — focus the fresh empty row after that,
 		// so the next row can be typed straight away.

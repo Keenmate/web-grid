@@ -664,6 +664,8 @@ Every column callback takes one `ctx`. The cell ctx (`CellContext<T>`) is `{ row
 
 An invalid value is not a veto: it stays as a draft, the cell is marked invalid and the `validation-error` event fires.
 
+An async `validateCallback` (a promise) never holds the edit: leaving the cell ends the edit at once and the cell shows the typed value; the result (transform, invalid mark, `validation-error`, `row-change`) is applied when the promise settles, in commit order.
+
 ### Tooltip
 
 | Field | Type | Description |

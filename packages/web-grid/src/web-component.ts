@@ -755,6 +755,14 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 				}
 			}
 		}
+
+		// An async validateCallback's result arrived after the edit ended: show it (the value, a
+		// transform, the invalid mark). A cell being edited again keeps its editor.
+		;(this.engine as unknown as { _onCommitApplied: ((rowIndex: number, field: string) => void) | null })._onCommitApplied = (rowIndex, field) => {
+			if (this.engine.isEditing(rowIndex, field)) return
+			const colIndex = this.engine.columns.findIndex(c => String(c.field) === field)
+			if (colIndex >= 0) renderCell(this, rowIndex, colIndex)
+		}
 	}
 
 	// ==========================================================================

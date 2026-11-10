@@ -15,6 +15,15 @@ Target: **2.0.0-rc01** — a major: the callback, event and item API below is br
   text, number, date, dropdown), then opens that cell's picker / dropdown — the Excel rule, like a click
   on the cell itself (`shouldCommitOnClickAway: false` still discards). Was: `cell-edit-cancel`, the
   typed text lost.
+- **An async `validateCallback` no longer breaks moving between cells.** The engine's `commitEdit()`
+  awaited the validation BEFORE ending the edit, so a move (Tab / Enter / a click) that started the
+  next edit at once had that new edit ended by the late commit, the old editor stayed open to a second
+  commit (duplicate `row-change`) or a stray `cell-edit-cancel`, and an edit could stay stuck. Now the
+  edit ends synchronously at the commit and the cell shows the typed value at once; the result
+  (transform, invalid mark + `validation-error`, one `row-change`) is applied when the promise settles,
+  in commit order (a fast Tab, Tab, Tab keeps the last write), and re-renders the cell. A sync
+  `validateCallback` is applied synchronously again (it was deferred a microtask by the `await`).
+  Pinned by `e2e/validation-async.spec.ts`.
 
 ### Date editor on core `createPopover()` (overlay WP2, 2026-11-10)
 - **Internal:** the date cell editor's picker is a core `createPopover()` in the grid's shadow root (was a

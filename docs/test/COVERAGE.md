@@ -80,6 +80,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | `preset` (read-only / excel / input-matrix; read-only sets `isReadonly`) | ✓ | `grid-modes.spec.ts`, `inputs.spec.ts` | `grid-modes.html`, `inputs.html` |
 | `validateCallback` (string / result / transform) | ✓ | `validation.spec.ts` | `validation.html` |
 | `invalidCells` (read + assign) + `isCellInvalid` / `getCellValidationError` | ✓ | `validation.spec.ts` | `validation.html` |
+| Async `validateCallback` while moving between cells (one save per move, result applied in commit order) | ✓ | `validation-async.spec.ts` | `validation-async.html` |
 | Fill handle (drag, cancel, direction constraint, `fill-direction` input — attribute / property / invalid value / column override; reordered + hidden columns — handle editability, filled field, horizontal span, `sourceCell` / `targetCells` column indices) | ✓ | `fill-handle.spec.ts` | `fill-handle.html` |
 | Paste (single / multi-cell, modes, events, proxies) | ✓ | `paste.spec.ts` | `paste.html` |
 | Drafts: dirty marking, indicator, `isCellDirty/isRowDirty/getRowDraft` | ✓ | `drafts.spec.ts` | `drafts.html` |

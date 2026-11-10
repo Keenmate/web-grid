@@ -75,6 +75,21 @@ type TreeIndex = {
 	rootPaths: string[]
 }
 
+/** A commit's validation result (see `GridEngine.commitEdit`). */
+type CommitOutcome = { isValid: boolean; validationError: string | null; finalValue: unknown }
+/** The cell a commit writes to, captured when the edit was committed. */
+type CommitTarget<T> = {
+	item: T
+	rowIndex: number
+	field: string
+	oldValue: unknown
+	isEmptyRow: boolean
+	commitEmptyRow: boolean
+	source: 'edit' | 'paste'
+}
+const isThenable = (v: unknown): v is PromiseLike<unknown> =>
+	!!v && (typeof v === 'object' || typeof v === 'function') && typeof (v as { then?: unknown }).then === 'function'
+
 import type { StateStore } from '@keenmate/web-components-core'
 // Date formatting utilities for auto-formatting date columns
 import { parseFormat, formatDate } from './modules/datepicker/index.js'
@@ -256,6 +271,12 @@ export class GridEngine<T = unknown> {
 	protected _editingCell: EditingCell = null
 	protected _currentCellError: string | null = null
 	protected _isValidating: boolean = false
+	/** Commits whose validation result is still to be applied (async `validateCallback`). */
+	protected _pendingCommits = 0
+	/** The pending commits, chained so their results apply in commit order. */
+	protected _commitChain: Promise<void> = Promise.resolve()
+	/** A deferred commit's result was applied to (rowIndex, field) — the element re-renders that cell. */
+	protected _onCommitApplied: ((rowIndex: number, field: string) => void) | null = null
 	/** Drafts keyed by row identity (see `draftKey`) — they follow their row through sort / page / filter. */
 	protected _draftRows: Map<unknown, T> = new Map()
 	/** The row each draft was made from (by the same key) — lists drafts of rows no longer in `items`. */
@@ -3159,16 +3180,26 @@ export class GridEngine<T = unknown> {
 	}
 
 	/**
-	 * Commit edit with validation
+	 * Commit edit with validation.
+	 *
+	 * The edit ENDS synchronously, here — never after an `await`: a move (Tab, Enter, a click on
+	 * another cell) commits and then starts the next edit at once, so an edit-state change that waited
+	 * for an async `validateCallback` would end the NEXT cell's edit (and leave the old editor open to a
+	 * second commit / a cancel). The validation result is applied when it arrives:
+	 * - sync `validateCallback` (or none) and no commit pending → applied right here, as before;
+	 * - a promise, or earlier commits still pending → the typed value goes into the draft now (the cell
+	 *   shows it), the result (draft value / invalid mark / `validation-error` / `row-change`) is applied
+	 *   when it arrives, in COMMIT ORDER (a later commit waits for the earlier ones), then the cell is
+	 *   re-rendered (`_onCommitApplied`). The returned promise settles after the apply.
 	 * @param commitEmptyRow - If true and editing empty row, add it to items. If false, just update the draft.
 	 */
-	async commitEdit(rowIndex: number, field: string, newValue: unknown, commitEmptyRow: boolean = false, source: 'edit' | 'paste' = 'edit', parseError: string | null = null): Promise<void> {
+	commitEdit(rowIndex: number, field: string, newValue: unknown, commitEmptyRow: boolean = false, source: 'edit' | 'paste' = 'edit', parseError: string | null = null): Promise<void> {
 		dataLogger.debug('commitEdit:', { rowIndex, field, newValue })
 		const column = this._columns.find(c => String(c.field) === field)
-		if (!column) return
+		if (!column) return Promise.resolve()
 
 		const item = this.displayItems[rowIndex]
-		if (!item) return
+		if (!item) return Promise.resolve()
 
 		const isEmptyRow = this.isEmptyRowIndex(rowIndex)
 		const oldValue = (item as Record<string, unknown>)[field]
@@ -3185,40 +3216,117 @@ export class GridEngine<T = unknown> {
 			builtInError = typed.error
 		}
 
-		let finalValue = newValue
-		let validationError: string | null = builtInError
-		let isValid = !builtInError
-
-		this._isValidating = true
-
-		try {
-			if (column.validateCallback && isValid) {
-				const context: ValidateContext<T> = this.ctx({
+		const value = newValue
+		let outcome: CommitOutcome | Promise<CommitOutcome> = { isValid: !builtInError, validationError: builtInError, finalValue: value }
+		if (column.validateCallback && !builtInError) {
+			const invalid = (err: unknown): CommitOutcome => ({ isValid: false, validationError: err instanceof Error ? err.message : 'Validation failed', finalValue: value })
+			const normalize = (result: ValidateResult): CommitOutcome => {
+				const n = this.normalizeValidationResult(result, value)
+				return { isValid: n.valid, validationError: n.message || null, finalValue: n.finalValue }
+			}
+			try {
+				const result = column.validateCallback(this.ctx({
 					row: item,
 					rowIndex,
 					column,
 					colIndex: this._columns.indexOf(column),
 					field,
-					value: newValue,
+					value,
 					oldValue,
 					source
-				})
-				const result = await Promise.resolve(column.validateCallback(context))
-				const normalized = this.normalizeValidationResult(result, newValue)
-
-				isValid = normalized.valid
-				validationError = normalized.message || null
-				finalValue = normalized.finalValue
+				}))
+				outcome = isThenable(result)
+					? Promise.resolve(result).then(normalize, invalid)
+					: normalize(result)
+			} catch (err) {
+				outcome = invalid(err)
 			}
-		} catch (err) {
-			isValid = false
-			validationError = err instanceof Error ? err.message : "Validation failed"
 		}
 
-		this._isValidating = false
+		const target: CommitTarget<T> = { item, rowIndex, field, oldValue, isEmptyRow, commitEmptyRow, source }
+
+		// Sync result, nothing pending: apply now, then end the edit (the order it always had)
+		if (!(outcome instanceof Promise) && this._pendingCommits === 0) {
+			const rowAdded = this.applyCommit(target, outcome, true)
+			this.endEditOnCommit()
+			if (rowAdded) this.requestUpdate()
+			return Promise.resolve()
+		}
+
+		// Deferred: the typed value shows now, the edit ends now, the result applies in commit order
+		this.writeCommitDraft(target, value)
+		this.endEditOnCommit()
+		this._pendingCommits++
+		this._isValidating = true
+		const pending = outcome
+		const run = this._commitChain
+			.then(() => pending)
+			.then(result => {
+				const at = this.resolveCommitTarget(target)
+				if (!at) {
+					dataLogger.debug('commitEdit: the row is gone, validation result dropped', { rowIndex, field })
+					return
+				}
+				const rowAdded = this.applyCommit(at, result, false)
+				if (rowAdded) this.requestUpdate()
+				else this._onCommitApplied?.(at.rowIndex, field)
+			})
+			.finally(() => {
+				if (--this._pendingCommits === 0) this._isValidating = false
+			})
+		this._commitChain = run.catch(() => undefined)
+		return run
+	}
+
+	/** End the edit a commit closes (whatever cell is edited — the commit's caller decided). */
+	private endEditOnCommit(): void {
+		const prev = this._editingCell
+		if (!prev) return
+		this._editingCell = null
+		this._onInteractionChange?.('editingCell', { prev, current: null })
+		// NOTE: No requestUpdate() - caller handles surgical DOM update
+	}
+
+	/** A deferred commit: put the typed value in the draft now, so the cell shows it while validating. */
+	private writeCommitDraft(t: CommitTarget<T>, value: unknown): void {
+		if (t.isEmptyRow) {
+			if (!this._emptyRowDraft) this._emptyRowDraft = { ...t.item }
+			;(this._emptyRowDraft as Record<string, unknown>)[t.field] = value
+			return
+		}
+		let draftRow = this.draftAt(t.rowIndex)
+		if (!draftRow) {
+			draftRow = { ...t.item }
+			this.setDraftAt(t.rowIndex, draftRow)
+		}
+		(draftRow as Record<string, unknown>)[t.field] = value
+	}
+
+	/** Where a deferred commit's row is now (`items` / sort may have changed while validating); null = gone. */
+	private resolveCommitTarget(t: CommitTarget<T>): CommitTarget<T> | null {
+		if (t.isEmptyRow) {
+			const index = this._newRowPosition === 'top' ? 0 : this.displayItems.length - 1
+			return this.isEmptyRowIndex(index) ? { ...t, rowIndex: index, item: this.displayItems[index] } : null
+		}
+		if (this.displayItems[t.rowIndex] === t.item) return t
+		const key = this.draftKey(t.item)
+		const index = this.displayItems.findIndex(i => this.draftKey(i) === key)
+		return index < 0 ? null : { ...t, rowIndex: index, item: this.displayItems[index] }
+	}
+
+	/**
+	 * Apply a commit's validation result: the draft value, the invalid mark, `validation-error`,
+	 * `row-change`. Returns true when an empty-row commit added the row to `items` (the caller
+	 * re-renders the grid). `immediate` = applied inside `commitEdit()` (the edit is still the
+	 * committed one, so `currentCellError` follows it).
+	 */
+	private applyCommit(t: CommitTarget<T>, o: CommitOutcome, immediate: boolean): boolean {
+		const { item, rowIndex, field, oldValue, source } = t
+		const { isValid, validationError, finalValue } = o
+		const setCellError = (error: string | null) => { if (immediate) this._currentCellError = error }
 
 		// Handle empty row commit - LENIENT validation (tracks errors but doesn't block)
-		if (isEmptyRow) {
+		if (t.isEmptyRow) {
 			// Always update empty row draft with the value (preserves user input)
 			if (!this._emptyRowDraft) {
 				this._emptyRowDraft = { ...item }
@@ -3228,15 +3336,15 @@ export class GridEngine<T = unknown> {
 			// Track validation state (but DON'T block commit)
 			if (!isValid) {
 				this.addInvalidCell(rowIndex, field, validationError || "Invalid value")
-				this._currentCellError = validationError
+				setCellError(validationError)
 				this.notify('validation-error', { row: item, rowIndex, field, error: validationError || "Invalid value", source })
 			} else {
 				this.removeInvalidCell(rowIndex, field)
-				this._currentCellError = null
+				setCellError(null)
 			}
 
 			// Commit to items if explicitly requested (Enter key or Tab on last cell)
-			if (commitEmptyRow) {
+			if (t.commitEmptyRow) {
 				// Check if the empty row has any actual data (not all null/empty)
 				const hasData = this.emptyRowHasData(this._emptyRowDraft)
 
@@ -3292,22 +3400,12 @@ export class GridEngine<T = unknown> {
 
 					// Reset empty row draft for next entry
 					this._emptyRowDraft = null
-
-					// Exit edit mode and re-render
-					const prevEditingCell = this._editingCell
-					this._editingCell = null
-					this._onInteractionChange?.('editingCell', { prev: prevEditingCell, current: null })
-					this.requestUpdate()
-					return
+					return true
 				}
 			}
 
-			// Tab within empty row or no data yet - exit edit mode, keep draft
-			// NOTE: No requestUpdate() - caller handles surgical DOM update
-			const prevEditingCell = this._editingCell
-			this._editingCell = null
-			this._onInteractionChange?.('editingCell', { prev: prevEditingCell, current: null })
-			return
+			// Tab within empty row or no data yet - keep draft
+			return false
 		}
 
 		// ALWAYS update draft row (valid OR invalid) - preserves user input
@@ -3321,10 +3419,10 @@ export class GridEngine<T = unknown> {
 		// Update invalid cells tracking
 		if (isValid) {
 			this.removeInvalidCell(rowIndex, field)
-			this._currentCellError = null
+			setCellError(null)
 		} else {
 			this.addInvalidCell(rowIndex, field, validationError || "Invalid value")
-			this._currentCellError = validationError
+			setCellError(validationError)
 			this.notify('validation-error', { row: item, rowIndex, field, error: validationError || "Invalid value", source })
 		}
 
@@ -3352,12 +3450,7 @@ export class GridEngine<T = unknown> {
 				validationError
 			})
 		}
-
-		// Exit edit mode
-		const prevEditingCell = this._editingCell
-		this._editingCell = null
-		this._onInteractionChange?.('editingCell', { prev: prevEditingCell, current: null })
-		// NOTE: No requestUpdate() - caller handles surgical DOM update
+		return false
 	}
 
 	/**

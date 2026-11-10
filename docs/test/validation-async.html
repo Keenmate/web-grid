@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — async validation fixture</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>async validation fixture</h1>
+	<p>
+		Targeted by <code>e2e/validation-async.spec.ts</code> — moving between cells while an async
+		<code>validateCallback</code> is pending (each move saves once, the result marks the cell, the
+		results apply in commit order). Reload resets all state.
+	</p>
+
+	<button type="button" id="outside" data-testid="outside">outside</button>
+
+	<web-grid id="grid" style="max-width: 720px; max-height: 320px;"></web-grid>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+		import { installEventLog } from './event-log.js'
+
+		/*
+		 *  col index:  0    1 a (text)   2 b (text)   3 c (text)   4 s (text, SYNC validate)
+		 *  row r:      id   'a<r>'       'b<r>'       'c<r>'       's<r>'
+		 *
+		 * Columns a / b / c validate ASYNC: the promise resolves after `window.__delays[value]` ms
+		 * (default `window.__delay`, 150 ms). A value starting with 'bad' → 'Not allowed'; 'up:x' → valid,
+		 * transformed to 'X'. Column s validates SYNCHRONOUSLY with the same rules.
+		 * Every call is logged to `window.__validations` (`<row>.<field>=<value>`).
+		 * Navigate mode, text editors.
+		 */
+		window.__delay = 150
+		window.__delays = {}
+		window.__validations = []
+		const rule = (value) => {
+			const v = String(value ?? '')
+			if (v.startsWith('bad')) return 'Not allowed'
+			if (v.startsWith('up:')) return { valid: true, transformedValue: v.slice(3).toUpperCase() }
+			return null
+		}
+		const asyncValidate = ({ rowIndex, field, value }) => {
+			window.__validations.push(`${rowIndex}.${field}=${value}`)
+			const ms = window.__delays[value] ?? window.__delay
+			return new Promise((resolve) => setTimeout(() => resolve(rule(value)), ms))
+		}
+		const syncValidate = ({ rowIndex, field, value }) => {
+			window.__validations.push(`${rowIndex}.${field}=${value}`)
+			return rule(value)
+		}
+
+		const grid = document.getElementById('grid')
+		grid.items = Array.from({ length: 6 }, (_, r) => ({ id: r + 1, a: 'a' + r, b: 'b' + r, c: 'c' + r, s: 's' + r }))
+		grid.columns = [
+			{ field: 'id', title: 'ID', width: '50px', isEditable: false },
+			{ field: 'a', title: 'A', width: '110px', validateCallback: asyncValidate },
+			{ field: 'b', title: 'B', width: '110px', validateCallback: asyncValidate },
+			{ field: 'c', title: 'C', width: '110px', validateCallback: asyncValidate },
+			{ field: 's', title: 'S (sync)', width: '110px', validateCallback: syncValidate }
+		]
+		grid.isEditingEnabled = true
+		grid.editTrigger = 'navigate'
+
+		installEventLog(grid, 'grid', ['row-change', 'cell-edit-start', 'cell-edit-cancel', 'validation-error'])
+	</script>
+</body>
+</html>
