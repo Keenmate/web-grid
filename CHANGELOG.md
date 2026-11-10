@@ -10,6 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Added — `overlay-group` (2026-11-10)
+- **`overlay-group` attribute / `overlayGroup` property** (`string | null`, default unset): scopes the
+  cell dropdown's "one overlay open at a time" coordination to a named group, like web-multiselect and
+  web-daterangepicker. Overlays sharing a group dismiss each other when one opens; different groups are
+  independent. Unset = the default (ungrouped) group, as before. Read when the dropdown opens (a change
+  applies at the next open, no rebuild). Pinned by `e2e/overlay-group.spec.ts`.
+
 ### Cell dropdown on core `createPopover()` (overlay WP1, 2026-11-10)
 - **Internal:** the select / combobox / autocomplete dropdown is a core `createPopover()` in the grid's
   shadow root (was a bare `anchor()` + the grid's own scroll listeners). One close handler maps each

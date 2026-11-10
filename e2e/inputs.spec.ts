@@ -141,7 +141,8 @@ test.describe('every input (table-driven)', () => {
 				treeCollapsedGlyph: ['+', '+'],
 				labels: ['{"noData":"Nic"}', { noData: 'Nic' }],
 				customStyles: ['.wg { outline: 1px solid red; }', '.wg { outline: 1px solid red; }'],
-				storageKey: ['inputs-spec', 'inputs-spec']
+				storageKey: ['inputs-spec', 'inputs-spec'],
+				overlayGroup: ['grp', 'grp']
 			}
 			const sample = (d: any): [string, unknown] | null => {
 				if (SPECIAL[d.configKey]) return SPECIAL[d.configKey]

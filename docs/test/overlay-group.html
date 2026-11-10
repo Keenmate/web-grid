@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — overlay-group fixture</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>overlay-group fixture</h1>
+	<p>
+		Targeted by <code>e2e/overlay-group.spec.ts</code> — the <code>overlay-group</code> input scopes the
+		cell dropdown's "one overlay open at a time" coordination (core overlay tree). Reload resets all state.
+	</p>
+
+	<h2>#ga — overlay-group="a"</h2>
+	<web-grid id="ga" overlay-group="a" style="max-width: 400px;"></web-grid>
+
+	<h2>#gb — overlay-group="b"</h2>
+	<web-grid id="gb" overlay-group="b" style="max-width: 400px;"></web-grid>
+
+	<h2>#gd — no overlay-group (the default group)</h2>
+	<web-grid id="gd" style="max-width: 400px;"></web-grid>
+
+	<!-- Page overlays: core createPopover() panels, one per group (opening one doesn't move focus) -->
+	<button type="button" id="anchor">anchor</button>
+	<div id="pop-a" data-testid="pop-a" hidden>page overlay, group a</div>
+	<div id="pop-b" data-testid="pop-b" hidden>page overlay, group b</div>
+	<div id="pop-default" data-testid="pop-default" hidden>page overlay, default group</div>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+		import { createPopover } from '@keenmate/web-components-core/positioning'
+
+		/*
+		 *  every grid  col index:  0    1
+		 *              field:      id   status (select)
+		 */
+		const statusOptions = [
+			{ value: 'open', label: 'Open' },
+			{ value: 'done', label: 'Done' },
+			{ value: 'hold', label: 'On hold' }
+		]
+		for (const id of ['ga', 'gb', 'gd']) {
+			const g = document.getElementById(id)
+			g.items = Array.from({ length: 3 }, (_, r) => ({ id: r + 1, status: 'open' }))
+			g.columns = [
+				{ field: 'id', title: 'ID', width: '60px', isEditable: false },
+				{ field: 'status', title: 'Status', width: '150px', editor: 'select', editorOptions: { options: statusOptions } }
+			]
+			g.isEditingEnabled = true
+			g.editTrigger = 'navigate'
+		}
+
+		// window.__pop.<a|b|default>.open() / .isOpen — closes only through the overlay tree
+		const anchor = document.getElementById('anchor')
+		window.__pop = {}
+		for (const [key, group] of [['a', 'a'], ['b', 'b'], ['default', undefined]]) {
+			window.__pop[key] = createPopover({
+				reference: anchor,
+				panel: document.getElementById('pop-' + key),
+				overlayGroup: group,
+				shouldCloseOnOutsideClick: false,
+				shouldCloseOnEscape: false,
+				shouldCloseOnScroll: false,
+				shouldCloseOnResize: false,
+				returnFocusTo: null,
+			})
+		}
+	</script>
+</body>
+</html>

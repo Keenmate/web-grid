@@ -453,6 +453,14 @@ export interface GridElementConfig<T = unknown> {
 	beforeScrollCallback: ((ctx: GridBeforeScrollContext<T>) => false | Partial<GridScrollOptions> | void) | null
 	tooltipShowDelay: number
 	tooltipHideDelay: number
+	/**
+	 * Scope the "one overlay open at a time" coordination to a named group. Overlays
+	 * (the cell dropdown, multiselects, datepickers, external popovers) sharing a group dismiss each
+	 * other when one opens; different groups are independent. Unset = the default (ungrouped)
+	 * group, in which every ungrouped overlay coordinates. Read when the cell dropdown opens.
+	 * (internal: overlayGroup)
+	 */
+	overlayGroup: string | null
 }
 
 /**
@@ -595,6 +603,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		// guard skips them; readers use the input's getter)
 		{ configKey: 'tooltipShowDelay', attribute: 'tooltip-show-delay', converter: toInt({ min: 0, default: 200 }), default: 200, on: 'update' },
 		{ configKey: 'tooltipHideDelay', attribute: 'tooltip-hide-delay', converter: toInt({ min: 0, default: 100 }), default: 100, on: 'update' },
+		// Overlay tree group of the cell dropdown (element-local, read at each open — so `update`, no rebuild)
+		{ configKey: 'overlayGroup', attribute: 'overlay-group', converter: toText({ isNullable: true }), on: 'update', type: 'string | null', description: 'Scope the "one overlay open at a time" coordination to a named group. Overlays (the cell dropdown, multiselects, datepickers, external popovers) sharing a group dismiss each other when one opens; different groups are independent. Unset = the default (ungrouped) group.' },
 	] as const satisfies readonly InputDef[]
 
 	static events = EVENTS

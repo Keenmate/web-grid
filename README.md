@@ -329,6 +329,7 @@ This architecture separates mode detection (the adapter decides *what* action a 
 | `dropdownToggleVisibility` | `ToggleVisibility` | `'on-focus'` | When to show dropdown toggle button: `'always'`, `'on-focus'` |
 | `shouldOpenDropdownOnFocus` | `boolean` | `false` | Auto-open dropdown when cell is focused |
 | `shouldOpenDropdownOnEnter` | `boolean` | `false` | Enter key opens dropdown (`true`) or moves to next row (`false`) |
+| `overlayGroup` (`overlay-group`) | `string \| null` | `null` | Scope the "one overlay open at a time" coordination of the cell dropdown to a named group: overlays (multiselects, datepickers, external popovers) sharing a group dismiss each other when one opens; different groups are independent. Unset = the default (ungrouped) group |
 | `isCheckboxAlwaysEditable` | `boolean` | `false` | Checkboxes are always clickable, even in navigate mode |
 
 ### Sorting

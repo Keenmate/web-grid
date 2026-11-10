@@ -213,6 +213,12 @@ Grid-level dropdown settings (set on the grid element, overridable per-column):
     When true, pressing Enter opens the dropdown instead of moving down.
     Per-column override: column.shouldOpenDropdownOnEnter
 
+  overlayGroup   string | null (attribute overlay-group, default: null)
+    Scopes the "one overlay open at a time" coordination to a named group.
+    Overlays (the cell dropdown, multiselects, datepickers, external popovers)
+    sharing a group dismiss each other when one opens; different groups are
+    independent. Unset = the default (ungrouped) group. Read at each open.
+
 
 AUTOCOMPLETE-SPECIFIC OPTIONS
 ------------------------------

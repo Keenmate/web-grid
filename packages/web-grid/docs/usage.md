@@ -103,6 +103,7 @@ The `QuickGridProps<T>` type defined in `src/types.ts` is the canonical source o
 | `dropdownToggleVisibility` | `ToggleVisibility` | `'on-focus'` | When to show dropdown toggle: `'always'`, `'on-focus'` |
 | `shouldOpenDropdownOnFocus` | `boolean` | `false` | Auto-open dropdown when cell is focused |
 | `shouldOpenDropdownOnEnter` | `boolean` | `false` | Enter opens dropdown (`true`) or moves down (`false`) |
+| `overlayGroup` (`overlay-group`) | `string \| null` | `null` | Scope the "one overlay open at a time" coordination of the cell dropdown to a named group: overlays (multiselects, datepickers, external popovers) sharing a group dismiss each other when one opens; different groups are independent. Unset = the default (ungrouped) group |
 | `isCheckboxAlwaysEditable` | `boolean` | `false` | Checkboxes stay clickable, even in navigate mode |
 | `invalidCells` | `CellValidationState[]` | `[]` | External validation state for cells |
 

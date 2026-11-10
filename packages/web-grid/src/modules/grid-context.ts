@@ -52,6 +52,8 @@ export interface GridHost<T = unknown> {
 	// Tooltip configuration (grid-level), exposed as accessors.
 	readonly tooltipShowDelay: number
 	readonly tooltipHideDelay: number
+	/** Overlay tree group of the cell dropdown (input `overlay-group`; null = the default group). */
+	readonly overlayGroup: string | null
 
 	/** Gate of every scroll the grid makes on its own (input; see modules/scroll/reveal.ts). */
 	readonly beforeScrollCallback: ((ctx: import('../interaction.js').GridBeforeScrollContext<T>) => false | Partial<import('../interaction.js').GridScrollOptions> | void) | null

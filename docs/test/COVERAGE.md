@@ -75,6 +75,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | `dropdownToggleVisibility`, `shouldOpenDropdownOnFocus`, `shouldOpenDropdownOnEnter` (grid + column), checkbox Space toggle | ✓ | `dropdown-flags.spec.ts` | `dropdown-flags.html` |
 | `isCheckboxAlwaysEditable` one-click toggle, off by default (#27 fixed) | ✓ | `dropdown-flags.spec.ts` | `dropdown-flags.html` |
 | Every way an open dropdown closes (option click, Enter, Tab / Shift+Tab, Escape, outside click, another cell incl. one that starts its own edit, grid / page scroll, resize, virtual row scrolled out, items replaced, `startEditing()`, another overlay opening) + typed values — value, edit mode, focus, events pinned (Excel rule: leaving saves, Escape cancels; overlay WP1 / WP1b) | ✓ | `dropdown-close.spec.ts` | `dropdown-close.html` |
+| `overlayGroup` (`overlay-group`): the cell dropdown joins the core overlay tree in its group — a same-group overlay closes it / is closed by it, another group (incl. the default) stays open alongside, unset = default group, a change applies at the next open | ✓ | `overlay-group.spec.ts` | `overlay-group.html` |
 | `preset` (read-only / excel / input-matrix; read-only sets `isReadonly`) | ✓ | `grid-modes.spec.ts`, `inputs.spec.ts` | `grid-modes.html`, `inputs.html` |
 | `validateCallback` (string / result / transform) | ✓ | `validation.spec.ts` | `validation.html` |
 | `invalidCells` (read + assign) + `isCellInvalid` / `getCellValidationError` | ✓ | `validation.spec.ts` | `validation.html` |

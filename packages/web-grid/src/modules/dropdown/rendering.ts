@@ -177,10 +177,11 @@ export function renderDropdown<T>(
 		// nor while the grid is detached (a DOM move keeps it open, as before)
 		shouldCloseOnScroll: () => !ctx.isTransitioningCells && ctx.shadow.host.isConnected,
 		shouldCloseOnResize: false,
-		// Join the page-wide overlay tree (default group): another overlay opening — or
-		// dismissAllOverlays() — closes it ('overlay'), and so does the overlay the grid lives in
-		// ('parent'); both save the edit. Escape / outside clicks stay the grid's own.
-		overlayGroup: undefined,
+		// Join the page-wide overlay tree (the `overlay-group` input; unset = the default group):
+		// another overlay of the same group opening — or dismissAllOverlays() — closes it ('overlay'),
+		// and so does the overlay the grid lives in ('parent'); both save the edit. Escape / outside
+		// clicks stay the grid's own.
+		overlayGroup: ctx.overlayGroup || undefined,
 		onClose: (reason) => onDropdownClose(ctx, reason, edited),
 	})
 	popovers.set(dropdown, popover)
