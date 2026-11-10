@@ -4,15 +4,13 @@
 // Extracted from GridElement. The handlers in this file are subscribed to the
 // scroll-event-manager and run on every scroll tick. They consult the
 // VirtualScrollService to decide whether the visible range needs re-rendering,
-// trigger infinite-scroll requests when the user nears the bottom, and close
-// the dropdown when the editing cell scrolls out from under it.
+// and trigger infinite-scroll requests when the user nears the bottom. (Closing
+// the cell dropdown on scroll is core createPopover()'s — see dropdown/rendering.ts.)
 
 import type { GridHost } from '../grid-context.js'
-import { clearEditingVisual, updateFocusVisual } from '../navigation/focus.js'
-import { renderCell } from '../rendering/cell.js'
+import { updateFocusVisual } from '../navigation/focus.js'
 import { renderDataRowsVirtual, renderLoadingMoreRow, type VirtualScrollParams } from '../rendering/table.js'
 import { syncLoadingMoreLoader } from '../rendering/loader.js'
-import { removeDropdown } from '../dropdown/rendering.js'
 import { calculateVisibleRange, shouldTriggerInfiniteScroll } from './calculations.js'
 
 /**
@@ -109,25 +107,3 @@ export function handleInfiniteScroll<T>(ctx: GridHost<T>, container: HTMLElement
 	}
 }
 
-/**
- * Close the dropdown when the editing cell scrolls out from under it. Shared
- * by both container-scroll and window-scroll subscribers — Floating UI doesn't
- * reposition on those, so the dropdown would otherwise float over the wrong
- * row.
- */
-export function handleScrollCloseDropdown<T>(ctx: GridHost<T>): void {
-	// Save editing cell info BEFORE cancelEdit clears it
-	const oldEditingCell = ctx.engine.editingCell
-	const oldColIndex = oldEditingCell
-		? ctx.engine.columns.findIndex(c => String(c.field) === oldEditingCell.field)
-		: -1
-
-	removeDropdown(ctx)
-	clearEditingVisual(ctx)
-	ctx.engine.cancelEdit()
-
-	// Re-render old cell to remove editor HTML (toggle, etc.)
-	if (oldEditingCell && oldColIndex >= 0) {
-		renderCell(ctx, oldEditingCell.rowIndex, oldColIndex)
-	}
-}

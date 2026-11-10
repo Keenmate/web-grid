@@ -174,8 +174,7 @@ import {
 	VirtualScrollService,
 	handleVirtualScroll,
 	renderVirtualRows,
-	handleInfiniteScroll,
-	handleScrollCloseDropdown
+	handleInfiniteScroll
 } from './modules/scroll/index.js'
 
 import {
@@ -834,6 +833,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	protected override destroyCallback(): void {
 		// Loader render hooks may hold resources (their returned cleanup)
 		removeAllLoaders(this)
+		// An open cell dropdown's popover (its document scroll listeners) goes too
+		removeDropdown(this)
 		this.#customStyles?.destroy()
 		this.#customStyles = null
 	}

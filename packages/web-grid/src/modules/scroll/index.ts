@@ -14,6 +14,5 @@ export { VirtualScrollService } from './virtual-scroll-service.js'
 export {
 	handleVirtualScroll,
 	renderVirtualRows,
-	handleInfiniteScroll,
-	handleScrollCloseDropdown
+	handleInfiniteScroll
 } from './element-handlers.js'

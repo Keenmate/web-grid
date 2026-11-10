@@ -10,6 +10,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Cell dropdown on core `createPopover()` (overlay WP1, 2026-11-10)
+- **Internal:** the select / combobox / autocomplete dropdown is a core `createPopover()` in the grid's
+  shadow root (was a bare `anchor()` + the grid's own scroll listeners). One close handler maps each
+  reason to save / cancel / nothing (`modules/dropdown/rendering.ts`); the grid's private scroll-close
+  (`handleScrollCloseDropdown`, the dropdown branches of the container / window scroll handlers) is gone.
+  Every other close path (option pick, Enter, Tab, Escape, blur, outside click, another cell) is the
+  grid's as before; the result of each is pinned by `e2e/dropdown-close.spec.ts`.
+- **Changed (visible timing):** the panel stays hidden until its first placement (core), instead of
+  showing at the shadow root's top-left for a frame. A scroll closes it (cancelling the edit, as before)
+  only once the cell has actually moved: a scroll of under 3px, a horizontal scroll that leaves a frozen
+  (sticky) cell in place, or the browser's own scroll-into-view while it opens no longer closes it.
+- `destroy()` closes an open dropdown.
+
 ### Theme (2026-11-10)
 - **Fixed: the date cell editor follows the grid's scheme.** It mounted in `document.body` with its styles in
   `<head>`, so a dark grid (`data-theme="dark"`, a page signal, a `theme-source` section) opened a light

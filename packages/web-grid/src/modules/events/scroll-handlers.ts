@@ -4,18 +4,21 @@
 // Two subscription bodies attached to scrollEvents:
 //
 //  - Container scroll: paint the horizontal frozen-column shadow indicator,
-//    close dropdown / advance virtual-scroll range / trigger infinite-scroll
+//    advance virtual-scroll range / trigger infinite-scroll
 //    loadMore, reposition the floating-toolbar connector, update fill-handle +
 //    range / row / column selection borders.
-//  - Window scroll: dismiss the dropdown + close the floating toolbar so
-//    overlays don't drift away from their anchors.
+//  - Window scroll: close the floating toolbar so it doesn't drift away from
+//    its anchor.
+//
+// The cell dropdown closes on scroll through core createPopover()
+// (`shouldCloseOnScroll`, dropdown/rendering.ts), not here.
 //
 // Both handlers take `container` and `scrollContainer` as parameters so the
 // extraction doesn't depend on shadow re-querying (the listener captures the
 // original DOM nodes via closure in the caller and forwards them in).
 
 import type { GridHost } from '../grid-context.js'
-import { handleScrollCloseDropdown, handleVirtualScroll, handleInfiniteScroll } from '../scroll/index.js'
+import { handleVirtualScroll, handleInfiniteScroll } from '../scroll/index.js'
 import { getActiveToolbarRowIndex, updateConnector, closeToolbarAndReset } from '../toolbar/index.js'
 import { updateFillHandle } from '../fill-handle/index.js'
 import { updateRangeBorder } from '../cell-selection/index.js'
@@ -32,11 +35,6 @@ export function handleContainerScroll<T>(
 	// Toggle horizontal scroll indicator for frozen column shadow
 	const isScrolledHorizontally = scrollContainer.scrollLeft > 0
 	container.classList.toggle('wg--scrolled-horizontal', isScrolledHorizontally)
-
-	// Close dropdown on scroll
-	if (ctx.dropdown.isOpen && !ctx.isTransitioningCells && !ctx.dropdown.isOpening) {
-		handleScrollCloseDropdown(ctx)
-	}
 
 	// Virtual scroll: recalculate visible range
 	if (ctx.engine.shouldUseVirtualScroll()) {
@@ -70,9 +68,6 @@ export function handleContainerScroll<T>(
  * Window scroll handler — close transient overlays so they don't drift.
  */
 export function handleWindowScroll<T>(ctx: GridHost<T>): void {
-	if (ctx.dropdown.isOpen && !ctx.isTransitioningCells) {
-		handleScrollCloseDropdown(ctx)
-	}
 	if (getActiveToolbarRowIndex() !== null) {
 		closeToolbarAndReset(ctx)
 	}

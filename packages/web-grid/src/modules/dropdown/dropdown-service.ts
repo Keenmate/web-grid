@@ -3,14 +3,14 @@
 // =============================================================================
 // Extracted from GridElement so the Element layer no longer holds UI state.
 // Tracks open-state, the visible option list, the highlighted index, the
-// filter query, and the race-condition flags that gate blur / focus /
-// scroll behavior while a dropdown is open or transitioning.
+// filter query, and the race-condition flags that gate blur / focus
+// behavior while a dropdown is open or transitioning.
 //
 // Why the flags matter:
-//   - isOpening      — true between "we're about to render the dropdown" and
-//                      "Floating UI finished positioning it". Used by scroll
-//                      event subscribers so an auto-triggered scroll during
-//                      open doesn't immediately close the dropdown.
+//   - isOpening      — true from "we're about to render the dropdown" to the
+//                      next frame. The blur guard skips the editor blur the
+//                      re-render causes. (Scroll during open: core
+//                      createPopover()'s scroll rule ignores it.)
 //   - isClosingViaToggle — true between mousedown-on-toggle and the next
 //                      blur. The focus event manager uses it to skip the
 //                      "blur → cancel edit" path so click-on-toggle closes
@@ -56,7 +56,7 @@ export class DropdownService {
 	get justSelected(): boolean { return this._justSelected }
 	setJustSelected(value: boolean): void { this._justSelected = value }
 
-	/** True between "starting to render" and "Floating UI positioned"; suppresses scroll-close. */
+	/** True from "starting to render" to the next frame; suppresses the editor blur. */
 	get isOpening(): boolean { return this._isOpening }
 	setIsOpening(value: boolean): void { this._isOpening = value }
 
