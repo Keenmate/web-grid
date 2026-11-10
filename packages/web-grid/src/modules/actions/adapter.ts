@@ -470,6 +470,28 @@ export class ActionPipelineAdapter<T = unknown> {
 	}
 
 	/**
+	 * A click on ANOTHER cell (its body or an in-cell button — date trigger, dropdown toggle) leaves
+	 * the open edit: Excel rule — a move SAVES it (`shouldCommitOnClickAway: false` keeps the legacy
+	 * discard). Sets the transition flag so the focusout from the old editor's re-render doesn't undo
+	 * the focus the caller dispatches next; `endCellTransition()` clears it.
+	 */
+	private leaveEditForCellClick(): void {
+		if (!this.ctx.engine.editingCell) return
+		this.ctx.isTransitioningCells = true
+		this.pipeline.dispatch({
+			type: this.ctx.engine.shouldCommitOnClickAway ? 'commitEdit' : 'cancelEdit'
+		})
+	}
+
+	/** Clear the transition flag `leaveEditForCellClick()` set, after focus has settled. */
+	private endCellTransition(): void {
+		if (!this.ctx.isTransitioningCells) return
+		requestAnimationFrame(() => {
+			this.ctx.isTransitioningCells = false
+		})
+	}
+
+	/**
 	 * Try to handle a mousedown event via the pipeline.
 	 * Returns true if the event was handled, false to fall through to existing handlers.
 	 */
@@ -647,9 +669,7 @@ export class ActionPipelineAdapter<T = unknown> {
 			e.preventDefault()
 			e.stopPropagation()
 
-			if (this.ctx.engine.editingCell) {
-				this.pipeline.dispatch({ type: 'cancelEdit' })
-			}
+			this.leaveEditForCellClick()
 
 			this.pipeline.dispatch({
 				type: 'focusCell',
@@ -663,6 +683,7 @@ export class ActionPipelineAdapter<T = unknown> {
 			})
 
 			this.pipeline.dispatch({ type: 'openDropdown' })
+			this.endCellTransition()
 
 			return true
 		}
@@ -672,9 +693,7 @@ export class ActionPipelineAdapter<T = unknown> {
 			e.preventDefault()
 			e.stopPropagation()
 
-			if (this.ctx.engine.editingCell) {
-				this.pipeline.dispatch({ type: 'cancelEdit' })
-			}
+			this.leaveEditForCellClick()
 
 			this.pipeline.dispatch({
 				type: 'focusCell',
@@ -688,6 +707,7 @@ export class ActionPipelineAdapter<T = unknown> {
 			})
 
 			this.pipeline.dispatch({ type: 'openDatePicker' })
+			this.endCellTransition()
 
 			return true
 		}
@@ -702,15 +722,7 @@ export class ActionPipelineAdapter<T = unknown> {
 			// Commit (or cancel) any active edit on a different cell before focusing.
 			// Excel-like commit-on-click-away is the default; shouldCommitOnClickAway=false
 			// preserves the legacy discard-on-click behaviour.
-			if (this.ctx.engine.editingCell) {
-				// Set transition flag to prevent focusout handler from clearing focus
-				// (commit/cancel re-renders the old cell, removing its editor → triggers
-				// focusout which would undo the focusCell we dispatch next)
-				this.ctx.isTransitioningCells = true
-				this.pipeline.dispatch({
-					type: this.ctx.engine.shouldCommitOnClickAway ? 'commitEdit' : 'cancelEdit'
-				})
-			}
+			this.leaveEditForCellClick()
 
 			// Clear row/column/cell selections when clicking on a cell
 			if (this.ctx.engine.selectedRowIndices.length > 0 ||
@@ -746,12 +758,7 @@ export class ActionPipelineAdapter<T = unknown> {
 				})
 			}
 
-			// Clear transitioning flag after focus has settled
-			if (this.ctx.isTransitioningCells) {
-				requestAnimationFrame(() => {
-					this.ctx.isTransitioningCells = false
-				})
-			}
+			this.endCellTransition()
 
 			return true
 		}

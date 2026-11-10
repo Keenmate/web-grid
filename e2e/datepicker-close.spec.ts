@@ -323,3 +323,61 @@ test.describe("date editor: a move's scroll saves, a user scroll cancels", () =>
 		expect(await snap(page, 'grid', 3, 1)).toEqual({ picker: 0, editing: [], focus: '3:1', value: '2026-06-13', events: ['cell-edit-start(3.due)', 'cell-edit-cancel(3.due)'] })
 	})
 })
+
+/**
+ * A click on ANOTHER cell's in-cell button (the date trigger, a select toggle) is a move: the open
+ * edit (any editor) is SAVED, then the clicked cell starts its edit with its picker / dropdown open
+ * (Excel rule; was: `cell-edit-cancel`, the typed text lost).
+ */
+test.describe('date editor: another cell\'s in-cell button saves the open edit', () => {
+	/** Load, start an edit on (row, col) and type `text` into it. */
+	async function openTypedEdit(page: Page, row: number, col: number, text: string): Promise<void> {
+		await page.goto(PAGE)
+		await expect(gridLocator(page, 'grid').locator('tbody tr.wg__row').first()).toBeVisible()
+		await cell(page, 'grid', row, col).click()
+		if (col === 1) {
+			await page.keyboard.press('F2')
+			await expect(gridLocator(page, 'grid').locator('.wg-datepicker')).toBeVisible()
+			await page.waitForTimeout(100)
+			await gridLocator(page, 'grid').locator('.wg__date-input').fill(text)
+		} else {
+			const input = cell(page, 'grid', row, col).locator('input')
+			await expect(input).toBeFocused()
+			await input.fill(text)
+		}
+		await page.waitForTimeout(100)
+	}
+
+	/** The open dropdowns (the grid's cell dropdown panel). */
+	const dropdowns = (page: Page) => gridLocator(page, 'grid').locator('.wg__dropdown:visible').count()
+
+	test('text edit → another cell\'s date trigger: saves the text, opens the picker there', async ({ page }) => {
+		await openTypedEdit(page, 3, 2, 'typed')
+		await cell(page, 'grid', 5, 1).locator('.wg__date-trigger').click()
+		await page.waitForTimeout(300)
+		expect(await snap(page, 'grid', 3, 2)).toEqual({ picker: 1, editing: ['5:1'], focus: '5:1/editor', value: 'typed', events: ['cell-edit-start(3.note)', 'row-change(3.note=typed)', 'cell-edit-start(5.due)'] })
+	})
+
+	test('text edit → another cell\'s select toggle: saves the text, opens the dropdown there', async ({ page }) => {
+		await openTypedEdit(page, 3, 2, 'typed')
+		await cell(page, 'grid', 5, 3).locator('.wg__select-toggle').click()
+		await page.waitForTimeout(300)
+		expect(await snap(page, 'grid', 3, 2)).toEqual({ picker: 0, editing: ['5:3'], focus: '5:3/editor', value: 'typed', events: ['cell-edit-start(3.note)', 'row-change(3.note=typed)', 'cell-edit-start(5.tag)'] })
+		expect(await dropdowns(page)).toBe(1)
+	})
+
+	test('typed date → another cell\'s date trigger: saves the date, opens the picker there', async ({ page }) => {
+		await openTypedEdit(page, 3, 1, TYPED)
+		await cell(page, 'grid', 6, 1).locator('.wg__date-trigger').click()
+		await page.waitForTimeout(300)
+		expect(await snap(page, 'grid', 3, 1)).toEqual({ picker: 1, editing: ['6:1'], focus: '6:1/editor', value: TYPED, events: ['cell-edit-start(3.due)', `row-change(3.due=${TYPED})`, 'cell-edit-start(6.due)'] })
+	})
+
+	test('typed date → another cell\'s select toggle: saves the date, opens the dropdown there', async ({ page }) => {
+		await openTypedEdit(page, 3, 1, TYPED)
+		await cell(page, 'grid', 2, 3).locator('.wg__select-toggle').click() // row 2: above the picker
+		await page.waitForTimeout(300)
+		expect(await snap(page, 'grid', 3, 1)).toEqual({ picker: 0, editing: ['2:3'], focus: '2:3/editor', value: TYPED, events: ['cell-edit-start(3.due)', `row-change(3.due=${TYPED})`, 'cell-edit-start(2.tag)'] })
+		expect(await dropdowns(page)).toBe(1)
+	})
+})
