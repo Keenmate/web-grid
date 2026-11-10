@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — date editor close paths fixture</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>date editor close paths fixture</h1>
+	<p>
+		Targeted by <code>e2e/datepicker-close.spec.ts</code> — pins what every way of closing an open date
+		editor (the cell datepicker) does (value saved or not, edit mode, focus, events). Reload resets all state.
+	</p>
+
+	<button type="button" id="outside" data-testid="outside">outside</button>
+
+	<h2>#grid — 40 rows, scrolls (date)</h2>
+	<web-grid id="grid" style="max-width: 760px; max-height: 300px;"></web-grid>
+
+	<h2>#vgrid — 1,000 rows, virtual scroll (date)</h2>
+	<web-grid id="vgrid" style="max-width: 500px; max-height: 300px;"></web-grid>
+
+	<!-- Room to scroll the page -->
+	<div style="height: 2000px"></div>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+		import { installEventLog } from './event-log.js'
+
+		/*
+		 *  #grid   col index:  0    1                2              3
+		 *          field:      id   due (date)       note (text,    tag (select,
+		 *                                            click)         click)
+		 *  (navigate mode; `note` / `tag` start editing on a single click — "another cell that starts its own edit")
+		 *  row r: due = 2026-06-<10 + r % 10> (YYYY-MM-DD, iso out), note 'n<r>', tag 'open'
+		 *
+		 *  #vgrid  col index:  0    1            2
+		 *          field:      id   due (date)   note
+		 */
+		const seed = (n) => Array.from({ length: n }, (_, r) => ({
+			id: r + 1,
+			due: `2026-06-${10 + (r % 10)}`,
+			note: 'n' + r,
+			tag: 'open'
+		}))
+		window.__seed = seed
+
+		const statusOptions = [
+			{ value: 'open', label: 'Open' },
+			{ value: 'done', label: 'Done' },
+			{ value: 'hold', label: 'On hold' }
+		]
+		const dateColumn = {
+			field: 'due', title: 'Due', width: '160px', editor: 'date',
+			editorOptions: { dateFormat: 'YYYY-MM-DD', outputFormat: 'iso' }
+		}
+
+		const grid = document.getElementById('grid')
+		grid.items = seed(40)
+		grid.columns = [
+			{ field: 'id', title: 'ID', width: '50px', isEditable: false },
+			dateColumn,
+			{ field: 'note', title: 'Note', width: '110px', editTrigger: 'click' },
+			{ field: 'tag', title: 'Tag', width: '110px', editor: 'select', editTrigger: 'click', editorOptions: { options: statusOptions } }
+		]
+		grid.isEditingEnabled = true
+		grid.editTrigger = 'navigate'
+
+		const vgrid = document.getElementById('vgrid')
+		vgrid.items = seed(1000)
+		vgrid.columns = [
+			{ field: 'id', title: 'ID', width: '70px', isEditable: false },
+			dateColumn,
+			{ field: 'note', title: 'Note', width: '150px' }
+		]
+		vgrid.isVirtualScrollEnabled = true
+		vgrid.virtualScrollItemHeight = 38
+		vgrid.virtualScrollOverscan = 5
+		vgrid.isEditingEnabled = true
+		vgrid.editTrigger = 'navigate'
+
+		const names = ['row-change', 'cell-edit-start', 'cell-edit-cancel']
+		installEventLog(grid, 'grid', names)
+		installEventLog(vgrid, 'vgrid', names)
+	</script>
+</body>
+</html>
