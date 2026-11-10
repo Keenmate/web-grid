@@ -20,6 +20,7 @@
 
 import type { GridHost } from '../grid-context.js'
 import type { FocusedCell } from '../../types.js'
+import { focusCellTd } from './focus.js'
 
 /**
  * Restore focus after a render — either to the in-progress editor (with
@@ -86,12 +87,22 @@ export function restoreFocusAfterRender<T>(
 		// Restore focus to the previously focused cell (if not editing)
 		const cell = container.querySelector(
 			`td[data-row="${focusedCell.rowIndex}"][data-col="${focusedCell.colIndex}"]`
-		) as HTMLElement
+		) as HTMLElement | null
+		// Never pulled from an element outside the grid that holds the focus now
+		const docActive = document.activeElement
+		const host = ctx.shadow.host
+		const isFocusElsewhere = !!docActive && docActive !== document.body && docActive !== host && !host.contains(docActive)
 		if (cell) {
 			// Now, not on a timer: the render just replaced the focused cell, and a key pressed
 			// before a deferred focus() landed on nothing (two quick Shift+Arrows grew the range
-			// by one). The new cell is in the DOM already.
-			if (ctx.shadow.activeElement !== cell) cell.focus({ preventScroll: true })
+			// by one). The new cell is in the DOM already. (focusCellTd: outside navigate mode the
+			// re-rendered cell has no tabindex of its own.)
+			if (ctx.shadow.activeElement !== cell && !isFocusElsewhere) focusCellTd(cell)
+		} else if (ctx.engine.shouldUseVirtualScroll() && !ctx.shadow.activeElement && !isFocusElsewhere) {
+			// Virtual scroll: the focused row is outside the rendered window (a Shift+Arrow range
+			// scrolled its anchor away) — the keyboard stays in the grid on the container, the
+			// focused cell is kept; the next key brings its row back (container-keydown)
+			container.focus({ preventScroll: true })
 		}
 	}
 }

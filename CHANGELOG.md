@@ -10,6 +10,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Fixed — keyboard moves in a virtual grid (2026-11-11)
+- **Arrow keys, Page Up / Down, Home / End, Ctrl+Home / End and Enter (also saving an edit) land on
+  the target cell when its row is outside the rendered window** (Excel rule). Was: the grid moved its
+  focused-cell state but the row had no element yet, so DOM focus dropped to the page and the focused
+  cell was cleared a frame later; the next key did nothing. Now the target row's window is rendered
+  and scrolled to synchronously (core `getScrollTopForBox()` behind `beforeScrollCallback`; a skipped
+  scroll still renders the row) before the cell takes focus, so a held key moves exactly one row per
+  keydown, and a reveal's own scroll renders its window at once (a late scroll-event render no longer
+  swaps the body under an edit started right after the move).
+- **Outside navigate mode a re-rendered focused cell takes the focus back** (the cell gets
+  `tabindex="-1"` again): a Shift+Arrow range (or any render) no longer loses the keyboard in a
+  click / dblclick grid. A render never pulls the focus from an element outside the grid.
+- **Shift+Arrow extends a range past the rendered window**: the moving corner is scrolled into view,
+  and when the anchor (the focused cell) leaves the window the keyboard stays on the grid container —
+  Shift+Arrow keeps moving the corner, any other cell key brings the focused row back first.
+  Pinned by `e2e/virtual-keyboard.spec.ts`.
+
 ### Fixed — moving between cells (2026-11-11)
 - **A click on another cell's calendar button or dropdown toggle saves the open edit** (any editor:
   text, number, date, dropdown), then opens that cell's picker / dropdown — the Excel rule, like a click

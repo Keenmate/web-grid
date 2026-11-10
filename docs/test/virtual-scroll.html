@@ -9,7 +9,7 @@
 <body>
 	<h1>virtual-scroll fixture</h1>
 	<p>
-		Targeted by <code>e2e/virtual-scroll.spec.ts</code>. Exercises the virtual
+		Targeted by <code>e2e/virtual-scroll.spec.ts</code> (+ <code>e2e/virtual-keyboard.spec.ts</code> on <code>#editGrid</code>). Exercises the virtual
 		scroll module (<code>src/modules/scroll/</code>) + infinite-scroll
 		<code>ondatarequest</code> with <code>mode='append'</code>. Reload resets
 		all state.
@@ -31,6 +31,9 @@
 		<div class="row">hasMoreItems: <b data-testid="has-more">true</b></div>
 		<div class="row">datarequest log (newest first): <div data-testid="datarequest-log"></div></div>
 	</div>
+
+	<h2>#editGrid — 1,000 rows, virtual scroll, editable (dblclick)</h2>
+	<web-grid id="editGrid" enable-editing edit-trigger="dblclick" style="max-width: 700px; max-height: 380px;"></web-grid>
 
 	<script type="module">
 		import '@keenmate/web-grid'
@@ -106,6 +109,19 @@
 
 		// First paint settle (virtual scroll measures viewport in next frame).
 		requestAnimationFrame(() => requestAnimationFrame(refresh))
+
+		// #editGrid — virtual scroll over 1000 items, Name editable (text) ----
+		// Keyboard moves past the rendered window (arrows held, Page / Ctrl+Home / End,
+		// Shift+Arrow range, Enter-commit-and-move-down) — e2e/virtual-keyboard.spec.ts.
+		const editGrid = document.getElementById('editGrid')
+		editGrid.columns = columns.map(c => c.field === 'name' ? { ...c, editor: 'text' } : c)
+		editGrid.items = generate(1000)
+		editGrid.isVirtualScrollEnabled = true
+		editGrid.virtualScrollItemHeight = 38
+		editGrid.virtualScrollOverscan = 5
+		// ?editTrigger=navigate — the same grid in navigate mode (cells focusable by markup)
+		const editTrigger = new URLSearchParams(location.search).get('editTrigger')
+		if (editTrigger) editGrid.editTrigger = editTrigger
 
 		// #infiniteGrid — append-mode datarequest -----------------------------
 		const infiniteGrid = document.getElementById('infiniteGrid')

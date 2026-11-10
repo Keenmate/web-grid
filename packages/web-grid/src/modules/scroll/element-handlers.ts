@@ -8,7 +8,7 @@
 // the cell dropdown on scroll is core createPopover()'s — see dropdown/rendering.ts.)
 
 import type { GridHost } from '../grid-context.js'
-import { updateFocusVisual } from '../navigation/focus.js'
+import { updateFocusVisual, focusCellTd } from '../navigation/focus.js'
 import { renderDataRowsVirtual, renderLoadingMoreRow, type VirtualScrollParams } from '../rendering/table.js'
 import { syncLoadingMoreLoader } from '../rendering/loader.js'
 import { calculateVisibleRange, shouldTriggerInfiniteScroll } from './calculations.js'
@@ -56,6 +56,9 @@ export function renderVirtualRows<T>(ctx: GridHost<T>, container: HTMLElement): 
 
 	// Save focusedCell BEFORE innerHTML — the blur from destroyed cell will clear it
 	const focusedCell = ctx.engine.focusedCell
+	// Was the keyboard focus on a body row (a cell / its editor) the swap is about to destroy?
+	const active = ctx.shadow.activeElement
+	const hadBodyFocus = !!active && tbody.contains(active)
 
 	tbody.innerHTML = renderDataRowsVirtual(ctx, params)
 	syncLoadingMoreLoader(ctx)
@@ -70,8 +73,13 @@ export function renderVirtualRows<T>(ctx: GridHost<T>, container: HTMLElement): 
 			`td[data-row="${focusedCell.rowIndex}"][data-col="${focusedCell.colIndex}"]`
 		) as HTMLElement | null
 		if (cell) {
-			cell.focus({ preventScroll: true })
+			focusCellTd(cell)
 			updateFocusVisual(ctx, null, focusedCell)
+		} else if (hadBodyFocus) {
+			// The focused row left the window (a Shift+Arrow range scrolled its anchor away, a wheel
+			// scroll): the keyboard stays in the grid on the container, the focused cell is kept —
+			// the next key brings its row back (container-keydown), Excel-like.
+			(ctx.shadow.querySelector('.wg') as HTMLElement | null)?.focus({ preventScroll: true })
 		}
 	}
 }

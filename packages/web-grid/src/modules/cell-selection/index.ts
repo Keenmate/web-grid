@@ -6,7 +6,7 @@
 import type { GridHost } from '../grid-context.js'
 import type { CellRange, Column } from '../../types.js'
 import { updateFocusVisual, focusCellElement } from '../navigation/index.js'
-import { revealElement, fieldAt } from '../scroll/reveal.js'
+import { fieldAt, prepareRowReveal, finishCellReveal } from '../scroll/reveal.js'
 
 /** Minimum distance (px) mouse must move before drag starts */
 const DRAG_THRESHOLD = 5
@@ -724,10 +724,14 @@ export function extendCellRangeByKey<T>(ctx: GridHost<T>, e: KeyboardEvent): boo
 	const col = order[pos]
 	if (!extendCellRangeTo(ctx, row, col)) return false
 
-	// Keep the moving corner in view (the anchor keeps focus)
+	// Keep the moving corner in view (the anchor keeps focus). Virtual scroll: the corner's row
+	// is rendered + scrolled to now (it may be past the window); the cell reveal (horizontal)
+	// follows the range render.
+	const target = { rowIndex: row, field: fieldAt(ctx, col) }
+	const state = prepareRowReveal(ctx, target, 'keyboard')
 	requestAnimationFrame(() => {
 		const cell = ctx.shadow.querySelector(`td.wg__cell[data-row="${row}"][data-col="${col}"]`) as HTMLElement | null
-		if (cell) revealElement(ctx, cell, { rowIndex: row, field: fieldAt(ctx, col) }, 'keyboard')
+		if (cell) finishCellReveal(ctx, cell, target, 'keyboard', state)
 	})
 	return true
 }

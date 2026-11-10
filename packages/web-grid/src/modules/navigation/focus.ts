@@ -9,7 +9,17 @@ import { renderCell } from '../rendering/index.js'
 import { removeDropdown } from '../dropdown/rendering.js'
 import { removeFillHandle } from '../fill-handle/index.js'
 import { isInGridMenu } from '../contextmenu/index.js'
-import { revealElement, gateScroll, fieldAt, virtualRowScrollTop, KEYBOARD_SCROLL } from '../scroll/reveal.js'
+import { revealElement, fieldAt, prepareRowReveal, finishCellReveal } from '../scroll/reveal.js'
+
+/**
+ * Focus a body cell (<td>) without scrolling. A cell is focusable by its markup only in
+ * navigate mode; elsewhere (click / dblclick / button triggers) it gets `tabindex="-1"` here,
+ * so a cell re-rendered from markup (a render, a virtual-window swap) can take focus back.
+ */
+export function focusCellTd(cell: HTMLElement): void {
+	if (!cell.hasAttribute('tabindex')) cell.setAttribute('tabindex', '-1')
+	cell.focus({ preventScroll: true })
+}
 
 /**
  * Focus the appropriate element within a cell.
@@ -37,7 +47,7 @@ function focusElementInCell(cell: HTMLElement, isAlwaysEditMode: boolean): void 
 		}
 	}
 	// Default: focus the cell itself
-	cell.focus({ preventScroll: true })
+	focusCellTd(cell)
 }
 
 /**
@@ -85,19 +95,19 @@ export function focusCellElement<T>(
 	const effectiveTrigger = column?.editTrigger ?? ctx.engine.editTrigger
 	const isAlwaysEditMode = effectiveTrigger === 'always'
 
-	// In virtual scroll mode: only scroll if row is outside viewport
+	// Virtual scroll: render the target row's window and scroll to it first (synchronously —
+	// the row may be outside the rendered window), then focus the cell
 	if (ctx.engine.shouldUseVirtualScroll()) {
-		ensureRowVisibleMinimal(ctx, rowIndex)
-		// If row is already visible, focus immediately
+		const target = { rowIndex, field: fieldAt(ctx, colIndex) }
+		const state = prepareRowReveal(ctx, target, 'keyboard')
 		const cell = ctx.shadow.querySelector(
-			`[data-row="${rowIndex}"][data-col="${colIndex}"]`
-		) as HTMLElement
-		if (cell) {
-			focusElementInCell(cell, isAlwaysEditMode)
-			// Ensure cell isn't hidden behind frozen columns
-			ensureCellNotBehindFrozen(ctx, cell, rowIndex)
-		}
-		// If not visible, scroll triggered re-render which will focus via renderVirtualRows
+			`td[data-row="${rowIndex}"][data-col="${colIndex}"]`
+		) as HTMLElement | null
+		if (!cell) return
+		focusElementInCell(cell, isAlwaysEditMode)
+		finishCellReveal(ctx, cell, target, 'keyboard', state)
+		// Ensure cell isn't hidden behind frozen columns
+		ensureCellNotBehindFrozen(ctx, cell, rowIndex)
 		return
 	}
 
@@ -153,25 +163,6 @@ export function ensureCellNotBehindFrozen<T>(
 	if (cellRect.left < frozenRight) {
 		scrollContainer.scrollBy({ left: cellRect.left - frozenRight, behavior: 'instant' })
 	}
-}
-
-/**
- * Ensure a row is visible with minimal scrolling (only if outside viewport)
- * Used for arrow key navigation - doesn't reposition, just ensures visibility.
- * Core's box math (`virtualRowScrollTop` → `getScrollTopForBox`): the row's real position
- * below the header, the sticky header as the top inset.
- */
-function ensureRowVisibleMinimal<T>(ctx: GridHost<T>, rowIndex: number): void {
-	const container = ctx.shadow.querySelector('.wg') as HTMLElement
-	if (!container) return
-
-	// Row fully visible → no scroll, no beforeScrollCallback
-	if (virtualRowScrollTop(ctx, container, rowIndex, 'nearest') === null) return
-	// A keyboard move — beforeScrollCallback may skip it or replace the block
-	const options = gateScroll(ctx, { rowIndex, field: null }, 'keyboard', container, KEYBOARD_SCROLL)
-	if (!options) return
-	const scrollTop = virtualRowScrollTop(ctx, container, rowIndex, options.block)
-	if (scrollTop !== null) container.scrollTop = scrollTop
 }
 
 // Track last focus visual update to debounce rapid changes during double-click

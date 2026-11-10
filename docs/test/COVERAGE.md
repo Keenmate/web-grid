@@ -38,6 +38,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Freeze panes (`frozenColumnCount`, column `isFrozen`) | ✓ | `freeze-panes.spec.ts` | `freeze-panes.html` |
 | Column visibility (`isHidden`, hide-column / column-visibility menu) | ✓ | `column-visibility.spec.ts` | `column-visibility.html` |
 | Virtual scroll (1,000 rows) + infinite scroll | ✓ | `virtual-scroll.spec.ts` | `virtual-scroll.html` |
+| Virtual grid keyboard moves past the rendered window (arrows one by one + held, Page Up / Down, Home / End, Ctrl+Home / End, Shift+Arrow range, Enter saving an edit) — focus lands on the target, dblclick + navigate modes | ✓ | `virtual-keyboard.spec.ts` | `virtual-scroll.html` (`#editGrid`, `?editTrigger=`) |
 
 ## 2. Sorting, filtering, pagination
 

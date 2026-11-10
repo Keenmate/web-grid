@@ -5,9 +5,9 @@
 
 import type { ActionExecutor, ExecutorContext } from '../pipeline.js'
 import type { GridAction, FocusCellAction, BlurCellAction } from '../types.js'
-import { updateFocusVisual } from '../../navigation/index.js'
+import { updateFocusVisual, focusCellTd } from '../../navigation/index.js'
 import { updateFillHandle } from '../../fill-handle/index.js'
-import { revealElement, fieldAt } from '../../scroll/reveal.js'
+import { fieldAt, prepareRowReveal, finishCellReveal } from '../../scroll/reveal.js'
 
 /**
  * Focus executor - handles cell focus/blur actions
@@ -75,6 +75,11 @@ function executeFocusCell(ctx: ExecutorContext, action: FocusCellAction): GridAc
 		newRow?.classList.add('wg__row--focused')
 	}
 
+	// Virtual scroll: the target row may be outside the rendered window — render its window and
+	// scroll to it NOW, so the cell exists to take focus (a held key's next keydown comes from it)
+	const revealTarget = { rowIndex, field: fieldAt(ctx, colIndex) }
+	const revealState = prepareRowReveal(ctx, revealTarget, 'keyboard')
+
 	// Find the cell element
 	const cell = ctx.shadow.querySelector(
 		`td[data-row="${rowIndex}"][data-col="${colIndex}"]`
@@ -102,15 +107,12 @@ function executeFocusCell(ctx: ExecutorContext, action: FocusCellAction): GridAc
 		}
 	} else {
 		// Default: focus the cell itself
-		// Ensure cell is focusable (cells in click/dblclick mode don't have tabindex from rendering)
-		if (!cell.hasAttribute('tabindex')) {
-			cell.setAttribute('tabindex', '-1')
-		}
-		cell.focus({ preventScroll: true })
+		// (cells in click/dblclick mode don't have tabindex from rendering — focusCellTd adds it)
+		focusCellTd(cell)
 	}
 
 	// Scroll into view if needed (core container scroll, gated by beforeScrollCallback)
-	revealElement(ctx, cell, { rowIndex, field: fieldAt(ctx, colIndex) }, 'keyboard')
+	finishCellReveal(ctx, cell, revealTarget, 'keyboard', revealState)
 
 	// Update fill handle position for the newly focused cell
 	updateFillHandle(ctx)

@@ -4,6 +4,7 @@
 
 export {
 	focusCellElement,
+	focusCellTd,
 	ensureCellNotBehindFrozen,
 	updateFocusVisual,
 	clearEditingVisual,
