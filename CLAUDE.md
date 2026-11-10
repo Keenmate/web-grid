@@ -101,7 +101,7 @@ Headers remain visible at the top when scrolling vertically:
 
 ### CSS Variable Architecture: `--base-*` Integration
 
-The `--base-*` CSS variables enable **centralized theming** across all KeenMate components via `@keenmate/theme-designer`.
+The `--base-*` CSS variables enable **centralized theming** across all Keenmate components via `@keenmate/theme-designer`.
 
 **Pattern - fallback chain:**
 ```css
@@ -119,7 +119,7 @@ The `--base-*` CSS variables enable **centralized theming** across all KeenMate 
 - **Other:** `--base-border-radius-*`
 
 **Benefits:**
-1. All KeenMate components (web-multiselect, web-daterangepicker, web-grid) share the same base theme
+1. All Keenmate components (web-multiselect, web-daterangepicker, web-grid) share the same base theme
 2. Change `:root { --base-primary-color: red }` and all components update
 3. Components work standalone with defaults, but integrate with theme-designer when present
 
@@ -174,7 +174,7 @@ If in doubt, no transition is better than a slow one.
 
 ### Naming Convention: Events vs Callbacks
 
-The grid follows the shared KeenMate interaction model (web-components-core `/actions`, SPEC §12.5 / §12.12). Distinct naming separates notifications from hooks that affect behavior. Every callback takes ONE `ctx` object; every ctx and event detail carries non-enumerable `controller` (`GridController`, also `el.controller`) and `element`.
+The grid follows the shared Keenmate interaction model (web-components-core `/actions`, SPEC §12.5 / §12.12). Distinct naming separates notifications from hooks that affect behavior. Every callback takes ONE `ctx` object; every ctx and event detail carries non-enumerable `controller` (`GridController`, also `el.controller`) and `element`.
 
 **Events** - real DOM events (kebab-case, bubble, not composed) + a camelCase `on*` property twin called with the same detail first. Return value is ignored. Declared in the `EVENTS` table in `web-component.ts`, typed in `GridEventMap` (`interaction.ts`):
 ```typescript

@@ -208,7 +208,7 @@ renderLoadingCallback
   (label = labels.loading), 'search' = the autocomplete's async search (label =
   labels.dropdownSearching). Fill ctx.containerElement (it already has role="status"
   + aria-label); return a cleanup function if needed. Beats the page-wide
-  window.components.renderLoadingCallback (same signature, every KeenMate component);
+  window.components.renderLoadingCallback (same signature, every Keenmate component);
   neither set -> the default <span class="wg__loader"> (--wg-loader-* tokens).
 
 getCustomStylesCallback

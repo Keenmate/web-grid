@@ -127,7 +127,7 @@ registerComponent('web-grid', _GridElement as unknown as CustomElementConstructo
 	config: {
 		name: typeof __PACKAGE_NAME__ !== 'undefined' ? __PACKAGE_NAME__ : '@keenmate/web-grid',
 		version: typeof __VERSION__ !== 'undefined' ? __VERSION__ : '0.0.0',
-		author: typeof __AUTHOR__ !== 'undefined' ? __AUTHOR__ : 'KeenMate',
+		author: typeof __AUTHOR__ !== 'undefined' ? __AUTHOR__ : 'Keenmate',
 		license: typeof __LICENSE__ !== 'undefined' ? __LICENSE__ : 'MIT',
 		repository: typeof __REPOSITORY__ !== 'undefined' ? __REPOSITORY__ : '',
 		homepage: typeof __HOMEPAGE__ !== 'undefined' ? __HOMEPAGE__ : ''

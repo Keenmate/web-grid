@@ -4,7 +4,7 @@ Reference for @keenmate/web-grid row toolbar, inline actions,
 cell-specific toolbar, and context menus (cell and header).
 
 Every toolbar button, menu item and keyboard shortcut is an ACTION ITEM
-(the shared KeenMate interaction model, @keenmate/web-components-core
+(the shared Keenmate interaction model, @keenmate/web-components-core
 /actions). Activating any of them runs the same pipeline:
 
     1. beforeActionCallback(detail)   -> return false to cancel (async OK)
@@ -358,7 +358,7 @@ Positioning offsets:
     grid.contextMenuXOffset = 8    (default) horizontal offset from click
     grid.contextMenuYOffset = 0    (default) vertical offset from click
 
-Both menus are the shared KeenMate menu (core openMenu(),
+Both menus are the shared Keenmate menu (core openMenu(),
 @keenmate/web-components-core/menu), rendered in the grid's shadow root
 (.km-menu, plus .wg-context-menu on cell menu levels / .wg-header-menu on
 header menu levels), positioned viewport-aware (flip / shift). Keyboard: see
@@ -367,7 +367,7 @@ CSS VARIABLES below (Shift+F10 / ContextMenu key opens the cell menu).
 Closing behavior:
 - Click outside the menu
 - Press Escape (focus returns to where it was) or Tab
-- Scroll the page or grid, window blur, another KeenMate overlay opening
+- Scroll the page or grid, window blur, another Keenmate overlay opening
 - Activating an item (unless shouldCloseOnClick: false)
 - el.controller.closeContextMenu()
 
@@ -569,7 +569,7 @@ One public set on web-grid, UNSET by default; each resolves
     --wg-context-menu-disabled-opacity disabled item opacity
     --wg-context-menu-z-index         z-index (default 10000)
 
-  :root { --km-menu-bg: #fafafa; }                 every KeenMate menu
+  :root { --km-menu-bg: #fafafa; }                 every Keenmate menu
   web-grid.orders { --wg-context-menu-bg: #eef; }  just this grid's menus
 
 Menu markup: .km-menu (.km-menu--submenu) > .km-menu__item

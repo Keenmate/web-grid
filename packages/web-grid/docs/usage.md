@@ -272,10 +272,10 @@ Cell menu items get the cell ctx `{ row, rowIndex, column, colIndex, field, valu
 
 #### Menu keyboard, markup and theming
 
-Both menus are the shared KeenMate menu (core `openMenu()`, `@keenmate/web-components-core/menu`) in the grid's shadow root.
+Both menus are the shared Keenmate menu (core `openMenu()`, `@keenmate/web-components-core/menu`) in the grid's shadow root.
 
 - **Keyboard:** Shift+F10 / the ContextMenu key on the focused cell opens the cell menu below it, first item focused. ↑ / ↓ skip disabled items, Home / End, → / Enter / Space open a submenu, ← / Escape close it, Enter / Space activate, Escape closes and returns focus to the cell, Tab closes; an item's `shortcut` letter activates it.
-- **Dismiss:** outside press, page or grid scroll, window blur, another KeenMate overlay opening.
+- **Dismiss:** outside press, page or grid scroll, window blur, another Keenmate overlay opening.
 - **Markup:** `.km-menu` (`.km-menu--submenu`), `.km-menu__item` (`--disabled` / `--danger` / `--toggled` / `--has-submenu`), `__icon`, `__label`, `__shortcut`, `__divider`. Cell menu levels also carry `wg-context-menu`, header menu levels `wg-header-menu`. A toggle item (`isToggled` / `getIsToggledCallback`; the column-visibility toggles, class `wg-header-menu__column-toggle`) is `role="menuitemcheckbox"` + `aria-checked`.
 - **Theming:** one public set `--wg-context-menu-*` on `web-grid` themes both menus — `bg`, `bg-hover`, `hover-color`, `text-color`, `border`, `border-radius`, `shadow`, `min-width`, `padding`, `font-size`, `item-padding`, `item-gap`, `toggled-color`, `icon-width`, `icon-font-size`, `arrow-font-size`, `shortcut-color`, `danger-color`, `danger-bg-hover`, `divider-color`, `divider-margin`, `disabled-opacity`, `z-index`. All unset by default: a value resolves `--wg-context-menu-*` (this grid) → `--km-menu-*` (page-wide, on `:root`) → `--base-*` → core default.
 
@@ -640,7 +640,7 @@ Set `editor: 'custom'` and provide `renderEditorCallback`:
 
 ## Callbacks, events and the controller
 
-The grid follows the shared KeenMate interaction model (`@keenmate/web-components-core`):
+The grid follows the shared Keenmate interaction model (`@keenmate/web-components-core`):
 
 - **`*Callback` properties** return a value that affects behavior (`get*Callback`, `render*Callback`, `create*Callback`; a `before*Callback` returning `false` cancels). **Every callback takes one `ctx` object.**
 - **Events** are real DOM events (bubble, not composed), each with a camelCase `on*` property twin that is called with the same detail first.

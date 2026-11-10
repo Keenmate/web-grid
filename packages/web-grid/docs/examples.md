@@ -405,7 +405,7 @@ grid.onRowChange = (detail: GridEventMap<Employee>['row-change']) => {
 <web-grid id="grid"></web-grid>
 ```
 
-Every KeenMate component on the page picks up the theme. See [`examples-theming.html`](../../../docs/examples-theming.html) and the [theming contract](./theming.md).
+Every Keenmate component on the page picks up the theme. See [`examples-theming.html`](../../../docs/examples-theming.html) and the [theming contract](./theming.md).
 
 ### Per-instance dark mode
 

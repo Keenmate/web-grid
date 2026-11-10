@@ -486,7 +486,7 @@ label `labels.dropdownSearching` — in the editor and in the dropdown). The con
 | `renderLoadingCallback` | `(ctx: LoaderRenderContext) => void \| (() => void)` | `null` | Draws the grid's loaders: fill `ctx.containerElement` (`ctx`: `{ component, context, containerElement, element, label }`); may return a cleanup. Beats the page-wide `window.components.renderLoadingCallback` |
 
 Precedence: `renderLoadingCallback` > `window.components.renderLoadingCallback` (one hook for every
-KeenMate component on the page) > the default `<span class="wg__loader">`, a mask drawn in
+Keenmate component on the page) > the default `<span class="wg__loader">`, a mask drawn in
 `currentColor` from `--wg-loader-icon` / `-rotate` / `-duration` / `-size` (→ `--base-loader-*`).
 Change the shape page-wide with `--base-loader-icon`; reduced motion slows it (1.5s), it never stops.
 
@@ -554,7 +554,7 @@ or a **callback** (`(ctx) => partial | undefined`), set at three levels:
 - Your own widths or combinations (device class AND width, orientation, …) go in `responsiveCallback`.
 
 ```js
-// page — every KeenMate component (keys a component doesn't have are skipped)
+// page — every Keenmate component (keys a component doesn't have are skipped)
 window.components.responsive = { device: { mobile: { pageSize: 10 } } }
 // tag — every <web-grid>
 window.components['web-grid'].responsive = {
@@ -830,7 +830,7 @@ Setting `preset` applies these defaults, but you can override individual propert
 
 ## Interaction Model
 
-Callbacks, events and clickable items follow the shared KeenMate interaction model (`@keenmate/web-components-core`):
+Callbacks, events and clickable items follow the shared Keenmate interaction model (`@keenmate/web-components-core`):
 
 - **Every callback takes one `ctx` object.** Every ctx and every event detail also carries `controller` (the public `GridController`, same as `el.controller`) and `element` (the `<web-grid>` host) — both non-enumerable, so `JSON.stringify` and logs see only the data.
 - **`*Callback` properties affect behavior** (return a value, or `false` to cancel a `before*Callback`); **events** only notify.
@@ -1002,12 +1002,12 @@ Column-visibility toggles report `action: 'toggle-column'` (with `id` = the fiel
 
 ### Menu keyboard, markup and theming
 
-Both menus are the shared KeenMate menu (`@keenmate/web-components-core/menu`), rendered in the grid's shadow root:
+Both menus are the shared Keenmate menu (`@keenmate/web-components-core/menu`), rendered in the grid's shadow root:
 
 - **Keyboard:** Shift+F10 or the ContextMenu key on the focused cell opens the cell menu below it with the first item focused. In the menu: ↑ / ↓ (disabled items are skipped), Home / End, → / Enter / Space open a submenu, ← / Escape close it, Enter / Space activate, Escape closes and returns focus to the cell, Tab closes. An item's `shortcut` letter activates it while the menu is open.
-- **Dismiss:** outside press, scroll (page or grid), window blur, another KeenMate overlay opening.
+- **Dismiss:** outside press, scroll (page or grid), window blur, another Keenmate overlay opening.
 - **Markup:** `.km-menu` levels (`.km-menu--submenu` for submenus) with `.km-menu__item` (`--disabled`, `--danger`, `--toggled`, `--has-submenu`), `__icon`, `__label`, `__shortcut`, `__divider`. The cell menu's levels also carry `wg-context-menu`, the header menu's `wg-header-menu`. Items are `role="menuitem"`; an item that defines its toggle state (`isToggled` / `getIsToggledCallback`, e.g. the column-visibility toggles, class `wg-header-menu__column-toggle`) is `role="menuitemcheckbox"` + `aria-checked`.
-- **Theming:** `--wg-context-menu-*` on `web-grid` themes both menus of that grid; unset (the default), the page-wide `--km-menu-*` on `:root` applies (every KeenMate menu), then `--base-*`, then the core default:
+- **Theming:** `--wg-context-menu-*` on `web-grid` themes both menus of that grid; unset (the default), the page-wide `--km-menu-*` on `:root` applies (every Keenmate menu), then `--base-*`, then the core default:
 
 ```css
 :root { --km-menu-bg: #fafafa; }                 /* every menu on the page */
@@ -1209,7 +1209,7 @@ web-grid {
   --wg-header-bg: #f5f5f5;
 }
 
-/* Or set base variables for all KeenMate components */
+/* Or set base variables for all Keenmate components */
 :root {
   --base-primary-color: #10b981;
   --base-main-bg: #ffffff;
@@ -1227,7 +1227,7 @@ colors (so the grid looks the same with or without `@keenmate/base-css-variables
 ```
 
 This means:
-1. Setting `--base-primary-color` on `:root` themes all KeenMate components at once
+1. Setting `--base-primary-color` on `:root` themes all Keenmate components at once
 2. Setting `--wg-accent-color` on `web-grid` overrides just the grid
 3. Without either, the component uses its built-in defaults
 
@@ -1386,7 +1386,7 @@ window.components['web-grid'].logging.setLogLevel('info')     // Set level: trac
 window.components['web-grid'].logging.disableLogging()        // Silence every category
 window.components['web-grid'].logging.setCategoryLevel('UI', 'debug')  // Per-category
 window.components['web-grid'].logging.getCategories()         // ['INIT', 'DATA', 'UI', 'INTERACTION', 'PERF']
-window.components.logging                                     // Page-wide switch for all KeenMate components
+window.components.logging                                     // Page-wide switch for all Keenmate components
 window.components['web-grid'].getInstances()                  // Live <web-grid> elements
 ```
 

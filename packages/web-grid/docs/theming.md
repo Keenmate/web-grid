@@ -2,7 +2,7 @@
 
 `@keenmate/web-grid` is styled entirely through CSS custom properties. The component lives in a Shadow DOM for encapsulation, but every visible color, size, font, and surface is exposed as a `--wg-*` variable that you can override from the light DOM.
 
-For interactive theme exploration, use the [KeenMate Theme Designer](https://theme-designer.keenmate.dev).
+For interactive theme exploration, use the [Keenmate Theme Designer](https://theme-designer.keenmate.dev).
 
 Four contracts govern how theming works:
 
@@ -88,7 +88,7 @@ Practical consequences:
 /* (1) Override just this grid */
 web-grid { --wg-accent-color: #10b981; }
 
-/* (2) Theme every KeenMate component on the page (Theme Designer pattern) */
+/* (2) Theme every Keenmate component on the page (Theme Designer pattern) */
 :root { --base-primary-color: #10b981; }
 
 /* (3) No override → the contract's default applies (`#3b82f6` in this case) */
@@ -162,7 +162,7 @@ The full table lives in [the manifest](../component-variables.manifest.json).
 
 ### `--base-*` variables consumed
 
-`@keenmate/web-grid` reads roughly 37 `--base-*` variables across these categories. Setting any of them on `:root` themes every KeenMate component on the page at once.
+`@keenmate/web-grid` reads roughly 37 `--base-*` variables across these categories. Setting any of them on `:root` themes every Keenmate component on the page at once.
 
 - **Colors**: `--base-primary-color` (+ `-hover` / `-active`), `--base-primary-bg-subtle`, `--base-text-color-1` … `-4`, `--base-on-primary-text-color`, `--base-main-bg`, `--base-elevated-bg`, `--base-hover-bg`, `--base-active-bg`, `--base-disabled-bg`, `--base-dropdown-bg`, `--base-tooltip-bg`, `--base-tooltip-text-color`, `--base-border-color`.
 - **Inputs**: `--base-input-bg` / `-text-color` / `-border-color` / `-border` (+ `-hover` / `-focus`) / `-placeholder-color`.
@@ -173,7 +173,7 @@ The full table lives in [the manifest](../component-variables.manifest.json).
 
 **Editor panel gap:** the cell editor's dropdown and datepicker open `--base-dropdown-offset` away from
 the cell (`@keenmate/base-css-variables` 2.0.1+, `4px` when unset) — the one field → panel gap every
-KeenMate component shares; core reads it on the cell when the panel opens (JS, not in the grid's CSS).
+Keenmate component shares; core reads it on the cell when the panel opens (JS, not in the grid's CSS).
 Set it page-wide, per section, or per component: `web-grid { --base-dropdown-offset: 2px; }`.
 
 ## Color-scheme contract
@@ -342,10 +342,10 @@ The CSS string lands inside the shadow root, so selectors target shadow-DOM node
 
 ## Theme Designer integration
 
-The easiest way to customize the grid's appearance is the **[KeenMate Theme Designer](https://theme-designer.keenmate.dev)**:
+The easiest way to customize the grid's appearance is the **[Keenmate Theme Designer](https://theme-designer.keenmate.dev)**:
 
 1. **Choose 3 base colors** — background, text, and accent.
-2. **Preview changes live** — every KeenMate component on the page updates instantly.
+2. **Preview changes live** — every Keenmate component on the page updates instantly.
 3. **Fine-tune individual variables** — lock specific values while adjusting others.
 4. **Export your theme** — copy CSS, JSON, or SCSS to your project.
 

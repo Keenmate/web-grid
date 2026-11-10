@@ -15,13 +15,13 @@ Each --wg-* variable falls back to a --base-* variable, then to a hardcoded defa
 
 Priority chain:
   1. Setting --wg-accent-color on <web-grid> overrides ONLY the grid
-  2. Setting --base-primary-color on :root themes ALL KeenMate components
+  2. Setting --base-primary-color on :root themes ALL Keenmate components
      (web-grid, web-multiselect, web-daterangepicker, etc.)
   3. If neither is set, the standalone default applies: the contract's default
      (#3b82f6) for inputs, the contract's formula on --wg-* for derived colors
      (hover, tints, borders, text levels), so it matches @keenmate/base-css-variables
 
-Example -- theme all KeenMate components at once:
+Example -- theme all Keenmate components at once:
 
   :root {
     --base-primary-color: #10b981;
@@ -306,7 +306,7 @@ This manifest is consumed by @keenmate/theme-designer for visual theming.
 
 THEME DESIGNER
 --------------
-Visual theming tool for all KeenMate components:
+Visual theming tool for all Keenmate components:
 
   https://theme-designer.keenmate.dev
 
@@ -314,14 +314,14 @@ The Theme Designer:
   - Reads the component-variables manifest to know which variables exist
   - Provides a visual UI for adjusting --base-* variables
   - Generates CSS that sets --base-* on :root
-  - Changes propagate to all KeenMate components using the fallback chain
+  - Changes propagate to all Keenmate components using the fallback chain
 
 Workflow:
   1. Open theme-designer.keenmate.dev
   2. Adjust colors, typography, spacing visually
   3. Export generated CSS
   4. Include the CSS in your application
-  5. All KeenMate components (web-grid, web-multiselect, etc.) pick up the theme
+  5. All Keenmate components (web-grid, web-multiselect, etc.) pick up the theme
 
 Since --wg-* falls back to --base-*, the theme applies automatically without
 any grid-specific configuration.
