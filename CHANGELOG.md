@@ -33,6 +33,15 @@ Target: **2.0.0-rc01** — a major: the callback, event and item API below is br
   lost and the edit went on without a picker). When the edited row no longer exists, nothing reopens (as
   before: no editor, the edit stays pending in the engine).
 - Unchanged: a window resize keeps it open (placed).
+- **Changed: an invalid or incomplete typed date is saved on leave, marked invalid** (D9), like a pasted
+  one: leaving the cell any way but Escape (Enter / Tab / Shift+Tab, another cell, a click outside,
+  another overlay, `startEditing()`) keeps the typed text in the draft with the parse error
+  `labels.invalidDate` ('Not a valid date'): the cell gets `wg__cell--invalid` + its tooltip,
+  `validation-error` and `row-change` fire, the edit ends. Was: the old date stayed (Enter / Tab picked
+  the old day). Text outside the column's `minDate` / `maxDate` counts as not a date. Arrow-key calendar
+  navigation after typing makes Enter / Tab pick the navigated day again. Escape still cancels.
+- **Fixed:** a date cell holding invalid text (typed or pasted) showed a rolled-over date
+  ('2026-02-31' as 2026-03-03); it shows the text as typed.
 
 ### Added — `overlay-group` (2026-11-10)
 - **`overlay-group` attribute / `overlayGroup` property** (`string | null`, default unset): scopes the

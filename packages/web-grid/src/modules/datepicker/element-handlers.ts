@@ -21,14 +21,17 @@ import type { GridHost } from '../grid-context.js'
 import { clearEditingVisual, returnFocusToCell } from '../navigation/focus.js'
 import { commitEditorValue } from '../editing/commit-on-transition.js'
 import { renderCell } from '../rendering/cell.js'
-import { DatePicker } from './datepicker.js'
+import { DatePicker, isTypedDateInvalid, setTypedDateInvalid } from './datepicker.js'
 import type { DatePickerCloseReason } from './types.js'
 import { parseFormat, formatDate, toISODateString, parseDateInput } from './formatting.js'
 
 export { parseDateInput }
 
-/** What a pick does: save `date` from the cell's date `input`, then move per `direction`. */
-type DatePickerSelect = (date: Date, direction: 'down' | 'next' | 'prev' | undefined, input: HTMLInputElement) => void
+/**
+ * What a pick does: save `date` from the cell's date `input`, then move per `direction`. `null`:
+ * Enter / Tab on typed text that is not a date — save that text as invalid (like a paste), then move.
+ */
+type DatePickerSelect = (date: Date | null, direction: 'down' | 'next' | 'prev' | undefined, input: HTMLInputElement) => void
 
 /** The cell a date picker opened on, captured at open (the grid may have moved on by the close). */
 type PickerCell = {
@@ -115,6 +118,7 @@ function reopenOnRerenderedCell<T>(ctx: GridHost<T>, at: PickerCell): void {
 	if (input !== old) {
 		input.value = old.value
 		input.dataset.dateValue = old.dataset.dateValue ?? ''
+		setTypedDateInvalid(input, isTypedDateInvalid(old))
 		if (ctx.shadow.activeElement === input && old.selectionStart !== null && old.selectionEnd !== null) {
 			input.setSelectionRange(old.selectionStart, old.selectionEnd, old.selectionDirection ?? undefined)
 		}
@@ -161,9 +165,7 @@ export function openCellDatePicker<T>(
 		shouldCloseOnScroll: () => !ctx.isTransitioningCells && ctx.shadow.host.isConnected,
 		// The page-wide overlay tree, in the `overlay-group` input's group (unset = the default)
 		overlayGroup: ctx.overlayGroup || undefined,
-		onSelect: (date, direction) => {
-			if (date) onSelect(date, direction, input)
-		},
+		onSelect: (date, direction) => onSelect(date, direction, input),
 		onClose: (reason) => onDatePickerClose(ctx, picker, reason, at),
 	})
 	ctx.datepicker = picker
@@ -191,19 +193,20 @@ export function openDatePicker<T>(
 /**
  * Apply the user's date pick: write the formatted value back into the input,
  * commit the edit (`commitEmptyRow` for Enter, not for Tab), then move focus.
+ * `date` null: the typed text is not a date — it is committed as is (invalid).
  */
 export function handleDatePickerSelect<T>(
 	ctx: GridHost<T>,
 	input: HTMLInputElement,
-	date: Date,
+	date: Date | null,
 	direction?: 'down' | 'next' | 'prev'
 ): void {
-	const dateFormat = input.dataset.dateFormat || 'YYYY-MM-DD'
-	const formatInfo = parseFormat(dateFormat)
-
-	// Update input value with formatted date
-	input.value = formatDate(date, formatInfo)
-	input.dataset.dateValue = toISODateString(date)
+	if (date) {
+		// Update input value with formatted date
+		input.value = formatDate(date, parseFormat(input.dataset.dateFormat || 'YYYY-MM-DD'))
+		input.dataset.dateValue = toISODateString(date)
+		setTypedDateInvalid(input, false)
+	}
 
 	// The picker closes right after this ('api': nothing more to do)
 	ctx.datepicker = null
@@ -220,8 +223,19 @@ export function handleDatePickerSelect<T>(
 }
 
 /**
+ * The parse error to save the date editor's text with: `labels.invalidDate` when the typed text
+ * is not a date (DatePicker marked it — invalid, incomplete, out of min / max), else `null`.
+ * Every leave-the-cell path commits that text as is with this error (like a paste): the cell is
+ * marked invalid, `validation-error` fires, the edit ends.
+ */
+export function typedDateError<T>(ctx: GridHost<T>, input: HTMLInputElement): string | null {
+	return isTypedDateInvalid(input) && input.value.trim() !== '' ? ctx.engine.labels.invalidDate : null
+}
+
+/**
  * Convert the input's typed value into the configured output format (ISO
- * string / Date / timestamp) and write it through grid.commitEdit.
+ * string / Date / timestamp) and write it through grid.commitEdit. Text that
+ * is not a date is committed as is, invalid (`labels.invalidDate`).
  *
  * @param commitEmptyRow - If true and editing empty row, add it to items
  *                        (Enter-key behavior).
@@ -241,6 +255,13 @@ export async function commitDateEditor<T>(
 
 	// Parse the input value using the format
 	const dateValue = input.value ? parseDateInput(input.value, formatInfo) : null
+
+	// Not a date (marked while typing, or no parse): saved as typed, marked invalid
+	const parseError = typedDateError(ctx, input) ?? (input.value.trim() !== '' && !dateValue ? ctx.engine.labels.invalidDate : null)
+	if (parseError) {
+		await ctx.engine.commitEdit(rowIndex, field, input.value, commitEmptyRow, 'edit', parseError)
+		return
+	}
 
 	// Convert to output format
 	let value: unknown = null

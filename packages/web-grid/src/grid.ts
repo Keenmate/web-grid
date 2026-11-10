@@ -2977,8 +2977,11 @@ export class GridEngine<T = unknown> {
 			return column.getDisplayValueCallback(this.cellCtx(item, rowIndex, column))
 		}
 
-		// Auto-format date columns using editorOptions.dateFormat when no getDisplayValueCallback
-		if (column.editor === 'date' && column.editorOptions?.dateFormat && value) {
+		// Auto-format date columns using editorOptions.dateFormat when no getDisplayValueCallback.
+		// Text saved as an invalid date (typed / pasted, not a date) shows as typed: `new Date()`
+		// would roll '2026-02-31' over to March 3rd.
+		if (column.editor === 'date' && column.editorOptions?.dateFormat && value
+			&& !(typeof value === 'string' && this.isCellInvalid(rowIndex, String(column.field)))) {
 			try {
 				const date = value instanceof Date ? value : new Date(value as string | number)
 				if (!isNaN(date.getTime())) {

@@ -12,7 +12,8 @@
 //  - checkbox: ignored — we read the original raw value (clicking another
 //    cell shouldn't flip the checkbox).
 //  - .wg__date-input: prefer the parsed dataset.dateValue, fall back to the
-//    raw input value.
+//    raw input value; typed text that is not a date is saved as is, invalid
+//    (`labels.invalidDate`, typedDateError()).
 //  - .wg__editor--number: the text as-is — engine.commitEdit parses it strictly
 //    and applies the editorOptions (modules/editing/value-parse.ts).
 //  - .wg__combobox-input / .wg__autocomplete-input: the typed text resolved to an
@@ -31,6 +32,7 @@
 import type { GridHost } from '../grid-context.js'
 import type { EditorOptions } from '../../types.js'
 import { getOptionLabel, getOptionValue } from '../dropdown/options.js'
+import { typedDateError } from '../datepicker/element-handlers.js'
 
 /**
  * Read the in-progress editor's value and fire grid.commitEdit; fall back
@@ -92,6 +94,7 @@ export function commitEditorValue<T>(ctx: GridHost<T>): void {
 		return
 	}
 	let value: unknown
+	let parseError: string | null = null
 	if (editor.matches('.wg__combobox-input, .wg__autocomplete-input')) {
 		value = resolveComboboxValue(ctx, editor as HTMLInputElement)
 	} else if (editor instanceof HTMLInputElement) {
@@ -99,7 +102,8 @@ export function commitEditorValue<T>(ctx: GridHost<T>): void {
 			const item = ctx.engine.displayItems[rowIndex]
 			value = ctx.engine.getCellRawValue(item, rowIndex, field)
 		} else if (editor.classList.contains('wg__date-input')) {
-			value = editor.dataset.dateValue || editor.value
+			parseError = typedDateError(ctx, editor)
+			value = parseError ? editor.value : editor.dataset.dateValue || editor.value
 		} else if (editor.classList.contains('wg__editor--number')) {
 			value = editor.value
 		} else {
@@ -113,5 +117,5 @@ export function commitEditorValue<T>(ctx: GridHost<T>): void {
 	// Fire and forget — grid.commitEdit handles async validation and clears
 	// editingCell when complete. The surrounding caller already handles
 	// post-transition rendering and focus.
-	void ctx.engine.commitEdit(rowIndex, field, value)
+	void ctx.engine.commitEdit(rowIndex, field, value, false, 'edit', parseError)
 }

@@ -20,13 +20,19 @@ import { test, expect, type Page, gridLocator, cell } from './fixtures'
  * (was: stayed open; vgrid: closed silently, the edit went on) · D6 in the overlay tree: another
  * overlay saves · D7 a re-render (`items` replaced) reopens the picker on the re-rendered cell with the
  * typed text kept (was: closed, the edit went on without it); the edited row gone → no reopen · D8
- * `destroy()` leaves the edit alone (was: cancel + `cell-edit-cancel`).
+ * `destroy()` leaves the edit alone (was: cancel + `cell-edit-cancel`) · D9 an invalid / incomplete typed date
+ * (`bad:` / `partial:` paths) is saved on leave like a paste: the text kept, the cell marked invalid,
+ * `validation-error` (was: the old date stayed).
  */
 
 const PAGE = '/test/datepicker-close.html'
 const TYPED = '2026-06-25'
+/** What a `bad:` path types (not a date) and a `partial:` path types (incomplete). */
+const BAD = '2026-02-31'
+const PARTIAL = '2026-06'
 
-type Expected = { picker: number; editing: string[]; focus: string; value: string; events: string[] }
+/** `invalid` = the cells marked `wg__cell--invalid` (left out of the snapshot when none). */
+type Expected = { picker: number; editing: string[]; focus: string; value: string; events: string[]; invalid?: string[] }
 
 /** The state after a close path: picker count, editing cells, focused cell (`/editor` = inside its editor), cell text, events. */
 async function snap(page: Page, id: string, row: number, col: number): Promise<Expected> {
@@ -39,10 +45,11 @@ async function snap(page: Page, id: string, row: number, col: number): Promise<E
 		const focus = td
 			? `${td.dataset.row}:${td.dataset.col}${a === td ? '' : '/editor'}`
 			: a?.classList.contains('wg') ? 'grid' : `${a?.tagName.toLowerCase()}${a?.id ? '#' + a.id : ''}`
-		type Logged = { type: string; via: string; grid: string; detail: { rowIndex: number; field: string; newValue?: unknown } }
+		type Logged = { type: string; via: string; grid: string; detail: { rowIndex: number; field: string; newValue?: unknown; error?: string } }
+		const invalid = [...(root?.querySelectorAll<HTMLElement>('.wg__cell--invalid') ?? [])].map((c) => `${c.dataset.row}:${c.dataset.col}`)
 		const td2 = root?.querySelector(`td.wg__cell[data-row="${row}"][data-col="${col}"]`)
 		const input = td2?.querySelector('input') as HTMLInputElement | null
-		return {
+		const state: Expected = {
 			picker: document.querySelectorAll('.wg-datepicker').length + (root?.querySelectorAll('.wg-datepicker').length ?? 0),
 			editing: [...(root?.querySelectorAll<HTMLElement>('.wg__cell--editing') ?? [])].map((c) => `${c.dataset.row}:${c.dataset.col}`),
 			focus,
@@ -51,8 +58,12 @@ async function snap(page: Page, id: string, row: number, col: number): Promise<E
 				.filter((e) => e.via === 'event' && e.grid === id)
 				.map((e) => e.type === 'row-change'
 					? `${e.type}(${e.detail.rowIndex}.${e.detail.field}=${e.detail.newValue})`
-					: `${e.type}(${e.detail.rowIndex}.${e.detail.field})`)
+					: e.type === 'validation-error'
+						? `${e.type}(${e.detail.rowIndex}.${e.detail.field}: ${e.detail.error})`
+						: `${e.type}(${e.detail.rowIndex}.${e.detail.field})`)
 		}
+		if (invalid.length) state.invalid = invalid
+		return state
 	}, [id, row, col] as const)
 }
 
@@ -176,6 +187,20 @@ const CASES: [string, string, Expected][] = [
 	['vgrid', 'pageScroll', { picker: 0, editing: [], focus: '1:1', value: '2026-06-11', events: ['cell-edit-start(1.due)', 'cell-edit-cancel(1.due)'] }], // D5
 	['vgrid', 'resize', { picker: 1, editing: ['1:1'], focus: '1:1/editor', value: 'input:2026-06-11', events: ['cell-edit-start(1.due)'] }],
 	['vgrid', 'tab', { picker: 0, editing: [], focus: '1:2', value: '2026-06-11', events: ['cell-edit-start(1.due)'] }],
+	// D9: an invalid / incomplete typed date is saved on leave like a paste — the text kept, the cell marked invalid
+	// (`validation-error` 'Not a valid date'), the edit ends (was: the old date stayed / Enter / Tab picked it). Escape still cancels.
+	['grid', 'bad:enter', { picker: 0, editing: [], focus: '4:1', value: BAD, invalid: ['3:1'], events: ['cell-edit-start(3.due)', 'validation-error(3.due: Not a valid date)', `row-change(3.due=${BAD})`] }],
+	['grid', 'bad:tab', { picker: 0, editing: [], focus: '3:2', value: BAD, invalid: ['3:1'], events: ['cell-edit-start(3.due)', 'validation-error(3.due: Not a valid date)', `row-change(3.due=${BAD})`] }],
+	['grid', 'bad:shiftTab', { picker: 0, editing: [], focus: '2:3', value: BAD, invalid: ['3:1'], events: ['cell-edit-start(3.due)', 'validation-error(3.due: Not a valid date)', `row-change(3.due=${BAD})`] }],
+	['grid', 'bad:outsideClick', { picker: 0, editing: [], focus: 'OUTSIDE', value: BAD, invalid: ['3:1'], events: ['cell-edit-start(3.due)', 'validation-error(3.due: Not a valid date)', `row-change(3.due=${BAD})`] }],
+	['grid', 'bad:otherCell', { picker: 0, editing: [], focus: '5:0', value: BAD, invalid: ['3:1'], events: ['cell-edit-start(3.due)', 'validation-error(3.due: Not a valid date)', `row-change(3.due=${BAD})`] }],
+	['grid', 'bad:otherCellEdits', { picker: 0, editing: ['5:2'], focus: '5:2/editor', value: BAD, invalid: ['3:1'], events: ['cell-edit-start(3.due)', 'validation-error(3.due: Not a valid date)', `row-change(3.due=${BAD})`, 'cell-edit-start(5.note)'] }],
+	['grid', 'bad:overlayDismiss', { picker: 0, editing: [], focus: '3:1', value: BAD, invalid: ['3:1'], events: ['cell-edit-start(3.due)', 'validation-error(3.due: Not a valid date)', `row-change(3.due=${BAD})`] }],
+	['grid', 'bad:startEditingApi', { picker: 0, editing: ['6:2'], focus: '6:2/editor', value: BAD, invalid: ['3:1'], events: ['cell-edit-start(3.due)', 'validation-error(3.due: Not a valid date)', `row-change(3.due=${BAD})`, 'cell-edit-start(6.note)'] }],
+	['grid', 'bad:itemsReplacedEnter', { picker: 0, editing: [], focus: '4:1', value: BAD, invalid: ['3:1'], events: ['cell-edit-start(3.due)', 'validation-error(3.due: Not a valid date)', `row-change(3.due=${BAD})`] }],
+	['grid', 'partial:enter', { picker: 0, editing: [], focus: '4:1', value: PARTIAL, invalid: ['3:1'], events: ['cell-edit-start(3.due)', 'validation-error(3.due: Not a valid date)', `row-change(3.due=${PARTIAL})`] }],
+	['grid', 'partial:otherCell', { picker: 0, editing: [], focus: '5:0', value: PARTIAL, invalid: ['3:1'], events: ['cell-edit-start(3.due)', 'validation-error(3.due: Not a valid date)', `row-change(3.due=${PARTIAL})`] }],
+	['vgrid', 'bad:tab', { picker: 0, editing: [], focus: '1:2', value: BAD, invalid: ['1:1'], events: ['cell-edit-start(1.due)', 'validation-error(1.due: Not a valid date)', `row-change(1.due=${BAD})`] }],
 ]
 
 test.describe('date editor close paths (characterization)', () => {
@@ -184,9 +209,9 @@ test.describe('date editor close paths (characterization)', () => {
 			const row = id === 'vgrid' ? 1 : 3
 			const col = 1
 			await openEditor(page, id, row, col)
-			const action = path.replace(/^typed:/, '')
-			if (action !== path) {
-				await gridLocator(page, id).locator('.wg__date-input').fill(TYPED)
+			const [, typing, action] = /^(?:(typed|bad|partial):)?(.+)$/.exec(path)!
+			if (typing) {
+				await gridLocator(page, id).locator('.wg__date-input').fill(typing === 'bad' ? BAD : typing === 'partial' ? PARTIAL : TYPED)
 				await page.waitForTimeout(100)
 			}
 			await ACTIONS[action](page, id)

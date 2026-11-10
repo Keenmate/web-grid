@@ -315,6 +315,8 @@ export class DatePicker {
 	private isDismissing = false
 	/** Stops following the cell's input (see followInput()). */
 	private unfollowInput: (() => void) | null = null
+	/** The followed input holds text that is not a date the picker accepts (see followInput()). */
+	private followedInput: HTMLInputElement | null = null
 
 	/** The picker's outer container (mounted in `options.container`, default document.body), or null when closed. */
 	getElement(): HTMLElement | null { return this.element }
@@ -610,21 +612,33 @@ export class DatePicker {
 	 * Handle keyboard events
 	 */
 	private handleKeyDown(e: KeyboardEvent): void {
+		// The typed text is not a date (invalid / incomplete / out of range): Enter / Tab leave the
+		// cell with that text — `onSelect(null)`, the owner saves it as invalid (Excel: leaving saves)
+		const input = this.followedInput
+		if (input && isTypedDateInvalid(input) && !this.state.rollingSelectorOpen && (e.key === 'Enter' || e.key === 'Tab')) {
+			e.preventDefault()
+			if (e.key === 'Enter') e.stopPropagation()
+			this.selectDate(null, e.key === 'Enter' ? 'down' : e.shiftKey ? 'prev' : 'next')
+			return
+		}
+
 		const handled = handleKeyDown(e, this.state, this.options, {
 			onSelect: (date, direction) => this.selectDate(date, direction),
 			onDismiss: () => this.dismiss()
 		})
 
 		if (handled) {
+			// Calendar navigation: Enter / Tab now pick the navigated day, not the typed text
+			if (input && e.key !== 'Enter' && e.key !== 'Tab') setTypedDateInvalid(input, false)
 			this.render()
 		}
 	}
 
 	/**
-	 * Select a date and fire callback
+	 * Select a date and fire callback (`null`: leave with the typed text, which is not a date)
 	 */
-	private selectDate(date: Date, direction?: 'down' | 'next' | 'prev'): void {
-		this.state.selectedDate = date
+	private selectDate(date: Date | null, direction?: 'down' | 'next' | 'prev'): void {
+		if (date) this.state.selectedDate = date
 		this.options.onSelect?.(date, direction)
 		// onSelect already handled the commit: the close reports 'api' (nothing to do)
 		this.close()
@@ -656,7 +670,9 @@ export class DatePicker {
 	/**
 	 * Follow the cell's text input while open: a complete, valid typed date becomes the picker's
 	 * selected + focused day (so Enter / Tab pick it) and the input's `data-date-value` (what
-	 * leaving the cell saves); clearing the text clears both.
+	 * leaving the cell saves); clearing the text clears both. Any other text (invalid, incomplete,
+	 * out of min / max) marks the input `data-date-invalid` (isTypedDateInvalid()): leaving the
+	 * cell — Enter / Tab included — saves that text as an invalid value.
 	 */
 	followInput(input: HTMLInputElement): void {
 		this.unfollowInput?.()
@@ -664,14 +680,36 @@ export class DatePicker {
 			if (input.value.trim() === '') {
 				this.state.selectedDate = null
 				input.dataset.dateValue = ''
+				setTypedDateInvalid(input, false)
 			} else if (updateStateFromInput(input.value, this.formatInfo, this.state, this.options) && this.state.selectedDate) {
 				input.dataset.dateValue = toISODateString(this.state.selectedDate)
+				setTypedDateInvalid(input, false)
 			} else {
+				setTypedDateInvalid(input, true)
 				return
 			}
 			this.render()
 		}
 		input.addEventListener('input', onInput)
-		this.unfollowInput = () => input.removeEventListener('input', onInput)
+		this.followedInput = input
+		this.unfollowInput = () => {
+			input.removeEventListener('input', onInput)
+			this.followedInput = null
+		}
 	}
+}
+
+/**
+ * Does the cell's date input hold typed text that is not a date (invalid, incomplete, out of
+ * min / max)? Set while the picker follows the input (DatePicker.followInput()); leaving the
+ * cell then saves that text with the `invalidDate` parse error (like a paste).
+ */
+export function isTypedDateInvalid(input: HTMLInputElement): boolean {
+	return input.dataset.dateInvalid !== undefined
+}
+
+/** Mark / unmark the cell's date input as holding typed text that is not a date. */
+export function setTypedDateInvalid(input: HTMLInputElement, isInvalid: boolean): void {
+	if (isInvalid) input.dataset.dateInvalid = ''
+	else delete input.dataset.dateInvalid
 }

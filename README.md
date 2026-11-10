@@ -1343,7 +1343,7 @@ grid.labels = {
   numberMax: 'Must be at most {max}',
   numberNegative: 'Must not be negative',
   invalidBoolean: 'Not a yes / no value',     // text pasted into a checkbox column
-  invalidDate: 'Not a valid date',            // text pasted into a date column
+  invalidDate: 'Not a valid date',            // text pasted / typed into a date column
   actions: {                       // built-in row / tree action texts
     add: 'Add row',
     delete: 'Delete row',

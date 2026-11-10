@@ -643,7 +643,7 @@ export type GridLabels = {
 	numberMax: string               // "Must be at most {max}"
 	numberNegative: string          // "Must not be negative"
 	invalidBoolean: string          // "Not a yes / no value" (pasted into a checkbox column)
-	invalidDate: string             // "Not a valid date" (pasted into a date column)
+	invalidDate: string             // "Not a valid date" (pasted / typed into a date column)
 
 	// Built-in row / tree action texts (toolbar, cell context menu, shortcuts help)
 	actions: {

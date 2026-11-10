@@ -9,6 +9,7 @@ import { tryStartEdit, clearEditingVisual, focusCellElement, moveFocus } from '.
 import { removeDropdown, getOptionDisplayValue } from '../../dropdown/index.js'
 import { renderCell } from '../../rendering/index.js'
 import { resolveComboboxValue } from '../../editing/commit-on-transition.js'
+import { typedDateError } from '../../datepicker/element-handlers.js'
 
 /**
  * Edit executor - handles edit lifecycle actions
@@ -107,6 +108,7 @@ async function executeCommitEdit(
 
 	// Get the value based on editor type
 	let value: unknown
+	let parseError: string | null = null
 	const column = ctx.engine.columns[colIndex]
 	if (editor.matches('.wg__combobox-input, .wg__autocomplete-input')) {
 		// The typed text → the matching option's VALUE (else the raw text, free-form)
@@ -118,8 +120,9 @@ async function executeCommitEdit(
 			const item = ctx.engine.displayItems[rowIndex]
 			value = ctx.engine.getCellRawValue(item, rowIndex, field)
 		} else if (editor.classList.contains('wg__date-input')) {
-			// Date editor - use the stored date value
-			value = editor.dataset.dateValue || editor.value
+			// Date editor - use the stored date value (typed text that is not a date: as is, invalid)
+			parseError = typedDateError(ctx, editor)
+			value = parseError ? editor.value : editor.dataset.dateValue || editor.value
 		} else if (editor.classList.contains('wg__editor--number')) {
 			// Number editor - the text is parsed (strictly) and checked by engine.commitEdit
 			value = editor.value
@@ -142,7 +145,7 @@ async function executeCommitEdit(
 	clearEditingVisual(ctx)
 
 	// Commit the edit and await it (may be async with validation callbacks)
-	await ctx.engine.commitEdit(rowIndex, field, value, commitEmptyRow)
+	await ctx.engine.commitEdit(rowIndex, field, value, commitEmptyRow, 'edit', parseError)
 
 	// Re-render the cell (now has correct value with getDisplayValueCallback applied)
 	renderCell(ctx, rowIndex, colIndex)

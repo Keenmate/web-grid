@@ -5,7 +5,7 @@
 
 import type { ActionExecutor, ExecutorContext } from '../pipeline.js'
 import type { GridAction } from '../types.js'
-import { openCellDatePicker } from '../../datepicker/element-handlers.js'
+import { openCellDatePicker, typedDateError } from '../../datepicker/element-handlers.js'
 import { toISODateString } from '../../datepicker/formatting.js'
 import { renderCell } from '../../rendering/index.js'
 
@@ -54,22 +54,25 @@ function executeOpenDatePicker(ctx: ExecutorContext): void {
 	if (!editorContainer || !input) return
 
 	// Capture stable values for callbacks (don't capture DOM refs — they go stale on re-render)
-	openCellDatePicker(ctx, input, editorContainer, rowIndex, colIndex, (date, direction) => {
-		handleDateSelect(ctx, rowIndex, colIndex, field, date, direction)
+	openCellDatePicker(ctx, input, editorContainer, rowIndex, colIndex, (date, direction, at) => {
+		handleDateSelect(ctx, rowIndex, colIndex, field, date, direction, at)
 	})
 }
 
 /**
  * Handle date selection from the picker.
- * Uses captured rowIndex/colIndex/field instead of DOM refs (which go stale on re-render).
+ * Uses captured rowIndex/colIndex/field instead of DOM refs (which go stale on re-render);
+ * `input` (the current cell input) is read only for `date` null: Enter / Tab on typed text
+ * that is not a date — that text is committed as is, invalid (like a paste).
  */
 function handleDateSelect(
 	ctx: ExecutorContext,
 	rowIndex: number,
 	colIndex: number,
 	field: string,
-	date: Date,
-	direction?: 'down' | 'next' | 'prev'
+	date: Date | null,
+	direction: 'down' | 'next' | 'prev' | undefined,
+	input: HTMLInputElement
 ): void {
 	// Clear datepicker reference
 	ctx.datepicker = null
@@ -78,22 +81,25 @@ function handleDateSelect(
 	// legacy commitDateEditor behavior.
 	const column = ctx.engine.columns[colIndex]
 	const outputFormat = column?.editorOptions?.outputFormat ?? 'iso'
-	let value: unknown
-	switch (outputFormat) {
-		case 'date':
-			value = date
-			break
-		case 'timestamp':
-			value = date.getTime()
-			break
-		case 'iso':
-		default:
-			value = toISODateString(date)
-			break
+	const parseError = date ? null : typedDateError(ctx, input) ?? ctx.engine.labels.invalidDate
+	let value: unknown = input.value
+	if (date) {
+		switch (outputFormat) {
+			case 'date':
+				value = date
+				break
+			case 'timestamp':
+				value = date.getTime()
+				break
+			case 'iso':
+			default:
+				value = toISODateString(date)
+				break
+		}
 	}
 
 	// Commit the date value (clears editingCell state)
-	ctx.engine.commitEdit(rowIndex, field, value)
+	ctx.engine.commitEdit(rowIndex, field, value, false, 'edit', parseError)
 
 	// Re-render cell in display mode with the committed value
 	renderCell(ctx, rowIndex, colIndex)
