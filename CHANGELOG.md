@@ -23,6 +23,24 @@ Target: **2.0.0-rc01** — a major: the callback, event and item API below is br
   (sticky) cell in place, or the browser's own scroll-into-view while it opens no longer closes it.
 - `destroy()` closes an open dropdown.
 
+### Leaving a cell saves, Escape cancels — the Excel rule (overlay WP1b, 2026-11-10)
+- **Changed: a click outside the grid saves the edit** (was: cancel) — for every editor, as a click on
+  another cell already did: combobox / autocomplete commit what the input shows, text / number / date
+  their typed value; a select with no new pick changes nothing. `shouldCommitOnClickAway: false` keeps
+  discarding (both paths).
+- **Changed: `startEditing(r, c)` saves an edit open on another cell first** (its dropdown closes), so
+  only one cell is ever in edit mode; focus that was in the old editor moves to the new one.
+- **Changed: the cell dropdown joins the page-wide overlay tree** (core, default group): another overlay
+  opening (a multiselect / date picker / menu, `dismissAllOverlays()`), or the overlay the grid lives in
+  closing, closes it and saves the edit.
+- **Fixed:** a combobox left by a click on another cell saved the option's LABEL (`'Phone'`) instead of
+  its value (`'phone'`).
+- **Fixed:** a select left without a pick by a click on another cell ended the edit with no
+  `cell-edit-cancel`; every no-pick close now fires it.
+- **Fixed:** focus fell to `<body>` after an option click or a scroll close; it stays on the cell (on
+  the grid when the cell's row scrolled out of view).
+- Unchanged: a scroll that moves the edited cell still cancels the edit.
+
 ### Theme (2026-11-10)
 - **Fixed: the date cell editor follows the grid's scheme.** It mounted in `document.body` with its styles in
   `<head>`, so a dark grid (`data-theme="dark"`, a page signal, a `theme-source` section) opened a light

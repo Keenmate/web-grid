@@ -31,4 +31,4 @@ export { handleEditorKeyDown } from './editor-keydown.js'
 export { openCustomEditor } from './custom-editor.js'
 
 // Excel-like commit-on-click-away
-export { commitOrCancelEditOnTransition } from './commit-on-transition.js'
+export { commitOrCancelEditOnTransition, commitEditorValue, resolveComboboxValue } from './commit-on-transition.js'

@@ -41,6 +41,37 @@ function focusElementInCell(cell: HTMLElement, isAlwaysEditMode: boolean): void 
 }
 
 /**
+ * Put focus back on a cell whose editor just closed (an option click, a dropdown closed by a
+ * scroll or another overlay): the cell when it is still rendered — focused state + visual, never
+ * scrolling — else the grid's container, so keyboard focus isn't lost to <body>.
+ */
+export function returnFocusToCell<T>(ctx: GridHost<T>, rowIndex: number, colIndex: number): void {
+	const cell = ctx.shadow.querySelector(
+		`td[data-row="${rowIndex}"][data-col="${colIndex}"]`
+	) as HTMLElement | null
+	// Scrolled out of the grid's viewport counts as gone (a virtual grid recycles that row next)
+	const scroller = ctx.shadow.querySelector('.wg') as HTMLElement | null
+	const cellRect = cell?.getBoundingClientRect()
+	const viewRect = scroller?.getBoundingClientRect()
+	const isInView = !!cellRect && (!viewRect || (cellRect.bottom > viewRect.top && cellRect.top < viewRect.bottom))
+	if (cell && isInView) {
+		const oldFocus = ctx.engine.focusedCell
+		ctx.engine.setFocusedCell(rowIndex, colIndex)
+		updateFocusVisual(ctx, oldFocus, { rowIndex, colIndex })
+		const column = ctx.engine.columns[colIndex]
+		const fresh = ctx.shadow.querySelector(
+			`td[data-row="${rowIndex}"][data-col="${colIndex}"]`
+		) as HTMLElement | null
+		if (fresh) {
+			focusElementInCell(fresh, (column?.editTrigger ?? ctx.engine.editTrigger) === 'always')
+			const active = ctx.shadow.activeElement
+			if (active && fresh.contains(active)) return
+		}
+	}
+	scroller?.focus({ preventScroll: true })
+}
+
+/**
  * Focus a cell element in the DOM
  * In virtual scroll mode, only scroll if cell is outside viewport (minimal scroll)
  */

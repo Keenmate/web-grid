@@ -9,6 +9,7 @@ import type { GridHost } from '../grid-context.js'
 import { getOptionValue, getOptionLabel, isOptionDisabled, withEmptyOption } from './options.js'
 import { renderDropdown, removeDropdown } from './rendering.js'
 import { renderCell } from '../rendering/index.js'
+import { returnFocusToCell } from '../navigation/focus.js'
 import { scrollIntoContainer } from '@keenmate/web-components-core'
 
 /**
@@ -62,8 +63,11 @@ export function selectDropdownOption<T>(
 		// Move focus to next row in same column (like Enter does for other editors)
 		ctx.moveFocusAfterCommit(rowIndex, field, 'down')
 	} else {
-		// Stay on current cell with focused state - re-render to show new value
+		// Stay on current cell with focused state - re-render to show new value, and
+		// focus the cell (the picked-from editor is gone; focus never drops to <body>)
 		renderCell(ctx, rowIndex, colIndex)
+		returnFocusToCell(ctx, rowIndex, colIndex)
+		ctx.isCommittingFromKeyboard = false
 	}
 
 	// Reset justSelected after focus moves

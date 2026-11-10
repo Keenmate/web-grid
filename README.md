@@ -1101,7 +1101,7 @@ grid.onRowChange = (detail) => save(detail.draftRow)
 |--------|-------------|
 | `focusCell(rowIndex, colIndex)` | Programmatically focus a cell |
 | `scrollToRow(rowIndex)` | Scroll a displayed row into view — centred in the grid's container, the grid brought on screen; `Promise<boolean>` (`false` when out of range or `beforeScrollCallback` skipped it) |
-| `startEditing(rowIndex, colIndex)` | Programmatically start editing a cell |
+| `startEditing(rowIndex, colIndex)` | Programmatically start editing a cell (an edit open on another cell is saved first) |
 | `openCustomEditor(rowIndex, colIndex)` | Open the custom editor for a cell with `editor: 'custom'` |
 
 ### Draft Management

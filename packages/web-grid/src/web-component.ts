@@ -122,7 +122,8 @@ import {
 	renderCellEditor,
 	handleEditorKeyDown,
 	openCustomEditor as openCustomEditorModule,
-	commitOrCancelEditOnTransition as commitOrCancelEditOnTransitionModule
+	commitOrCancelEditOnTransition as commitOrCancelEditOnTransitionModule,
+	commitEditorValue
 } from './modules/editing/index.js'
 
 import {
@@ -1182,6 +1183,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	/**
 	 * Programmatically start editing a cell.
 	 * Uses surgical DOM update instead of full re-render.
+	 * An edit open on another cell is saved first (Excel: leaving a cell saves; its dropdown
+	 * closes) — one cell edits at a time; focus that was in the old editor moves to the new one.
 	 */
 	startEditing(rowIndex: number, colIndex: number): void {
 		this.flush()
@@ -1190,6 +1193,25 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 
 		const column = columns[colIndex]
 		const field = String(column.field)
+
+		let shouldFocusEditor = false
+		const old = this.engine.editingCell
+		const oldColIndex = old ? columns.findIndex(c => String(c.field) === old.field) : -1
+		if (old && (old.rowIndex !== rowIndex || oldColIndex !== colIndex)) {
+			if (!this.engine.canEditCell(rowIndex, field)) return
+			const oldCell = oldColIndex >= 0
+				? this.shadow.querySelector(`td[data-row="${old.rowIndex}"][data-col="${oldColIndex}"]`)
+				: null
+			const active = this.shadow.activeElement
+			shouldFocusEditor = !!active && !!oldCell?.contains(active)
+			// The old editor goes away below: keep the blur handlers out of it
+			this.isTransitioningCells = true
+			removeDropdown(this)
+			clearEditingVisual(this)
+			commitEditorValue(this)
+			if (oldColIndex >= 0) renderCell(this, old.rowIndex, oldColIndex)
+			requestAnimationFrame(() => { this.isTransitioningCells = false })
+		}
 
 		// Update state (no longer triggers requestUpdate)
 		this.engine.startEdit(rowIndex, field)
@@ -1205,6 +1227,11 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 			cell.classList.remove('wg__cell--focused')
 			cell.classList.add('wg__cell--editing')
 			cell.innerHTML = renderCellEditor(this, rowIndex, colIndex, column)
+			if (shouldFocusEditor) {
+				const editor = (cell.querySelector('.wg__combobox-input, .wg__autocomplete-input, .wg__date-input, .wg__select-trigger')
+					?? cell.querySelector('.wg__editor')) as HTMLElement | null
+				editor?.focus({ preventScroll: true })
+			}
 		}
 	}
 

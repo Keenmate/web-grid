@@ -10,7 +10,8 @@ import type { GridHost } from '../grid-context.js'
 import { getOptionLabel, getOptionValue, getOptionIcon, getOptionSubtitle, isOptionDisabled, isEmptyOption, optionCtx } from './options.js'
 import { removeFillHandle } from '../fill-handle/index.js'
 import { syncLoader, pruneDetachedLoaders } from '../rendering/loader.js'
-import { clearEditingVisual } from '../navigation/focus.js'
+import { clearEditingVisual, returnFocusToCell } from '../navigation/focus.js'
+import { commitEditorValue } from '../editing/commit-on-transition.js'
 import { renderCell } from '../rendering/cell.js'
 
 /** The core popover of each open dropdown panel (closed in removeDropdown()). */
@@ -21,32 +22,47 @@ type EditedCell = { rowIndex: number; field: string } | null
 
 /**
  * The one close handler of the dropdown popover. Each close path is wired ONCE: either the grid
- * drives it (and closes the popover itself → `'api'`) or core does (its reason below).
+ * drives it (and closes the popover itself → `'api'`) or core does (its reason below). Excel
+ * model: leaving a cell any way but Escape SAVES (a select without a pick changes nothing).
  *
  * | reason                 | close path                                              | result                                  |
  * |------------------------|---------------------------------------------------------|-----------------------------------------|
  * | 'api'                  | the grid closed it: option pick, Enter, Tab / Shift+Tab, | nothing: the caller already saved /     |
  * |                        | Escape, editor blur, outside click, another cell, edit  | cancelled (or the edit goes on: filter  |
  * |                        | ended, toggle, a filter re-render, grid destroyed        | re-render, toggle)                      |
+ * | 'overlay' / 'parent'   | another overlay opened (or dismissAllOverlays()), the   | SAVE the edit captured at open          |
+ * |                        | overlay the grid lives in closed                        | (commitEditorValue), focus back to the  |
+ * |                        |                                                         | cell if it was in the editor            |
  * | 'scroll'               | the page or the grid body scrolled and the cell moved   | CANCEL the edit (no save), re-render    |
- * |                        |                                                         | the cell captured at open               |
+ * |                        |                                                         | the cell captured at open, focus to it  |
+ * |                        |                                                         | (or to the grid when not rendered)      |
  * | 'reference-removed'    | never fires: the position isn't auto-updated            | nothing (state reset only)              |
  * | 'resize'               | off (`shouldCloseOnResize: false`; stays open, as before)| —                                       |
- * | 'escape' / 'outside-   | off: not in the overlay tree. Escape = the grid's key   | —                                       |
- * | click' / 'overlay' /   | pipeline; outside = the editor's blur / the grid's      |                                         |
- * | 'parent'               | outside-click                                           |                                         |
+ * | 'escape' / 'outside-   | off: Escape = the grid's key pipeline; outside = the    | —                                       |
+ * | click'                 | editor's blur / the grid's outside-click                |                                         |
  *
  * For any reason but 'api', core has already removed the panel: reset the dropdown state.
  */
 function onDropdownClose<T>(ctx: GridHost<T>, reason: PopoverCloseReason, edited: EditedCell): void {
 	if (reason === 'api') return
 	resetDropdownState(ctx)
-	if (reason !== 'scroll') return
+	if (reason !== 'scroll' && reason !== 'overlay' && reason !== 'parent') return
+	// Only the edit this dropdown opened with (the grid may have moved on since)
+	const editing = ctx.engine.editingCell
+	if (!edited || !editing || editing.rowIndex !== edited.rowIndex || editing.field !== edited.field) return
+	const colIndex = ctx.engine.columns.findIndex(c => String(c.field) === edited.field)
+	const cell = colIndex >= 0
+		? ctx.shadow.querySelector(`td[data-row="${edited.rowIndex}"][data-col="${colIndex}"]`)
+		: null
+	const active = ctx.shadow.activeElement
+	const hadFocus = !!active && !!cell?.contains(active)
 	clearEditingVisual(ctx)
-	ctx.engine.cancelEdit()
+	if (reason === 'scroll') ctx.engine.cancelEdit()
+	else commitEditorValue(ctx)
 	// Re-render the edited cell to remove the editor HTML (toggle, etc.)
-	const colIndex = edited ? ctx.engine.columns.findIndex(c => String(c.field) === edited.field) : -1
-	if (edited && colIndex >= 0) renderCell(ctx, edited.rowIndex, colIndex)
+	if (colIndex >= 0) renderCell(ctx, edited.rowIndex, colIndex)
+	// Keyboard focus stays with the cell (the grid when its row is no longer rendered)
+	if (colIndex >= 0 && (reason === 'scroll' || hadFocus)) returnFocusToCell(ctx, edited.rowIndex, colIndex)
 }
 
 /**
@@ -143,7 +159,7 @@ export function renderDropdown<T>(
 
 	// Core popover in the shadow root (the grid's styles + theme apply): one placement below the
 	// cell (flip to above), at least the cell's width unless the column sets `dropdownMinWidth`.
-	// Closing stays grid-driven except scroll (see onDropdownClose()).
+	// Closing stays grid-driven except scroll and the overlay tree (see onDropdownClose()).
 	if (opts.dropdownMinWidth) dropdown.style.minWidth = opts.dropdownMinWidth
 	const popover = createPopover({
 		reference: anchor,
@@ -161,6 +177,10 @@ export function renderDropdown<T>(
 		// nor while the grid is detached (a DOM move keeps it open, as before)
 		shouldCloseOnScroll: () => !ctx.isTransitioningCells && ctx.shadow.host.isConnected,
 		shouldCloseOnResize: false,
+		// Join the page-wide overlay tree (default group): another overlay opening — or
+		// dismissAllOverlays() — closes it ('overlay'), and so does the overlay the grid lives in
+		// ('parent'); both save the edit. Escape / outside clicks stay the grid's own.
+		overlayGroup: undefined,
 		onClose: (reason) => onDropdownClose(ctx, reason, edited),
 	})
 	popovers.set(dropdown, popover)

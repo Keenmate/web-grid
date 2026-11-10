@@ -12,7 +12,7 @@
 import type { GridHost } from '../grid-context.js'
 import { clearEditingVisual } from '../navigation/focus.js'
 import { renderCell } from '../rendering/cell.js'
-import { getOptionLabel, getOptionValue } from './options.js'
+import { resolveComboboxValue } from '../editing/commit-on-transition.js'
 import { removeDropdown } from './rendering.js'
 
 /**
@@ -64,15 +64,8 @@ export function handleComboboxBlur<T>(
 	const editingCell = ctx.engine.editingCell
 	const colIndex = ctx.engine.columns.findIndex(c => String(c.field) === editingCell.field)
 
-	const column = ctx.getCurrentEditingColumn()
-	if (!column) return
-
-	const opts = column.editorOptions || {}
-	const allOptions = opts.options || opts.initialOptions || []
-	const matchedOpt = allOptions.find(opt =>
-		getOptionLabel(opt, opts).toLowerCase() === input.value.toLowerCase()
-	)
-	const value = matchedOpt ? getOptionValue(matchedOpt, opts) : input.value
+	if (!ctx.getCurrentEditingColumn()) return
+	const value = resolveComboboxValue(ctx, input)
 
 	// Clear visual and commit
 	clearEditingVisual(ctx)

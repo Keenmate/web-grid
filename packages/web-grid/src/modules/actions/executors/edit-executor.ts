@@ -8,6 +8,7 @@ import type { GridAction, StartEditAction, DeleteCellAction, EscapeEditAction } 
 import { tryStartEdit, clearEditingVisual, focusCellElement, moveFocus } from '../../navigation/focus.js'
 import { removeDropdown, getOptionDisplayValue } from '../../dropdown/index.js'
 import { renderCell } from '../../rendering/index.js'
+import { resolveComboboxValue } from '../../editing/commit-on-transition.js'
 
 /**
  * Edit executor - handles edit lifecycle actions
@@ -96,10 +97,21 @@ async function executeCommitEdit(
 	}
 	if (!editor) return
 
+	// A select changes only on a pick (option click / Enter / Tab after arrowing): leaving its
+	// cell otherwise changes nothing and ends as a cancel (`cell-edit-cancel`), like every
+	// other no-pick close. An empty-row commit still goes through (it may add the row).
+	if (!target && !commitEmptyRow && editor.classList.contains('wg__select-trigger')) {
+		executeCancelEdit(ctx)
+		return
+	}
+
 	// Get the value based on editor type
 	let value: unknown
 	const column = ctx.engine.columns[colIndex]
-	if (editor instanceof HTMLInputElement) {
+	if (editor.matches('.wg__combobox-input, .wg__autocomplete-input')) {
+		// The typed text → the matching option's VALUE (else the raw text, free-form)
+		value = resolveComboboxValue(ctx, editor as HTMLInputElement, column?.editorOptions || {})
+	} else if (editor instanceof HTMLInputElement) {
 		if (editor.type === 'checkbox') {
 			// For checkbox, read from draft row to preserve custom trueValue/falseValue
 			// The draft row is already updated by toggleCheckbox action

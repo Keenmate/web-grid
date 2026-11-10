@@ -99,7 +99,7 @@ The `QuickGridProps<T>` type defined in `src/types.ts` is the canonical source o
 | `editTrigger` | `EditTrigger` | `'dblclick'` | How editing starts: `'click'`, `'dblclick'`, `'button'` (an edit button in editable cells — on hover and in the focused cell; F2 / Enter too), `'always'`, `'navigate'` |
 | `editButtonIcon` | `string` (HTML) | `'✎'` | Content of the edit button (`editTrigger: 'button'` / `column.isEditButtonShown`) — HTML, e.g. `'<span class="lucide-pencil"></span>'`. Attribute `edit-button-icon`. Accessible name: `labels.editCell` |
 | `editStartSelection` | `EditStartSelection` | `'select-all'` | Cursor position when entering edit via navigate: `'mouse-position'`, `'select-all'`, `'cursor-at-start'`, `'cursor-at-end'` |
-| `shouldCommitOnClickAway` | `boolean` | `true` | Excel-like commit on click-away. `false` discards the in-progress value |
+| `shouldCommitOnClickAway` | `boolean` | `true` | Excel-like commit on click-away (another cell, or outside the grid). `false` discards the in-progress value |
 | `dropdownToggleVisibility` | `ToggleVisibility` | `'on-focus'` | When to show dropdown toggle: `'always'`, `'on-focus'` |
 | `shouldOpenDropdownOnFocus` | `boolean` | `false` | Auto-open dropdown when cell is focused |
 | `shouldOpenDropdownOnEnter` | `boolean` | `false` | Enter opens dropdown (`true`) or moves down (`false`) |
@@ -776,7 +776,7 @@ After a paste, the `cell-paste` event (`onCellPaste`) reports `{ totalCells, suc
 | Method | Description |
 |---|---|
 | `focusCell(rowIndex, colIndex)` | Programmatically focus a cell |
-| `startEditing(rowIndex, colIndex)` | Programmatically start editing a cell |
+| `startEditing(rowIndex, colIndex)` | Programmatically start editing a cell (an edit open on another cell is saved first) |
 | `openCustomEditor(rowIndex, colIndex)` | Open the custom editor for a cell with `editor: 'custom'` |
 
 ### Draft management

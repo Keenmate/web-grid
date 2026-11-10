@@ -5,7 +5,8 @@
 //
 //  - outsideClick: fires when the user clicks anywhere outside the grid
 //    (and outside body-hosted owned popovers — datepicker / context menus).
-//    Tears down focused cell visuals, row focus, dropdown, in-progress edit,
+//    Tears down focused cell visuals, row focus, dropdown, in-progress edit
+//    (saved, Excel-like — see commitOrCancelEditOnTransition),
 //    and any active row / column / cell-range selection. Calls render only
 //    when a state change actually requires a full DOM refresh.
 //  - sortClick: fires when the user clicks a sort indicator. Drops every
@@ -46,7 +47,8 @@ export function handleOutsideClick<T>(ctx: GridHost<T>): void {
 		needsRender = true
 	}
 
-	// Close dropdown and cancel edit if editing
+	// Close the dropdown and leave the edit — Excel: leaving a cell saves (the editor's value;
+	// a select without a pick changes nothing), unless shouldCommitOnClickAway is off
 	if (ctx.dropdown.isOpen || ctx.engine.editingCell) {
 		const oldEditingCell = ctx.engine.editingCell
 		const oldColIndex = oldEditingCell
@@ -55,7 +57,7 @@ export function handleOutsideClick<T>(ctx: GridHost<T>): void {
 
 		removeDropdown(ctx)
 		clearEditingVisual(ctx)
-		ctx.engine.cancelEdit()
+		ctx.commitOrCancelEditOnTransition()
 
 		// Re-render old cell to restore display mode (now without focused class)
 		if (oldEditingCell && oldColIndex >= 0) {
