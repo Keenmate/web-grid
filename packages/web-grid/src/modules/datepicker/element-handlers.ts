@@ -4,8 +4,12 @@
 // Extracted from GridElement. Owns the four glue functions that bridge the
 // date editor (cell input + format metadata) and the DatePicker instance:
 //
-//   - openDatePicker         — instantiate + open the picker with the right
-//                              format, min/max, and select/close callbacks.
+//   - openCellDatePicker     — instantiate + open the picker for a cell's date
+//                              input (format, min/max, scroll / overlay-tree
+//                              options) with the ONE close handler,
+//                              onDatePickerClose(). Both openers use it.
+//   - openDatePicker         — the mousedown opener (trigger button): commits a
+//                              pick via handleDatePickerSelect.
 //   - handleDatePickerSelect — apply the user's pick to the input, commit,
 //                              move focus.
 //   - commitDateEditor       — convert the input's typed value into the
@@ -14,73 +18,130 @@
 //   - parseDateInput         — re-exported from formatting.ts (pure helper).
 
 import type { GridHost } from '../grid-context.js'
-import { clearEditingVisual, restoreEditingCellToDisplayMode } from '../navigation/focus.js'
+import { clearEditingVisual, returnFocusToCell } from '../navigation/focus.js'
+import { commitEditorValue } from '../editing/commit-on-transition.js'
+import { renderCell } from '../rendering/cell.js'
 import { DatePicker } from './datepicker.js'
+import type { DatePickerCloseReason } from './types.js'
 import { parseFormat, formatDate, toISODateString, parseDateInput } from './formatting.js'
 
 export { parseDateInput }
 
+/** The cell a date picker opened on, captured at open (the grid may have moved on by the close). */
+type PickerCell = { rowIndex: number; colIndex: number; field: string; isAlwaysMode: boolean }
+
 /**
- * Create + open the date picker for the given input. The picker reads its
- * config from the input's `data-*` attributes (`dateFormat`, `minDate`,
- * `maxDate`, current `dateValue`) and registers select/close callbacks that
- * commit + restore visual state respectively.
+ * The one close handler of the date picker. Each close path is wired ONCE: either the grid drives
+ * it (and closes the picker itself → `'api'`) or core's popover does (its reason below). Excel
+ * model: leaving a cell any way but Escape SAVES; Escape cancels; focus stays on / returns to the cell.
+ *
+ * | reason                 | close path                                               | result                                   |
+ * |------------------------|----------------------------------------------------------|------------------------------------------|
+ * | 'api'                  | the grid closed it: a day pick / Enter / Tab / Shift+Tab | nothing: the caller already saved /      |
+ * |                        | (onSelect saved), the edit ended any other way (another  | cancelled                                |
+ * |                        | cell, outside the grid, startEditing(), Tab elsewhere),  |                                          |
+ * |                        | a new picker opening, grid disconnected / destroyed      |                                          |
+ * | 'escape' / 'dismiss'   | Escape; the trigger toggled it / Tab with no focused day | CANCEL the edit, focus to the cell       |
+ * | 'scroll'               | the page or the grid body scrolled and the cell moved    | CANCEL the edit, focus to the cell (the  |
+ * |                        | (veto: a cell transition, the grid detached)             | grid when its row is no longer rendered) |
+ * | 'outside-click'        | a click in the grid but outside the picker and the cell  | SAVE the edit (commitEditorValue)        |
+ * |                        | editor (header, toolbar, empty area) — a click outside   |                                          |
+ * |                        | the grid is the grid's outside-click (it saves; 'api')   |                                          |
+ * | 'overlay' / 'parent'   | another overlay of the group opened (or                  | SAVE the edit, focus back to the cell if |
+ * |                        | dismissAllOverlays()), the overlay the grid lives in     | it was in the editor                     |
+ * |                        | closed                                                   |                                          |
+ * | 'reference-removed'    | the cell re-rendered while open (items replaced)         | nothing: the edit goes on, picker closed |
+ * | 'resize'               | off (`shouldCloseOnResize: false`; stays open, placed)   | —                                        |
+ *
+ * Only the edit the picker opened with is saved / cancelled (the grid may have moved on).
+ * 'always' edit mode has no edit session: any close but 'api' / 'reference-removed' re-renders the cell.
+ */
+function onDatePickerClose<T>(ctx: GridHost<T>, picker: DatePicker, reason: DatePickerCloseReason, at: PickerCell): void {
+	if (ctx.datepicker === picker) ctx.datepicker = null
+	if (reason === 'api' || reason === 'reference-removed' || reason === 'resize') return
+	if (at.isAlwaysMode) {
+		renderCell(ctx, at.rowIndex, at.colIndex)
+		return
+	}
+	const editing = ctx.engine.editingCell
+	if (!editing || editing.rowIndex !== at.rowIndex || editing.field !== at.field) return
+	const cell = ctx.shadow.querySelector(`td[data-row="${at.rowIndex}"][data-col="${at.colIndex}"]`)
+	const active = ctx.shadow.activeElement
+	const hadFocus = !!active && !!cell?.contains(active)
+	const isCancel = reason === 'escape' || reason === 'dismiss' || reason === 'scroll'
+	clearEditingVisual(ctx)
+	if (isCancel) ctx.engine.cancelEdit()
+	else commitEditorValue(ctx)
+	// Re-render the cell to restore display mode content
+	renderCell(ctx, at.rowIndex, at.colIndex)
+	// Keyboard focus stays with the cell (the grid when its row is no longer rendered)
+	if (isCancel || ((reason === 'overlay' || reason === 'parent') && hadFocus)) {
+		returnFocusToCell(ctx, at.rowIndex, at.colIndex)
+	}
+}
+
+/**
+ * Create + open the date picker for a cell's date input. The picker reads its config from the
+ * input's `data-*` attributes (`dateFormat`, `minDate`, `maxDate`, current `dateValue`), follows
+ * what is typed into the input, and reports every close to onDatePickerClose().
+ */
+export function openCellDatePicker<T>(
+	ctx: GridHost<T>,
+	input: HTMLInputElement,
+	anchor: HTMLElement,
+	rowIndex: number,
+	colIndex: number,
+	onSelect: (date: Date, direction?: 'down' | 'next' | 'prev') => void
+): void {
+	// Close any existing datepicker ('api': opening a new one)
+	if (ctx.datepicker) {
+		ctx.datepicker.close()
+		ctx.datepicker = null
+	}
+
+	const column = ctx.engine.columns[colIndex]
+	const at: PickerCell = {
+		rowIndex,
+		colIndex,
+		field: String(column?.field ?? input.dataset.field ?? ''),
+		isAlwaysMode: (column?.editTrigger ?? ctx.engine.editTrigger) === 'always',
+	}
+
+	const picker: DatePicker = new DatePicker({
+		container: ctx.shadow,
+		dateFormat: input.dataset.dateFormat || 'YYYY-MM-DD',
+		minDate: input.dataset.minDate || undefined,
+		maxDate: input.dataset.maxDate || undefined,
+		// A scroll that moved the cell closes it: not while the grid moves the edit between
+		// cells, nor while the grid is detached
+		shouldCloseOnScroll: () => !ctx.isTransitioningCells && ctx.shadow.host.isConnected,
+		// The page-wide overlay tree, in the `overlay-group` input's group (unset = the default)
+		overlayGroup: ctx.overlayGroup || undefined,
+		onSelect: (date, direction) => {
+			if (date) onSelect(date, direction)
+		},
+		onClose: (reason) => onDatePickerClose(ctx, picker, reason, at),
+	})
+	ctx.datepicker = picker
+	picker.open(anchor, input.dataset.dateValue || null)
+	picker.followInput(input)
+}
+
+/**
+ * The trigger-button opener: open the picker on the given input; a pick commits
+ * through handleDatePickerSelect.
  */
 export function openDatePicker<T>(
 	ctx: GridHost<T>,
 	input: HTMLInputElement,
 	anchor: HTMLElement
 ): void {
-	// Close any existing datepicker silently (don't trigger onClose - we're opening a new one)
-	if (ctx.datepicker) {
-		ctx.datepicker.close(true)
-		ctx.datepicker = null
-	}
-
-	const dateFormat = input.dataset.dateFormat || 'YYYY-MM-DD'
-	const minDateStr = input.dataset.minDate
-	const maxDateStr = input.dataset.maxDate
-
-	// Parse current value
-	const currentValue = input.dataset.dateValue || ''
-
-	ctx.datepicker = new DatePicker({
-		container: ctx.shadow,
-		dateFormat,
-		minDate: minDateStr || undefined,
-		maxDate: maxDateStr || undefined,
-		onSelect: (date, direction) => {
-			handleDatePickerSelect(ctx, input, date, direction)
-		},
-		onClose: () => {
-			// Capture editing cell info BEFORE canceling (cancelEdit clears it)
-			const editingCell = ctx.engine.editingCell
-			const colIndex = editingCell
-				? ctx.engine.columns.findIndex(c => String(c.field) === editingCell.field)
-				: -1
-			const rowIndex = editingCell?.rowIndex ?? -1
-
-			ctx.datepicker = null
-			// Cancel edit mode (Escape or click outside without selecting)
-			clearEditingVisual(ctx)
-			ctx.engine.cancelEdit()
-
-			// Re-render the cell to restore display mode content
-			if (rowIndex >= 0 && colIndex >= 0) {
-				restoreEditingCellToDisplayMode(ctx, rowIndex, colIndex)
-
-				// Focus the cell after cancelling edit (so user doesn't lose focus)
-				const cell = ctx.shadow.querySelector(
-					`.wg__cell[data-row="${rowIndex}"][data-col="${colIndex}"]`
-				) as HTMLElement
-				if (cell) {
-					cell.focus()
-				}
-			}
-		}
+	const rowIndex = parseInt(input.dataset.row || '0', 10)
+	const field = input.dataset.field || ''
+	const colIndex = ctx.engine.columns.findIndex(c => String(c.field) === field)
+	openCellDatePicker(ctx, input, anchor, rowIndex, colIndex, (date, direction) => {
+		handleDatePickerSelect(ctx, input, date, direction)
 	})
-
-	ctx.datepicker.open(anchor, currentValue || null)
 }
 
 /**
@@ -91,7 +152,7 @@ export function handleDatePickerSelect<T>(
 	ctx: GridHost<T>,
 	input: HTMLInputElement,
 	date: Date,
-	direction?: 'down' | 'next'
+	direction?: 'down' | 'next' | 'prev'
 ): void {
 	const dateFormat = input.dataset.dateFormat || 'YYYY-MM-DD'
 	const formatInfo = parseFormat(dateFormat)
@@ -100,7 +161,7 @@ export function handleDatePickerSelect<T>(
 	input.value = formatDate(date, formatInfo)
 	input.dataset.dateValue = toISODateString(date)
 
-	// Clear datepicker reference (picker closes silently via close(true), skipping onClose)
+	// The picker closes right after this ('api': nothing more to do)
 	ctx.datepicker = null
 
 	// Commit the date (Enter commits empty row, Tab doesn't)

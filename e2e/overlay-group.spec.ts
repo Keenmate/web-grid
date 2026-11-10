@@ -1,8 +1,8 @@
 import { test, expect, type Page, gridLocator, cell } from './fixtures'
 
 /**
- * `overlay-group` (docs/test/overlay-group.html): the cell dropdown joins the core overlay tree in
- * the grid's group. #ga = group "a", #gb = group "b", #gd = unset (the default group). The other
+ * `overlay-group` (docs/test/overlay-group.html): the cell dropdown and the date editor (col 2)
+ * join the core overlay tree in the grid's group. #ga = group "a", #gb = group "b", #gd = unset (the default group). The other
  * overlay is a page createPopover() per group (`window.__pop.a / .b / .default`) — it opens without
  * taking focus, so the grid's own close-on-blur stays out of the way (two GRID dropdowns are never
  * open together: focusing the second grid blurs the first one's editor, which closes it).
@@ -91,5 +91,31 @@ test.describe('overlay-group', () => {
 		await expect(dropdowns(page, 'gd')).toHaveCount(1)
 		await openPop(page, 'b')
 		await expect(dropdowns(page, 'gd')).toHaveCount(0)
+	})
+
+	test('the date editor: same group closes it (saved), another group leaves it open', async ({ page }) => {
+		await load(page)
+		await cell(page, 'ga', 0, 2).click()
+		await page.keyboard.press('F2')
+		const picker = gridLocator(page, 'ga').locator('.wg-datepicker')
+		await expect(picker).toBeVisible()
+		await page.waitForTimeout(100)
+		await openPop(page, 'b')
+		await openPop(page, 'default')
+		await page.waitForTimeout(100)
+		await expect(picker).toHaveCount(1)
+		await openPop(page, 'a')
+		await expect(picker).toHaveCount(0)
+		await expect(gridLocator(page, 'ga').locator('.wg__cell--editing')).toHaveCount(0)
+		await expect(cell(page, 'ga', 0, 2)).toContainText('2026-06-10')
+	})
+
+	test('the date editor opening closes a same-group overlay', async ({ page }) => {
+		await load(page)
+		await openPop(page, 'b')
+		await cell(page, 'gb', 0, 2).click()
+		await page.keyboard.press('F2')
+		await expect(gridLocator(page, 'gb').locator('.wg-datepicker')).toBeVisible()
+		expect(await isPopOpen(page, 'b')).toBe(false)
 	})
 })

@@ -13,11 +13,13 @@ import { test, expect, type Page, gridLocator, cell } from './fixtures'
  * editor with F2 (#vgrid: row 1). Row 3's date is 2026-06-13 (#vgrid row 1: 2026-06-11).
  * `typed:<path>` = replace the editor's text with 2026-06-25 first.
  *
- * Rows marked `D<n>` pin today's behaviour that breaks the Excel rule / a decision (overlay WP2,
- * `_agent-progress/grid-overlay-wp2-datepicker.md`): D1 a typed date is lost on leave · D2 Shift+Tab
- * moves forward · D3 outside click cancels · D4 clicking another cell leaves focus on the edited
- * cell · D5 a scroll keeps the picker open (vgrid: closes it silently, the edit goes on) · D6 not in
- * the overlay tree · D7 a re-render closes the picker, the edit goes on · D8 `destroy()` cancels.
+ * Rows marked `D<n>` changed when the picker moved onto core createPopover() (overlay WP2,
+ * `_agent-progress/grid-overlay-wp2-datepicker.md`): D1 a typed date saves on leave (was: lost) ·
+ * D2 Shift+Tab moves back (was: forward) · D3 outside click saves (was: cancel) · D4 clicking another
+ * cell focuses it (was: focus stayed on the edited cell) · D5 a scroll that moves the cell cancels
+ * (was: stayed open; vgrid: closed silently, the edit went on) · D6 in the overlay tree: another
+ * overlay saves · D7 (unchanged) a re-render closes the picker, the edit goes on · D8 `destroy()`
+ * leaves the edit alone (was: cancel + `cell-edit-cancel`).
  */
 
 const PAGE = '/test/datepicker-close.html'
@@ -120,41 +122,41 @@ const ACTIONS: Record<string, (page: Page, id: string) => Promise<void>> = {
 const CASES: [string, string, Expected][] = [
 	['grid', 'arrowEnter', { picker: 0, editing: [], focus: '4:1', value: '2026-06-14', events: ['cell-edit-start(3.due)', 'row-change(3.due=2026-06-14)'] }],
 	['grid', 'dayClick', { picker: 0, editing: [], focus: '3:1', value: '2026-06-18', events: ['cell-edit-start(3.due)', 'row-change(3.due=2026-06-18)'] }],
-	['grid', 'destroy', { picker: 0, editing: [], focus: '3:1', value: '2026-06-13', events: ['cell-edit-start(3.due)', 'cell-edit-cancel(3.due)'] }], // D8 cancels + cell-edit-cancel from a destroyed grid
+	['grid', 'destroy', { picker: 0, editing: ['3:1'], focus: '3:1/editor', value: 'input:2026-06-13', events: ['cell-edit-start(3.due)'] }], // D8 'api' = nothing: no cancel from a destroyed grid (was: cell-edit-cancel)
 	['grid', 'enter', { picker: 0, editing: [], focus: '4:1', value: '2026-06-13', events: ['cell-edit-start(3.due)'] }],
 	['grid', 'escape', { picker: 0, editing: [], focus: '3:1', value: '2026-06-13', events: ['cell-edit-start(3.due)', 'cell-edit-cancel(3.due)'] }],
-	['grid', 'gridScroll', { picker: 1, editing: ['3:1'], focus: '3:1/editor', value: 'input:2026-06-13', events: ['cell-edit-start(3.due)'] }], // D5 stays open through a scroll (decided: cancel)
-	['grid', 'itemsReplaced', { picker: 0, editing: ['3:1'], focus: '3:1/editor', value: 'input:2026-06-13', events: ['cell-edit-start(3.due)'] }], // D7 the picker closes, the edit goes on
-	['grid', 'otherCell', { picker: 0, editing: [], focus: '3:1', value: '2026-06-13', events: ['cell-edit-start(3.due)'] }], // D4 focus stays on the edited cell, not the clicked one
+	['grid', 'gridScroll', { picker: 0, editing: [], focus: '3:1', value: '2026-06-13', events: ['cell-edit-start(3.due)', 'cell-edit-cancel(3.due)'] }], // D5 a scroll that moves the cell cancels (was: stayed open)
+	['grid', 'itemsReplaced', { picker: 0, editing: ['3:1'], focus: '3:1/editor', value: 'input:2026-06-13', events: ['cell-edit-start(3.due)'] }], // D7 (unchanged) the picker closes, the edit goes on
+	['grid', 'otherCell', { picker: 0, editing: [], focus: '5:0', value: '2026-06-13', events: ['cell-edit-start(3.due)'] }], // D4 focus on the clicked cell (was: stayed on the edited one)
 	['grid', 'otherCellEdits', { picker: 0, editing: ['5:2'], focus: '5:2/editor', value: '2026-06-13', events: ['cell-edit-start(3.due)', 'cell-edit-start(5.note)'] }],
 	['grid', 'otherDropdownCellEdits', { picker: 0, editing: ['5:3'], focus: '5:3/editor', value: '2026-06-13', events: ['cell-edit-start(3.due)', 'cell-edit-start(5.tag)'] }],
-	['grid', 'outsideClick', { picker: 0, editing: [], focus: 'OUTSIDE', value: '2026-06-13', events: ['cell-edit-start(3.due)', 'cell-edit-cancel(3.due)'] }], // D3 cancels (Excel: save)
-	['grid', 'overlayDismiss', { picker: 1, editing: ['3:1'], focus: '3:1/editor', value: 'input:2026-06-13', events: ['cell-edit-start(3.due)'] }], // D6 not in the overlay tree
-	['grid', 'pageScroll', { picker: 1, editing: ['3:1'], focus: '3:1/editor', value: 'input:2026-06-13', events: ['cell-edit-start(3.due)'] }], // D5
+	['grid', 'outsideClick', { picker: 0, editing: [], focus: 'OUTSIDE', value: '2026-06-13', events: ['cell-edit-start(3.due)'] }], // D3 saves (was: cancel); unchanged value: no event
+	['grid', 'overlayDismiss', { picker: 0, editing: [], focus: '3:1', value: '2026-06-13', events: ['cell-edit-start(3.due)'] }], // D6 in the overlay tree: another overlay saves (unchanged: no event), focus on the cell
+	['grid', 'pageScroll', { picker: 0, editing: [], focus: '3:1', value: '2026-06-13', events: ['cell-edit-start(3.due)', 'cell-edit-cancel(3.due)'] }], // D5
 	['grid', 'resize', { picker: 1, editing: ['3:1'], focus: '3:1/editor', value: 'input:2026-06-13', events: ['cell-edit-start(3.due)'] }],
-	['grid', 'shiftTab', { picker: 0, editing: [], focus: '3:2', value: '2026-06-13', events: ['cell-edit-start(3.due)'] }], // D2 Shift+Tab moves FORWARD
+	['grid', 'shiftTab', { picker: 0, editing: [], focus: '2:3', value: '2026-06-13', events: ['cell-edit-start(3.due)'] }], // D2 Shift+Tab moves to the previous editable cell (was: forward)
 	['grid', 'startEditingApi', { picker: 0, editing: ['6:2'], focus: '6:2/editor', value: '2026-06-13', events: ['cell-edit-start(3.due)', 'cell-edit-start(6.note)'] }],
 	['grid', 'tab', { picker: 0, editing: [], focus: '3:2', value: '2026-06-13', events: ['cell-edit-start(3.due)'] }],
 	['grid', 'typed:dayClick', { picker: 0, editing: [], focus: '3:1', value: '2026-06-18', events: ['cell-edit-start(3.due)', 'row-change(3.due=2026-06-18)'] }],
-	['grid', 'typed:enter', { picker: 0, editing: [], focus: '4:1', value: '2026-06-13', events: ['cell-edit-start(3.due)'] }], // D1 the typed date is lost (the picker commits its own focused day)
+	['grid', 'typed:enter', { picker: 0, editing: [], focus: '4:1', value: '2026-06-25', events: ['cell-edit-start(3.due)', 'row-change(3.due=2026-06-25)'] }], // D1 the typed date is the picked day (was: lost)
 	['grid', 'typed:escape', { picker: 0, editing: [], focus: '3:1', value: '2026-06-13', events: ['cell-edit-start(3.due)', 'cell-edit-cancel(3.due)'] }],
-	['grid', 'typed:gridScroll', { picker: 1, editing: ['3:1'], focus: '3:1/editor', value: 'input:2026-06-25', events: ['cell-edit-start(3.due)'] }], // D5
-	['grid', 'typed:otherCell', { picker: 0, editing: [], focus: '3:1', value: '2026-06-13', events: ['cell-edit-start(3.due)'] }], // D1 + D4
-	['grid', 'typed:otherCellEdits', { picker: 0, editing: ['5:2'], focus: '5:2/editor', value: '2026-06-13', events: ['cell-edit-start(3.due)', 'cell-edit-start(5.note)'] }], // D1
-	['grid', 'typed:outsideClick', { picker: 0, editing: [], focus: 'OUTSIDE', value: '2026-06-13', events: ['cell-edit-start(3.due)', 'cell-edit-cancel(3.due)'] }], // D1 + D3 the typed date is lost
-	['grid', 'typed:overlayDismiss', { picker: 1, editing: ['3:1'], focus: '3:1/editor', value: 'input:2026-06-25', events: ['cell-edit-start(3.due)'] }], // D6
-	['grid', 'typed:shiftTab', { picker: 0, editing: [], focus: '3:2', value: '2026-06-13', events: ['cell-edit-start(3.due)'] }], // D1 + D2
-	['grid', 'typed:startEditingApi', { picker: 0, editing: ['6:2'], focus: '6:2/editor', value: '2026-06-13', events: ['cell-edit-start(3.due)', 'cell-edit-start(6.note)'] }], // D1
-	['grid', 'typed:tab', { picker: 0, editing: [], focus: '3:2', value: '2026-06-13', events: ['cell-edit-start(3.due)'] }], // D1
+	['grid', 'typed:gridScroll', { picker: 0, editing: [], focus: '3:1', value: '2026-06-13', events: ['cell-edit-start(3.due)', 'cell-edit-cancel(3.due)'] }], // D5 cancels the typed date too
+	['grid', 'typed:otherCell', { picker: 0, editing: [], focus: '5:0', value: '2026-06-25', events: ['cell-edit-start(3.due)', 'row-change(3.due=2026-06-25)'] }], // D1 + D4
+	['grid', 'typed:otherCellEdits', { picker: 0, editing: ['5:2'], focus: '5:2/editor', value: '2026-06-25', events: ['cell-edit-start(3.due)', 'row-change(3.due=2026-06-25)', 'cell-edit-start(5.note)'] }], // D1
+	['grid', 'typed:outsideClick', { picker: 0, editing: [], focus: 'OUTSIDE', value: '2026-06-25', events: ['cell-edit-start(3.due)', 'row-change(3.due=2026-06-25)'] }], // D1 + D3 the typed date saves
+	['grid', 'typed:overlayDismiss', { picker: 0, editing: [], focus: '3:1', value: '2026-06-25', events: ['cell-edit-start(3.due)', 'row-change(3.due=2026-06-25)'] }], // D6 + D1
+	['grid', 'typed:shiftTab', { picker: 0, editing: [], focus: '2:3', value: '2026-06-25', events: ['cell-edit-start(3.due)', 'row-change(3.due=2026-06-25)'] }], // D1 + D2
+	['grid', 'typed:startEditingApi', { picker: 0, editing: ['6:2'], focus: '6:2/editor', value: '2026-06-25', events: ['cell-edit-start(3.due)', 'row-change(3.due=2026-06-25)', 'cell-edit-start(6.note)'] }], // D1
+	['grid', 'typed:tab', { picker: 0, editing: [], focus: '3:2', value: '2026-06-25', events: ['cell-edit-start(3.due)', 'row-change(3.due=2026-06-25)'] }], // D1
 	['vgrid', 'dayClick', { picker: 0, editing: [], focus: '1:1', value: '2026-06-18', events: ['cell-edit-start(1.due)', 'row-change(1.due=2026-06-18)'] }],
 	['vgrid', 'enter', { picker: 0, editing: [], focus: '2:1', value: '2026-06-11', events: ['cell-edit-start(1.due)'] }],
 	['vgrid', 'escape', { picker: 0, editing: [], focus: '1:1', value: '2026-06-11', events: ['cell-edit-start(1.due)', 'cell-edit-cancel(1.due)'] }],
-	['vgrid', 'gridScroll', { picker: 0, editing: ['1:1'], focus: '1:1', value: 'input:2026-06-11', events: ['cell-edit-start(1.due)'] }], // D5 the row scrolled out: the picker closes silently, the edit goes on
+	['vgrid', 'gridScroll', { picker: 0, editing: [], focus: 'grid', value: '', events: ['cell-edit-start(1.due)', 'cell-edit-cancel(1.due)'] }], // D5 the row scrolled out: cancel, focus on the grid (was: the edit went on)
 	['vgrid', 'itemsReplaced', { picker: 0, editing: ['1:1'], focus: '1:1/editor', value: 'input:2026-06-11', events: ['cell-edit-start(1.due)'] }], // D7
-	['vgrid', 'otherCell', { picker: 0, editing: [], focus: '1:1', value: '2026-06-11', events: ['cell-edit-start(1.due)'] }], // D4
-	['vgrid', 'outsideClick', { picker: 0, editing: [], focus: 'OUTSIDE', value: '2026-06-11', events: ['cell-edit-start(1.due)', 'cell-edit-cancel(1.due)'] }], // D3
-	['vgrid', 'overlayDismiss', { picker: 1, editing: ['1:1'], focus: '1:1/editor', value: 'input:2026-06-11', events: ['cell-edit-start(1.due)'] }], // D6
-	['vgrid', 'pageScroll', { picker: 1, editing: ['1:1'], focus: '1:1/editor', value: 'input:2026-06-11', events: ['cell-edit-start(1.due)'] }], // D5
+	['vgrid', 'otherCell', { picker: 0, editing: [], focus: '5:0', value: '2026-06-11', events: ['cell-edit-start(1.due)'] }], // D4
+	['vgrid', 'outsideClick', { picker: 0, editing: [], focus: 'OUTSIDE', value: '2026-06-11', events: ['cell-edit-start(1.due)'] }], // D3
+	['vgrid', 'overlayDismiss', { picker: 0, editing: [], focus: '1:1', value: '2026-06-11', events: ['cell-edit-start(1.due)'] }], // D6
+	['vgrid', 'pageScroll', { picker: 0, editing: [], focus: '1:1', value: '2026-06-11', events: ['cell-edit-start(1.due)', 'cell-edit-cancel(1.due)'] }], // D5
 	['vgrid', 'resize', { picker: 1, editing: ['1:1'], focus: '1:1/editor', value: 'input:2026-06-11', events: ['cell-edit-start(1.due)'] }],
 	['vgrid', 'tab', { picker: 0, editing: [], focus: '1:2', value: '2026-06-11', events: ['cell-edit-start(1.due)'] }],
 ]

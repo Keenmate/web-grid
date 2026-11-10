@@ -279,7 +279,7 @@ function executeEscapeEdit(ctx: ExecutorContext, action: EscapeEditAction): Grid
 			removeDropdown(ctx)
 		}
 		if (ctx.datepicker) {
-			ctx.datepicker.close(true)
+			ctx.datepicker.close()
 			ctx.datepicker = null
 		}
 

@@ -457,7 +457,7 @@ export interface GridElementConfig<T = unknown> {
 	 * Scope the "one overlay open at a time" coordination to a named group. Overlays
 	 * (the cell dropdown, multiselects, datepickers, external popovers) sharing a group dismiss each
 	 * other when one opens; different groups are independent. Unset = the default (ungrouped)
-	 * group, in which every ungrouped overlay coordinates. Read when the cell dropdown opens.
+	 * group, in which every ungrouped overlay coordinates. Read when the cell dropdown / date editor opens.
 	 * (internal: overlayGroup)
 	 */
 	overlayGroup: string | null
@@ -603,7 +603,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		// guard skips them; readers use the input's getter)
 		{ configKey: 'tooltipShowDelay', attribute: 'tooltip-show-delay', converter: toInt({ min: 0, default: 200 }), default: 200, on: 'update' },
 		{ configKey: 'tooltipHideDelay', attribute: 'tooltip-hide-delay', converter: toInt({ min: 0, default: 100 }), default: 100, on: 'update' },
-		// Overlay tree group of the cell dropdown (element-local, read at each open — so `update`, no rebuild)
+		// Overlay tree group of the cell dropdown + date editor (element-local, read at each open — so `update`, no rebuild)
 		{ configKey: 'overlayGroup', attribute: 'overlay-group', converter: toText({ isNullable: true }), on: 'update', type: 'string | null', description: 'Scope the "one overlay open at a time" coordination to a named group. Overlays (the cell dropdown, multiselects, datepickers, external popovers) sharing a group dismiss each other when one opens; different groups are independent. Unset = the default (ungrouped) group.' },
 	] as const satisfies readonly InputDef[]
 
@@ -746,8 +746,13 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		// Handle interaction changes (cleanup dropdown when editing is cancelled externally)
 		;(this.engine as unknown as { _onInteractionChange: ((type: string, detail: { prev: unknown, current: unknown }) => void) | null })._onInteractionChange = (type, detail) => {
 			if (type === 'editingCell' && detail.current === null) {
-				// Editing was cancelled - clean up dropdown if open
+				// The edit ended (saved / cancelled, any path) - close its dropdown / date picker
+				// ('api': whoever ended the edit already saved or cancelled it)
 				removeDropdown(this)
+				if (this.datepicker) {
+					this.datepicker.close()
+					this.datepicker = null
+				}
 			}
 		}
 	}

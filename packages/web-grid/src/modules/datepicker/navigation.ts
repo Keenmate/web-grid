@@ -61,17 +61,12 @@ export function handleKeyDown(
 	state: DatePickerState,
 	options: DatePickerOptions,
 	callbacks: {
-		onSelect?: (date: Date, direction?: 'down' | 'next') => void
-		onClose?: () => void
+		onSelect?: (date: Date, direction?: 'down' | 'next' | 'prev') => void
+		/** Close without a pick (Tab with no focused day). Escape is the popover's (core). */
+		onDismiss?: () => void
 	}
 ): boolean {
 	const { key } = event
-
-	// Escape closes the picker
-	if (key === 'Escape') {
-		callbacks.onClose?.()
-		return true
-	}
 
 	// If rolling selector is open, handle differently
 	if (state.rollingSelectorOpen) {
@@ -111,14 +106,14 @@ export function handleKeyDown(
 		return true
 	}
 
-	// Tab selects the focused date (move next)
+	// Tab / Shift+Tab selects the focused date (move next / previous)
 	if (key === 'Tab') {
 		event.preventDefault()
 		// Select focused date if available, otherwise just close
 		if (state.focusedDate) {
-			callbacks.onSelect?.(state.focusedDate, 'next')
+			callbacks.onSelect?.(state.focusedDate, event.shiftKey ? 'prev' : 'next')
 		} else {
-			callbacks.onClose?.()
+			callbacks.onDismiss?.()
 		}
 		return true
 	}

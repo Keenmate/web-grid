@@ -10,6 +10,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Date editor on core `createPopover()` (overlay WP2, 2026-11-10)
+- **Internal:** the date cell editor's picker is a core `createPopover()` in the grid's shadow root (was a
+  bare `anchor()` + its own document `mousedown` outside-click and Escape handling). One close handler
+  maps each reason to save / cancel / nothing (`modules/datepicker/element-handlers.ts`), shared by both
+  openers (F2 / Enter and the calendar button); the edit ending any other way closes the picker. The
+  picker's outer `.wg-datepicker-container` is now the positioned panel (the calendar inside is in flow).
+  Every close path is pinned by `e2e/datepicker-close.spec.ts`.
+- **Changed: a click outside the picker saves the edit** (was: cancel), like every other editor since WP1b.
+- **Changed: a scroll that moves the edited cell cancels the edit** (was: the picker stayed open; in a
+  virtual grid it vanished and the edit went on), like the cell dropdown.
+- **Changed: the date editor joins the page-wide overlay tree** in the `overlay-group` group: another
+  overlay of the group opening (or `dismissAllOverlays()`) closes it and saves the edit; it opening closes
+  the others.
+- **Changed:** `destroy()` with the picker open no longer cancels the edit / fires `cell-edit-cancel`.
+- **Fixed:** a date typed into the editor was lost when leaving the cell (Enter / Tab / another cell /
+  click outside / `startEditing()` saved the old value); the typed date is now the picked day and is saved.
+- **Fixed:** Shift+Tab in the picker moved to the NEXT cell; it moves to the previous one.
+- **Fixed:** clicking another (read-only) cell while the picker was open left focus on the edited cell.
+- Unchanged: a window resize keeps it open (placed); a re-render of the cell (`items` replaced) closes it
+  and the edit goes on.
+
 ### Added — `overlay-group` (2026-11-10)
 - **`overlay-group` attribute / `overlayGroup` property** (`string | null`, default unset): scopes the
   cell dropdown's "one overlay open at a time" coordination to a named group, like web-multiselect and

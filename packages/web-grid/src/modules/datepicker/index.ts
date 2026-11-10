@@ -6,6 +6,7 @@ export { DatePicker } from './datepicker.js'
 
 export type {
 	DatePickerOptions,
+	DatePickerCloseReason,
 	DatePickerState,
 	FormatSpec,
 	LocaleStrings

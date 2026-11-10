@@ -5,10 +5,9 @@
 
 import type { ActionExecutor, ExecutorContext } from '../pipeline.js'
 import type { GridAction } from '../types.js'
-import { DatePicker } from '../../datepicker/datepicker.js'
+import { openCellDatePicker } from '../../datepicker/element-handlers.js'
 import { toISODateString } from '../../datepicker/formatting.js'
 import { renderCell } from '../../rendering/index.js'
-import { clearEditingVisual } from '../../navigation/focus.js'
 
 /**
  * DatePicker executor - handles date picker open/close actions
@@ -54,38 +53,10 @@ function executeOpenDatePicker(ctx: ExecutorContext): void {
 	const input = cell.querySelector('.wg__date-input') as HTMLInputElement
 	if (!editorContainer || !input) return
 
-	// Close any existing datepicker
-	if (ctx.datepicker) {
-		ctx.datepicker.close(true)
-		ctx.datepicker = null
-	}
-
-	// Get date configuration from input data attributes
-	const dateFormat = input.dataset.dateFormat || 'YYYY-MM-DD'
-	const minDateStr = input.dataset.minDate
-	const maxDateStr = input.dataset.maxDate
-	const currentValue = input.dataset.dateValue || ''
-
 	// Capture stable values for callbacks (don't capture DOM refs — they go stale on re-render)
-	const capturedRowIndex = rowIndex
-	const capturedColIndex = colIndex
-	const capturedField = field
-
-	// Create and open the date picker
-	ctx.datepicker = new DatePicker({
-		container: ctx.shadow,
-		dateFormat,
-		minDate: minDateStr || undefined,
-		maxDate: maxDateStr || undefined,
-		onSelect: (date, direction) => {
-			handleDateSelect(ctx, capturedRowIndex, capturedColIndex, capturedField, date, direction)
-		},
-		onClose: () => {
-			handleDatePickerClose(ctx, capturedRowIndex, capturedColIndex)
-		}
+	openCellDatePicker(ctx, input, editorContainer, rowIndex, colIndex, (date, direction) => {
+		handleDateSelect(ctx, rowIndex, colIndex, field, date, direction)
 	})
-
-	ctx.datepicker.open(editorContainer, currentValue || null)
 }
 
 /**
@@ -98,7 +69,7 @@ function handleDateSelect(
 	colIndex: number,
 	field: string,
 	date: Date,
-	direction?: 'down' | 'next'
+	direction?: 'down' | 'next' | 'prev'
 ): void {
 	// Clear datepicker reference
 	ctx.datepicker = null
@@ -140,36 +111,8 @@ function handleDateSelect(
 		ctx.dispatch({ type: 'navigate', direction: 'down' })
 	} else if (direction === 'next') {
 		ctx.dispatch({ type: 'navigate', direction: 'tab' })
-	}
-}
-
-/**
- * Handle date picker close (without selection)
- */
-function handleDatePickerClose(ctx: ExecutorContext, rowIndex: number, colIndex: number): void {
-	ctx.datepicker = null
-
-	// For 'always' mode, just re-render the cell to restore focus
-	const column = ctx.engine.columns[colIndex]
-	if (!column) return
-
-	const effectiveTrigger = column.editTrigger ?? ctx.engine.editTrigger
-	if (effectiveTrigger === 'always') {
-		// Just re-render to clean up any visual state
-		renderCell(ctx, rowIndex, colIndex)
-	} else {
-		// For other modes, cancel the edit
-		clearEditingVisual(ctx)
-		ctx.engine.cancelEdit()
-		renderCell(ctx, rowIndex, colIndex)
-
-		// Focus the cell after cancelling edit (so user doesn't lose focus)
-		const cell = ctx.shadow.querySelector(
-			`.wg__cell[data-row="${rowIndex}"][data-col="${colIndex}"]`
-		) as HTMLElement
-		if (cell) {
-			cell.focus()
-		}
+	} else if (direction === 'prev') {
+		ctx.dispatch({ type: 'navigate', direction: 'tab-back' })
 	}
 }
 
@@ -178,7 +121,7 @@ function handleDatePickerClose(ctx: ExecutorContext, rowIndex: number, colIndex:
  */
 function executeCloseDatePicker(ctx: ExecutorContext): void {
 	if (ctx.datepicker) {
-		ctx.datepicker.close(true)
+		ctx.datepicker.close()
 		ctx.datepicker = null
 	}
 }
@@ -188,9 +131,8 @@ function executeCloseDatePicker(ctx: ExecutorContext): void {
  */
 function executeToggleDatePicker(ctx: ExecutorContext): void {
 	if (ctx.datepicker) {
-		// Datepicker is open - close it (non-silent so onClose callback runs)
-		ctx.datepicker.close(false)
-		// Note: onClose callback sets ctx.datepicker = null and cleans up edit state
+		// Datepicker is open - dismiss it (the close handler cancels the edit, like Escape)
+		ctx.datepicker.dismiss()
 	} else {
 		// Datepicker is closed - open it
 		executeOpenDatePicker(ctx)

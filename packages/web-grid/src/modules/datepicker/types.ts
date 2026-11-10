@@ -2,6 +2,16 @@
 // Date Picker Types (Lightweight version for web-grid)
 // =============================================================================
 
+import type { PopoverCloseReason } from '@keenmate/web-components-core/positioning'
+
+/**
+ * Why the picker closed: core's popover reasons (`'escape'`, `'outside-click'`, `'scroll'`,
+ * `'overlay'`, `'parent'`, `'reference-removed'`, `'api'` = close() / destroy() / a pick), or
+ * `'dismiss'` — the picker's own close without a pick (dismiss(): the trigger toggled it, Tab with
+ * no focused day).
+ */
+export type DatePickerCloseReason = PopoverCloseReason | 'dismiss'
+
 /**
  * Date picker configuration options
  */
@@ -26,9 +36,16 @@ export interface DatePickerOptions {
 	// color-scheme (data-theme / data-context-theme) and --wg-* / --base-* (default: document.body)
 	container?: ShadowRoot | HTMLElement
 
+	// Close a scroll that moved the anchor (default false); a function is asked at each scroll
+	shouldCloseOnScroll?: boolean | (() => boolean)
+
+	// The page-wide overlay tree group (core createPopover overlayGroup; undefined = the default group)
+	overlayGroup?: string
+
 	// Callbacks
-	onSelect?: (date: Date | null, direction?: 'down' | 'next') => void
-	onClose?: () => void
+	onSelect?: (date: Date | null, direction?: 'down' | 'next' | 'prev') => void
+	/** The picker closed — every close, with its reason (a pick reports 'api' after onSelect). */
+	onClose?: (reason: DatePickerCloseReason) => void
 }
 
 /**

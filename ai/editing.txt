@@ -179,6 +179,13 @@ Options (editorOptions):
                                   'YYYY-MM-DD' for cleaner display.
                    'timestamp' -- Unix timestamp (milliseconds).
 
+Closing the picker (Excel rule): a day click / Enter / Tab / Shift+Tab saves
+the day and moves (down / next / previous); a date typed into the input
+becomes the picked day. Leaving the cell any other way (another cell, a click
+outside, startEditing(), another overlay of the `overlay-group` opening) saves
+the input's date. Escape cancels. A scroll that moves the cell cancels. The
+picker is a core createPopover() in the grid's shadow root.
+
 Example:
   {
     field: 'birthDate',

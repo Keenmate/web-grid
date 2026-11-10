@@ -10,7 +10,7 @@
 	<h1>overlay-group fixture</h1>
 	<p>
 		Targeted by <code>e2e/overlay-group.spec.ts</code> — the <code>overlay-group</code> input scopes the
-		cell dropdown's "one overlay open at a time" coordination (core overlay tree). Reload resets all state.
+		cell dropdown's and the date editor's "one overlay open at a time" coordination (core overlay tree). Reload resets all state.
 	</p>
 
 	<h2>#ga — overlay-group="a"</h2>
@@ -33,8 +33,8 @@
 		import { createPopover } from '@keenmate/web-components-core/positioning'
 
 		/*
-		 *  every grid  col index:  0    1
-		 *              field:      id   status (select)
+		 *  every grid  col index:  0    1                2
+		 *              field:      id   status (select)  due (date)
 		 */
 		const statusOptions = [
 			{ value: 'open', label: 'Open' },
@@ -43,10 +43,11 @@
 		]
 		for (const id of ['ga', 'gb', 'gd']) {
 			const g = document.getElementById(id)
-			g.items = Array.from({ length: 3 }, (_, r) => ({ id: r + 1, status: 'open' }))
+			g.items = Array.from({ length: 3 }, (_, r) => ({ id: r + 1, status: 'open', due: '2026-06-1' + r }))
 			g.columns = [
 				{ field: 'id', title: 'ID', width: '60px', isEditable: false },
-				{ field: 'status', title: 'Status', width: '150px', editor: 'select', editorOptions: { options: statusOptions } }
+				{ field: 'status', title: 'Status', width: '150px', editor: 'select', editorOptions: { options: statusOptions } },
+				{ field: 'due', title: 'Due', width: '130px', editor: 'date' }
 			]
 			g.isEditingEnabled = true
 			g.editTrigger = 'navigate'

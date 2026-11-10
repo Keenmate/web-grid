@@ -4,7 +4,7 @@
 // =============================================================================
 
 import { adoptStyles } from '@keenmate/web-components-core'
-import { anchor as anchorTo } from '@keenmate/web-components-core/positioning'
+import { createPopover, type PopoverCloseReason, type PopoverHandle } from '@keenmate/web-components-core/positioning'
 import type { DatePickerOptions, DatePickerState, LocaleStrings, FormatSpec } from './types.js'
 import { DEFAULT_LOCALE_STRINGS } from './types.js'
 import { parseFormat, formatDate, normalizeDate, toISODateString } from './formatting.js'
@@ -12,7 +12,10 @@ import { parseFormat, formatDate, normalizeDate, toISODateString } from './forma
 // Datepicker styles (adopted into the mount root: the grid's shadow root, else document.head)
 const DATEPICKER_STYLES = `
 .wg-datepicker-container {
-	position: fixed;
+	/* The core popover's panel (placed by anchor()); the picker inside is in flow, so the panel has its size */
+	position: absolute;
+	top: 0;
+	left: 0;
 	z-index: var(--wg-dp-z-index, 9999);
 
 	/* Colors — contract inputs with their defaults and the contract's formulas on them;
@@ -67,7 +70,7 @@ const DATEPICKER_STYLES = `
 }
 
 .wg-datepicker {
-	position: absolute;
+	position: relative;
 	background: var(--wg-dp-background);
 	border: 1px solid var(--wg-dp-border-color);
 	border-radius: var(--wg-dp-border-radius);
@@ -292,9 +295,6 @@ import {
 	handleTodayClick,
 	handleMonthClick,
 	handleYearClick,
-	handleInputChange,
-	handleInputKeyDown,
-	handleInputPaste,
 	updateStateFromInput
 } from './interaction.js'
 
@@ -309,14 +309,16 @@ export class DatePicker {
 
 	private element: HTMLElement | null = null
 	private anchor: HTMLElement | null = null
-	private input: HTMLInputElement | null = null
-	private cleanupAutoUpdate: (() => void) | null = null
+	/** The open picker's core popover (positioning + Escape / outside click / scroll / overlay tree). */
+	private popover: PopoverHandle | null = null
+	/** Set while dismiss() closes the popover: its 'api' close is reported as 'dismiss'. */
+	private isDismissing = false
+	/** Stops following the cell's input (see followInput()). */
+	private unfollowInput: (() => void) | null = null
 
 	/** The picker's outer container (mounted in `options.container`, default document.body), or null when closed. */
 	getElement(): HTMLElement | null { return this.element }
 
-	private previousInputValue = ''
-	private boundHandleClickOutside: (e: MouseEvent) => void
 	private boundHandleKeyDown: (e: KeyboardEvent) => void
 
 	constructor(options: DatePickerOptions = {}) {
@@ -340,7 +342,6 @@ export class DatePicker {
 		this.localeStrings = this.initLocaleStrings(options.locale)
 		this.formatInfo = parseFormat(this.options.dateFormat || 'YYYY-MM-DD')
 
-		this.boundHandleClickOutside = this.handleClickOutside.bind(this)
 		this.boundHandleKeyDown = this.handleKeyDown.bind(this)
 	}
 
@@ -438,15 +439,39 @@ export class DatePicker {
 		this.element.className = 'wg-datepicker-container'
 		this.element.innerHTML = renderDatePicker(this.state, this.options, this.localeStrings)
 
-		root.appendChild(this.element)
-
-		// Position with Floating UI
-		this.position()
-
-		// Attach event listeners
-		this.attachListeners()
+		// Click handler for the picker's own controls
+		this.element.addEventListener('click', (e) => this.handleClick(e))
 
 		this.state.isOpen = true
+
+		// Core popover: mounts the panel in `root`, places it under the cell (core anchor()), and
+		// reports why it closed (options.onClose) — Escape, a click outside, a scroll that moved
+		// the cell, another overlay opening, the cell removed, or close() / destroy() ('api').
+		const popover = createPopover({
+			reference: anchor,
+			panel: this.element,
+			container: root,
+			// In a shadow root the panel already follows the grid's theme
+			inheritThemeFrom: root instanceof ShadowRoot ? false : anchor,
+			strategy: 'absolute',
+			placement: 'bottom-start',
+			// No `offset`: core's default is the page's field → panel gap `--base-dropdown-offset`
+			fallbackPlacements: ['top-start', 'bottom-end', 'top-end'],
+			shift: 8,
+			shouldCloseOnEscape: true,
+			shouldCloseOnOutsideClick: true,
+			// The owner moves focus itself (to the cell)
+			returnFocusTo: null,
+			shouldCloseOnScroll: this.options.shouldCloseOnScroll ?? false,
+			shouldCloseOnResize: false,
+			overlayGroup: this.options.overlayGroup,
+			onClose: (reason) => this.handlePopoverClose(popover, reason),
+		})
+		this.popover = popover
+		popover.open()
+
+		// Keyboard handler (calendar navigation, Enter / Tab pick; Escape is the popover's)
+		document.addEventListener('keydown', this.boundHandleKeyDown)
 
 		// Scroll rolling selector if needed
 		if (this.state.rollingSelectorOpen) {
@@ -455,34 +480,38 @@ export class DatePicker {
 	}
 
 	/**
-	 * Close the date picker
-	 * @param silent - If true, don't trigger onClose callback (used when switching cells)
+	 * Close the date picker from code: `options.onClose('api')` (the caller saves / cancels).
 	 */
-	close(silent = false): void {
-		if (!this.state.isOpen) return
+	close(): void {
+		this.popover?.destroy()
+	}
 
-		// Cleanup auto-update
-		if (this.cleanupAutoUpdate) {
-			this.cleanupAutoUpdate()
-			this.cleanupAutoUpdate = null
+	/**
+	 * Close without a pick as the user's own dismissal (the trigger button toggled it, Tab with
+	 * no focused day): `options.onClose('dismiss')`.
+	 */
+	dismiss(): void {
+		if (!this.popover) return
+		this.isDismissing = true
+		try {
+			this.popover.destroy()
+		} finally {
+			this.isDismissing = false
 		}
+	}
 
-		// Remove event listeners
-		document.removeEventListener('mousedown', this.boundHandleClickOutside)
+	/** The popover closed (any reason; core already unmounted the panel): tear down, tell the owner why. */
+	private handlePopoverClose(popover: PopoverHandle, reason: PopoverCloseReason): void {
+		if (this.popover !== popover) return
+		this.popover = null
+		popover.destroy()
 		document.removeEventListener('keydown', this.boundHandleKeyDown)
-
-		// Remove element
-		if (this.element) {
-			this.element.remove()
-			this.element = null
-		}
-
+		this.unfollowInput?.()
+		this.unfollowInput = null
+		this.element = null
 		this.state.isOpen = false
 		this.state.rollingSelectorOpen = false
-
-		if (!silent) {
-			this.options.onClose?.()
-		}
+		this.options.onClose?.(reason === 'api' && this.isDismissing ? 'dismiss' : reason)
 	}
 
 	/**
@@ -491,7 +520,6 @@ export class DatePicker {
 	destroy(): void {
 		this.close()
 		this.anchor = null
-		this.input = null
 	}
 
 	/**
@@ -506,51 +534,6 @@ export class DatePicker {
 	 */
 	getFormattedValue(): string {
 		return formatDate(this.state.selectedDate, this.formatInfo)
-	}
-
-	/**
-	 * Position the picker (core anchor())
-	 */
-	private position(): void {
-		if (!this.element || !this.anchor) return
-
-		const picker = this.element.querySelector('.wg-datepicker') as HTMLElement
-		if (!picker) return
-
-		// Core anchor(): kept in place on scroll / resize (autoUpdate) until close()
-		const anchorEl = this.anchor
-		const handle = anchorTo(picker, anchorEl, {
-			strategy: 'absolute',
-			placement: 'bottom-start',
-			// No `offset`: core's default is the page's field → panel gap `--base-dropdown-offset`
-			fallbackPlacements: ['top-start', 'bottom-end', 'top-end'],
-			shift: 8,
-			// Close datepicker silently if anchor is no longer valid
-			// Silent because something else (cell transition) already handled the edit state
-			beforeComputeCallback: () => {
-				if (!anchorEl.isConnected) this.close(true)
-			}
-		})
-		this.cleanupAutoUpdate = () => handle.destroy()
-	}
-
-	/**
-	 * Attach event listeners
-	 */
-	private attachListeners(): void {
-		if (!this.element) return
-
-
-		// Click handler for picker
-		this.element.addEventListener('click', (e) => this.handleClick(e))
-
-		// Global click-outside handler (with delay to avoid catching opening click)
-		setTimeout(() => {
-			document.addEventListener('mousedown', this.boundHandleClickOutside)
-		}, 0)
-
-		// Keyboard handler
-		document.addEventListener('keydown', this.boundHandleKeyDown)
 	}
 
 	/**
@@ -624,27 +607,12 @@ export class DatePicker {
 	}
 
 	/**
-	 * Handle click outside the picker
-	 */
-	private handleClickOutside(e: MouseEvent): void {
-		if (!this.element || !this.anchor) return
-
-		// Use composedPath() to correctly detect clicks across shadow DOM boundaries.
-		// e.target is retargeted to the shadow host at the document level, so
-		// anchor.contains(e.target) would fail for clicks inside the shadow DOM.
-		const path = e.composedPath()
-		if (!path.includes(this.element) && !path.includes(this.anchor)) {
-			this.close()
-		}
-	}
-
-	/**
 	 * Handle keyboard events
 	 */
 	private handleKeyDown(e: KeyboardEvent): void {
 		const handled = handleKeyDown(e, this.state, this.options, {
 			onSelect: (date, direction) => this.selectDate(date, direction),
-			onClose: () => this.close()
+			onDismiss: () => this.dismiss()
 		})
 
 		if (handled) {
@@ -655,11 +623,11 @@ export class DatePicker {
 	/**
 	 * Select a date and fire callback
 	 */
-	private selectDate(date: Date, direction?: 'down' | 'next'): void {
+	private selectDate(date: Date, direction?: 'down' | 'next' | 'prev'): void {
 		this.state.selectedDate = date
 		this.options.onSelect?.(date, direction)
-		// Close silently - onSelect already handled the commit, don't trigger onClose
-		this.close(true)
+		// onSelect already handled the commit: the close reports 'api' (nothing to do)
+		this.close()
 	}
 
 	/**
@@ -686,29 +654,24 @@ export class DatePicker {
 	}
 
 	/**
-	 * Connect an input field for masked input
+	 * Follow the cell's text input while open: a complete, valid typed date becomes the picker's
+	 * selected + focused day (so Enter / Tab pick it) and the input's `data-date-value` (what
+	 * leaving the cell saves); clearing the text clears both.
 	 */
-	connectInput(input: HTMLInputElement): void {
-		this.input = input
-		this.previousInputValue = input.value
-
-		input.addEventListener('input', () => {
-			this.previousInputValue = handleInputChange(input, this.formatInfo, this.previousInputValue)
-			updateStateFromInput(input.value, this.formatInfo, this.state, this.options)
-		})
-
-		input.addEventListener('keydown', (e) => {
-			handleInputKeyDown(e, this.formatInfo)
-		})
-
-		input.addEventListener('paste', (e) => {
-			handleInputPaste(e, input, this.formatInfo)
-		})
-
-		input.addEventListener('focus', () => {
-			if (!this.state.isOpen && this.anchor) {
-				this.open(this.anchor, input.value)
+	followInput(input: HTMLInputElement): void {
+		this.unfollowInput?.()
+		const onInput = () => {
+			if (input.value.trim() === '') {
+				this.state.selectedDate = null
+				input.dataset.dateValue = ''
+			} else if (updateStateFromInput(input.value, this.formatInfo, this.state, this.options) && this.state.selectedDate) {
+				input.dataset.dateValue = toISODateString(this.state.selectedDate)
+			} else {
+				return
 			}
-		})
+			this.render()
+		}
+		input.addEventListener('input', onInput)
+		this.unfollowInput = () => input.removeEventListener('input', onInput)
 	}
 }
