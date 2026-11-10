@@ -237,8 +237,11 @@ export class ActionPipelineAdapter<T = unknown> {
 						thenNavigate: e.shiftKey ? 'tab-back' : 'tab'
 					})
 				} else {
-					// Dropdown auto-opened, user didn't interact — just traverse
-					this.pipeline.dispatch({ type: 'cancelEdit' })
+					// No option navigated: traverse. Excel rule — leaving a cell saves: a combobox /
+					// autocomplete commits what its input shows (a matching label → that option's
+					// value, else the raw text); a select without a pick changes nothing (cancel)
+					const editorType = this.getDropdownEditorType(cell.colIndex)
+					this.pipeline.dispatch({ type: editorType === 'combobox' || editorType === 'autocomplete' ? 'commitEdit' : 'cancelEdit' })
 					this.pipeline.dispatch({
 						type: 'navigate',
 						direction: e.shiftKey ? 'tab-back' : 'tab',

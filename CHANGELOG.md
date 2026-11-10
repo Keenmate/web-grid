@@ -39,6 +39,9 @@ Target: **2.0.0-rc01** — a major: the callback, event and item API below is br
   `cell-edit-cancel`; every no-pick close now fires it.
 - **Fixed:** focus fell to `<body>` after an option click or a scroll close; it stays on the cell (on
   the grid when the cell's row scrolled out of view).
+- **Fixed:** Tab / Shift+Tab on a combobox / autocomplete without arrowing through the options
+  cancelled the edit, losing the typed text; it now saves it (a matching label → that option's value,
+  else the raw text — as on blur), then moves as before.
 - Unchanged: a scroll that moves the edited cell still cancels the edit.
 
 ### Theme (2026-11-10)

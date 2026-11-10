@@ -16,7 +16,8 @@ import { test, expect, type Page, gridLocator, cell } from './fixtures'
  * Rows marked `Q<n>` changed with the WP1b decisions (`_agent-progress/grid-overlay-wp1-dropdown.md`):
  * Q1 combobox commits the option VALUE · Q2 select without a pick → `cell-edit-cancel` · Q3 outside
  * click saves · Q4 focus returns to the cell (the grid when it scrolled away) · Q5 `startEditing()`
- * saves the open edit first · Q7 the dropdown is in the overlay tree (another overlay → save).
+ * saves the open edit first · Q7 the dropdown is in the overlay tree (another overlay → save) · Q8 Tab /
+ * Shift+Tab without arrowing saves a combobox / autocomplete (was: cancel).
  * `typed:<path>` = type into the editor first (product 'Tablet' → value 'tablet'; assignee 'Zed', free-form).
  */
 
@@ -124,9 +125,9 @@ const CASES: [string, string, string, Expected][] = [
 	['grid', 'assignee', 'outsideClick', { dropdown: 0, editing: [], focus: 'OUTSIDE', value: 'Alice', events: ['cell-edit-start(3.assignee)'] }], // Q3 saves (unchanged value: no row-change, no cancel)
 	['grid', 'assignee', 'pageScroll', { dropdown: 0, editing: [], focus: '3:3', value: 'Alice', events: ['cell-edit-start(3.assignee)', 'cell-edit-cancel(3.assignee)'] }], // Q4 focus back on the cell
 	['grid', 'assignee', 'resize', { dropdown: 1, editing: ['3:3'], focus: '3:3/editor', value: '', events: ['cell-edit-start(3.assignee)'] }],
-	['grid', 'assignee', 'shiftTab', { dropdown: 1, editing: ['3:2'], focus: '3:2/editor', value: 'Alice', events: ['cell-edit-start(3.assignee)', 'cell-edit-cancel(3.assignee)', 'cell-edit-start(3.product)'] }],
+	['grid', 'assignee', 'shiftTab', { dropdown: 1, editing: ['3:2'], focus: '3:2/editor', value: 'Alice', events: ['cell-edit-start(3.assignee)', 'cell-edit-start(3.product)'] }], // Q8 saves (unchanged: no event)
 	['grid', 'assignee', 'startEditingApi', { dropdown: 0, editing: ['6:1'], focus: '6:1/editor', value: 'Alice', events: ['cell-edit-start(3.assignee)', 'cell-edit-start(6.status)'] }], // Q5 saves first, one editing cell
-	['grid', 'assignee', 'tab', { dropdown: 0, editing: [], focus: '3:4', value: 'Alice', events: ['cell-edit-start(3.assignee)', 'cell-edit-cancel(3.assignee)'] }],
+	['grid', 'assignee', 'tab', { dropdown: 0, editing: [], focus: '3:4', value: 'Alice', events: ['cell-edit-start(3.assignee)'] }], // Q8 saves (unchanged: no event)
 	['grid', 'product', 'arrowEnter', { dropdown: 0, editing: [], focus: '4:2', value: 'Tablet', events: ['cell-edit-start(3.product)', 'row-change(3.product=tablet)'] }],
 	['grid', 'product', 'escape', { dropdown: 0, editing: [], focus: '3:2', value: 'Phone', events: ['cell-edit-start(3.product)', 'cell-edit-cancel(3.product)'] }],
 	['grid', 'product', 'gridScroll', { dropdown: 0, editing: [], focus: '3:2', value: 'Phone', events: ['cell-edit-start(3.product)', 'cell-edit-cancel(3.product)'] }], // Q4 focus back on the cell
@@ -138,9 +139,9 @@ const CASES: [string, string, string, Expected][] = [
 	['grid', 'product', 'outsideClick', { dropdown: 0, editing: [], focus: 'OUTSIDE', value: 'Phone', events: ['cell-edit-start(3.product)'] }], // Q3 saves (unchanged value: no row-change, no cancel)
 	['grid', 'product', 'pageScroll', { dropdown: 0, editing: [], focus: '3:2', value: 'Phone', events: ['cell-edit-start(3.product)', 'cell-edit-cancel(3.product)'] }], // Q4 focus back on the cell
 	['grid', 'product', 'resize', { dropdown: 1, editing: ['3:2'], focus: '3:2/editor', value: '', events: ['cell-edit-start(3.product)'] }],
-	['grid', 'product', 'shiftTab', { dropdown: 1, editing: ['3:1'], focus: '3:1/editor', value: 'Phone', events: ['cell-edit-start(3.product)', 'cell-edit-cancel(3.product)', 'cell-edit-start(3.status)'] }],
+	['grid', 'product', 'shiftTab', { dropdown: 1, editing: ['3:1'], focus: '3:1/editor', value: 'Phone', events: ['cell-edit-start(3.product)', 'cell-edit-start(3.status)'] }], // Q8 saves (unchanged: no event)
 	['grid', 'product', 'startEditingApi', { dropdown: 0, editing: ['6:1'], focus: '6:1/editor', value: 'Phone', events: ['cell-edit-start(3.product)', 'cell-edit-start(6.status)'] }], // Q5 saves first, one editing cell
-	['grid', 'product', 'tab', { dropdown: 1, editing: ['3:3'], focus: '3:3/editor', value: 'Phone', events: ['cell-edit-start(3.product)', 'cell-edit-cancel(3.product)', 'cell-edit-start(3.assignee)'] }],
+	['grid', 'product', 'tab', { dropdown: 1, editing: ['3:3'], focus: '3:3/editor', value: 'Phone', events: ['cell-edit-start(3.product)', 'cell-edit-start(3.assignee)'] }], // Q8 saves (unchanged: no event)
 	['grid', 'status', 'arrowEnter', { dropdown: 0, editing: [], focus: '4:1', value: 'Done', events: ['cell-edit-start(3.status)', 'row-change(3.status=done)'] }],
 	['grid', 'status', 'escape', { dropdown: 0, editing: [], focus: '3:1', value: 'Open', events: ['cell-edit-start(3.status)', 'cell-edit-cancel(3.status)'] }],
 	['grid', 'status', 'gridScroll', { dropdown: 0, editing: [], focus: '3:1', value: 'Open', events: ['cell-edit-start(3.status)', 'cell-edit-cancel(3.status)'] }], // Q4 focus back on the cell
@@ -169,6 +170,9 @@ const CASES: [string, string, string, Expected][] = [
 	['grid', 'product', 'typed:outsideClick', { dropdown: 0, editing: [], focus: 'OUTSIDE', value: 'Tablet', events: ['cell-edit-start(3.product)', 'row-change(3.product=tablet)'] }], // Q3 + Q1
 	['grid', 'product', 'typed:overlayDismiss', { dropdown: 0, editing: [], focus: '3:2', value: 'Tablet', events: ['cell-edit-start(3.product)', 'row-change(3.product=tablet)'] }], // Q7 another overlay: save
 	['grid', 'product', 'typed:startEditingApi', { dropdown: 0, editing: ['6:1'], focus: '6:1/editor', value: 'Tablet', events: ['cell-edit-start(3.product)', 'row-change(3.product=tablet)', 'cell-edit-start(6.status)'] }], // Q5 saves first
+	['grid', 'assignee', 'typed:tab', { dropdown: 0, editing: [], focus: '3:4', value: 'Zed', events: ['cell-edit-start(3.assignee)', 'row-change(3.assignee=Zed)'] }], // Q8 Tab saves the free-form text
+	['grid', 'product', 'typed:shiftTab', { dropdown: 1, editing: ['3:1'], focus: '3:1/editor', value: 'Tablet', events: ['cell-edit-start(3.product)', 'row-change(3.product=tablet)', 'cell-edit-start(3.status)'] }], // Q8 Shift+Tab saves the option value
+	['grid', 'product', 'typed:tab', { dropdown: 1, editing: ['3:3'], focus: '3:3/editor', value: 'Tablet', events: ['cell-edit-start(3.product)', 'row-change(3.product=tablet)', 'cell-edit-start(3.assignee)'] }], // Q8 Tab saves the option value
 	['grid', 'status', 'overlayDismiss', { dropdown: 0, editing: [], focus: '3:1', value: 'Open', events: ['cell-edit-start(3.status)', 'cell-edit-cancel(3.status)'] }], // Q7 + Q2 no pick: cancel, focus on the cell
 	['vgrid', 'status', 'overlayDismiss', { dropdown: 0, editing: [], focus: '1:1', value: 'Done', events: ['cell-edit-start(1.status)', 'cell-edit-cancel(1.status)'] }], // Q7 + Q2
 ]

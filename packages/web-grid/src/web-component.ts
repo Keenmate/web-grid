@@ -1204,6 +1204,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 				: null
 			const active = this.shadow.activeElement
 			shouldFocusEditor = !!active && !!oldCell?.contains(active)
+			// Always saved, even with shouldCommitOnClickAway: false — the edit MOVES to another
+			// cell (like Tab / Enter), it isn't a click-away discard.
 			// The old editor goes away below: keep the blur handlers out of it
 			this.isTransitioningCells = true
 			removeDropdown(this)
