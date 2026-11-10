@@ -28,7 +28,8 @@
 		"dist",
 		"src/css",
 		"ai",
-		"component-variables.manifest.json"
+		"component-variables.manifest.json",
+		"release-notes"
 	],
 	"scripts": {
 		"dev": "vite --port 12500",
