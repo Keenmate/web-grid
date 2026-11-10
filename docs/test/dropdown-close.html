@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — dropdown close paths fixture</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>dropdown close paths fixture</h1>
+	<p>
+		Targeted by <code>e2e/dropdown-close.spec.ts</code> — pins what every way of closing an open cell
+		dropdown does (value saved or not, edit mode, focus, events). Reload resets all state.
+	</p>
+
+	<button type="button" id="outside" data-testid="outside">outside</button>
+
+	<h2>#grid — 40 rows, scrolls (select / combobox / autocomplete)</h2>
+	<web-grid id="grid" style="max-width: 820px; max-height: 300px;"></web-grid>
+
+	<h2>#vgrid — 1,000 rows, virtual scroll (select)</h2>
+	<web-grid id="vgrid" style="max-width: 500px; max-height: 300px;"></web-grid>
+
+	<!-- Room to scroll the page -->
+	<div style="height: 2000px"></div>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+		import { installEventLog } from './event-log.js'
+
+		/*
+		 *  #grid   col index:  0    1          2           3            4              5
+		 *          field:      id   status     product     assignee     note           tag
+		 *          editor:     -    select     combobox    autocomplete text (click)   select (click)
+		 *  (navigate mode; `note` / `tag` start editing on a single click — "another cell that starts its own edit")
+		 *  row r: status = ['open','done','hold'][r % 3], product = 'laptop' / 'phone', assignee 'Alice', note 'n<r>'
+		 *
+		 *  #vgrid  col index:  0    1
+		 *          field:      id   status (select)
+		 */
+		const statuses = ['open', 'done', 'hold']
+		const seed = (n) => Array.from({ length: n }, (_, r) => ({
+			id: r + 1,
+			status: statuses[r % 3],
+			product: r % 2 ? 'phone' : 'laptop',
+			assignee: 'Alice',
+			note: 'n' + r,
+			tag: 'open'
+		}))
+		window.__seed = seed
+
+		const statusOptions = [
+			{ value: 'open', label: 'Open' },
+			{ value: 'done', label: 'Done' },
+			{ value: 'hold', label: 'On hold' }
+		]
+		const productOptions = [
+			{ value: 'laptop', label: 'Laptop' },
+			{ value: 'phone', label: 'Phone' },
+			{ value: 'tablet', label: 'Tablet' }
+		]
+		const users = ['Alice', 'Bob', 'Carol', 'Dave'].map((u) => ({ value: u, label: u }))
+
+		const grid = document.getElementById('grid')
+		grid.items = seed(40)
+		grid.columns = [
+			{ field: 'id', title: 'ID', width: '50px', isEditable: false },
+			{ field: 'status', title: 'Status', width: '150px', editor: 'select', editorOptions: { options: statusOptions } },
+			{ field: 'product', title: 'Product', width: '160px', editor: 'combobox', editorOptions: { options: productOptions } },
+			{
+				field: 'assignee', title: 'Assignee', width: '170px', editor: 'autocomplete',
+				editorOptions: {
+					initialOptions: users,
+					minSearchLength: 1,
+					debounceMs: 0,
+					searchCallback: async ({ term }) => users.filter((u) => u.label.toLowerCase().includes(term.toLowerCase()))
+				}
+			},
+			{ field: 'note', title: 'Note', width: '110px', editTrigger: 'click' },
+			{ field: 'tag', title: 'Tag', width: '110px', editor: 'select', editTrigger: 'click', editorOptions: { options: statusOptions } }
+		]
+		grid.isEditingEnabled = true
+		grid.editTrigger = 'navigate'
+
+		const vgrid = document.getElementById('vgrid')
+		vgrid.items = seed(1000)
+		vgrid.columns = [
+			{ field: 'id', title: 'ID', width: '70px', isEditable: false },
+			{ field: 'status', title: 'Status', width: '150px', editor: 'select', editorOptions: { options: statusOptions } },
+			{ field: 'note', title: 'Note', width: '150px' }
+		]
+		vgrid.isVirtualScrollEnabled = true
+		vgrid.virtualScrollItemHeight = 38
+		vgrid.virtualScrollOverscan = 5
+		vgrid.isEditingEnabled = true
+		vgrid.editTrigger = 'navigate'
+
+		const names = ['row-change', 'cell-edit-start', 'cell-edit-cancel']
+		installEventLog(grid, 'grid', names)
+		installEventLog(vgrid, 'vgrid', names)
+	</script>
+</body>
+</html>

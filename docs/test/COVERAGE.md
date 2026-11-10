@@ -74,6 +74,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Number editor: strict parse, non-numbers / min / max / negatives invalid (no clamping), decimals round, min/max/step attributes, label i18n (#25 fixed) | ✓ | `edit-modes.spec.ts` | `edit-modes.html` |
 | `dropdownToggleVisibility`, `shouldOpenDropdownOnFocus`, `shouldOpenDropdownOnEnter` (grid + column), checkbox Space toggle | ✓ | `dropdown-flags.spec.ts` | `dropdown-flags.html` |
 | `isCheckboxAlwaysEditable` one-click toggle, off by default (#27 fixed) | ✓ | `dropdown-flags.spec.ts` | `dropdown-flags.html` |
+| Every way an open dropdown closes (option click, Enter, Tab / Shift+Tab, Escape, outside click, another cell incl. one that starts its own edit, grid / page scroll, resize, virtual row scrolled out, items replaced, `startEditing()`) — value, edit mode, focus, events pinned (characterization, overlay WP1) | ✓ | `dropdown-close.spec.ts` | `dropdown-close.html` |
 | `preset` (read-only / excel / input-matrix; read-only sets `isReadonly`) | ✓ | `grid-modes.spec.ts`, `inputs.spec.ts` | `grid-modes.html`, `inputs.html` |
 | `validateCallback` (string / result / transform) | ✓ | `validation.spec.ts` | `validation.html` |
 | `invalidCells` (read + assign) + `isCellInvalid` / `getCellValidationError` | ✓ | `validation.spec.ts` | `validation.html` |
