@@ -10,6 +10,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Examples and docs — the example pages on the devkit shell (2026-11-11)
+- **Every example page is a devkit fragment page**: the devkit header / chapter nav / Ctrl+K spotlight /
+  theme switch (light / dark / auto) / footer instead of the page-local chrome; `index.html` is
+  `renderExamplesIndex()` (the Library / Practical grouping kept in an intro card). `examples-shared.css`
+  and the page-local layout / control / log / table CSS are gone — kit classes only (`.controls`,
+  `.reference-table`, `.note`, `.pill`, `.log-panel` + `appendLogLine`, `.w-*`, …). Every demo, its text
+  and its code are kept; CSS that IS a demo (theme palettes, shadow-root `customStyles`) stays, marked
+  `data-kmwc-fixed-colors` where the colours are fixed on purpose.
+- **Section codes** on every example (rulebook example-pages): `BU` basic, `CV` column visibility, `CM`
+  context menu, `CS` custom styling, `DD` dropdowns, `ET` edit trigger, `EF` editable full, `ED` editors,
+  `FH` fill handle, `FP` freeze panes, `GM` grid modes, `HM` height modes, `PS` product search, `RC`
+  resizable columns, `RL` row locking, `SE` selection, `SH` shortcuts, `SP` sorting & paging, `TH` theming,
+  `TB` toolbar, `TS` tree scroll, `TR` tree, `VS` virtual scroll — e.g. `examples-theming.html#th02`.
+- Not 1:1: toasts became the page's event-log panel (newest line at the bottom), custom segmented switches /
+  dark-mode toggles became kit buttons / the devkit theme switch, overlay dialogs are native `<dialog>`s.
+  Row locking's callback-mode demo passed `getCanEditLockedCallback` positional args — now the ctx
+  (`({ lockInfo })`). Every page passes `kmwc check-pages` at 1440 / 390 / 320 px (no overflow).
+
 ### Changed — rulebook leftovers (2026-11-11)
 - **BREAKING (CSS class):** the filter-row input refused by `filterCallback` (`null`) carries
   `.wg__filter-input--invalid` (BEM, rulebook C-NC-8 / C-CSS-7) instead of the bare `.invalid` — a

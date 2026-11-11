@@ -1,616 +1,595 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebGrid - Edit Trigger Examples</title>
-    <link rel="stylesheet" href="examples-shared.css">
-</head>
-<body>
-    <div class="container">
-        <header>
-            <a href="index.html" class="back-link">← Back to Examples</a>
-            <h1>Edit Trigger Examples</h1>
-            <p class="subtitle">Testing different edit trigger modes</p>
-        </header>
+<meta name="kmwc:title" content="Edit Trigger Examples">
+<meta name="kmwc:subtitle" content="Testing different edit trigger modes">
 
-        <div class="card">
-            <h2>Edit Trigger: Click</h2>
-            <p>Single click on a cell to start editing. Click another cell to immediately switch to editing that cell.</p>
+    <div class="card">
+        <h2>ET01 · Edit Trigger: Click</h2>
+        <p>Single click on a cell to start editing. Click another cell to immediately switch to editing that cell.</p>
 
-            <div class="controls">
-                <label>
-                    Edit Trigger:
-                    <select id="editTrigger">
-                        <option value="click">click</option>
-                        <option value="dblclick">dblclick</option>
-                        <option value="navigate">navigate</option>
-                    </select>
-                </label>
-                <label>
-                    Edit Start Selection:
-                    <select id="editStartSelection">
-                        <option value="mouse-position">mousePosition (default)</option>
-                        <option value="select-all">selectAll</option>
-                        <option value="cursor-at-end">cursorAtEnd</option>
-                        <option value="cursor-at-start">cursorAtStart</option>
-                    </select>
-                </label>
-                <label>
-                    <input type="checkbox" id="gridEditable" checked> grid.isEditingEnabled
-                </label>
-            </div>
-
-            <web-grid id="grid" style="max-width: 100%; max-height: 400px; border: 1px solid #e2e8f0;"></web-grid>
-
-            <div class="note" style="margin-top: 1rem;">
-                <div class="note-title">Test Scenarios</div>
-                <ul>
-                    <li><strong>Click mode:</strong> Click Alice → edit mode. Click Bob → should immediately edit Bob (no double-click)</li>
-                    <li><strong>DblClick mode:</strong> Double-click to edit. Single click just focuses.</li>
-                    <li><strong>Navigate mode:</strong> Arrow keys to navigate, type to start editing, Enter/F2 to edit.</li>
-                </ul>
-                <div class="note-title" style="margin-top: 1rem;">Edit Start Selection</div>
-                <ul>
-                    <li><strong>mousePosition:</strong> Cursor placed where you clicked (default)</li>
-                    <li><strong>selectAll:</strong> All text selected</li>
-                    <li><strong>cursorAtEnd:</strong> Cursor at end of text</li>
-                    <li><strong>cursorAtStart:</strong> Cursor at beginning of text</li>
-                </ul>
-            </div>
+        <div class="controls">
+            <label>
+                Edit Trigger:
+                <select id="editTrigger">
+                    <option value="click">click</option>
+                    <option value="dblclick">dblclick</option>
+                    <option value="navigate">navigate</option>
+                </select>
+            </label>
+            <label>
+                Edit Start Selection:
+                <select id="editStartSelection">
+                    <option value="mouse-position">mousePosition (default)</option>
+                    <option value="select-all">selectAll</option>
+                    <option value="cursor-at-end">cursorAtEnd</option>
+                    <option value="cursor-at-start">cursorAtStart</option>
+                </select>
+            </label>
+            <label>
+                <input type="checkbox" id="gridEditable" checked> grid.isEditingEnabled
+            </label>
         </div>
 
-        <div class="card">
-            <h2>Empty Row (Inline Data Entry) <span style="background: #f59e0b; color: white; font-size: 0.6em; padding: 2px 8px; border-radius: 10px; vertical-align: middle;">Experimental</span></h2>
-            <p>Add new rows directly in the grid using an empty row. <strong>Requires navigate mode</strong> (<code>editTrigger: 'navigate'</code>).<br>
-            <small style="color: #92400e;">⚠️ This feature is experimental — API may change in future releases.</small></p>
+        <web-grid id="grid" style="max-height: 400px;"></web-grid>
 
-            <div class="controls">
-                <label>
-                    Position:
-                    <select id="emptyRowPosition">
-                        <option value="bottom" selected>bottom</option>
-                        <option value="top">top</option>
-                    </select>
-                </label>
-                <label>
-                    <input type="checkbox" id="emptyRowEnabled" checked> isNewRowEnabled
-                </label>
-            </div>
-
-            <div class="controls" style="margin-top: 0.5rem;">
-                <button id="copyTestDataPositional" style="padding: 0.5rem 1rem; cursor: pointer;">
-                    Copy Test Data (by position)
-                </button>
-                <button id="copyTestDataHeaders" style="padding: 0.5rem 1rem; cursor: pointer;">
-                    Copy Test Data (with headers)
-                </button>
-                <span id="copyStatus" style="margin-left: 1rem; color: green;"></span>
-            </div>
-
-            <div class="controls" style="margin-top: 0.5rem; display: flex; align-items: center; gap: 1rem;">
-                <button id="saveButton" style="padding: 0.5rem 1.5rem; cursor: pointer; background: #2563eb; color: white; border: none; border-radius: 4px; font-weight: 500;">
-                    💾 Save to "Database"
-                </button>
-                <span id="saveStatus"></span>
-            </div>
-
-            <div id="statusPanel" style="margin-top: 0.5rem; padding: 0.75rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 0.9em;">
-                <strong>Status:</strong>
-                <span id="statusSaved" style="color: #16a34a;">0 saved</span> |
-                <span id="statusUnsaved" style="color: #ca8a04;">0 unsaved</span> |
-                <span id="statusInvalid" style="color: #dc2626;">0 invalid</span>
-                <div id="dbContents" style="margin-top: 0.5rem; font-family: monospace; font-size: 0.85em; color: #64748b;"></div>
-            </div>
-
-            <web-grid id="gridEmptyRow" style="max-width: 100%; max-height: 300px; border: 1px solid #e2e8f0;"></web-grid>
-
-            <div class="note" style="margin-top: 1rem;">
-                <div class="note-title">How it works</div>
-                <ul>
-                    <li>Click a cell in the empty row (marked with +) and type to enter values</li>
-                    <li>Press <strong>Tab</strong> to save the cell value and move to the next cell (doesn't commit row)</li>
-                    <li>Press <strong>Tab on last cell</strong> to commit the row and start a fresh empty row</li>
-                    <li>Press <strong>Enter</strong> to commit the row if it has any data</li>
-                    <li>Committed rows are added to the items array</li>
-                </ul>
-                <div class="note-title" style="margin-top: 1rem;">Validation Rules (for testing)</div>
-                <ul>
-                    <li><strong>Name</strong>: Cannot be empty</li>
-                    <li><strong>Salary</strong>: Cannot be empty, must be less than 300</li>
-                </ul>
-                <div class="note-title" style="margin-top: 1rem;">Test Data & Save Workflow</div>
-                <ul>
-                    <li><strong>Copy buttons:</strong> Copy test data with 2 valid + 3 invalid rows</li>
-                    <li><strong>Paste:</strong> Click NAME cell in empty row, then Ctrl+V</li>
-                    <li><strong>Save button:</strong> Saves valid rows to fake "database" (200-500ms delay)</li>
-                    <li><strong>Invalid rows:</strong> Cannot be saved until errors are fixed</li>
-                </ul>
-                <p style="margin: 0.5rem 0; font-size: 0.9em;">
-                    <strong>Try it:</strong> Paste test data → see status panel update → fix invalid cells → click Save
-                </p>
-                <div class="note-title" style="margin-top: 1rem;">Requirements</div>
-                <ul>
-                    <li><code>editTrigger: 'navigate'</code> - Navigate mode is required</li>
-                    <li><code>isNewRowEnabled: true</code> - Enable the empty row</li>
-                    <li><code>createEmptyRowCallback</code> - Provide a function to create new row objects</li>
-                </ul>
-            </div>
+        <div class="note mt-1">
+            <div class="note-title">Test Scenarios</div>
+            <ul>
+                <li><strong>Click mode:</strong> Click Alice → edit mode. Click Bob → should immediately edit Bob (no double-click)</li>
+                <li><strong>DblClick mode:</strong> Double-click to edit. Single click just focuses.</li>
+                <li><strong>Navigate mode:</strong> Arrow keys to navigate, type to start editing, Enter/F2 to edit.</li>
+            </ul>
+            <div class="note-title mt-1">Edit Start Selection</div>
+            <ul>
+                <li><strong>mousePosition:</strong> Cursor placed where you clicked (default)</li>
+                <li><strong>selectAll:</strong> All text selected</li>
+                <li><strong>cursorAtEnd:</strong> Cursor at end of text</li>
+                <li><strong>cursorAtStart:</strong> Cursor at beginning of text</li>
+            </ul>
         </div>
-
-        <div class="card">
-            <h2>Column-level editable vs Grid-level editable</h2>
-            <p>When <code>grid.isEditingEnabled = true</code>, all columns are editable by default unless <code>column.isEditable = false</code>.</p>
-
-            <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
-                <thead>
-                    <tr style="background: #f3f4f6;">
-                        <th style="padding: 8px; border: 1px solid #e2e8f0; text-align: left;">Column</th>
-                        <th style="padding: 8px; border: 1px solid #e2e8f0; text-align: left;">column.editor</th>
-                        <th style="padding: 8px; border: 1px solid #e2e8f0; text-align: left;">Notes</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td style="padding: 8px; border: 1px solid #e2e8f0;">ID</td>
-                        <td style="padding: 8px; border: 1px solid #e2e8f0;">-</td>
-                        <td style="padding: 8px; border: 1px solid #e2e8f0;">NOT editable (<code>isEditable: false</code>)</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 8px; border: 1px solid #e2e8f0;">Name</td>
-                        <td style="padding: 8px; border: 1px solid #e2e8f0;"><code>'text'</code></td>
-                        <td style="padding: 8px; border: 1px solid #e2e8f0;">Standard text input</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 8px; border: 1px solid #e2e8f0;">Status</td>
-                        <td style="padding: 8px; border: 1px solid #e2e8f0;"><code>'select'</code></td>
-                        <td style="padding: 8px; border: 1px solid #e2e8f0;">Dropdown with fixed options</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 8px; border: 1px solid #e2e8f0;">Dept</td>
-                        <td style="padding: 8px; border: 1px solid #e2e8f0;"><code>'combobox'</code></td>
-                        <td style="padding: 8px; border: 1px solid #e2e8f0;">Dropdown with text input</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 8px; border: 1px solid #e2e8f0;">Country</td>
-                        <td style="padding: 8px; border: 1px solid #e2e8f0;"><code>'autocomplete'</code></td>
-                        <td style="padding: 8px; border: 1px solid #e2e8f0;">Searchable dropdown</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 8px; border: 1px solid #e2e8f0;">Start Date</td>
-                        <td style="padding: 8px; border: 1px solid #e2e8f0;"><code>'date'</code></td>
-                        <td style="padding: 8px; border: 1px solid #e2e8f0;">Date picker</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 8px; border: 1px solid #e2e8f0;">Active</td>
-                        <td style="padding: 8px; border: 1px solid #e2e8f0;"><code>'checkbox'</code></td>
-                        <td style="padding: 8px; border: 1px solid #e2e8f0;">Boolean toggle</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 8px; border: 1px solid #e2e8f0;">Salary</td>
-                        <td style="padding: 8px; border: 1px solid #e2e8f0;"><code>'number'</code></td>
-                        <td style="padding: 8px; border: 1px solid #e2e8f0;">Numeric input</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-
-        <footer>
-            <p>WebGrid Component by <a href="https://github.com/keenmate">Keenmate</a></p>
-        </footer>
     </div>
 
-    <script type="module">
-        import '@keenmate/web-grid'
+    <div class="card">
+        <h2>ET02 · Empty Row (Inline Data Entry) <span class="pill pill--warn">Experimental</span></h2>
+        <p>Add new rows directly in the grid using an empty row. <strong>Requires navigate mode</strong> (<code>editTrigger: 'navigate'</code>).</p>
+        <div class="note warning">⚠️ This feature is experimental — API may change in future releases.</div>
 
-        const sampleData = [
-            { id: 1, name: 'Alice Johnson', email: 'alice@example.com', salary: 95000, status: 'active', department: 'Engineering', country: 'USA', startDate: '2023-01-15', isActive: true },
-            { id: 2, name: 'Bob Smith', email: 'bob@example.com', salary: 72000, status: 'pending', department: 'Marketing', country: 'Canada', startDate: '2023-03-20', isActive: true },
-            { id: 3, name: 'Charlie Brown', email: 'charlie@example.com', salary: 88000, status: 'active', department: 'Sales', country: 'UK', startDate: '2022-11-01', isActive: false },
-            { id: 4, name: 'Diana Ross', email: 'diana@example.com', salary: 67000, status: 'inactive', department: 'HR', country: 'Germany', startDate: '2024-02-10', isActive: true },
-            { id: 5, name: 'Eve Wilson', email: 'eve@example.com', salary: 105000, status: 'active', department: 'Engineering', country: 'France', startDate: '2021-06-05', isActive: false }
-        ]
+        <div class="controls">
+            <label>
+                Position:
+                <select id="emptyRowPosition">
+                    <option value="bottom" selected>bottom</option>
+                    <option value="top">top</option>
+                </select>
+            </label>
+            <label>
+                <input type="checkbox" id="emptyRowEnabled" checked> isNewRowEnabled
+            </label>
+        </div>
 
-        const statusOptions = [
-            { value: 'active', label: 'Active' },
-            { value: 'pending', label: 'Pending' },
-            { value: 'inactive', label: 'Inactive' }
-        ]
+        <div class="controls">
+            <button type="button" id="copyTestDataPositional" class="btn-secondary">
+                Copy Test Data (by position)
+            </button>
+            <button type="button" id="copyTestDataHeaders" class="btn-secondary">
+                Copy Test Data (with headers)
+            </button>
+            <span id="copyStatus" class="muted" role="status"></span>
+        </div>
 
-        const departmentOptions = [
-            { value: 'Engineering', label: 'Engineering' },
-            { value: 'Marketing', label: 'Marketing' },
-            { value: 'Sales', label: 'Sales' },
-            { value: 'HR', label: 'HR' },
-            { value: 'Finance', label: 'Finance' }
-        ]
+        <div class="controls">
+            <button type="button" id="saveButton">
+                💾 Save to "Database"
+            </button>
+            <span id="saveStatus" role="status"></span>
+        </div>
 
-        const countryOptions = [
-            { value: 'USA', label: 'United States' },
-            { value: 'Canada', label: 'Canada' },
-            { value: 'UK', label: 'United Kingdom' },
-            { value: 'Germany', label: 'Germany' },
-            { value: 'France', label: 'France' },
-            { value: 'Spain', label: 'Spain' },
-            { value: 'Italy', label: 'Italy' }
-        ]
+        <div id="statusPanel" class="output">
+            <strong>Status:</strong>
+            <span id="statusSaved" class="pill pill--ok">0 saved</span>
+            <span id="statusUnsaved" class="pill pill--warn">0 unsaved</span>
+            <span id="statusInvalid" class="pill pill--err">0 invalid</span>
+            <div id="dbContents" class="mono muted"></div>
+        </div>
 
-        // Column definitions - NO explicit isEditable:true on columns
-        // They should inherit from grid.isEditingEnabled = true
-        const columns = [
-            { field: 'id', title: 'ID', width: '60px', isEditable: false },
-            { field: 'name', title: 'Name', width: '150px', editor: 'text' },
-            {
-                field: 'status',
-                title: 'Status (select)',
-                width: '120px',
-                editor: 'select',
-                editorOptions: {
-                    options: statusOptions,
-                    valueMember: 'value',
-                    displayMember: 'label'
-                }
-            },
-            {
-                field: 'department',
-                title: 'Dept (combobox)',
-                width: '140px',
-                editor: 'combobox',
-                editorOptions: {
-                    options: departmentOptions,
-                    valueMember: 'value',
-                    displayMember: 'label'
-                }
-            },
-            {
-                field: 'country',
-                title: 'Country (autocomplete)',
-                width: '160px',
-                editor: 'autocomplete',
-                editorOptions: {
-                    initialOptions: countryOptions,
-                    valueMember: 'value',
-                    displayMember: 'label',
-                    editStartSelection: 'select-all'
-                }
-            },
-            {
-                field: 'startDate',
-                title: 'Start Date',
-                width: '130px',
-                editor: 'date'
-            },
-            {
-                field: 'isActive',
-                title: 'Active',
-                width: '80px',
-                horizontalAlign: 'center',
-                editor: 'checkbox'
-            },
-            {
-                field: 'salary',
-                title: 'Salary',
-                width: '100px',
-                horizontalAlign: 'right',
-                editor: 'number',
-                getDisplayValueCallback: ({ value: val }) => val != null ? `$${val.toLocaleString()}` : ''
+        <web-grid id="gridEmptyRow" style="max-height: 300px;"></web-grid>
+
+        <div class="note mt-1">
+            <div class="note-title">How it works</div>
+            <ul>
+                <li>Click a cell in the empty row (marked with +) and type to enter values</li>
+                <li>Press <strong>Tab</strong> to save the cell value and move to the next cell (doesn't commit row)</li>
+                <li>Press <strong>Tab on last cell</strong> to commit the row and start a fresh empty row</li>
+                <li>Press <strong>Enter</strong> to commit the row if it has any data</li>
+                <li>Committed rows are added to the items array</li>
+            </ul>
+            <div class="note-title mt-1">Validation Rules (for testing)</div>
+            <ul>
+                <li><strong>Name</strong>: Cannot be empty</li>
+                <li><strong>Salary</strong>: Cannot be empty, must be less than 300</li>
+            </ul>
+            <div class="note-title mt-1">Test Data & Save Workflow</div>
+            <ul>
+                <li><strong>Copy buttons:</strong> Copy test data with 2 valid + 3 invalid rows</li>
+                <li><strong>Paste:</strong> Click NAME cell in empty row, then Ctrl+V</li>
+                <li><strong>Save button:</strong> Saves valid rows to fake "database" (200-500ms delay)</li>
+                <li><strong>Invalid rows:</strong> Cannot be saved until errors are fixed</li>
+            </ul>
+            <p>
+                <strong>Try it:</strong> Paste test data → see status panel update → fix invalid cells → click Save
+            </p>
+            <div class="note-title mt-1">Requirements</div>
+            <ul>
+                <li><code>editTrigger: 'navigate'</code> - Navigate mode is required</li>
+                <li><code>isNewRowEnabled: true</code> - Enable the empty row</li>
+                <li><code>createEmptyRowCallback</code> - Provide a function to create new row objects</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>ET03 · Column-level editable vs Grid-level editable</h2>
+        <p>When <code>grid.isEditingEnabled = true</code>, all columns are editable by default unless <code>column.isEditable = false</code>.</p>
+
+        <table class="reference-table table-compact table-full">
+            <thead>
+                <tr>
+                    <th>Column</th>
+                    <th>column.editor</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>ID</td>
+                    <td>-</td>
+                    <td>NOT editable (<code>isEditable: false</code>)</td>
+                </tr>
+                <tr>
+                    <td>Name</td>
+                    <td><code>'text'</code></td>
+                    <td>Standard text input</td>
+                </tr>
+                <tr>
+                    <td>Status</td>
+                    <td><code>'select'</code></td>
+                    <td>Dropdown with fixed options</td>
+                </tr>
+                <tr>
+                    <td>Dept</td>
+                    <td><code>'combobox'</code></td>
+                    <td>Dropdown with text input</td>
+                </tr>
+                <tr>
+                    <td>Country</td>
+                    <td><code>'autocomplete'</code></td>
+                    <td>Searchable dropdown</td>
+                </tr>
+                <tr>
+                    <td>Start Date</td>
+                    <td><code>'date'</code></td>
+                    <td>Date picker</td>
+                </tr>
+                <tr>
+                    <td>Active</td>
+                    <td><code>'checkbox'</code></td>
+                    <td>Boolean toggle</td>
+                </tr>
+                <tr>
+                    <td>Salary</td>
+                    <td><code>'number'</code></td>
+                    <td>Numeric input</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+<script type="module">
+
+    const sampleData = [
+        { id: 1, name: 'Alice Johnson', email: 'alice@example.com', salary: 95000, status: 'active', department: 'Engineering', country: 'USA', startDate: '2023-01-15', isActive: true },
+        { id: 2, name: 'Bob Smith', email: 'bob@example.com', salary: 72000, status: 'pending', department: 'Marketing', country: 'Canada', startDate: '2023-03-20', isActive: true },
+        { id: 3, name: 'Charlie Brown', email: 'charlie@example.com', salary: 88000, status: 'active', department: 'Sales', country: 'UK', startDate: '2022-11-01', isActive: false },
+        { id: 4, name: 'Diana Ross', email: 'diana@example.com', salary: 67000, status: 'inactive', department: 'HR', country: 'Germany', startDate: '2024-02-10', isActive: true },
+        { id: 5, name: 'Eve Wilson', email: 'eve@example.com', salary: 105000, status: 'active', department: 'Engineering', country: 'France', startDate: '2021-06-05', isActive: false }
+    ]
+
+    const statusOptions = [
+        { value: 'active', label: 'Active' },
+        { value: 'pending', label: 'Pending' },
+        { value: 'inactive', label: 'Inactive' }
+    ]
+
+    const departmentOptions = [
+        { value: 'Engineering', label: 'Engineering' },
+        { value: 'Marketing', label: 'Marketing' },
+        { value: 'Sales', label: 'Sales' },
+        { value: 'HR', label: 'HR' },
+        { value: 'Finance', label: 'Finance' }
+    ]
+
+    const countryOptions = [
+        { value: 'USA', label: 'United States' },
+        { value: 'Canada', label: 'Canada' },
+        { value: 'UK', label: 'United Kingdom' },
+        { value: 'Germany', label: 'Germany' },
+        { value: 'France', label: 'France' },
+        { value: 'Spain', label: 'Spain' },
+        { value: 'Italy', label: 'Italy' }
+    ]
+
+    // Column definitions - NO explicit isEditable:true on columns
+    // They should inherit from grid.isEditingEnabled = true
+    const columns = [
+        { field: 'id', title: 'ID', width: '60px', isEditable: false },
+        { field: 'name', title: 'Name', width: '150px', editor: 'text' },
+        {
+            field: 'status',
+            title: 'Status (select)',
+            width: '120px',
+            editor: 'select',
+            editorOptions: {
+                options: statusOptions,
+                valueMember: 'value',
+                displayMember: 'label'
             }
-        ]
+        },
+        {
+            field: 'department',
+            title: 'Dept (combobox)',
+            width: '140px',
+            editor: 'combobox',
+            editorOptions: {
+                options: departmentOptions,
+                valueMember: 'value',
+                displayMember: 'label'
+            }
+        },
+        {
+            field: 'country',
+            title: 'Country (autocomplete)',
+            width: '160px',
+            editor: 'autocomplete',
+            editorOptions: {
+                initialOptions: countryOptions,
+                valueMember: 'value',
+                displayMember: 'label',
+                editStartSelection: 'select-all'
+            }
+        },
+        {
+            field: 'startDate',
+            title: 'Start Date',
+            width: '130px',
+            editor: 'date'
+        },
+        {
+            field: 'isActive',
+            title: 'Active',
+            width: '80px',
+            horizontalAlign: 'center',
+            editor: 'checkbox'
+        },
+        {
+            field: 'salary',
+            title: 'Salary',
+            width: '100px',
+            horizontalAlign: 'right',
+            editor: 'number',
+            getDisplayValueCallback: ({ value: val }) => val != null ? `$${val.toLocaleString()}` : ''
+        }
+    ]
 
-        const grid = document.getElementById('grid')
-        grid.items = sampleData
-        grid.columns = columns
-        grid.isEditingEnabled = true
-        grid.isStriped = true
-        grid.isHoverable = true
+    const grid = document.getElementById('grid')
+    grid.items = sampleData
+    grid.columns = columns
+    grid.isEditingEnabled = true
+    grid.isStriped = true
+    grid.isHoverable = true
 
-        // Load settings from localStorage
-        const savedEditTrigger = localStorage.getItem('editTrigger.value') || 'click'
-        const savedEditStartSelection = localStorage.getItem('editStartSelection.value') || 'mouse-position'
+    // Load settings from localStorage
+    const savedEditTrigger = localStorage.getItem('editTrigger.value') || 'click'
+    const savedEditStartSelection = localStorage.getItem('editStartSelection.value') || 'mouse-position'
 
-        grid.editTrigger = savedEditTrigger
-        grid.editStartSelection = savedEditStartSelection
+    grid.editTrigger = savedEditTrigger
+    grid.editStartSelection = savedEditStartSelection
 
-        // Update UI controls to match
-        document.getElementById('editTrigger').value = savedEditTrigger
-        document.getElementById('editStartSelection').value = savedEditStartSelection
+    // Update UI controls to match
+    document.getElementById('editTrigger').value = savedEditTrigger
+    document.getElementById('editStartSelection').value = savedEditStartSelection
 
-        // Wire up controls with localStorage persistence
-        document.getElementById('editTrigger').addEventListener('change', (e) => {
-            grid.editTrigger = e.target.value
-            localStorage.setItem('editTrigger.value', e.target.value)
-            console.log('editTrigger changed to:', e.target.value)
-        })
+    // Wire up controls with localStorage persistence
+    document.getElementById('editTrigger').addEventListener('change', (e) => {
+        grid.editTrigger = e.target.value
+        localStorage.setItem('editTrigger.value', e.target.value)
+        console.log('editTrigger changed to:', e.target.value)
+    })
 
-        document.getElementById('gridEditable').addEventListener('change', (e) => {
-            grid.isEditingEnabled = e.target.checked
-            console.log('grid.isEditingEnabled changed to:', e.target.checked)
-        })
+    document.getElementById('gridEditable').addEventListener('change', (e) => {
+        grid.isEditingEnabled = e.target.checked
+        console.log('grid.isEditingEnabled changed to:', e.target.checked)
+    })
 
-        document.getElementById('editStartSelection').addEventListener('change', (e) => {
-            grid.editStartSelection = e.target.value
-            localStorage.setItem('editStartSelection.value', e.target.value)
-            console.log('editStartSelection changed to:', e.target.value)
-        })
+    document.getElementById('editStartSelection').addEventListener('change', (e) => {
+        grid.editStartSelection = e.target.value
+        localStorage.setItem('editStartSelection.value', e.target.value)
+        console.log('editStartSelection changed to:', e.target.value)
+    })
 
-        // ========================================
-        // Empty Row Example
-        // ========================================
-        let nextId = 100
+    // ========================================
+    // Empty Row Example
+    // ========================================
+    let nextId = 100
 
-        // Initial data matches fakeDb (salary in $K for simplicity - validation: < 300)
-        const emptyRowSampleData = [
+    // Initial data matches fakeDb (salary in $K for simplicity - validation: < 300)
+    const emptyRowSampleData = [
+        { id: 1, name: 'Alice Johnson', email: 'alice@example.com', salary: 95 },
+        { id: 2, name: 'Bob Smith', email: 'bob@example.com', salary: 72 },
+        { id: 3, name: 'Charlie Brown', email: 'charlie@example.com', salary: 88 }
+    ]
+
+    const emptyRowColumns = [
+        { field: 'id', title: 'ID', width: '60px', isEditable: false },
+        {
+            field: 'name',
+            title: 'Name',
+            width: '150px',
+            editor: 'text',
+            validateCallback: ({ value }) => {
+                if (!value || value.trim() === '') {
+                    return { valid: false, error: 'Name is required' }
+                }
+                return { valid: true }
+            }
+        },
+        { field: 'email', title: 'Email', width: '180px', editor: 'text' },
+        {
+            field: 'salary',
+            title: 'Salary',
+            width: '100px',
+            horizontalAlign: 'right',
+            editor: 'number',
+            getDisplayValueCallback: ({ value: val }) => val != null ? `$${val}K` : '',
+            validateCallback: ({ value }) => {
+                if (value == null || value === '') {
+                    return { valid: false, error: 'Salary is required' }
+                }
+                if (value >= 300) {
+                    return { valid: false, error: 'Salary must be less than 300' }
+                }
+                return { valid: true }
+            }
+        }
+    ]
+
+    const gridEmptyRow = document.getElementById('gridEmptyRow')
+    gridEmptyRow.items = emptyRowSampleData
+    gridEmptyRow.columns = emptyRowColumns
+    gridEmptyRow.isEditingEnabled = true
+    gridEmptyRow.editTrigger = 'navigate'  // REQUIRED for empty row
+    gridEmptyRow.isStriped = true
+    gridEmptyRow.isRowNumbersShown = true
+    gridEmptyRow.isNewRowEnabled = true
+    gridEmptyRow.newRowPosition = 'bottom'
+    gridEmptyRow.createEmptyRowCallback = () => ({
+        id: nextId++,
+        name: '',
+        email: '',
+        salary: null
+    })
+
+    // Load settings from localStorage
+    const savedPosition = localStorage.getItem('emptyRow.position') || 'bottom'
+    const savedEnabled = localStorage.getItem('emptyRow.enabled') !== 'false'  // default true
+
+    gridEmptyRow.newRowPosition = savedPosition
+    gridEmptyRow.isNewRowEnabled = savedEnabled
+
+    // Update UI controls to match
+    document.getElementById('emptyRowPosition').value = savedPosition
+    document.getElementById('emptyRowEnabled').checked = savedEnabled
+
+    // Log when rows are committed
+    gridEmptyRow.onRowChange = ({ row, field, oldValue, newValue, rowIndex }) => {
+        console.log('Row changed:', { row, field, oldValue, newValue, rowIndex })
+    }
+
+    // Wire up controls with localStorage persistence
+    document.getElementById('emptyRowPosition').addEventListener('change', (e) => {
+        gridEmptyRow.newRowPosition = e.target.value
+        localStorage.setItem('emptyRow.position', e.target.value)
+        console.log('newRowPosition changed to:', e.target.value)
+    })
+
+    document.getElementById('emptyRowEnabled').addEventListener('change', (e) => {
+        gridEmptyRow.isNewRowEnabled = e.target.checked
+        localStorage.setItem('emptyRow.enabled', e.target.checked)
+        console.log('isNewRowEnabled changed to:', e.target.checked)
+    })
+
+    // ========================================
+    // Test Data Copy Buttons
+    // ========================================
+
+    // Test data: mix of valid and invalid rows
+    // Invalid: empty name (row 2), salary >= 300 (row 3)
+
+    // Positional data: Name, Email, Salary only (no ID - it's not editable)
+    // Salary in $K - validation requires < 300
+    const testDataPositional = [
+        ['John Doe', 'john@test.com', '150'],           // Valid: name + salary OK
+        ['', 'jane@test.com', '200'],                   // Invalid: empty name
+        ['Bob Test', 'bob@test.com', '350'],            // Invalid: salary >= 300
+        ['Valid Person', 'valid@test.com', '120'],      // Valid: name + salary OK
+        ['', 'empty@test.com', '400'],                  // Invalid: empty name AND salary >= 300
+    ]
+
+    // Header data: includes all columns for header matching
+    const testDataWithHeaders = [
+        ['ID', 'Name', 'Email', 'Salary'],             // Headers
+        ['', 'John Doe', 'john@test.com', '150'],      // Valid (no ID - will be assigned on save)
+        ['', '', 'jane@test.com', '200'],              // Invalid: empty name
+        ['', 'Bob Test', 'bob@test.com', '350'],       // Invalid: salary >= 300
+        ['', 'Valid Person', 'valid@test.com', '120'], // Valid
+        ['', '', 'empty@test.com', '400'],             // Invalid: empty name AND salary >= 300
+    ]
+
+    function showCopyStatus(message) {
+        const status = document.getElementById('copyStatus')
+        status.textContent = message
+        setTimeout(() => { status.textContent = '' }, 2000)
+    }
+
+    // Copy by position (no headers) - click on Name cell before pasting
+    document.getElementById('copyTestDataPositional').addEventListener('click', async () => {
+        const tsv = testDataPositional.map(row => row.join('\t')).join('\n')
+        await navigator.clipboard.writeText(tsv)
+        showCopyStatus('Copied! Click NAME cell in empty row, then Ctrl+V')
+    })
+
+    // Copy with headers - paste will match by column names
+    document.getElementById('copyTestDataHeaders').addEventListener('click', async () => {
+        const tsv = testDataWithHeaders.map(row => row.join('\t')).join('\n')
+        await navigator.clipboard.writeText(tsv)
+        showCopyStatus('Copied! Click any cell in empty row, then Ctrl+V')
+    })
+
+    // ========================================
+    // Fake Database & API Simulation
+    // ========================================
+
+    // Simulated database (in-memory)
+    const fakeDb = {
+        rows: [
             { id: 1, name: 'Alice Johnson', email: 'alice@example.com', salary: 95 },
             { id: 2, name: 'Bob Smith', email: 'bob@example.com', salary: 72 },
             { id: 3, name: 'Charlie Brown', email: 'charlie@example.com', salary: 88 }
-        ]
+        ],
+        nextId: 4
+    }
 
-        const emptyRowColumns = [
-            { field: 'id', title: 'ID', width: '60px', isEditable: false },
-            {
-                field: 'name',
-                title: 'Name',
-                width: '150px',
-                editor: 'text',
-                validateCallback: ({ value }) => {
-                    if (!value || value.trim() === '') {
-                        return { valid: false, error: 'Name is required' }
-                    }
-                    return { valid: true }
-                }
-            },
-            { field: 'email', title: 'Email', width: '180px', editor: 'text' },
-            {
-                field: 'salary',
-                title: 'Salary',
-                width: '100px',
-                horizontalAlign: 'right',
-                editor: 'number',
-                getDisplayValueCallback: ({ value: val }) => val != null ? `$${val}K` : '',
-                validateCallback: ({ value }) => {
-                    if (value == null || value === '') {
-                        return { valid: false, error: 'Salary is required' }
-                    }
-                    if (value >= 300) {
-                        return { valid: false, error: 'Salary must be less than 300' }
-                    }
-                    return { valid: true }
-                }
+    // Simulated API with delays
+    const fakeApi = {
+        // Simulate network delay (200-500ms)
+        delay: () => new Promise(resolve => setTimeout(resolve, 200 + Math.random() * 300)),
+
+        // Save a single row - returns assigned ID
+        async saveRow(rowData) {
+            await this.delay()
+
+            // Simulate server-side validation
+            if (!rowData.name || rowData.name.trim() === '') {
+                throw new Error('Server validation: Name is required')
             }
-        ]
+            if (rowData.salary == null || rowData.salary >= 300) {
+                throw new Error('Server validation: Salary must be less than 300')
+            }
 
-        const gridEmptyRow = document.getElementById('gridEmptyRow')
-        gridEmptyRow.items = emptyRowSampleData
-        gridEmptyRow.columns = emptyRowColumns
-        gridEmptyRow.isEditingEnabled = true
-        gridEmptyRow.editTrigger = 'navigate'  // REQUIRED for empty row
-        gridEmptyRow.isStriped = true
-        gridEmptyRow.isRowNumbersShown = true
-        gridEmptyRow.isNewRowEnabled = true
-        gridEmptyRow.newRowPosition = 'bottom'
-        gridEmptyRow.createEmptyRowCallback = () => ({
-            id: nextId++,
-            name: '',
-            email: '',
-            salary: null
-        })
+            // Assign ID and save
+            const id = fakeDb.nextId++
+            const savedRow = { ...rowData, id }
+            fakeDb.rows.push(savedRow)
+            console.log('[FakeAPI] Saved row:', savedRow)
+            return savedRow
+        },
 
-        // Load settings from localStorage
-        const savedPosition = localStorage.getItem('emptyRow.position') || 'bottom'
-        const savedEnabled = localStorage.getItem('emptyRow.enabled') !== 'false'  // default true
+        // Get all rows from "database"
+        async getAll() {
+            await this.delay()
+            return [...fakeDb.rows]
+        }
+    }
 
-        gridEmptyRow.newRowPosition = savedPosition
-        gridEmptyRow.isNewRowEnabled = savedEnabled
+    // Update status panel
+    function updateStatusPanel() {
+        const items = gridEmptyRow.items
+        const invalidCells = gridEmptyRow.invalidCells
 
-        // Update UI controls to match
-        document.getElementById('emptyRowPosition').value = savedPosition
-        document.getElementById('emptyRowEnabled').checked = savedEnabled
+        // Count rows by status
+        const savedRows = items.filter(row => row.id && typeof row.id === 'number')
+        const unsavedRows = items.filter(row => !row.id || typeof row.id !== 'number')
 
-        // Log when rows are committed
-        gridEmptyRow.onRowChange = ({ row, field, oldValue, newValue, rowIndex }) => {
-            console.log('Row changed:', { row, field, oldValue, newValue, rowIndex })
+        // Count rows with invalid cells
+        const rowsWithErrors = new Set(invalidCells.map(c => c.rowIndex))
+
+        document.getElementById('statusSaved').textContent = `${savedRows.length} saved`
+        document.getElementById('statusUnsaved').textContent = `${unsavedRows.length} unsaved`
+        document.getElementById('statusInvalid').textContent = `${rowsWithErrors.size} with errors`
+
+        // Show database contents
+        const dbHtml = fakeDb.rows.length > 0
+            ? `Database: ${fakeDb.rows.map(r => `#${r.id} ${r.name}`).join(', ')}`
+            : 'Database: (empty)'
+        document.getElementById('dbContents').textContent = dbHtml
+    }
+
+    // Save button handler
+    document.getElementById('saveButton').addEventListener('click', async () => {
+        const saveBtn = document.getElementById('saveButton')
+        const saveStatus = document.getElementById('saveStatus')
+
+        // Get unsaved rows (no ID or non-numeric ID)
+        const items = gridEmptyRow.items
+        const unsavedRows = items.filter(row => !row.id || typeof row.id !== 'number')
+
+        if (unsavedRows.length === 0) {
+            saveStatus.textContent = 'Nothing to save'
+            saveStatus.style.color = 'var(--kmwc-text-color-3)'
+            setTimeout(() => { saveStatus.textContent = '' }, 2000)
+            return
         }
 
-        // Wire up controls with localStorage persistence
-        document.getElementById('emptyRowPosition').addEventListener('change', (e) => {
-            gridEmptyRow.newRowPosition = e.target.value
-            localStorage.setItem('emptyRow.position', e.target.value)
-            console.log('newRowPosition changed to:', e.target.value)
-        })
-
-        document.getElementById('emptyRowEnabled').addEventListener('change', (e) => {
-            gridEmptyRow.isNewRowEnabled = e.target.checked
-            localStorage.setItem('emptyRow.enabled', e.target.checked)
-            console.log('isNewRowEnabled changed to:', e.target.checked)
-        })
-
-        // ========================================
-        // Test Data Copy Buttons
-        // ========================================
-
-        // Test data: mix of valid and invalid rows
-        // Invalid: empty name (row 2), salary >= 300 (row 3)
-
-        // Positional data: Name, Email, Salary only (no ID - it's not editable)
-        // Salary in $K - validation requires < 300
-        const testDataPositional = [
-            ['John Doe', 'john@test.com', '150'],           // Valid: name + salary OK
-            ['', 'jane@test.com', '200'],                   // Invalid: empty name
-            ['Bob Test', 'bob@test.com', '350'],            // Invalid: salary >= 300
-            ['Valid Person', 'valid@test.com', '120'],      // Valid: name + salary OK
-            ['', 'empty@test.com', '400'],                  // Invalid: empty name AND salary >= 300
-        ]
-
-        // Header data: includes all columns for header matching
-        const testDataWithHeaders = [
-            ['ID', 'Name', 'Email', 'Salary'],             // Headers
-            ['', 'John Doe', 'john@test.com', '150'],      // Valid (no ID - will be assigned on save)
-            ['', '', 'jane@test.com', '200'],              // Invalid: empty name
-            ['', 'Bob Test', 'bob@test.com', '350'],       // Invalid: salary >= 300
-            ['', 'Valid Person', 'valid@test.com', '120'], // Valid
-            ['', '', 'empty@test.com', '400'],             // Invalid: empty name AND salary >= 300
-        ]
-
-        function showCopyStatus(message) {
-            const status = document.getElementById('copyStatus')
-            status.textContent = message
-            setTimeout(() => { status.textContent = '' }, 2000)
-        }
-
-        // Copy by position (no headers) - click on Name cell before pasting
-        document.getElementById('copyTestDataPositional').addEventListener('click', async () => {
-            const tsv = testDataPositional.map(row => row.join('\t')).join('\n')
-            await navigator.clipboard.writeText(tsv)
-            showCopyStatus('Copied! Click NAME cell in empty row, then Ctrl+V')
-        })
-
-        // Copy with headers - paste will match by column names
-        document.getElementById('copyTestDataHeaders').addEventListener('click', async () => {
-            const tsv = testDataWithHeaders.map(row => row.join('\t')).join('\n')
-            await navigator.clipboard.writeText(tsv)
-            showCopyStatus('Copied! Click any cell in empty row, then Ctrl+V')
-        })
-
-        // ========================================
-        // Fake Database & API Simulation
-        // ========================================
-
-        // Simulated database (in-memory)
-        const fakeDb = {
-            rows: [
-                { id: 1, name: 'Alice Johnson', email: 'alice@example.com', salary: 95 },
-                { id: 2, name: 'Bob Smith', email: 'bob@example.com', salary: 72 },
-                { id: 3, name: 'Charlie Brown', email: 'charlie@example.com', salary: 88 }
-            ],
-            nextId: 4
-        }
-
-        // Simulated API with delays
-        const fakeApi = {
-            // Simulate network delay (200-500ms)
-            delay: () => new Promise(resolve => setTimeout(resolve, 200 + Math.random() * 300)),
-
-            // Save a single row - returns assigned ID
-            async saveRow(rowData) {
-                await this.delay()
-
-                // Simulate server-side validation
-                if (!rowData.name || rowData.name.trim() === '') {
-                    throw new Error('Server validation: Name is required')
-                }
-                if (rowData.salary == null || rowData.salary >= 300) {
-                    throw new Error('Server validation: Salary must be less than 300')
-                }
-
-                // Assign ID and save
-                const id = fakeDb.nextId++
-                const savedRow = { ...rowData, id }
-                fakeDb.rows.push(savedRow)
-                console.log('[FakeAPI] Saved row:', savedRow)
-                return savedRow
-            },
-
-            // Get all rows from "database"
-            async getAll() {
-                await this.delay()
-                return [...fakeDb.rows]
-            }
-        }
-
-        // Update status panel
-        function updateStatusPanel() {
-            const items = gridEmptyRow.items
-            const invalidCells = gridEmptyRow.invalidCells
-
-            // Count rows by status
-            const savedRows = items.filter(row => row.id && typeof row.id === 'number')
-            const unsavedRows = items.filter(row => !row.id || typeof row.id !== 'number')
-
-            // Count rows with invalid cells
-            const rowsWithErrors = new Set(invalidCells.map(c => c.rowIndex))
-
-            document.getElementById('statusSaved').textContent = `${savedRows.length} saved`
-            document.getElementById('statusUnsaved').textContent = `${unsavedRows.length} unsaved`
-            document.getElementById('statusInvalid').textContent = `${rowsWithErrors.size} with errors`
-
-            // Show database contents
-            const dbHtml = fakeDb.rows.length > 0
-                ? `Database: ${fakeDb.rows.map(r => `#${r.id} ${r.name}`).join(', ')}`
-                : 'Database: (empty)'
-            document.getElementById('dbContents').textContent = dbHtml
-        }
-
-        // Save button handler
-        document.getElementById('saveButton').addEventListener('click', async () => {
-            const saveBtn = document.getElementById('saveButton')
-            const saveStatus = document.getElementById('saveStatus')
-
-            // Get unsaved rows (no ID or non-numeric ID)
-            const items = gridEmptyRow.items
-            const unsavedRows = items.filter(row => !row.id || typeof row.id !== 'number')
-
-            if (unsavedRows.length === 0) {
-                saveStatus.textContent = 'Nothing to save'
-                saveStatus.style.color = '#64748b'
-                setTimeout(() => { saveStatus.textContent = '' }, 2000)
-                return
-            }
-
-            // Check for invalid cells
-            const invalidCells = gridEmptyRow.invalidCells
-            if (invalidCells.length > 0) {
-                saveStatus.textContent = `Cannot save: ${invalidCells.length} cell(s) have validation errors`
-                saveStatus.style.color = '#dc2626'
-                setTimeout(() => { saveStatus.textContent = '' }, 3000)
-                return
-            }
-
-            // Save each unsaved row
-            saveBtn.disabled = true
-            saveBtn.textContent = '⏳ Saving...'
-            saveStatus.textContent = ''
-
-            let savedCount = 0
-            let errorCount = 0
-
-            for (const row of unsavedRows) {
-                try {
-                    const savedRow = await fakeApi.saveRow(row)
-                    // Update the row in items with the assigned ID
-                    row.id = savedRow.id
-                    savedCount++
-                    saveStatus.textContent = `Saving... ${savedCount}/${unsavedRows.length}`
-                    saveStatus.style.color = '#2563eb'
-                } catch (err) {
-                    console.error('[Save] Error saving row:', row, err)
-                    errorCount++
-                }
-            }
-
-            // Refresh grid to show updated IDs
-            gridEmptyRow.items = [...items]
-
-            saveBtn.disabled = false
-            saveBtn.textContent = '💾 Save to "Database"'
-
-            if (errorCount > 0) {
-                saveStatus.textContent = `Saved ${savedCount}, failed ${errorCount}`
-                saveStatus.style.color = '#ca8a04'
-            } else {
-                saveStatus.textContent = `✓ Saved ${savedCount} row(s)`
-                saveStatus.style.color = '#16a34a'
-            }
-
-            updateStatusPanel()
+        // Check for invalid cells
+        const invalidCells = gridEmptyRow.invalidCells
+        if (invalidCells.length > 0) {
+            saveStatus.textContent = `Cannot save: ${invalidCells.length} cell(s) have validation errors`
+            saveStatus.style.color = 'var(--kmwc-danger-color)'
             setTimeout(() => { saveStatus.textContent = '' }, 3000)
-        })
+            return
+        }
 
-        // Update status when grid changes
-        gridEmptyRow.addEventListener('row-change', updateStatusPanel)
-        gridEmptyRow.addEventListener('cell-paste', updateStatusPanel)
+        // Save each unsaved row
+        saveBtn.disabled = true
+        saveBtn.textContent = '⏳ Saving...'
+        saveStatus.textContent = ''
 
-        // Initial status update
-        setTimeout(updateStatusPanel, 100)
-    </script>
-</body>
-</html>
+        let savedCount = 0
+        let errorCount = 0
+
+        for (const row of unsavedRows) {
+            try {
+                const savedRow = await fakeApi.saveRow(row)
+                // Update the row in items with the assigned ID
+                row.id = savedRow.id
+                savedCount++
+                saveStatus.textContent = `Saving... ${savedCount}/${unsavedRows.length}`
+                saveStatus.style.color = 'var(--kmwc-info-color)'
+            } catch (err) {
+                console.error('[Save] Error saving row:', row, err)
+                errorCount++
+            }
+        }
+
+        // Refresh grid to show updated IDs
+        gridEmptyRow.items = [...items]
+
+        saveBtn.disabled = false
+        saveBtn.textContent = '💾 Save to "Database"'
+
+        if (errorCount > 0) {
+            saveStatus.textContent = `Saved ${savedCount}, failed ${errorCount}`
+            saveStatus.style.color = 'var(--kmwc-warning-color)'
+        } else {
+            saveStatus.textContent = `✓ Saved ${savedCount} row(s)`
+            saveStatus.style.color = 'var(--kmwc-success-color)'
+        }
+
+        updateStatusPanel()
+        setTimeout(() => { saveStatus.textContent = '' }, 3000)
+    })
+
+    // Update status when grid changes
+    gridEmptyRow.addEventListener('row-change', updateStatusPanel)
+    gridEmptyRow.addEventListener('cell-paste', updateStatusPanel)
+
+    // Initial status update
+    setTimeout(updateStatusPanel, 100)
+</script>

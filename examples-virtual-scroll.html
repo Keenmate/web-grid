@@ -1,118 +1,52 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebGrid - Virtual Scroll & Infinite Scroll</title>
-    <link rel="stylesheet" href="examples-shared.css">
-    <style>
-        .stats {
-            display: flex;
-            gap: 2rem;
-            margin-top: 1rem;
-            font-size: 14px;
-            color: #666;
-        }
-        .stat {
-            background: #f0f4f8;
-            padding: 8px 16px;
-            border-radius: 6px;
-        }
-        .stat strong {
-            color: #333;
-        }
-        .controls {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 1rem;
-            flex-wrap: wrap;
-        }
-        .controls button {
-            padding: 8px 16px;
-            border: 1px solid #e2e8f0;
-            background: white;
-            color: #333;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        .controls button:hover {
-            background: #f7fafc;
-        }
-        .controls button.active {
-            background: #667eea;
-            color: white;
-            border-color: #667eea;
-        }
-        .loading-indicator {
-            text-align: center;
-            padding: 1rem;
-            color: #666;
-            font-size: 14px;
-        }
-        .loading-indicator.hidden {
-            display: none;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <header>
-            <a href="index.html" class="back-link">&larr; Back to Examples</a>
-            <h1>Virtual Scroll & Infinite Scroll</h1>
-            <p class="subtitle">Efficiently render large datasets with virtual scrolling and progressive loading</p>
-        </header>
+<meta name="kmwc:title" content="Virtual Scroll &amp; Infinite Scroll">
+<meta name="kmwc:subtitle" content="Efficiently render large datasets with virtual scrolling and progressive loading">
 
-        <div class="card">
-            <h2>Virtual Scroll (10,000 rows)</h2>
-            <p style="color: #666; margin-bottom: 1rem;">
-                Virtual scrolling only renders visible rows + buffer, enabling smooth scrolling through massive datasets.
-                The grid calculates which rows to display based on scroll position.
-            </p>
+    <div class="card">
+        <h2>VS01 · Virtual Scroll (10,000 rows)</h2>
+        <p>
+            Virtual scrolling only renders visible rows + buffer, enabling smooth scrolling through massive datasets.
+            The grid calculates which rows to display based on scroll position.
+        </p>
 
-            <div class="controls" id="rowControls">
-                <button data-count="1000">1,000 rows</button>
-                <button data-count="10000" class="active">10,000 rows</button>
-                <button data-count="100000">100,000 rows</button>
-            </div>
-
-            <div class="grid-wrapper">
-                <web-grid id="grid1" isStriped isHoverable style="max-width: 100%; max-height: 400px; border: 1px solid #e2e8f0;"></web-grid>
-            </div>
-
-            <div class="stats">
-                <div class="stat"><strong>Total rows:</strong> <span id="totalRows">10,000</span></div>
-                <div class="stat"><strong>Rendered rows:</strong> <span id="renderedRows">~25</span></div>
-                <div class="stat"><strong>Row height:</strong> 38px</div>
-                <div class="stat"><strong>Buffer:</strong> 10 rows</div>
-            </div>
+        <div class="controls" id="rowControls">
+            <button type="button" data-count="1000" class="btn-outline">1,000 rows</button>
+            <button type="button" data-count="10000">10,000 rows</button>
+            <button type="button" data-count="100000" class="btn-outline">100,000 rows</button>
         </div>
 
-        <div class="card">
-            <h2>Infinite Scroll (Load More)</h2>
-            <p style="color: #666; margin-bottom: 1rem;">
-                Loads 1,000 items initially, then loads 1,000 more each time you scroll near the bottom (up to 10,000 total).
-                Combined with virtual scroll for optimal performance.
-            </p>
+        <web-grid id="grid1" isStriped isHoverable style="max-height: 400px;"></web-grid>
 
-            <div class="grid-wrapper">
-                <web-grid id="grid2" isStriped isHoverable style="max-width: 100%; max-height: 400px; border: 1px solid #e2e8f0;"></web-grid>
-                <div id="loadingIndicator" class="loading-indicator hidden">Loading 1,000 more items...</div>
-            </div>
-
-            <div class="stats">
-                <div class="stat"><strong>Loaded items:</strong> <span id="loadedItems">1,000</span></div>
-                <div class="stat"><strong>Has more:</strong> <span id="hasMore">Yes</span></div>
-                <div class="stat"><strong>Batch size:</strong> 1,000</div>
-                <div class="stat"><strong>Max items:</strong> 10,000</div>
-            </div>
+        <div class="controls mt-1">
+            <span class="pill pill--muted">Total rows: <span id="totalRows">10,000</span></span>
+            <span class="pill pill--muted">Rendered rows: <span id="renderedRows">~25</span></span>
+            <span class="pill pill--muted">Row height: 38px</span>
+            <span class="pill pill--muted">Buffer: 10 rows</span>
         </div>
+    </div>
 
-        <div class="grid-2">
-            <div class="card">
-                <h2>Virtual Scroll API</h2>
-                <div class="code-block">
-                    <pre>// Enable virtual scroll explicitly
+    <div class="card">
+        <h2>VS02 · Infinite Scroll (Load More)</h2>
+        <p>
+            Loads 1,000 items initially, then loads 1,000 more each time you scroll near the bottom (up to 10,000 total).
+            Combined with virtual scroll for optimal performance.
+        </p>
+
+        <web-grid id="grid2" isStriped isHoverable style="max-height: 400px;"></web-grid>
+        <p id="loadingIndicator" class="muted mt-1" hidden>Loading 1,000 more items...</p>
+
+        <div class="controls mt-1">
+            <span class="pill pill--muted">Loaded items: <span id="loadedItems">1,000</span></span>
+            <span class="pill pill--muted">Has more: <span id="hasMore">Yes</span></span>
+            <span class="pill pill--muted">Batch size: 1,000</span>
+            <span class="pill pill--muted">Max items: 10,000</span>
+        </div>
+    </div>
+
+    <div class="grid-2">
+        <div class="card">
+            <h2>VS03 · Virtual Scroll API</h2>
+            <div class="code-block" data-kmwc-snippet>
+                <pre>// Enable virtual scroll explicitly
 grid.isVirtualScrollEnabled = true
 
 // Or auto-enable via threshold
@@ -128,13 +62,13 @@ grid.virtualScrollOverscan = 10  // Default: 10
 if (grid.shouldUseVirtualScroll()) {
   console.log('Virtual scroll is active')
 }</pre>
-                </div>
             </div>
+        </div>
 
-            <div class="card">
-                <h2>Infinite Scroll API</h2>
-                <div class="code-block">
-                    <pre>// Enable infinite scroll
+        <div class="card">
+            <h2>VS04 · Infinite Scroll API</h2>
+            <div class="code-block" data-kmwc-snippet>
+                <pre>// Enable infinite scroll
 grid.isInfiniteScrollEnabled = true
 
 // Distance from bottom to trigger (px)
@@ -153,14 +87,14 @@ grid.onDataRequest = async (detail) => {
     grid.hasMoreItems = more.length === pageSize
   }
 }</pre>
-                </div>
             </div>
         </div>
+    </div>
 
-        <div class="card">
-            <h2>DataRequestDetail (Extended)</h2>
-            <div class="code-block">
-                <pre>type DataRequestDetail = {
+    <div class="card">
+        <h2>VS05 · DataRequestDetail (Extended)</h2>
+        <div class="code-block" data-kmwc-snippet>
+            <pre>type DataRequestDetail = {
   sort: SortState[]      // Current sort state
   page: number           // Current page (for pagination)
   pageSize: number       // Items per page
@@ -183,223 +117,215 @@ grid.onDataRequest = (detail) => {
     })
   }
 }</pre>
-            </div>
         </div>
     </div>
 
-    <script type="module">
-        import '@keenmate/web-grid'
+<script type="module">
+    // =============================================================
+    // Generate sample data
+    // =============================================================
+    const departments = ['Engineering', 'Marketing', 'Sales', 'HR', 'Finance', 'Legal', 'Operations', 'Support']
+    const statuses = ['Active', 'Inactive', 'On Leave', 'Remote']
+    const locations = ['New York', 'Los Angeles', 'Chicago', 'Miami', 'Seattle', 'Boston', 'Denver', 'Austin']
 
-        // =============================================================
-        // Generate sample data
-        // =============================================================
-        const departments = ['Engineering', 'Marketing', 'Sales', 'HR', 'Finance', 'Legal', 'Operations', 'Support']
-        const statuses = ['Active', 'Inactive', 'On Leave', 'Remote']
-        const locations = ['New York', 'Los Angeles', 'Chicago', 'Miami', 'Seattle', 'Boston', 'Denver', 'Austin']
-
-        function generateData(count) {
-            const data = []
-            for (let i = 1; i <= count; i++) {
-                data.push({
-                    id: i,
-                    name: `Employee ${i}`,
-                    department: departments[i % departments.length],
-                    salary: 50000 + Math.floor(Math.random() * 100000),
-                    status: statuses[i % statuses.length],
-                    location: locations[i % locations.length],
-                    startDate: `202${Math.floor(Math.random() * 4)}-${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}`
-                })
-            }
-            return data
-        }
-
-        const columns = [
-            { field: 'id', title: 'ID', width: '70px', horizontalAlign: 'center' },
-            { field: 'name', title: 'Name', width: '150px', isEditable: true },
-            { field: 'department', title: 'Department', width: '120px', isEditable: true },
-            { field: 'salary', title: 'Salary', width: '100px', horizontalAlign: 'right', isEditable: true, getDisplayValueCallback: ({ value: v }) => `$${v.toLocaleString()}` },
-            { field: 'status', title: 'Status', width: '100px', isEditable: true },
-            { field: 'location', title: 'Location', width: '120px', isEditable: true },
-            { field: 'startDate', title: 'Start Date', width: '110px' }
-        ]
-
-        // =============================================================
-        // Grid 1: Virtual Scroll Demo
-        // =============================================================
-        const grid1 = document.getElementById('grid1')
-        const totalRowsEl = document.getElementById('totalRows')
-        const renderedRowsEl = document.getElementById('renderedRows')
-
-        grid1.columns = columns
-        grid1.sortMode = 'multiple'
-        grid1.isEditingEnabled = true  // Enable editing to test with virtual scroll
-        grid1.editTrigger = 'navigate'  // Enable focus visual on click
-
-        // Enable virtual scroll
-        grid1.isVirtualScrollEnabled = true
-        grid1.virtualScrollItemHeight = 38
-        grid1.virtualScrollOverscan = 10
-
-        // Row toolbar
-        grid1.isRowToolbarShown = true
-        grid1.toolbarTrigger = 'hover'
-        grid1.rowToolbar = [
-            {
-                id: 'edit',
-                icon: '✏️',
-                text: 'Edit row',
-                onClick: ({ row, rowIndex }) => {
-                    alert(`Edit row ${rowIndex + 1}: ${row.name}`)
-                }
-            },
-            // Built-ins do the work: `duplicate` inserts createDuplicateRowCallback's copy,
-            // `delete` removes the row (after beforeActionCallback allows it).
-            { action: 'duplicate', icon: '📋', text: 'Duplicate row' },
-            { action: 'delete', icon: '🗑️', text: 'Delete row' }
-        ]
-        grid1.createDuplicateRowCallback = ({ row }) => ({
-            ...row,
-            id: Math.max(...grid1.items.map(r => r.id)) + 1,
-            name: `${row.name} (copy)`
-        })
-        grid1.beforeActionCallback = ({ action, row }) => {
-            if (action === 'delete') return confirm(`Delete ${row.name}?`)
-        }
-
-        function loadData(count) {
-            // Update button states
-            document.querySelectorAll('#rowControls button').forEach(btn => {
-                btn.classList.remove('active')
-                if (parseInt(btn.dataset.count, 10) === count) {
-                    btn.classList.add('active')
-                }
+    function generateData(count) {
+        const data = []
+        for (let i = 1; i <= count; i++) {
+            data.push({
+                id: i,
+                name: `Employee ${i}`,
+                department: departments[i % departments.length],
+                salary: 50000 + Math.floor(Math.random() * 100000),
+                status: statuses[i % statuses.length],
+                location: locations[i % locations.length],
+                startDate: `202${Math.floor(Math.random() * 4)}-${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}`
             })
-
-            grid1.items = generateData(count)
-            totalRowsEl.textContent = count.toLocaleString()
-
-            // Calculate approximate rendered rows
-            const viewportHeight = 400
-            const rowHeight = grid1.virtualScrollItemHeight
-            const buffer = grid1.virtualScrollOverscan
-            const visibleRows = Math.ceil(viewportHeight / rowHeight) + buffer * 2
-            renderedRowsEl.textContent = `~${visibleRows}`
         }
+        return data
+    }
 
-        // Attach event listeners to row count buttons
-        document.getElementById('rowControls').addEventListener('click', (e) => {
-            const btn = e.target.closest('button')
-            if (btn && btn.dataset.count) {
-                loadData(parseInt(btn.dataset.count, 10))
+    const columns = [
+        { field: 'id', title: 'ID', width: '70px', horizontalAlign: 'center' },
+        { field: 'name', title: 'Name', width: '150px', isEditable: true },
+        { field: 'department', title: 'Department', width: '120px', isEditable: true },
+        { field: 'salary', title: 'Salary', width: '100px', horizontalAlign: 'right', isEditable: true, getDisplayValueCallback: ({ value: v }) => `$${v.toLocaleString()}` },
+        { field: 'status', title: 'Status', width: '100px', isEditable: true },
+        { field: 'location', title: 'Location', width: '120px', isEditable: true },
+        { field: 'startDate', title: 'Start Date', width: '110px' }
+    ]
+
+    // =============================================================
+    // Grid 1: Virtual Scroll Demo
+    // =============================================================
+    const grid1 = document.getElementById('grid1')
+    const totalRowsEl = document.getElementById('totalRows')
+    const renderedRowsEl = document.getElementById('renderedRows')
+
+    grid1.columns = columns
+    grid1.sortMode = 'multiple'
+    grid1.isEditingEnabled = true  // Enable editing to test with virtual scroll
+    grid1.editTrigger = 'navigate'  // Enable focus visual on click
+
+    // Enable virtual scroll
+    grid1.isVirtualScrollEnabled = true
+    grid1.virtualScrollItemHeight = 38
+    grid1.virtualScrollOverscan = 10
+
+    // Row toolbar
+    grid1.isRowToolbarShown = true
+    grid1.toolbarTrigger = 'hover'
+    grid1.rowToolbar = [
+        {
+            id: 'edit',
+            icon: '✏️',
+            text: 'Edit row',
+            onClick: ({ row, rowIndex }) => {
+                alert(`Edit row ${rowIndex + 1}: ${row.name}`)
             }
+        },
+        // Built-ins do the work: `duplicate` inserts createDuplicateRowCallback's copy,
+        // `delete` removes the row (after beforeActionCallback allows it).
+        { action: 'duplicate', icon: '📋', text: 'Duplicate row' },
+        { action: 'delete', icon: '🗑️', text: 'Delete row' }
+    ]
+    grid1.createDuplicateRowCallback = ({ row }) => ({
+        ...row,
+        id: Math.max(...grid1.items.map(r => r.id)) + 1,
+        name: `${row.name} (copy)`
+    })
+    grid1.beforeActionCallback = ({ action, row }) => {
+        if (action === 'delete') return confirm(`Delete ${row.name}?`)
+    }
+
+    function loadData(count) {
+        // Update button states (the active one is the filled button)
+        document.querySelectorAll('#rowControls button').forEach(btn => {
+            btn.classList.toggle('btn-outline', parseInt(btn.dataset.count, 10) !== count)
         })
 
-        // Initial load
-        loadData(10000)
+        grid1.items = generateData(count)
+        totalRowsEl.textContent = count.toLocaleString()
 
-        // =============================================================
-        // Grid 2: Infinite Scroll Demo
-        // =============================================================
-        const grid2 = document.getElementById('grid2')
-        const loadingIndicator = document.getElementById('loadingIndicator')
-        const loadedItemsEl = document.getElementById('loadedItems')
-        const hasMoreEl = document.getElementById('hasMore')
+        // Calculate approximate rendered rows
+        const viewportHeight = 400
+        const rowHeight = grid1.virtualScrollItemHeight
+        const buffer = grid1.virtualScrollOverscan
+        const visibleRows = Math.ceil(viewportHeight / rowHeight) + buffer * 2
+        renderedRowsEl.textContent = `~${visibleRows}`
+    }
 
-        grid2.columns = columns
-        grid2.sortMode = 'multiple'
-
-        // Enable both virtual scroll and infinite scroll
-        grid2.isVirtualScrollEnabled = true
-        grid2.virtualScrollItemHeight = 38
-        grid2.isInfiniteScrollEnabled = true
-        grid2.infiniteScrollThreshold = 100
-
-        // Row toolbar
-        grid2.isRowToolbarShown = true
-        grid2.toolbarTrigger = 'hover'
-        grid2.rowToolbar = [
-            {
-                id: 'view',
-                icon: '👁️',
-                text: 'View details',
-                onClick: ({ row, rowIndex }) => {
-                    alert(`Row ${rowIndex + 1}:\n${JSON.stringify(row, null, 2)}`)
-                }
-            },
-            {
-                // A custom item (no built-in `action`): the page removes the row itself
-                // so it can refresh the stats right after.
-                id: 'remove',
-                icon: '🗑️',
-                text: 'Delete row',
-                isDanger: true,
-                onClick: ({ row }) => {
-                    if (confirm(`Delete ${row.name}?`)) {
-                        grid2.items = grid2.items.filter(r => r !== row)
-                        updateStats()
-                    }
-                }
-            }
-        ]
-
-        // Configuration
-        const BATCH_SIZE = 1000
-        const MAX_ITEMS = 10000
-
-        // Initial data
-        grid2.items = generateData(BATCH_SIZE)
-        grid2.hasMoreItems = true
-
-        function updateStats() {
-            loadedItemsEl.textContent = grid2.items.length.toLocaleString()
-            hasMoreEl.textContent = grid2.hasMoreItems ? 'Yes' : `No (reached ${MAX_ITEMS.toLocaleString()} limit)`
+    // Attach event listeners to row count buttons
+    document.getElementById('rowControls').addEventListener('click', (e) => {
+        const btn = e.target.closest('button')
+        if (btn && btn.dataset.count) {
+            loadData(parseInt(btn.dataset.count, 10))
         }
+    })
 
-        updateStats()
+    // Initial load
+    loadData(10000)
 
-        // Simulated server fetch
-        async function fetchMoreData(skip, take = BATCH_SIZE) {
-            // Simulate network delay
-            await new Promise(resolve => setTimeout(resolve, 300))
+    // =============================================================
+    // Grid 2: Infinite Scroll Demo
+    // =============================================================
+    const grid2 = document.getElementById('grid2')
+    const loadingIndicator = document.getElementById('loadingIndicator')
+    const loadedItemsEl = document.getElementById('loadedItems')
+    const hasMoreEl = document.getElementById('hasMore')
 
-            // Generate more data (limit to MAX_ITEMS for demo)
-            if (skip >= MAX_ITEMS) {
-                return []
+    grid2.columns = columns
+    grid2.sortMode = 'multiple'
+
+    // Enable both virtual scroll and infinite scroll
+    grid2.isVirtualScrollEnabled = true
+    grid2.virtualScrollItemHeight = 38
+    grid2.isInfiniteScrollEnabled = true
+    grid2.infiniteScrollThreshold = 100
+
+    // Row toolbar
+    grid2.isRowToolbarShown = true
+    grid2.toolbarTrigger = 'hover'
+    grid2.rowToolbar = [
+        {
+            id: 'view',
+            icon: '👁️',
+            text: 'View details',
+            onClick: ({ row, rowIndex }) => {
+                alert(`Row ${rowIndex + 1}:\n${JSON.stringify(row, null, 2)}`)
             }
-
-            const data = []
-            for (let i = skip + 1; i <= Math.min(skip + take, MAX_ITEMS); i++) {
-                data.push({
-                    id: i,
-                    name: `Employee ${i}`,
-                    department: departments[i % departments.length],
-                    salary: 50000 + Math.floor(Math.random() * 100000),
-                    status: statuses[i % statuses.length],
-                    location: locations[i % locations.length],
-                    startDate: `202${Math.floor(Math.random() * 4)}-${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}`
-                })
-            }
-            return data
-        }
-
-        // Handle data requests
-        grid2.onDataRequest = async (detail) => {
-            if (detail.trigger === 'load-more') {
-                loadingIndicator.classList.remove('hidden')
-
-                const moreData = await fetchMoreData(detail.skip, BATCH_SIZE)
-
-                if (moreData.length > 0) {
-                    grid2.items = [...grid2.items, ...moreData]
+        },
+        {
+            // A custom item (no built-in `action`): the page removes the row itself
+            // so it can refresh the stats right after.
+            id: 'remove',
+            icon: '🗑️',
+            text: 'Delete row',
+            isDanger: true,
+            onClick: ({ row }) => {
+                if (confirm(`Delete ${row.name}?`)) {
+                    grid2.items = grid2.items.filter(r => r !== row)
+                    updateStats()
                 }
-
-                // Check if we've reached the limit
-                grid2.hasMoreItems = moreData.length === BATCH_SIZE && grid2.items.length < MAX_ITEMS
-
-                loadingIndicator.classList.add('hidden')
-                updateStats()
             }
         }
-    </script>
-</body>
-</html>
+    ]
+
+    // Configuration
+    const BATCH_SIZE = 1000
+    const MAX_ITEMS = 10000
+
+    // Initial data
+    grid2.items = generateData(BATCH_SIZE)
+    grid2.hasMoreItems = true
+
+    function updateStats() {
+        loadedItemsEl.textContent = grid2.items.length.toLocaleString()
+        hasMoreEl.textContent = grid2.hasMoreItems ? 'Yes' : `No (reached ${MAX_ITEMS.toLocaleString()} limit)`
+    }
+
+    updateStats()
+
+    // Simulated server fetch
+    async function fetchMoreData(skip, take = BATCH_SIZE) {
+        // Simulate network delay
+        await new Promise(resolve => setTimeout(resolve, 300))
+
+        // Generate more data (limit to MAX_ITEMS for demo)
+        if (skip >= MAX_ITEMS) {
+            return []
+        }
+
+        const data = []
+        for (let i = skip + 1; i <= Math.min(skip + take, MAX_ITEMS); i++) {
+            data.push({
+                id: i,
+                name: `Employee ${i}`,
+                department: departments[i % departments.length],
+                salary: 50000 + Math.floor(Math.random() * 100000),
+                status: statuses[i % statuses.length],
+                location: locations[i % locations.length],
+                startDate: `202${Math.floor(Math.random() * 4)}-${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}`
+            })
+        }
+        return data
+    }
+
+    // Handle data requests
+    grid2.onDataRequest = async (detail) => {
+        if (detail.trigger === 'load-more') {
+            loadingIndicator.hidden = false
+
+            const moreData = await fetchMoreData(detail.skip, BATCH_SIZE)
+
+            if (moreData.length > 0) {
+                grid2.items = [...grid2.items, ...moreData]
+            }
+
+            // Check if we've reached the limit
+            grid2.hasMoreItems = moreData.length === BATCH_SIZE && grid2.items.length < MAX_ITEMS
+
+            loadingIndicator.hidden = true
+            updateStats()
+        }
+    }
+</script>

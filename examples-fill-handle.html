@@ -1,86 +1,69 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebGrid - Fill Handle (Autofill)</title>
-    <link rel="stylesheet" href="examples-shared.css">
-</head>
-<body>
-    <div class="container">
-        <header>
-            <a href="index.html" class="back-link">← Back to Examples</a>
-            <h1>Fill Handle (Autofill)</h1>
-            <p class="subtitle">Excel-like drag-to-fill for copying values to adjacent cells</p>
-        </header>
+<meta name="kmwc:title" content="Fill Handle (Autofill)">
+<meta name="kmwc:subtitle" content="Excel-like drag-to-fill for copying values to adjacent cells">
 
-        <div class="card">
-            <h2>Basic Fill Demo</h2>
-            <p>Click a cell to focus it, then drag the small square at the bottom-right corner to copy the value to adjacent cells.</p>
+    <div class="card">
+        <h2>FH01 · Basic Fill Demo</h2>
+        <p>Click a cell to focus it, then drag the small square at the bottom-right corner to copy the value to adjacent cells.</p>
 
-            <web-grid id="grid" style="max-width: 100%; max-height: 400px;"></web-grid>
+        <web-grid id="grid" style="max-height: 400px;"></web-grid>
 
-            <div id="fillLog" style="margin-top: 1rem; font-family: monospace; font-size: 0.85rem; color: #666;">
-                Drag the fill handle to see the callback data...
-            </div>
+        <div id="fillLog" class="log-panel mt-1" data-empty="Drag the fill handle to see the callback data..."></div>
 
-            <div class="note" style="margin-top: 1rem;">
-                <div class="note-title">How it works</div>
-                <ul>
-                    <li>Click any cell to focus it</li>
-                    <li>A small square appears at the bottom-right corner (the fill handle)</li>
-                    <li>Drag the handle in any direction (up, down, left, right)</li>
-                    <li>Release to copy the source cell's value to all highlighted cells</li>
-                    <li>Non-editable cells are automatically skipped</li>
-                </ul>
-            </div>
+        <div class="note mt-1">
+            <div class="note-title">How it works</div>
+            <ul>
+                <li>Click any cell to focus it</li>
+                <li>A small square appears at the bottom-right corner (the fill handle)</li>
+                <li>Drag the handle in any direction (up, down, left, right)</li>
+                <li>Release to copy the source cell's value to all highlighted cells</li>
+                <li>Non-editable cells are automatically skipped</li>
+            </ul>
         </div>
+    </div>
 
-        <div class="card">
-            <h2>With Cancellation</h2>
-            <p>The <code>beforeFillCallback</code> callback can return <code>false</code> to cancel the fill operation. Try filling the "Status" column - it will be blocked.</p>
+    <div class="card">
+        <h2>FH02 · With Cancellation</h2>
+        <p>The <code>beforeFillCallback</code> callback can return <code>false</code> to cancel the fill operation. Try filling the "Status" column - it will be blocked.</p>
 
-            <web-grid id="grid2" style="max-width: 100%; max-height: 300px;"></web-grid>
+        <web-grid id="grid2" style="max-height: 300px;"></web-grid>
 
-            <div id="fillLog2" style="margin-top: 1rem; font-family: monospace; font-size: 0.85rem; color: #666;">
-                Try filling different columns...
-            </div>
+        <div id="fillLog2" class="log-panel mt-1" data-empty="Try filling different columns..."></div>
 
-            <div class="note" style="margin-top: 1rem;">
-                <div class="note-title">Cancellation Example</div>
-                <pre style="background: #f8fafc; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.85rem;"><code>grid.beforeFillCallback = (detail) => {
+        <div class="note mt-1">
+            <div class="note-title">Cancellation Example</div>
+            <pre data-kmwc-snippet><code>grid.beforeFillCallback = (detail) => {
     // Block filling the "status" column
     if (detail.sourceCell.field === 'status') {
         alert('Cannot fill the Status column!')
         return false  // Cancel the fill
     }
 }</code></pre>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>FH03 · Fill Directions</h2>
+        <p>Fill works in all four directions. The direction is determined by the dominant axis of your drag.</p>
+
+        <div class="grid-2">
+            <div>
+                <h3>Vertical Fill</h3>
+                <p>Drag up or down to fill cells in the same column.</p>
+                <web-grid id="gridVertical" style="max-width: fit-content; max-height: 250px;"></web-grid>
+            </div>
+            <div>
+                <h3>Horizontal Fill</h3>
+                <p>Drag left or right to fill cells in the same row.</p>
+                <web-grid id="gridHorizontal" style="max-width: fit-content; max-height: 250px;"></web-grid>
             </div>
         </div>
+    </div>
 
-        <div class="card">
-            <h2>Fill Directions</h2>
-            <p>Fill works in all four directions. The direction is determined by the dominant axis of your drag.</p>
+    <div class="card">
+        <h2>FH04 · Callback Data Structure</h2>
+        <p>The <code>beforeFillCallback</code> callback receives detailed information about the fill operation:</p>
 
-            <div class="grid-2" style="gap: 2rem;">
-                <div>
-                    <h3>Vertical Fill</h3>
-                    <p>Drag up or down to fill cells in the same column.</p>
-                    <web-grid id="gridVertical" style="max-width: fit-content; max-height: 250px;"></web-grid>
-                </div>
-                <div>
-                    <h3>Horizontal Fill</h3>
-                    <p>Drag left or right to fill cells in the same row.</p>
-                    <web-grid id="gridHorizontal" style="max-width: fit-content; max-height: 250px;"></web-grid>
-                </div>
-            </div>
-        </div>
-
-        <div class="card">
-            <h2>Callback Data Structure</h2>
-            <p>The <code>beforeFillCallback</code> callback receives detailed information about the fill operation:</p>
-
-            <pre style="background: #f8fafc; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.85rem;"><code>{
+        <pre data-kmwc-snippet><code>{
     sourceCell: {
         rowIndex: 0,          // Source row index
         colIndex: 1,          // Source column index
@@ -95,282 +78,247 @@
     direction: "down"         // "up" | "down" | "left" | "right"
 }</code></pre>
 
-            <p style="margin-top: 1rem;">After <code>beforeFillCallback</code> completes (unless cancelled), the <code>row-change</code> event (<code>onRowChange</code>) fires for each modified cell.</p>
-        </div>
-
-        <div class="card">
-            <h2>Configuration</h2>
-            <table class="props-table">
-                <tr>
-                    <td><code>editTrigger</code></td>
-                    <td>Must be <code>"navigate"</code> for cell focus (and fill handle) to work.</td>
-                </tr>
-                <tr>
-                    <td><code>isEditable</code></td>
-                    <td>Grid must be editable for fill to work. Non-editable columns are skipped.</td>
-                </tr>
-                <tr>
-                    <td><code>beforeFillCallback</code></td>
-                    <td>Callback fired before fill is applied. Return <code>false</code> to cancel.</td>
-                </tr>
-                <tr>
-                    <td><code>row-change</code> / <code>onRowChange</code></td>
-                    <td>Fired for each cell after fill is applied.</td>
-                </tr>
-            </table>
-        </div>
-
-        <footer>
-            <p>WebGrid Component by <a href="https://github.com/keenmate">Keenmate</a></p>
-        </footer>
+        <p class="mt-1">After <code>beforeFillCallback</code> completes (unless cancelled), the <code>row-change</code> event (<code>onRowChange</code>) fires for each modified cell.</p>
     </div>
 
-    <style>
-        .props-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.9rem;
-        }
-        .props-table td {
-            padding: 0.75rem;
-            border-bottom: 1px solid #e2e8f0;
-        }
-        .props-table td:first-child {
-            width: 30%;
-            font-family: monospace;
-            color: #6366f1;
-        }
-        .grid-2 {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-        }
-        @media (max-width: 768px) {
-            .grid-2 {
-                grid-template-columns: 1fr;
+    <div class="card">
+        <h2>FH05 · Configuration</h2>
+        <table class="reference-table table-compact">
+            <tr>
+                <td><code>editTrigger</code></td>
+                <td>Must be <code>"navigate"</code> for cell focus (and fill handle) to work.</td>
+            </tr>
+            <tr>
+                <td><code>isEditable</code></td>
+                <td>Grid must be editable for fill to work. Non-editable columns are skipped.</td>
+            </tr>
+            <tr>
+                <td><code>beforeFillCallback</code></td>
+                <td>Callback fired before fill is applied. Return <code>false</code> to cancel.</td>
+            </tr>
+            <tr>
+                <td><code>row-change</code> / <code>onRowChange</code></td>
+                <td>Fired for each cell after fill is applied.</td>
+            </tr>
+        </table>
+    </div>
+
+<script type="module">
+    // Small modal star picker for the "Rating (custom)" column.
+    // Demonstrates the current renderEditorCallback signature: one context object
+    // with { value, row, rowIndex, field, commit, cancel }.
+    function openStarPicker(context) {
+        const current = Number(context.value) || 0
+
+        const overlay = document.createElement('div')
+        overlay.style.cssText = `
+            position: fixed; inset: 0; background: var(--kmwc-overlay-bg);
+            display: flex; align-items: center; justify-content: center; z-index: 9999;
+        `
+
+        const dialog = document.createElement('div')
+        dialog.className = 'card'
+        dialog.style.cssText = `
+            margin: 0; min-width: 260px;
+            box-shadow: 0 20px 40px var(--kmwc-shadow-color);
+        `
+        dialog.innerHTML = `
+            <h3>Rate this row</h3>
+            <div class="stars" style="display: flex; gap: 4px; font-size: 2rem; cursor: pointer; user-select: none;"></div>
+            <div class="controls mt-1">
+                <button type="button" class="cancel btn-secondary push-end">Cancel</button>
+            </div>
+        `
+
+        const starsEl = dialog.querySelector('.stars')
+        const paint = (n) => {
+            starsEl.innerHTML = ''
+            for (let i = 1; i <= 5; i++) {
+                const s = document.createElement('span')
+                s.textContent = i <= n ? '★' : '☆'
+                s.style.color = i <= n ? 'var(--kmwc-warning-color)' : 'var(--kmwc-border-color-strong)'
+                s.addEventListener('mouseenter', () => paint(i))
+                s.addEventListener('click', () => {
+                    cleanup()
+                    context.commit(i)
+                })
+                starsEl.appendChild(s)
             }
         }
-    </style>
+        starsEl.addEventListener('mouseleave', () => paint(current))
+        paint(current)
 
-    <script type="module">
-        import '@keenmate/web-grid'
+        const cleanup = () => {
+            document.removeEventListener('keydown', onKey)
+            overlay.remove()
+        }
+        const doCancel = () => {
+            cleanup()
+            context.cancel()
+        }
+        const onKey = (e) => {
+            if (e.key === 'Escape') { e.preventDefault(); doCancel() }
+        }
+        dialog.querySelector('.cancel').addEventListener('click', doCancel)
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) doCancel() })
+        document.addEventListener('keydown', onKey)
 
-        // Small modal star picker for the "Rating (custom)" column.
-        // Demonstrates the current renderEditorCallback signature: one context object
-        // with { value, row, rowIndex, field, commit, cancel }.
-        function openStarPicker(context) {
-            const current = Number(context.value) || 0
+        overlay.appendChild(dialog)
+        document.body.appendChild(overlay)
+    }
 
-            const overlay = document.createElement('div')
-            overlay.style.cssText = `
-                position: fixed; inset: 0; background: rgba(0,0,0,0.35);
-                display: flex; align-items: center; justify-content: center; z-index: 9999;
-            `
+    // Department options for select/combobox
+    const departmentOptions = [
+        { value: 'Engineering', label: 'Engineering' },
+        { value: 'Marketing', label: 'Marketing' },
+        { value: 'Sales', label: 'Sales' },
+        { value: 'HR', label: 'HR' },
+        { value: 'Finance', label: 'Finance' }
+    ]
 
-            const dialog = document.createElement('div')
-            dialog.style.cssText = `
-                background: white; border-radius: 10px; padding: 1.25rem 1.5rem;
-                box-shadow: 0 20px 40px rgba(0,0,0,0.2); min-width: 260px;
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            `
-            dialog.innerHTML = `
-                <div style="font-weight: 600; margin-bottom: 0.75rem;">Rate this row</div>
-                <div class="stars" style="display: flex; gap: 4px; font-size: 2rem; cursor: pointer; user-select: none;"></div>
-                <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem;">
-                    <button type="button" class="cancel secondary" style="background:#6b7280;color:white;border:none;padding:0.4rem 0.9rem;border-radius:6px;cursor:pointer;">Cancel</button>
-                </div>
-            `
+    // Status options
+    const statusOptions = [
+        { value: 'Active', label: 'Active' },
+        { value: 'Pending', label: 'Pending' },
+        { value: 'Inactive', label: 'Inactive' }
+    ]
 
-            const starsEl = dialog.querySelector('.stars')
-            const paint = (n) => {
-                starsEl.innerHTML = ''
-                for (let i = 1; i <= 5; i++) {
-                    const s = document.createElement('span')
-                    s.textContent = i <= n ? '★' : '☆'
-                    s.style.color = i <= n ? '#f59e0b' : '#d1d5db'
-                    s.addEventListener('mouseenter', () => paint(i))
-                    s.addEventListener('click', () => {
-                        cleanup()
-                        context.commit(i)
-                    })
-                    starsEl.appendChild(s)
+    // Priority options
+    const priorityOptions = [
+        { value: 'low', label: 'Low' },
+        { value: 'medium', label: 'Medium' },
+        { value: 'high', label: 'High' },
+        { value: 'critical', label: 'Critical' }
+    ]
+
+    // Sample data with various field types
+    const sampleData = Array.from({ length: 10 }, (_, i) => ({
+        id: 1000 + i,
+        name: ['Alice', 'Bob', 'Carol', 'David', 'Eve', 'Frank', 'Grace', 'Henry', 'Ivy', 'Jack'][i],
+        salary: 50000 + (i * 5000),
+        startDate: `2024-0${(i % 9) + 1}-${10 + i}`,
+        department: ['Engineering', 'Marketing', 'Sales', 'HR', 'Finance'][i % 5],
+        status: i % 3 === 0 ? 'Active' : 'Pending',
+        priority: ['low', 'medium', 'high', 'critical'][i % 4],
+        rating: (i % 5) + 1
+    }))
+
+    // Columns with all editor types
+    const columns = [
+        { field: 'id', title: 'ID', width: '70px', isEditable: false },
+        { field: 'name', title: 'Name (text)', width: '120px', editor: 'text' },
+        { field: 'salary', title: 'Salary (number)', width: '110px', editor: 'number', getDisplayValueCallback: ({ value: v }) => '$' + v?.toLocaleString() },
+        { field: 'startDate', title: 'Start Date', width: '120px', editor: 'date' },
+        {
+            field: 'department',
+            title: 'Dept (select)',
+            width: '120px',
+            editor: 'select',
+            editorOptions: { options: departmentOptions }
+        },
+        {
+            field: 'status',
+            title: 'Status (combobox)',
+            width: '130px',
+            editor: 'combobox',
+            editorOptions: { options: statusOptions }
+        },
+        {
+            field: 'priority',
+            title: 'Priority (autocomplete)',
+            width: '140px',
+            editor: 'autocomplete',
+            editorOptions: {
+                options: priorityOptions,
+                searchCallback: async ({ term: query }) => {
+                    // Simulate async search
+                    await new Promise(r => setTimeout(r, 100))
+                    return priorityOptions.filter(o =>
+                        o.label.toLowerCase().includes(query.toLowerCase())
+                    )
                 }
             }
-            starsEl.addEventListener('mouseleave', () => paint(current))
-            paint(current)
+        },
+        {
+            field: 'rating',
+            title: 'Rating (custom)',
+            width: '120px',
+            editor: 'custom',
+            getDisplayValueCallback: ({ value: v }) => '★'.repeat(v || 0) + '☆'.repeat(5 - (v || 0)),
+            renderEditorCallback: (context) => openStarPicker(context)
+        }
+    ]
 
-            const cleanup = () => {
-                document.removeEventListener('keydown', onKey)
-                overlay.remove()
-            }
-            const doCancel = () => {
-                cleanup()
-                context.cancel()
-            }
-            const onKey = (e) => {
-                if (e.key === 'Escape') { e.preventDefault(); doCancel() }
-            }
-            dialog.querySelector('.cancel').addEventListener('click', doCancel)
-            overlay.addEventListener('click', (e) => { if (e.target === overlay) doCancel() })
-            document.addEventListener('keydown', onKey)
+    // Grid 1 - Basic fill with all editor types
+    const grid = document.getElementById('grid')
+    grid.items = JSON.parse(JSON.stringify(sampleData))
+    grid.columns = columns
+    grid.isRowNumbersShown = true
+    grid.isEditingEnabled = true
+    grid.editTrigger = 'navigate'  // Required for cell focus
+    grid.isHoverable = true
 
-            overlay.appendChild(dialog)
-            document.body.appendChild(overlay)
+    grid.beforeFillCallback = (detail) => {
+        const log = document.getElementById('fillLog')
+        log.innerHTML = `<strong>Fill operation:</strong><br>
+            Source: [${detail.sourceCell.rowIndex}, ${detail.sourceCell.colIndex}] "${detail.sourceCell.field}" = ${JSON.stringify(detail.sourceCell.value)}<br>
+            Direction: ${detail.direction}<br>
+            Target cells: ${detail.targetCells.length} cells`
+    }
+
+    grid.onRowChange = (detail) => {
+        console.log('Row changed:', detail.rowIndex, detail.field, detail.newValue)
+    }
+
+    // Grid 2 - With cancellation
+    const grid2 = document.getElementById('grid2')
+    grid2.items = JSON.parse(JSON.stringify(sampleData))
+    grid2.columns = columns
+    grid2.isRowNumbersShown = true
+    grid2.isEditingEnabled = true
+    grid2.editTrigger = 'navigate'
+    grid2.isHoverable = true
+
+    grid2.beforeFillCallback = (detail) => {
+        const log = document.getElementById('fillLog2')
+
+        // Block filling the status column
+        if (detail.sourceCell.field === 'status') {
+            log.innerHTML = `<div class="log-line log-line--err"><strong>BLOCKED:</strong> Cannot fill the Status column!</div>`
+            return false
         }
 
-        // Department options for select/combobox
-        const departmentOptions = [
-            { value: 'Engineering', label: 'Engineering' },
-            { value: 'Marketing', label: 'Marketing' },
-            { value: 'Sales', label: 'Sales' },
-            { value: 'HR', label: 'HR' },
-            { value: 'Finance', label: 'Finance' }
-        ]
+        log.innerHTML = `<div class="log-line log-line--ok"><strong>ALLOWED:</strong> Filling ${detail.targetCells.length} cells in "${detail.sourceCell.field}" column</div>`
+    }
 
-        // Status options
-        const statusOptions = [
-            { value: 'Active', label: 'Active' },
-            { value: 'Pending', label: 'Pending' },
-            { value: 'Inactive', label: 'Inactive' }
-        ]
+    // Grid 3 - Vertical fill demo
+    const gridVertical = document.getElementById('gridVertical')
+    gridVertical.items = Array.from({ length: 8 }, (_, i) => ({
+        value: i === 0 ? 100 : '',
+        description: `Row ${i + 1}`
+    }))
+    gridVertical.columns = [
+        { field: 'description', title: 'Row', width: '80px', isEditable: false },
+        { field: 'value', title: 'Value (drag down)', width: '150px' }
+    ]
+    gridVertical.isEditingEnabled = true
+    gridVertical.editTrigger = 'navigate'
+    gridVertical.isHoverable = true
 
-        // Priority options
-        const priorityOptions = [
-            { value: 'low', label: 'Low' },
-            { value: 'medium', label: 'Medium' },
-            { value: 'high', label: 'High' },
-            { value: 'critical', label: 'Critical' }
-        ]
-
-        // Sample data with various field types
-        const sampleData = Array.from({ length: 10 }, (_, i) => ({
-            id: 1000 + i,
-            name: ['Alice', 'Bob', 'Carol', 'David', 'Eve', 'Frank', 'Grace', 'Henry', 'Ivy', 'Jack'][i],
-            salary: 50000 + (i * 5000),
-            startDate: `2024-0${(i % 9) + 1}-${10 + i}`,
-            department: ['Engineering', 'Marketing', 'Sales', 'HR', 'Finance'][i % 5],
-            status: i % 3 === 0 ? 'Active' : 'Pending',
-            priority: ['low', 'medium', 'high', 'critical'][i % 4],
-            rating: (i % 5) + 1
-        }))
-
-        // Columns with all editor types
-        const columns = [
-            { field: 'id', title: 'ID', width: '70px', isEditable: false },
-            { field: 'name', title: 'Name (text)', width: '120px', editor: 'text' },
-            { field: 'salary', title: 'Salary (number)', width: '110px', editor: 'number', getDisplayValueCallback: ({ value: v }) => '$' + v?.toLocaleString() },
-            { field: 'startDate', title: 'Start Date', width: '120px', editor: 'date' },
-            {
-                field: 'department',
-                title: 'Dept (select)',
-                width: '120px',
-                editor: 'select',
-                editorOptions: { options: departmentOptions }
-            },
-            {
-                field: 'status',
-                title: 'Status (combobox)',
-                width: '130px',
-                editor: 'combobox',
-                editorOptions: { options: statusOptions }
-            },
-            {
-                field: 'priority',
-                title: 'Priority (autocomplete)',
-                width: '140px',
-                editor: 'autocomplete',
-                editorOptions: {
-                    options: priorityOptions,
-                    searchCallback: async ({ term: query }) => {
-                        // Simulate async search
-                        await new Promise(r => setTimeout(r, 100))
-                        return priorityOptions.filter(o =>
-                            o.label.toLowerCase().includes(query.toLowerCase())
-                        )
-                    }
-                }
-            },
-            {
-                field: 'rating',
-                title: 'Rating (custom)',
-                width: '120px',
-                editor: 'custom',
-                getDisplayValueCallback: ({ value: v }) => '★'.repeat(v || 0) + '☆'.repeat(5 - (v || 0)),
-                renderEditorCallback: (context) => openStarPicker(context)
-            }
-        ]
-
-        // Grid 1 - Basic fill with all editor types
-        const grid = document.getElementById('grid')
-        grid.items = JSON.parse(JSON.stringify(sampleData))
-        grid.columns = columns
-        grid.isRowNumbersShown = true
-        grid.isEditingEnabled = true
-        grid.editTrigger = 'navigate'  // Required for cell focus
-        grid.isHoverable = true
-
-        grid.beforeFillCallback = (detail) => {
-            const log = document.getElementById('fillLog')
-            log.innerHTML = `<strong>Fill operation:</strong><br>
-                Source: [${detail.sourceCell.rowIndex}, ${detail.sourceCell.colIndex}] "${detail.sourceCell.field}" = ${JSON.stringify(detail.sourceCell.value)}<br>
-                Direction: ${detail.direction}<br>
-                Target cells: ${detail.targetCells.length} cells`
-        }
-
-        grid.onRowChange = (detail) => {
-            console.log('Row changed:', detail.rowIndex, detail.field, detail.newValue)
-        }
-
-        // Grid 2 - With cancellation
-        const grid2 = document.getElementById('grid2')
-        grid2.items = JSON.parse(JSON.stringify(sampleData))
-        grid2.columns = columns
-        grid2.isRowNumbersShown = true
-        grid2.isEditingEnabled = true
-        grid2.editTrigger = 'navigate'
-        grid2.isHoverable = true
-
-        grid2.beforeFillCallback = (detail) => {
-            const log = document.getElementById('fillLog2')
-
-            // Block filling the status column
-            if (detail.sourceCell.field === 'status') {
-                log.innerHTML = `<span style="color: #dc2626;"><strong>BLOCKED:</strong> Cannot fill the Status column!</span>`
-                return false
-            }
-
-            log.innerHTML = `<span style="color: #16a34a;"><strong>ALLOWED:</strong> Filling ${detail.targetCells.length} cells in "${detail.sourceCell.field}" column</span>`
-        }
-
-        // Grid 3 - Vertical fill demo
-        const gridVertical = document.getElementById('gridVertical')
-        gridVertical.items = Array.from({ length: 8 }, (_, i) => ({
-            value: i === 0 ? 100 : '',
-            description: `Row ${i + 1}`
-        }))
-        gridVertical.columns = [
-            { field: 'description', title: 'Row', width: '80px', isEditable: false },
-            { field: 'value', title: 'Value (drag down)', width: '150px' }
-        ]
-        gridVertical.isEditingEnabled = true
-        gridVertical.editTrigger = 'navigate'
-        gridVertical.isHoverable = true
-
-        // Grid 4 - Horizontal fill demo
-        const gridHorizontal = document.getElementById('gridHorizontal')
-        gridHorizontal.items = [
-            { label: 'Values', col1: 'Hello', col2: '', col3: '', col4: '' },
-            { label: 'Numbers', col1: 42, col2: '', col3: '', col4: '' }
-        ]
-        gridHorizontal.columns = [
-            { field: 'label', title: 'Type', width: '80px', isEditable: false },
-            { field: 'col1', title: 'A', width: '80px' },
-            { field: 'col2', title: 'B', width: '80px' },
-            { field: 'col3', title: 'C', width: '80px' },
-            { field: 'col4', title: 'D', width: '80px' }
-        ]
-        gridHorizontal.isEditingEnabled = true
-        gridHorizontal.editTrigger = 'navigate'
-        gridHorizontal.isHoverable = true
-    </script>
-</body>
-</html>
+    // Grid 4 - Horizontal fill demo
+    const gridHorizontal = document.getElementById('gridHorizontal')
+    gridHorizontal.items = [
+        { label: 'Values', col1: 'Hello', col2: '', col3: '', col4: '' },
+        { label: 'Numbers', col1: 42, col2: '', col3: '', col4: '' }
+    ]
+    gridHorizontal.columns = [
+        { field: 'label', title: 'Type', width: '80px', isEditable: false },
+        { field: 'col1', title: 'A', width: '80px' },
+        { field: 'col2', title: 'B', width: '80px' },
+        { field: 'col3', title: 'C', width: '80px' },
+        { field: 'col4', title: 'D', width: '80px' }
+    ]
+    gridHorizontal.isEditingEnabled = true
+    gridHorizontal.editTrigger = 'navigate'
+    gridHorizontal.isHoverable = true
+</script>

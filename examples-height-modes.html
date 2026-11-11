@@ -1,330 +1,201 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebGrid - Height Modes</title>
-    <link rel="stylesheet" href="examples-shared.css">
-    <style>
-        /* Override shared web-grid default so it doesn't force max-height: 400px.
-           We control sizing per-demo via inline styles. */
-        web-grid {
-            display: block;
-            max-height: none;
-        }
+<meta name="kmwc:title" content="📐 Height Modes">
+<meta name="kmwc:subtitle" content="Control grid height: capped (max-height) vs auto-sizing to fit all content">
 
-        .mode-switch {
-            display: inline-flex;
-            background: #edf2f7;
-            border-radius: 8px;
-            padding: 4px;
-            gap: 4px;
-        }
+    <div class="card">
+        <h2>HM01 · Interactive Demo</h2>
+        <p>Toggle between <strong>Container</strong> mode (grid caps itself with a pixel <code>max-height</code> and scrolls internally) and <strong>Full Height</strong> mode (grid sizes to its full content — the surrounding layout grows to fit).</p>
 
-        .mode-switch button {
-            background: transparent;
-            color: #4a5568;
-            padding: 0.4rem 1rem;
-            font-weight: 500;
-            border-radius: 6px;
-        }
+        <div class="controls">
+            <strong>Mode:</strong>
+            <button type="button" id="modeContainer">Container</button>
+            <button type="button" id="modeFull" class="btn-outline">Full Height</button>
 
-        .mode-switch button.active {
-            background: #667eea;
-            color: white;
-        }
+            <label>
+                <input type="checkbox" id="isPagingEnabled"> Pager
+            </label>
 
-        .mode-switch button:not(.active):hover {
-            background: #e2e8f0;
-        }
+            <label id="heightLabel">
+                Height:
+                <input type="number" id="heightInput" min="100" max="900" step="25" value="350"> px
+            </label>
 
-        .height-input {
-            width: 80px;
-            padding: 0.35rem 0.5rem;
-            border: 1px solid #cbd5e0;
-            border-radius: 6px;
-            font-size: 0.9rem;
-        }
+            <label>
+                Rows:
+                <input type="number" id="rowsInput" min="0" max="500" step="5" value="40">
+            </label>
+        </div>
 
-        .stage {
-            margin-top: 1.25rem;
-            padding: 1rem;
-            background: repeating-linear-gradient(
-                45deg,
-                #fafafa,
-                #fafafa 10px,
-                #f3f4f6 10px,
-                #f3f4f6 20px
-            );
-            border-radius: 8px;
-            border: 1px solid #e5e7eb;
-        }
-
-        .stage-label {
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: #6b7280;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 0.5rem;
-        }
-
-        .explainer {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-            margin-top: 1rem;
-        }
-
-        .explainer-item {
-            background: #f7fafc;
-            border-left: 3px solid #667eea;
-            padding: 0.75rem 1rem;
-            border-radius: 4px;
-        }
-
-        .explainer-item.active {
-            background: #ebf4ff;
-            border-left-color: #3b82f6;
-        }
-
-        .explainer-item h4 {
-            margin: 0 0 0.4rem 0;
-            font-size: 0.95rem;
-            color: #2d3748;
-        }
-
-        .explainer-item code {
-            display: block;
-            background: #2d3748;
-            color: #e2e8f0;
-            padding: 0.5rem;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            margin-top: 0.4rem;
-        }
-
-        @media (max-width: 768px) {
-            .explainer { grid-template-columns: 1fr; }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <header>
-            <a href="index.html" class="back-link">← Back to Examples</a>
-            <h1>📐 Height Modes</h1>
-            <p class="subtitle">Control grid height: capped (max-height) vs auto-sizing to fit all content</p>
-        </header>
-
-        <div class="card">
-            <h2>Interactive Demo</h2>
-            <p>Toggle between <strong>Container</strong> mode (grid caps itself with a pixel <code>max-height</code> and scrolls internally) and <strong>Full Height</strong> mode (grid sizes to its full content — the surrounding layout grows to fit).</p>
-
-            <div class="controls">
-                <div>
-                    <strong style="margin-right: 0.5rem;">Mode:</strong>
-                    <div class="mode-switch" role="tablist">
-                        <button type="button" id="modeContainer" class="active">Container</button>
-                        <button type="button" id="modeFull">Full Height</button>
-                    </div>
-                </div>
-
-                <label>
-                    <input type="checkbox" id="isPagingEnabled"> Pager
-                </label>
-
-                <label id="heightLabel">
-                    Height:
-                    <input type="number" id="heightInput" class="height-input" min="100" max="900" step="25" value="350"> px
-                </label>
-
-                <label>
-                    Rows:
-                    <input type="number" id="rowsInput" class="height-input" min="0" max="500" step="5" value="40">
-                </label>
+        <div class="grid-2">
+            <div class="note" id="explainContainer">
+                <div class="note-title">Container mode</div>
+                <div>Grid uses <code>max-height</code>. It grows with content up to the limit, then scrolls internally.</div>
+                <pre><code id="codeContainer">&lt;web-grid style="max-height: 350px"&gt;</code></pre>
             </div>
-
-            <div class="explainer">
-                <div class="explainer-item" id="explainContainer">
-                    <h4>Container mode</h4>
-                    <div>Grid uses <code>max-height</code>. It grows with content up to the limit, then scrolls internally.</div>
-                    <code id="codeContainer">&lt;web-grid style="max-height: 350px"&gt;</code>
-                </div>
-                <div class="explainer-item" id="explainFull">
-                    <h4>Full-height mode</h4>
-                    <div>Grid uses <code>height: 100%</code> against an unbounded parent — the percentage falls back to <code>auto</code>, so the grid sizes to its content and the outer layout expands to wrap it. The demo also sets <code>isTableBorderOnly = true</code>, which turns the outer <code>.wg</code> into a non-scrolling container so wheel events pass through to the page instead of being captured by the grid.</div>
-                    <code id="codeFull">&lt;web-grid style="height: 100%"&gt;<br>grid.isTableBorderOnly = true</code>
-                </div>
-            </div>
-
-            <div class="stage">
-                <div class="stage-label">Demo area</div>
-                <div id="mount"></div>
-            </div>
-
-            <div class="note" style="margin-top: 1.25rem;">
-                <div class="note-title">When to use which?</div>
-                <ul>
-                    <li><strong>Container</strong> — default for most pages. Grid flows with the document, shrinks when data is short, and never grows beyond the pixel cap. Page scrolls around it.</li>
-                    <li><strong>Full Height</strong> — when you want every row visible without an internal scrollbar. The grid expands to its natural height and the page scrolls instead.</li>
-                </ul>
+            <div class="note" id="explainFull">
+                <div class="note-title">Full-height mode</div>
+                <div>Grid uses <code>height: 100%</code> against an unbounded parent — the percentage falls back to <code>auto</code>, so the grid sizes to its content and the outer layout expands to wrap it. The demo also sets <code>isTableBorderOnly = true</code>, which turns the outer <code>.wg</code> into a non-scrolling container so wheel events pass through to the page instead of being captured by the grid.</div>
+                <pre><code id="codeFull">&lt;web-grid style="height: 100%"&gt;<br>grid.isTableBorderOnly = true</code></pre>
             </div>
         </div>
 
-        <div class="card">
-            <h2>How sizing works internally</h2>
-            <p>The shadow DOM scroll container uses <code>max-height: inherit</code>, so a <code>max-height</code> set on the host element propagates inside. That's the whole mechanism for Container mode — set a pixel cap and the grid scrolls internally.</p>
-            <div class="code-block">
-                <pre>/* Inside the grid's shadow DOM */
+        <div class="demo-area">
+            <span class="demo-label">Demo area</span>
+            <div id="mount"></div>
+        </div>
+
+        <div class="note mt-1">
+            <div class="note-title">When to use which?</div>
+            <ul>
+                <li><strong>Container</strong> — default for most pages. Grid flows with the document, shrinks when data is short, and never grows beyond the pixel cap. Page scrolls around it.</li>
+                <li><strong>Full Height</strong> — when you want every row visible without an internal scrollbar. The grid expands to its natural height and the page scrolls instead.</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>HM02 · How sizing works internally</h2>
+        <p>The shadow DOM scroll container uses <code>max-height: inherit</code>, so a <code>max-height</code> set on the host element propagates inside. That's the whole mechanism for Container mode — set a pixel cap and the grid scrolls internally.</p>
+        <div class="code-block" data-kmwc-snippet>
+            <pre>/* Inside the grid's shadow DOM */
 .wg {
   max-height: inherit;  /* picks up host max-height */
   overflow: auto;       /* single scroll container */
 }</pre>
-            </div>
-            <p style="margin-top: 0.75rem;">In Full Height mode there is no cap — <code>height: 100%</code> resolves to <code>auto</code> against the unbounded parent, the grid sizes to its content, and the outer layout grows with it. Sticky headers still work in Container mode thanks to the single scroll container.</p>
         </div>
-
-        <footer>
-            <p>WebGrid Component by <a href="https://github.com/keenmate">Keenmate</a></p>
-        </footer>
+        <p class="mt-1">In Full Height mode there is no cap — <code>height: 100%</code> resolves to <code>auto</code> against the unbounded parent, the grid sizes to its content, and the outer layout grows with it. Sticky headers still work in Container mode thanks to the single scroll container.</p>
     </div>
 
-    <script type="module">
-        import '@keenmate/web-grid'
+<script type="module">
+    // ---- Sample data ----------------------------------------------------
+    const firstNames = ['Alice', 'Bob', 'Carol', 'David', 'Eva', 'Frank', 'Grace', 'Henry', 'Ivy', 'Jack', 'Karen', 'Leo', 'Mia', 'Noah', 'Olivia', 'Paul', 'Quinn', 'Rita', 'Sam', 'Tina']
+    const lastNames = ['Johnson', 'Smith', 'Williams', 'Brown', 'Martinez', 'Lee', 'Kim', 'Chen', 'Wang', 'Davis', 'Wilson', 'Garcia', 'Taylor', 'Anderson']
+    const departments = ['Engineering', 'Marketing', 'Sales', 'HR', 'Finance', 'Design', 'Support']
+    const statuses = ['Active', 'On Leave', 'Inactive']
 
-        // ---- Sample data ----------------------------------------------------
-        const firstNames = ['Alice', 'Bob', 'Carol', 'David', 'Eva', 'Frank', 'Grace', 'Henry', 'Ivy', 'Jack', 'Karen', 'Leo', 'Mia', 'Noah', 'Olivia', 'Paul', 'Quinn', 'Rita', 'Sam', 'Tina']
-        const lastNames = ['Johnson', 'Smith', 'Williams', 'Brown', 'Martinez', 'Lee', 'Kim', 'Chen', 'Wang', 'Davis', 'Wilson', 'Garcia', 'Taylor', 'Anderson']
-        const departments = ['Engineering', 'Marketing', 'Sales', 'HR', 'Finance', 'Design', 'Support']
-        const statuses = ['Active', 'On Leave', 'Inactive']
+    function buildRows(count) {
+        const rows = []
+        for (let i = 0; i < count; i++) {
+            const first = firstNames[i % firstNames.length]
+            const last = lastNames[(i * 3) % lastNames.length]
+            rows.push({
+                id: 1000 + i,
+                name: `${first} ${last}`,
+                email: `${first.toLowerCase()}.${last.toLowerCase()}@example.com`,
+                department: departments[i % departments.length],
+                salary: 55000 + (i * 1371) % 55000,
+                status: statuses[i % statuses.length]
+            })
+        }
+        return rows
+    }
 
-        function buildRows(count) {
-            const rows = []
-            for (let i = 0; i < count; i++) {
-                const first = firstNames[i % firstNames.length]
-                const last = lastNames[(i * 3) % lastNames.length]
-                rows.push({
-                    id: 1000 + i,
-                    name: `${first} ${last}`,
-                    email: `${first.toLowerCase()}.${last.toLowerCase()}@example.com`,
-                    department: departments[i % departments.length],
-                    salary: 55000 + (i * 1371) % 55000,
-                    status: statuses[i % statuses.length]
-                })
-            }
-            return rows
+    const columns = [
+        { field: 'id', title: 'ID', width: '70px', horizontalAlign: 'center' },
+        { field: 'name', title: 'Name', width: '160px' },
+        { field: 'email', title: 'Email', width: '220px' },
+        { field: 'department', title: 'Department', width: '140px' },
+        {
+            field: 'salary',
+            title: 'Salary',
+            width: '110px',
+            horizontalAlign: 'right',
+            getDisplayValueCallback: ({ value: v }) => v != null ? `$${v.toLocaleString()}` : ''
+        },
+        { field: 'status', title: 'Status', width: '110px' }
+    ]
+
+    // ---- Render logic ---------------------------------------------------
+    const mount = document.getElementById('mount')
+    const state = {
+        mode: 'container',    // 'container' | 'full'
+        isPagingEnabled: false,
+        height: 350,
+        rows: 40
+    }
+
+    function render() {
+        mount.innerHTML = ''
+
+        const grid = document.createElement('web-grid')
+        grid.style.display = 'block'
+
+        if (state.mode === 'container') {
+            grid.style.maxHeight = `${state.height}px`
+        } else {
+            // No sized parent — percentage height against an indefinite parent
+            // resolves to auto, so the grid sizes to its content.
+            grid.style.height = '100%'
+            // isTableBorderOnly moves the scroll container inward and leaves
+            // the outer `.wg` with overflow: visible — wheel events pass
+            // through to the page instead of being captured by the grid.
+            grid.isTableBorderOnly = true
         }
 
-        const columns = [
-            { field: 'id', title: 'ID', width: '70px', horizontalAlign: 'center' },
-            { field: 'name', title: 'Name', width: '160px' },
-            { field: 'email', title: 'Email', width: '220px' },
-            { field: 'department', title: 'Department', width: '140px' },
-            {
-                field: 'salary',
-                title: 'Salary',
-                width: '110px',
-                horizontalAlign: 'right',
-                getDisplayValueCallback: ({ value: v }) => v != null ? `$${v.toLocaleString()}` : ''
-            },
-            { field: 'status', title: 'Status', width: '110px' }
-        ]
+        mount.appendChild(grid)
 
-        // ---- Render logic ---------------------------------------------------
-        const mount = document.getElementById('mount')
-        const state = {
-            mode: 'container',    // 'container' | 'full'
-            isPagingEnabled: false,
-            height: 350,
-            rows: 40
-        }
+        grid.columns = columns
+        grid.items = buildRows(state.rows)
+        grid.isStriped = true
+        grid.isHoverable = true
+        grid.isRowNumbersShown = true
+        grid.sortMode = 'single'
+        grid.isPagingEnabled = state.isPagingEnabled
+        grid.pageSize = 10
+        grid.paginationPosition = 'top-center|bottom-center'
 
-        function render() {
-            mount.innerHTML = ''
+        updateExplainer()
+    }
 
-            const grid = document.createElement('web-grid')
-            grid.style.display = 'block'
+    function updateExplainer() {
+        document.getElementById('explainContainer').classList.toggle('success', state.mode === 'container')
+        document.getElementById('explainFull').classList.toggle('success', state.mode === 'full')
 
-            if (state.mode === 'container') {
-                grid.style.maxHeight = `${state.height}px`
-            } else {
-                // No sized parent — percentage height against an indefinite parent
-                // resolves to auto, so the grid sizes to its content.
-                grid.style.height = '100%'
-                // isTableBorderOnly moves the scroll container inward and leaves
-                // the outer `.wg` with overflow: visible — wheel events pass
-                // through to the page instead of being captured by the grid.
-                grid.isTableBorderOnly = true
-            }
+        // Height input only meaningful in Container mode.
+        const heightLabel = document.getElementById('heightLabel')
+        heightLabel.style.opacity = state.mode === 'container' ? '1' : '0.4'
+        document.getElementById('heightInput').disabled = state.mode !== 'container'
 
-            mount.appendChild(grid)
+        document.getElementById('codeContainer').innerHTML =
+            `&lt;web-grid style="max-height: ${state.height}px"&gt;`
+        document.getElementById('codeFull').innerHTML =
+            `&lt;web-grid style="height: 100%"&gt;<br>grid.isTableBorderOnly = true`
+    }
 
-            grid.columns = columns
-            grid.items = buildRows(state.rows)
-            grid.isStriped = true
-            grid.isHoverable = true
-            grid.isRowNumbersShown = true
-            grid.sortMode = 'single'
-            grid.isPagingEnabled = state.isPagingEnabled
-            grid.pageSize = 10
-            grid.paginationPosition = 'top-center|bottom-center'
-
-            updateExplainer()
-        }
-
-        function updateExplainer() {
-            document.getElementById('explainContainer').classList.toggle('active', state.mode === 'container')
-            document.getElementById('explainFull').classList.toggle('active', state.mode === 'full')
-
-            // Height input only meaningful in Container mode.
-            const heightLabel = document.getElementById('heightLabel')
-            heightLabel.style.opacity = state.mode === 'container' ? '1' : '0.4'
-            document.getElementById('heightInput').disabled = state.mode !== 'container'
-
-            document.getElementById('codeContainer').innerHTML =
-                `&lt;web-grid style="max-height: ${state.height}px"&gt;`
-            document.getElementById('codeFull').innerHTML =
-                `&lt;web-grid style="height: 100%"&gt;`
-        }
-
-        // ---- Wire up controls ----------------------------------------------
-        document.getElementById('modeContainer').addEventListener('click', () => {
-            state.mode = 'container'
-            document.getElementById('modeContainer').classList.add('active')
-            document.getElementById('modeFull').classList.remove('active')
-            render()
-        })
-
-        document.getElementById('modeFull').addEventListener('click', () => {
-            state.mode = 'full'
-            document.getElementById('modeFull').classList.add('active')
-            document.getElementById('modeContainer').classList.remove('active')
-            render()
-        })
-
-        document.getElementById('isPagingEnabled').addEventListener('change', (e) => {
-            state.isPagingEnabled = e.target.checked
-            render()
-        })
-
-        document.getElementById('heightInput').addEventListener('input', (e) => {
-            const v = parseInt(e.target.value, 10)
-            if (!isNaN(v) && v > 0) {
-                state.height = v
-                render()
-            }
-        })
-
-        document.getElementById('rowsInput').addEventListener('input', (e) => {
-            const v = parseInt(e.target.value, 10)
-            if (!isNaN(v) && v >= 0) {
-                state.rows = v
-                render()
-            }
-        })
-
+    // ---- Wire up controls ----------------------------------------------
+    document.getElementById('modeContainer').addEventListener('click', () => {
+        state.mode = 'container'
+        document.getElementById('modeContainer').classList.remove('btn-outline')
+        document.getElementById('modeFull').classList.add('btn-outline')
         render()
-    </script>
-</body>
-</html>
+    })
+
+    document.getElementById('modeFull').addEventListener('click', () => {
+        state.mode = 'full'
+        document.getElementById('modeFull').classList.remove('btn-outline')
+        document.getElementById('modeContainer').classList.add('btn-outline')
+        render()
+    })
+
+    document.getElementById('isPagingEnabled').addEventListener('change', (e) => {
+        state.isPagingEnabled = e.target.checked
+        render()
+    })
+
+    document.getElementById('heightInput').addEventListener('input', (e) => {
+        const v = parseInt(e.target.value, 10)
+        if (!isNaN(v) && v > 0) {
+            state.height = v
+            render()
+        }
+    })
+
+    document.getElementById('rowsInput').addEventListener('input', (e) => {
+        const v = parseInt(e.target.value, 10)
+        if (!isNaN(v) && v >= 0) {
+            state.rows = v
+            render()
+        }
+    })
+
+    render()
+</script>

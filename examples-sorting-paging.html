@@ -1,296 +1,111 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebGrid - Sorting & Pagination</title>
-    <link rel="stylesheet" href="examples-shared.css">
-    <style>
-        .event-log {
-            background: #1a1a2e;
-            color: #0f0;
-            font-family: monospace;
-            font-size: 12px;
-            padding: 12px;
-            border-radius: 6px;
-            max-height: 150px;
-            overflow-y: auto;
-            margin-top: 1rem;
-        }
-        .event-log .entry {
-            margin: 4px 0;
-            padding: 4px 8px;
-            background: rgba(255,255,255,0.05);
-            border-radius: 3px;
-        }
-        .event-log .entry.sort { border-left: 3px solid #667eea; }
-        .event-log .entry.page { border-left: 3px solid #38a169; }
-        .sort-state {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-top: 0.5rem;
-        }
-        .sort-chip {
-            background: #667eea;
-            color: white;
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 13px;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .sort-chip .priority {
-            background: rgba(255,255,255,0.3);
-            border-radius: 50%;
-            width: 18px;
-            height: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 11px;
-        }
-        .loading-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(255,255,255,0.8);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            color: #666;
-        }
-        .grid-wrapper {
-            position: relative;
-        }
-        .hidden { display: none !important; }
+<meta name="kmwc:title" content="Sorting &amp; Pagination">
+<meta name="kmwc:subtitle" content="Multi-column sorting with Ctrl+Click, server-side pagination support">
 
-        /* Configuration UI styles */
-        .config-section {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
-        .config-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-        .config-group label {
-            color: #374151;
-        }
-        .config-group small {
-            color: #9ca3af;
-            font-weight: normal;
-        }
-        .radio-groups {
-            display: flex;
-            gap: 2rem;
-            flex-wrap: wrap;
-        }
-        .radio-group {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-        .radio-group-label {
-            color: #6b7280;
-            font-size: 13px;
-            min-width: 70px;
-        }
-        .radio-group label {
-            display: flex;
-            align-items: center;
-            gap: 0.35rem;
-            font-weight: normal;
-            cursor: pointer;
-        }
-        .config-output {
-            margin-top: 0.5rem;
-            padding: 0.5rem 0.75rem;
-            background: #f3f4f6;
-            border-radius: 4px;
-            font-family: monospace;
-            font-size: 13px;
-        }
-        .config-output code {
-            color: #1f2937;
-        }
-        .config-output span {
-            color: #059669;
-        }
-        .config-hint {
-            font-size: 12px;
-            color: #9ca3af;
-        }
-        .layout-elements {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            padding: 0.75rem;
-            background: #f9fafb;
-            border: 2px dashed #e5e7eb;
-            border-radius: 6px;
-            min-height: 50px;
-        }
-        .layout-chip {
-            padding: 0.4rem 0.75rem;
-            background: #667eea;
-            color: white;
-            border-radius: 4px;
-            font-size: 13px;
-            cursor: grab;
-            user-select: none;
-            transition: opacity 0.2s, transform 0.2s;
-        }
-        .layout-chip:hover {
-            transform: scale(1.05);
-        }
-        .layout-chip.inactive {
-            background: #d1d5db;
-            color: #6b7280;
-        }
-        .layout-chip.dragging {
-            opacity: 0.5;
-        }
-        .config-group select {
-            padding: 0.5rem;
-            border: 1px solid #d1d5db;
-            border-radius: 4px;
-            font-size: 14px;
-            max-width: 300px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <header>
-            <a href="index.html" class="back-link">← Back to Examples</a>
-            <h1>Sorting & Pagination</h1>
-            <p class="subtitle">Multi-column sorting with Ctrl+Click, server-side pagination support</p>
-        </header>
+    <div class="card">
+        <h2>SP01 · Pagination Configuration</h2>
+        <p class="section-desc">
+            Configure pagination position and layout for the grid below. Changes apply immediately.
+        </p>
 
-        <div class="card">
-            <h2>Pagination Configuration</h2>
-            <p style="color: #666; margin-bottom: 1rem;">
-                Configure pagination position and layout for the grid below. Changes apply immediately.
-            </p>
+        <div class="output-label">Position</div>
+        <div class="controls">
+            <span class="muted">Vertical:</span>
+            <label><input type="radio" name="pos-vertical" value="top"> Top</label>
+            <label><input type="radio" name="pos-vertical" value="bottom" checked> Bottom</label>
+            <label><input type="radio" name="pos-vertical" value="both"> Both</label>
+        </div>
+        <div class="controls">
+            <span class="muted">Horizontal:</span>
+            <label><input type="radio" name="pos-horizontal" value="left"> Left</label>
+            <label><input type="radio" name="pos-horizontal" value="center"> Center</label>
+            <label><input type="radio" name="pos-horizontal" value="right" checked> Right</label>
+        </div>
+        <div class="controls">
+            <code>paginationPosition = "<span id="pos-output">bottom-right</span>"</code>
+        </div>
 
-            <div class="config-section">
-                <div class="config-group">
-                    <label><strong>Position:</strong></label>
-                    <div class="radio-groups">
-                        <div class="radio-group">
-                            <span class="radio-group-label">Vertical:</span>
-                            <label><input type="radio" name="pos-vertical" value="top"> Top</label>
-                            <label><input type="radio" name="pos-vertical" value="bottom" checked> Bottom</label>
-                            <label><input type="radio" name="pos-vertical" value="both"> Both</label>
-                        </div>
-                        <div class="radio-group">
-                            <span class="radio-group-label">Horizontal:</span>
-                            <label><input type="radio" name="pos-horizontal" value="left"> Left</label>
-                            <label><input type="radio" name="pos-horizontal" value="center"> Center</label>
-                            <label><input type="radio" name="pos-horizontal" value="right" checked> Right</label>
-                        </div>
-                    </div>
-                    <div class="config-output">
-                        <code>paginationPosition = "<span id="pos-output">bottom-right</span>"</code>
-                    </div>
-                </div>
+        <div class="output-label">Layout Elements <small class="muted">(drag to reorder)</small></div>
+        <div id="layout-elements" class="controls">
+            <span class="layout-chip pill pill--info" data-element="first" draggable="true">first</span>
+            <span class="layout-chip pill pill--info" data-element="previous" draggable="true">previous</span>
+            <span class="layout-chip pill pill--info" data-element="page-info" draggable="true">page-info</span>
+            <span class="layout-chip pill pill--info" data-element="next" draggable="true">next</span>
+            <span class="layout-chip pill pill--info" data-element="last" draggable="true">last</span>
+            <span class="layout-chip pill pill--muted inactive" data-element="page-size" draggable="true">page-size</span>
+            <small class="muted">Click to toggle, drag to reorder</small>
+        </div>
+        <div class="controls">
+            <code>paginationLayout = "</code><input type="text" id="layout-output" class="mono w-lg" value="first|previous|page-info|next|last"><code>"</code>
+        </div>
 
-                <div class="config-group">
-                    <label><strong>Layout Elements:</strong> <small>(drag to reorder)</small></label>
-                    <div id="layout-elements" class="layout-elements">
-                        <span class="layout-chip" data-element="first" draggable="true">first</span>
-                        <span class="layout-chip" data-element="previous" draggable="true">previous</span>
-                        <span class="layout-chip" data-element="page-info" draggable="true">page-info</span>
-                        <span class="layout-chip" data-element="next" draggable="true">next</span>
-                        <span class="layout-chip" data-element="last" draggable="true">last</span>
-                        <span class="layout-chip inactive" data-element="page-size" draggable="true">page-size</span>
-                    </div>
-                    <div class="config-hint">Click to toggle, drag to reorder</div>
-                    <div class="config-output">
-                        <code>paginationLayout = "</code><input type="text" id="layout-output" value="first|previous|page-info|next|last" style="font-family: monospace; border: 1px solid #d1d5db; border-radius: 3px; padding: 2px 6px; width: 380px;"><code>"</code>
-                    </div>
-                </div>
-
-                <div class="config-group">
-                    <label><strong>Summary Position:</strong></label>
-                    <select id="summary-position">
-                        <option value="">None</option>
-                        <option value="top-left">Top Left</option>
-                        <option value="top-right">Top Right</option>
-                        <option value="bottom-left">Bottom Left</option>
-                        <option value="bottom-right" selected>Bottom Right (same as pagination)</option>
-                    </select>
-                </div>
-
-                <div class="config-group">
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                        <input type="checkbox" id="summary-inline" checked>
-                        <strong>Summary Inline</strong>
-                        <small>(share row with pagination when in same area)</small>
-                    </label>
-                </div>
+        <div class="control-row">
+            <div class="control-group">
+                <label for="summary-position">Summary Position</label>
+                <select id="summary-position">
+                    <option value="">None</option>
+                    <option value="top-left">Top Left</option>
+                    <option value="top-right">Top Right</option>
+                    <option value="bottom-left">Bottom Left</option>
+                    <option value="bottom-right" selected>Bottom Right (same as pagination)</option>
+                </select>
             </div>
         </div>
 
+        <label class="toggle-label">
+            <input type="checkbox" id="summary-inline" checked>
+            <strong>Summary Inline</strong>
+            <small class="muted">(share row with pagination when in same area)</small>
+        </label>
+    </div>
+
+    <div class="card">
+        <h2>SP02 · Client-Side Sorting & Paging</h2>
+        <p class="section-desc">
+            Click column headers to sort. <strong>Ctrl+Click</strong> to add columns for multi-column sort.
+            Sort indicators show direction (▲▼) and priority numbers for multi-column.
+        </p>
+
+        <web-grid id="grid1" isStriped isHoverable style="max-height: 350px;"></web-grid>
+
+        <div class="mt-1">
+            <strong>Current Sort:</strong>
+            <div id="sortState1" class="controls">
+                <span class="muted">No sorting applied</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>SP03 · Server-Side Pagination (Simulated)</h2>
+        <p class="section-desc">
+            This grid simulates server-side data fetching. Notice the loading state when sorting or paging.
+            The <code>data-request</code> event (<code>onDataRequest</code>) fires and fetches data from a simulated API.
+        </p>
+
+        <web-grid id="grid2" isStriped isHoverable style="max-height: 350px;"></web-grid>
+
+        <div class="output-label mt-1">Event log <span id="loadingOverlay" hidden><span class="pill pill--warn">Loading...</span></span></div>
+        <div id="eventLog" class="log-panel">
+            <div class="log-line log-line--muted">Event log will appear here...</div>
+        </div>
+    </div>
+
+    <div class="grid-2">
         <div class="card">
-            <h2>Client-Side Sorting & Paging</h2>
-            <p style="color: #666; margin-bottom: 1rem;">
-                Click column headers to sort. <strong>Ctrl+Click</strong> to add columns for multi-column sort.
-                Sort indicators show direction (▲▼) and priority numbers for multi-column.
-            </p>
-
-            <div class="grid-wrapper">
-                <web-grid id="grid1" isStriped isHoverable style="max-width: 100%; max-height: 350px; border: 1px solid #e2e8f0;"></web-grid>
-            </div>
-
-            <div style="margin-top: 1rem;">
-                <strong>Current Sort:</strong>
-                <div id="sortState1" class="sort-state">
-                    <span style="color: #999;">No sorting applied</span>
-                </div>
-            </div>
+            <h2>SP04 · Sorting Behavior</h2>
+            <table class="reference-table table-compact">
+                <tr><td><strong>Click</strong></td><td>Single-column sort (replaces all)</td></tr>
+                <tr><td><strong>Ctrl+Click</strong></td><td>Add to multi-column sort</td></tr>
+                <tr><td><strong>Click sorted</strong></td><td>Toggle direction (asc → desc)</td></tr>
+                <tr><td><strong>Click desc</strong></td><td>Clear sorting</td></tr>
+                <tr><td><strong>Ctrl+Click sorted desc</strong></td><td>Remove from sort</td></tr>
+            </table>
         </div>
 
         <div class="card">
-            <h2>Server-Side Pagination (Simulated)</h2>
-            <p style="color: #666; margin-bottom: 1rem;">
-                This grid simulates server-side data fetching. Notice the loading state when sorting or paging.
-                The <code>data-request</code> event (<code>onDataRequest</code>) fires and fetches data from a simulated API.
-            </p>
-
-            <div class="grid-wrapper">
-                <web-grid id="grid2" isStriped isHoverable style="max-width: 100%; max-height: 350px; border: 1px solid #e2e8f0;"></web-grid>
-                <div id="loadingOverlay" class="loading-overlay hidden">Loading...</div>
-            </div>
-
-            <div id="eventLog" class="event-log">
-                <div style="color: #666;">Event log will appear here...</div>
-            </div>
-        </div>
-
-        <div class="grid-2">
-            <div class="card">
-                <h2>Sorting Behavior</h2>
-                <table class="props-table">
-                    <tr><td><strong>Click</strong></td><td>Single-column sort (replaces all)</td></tr>
-                    <tr><td><strong>Ctrl+Click</strong></td><td>Add to multi-column sort</td></tr>
-                    <tr><td><strong>Click sorted</strong></td><td>Toggle direction (asc → desc)</td></tr>
-                    <tr><td><strong>Click desc</strong></td><td>Clear sorting</td></tr>
-                    <tr><td><strong>Ctrl+Click sorted desc</strong></td><td>Remove from sort</td></tr>
-                </table>
-            </div>
-
-            <div class="card">
-                <h2>API</h2>
-                <div class="code-block">
-                    <pre>// Set initial sort
+            <h2>SP05 · API</h2>
+            <div class="code-block" data-kmwc-snippet>
+                <pre>// Set initial sort
 grid.sort = [
     { column: 'dept', direction: 'asc' },
     { column: 'name', direction: 'desc' }
@@ -352,295 +167,289 @@ grid.summaryInline = true  // Share row when in same area
 
 // Separate rows
 grid.summaryInline = false  // Each on its own row</pre>
-                </div>
             </div>
         </div>
     </div>
 
-    <script type="module">
-        import '@keenmate/web-grid'
+<script type="module">
+    import { appendLogLine } from '@keenmate/web-components-devkit/examples'
 
-        // =============================================================
-        // Sample Data (100 records for demo)
-        // =============================================================
-        const allData = []
-        const departments = ['Engineering', 'Marketing', 'Sales', 'HR', 'Finance', 'Legal', 'Operations']
-        const statuses = ['Active', 'Inactive', 'On Leave']
-        const locations = ['New York', 'Los Angeles', 'Chicago', 'Miami', 'Seattle', 'Boston', 'Denver']
+    // =============================================================
+    // Sample Data (100 records for demo)
+    // =============================================================
+    const allData = []
+    const departments = ['Engineering', 'Marketing', 'Sales', 'HR', 'Finance', 'Legal', 'Operations']
+    const statuses = ['Active', 'Inactive', 'On Leave']
+    const locations = ['New York', 'Los Angeles', 'Chicago', 'Miami', 'Seattle', 'Boston', 'Denver']
 
-        for (let i = 1; i <= 100; i++) {
-            allData.push({
-                id: i,
-                name: `Employee ${i}`,
-                department: departments[i % departments.length],
-                salary: 50000 + Math.floor(Math.random() * 100000),
-                status: statuses[i % statuses.length],
-                location: locations[i % locations.length],
-                startDate: `202${Math.floor(Math.random() * 4)}-${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}`
+    for (let i = 1; i <= 100; i++) {
+        allData.push({
+            id: i,
+            name: `Employee ${i}`,
+            department: departments[i % departments.length],
+            salary: 50000 + Math.floor(Math.random() * 100000),
+            status: statuses[i % statuses.length],
+            location: locations[i % locations.length],
+            startDate: `202${Math.floor(Math.random() * 4)}-${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}`
+        })
+    }
+
+    const columns = [
+        { field: 'id', title: 'ID', width: '60px', horizontalAlign: 'center' },
+        { field: 'name', title: 'Name', width: '140px' },
+        { field: 'department', title: 'Department', width: '120px' },
+        { field: 'salary', title: 'Salary', width: '100px', horizontalAlign: 'right', getDisplayValueCallback: ({ value: v }) => `$${v.toLocaleString()}` },
+        { field: 'status', title: 'Status', width: '100px' },
+        { field: 'location', title: 'Location', width: '120px' },
+        { field: 'startDate', title: 'Start Date', width: '110px' }
+    ]
+
+    // =============================================================
+    // Grid 1: Client-Side Sorting
+    // =============================================================
+    const grid1 = document.getElementById('grid1')
+    const sortState1 = document.getElementById('sortState1')
+
+    grid1.items = allData.slice(0, 50)  // 50 items for client-side demo
+    grid1.columns = columns
+    grid1.sortMode = 'multiple'
+    grid1.isPagingEnabled = true
+    grid1.pageSize = 10
+    grid1.pageSizes = [5, 10, 25, 50]  // Page size options
+    grid1.paginationPosition = 'bottom-right'  // Pagination on the right
+    grid1.paginationLayout = 'first|previous|page-info|next|last'  // Full navigation with first/last
+
+    // Summary at same position as pagination (will appear on left)
+    grid1.summaryPosition = 'bottom-right'
+    grid1.renderSummaryCallback = ({ allItems }) => {
+        const totalSalary = allItems.reduce((sum, item) => sum + item.salary, 0)
+        const avgSalary = Math.round(totalSalary / allItems.length)
+        return `<strong>Total:</strong> $${totalSalary.toLocaleString()} &nbsp;|&nbsp; <strong>Avg:</strong> $${avgSalary.toLocaleString()}`
+    }
+
+    // Update sort state display
+    function updateSortDisplay(sort) {
+        if (!sort || sort.length === 0) {
+            sortState1.innerHTML = '<span class="muted">No sorting applied</span>'
+        } else {
+            sortState1.innerHTML = sort.map((s, i) => `
+                <span class="pill pill--info">${i + 1}. ${s.column} ${s.direction === 'asc' ? '▲' : '▼'}</span>
+            `).join('')
+        }
+    }
+
+    grid1.onDataRequest = (detail) => {
+        updateSortDisplay(detail.sort)
+    }
+
+    // =============================================================
+    // Configuration UI Logic
+    // =============================================================
+    const posOutput = document.getElementById('pos-output')
+    const layoutOutput = document.getElementById('layout-output')
+    const layoutElements = document.getElementById('layout-elements')
+    const summaryPositionSelect = document.getElementById('summary-position')
+
+    // Position radio buttons
+    const verticalRadios = document.querySelectorAll('[name="pos-vertical"]')
+    const horizontalRadios = document.querySelectorAll('[name="pos-horizontal"]')
+
+    verticalRadios.forEach(r => r.addEventListener('change', updatePaginationPosition))
+    horizontalRadios.forEach(r => r.addEventListener('change', updatePaginationPosition))
+
+    function updatePaginationPosition() {
+        const vertical = document.querySelector('[name="pos-vertical"]:checked')?.value || 'bottom'
+        const horizontal = document.querySelector('[name="pos-horizontal"]:checked')?.value || 'center'
+        let positionStr
+        if (vertical === 'both') {
+            positionStr = `top-${horizontal}|bottom-${horizontal}`
+        } else {
+            positionStr = `${vertical}-${horizontal}`
+        }
+        posOutput.textContent = positionStr
+        grid1.paginationPosition = positionStr
+    }
+
+    // Layout elements - click to toggle, drag to reorder
+    layoutElements.addEventListener('click', (e) => {
+        const chip = e.target.closest('.layout-chip')
+        if (chip && !chip.classList.contains('dragging')) {
+            const isInactive = chip.classList.toggle('inactive')
+            chip.classList.toggle('pill--info', !isInactive)
+            chip.classList.toggle('pill--muted', isInactive)
+            updateLayoutString()
+        }
+    })
+
+    // Drag and drop for reordering
+    let draggedElement = null
+
+    layoutElements.addEventListener('dragstart', (e) => {
+        draggedElement = e.target
+        e.target.classList.add('dragging')
+    })
+
+    layoutElements.addEventListener('dragend', (e) => {
+        e.target.classList.remove('dragging')
+        draggedElement = null
+    })
+
+    layoutElements.addEventListener('dragover', (e) => {
+        e.preventDefault()
+        const afterElement = getDragAfterElement(layoutElements, e.clientX)
+        if (afterElement == null) {
+            layoutElements.appendChild(draggedElement)
+        } else {
+            layoutElements.insertBefore(draggedElement, afterElement)
+        }
+    })
+
+    function getDragAfterElement(container, x) {
+        const draggableElements = [...container.querySelectorAll('.layout-chip:not(.dragging)')]
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect()
+            const offset = x - box.left - box.width / 2
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child }
+            } else {
+                return closest
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element
+    }
+
+    layoutElements.addEventListener('drop', () => {
+        updateLayoutString()
+    })
+
+    function updateLayoutString() {
+        const elements = Array.from(layoutElements.querySelectorAll('.layout-chip:not(.inactive)'))
+            .map(el => el.dataset.element)
+        const layoutStr = elements.join('|')
+        layoutOutput.value = layoutStr || ''
+        grid1.paginationLayout = layoutStr
+    }
+
+    // Manual input for layout string
+    layoutOutput.addEventListener('input', () => {
+        grid1.paginationLayout = layoutOutput.value
+    })
+
+    // Summary position select
+    summaryPositionSelect.addEventListener('change', () => {
+        const value = summaryPositionSelect.value
+        if (value) {
+            grid1.summaryPosition = value
+        } else {
+            grid1.summaryPosition = undefined
+        }
+    })
+
+    // Summary inline checkbox
+    const summaryInlineCheckbox = document.getElementById('summary-inline')
+    summaryInlineCheckbox.addEventListener('change', () => {
+        grid1.summaryInline = summaryInlineCheckbox.checked
+    })
+
+    // =============================================================
+    // Grid 2: Server-Side Pagination (Simulated)
+    // =============================================================
+    const grid2 = document.getElementById('grid2')
+    const eventLog = document.getElementById('eventLog')
+    const loadingOverlay = document.getElementById('loadingOverlay')
+
+    grid2.columns = columns
+    grid2.sortMode = 'multiple'
+    grid2.isPagingEnabled = true
+    grid2.pageSize = 10
+    grid2.pageSizes = [10, 25, 50, 100]  // Page size options
+    grid2.paginationPosition = 'bottom-right'  // Right-aligned pagination
+    // Custom labels (Czech translation example)
+    grid2.getPaginationLabelsCallback = ({ currentPage, totalPages, totalItems }) => ({
+        previous: '← Předchozí',
+        next: 'Další →',
+        pageInfo: `Strana ${currentPage} z ${totalPages}`,
+        itemCount: `(${totalItems} položek)`,
+        perPage: 'na stránku'
+    })
+
+    function logEvent(type, detail) {
+        const sortStr = detail.sort.length > 0
+            ? detail.sort.map(s => `${s.column}:${s.direction}`).join(', ')
+            : 'none'
+        const variant = { sort: 'info', page: 'success' }[type]
+        appendLogLine(eventLog, { name: type.toUpperCase(), detail: `page=${detail.page}, pageSize=${detail.pageSize}, sort=[${sortStr}]`, variant })
+
+        // Keep only last 10 entries
+        while (eventLog.children.length > 10) {
+            eventLog.removeChild(eventLog.firstChild)
+        }
+    }
+
+    // Simulated server-side data fetch
+    async function fetchServerData(detail) {
+        loadingOverlay.hidden = false
+
+        // Simulate network delay
+        await new Promise(resolve => setTimeout(resolve, 500))
+
+        // Sort data
+        let sorted = [...allData]
+        if (detail.sort.length > 0) {
+            sorted.sort((a, b) => {
+                for (const s of detail.sort) {
+                    const aVal = a[s.column]
+                    const bVal = b[s.column]
+                    if (aVal === bVal) continue
+
+                    let cmp = 0
+                    if (typeof aVal === 'string') {
+                        cmp = aVal.localeCompare(bVal)
+                    } else {
+                        cmp = aVal - bVal
+                    }
+                    return s.direction === 'asc' ? cmp : -cmp
+                }
+                return 0
             })
         }
 
-        const columns = [
-            { field: 'id', title: 'ID', width: '60px', horizontalAlign: 'center' },
-            { field: 'name', title: 'Name', width: '140px' },
-            { field: 'department', title: 'Department', width: '120px' },
-            { field: 'salary', title: 'Salary', width: '100px', horizontalAlign: 'right', getDisplayValueCallback: ({ value: v }) => `$${v.toLocaleString()}` },
-            { field: 'status', title: 'Status', width: '100px' },
-            { field: 'location', title: 'Location', width: '120px' },
-            { field: 'startDate', title: 'Start Date', width: '110px' }
-        ]
+        // Paginate
+        const start = (detail.page - 1) * detail.pageSize
+        const pageData = sorted.slice(start, start + detail.pageSize)
 
-        // =============================================================
-        // Grid 1: Client-Side Sorting
-        // =============================================================
-        const grid1 = document.getElementById('grid1')
-        const sortState1 = document.getElementById('sortState1')
+        loadingOverlay.hidden = true
 
-        grid1.items = allData.slice(0, 50)  // 50 items for client-side demo
-        grid1.columns = columns
-        grid1.sortMode = 'multiple'
-        grid1.isPagingEnabled = true
-        grid1.pageSize = 10
-        grid1.pageSizes = [5, 10, 25, 50]  // Page size options
-        grid1.paginationPosition = 'bottom-right'  // Pagination on the right
-        grid1.paginationLayout = 'first|previous|page-info|next|last'  // Full navigation with first/last
+        // Calculate aggregates (in real scenario, server would provide these)
+        const totalSalary = allData.reduce((sum, item) => sum + item.salary, 0)
+        const avgSalary = Math.round(totalSalary / allData.length)
 
-        // Summary at same position as pagination (will appear on left)
-        grid1.summaryPosition = 'bottom-right'
-        grid1.renderSummaryCallback = ({ allItems }) => {
-            const totalSalary = allItems.reduce((sum, item) => sum + item.salary, 0)
-            const avgSalary = Math.round(totalSalary / allItems.length)
-            return `<strong>Total:</strong> $${totalSalary.toLocaleString()} &nbsp;|&nbsp; <strong>Avg:</strong> $${avgSalary.toLocaleString()}`
+        return {
+            data: pageData,
+            total: allData.length,
+            aggregates: { totalSalary, avgSalary }
         }
+    }
 
-        // Update sort state display
-        function updateSortDisplay(sort) {
-            if (!sort || sort.length === 0) {
-                sortState1.innerHTML = '<span style="color: #999;">No sorting applied</span>'
-            } else {
-                sortState1.innerHTML = sort.map((s, i) => `
-                    <span class="sort-chip">
-                        <span class="priority">${i + 1}</span>
-                        ${s.column} ${s.direction === 'asc' ? '▲' : '▼'}
-                    </span>
-                `).join('')
-            }
-        }
+    // Summary using server-provided metadata (aggregates)
+    grid2.summaryPosition = 'bottom-right'
+    grid2.renderSummaryCallback = ({ metadata }) => {
+        const agg = metadata || {}
+        return `<strong>Total Salary:</strong> $${agg.totalSalary?.toLocaleString() || 0}`
+    }
 
-        grid1.onDataRequest = (detail) => {
-            updateSortDisplay(detail.sort)
-        }
+    grid2.onDataRequest = async (detail) => {
+        logEvent(detail.trigger, detail)
 
-        // =============================================================
-        // Configuration UI Logic
-        // =============================================================
-        const posOutput = document.getElementById('pos-output')
-        const layoutOutput = document.getElementById('layout-output')
-        const layoutElements = document.getElementById('layout-elements')
-        const summaryPositionSelect = document.getElementById('summary-position')
+        const result = await fetchServerData(detail)
+        grid2.items = result.data
+        grid2.totalItems = result.total
+        grid2.summaryMetadata = result.aggregates  // Server-provided aggregates
+    }
 
-        // Position radio buttons
-        const verticalRadios = document.querySelectorAll('[name="pos-vertical"]')
-        const horizontalRadios = document.querySelectorAll('[name="pos-horizontal"]')
-
-        verticalRadios.forEach(r => r.addEventListener('change', updatePaginationPosition))
-        horizontalRadios.forEach(r => r.addEventListener('change', updatePaginationPosition))
-
-        function updatePaginationPosition() {
-            const vertical = document.querySelector('[name="pos-vertical"]:checked')?.value || 'bottom'
-            const horizontal = document.querySelector('[name="pos-horizontal"]:checked')?.value || 'center'
-            let positionStr
-            if (vertical === 'both') {
-                positionStr = `top-${horizontal}|bottom-${horizontal}`
-            } else {
-                positionStr = `${vertical}-${horizontal}`
-            }
-            posOutput.textContent = positionStr
-            grid1.paginationPosition = positionStr
-        }
-
-        // Layout elements - click to toggle, drag to reorder
-        layoutElements.addEventListener('click', (e) => {
-            const chip = e.target.closest('.layout-chip')
-            if (chip && !chip.classList.contains('dragging')) {
-                chip.classList.toggle('inactive')
-                updateLayoutString()
-            }
-        })
-
-        // Drag and drop for reordering
-        let draggedElement = null
-
-        layoutElements.addEventListener('dragstart', (e) => {
-            draggedElement = e.target
-            e.target.classList.add('dragging')
-        })
-
-        layoutElements.addEventListener('dragend', (e) => {
-            e.target.classList.remove('dragging')
-            draggedElement = null
-        })
-
-        layoutElements.addEventListener('dragover', (e) => {
-            e.preventDefault()
-            const afterElement = getDragAfterElement(layoutElements, e.clientX)
-            if (afterElement == null) {
-                layoutElements.appendChild(draggedElement)
-            } else {
-                layoutElements.insertBefore(draggedElement, afterElement)
-            }
-        })
-
-        function getDragAfterElement(container, x) {
-            const draggableElements = [...container.querySelectorAll('.layout-chip:not(.dragging)')]
-            return draggableElements.reduce((closest, child) => {
-                const box = child.getBoundingClientRect()
-                const offset = x - box.left - box.width / 2
-                if (offset < 0 && offset > closest.offset) {
-                    return { offset: offset, element: child }
-                } else {
-                    return closest
-                }
-            }, { offset: Number.NEGATIVE_INFINITY }).element
-        }
-
-        layoutElements.addEventListener('drop', () => {
-            updateLayoutString()
-        })
-
-        function updateLayoutString() {
-            const elements = Array.from(layoutElements.querySelectorAll('.layout-chip:not(.inactive)'))
-                .map(el => el.dataset.element)
-            const layoutStr = elements.join('|')
-            layoutOutput.value = layoutStr || ''
-            grid1.paginationLayout = layoutStr
-        }
-
-        // Manual input for layout string
-        layoutOutput.addEventListener('input', () => {
-            grid1.paginationLayout = layoutOutput.value
-        })
-
-        // Summary position select
-        summaryPositionSelect.addEventListener('change', () => {
-            const value = summaryPositionSelect.value
-            if (value) {
-                grid1.summaryPosition = value
-            } else {
-                grid1.summaryPosition = undefined
-            }
-        })
-
-        // Summary inline checkbox
-        const summaryInlineCheckbox = document.getElementById('summary-inline')
-        summaryInlineCheckbox.addEventListener('change', () => {
-            grid1.summaryInline = summaryInlineCheckbox.checked
-        })
-
-        // =============================================================
-        // Grid 2: Server-Side Pagination (Simulated)
-        // =============================================================
-        const grid2 = document.getElementById('grid2')
-        const eventLog = document.getElementById('eventLog')
-        const loadingOverlay = document.getElementById('loadingOverlay')
-
-        grid2.columns = columns
-        grid2.sortMode = 'multiple'
-        grid2.isPagingEnabled = true
-        grid2.pageSize = 10
-        grid2.pageSizes = [10, 25, 50, 100]  // Page size options
-        grid2.paginationPosition = 'bottom-right'  // Right-aligned pagination
-        // Custom labels (Czech translation example)
-        grid2.getPaginationLabelsCallback = ({ currentPage, totalPages, totalItems }) => ({
-            previous: '← Předchozí',
-            next: 'Další →',
-            pageInfo: `Strana ${currentPage} z ${totalPages}`,
-            itemCount: `(${totalItems} položek)`,
-            perPage: 'na stránku'
-        })
-
-        function logEvent(type, detail) {
-            const entry = document.createElement('div')
-            entry.className = `entry ${type}`
-            const sortStr = detail.sort.length > 0
-                ? detail.sort.map(s => `${s.column}:${s.direction}`).join(', ')
-                : 'none'
-            entry.textContent = `[${type.toUpperCase()}] page=${detail.page}, pageSize=${detail.pageSize}, sort=[${sortStr}]`
-            eventLog.insertBefore(entry, eventLog.firstChild)
-
-            // Keep only last 10 entries
-            while (eventLog.children.length > 10) {
-                eventLog.removeChild(eventLog.lastChild)
-            }
-        }
-
-        // Simulated server-side data fetch
-        async function fetchServerData(detail) {
-            loadingOverlay.classList.remove('hidden')
-
-            // Simulate network delay
-            await new Promise(resolve => setTimeout(resolve, 500))
-
-            // Sort data
-            let sorted = [...allData]
-            if (detail.sort.length > 0) {
-                sorted.sort((a, b) => {
-                    for (const s of detail.sort) {
-                        const aVal = a[s.column]
-                        const bVal = b[s.column]
-                        if (aVal === bVal) continue
-
-                        let cmp = 0
-                        if (typeof aVal === 'string') {
-                            cmp = aVal.localeCompare(bVal)
-                        } else {
-                            cmp = aVal - bVal
-                        }
-                        return s.direction === 'asc' ? cmp : -cmp
-                    }
-                    return 0
-                })
-            }
-
-            // Paginate
-            const start = (detail.page - 1) * detail.pageSize
-            const pageData = sorted.slice(start, start + detail.pageSize)
-
-            loadingOverlay.classList.add('hidden')
-
-            // Calculate aggregates (in real scenario, server would provide these)
-            const totalSalary = allData.reduce((sum, item) => sum + item.salary, 0)
-            const avgSalary = Math.round(totalSalary / allData.length)
-
-            return {
-                data: pageData,
-                total: allData.length,
-                aggregates: { totalSalary, avgSalary }
-            }
-        }
-
-        // Summary using server-provided metadata (aggregates)
-        grid2.summaryPosition = 'bottom-right'
-        grid2.renderSummaryCallback = ({ metadata }) => {
-            const agg = metadata || {}
-            return `<strong>Total Salary:</strong> $${agg.totalSalary?.toLocaleString() || 0}`
-        }
-
-        grid2.onDataRequest = async (detail) => {
-            logEvent(detail.trigger, detail)
-
-            const result = await fetchServerData(detail)
-            grid2.items = result.data
-            grid2.totalItems = result.total
-            grid2.summaryMetadata = result.aggregates  // Server-provided aggregates
-        }
-
-        // Initial load
-        fetchServerData({ sort: [], page: 1, pageSize: 10, trigger: 'init' }).then(result => {
-            grid2.items = result.data
-            grid2.totalItems = result.total
-            grid2.summaryMetadata = result.aggregates
-        })
-    </script>
-</body>
-</html>
+    // Initial load
+    fetchServerData({ sort: [], page: 1, pageSize: 10, trigger: 'init' }).then(result => {
+        grid2.items = result.data
+        grid2.totalItems = result.total
+        grid2.summaryMetadata = result.aggregates
+    })
+</script>

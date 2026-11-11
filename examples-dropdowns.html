@@ -1,60 +1,47 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebGrid - Dropdown Features</title>
-    <link rel="stylesheet" href="examples-shared.css">
-</head>
-<body>
-    <div class="container">
-        <header>
-            <a href="index.html" class="back-link">← Back to Examples</a>
-            <h1>🔽 Dropdown Features</h1>
-            <p class="subtitle">Advanced dropdown customization with icons, subtitles, custom rendering, and async search</p>
-        </header>
+<meta name="kmwc:title" content="🔽 Dropdown Features">
+<meta name="kmwc:subtitle" content="Advanced dropdown customization with icons, subtitles, custom rendering, and async search">
 
+    <div class="card">
+        <h2>DD01 · Dropdown Customization Demo</h2>
+        <p>This grid demonstrates various dropdown customization options including custom member properties, callbacks, and rendering.</p>
+
+        <web-grid id="grid" style="max-height: 350px;"></web-grid>
+    </div>
+
+    <div class="grid-2">
         <div class="card">
-            <h2>Dropdown Customization Demo</h2>
-            <p>This grid demonstrates various dropdown customization options including custom member properties, callbacks, and rendering.</p>
-
-            <web-grid id="grid" style="max-width: 100%; max-height: 350px; border: 1px solid #e2e8f0;"></web-grid>
-        </div>
-
-        <div class="grid-2">
-            <div class="card">
-                <h2>Member Properties</h2>
-                <p>Map your data fields to dropdown display properties:</p>
-                <ul>
-                    <li><code>valueMember</code> - Field for option value</li>
-                    <li><code>displayMember</code> - Field for display text</li>
-                    <li><code>iconMember</code> - Field for icon/emoji</li>
-                    <li><code>subtitleMember</code> - Field for secondary text</li>
-                    <li><code>disabledMember</code> - Field for disabled state</li>
-                    <li><code>searchMember</code> - Field for search matching</li>
-                </ul>
-            </div>
-
-            <div class="card">
-                <h2>Callback Overrides</h2>
-                <p>Use callbacks for complex data transformations (each takes one ctx: <code>{ option }</code>):</p>
-                <ul>
-                    <li><code>getValueCallback({ option })</code></li>
-                    <li><code>getDisplayValueCallback({ option })</code></li>
-                    <li><code>getIconCallback({ option })</code></li>
-                    <li><code>getSubtitleCallback({ option })</code></li>
-                    <li><code>getIsDisabledCallback({ option })</code></li>
-                    <li><code>getSearchValueCallback({ option })</code></li>
-                </ul>
-            </div>
+            <h2>DD02 · Member Properties</h2>
+            <p>Map your data fields to dropdown display properties:</p>
+            <ul>
+                <li><code>valueMember</code> - Field for option value</li>
+                <li><code>displayMember</code> - Field for display text</li>
+                <li><code>iconMember</code> - Field for icon/emoji</li>
+                <li><code>subtitleMember</code> - Field for secondary text</li>
+                <li><code>disabledMember</code> - Field for disabled state</li>
+                <li><code>searchMember</code> - Field for search matching</li>
+            </ul>
         </div>
 
         <div class="card">
-            <h2>Custom Option Rendering</h2>
-            <p>The Priority column uses <code>renderOptionCallback</code> to create custom HTML for each option with colored dots.</p>
+            <h2>DD03 · Callback Overrides</h2>
+            <p>Use callbacks for complex data transformations (each takes one ctx: <code>{ option }</code>):</p>
+            <ul>
+                <li><code>getValueCallback({ option })</code></li>
+                <li><code>getDisplayValueCallback({ option })</code></li>
+                <li><code>getIconCallback({ option })</code></li>
+                <li><code>getSubtitleCallback({ option })</code></li>
+                <li><code>getIsDisabledCallback({ option })</code></li>
+                <li><code>getSearchValueCallback({ option })</code></li>
+            </ul>
+        </div>
+    </div>
 
-            <div class="code-block">
-                <pre>editorOptions: {
+    <div class="card">
+        <h2>DD04 · Custom Option Rendering</h2>
+        <p>The Priority column uses <code>renderOptionCallback</code> to create custom HTML for each option with colored dots.</p>
+
+        <div class="code-block" data-kmwc-snippet>
+            <pre>editorOptions: {
     renderOptionCallback: ({ option: opt, ...ctx }) => {
         const classes = ['wg__dropdown-option']
         if (ctx.isFocused) classes.push('wg__dropdown-option--highlighted')
@@ -66,27 +53,27 @@
         &lt;/div&gt;`
     }
 }</pre>
-            </div>
-
-            <div class="note">
-                <div class="note-title">Context Properties</div>
-                <p>The ctx object provides:</p>
-                <ul>
-                    <li><code>option</code> - The option being rendered</li>
-                    <li><code>optionIndex</code> - Option index in the list</li>
-                    <li><code>isFocused</code> - The keyboard / mouse cursor is on it</li>
-                    <li><code>isSelected</code> - Currently selected value</li>
-                    <li><code>isDisabled</code> - Option is disabled</li>
-                </ul>
-            </div>
         </div>
 
-        <div class="card">
-            <h2>Dynamic Cell Styling</h2>
-            <p>The Priority column also uses <code>getCellClassCallback</code> to apply CSS classes based on the cell value, <code>renderCellCallback</code> for the cell HTML, and <code>getCustomStylesCallback</code> to inject the matching styles into the shadow DOM.</p>
+        <div class="note">
+            <div class="note-title">Context Properties</div>
+            <p>The ctx object provides:</p>
+            <ul>
+                <li><code>option</code> - The option being rendered</li>
+                <li><code>optionIndex</code> - Option index in the list</li>
+                <li><code>isFocused</code> - The keyboard / mouse cursor is on it</li>
+                <li><code>isSelected</code> - Currently selected value</li>
+                <li><code>isDisabled</code> - Option is disabled</li>
+            </ul>
+        </div>
+    </div>
 
-            <div class="code-block">
-                <pre>// Column definition
+    <div class="card">
+        <h2>DD05 · Dynamic Cell Styling</h2>
+        <p>The Priority column also uses <code>getCellClassCallback</code> to apply CSS classes based on the cell value, <code>renderCellCallback</code> for the cell HTML, and <code>getCustomStylesCallback</code> to inject the matching styles into the shadow DOM.</p>
+
+        <div class="code-block" data-kmwc-snippet>
+            <pre>// Column definition
 {
     field: 'priority',
     getCellClassCallback: ({ value }) =&gt; value ? `priority-${value}` : null,
@@ -103,166 +90,158 @@ grid.getCustomStylesCallback = () =&gt; `
     .priority-medium { background: color-mix(in srgb, #ffc107 12%, transparent); }
     .priority-low { background: color-mix(in srgb, #28a745 12%, transparent); }
 `</pre>
-            </div>
-
-            <div class="note">
-                <div class="note-title">Why getCustomStylesCallback?</div>
-                <p>Since WebGrid uses Shadow DOM, external page CSS cannot reach cell elements. Use <code>getCustomStylesCallback</code> to inject CSS rules that target classes added by <code>getCellClassCallback</code>.</p>
-            </div>
         </div>
 
-        <footer>
-            <p>WebGrid Component by <a href="https://github.com/keenmate">Keenmate</a></p>
-        </footer>
+        <div class="note">
+            <div class="note-title">Why getCustomStylesCallback?</div>
+            <p>Since WebGrid uses Shadow DOM, external page CSS cannot reach cell elements. Use <code>getCustomStylesCallback</code> to inject CSS rules that target classes added by <code>getCellClassCallback</code>.</p>
+        </div>
     </div>
 
-    <script type="module">
-        import '@keenmate/web-grid'
+<script type="module">
 
-        const gridData = [
-            { id: 1, priority: 'high', country: 'US', product: 'laptop', assignee: '' },
-            { id: 2, priority: 'medium', country: 'DE', product: 'phone', assignee: '' },
-            { id: 3, priority: 'low', country: 'FR', product: 'tablet', assignee: '' },
-            { id: 4, priority: 'high', country: 'JP', product: 'laptop', assignee: '' },
-            { id: 5, priority: 'medium', country: 'UK', product: 'monitor', assignee: '' },
-        ]
+    const gridData = [
+        { id: 1, priority: 'high', country: 'US', product: 'laptop', assignee: '' },
+        { id: 2, priority: 'medium', country: 'DE', product: 'phone', assignee: '' },
+        { id: 3, priority: 'low', country: 'FR', product: 'tablet', assignee: '' },
+        { id: 4, priority: 'high', country: 'JP', product: 'laptop', assignee: '' },
+        { id: 5, priority: 'medium', country: 'UK', product: 'monitor', assignee: '' },
+    ]
 
-        // Priority options with colors for custom rendering
-        const priorityOptions = [
-            { value: 'critical', label: 'Critical', color: '#dc3545' },
-            { value: 'high', label: 'High', color: '#fd7e14' },
-            { value: 'medium', label: 'Medium', color: '#ffc107' },
-            { value: 'low', label: 'Low', color: '#28a745' },
-            { value: 'none', label: 'None', color: '#6c757d', disabled: true },
-        ]
+    // Priority options with colors for custom rendering
+    const priorityOptions = [
+        { value: 'critical', label: 'Critical', color: '#dc3545' },
+        { value: 'high', label: 'High', color: '#fd7e14' },
+        { value: 'medium', label: 'Medium', color: '#ffc107' },
+        { value: 'low', label: 'Low', color: '#28a745' },
+        { value: 'none', label: 'None', color: '#6c757d', disabled: true },
+    ]
 
-        // Country options with custom member properties
-        const countryOptions = [
-            { code: 'US', name: 'United States', flag: '🇺🇸', region: 'North America' },
-            { code: 'CA', name: 'Canada', flag: '🇨🇦', region: 'North America' },
-            { code: 'UK', name: 'United Kingdom', flag: '🇬🇧', region: 'Europe' },
-            { code: 'DE', name: 'Germany', flag: '🇩🇪', region: 'Europe' },
-            { code: 'FR', name: 'France', flag: '🇫🇷', region: 'Europe' },
-            { code: 'JP', name: 'Japan', flag: '🇯🇵', region: 'Asia' },
-            { code: 'AU', name: 'Australia', flag: '🇦🇺', region: 'Oceania', disabled: true },
-        ]
+    // Country options with custom member properties
+    const countryOptions = [
+        { code: 'US', name: 'United States', flag: '🇺🇸', region: 'North America' },
+        { code: 'CA', name: 'Canada', flag: '🇨🇦', region: 'North America' },
+        { code: 'UK', name: 'United Kingdom', flag: '🇬🇧', region: 'Europe' },
+        { code: 'DE', name: 'Germany', flag: '🇩🇪', region: 'Europe' },
+        { code: 'FR', name: 'France', flag: '🇫🇷', region: 'Europe' },
+        { code: 'JP', name: 'Japan', flag: '🇯🇵', region: 'Asia' },
+        { code: 'AU', name: 'Australia', flag: '🇦🇺', region: 'Oceania', disabled: true },
+    ]
 
-        // Product options with categories
-        const productOptions = [
-            { id: 'laptop', name: 'Laptop', category: 'Computers', icon: '💻' },
-            { id: 'desktop', name: 'Desktop', category: 'Computers', icon: '🖥️' },
-            { id: 'phone', name: 'Smartphone', category: 'Mobile', icon: '📱' },
-            { id: 'tablet', name: 'Tablet', category: 'Mobile', icon: '📲' },
-            { id: 'monitor', name: 'Monitor', category: 'Accessories', icon: '🖥️' },
-            { id: 'keyboard', name: 'Keyboard', category: 'Accessories', icon: '⌨️' },
-        ]
+    // Product options with categories
+    const productOptions = [
+        { id: 'laptop', name: 'Laptop', category: 'Computers', icon: '💻' },
+        { id: 'desktop', name: 'Desktop', category: 'Computers', icon: '🖥️' },
+        { id: 'phone', name: 'Smartphone', category: 'Mobile', icon: '📱' },
+        { id: 'tablet', name: 'Tablet', category: 'Mobile', icon: '📲' },
+        { id: 'monitor', name: 'Monitor', category: 'Accessories', icon: '🖥️' },
+        { id: 'keyboard', name: 'Keyboard', category: 'Accessories', icon: '⌨️' },
+    ]
 
-        const columns = [
-            { field: 'id', title: 'ID', width: '50px', isEditable: false },
-            {
-                field: 'priority',
-                title: 'Priority (custom render)',
-                width: '180px',
-                editor: 'select',
-                renderCellCallback: ({ value }) => {
-                    const opt = priorityOptions.find(o => o.value === value)
-                    if (!opt) return value ?? ''
-                    return `<span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: ${opt.color}; margin-right: 6px; vertical-align: middle;"></span>${opt.label}`
+    const columns = [
+        { field: 'id', title: 'ID', width: '50px', isEditable: false },
+        {
+            field: 'priority',
+            title: 'Priority (custom render)',
+            width: '180px',
+            editor: 'select',
+            renderCellCallback: ({ value }) => {
+                const opt = priorityOptions.find(o => o.value === value)
+                if (!opt) return value ?? ''
+                return `<span data-kmwc-fixed-colors style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: ${opt.color}; margin-right: 6px; vertical-align: middle;"></span>${opt.label}`
+            },
+            getCellClassCallback: ({ value }) => value ? `priority-${value}` : null,
+            editorOptions: {
+                options: priorityOptions,
+                disabledMember: 'disabled',
+                // Custom render with colored dot
+                renderOptionCallback: ({ option: opt, ...ctx }) => {
+                    const classes = ['wg__dropdown-option']
+                    if (ctx.isFocused) classes.push('wg__dropdown-option--highlighted')
+                    if (ctx.isSelected) classes.push('wg__dropdown-option--selected')
+                    if (ctx.isDisabled) classes.push('wg__dropdown-option--disabled')
+                    return `<div class="${classes.join(' ')}" data-index="${ctx.optionIndex}" ${ctx.isDisabled ? 'data-disabled="true"' : ''}>
+                        <span data-kmwc-fixed-colors style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: ${opt.color}; margin-right: 8px;"></span>
+                        ${opt.label}
+                    </div>`
                 },
-                getCellClassCallback: ({ value }) => value ? `priority-${value}` : null,
-                editorOptions: {
-                    options: priorityOptions,
-                    disabledMember: 'disabled',
-                    // Custom render with colored dot
-                    renderOptionCallback: ({ option: opt, ...ctx }) => {
-                        const classes = ['wg__dropdown-option']
-                        if (ctx.isFocused) classes.push('wg__dropdown-option--highlighted')
-                        if (ctx.isSelected) classes.push('wg__dropdown-option--selected')
-                        if (ctx.isDisabled) classes.push('wg__dropdown-option--disabled')
-                        return `<div class="${classes.join(' ')}" data-index="${ctx.optionIndex}" ${ctx.isDisabled ? 'data-disabled="true"' : ''}>
-                            <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: ${opt.color}; margin-right: 8px;"></span>
-                            ${opt.label}
-                        </div>`
-                    },
-                    onSelect: ({ option: opt, row }) => {
-                        console.log('Priority selected:', opt.label, 'for row:', row.id)
-                    }
-                }
-            },
-            {
-                field: 'country',
-                title: 'Country (custom members)',
-                width: '200px',
-                editor: 'select',
-                editorOptions: {
-                    options: countryOptions,
-                    valueMember: 'code',
-                    displayMember: 'name',
-                    iconMember: 'flag',
-                    subtitleMember: 'region',
-                    disabledMember: 'disabled',
-                    searchMember: 'name'
-                }
-            },
-            {
-                field: 'product',
-                title: 'Product (combobox)',
-                width: '180px',
-                editor: 'combobox',
-                editorOptions: {
-                    options: productOptions,
-                    valueMember: 'id',
-                    displayMember: 'name',
-                    iconMember: 'icon',
-                    subtitleMember: 'category'
-                }
-            },
-            {
-                field: 'assignee',
-                title: 'Assignee (autocomplete)',
-                width: '200px',
-                editor: 'autocomplete',
-                editorOptions: {
-                    placeholder: 'Search users...',
-                    minSearchLength: 1,
-                    debounceMs: 200,
-                    // Custom callbacks for complex data
-                    getDisplayValueCallback: ({ option: opt }) => `${opt.firstName} ${opt.lastName}`,
-                    getIconCallback: ({ option: opt }) => opt.avatar,
-                    getSubtitleCallback: ({ option: opt }) => opt.email,
-                    searchCallback: async ({ term: query }) => {
-                        await new Promise(r => setTimeout(r, 300))
-                        const users = [
-                            { id: 1, firstName: 'Alice', lastName: 'Johnson', email: 'alice@example.com', avatar: '👩' },
-                            { id: 2, firstName: 'Bob', lastName: 'Smith', email: 'bob@example.com', avatar: '👨' },
-                            { id: 3, firstName: 'Carol', lastName: 'Williams', email: 'carol@example.com', avatar: '👩‍💼' },
-                            { id: 4, firstName: 'David', lastName: 'Brown', email: 'david@example.com', avatar: '👨‍💼' },
-                            { id: 5, firstName: 'Eve', lastName: 'Davis', email: 'eve@example.com', avatar: '👩‍🔬' },
-                        ]
-                        return users.filter(u =>
-                            `${u.firstName} ${u.lastName}`.toLowerCase().includes(query.toLowerCase()) ||
-                            u.email.toLowerCase().includes(query.toLowerCase())
-                        )
-                    }
+                onSelect: ({ option: opt, row }) => {
+                    console.log('Priority selected:', opt.label, 'for row:', row.id)
                 }
             }
-        ]
+        },
+        {
+            field: 'country',
+            title: 'Country (custom members)',
+            width: '200px',
+            editor: 'select',
+            editorOptions: {
+                options: countryOptions,
+                valueMember: 'code',
+                displayMember: 'name',
+                iconMember: 'flag',
+                subtitleMember: 'region',
+                disabledMember: 'disabled',
+                searchMember: 'name'
+            }
+        },
+        {
+            field: 'product',
+            title: 'Product (combobox)',
+            width: '180px',
+            editor: 'combobox',
+            editorOptions: {
+                options: productOptions,
+                valueMember: 'id',
+                displayMember: 'name',
+                iconMember: 'icon',
+                subtitleMember: 'category'
+            }
+        },
+        {
+            field: 'assignee',
+            title: 'Assignee (autocomplete)',
+            width: '200px',
+            editor: 'autocomplete',
+            editorOptions: {
+                placeholder: 'Search users...',
+                minSearchLength: 1,
+                debounceMs: 200,
+                // Custom callbacks for complex data
+                getDisplayValueCallback: ({ option: opt }) => `${opt.firstName} ${opt.lastName}`,
+                getIconCallback: ({ option: opt }) => opt.avatar,
+                getSubtitleCallback: ({ option: opt }) => opt.email,
+                searchCallback: async ({ term: query }) => {
+                    await new Promise(r => setTimeout(r, 300))
+                    const users = [
+                        { id: 1, firstName: 'Alice', lastName: 'Johnson', email: 'alice@example.com', avatar: '👩' },
+                        { id: 2, firstName: 'Bob', lastName: 'Smith', email: 'bob@example.com', avatar: '👨' },
+                        { id: 3, firstName: 'Carol', lastName: 'Williams', email: 'carol@example.com', avatar: '👩‍💼' },
+                        { id: 4, firstName: 'David', lastName: 'Brown', email: 'david@example.com', avatar: '👨‍💼' },
+                        { id: 5, firstName: 'Eve', lastName: 'Davis', email: 'eve@example.com', avatar: '👩‍🔬' },
+                    ]
+                    return users.filter(u =>
+                        `${u.firstName} ${u.lastName}`.toLowerCase().includes(query.toLowerCase()) ||
+                        u.email.toLowerCase().includes(query.toLowerCase())
+                    )
+                }
+            }
+        }
+    ]
 
-        const grid = document.getElementById('grid')
-        grid.items = gridData
-        grid.columns = columns
-        grid.isEditingEnabled = true
-        grid.editTrigger = 'navigate'
-        grid.tooltipShowDelay = 0
-        grid.tooltipHideDelay = 100
+    const grid = document.getElementById('grid')
+    grid.items = gridData
+    grid.columns = columns
+    grid.isEditingEnabled = true
+    grid.editTrigger = 'navigate'
+    grid.tooltipShowDelay = 0
+    grid.tooltipHideDelay = 100
 
-        // Inject custom styles into shadow DOM for getCellClassCallback classes
-        grid.getCustomStylesCallback = () => `
-            .priority-critical { background: color-mix(in srgb, #dc3545 12%, transparent); }
-            .priority-high { background: color-mix(in srgb, #fd7e14 12%, transparent); }
-            .priority-medium { background: color-mix(in srgb, #ffc107 12%, transparent); }
-            .priority-low { background: color-mix(in srgb, #28a745 12%, transparent); }
-        `
-    </script>
-</body>
-</html>
+    // Inject custom styles into shadow DOM for getCellClassCallback classes
+    grid.getCustomStylesCallback = () => `
+        .priority-critical { background: color-mix(in srgb, #dc3545 12%, transparent); }
+        .priority-high { background: color-mix(in srgb, #fd7e14 12%, transparent); }
+        .priority-medium { background: color-mix(in srgb, #ffc107 12%, transparent); }
+        .priority-low { background: color-mix(in srgb, #28a745 12%, transparent); }
+    `
+</script>

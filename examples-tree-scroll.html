@@ -1,262 +1,241 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebGrid - Tree + Virtual / Infinite Scroll (Test View)</title>
-    <link rel="stylesheet" href="examples-shared.css">
-</head>
-<body>
-    <div class="container">
-        <header>
-            <a href="index.html" class="back-link">← Back to Examples</a>
-            <h1>🧪 Tree + Virtual / Infinite Scroll</h1>
-            <p class="subtitle">Test view for combining tree mode with high-volume scrolling primitives. Both combinations are technically supported but have UX trade-offs — this page exists so you can poke them.</p>
-        </header>
+<meta name="kmwc:title" content="🧪 Tree + Virtual / Infinite Scroll">
+<meta name="kmwc:subtitle" content="Test view for combining tree mode with high-volume scrolling primitives. Both combinations are technically supported but have UX trade-offs — this page exists so you can poke them.">
 
-        <!-- ============================================================ -->
-        <!-- Test 1: Tree + Virtual Scroll (large in-memory tree)        -->
-        <!-- ============================================================ -->
-        <div class="card">
-            <h2>1. Tree + Virtual Scroll</h2>
-            <p>Full tree (<span id="vsRowCount">…</span> rows, 3 levels deep) loaded once, virtual scroll renders only the visible rows. Toggle expand/collapse and watch render count update.</p>
+    <!-- ============================================================ -->
+    <!-- Test 1: Tree + Virtual Scroll (large in-memory tree)        -->
+    <!-- ============================================================ -->
+    <div class="card">
+        <h2>TS01 · Tree + Virtual Scroll</h2>
+        <p>Full tree (<span id="vsRowCount">…</span> rows, 3 levels deep) loaded once, virtual scroll renders only the visible rows. Toggle expand/collapse and watch render count update.</p>
 
-            <div class="controls">
-                <label>
-                    <input type="checkbox" id="vsEnabled" checked> Virtual scroll enabled
-                </label>
-                <button type="button" id="vsExpand">Expand all</button>
-                <button type="button" id="vsCollapse">Collapse all</button>
-                <span style="margin-left: auto; color: #555;">
-                    Visible: <strong id="vsVisibleCount">0</strong> rows
-                </span>
-            </div>
-
-            <web-grid id="vsGrid" style="max-width: 100%; height: 500px; border: 1px solid #e2e8f0;"></web-grid>
-
-            <div style="margin-top: 0.75rem; color: #666; font-size: 0.9rem;">
-                <strong>What to look for:</strong>
-                <ul>
-                    <li>Smooth scroll through all rows without slowdown</li>
-                    <li>Toggling a parent collapses/expands instantly even with thousands of descendants</li>
-                    <li>Row heights stay consistent (no jitter from the tree wrapper)</li>
-                    <li>Frozen / sticky headers still pin correctly</li>
-                </ul>
-            </div>
+        <div class="controls">
+            <label>
+                <input type="checkbox" id="vsEnabled" checked> Virtual scroll enabled
+            </label>
+            <button type="button" id="vsExpand" class="btn-secondary">Expand all</button>
+            <button type="button" id="vsCollapse" class="btn-secondary">Collapse all</button>
+            <span class="push-end muted">
+                Visible: <strong id="vsVisibleCount">0</strong> rows
+            </span>
         </div>
 
-        <!-- ============================================================ -->
-        <!-- Test 2: Tree + Infinite Scroll (load more roots on scroll)   -->
-        <!-- ============================================================ -->
-        <div class="card">
-            <h2>2. Tree + Infinite Scroll</h2>
-            <p>"Server" returns full subtrees (one root + all its descendants) in batches. Each batch appends to the bottom of the items array, so caller-controlled append-order works cleanly with <code>isTreeDataSorted: true</code>.</p>
+        <web-grid id="vsGrid" style="height: 500px;"></web-grid>
 
-            <div class="controls">
-                <span>Loaded: <strong id="isLoadedCount">0</strong> rows</span>
-                <span>Has more: <strong id="isHasMore">yes</strong></span>
-                <span id="isLoading" style="color: #0078d4; display: none;">Loading…</span>
-            </div>
-
-            <web-grid id="isGrid" style="max-width: 100%; height: 500px; border: 1px solid #e2e8f0;"></web-grid>
-
-            <div style="margin-top: 0.75rem; color: #666; font-size: 0.9rem;">
-                <strong>What to look for:</strong>
-                <ul>
-                    <li>Scroll to the bottom — new root subtrees should append seamlessly</li>
-                    <li>Already-expanded state of earlier rows is preserved across loads</li>
-                    <li>Loading indicator appears during the simulated 300ms server fetch</li>
-                    <li>When the dataset is exhausted, "Has more" flips to no and loading stops</li>
-                </ul>
-            </div>
-            <p style="color: #666; font-size: 0.9rem;"><strong>Caveat:</strong> infinite scroll fits "more siblings appended at the bottom" semantics. For "load children of an expanded node on demand", we'd need a separate per-node lazy-load callback — not implemented today.</p>
+        <div class="note mt-1">
+            <div class="note-title">What to look for</div>
+            <ul>
+                <li>Smooth scroll through all rows without slowdown</li>
+                <li>Toggling a parent collapses/expands instantly even with thousands of descendants</li>
+                <li>Row heights stay consistent (no jitter from the tree wrapper)</li>
+                <li>Frozen / sticky headers still pin correctly</li>
+            </ul>
         </div>
-
-        <footer>
-            <p>WebGrid Component by <a href="https://github.com/keenmate">Keenmate</a></p>
-        </footer>
     </div>
 
-    <script type="module">
-        import '@keenmate/web-grid'
+    <!-- ============================================================ -->
+    <!-- Test 2: Tree + Infinite Scroll (load more roots on scroll)   -->
+    <!-- ============================================================ -->
+    <div class="card">
+        <h2>TS02 · Tree + Infinite Scroll</h2>
+        <p>"Server" returns full subtrees (one root + all its descendants) in batches. Each batch appends to the bottom of the items array, so caller-controlled append-order works cleanly with <code>isTreeDataSorted: true</code>.</p>
 
-        // -----------------------------------------------------------------
-        // Generate a synthetic 3-level tree
-        // -----------------------------------------------------------------
-        // Structure: ROOTS roots × SUBS sub-orgs × TEAMS teams = lots of rows.
-        // Adjust to taste — these numbers give ~12k rows, plenty for stressing
-        // both virtual + infinite scroll without browser sluggishness.
-        const ROOTS = 100
-        const SUBS_PER_ROOT = 20
-        const TEAMS_PER_SUB = 5
+        <div class="controls">
+            <span>Loaded: <strong id="isLoadedCount">0</strong> rows</span>
+            <span>Has more: <strong id="isHasMore">yes</strong></span>
+            <span id="isLoading" hidden><span class="pill pill--info">Loading…</span></span>
+        </div>
 
-        function buildSubtree(rootIdx) {
-            const out = []
-            const rootPath = `r${rootIdx}`
+        <web-grid id="isGrid" style="height: 500px;"></web-grid>
+
+        <div class="note mt-1">
+            <div class="note-title">What to look for</div>
+            <ul>
+                <li>Scroll to the bottom — new root subtrees should append seamlessly</li>
+                <li>Already-expanded state of earlier rows is preserved across loads</li>
+                <li>Loading indicator appears during the simulated 300ms server fetch</li>
+                <li>When the dataset is exhausted, "Has more" flips to no and loading stops</li>
+            </ul>
+        </div>
+        <p class="note warning"><strong>Caveat:</strong> infinite scroll fits "more siblings appended at the bottom" semantics. For "load children of an expanded node on demand", we'd need a separate per-node lazy-load callback — not implemented today.</p>
+    </div>
+
+<script type="module">
+
+    // -----------------------------------------------------------------
+    // Generate a synthetic 3-level tree
+    // -----------------------------------------------------------------
+    // Structure: ROOTS roots × SUBS sub-orgs × TEAMS teams = lots of rows.
+    // Adjust to taste — these numbers give ~12k rows, plenty for stressing
+    // both virtual + infinite scroll without browser sluggishness.
+    const ROOTS = 100
+    const SUBS_PER_ROOT = 20
+    const TEAMS_PER_SUB = 5
+
+    function buildSubtree(rootIdx) {
+        const out = []
+        const rootPath = `r${rootIdx}`
+        out.push({
+            path: rootPath,
+            name: `Organization ${rootIdx}`,
+            level: 0,
+            headcount: 100 + (rootIdx * 7) % 400,
+            budget: 1_000_000 + (rootIdx * 137_000) % 5_000_000
+        })
+        for (let s = 1; s <= SUBS_PER_ROOT; s++) {
+            const subPath = `${rootPath}.s${s}`
             out.push({
-                path: rootPath,
-                name: `Organization ${rootIdx}`,
-                level: 0,
-                headcount: 100 + (rootIdx * 7) % 400,
-                budget: 1_000_000 + (rootIdx * 137_000) % 5_000_000
+                path: subPath,
+                name: `Sub-org ${rootIdx}.${s}`,
+                level: 1,
+                headcount: 20 + (s * 11) % 60,
+                budget: 200_000 + (s * 31_000) % 800_000
             })
-            for (let s = 1; s <= SUBS_PER_ROOT; s++) {
-                const subPath = `${rootPath}.s${s}`
+            for (let t = 1; t <= TEAMS_PER_SUB; t++) {
                 out.push({
-                    path: subPath,
-                    name: `Sub-org ${rootIdx}.${s}`,
-                    level: 1,
-                    headcount: 20 + (s * 11) % 60,
-                    budget: 200_000 + (s * 31_000) % 800_000
+                    path: `${subPath}.t${t}`,
+                    name: `Team ${rootIdx}.${s}.${t}`,
+                    level: 2,
+                    headcount: 4 + (t * 3) % 12,
+                    budget: 40_000 + (t * 5_700) % 120_000
                 })
-                for (let t = 1; t <= TEAMS_PER_SUB; t++) {
-                    out.push({
-                        path: `${subPath}.t${t}`,
-                        name: `Team ${rootIdx}.${s}.${t}`,
-                        level: 2,
-                        headcount: 4 + (t * 3) % 12,
-                        budget: 40_000 + (t * 5_700) % 120_000
-                    })
-                }
             }
-            return out
         }
+        return out
+    }
 
-        const allData = []
-        for (let r = 1; r <= ROOTS; r++) allData.push(...buildSubtree(r))
+    const allData = []
+    for (let r = 1; r <= ROOTS; r++) allData.push(...buildSubtree(r))
 
-        const columns = [
-            { field: 'name', title: 'Organization', width: '320px', isTree: true },
-            { field: 'headcount', title: 'Headcount', width: '120px', horizontalAlign: 'right',
-                getDisplayValueCallback: ({ value: v }) => v != null ? v.toLocaleString() : '' },
-            { field: 'budget', title: 'Annual Budget', width: '160px', horizontalAlign: 'right',
-                getDisplayValueCallback: ({ value: v }) => v != null ? `$${(v / 1_000_000).toFixed(1)}M` : '' },
-            { field: 'path', title: 'Path', width: '180px' }
-        ]
+    const columns = [
+        { field: 'name', title: 'Organization', width: '320px', isTree: true },
+        { field: 'headcount', title: 'Headcount', width: '120px', horizontalAlign: 'right',
+            getDisplayValueCallback: ({ value: v }) => v != null ? v.toLocaleString() : '' },
+        { field: 'budget', title: 'Annual Budget', width: '160px', horizontalAlign: 'right',
+            getDisplayValueCallback: ({ value: v }) => v != null ? `$${(v / 1_000_000).toFixed(1)}M` : '' },
+        { field: 'path', title: 'Path', width: '180px' }
+    ]
 
-        // -----------------------------------------------------------------
-        // Test 1: Tree + Virtual Scroll
-        // -----------------------------------------------------------------
-        const vsGrid = document.getElementById('vsGrid')
-        const vsRowCountEl = document.getElementById('vsRowCount')
-        const vsVisibleCountEl = document.getElementById('vsVisibleCount')
-        vsRowCountEl.textContent = allData.length.toLocaleString()
+    // -----------------------------------------------------------------
+    // Test 1: Tree + Virtual Scroll
+    // -----------------------------------------------------------------
+    const vsGrid = document.getElementById('vsGrid')
+    const vsRowCountEl = document.getElementById('vsRowCount')
+    const vsVisibleCountEl = document.getElementById('vsVisibleCount')
+    vsRowCountEl.textContent = allData.length.toLocaleString()
 
-        vsGrid.columns = columns
-        vsGrid.items = allData
-        vsGrid.pathMember = 'path'
-        vsGrid.levelMember = 'level'
-        vsGrid.isTreeDataSorted = true
-        vsGrid.expandLevel = 1
-        vsGrid.treeDoubleClickBehavior = 'toggle'
-        vsGrid.isVirtualScrollEnabled = true
-        vsGrid.virtualScrollItemHeight = 38
-        vsGrid.isStriped = true
-        vsGrid.isHoverable = true
+    vsGrid.columns = columns
+    vsGrid.items = allData
+    vsGrid.pathMember = 'path'
+    vsGrid.levelMember = 'level'
+    vsGrid.isTreeDataSorted = true
+    vsGrid.expandLevel = 1
+    vsGrid.treeDoubleClickBehavior = 'toggle'
+    vsGrid.isVirtualScrollEnabled = true
+    vsGrid.virtualScrollItemHeight = 38
+    vsGrid.isStriped = true
+    vsGrid.isHoverable = true
 
-        const refreshVisibleCount = () => {
-            // Count post-collapse visible rows. Same accessor the grid uses internally.
-            // Note: this triggers tree re-evaluation, ok for a small status panel.
-            const visible = vsGrid.items.filter(r => {
-                let p = r.path
-                let parent = p.lastIndexOf('.') >= 0 ? p.slice(0, p.lastIndexOf('.')) : null
-                while (parent) {
-                    if (!vsGrid.isPathExpanded(parent)) return false
-                    parent = parent.lastIndexOf('.') >= 0 ? parent.slice(0, parent.lastIndexOf('.')) : null
-                }
-                return true
-            }).length
-            vsVisibleCountEl.textContent = visible.toLocaleString()
-        }
+    const refreshVisibleCount = () => {
+        // Count post-collapse visible rows. Same accessor the grid uses internally.
+        // Note: this triggers tree re-evaluation, ok for a small status panel.
+        const visible = vsGrid.items.filter(r => {
+            let p = r.path
+            let parent = p.lastIndexOf('.') >= 0 ? p.slice(0, p.lastIndexOf('.')) : null
+            while (parent) {
+                if (!vsGrid.isPathExpanded(parent)) return false
+                parent = parent.lastIndexOf('.') >= 0 ? parent.slice(0, parent.lastIndexOf('.')) : null
+            }
+            return true
+        }).length
+        vsVisibleCountEl.textContent = visible.toLocaleString()
+    }
+    refreshVisibleCount()
+
+    vsGrid.onExpandedChange = refreshVisibleCount
+
+    document.getElementById('vsEnabled').addEventListener('change', e => {
+        vsGrid.isVirtualScrollEnabled = e.target.checked
+    })
+    document.getElementById('vsExpand').addEventListener('click', () => {
+        vsGrid.expandAll()
         refreshVisibleCount()
+    })
+    document.getElementById('vsCollapse').addEventListener('click', () => {
+        vsGrid.collapseAll()
+        refreshVisibleCount()
+    })
 
-        vsGrid.onExpandedChange = refreshVisibleCount
+    // -----------------------------------------------------------------
+    // Test 2: Tree + Infinite Scroll (append subtrees in batches)
+    // -----------------------------------------------------------------
+    const isGrid = document.getElementById('isGrid')
+    const isLoadedCountEl = document.getElementById('isLoadedCount')
+    const isHasMoreEl = document.getElementById('isHasMore')
+    const isLoadingEl = document.getElementById('isLoading')
 
-        document.getElementById('vsEnabled').addEventListener('change', e => {
-            vsGrid.isVirtualScrollEnabled = e.target.checked
-        })
-        document.getElementById('vsExpand').addEventListener('click', () => {
-            vsGrid.expandAll()
-            refreshVisibleCount()
-        })
-        document.getElementById('vsCollapse').addEventListener('click', () => {
-            vsGrid.collapseAll()
-            refreshVisibleCount()
-        })
+    const ROOTS_PER_BATCH = 10  // 10 roots × (1 + 20 + 100) = 1210 rows per batch
+    let nextRootToLoad = 1
 
-        // -----------------------------------------------------------------
-        // Test 2: Tree + Infinite Scroll (append subtrees in batches)
-        // -----------------------------------------------------------------
-        const isGrid = document.getElementById('isGrid')
-        const isLoadedCountEl = document.getElementById('isLoadedCount')
-        const isHasMoreEl = document.getElementById('isHasMore')
-        const isLoadingEl = document.getElementById('isLoading')
+    // Owned expanded set so the grid never resets it on items change
+    const isExpanded = []
+    // Initial expand depth = 1 (roots only)
+    const seedRoots = []
+    for (let r = 1; r <= ROOTS_PER_BATCH; r++) seedRoots.push(`r${r}`)
+    seedRoots.forEach(p => isExpanded.push(p))
 
-        const ROOTS_PER_BATCH = 10  // 10 roots × (1 + 20 + 100) = 1210 rows per batch
-        let nextRootToLoad = 1
+    isGrid.columns = columns
+    isGrid.pathMember = 'path'
+    isGrid.levelMember = 'level'
+    isGrid.isTreeDataSorted = true
+    isGrid.expandedPaths = isExpanded
+    isGrid.treeDoubleClickBehavior = 'toggle'
+    isGrid.isVirtualScrollEnabled = true
+    isGrid.virtualScrollItemHeight = 38
+    isGrid.isInfiniteScrollEnabled = true
+    isGrid.infiniteScrollThreshold = 200
+    isGrid.hasMoreItems = true
+    isGrid.isStriped = true
+    isGrid.isHoverable = true
 
-        // Owned expanded set so the grid never resets it on items change
-        const isExpanded = []
-        // Initial expand depth = 1 (roots only)
-        const seedRoots = []
-        for (let r = 1; r <= ROOTS_PER_BATCH; r++) seedRoots.push(`r${r}`)
-        seedRoots.forEach(p => isExpanded.push(p))
+    // Load first batch synchronously
+    const initialBatch = []
+    for (let r = nextRootToLoad; r < nextRootToLoad + ROOTS_PER_BATCH; r++) {
+        initialBatch.push(...buildSubtree(r))
+    }
+    nextRootToLoad += ROOTS_PER_BATCH
+    isGrid.items = initialBatch
+    const updateInfiniteStats = () => {
+        isLoadedCountEl.textContent = isGrid.items.length.toLocaleString()
+        isHasMoreEl.textContent = isGrid.hasMoreItems ? 'yes' : 'no'
+    }
+    updateInfiniteStats()
 
-        isGrid.columns = columns
-        isGrid.pathMember = 'path'
-        isGrid.levelMember = 'level'
-        isGrid.isTreeDataSorted = true
-        isGrid.expandedPaths = isExpanded
-        isGrid.treeDoubleClickBehavior = 'toggle'
-        isGrid.isVirtualScrollEnabled = true
-        isGrid.virtualScrollItemHeight = 38
-        isGrid.isInfiniteScrollEnabled = true
-        isGrid.infiniteScrollThreshold = 200
-        isGrid.hasMoreItems = true
-        isGrid.isStriped = true
-        isGrid.isHoverable = true
-
-        // Load first batch synchronously
-        const initialBatch = []
-        for (let r = nextRootToLoad; r < nextRootToLoad + ROOTS_PER_BATCH; r++) {
-            initialBatch.push(...buildSubtree(r))
+    // Simulate a server fetch for the next batch of root subtrees
+    let newRoots = []
+    async function fetchNextBatch() {
+        await new Promise(r => setTimeout(r, 300))
+        if (nextRootToLoad > ROOTS) return []
+        const batch = []
+        newRoots = []
+        const end = Math.min(nextRootToLoad + ROOTS_PER_BATCH - 1, ROOTS)
+        for (let r = nextRootToLoad; r <= end; r++) {
+            batch.push(...buildSubtree(r))
+            newRoots.push(`r${r}`)  // expand new roots by default
         }
-        nextRootToLoad += ROOTS_PER_BATCH
-        isGrid.items = initialBatch
-        const updateInfiniteStats = () => {
-            isLoadedCountEl.textContent = isGrid.items.length.toLocaleString()
-            isHasMoreEl.textContent = isGrid.hasMoreItems ? 'yes' : 'no'
+        nextRootToLoad = end + 1
+        return batch
+    }
+
+    isGrid.onDataRequest = async (detail) => {
+        if (detail.trigger !== 'load-more') return
+        isLoadingEl.hidden = false
+        const more = await fetchNextBatch()
+        if (more.length > 0) {
+            isGrid.items = [...isGrid.items, ...more]
+            isGrid.expandRows(newRoots, { isSilent: true })
         }
+        isGrid.hasMoreItems = nextRootToLoad <= ROOTS
+        isLoadingEl.hidden = true
         updateInfiniteStats()
-
-        // Simulate a server fetch for the next batch of root subtrees
-        let newRoots = []
-        async function fetchNextBatch() {
-            await new Promise(r => setTimeout(r, 300))
-            if (nextRootToLoad > ROOTS) return []
-            const batch = []
-            newRoots = []
-            const end = Math.min(nextRootToLoad + ROOTS_PER_BATCH - 1, ROOTS)
-            for (let r = nextRootToLoad; r <= end; r++) {
-                batch.push(...buildSubtree(r))
-                newRoots.push(`r${r}`)  // expand new roots by default
-            }
-            nextRootToLoad = end + 1
-            return batch
-        }
-
-        isGrid.onDataRequest = async (detail) => {
-            if (detail.trigger !== 'load-more') return
-            isLoadingEl.style.display = ''
-            const more = await fetchNextBatch()
-            if (more.length > 0) {
-                isGrid.items = [...isGrid.items, ...more]
-                isGrid.expandRows(newRoots, { isSilent: true })
-            }
-            isGrid.hasMoreItems = nextRootToLoad <= ROOTS
-            isLoadingEl.style.display = 'none'
-            updateInfiniteStats()
-        }
-    </script>
-</body>
-</html>
+    }
+</script>

@@ -1,236 +1,217 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebGrid - Resizable & Reorderable Columns</title>
-    <link rel="stylesheet" href="examples-shared.css">
-</head>
-<body>
-    <div class="container">
-        <header>
-            <a href="index.html" class="back-link">← Back to Examples</a>
-            <h1>↔️ Resizable & Reorderable Columns</h1>
-            <p class="subtitle">Excel-like column resizing and drag-to-reorder column headers</p>
-        </header>
+<meta name="kmwc:title" content="↔️ Resizable &amp; Reorderable Columns">
+<meta name="kmwc:subtitle" content="Excel-like column resizing and drag-to-reorder column headers">
 
-        <div class="card">
-            <h2>Basic Resize Demo</h2>
-            <p>Hover over the right edge of any column header to see the resize handle. Drag to resize the column.</p>
+    <div class="card">
+        <h2>RC01 · Basic Resize Demo</h2>
+        <p>Hover over the right edge of any column header to see the resize handle. Drag to resize the column.</p>
 
-            <web-grid id="grid" style="max-width: 100%; max-height: 400px;"></web-grid>
+        <web-grid id="grid" style="max-height: 400px;"></web-grid>
 
-            <div class="note" style="margin-top: 1rem;">
-                <div class="note-title">How it works</div>
-                <ul>
-                    <li>Hover over the right edge of a column header to reveal the resize handle</li>
-                    <li>Click and drag to resize the column</li>
-                    <li>Release to set the new width</li>
-                    <li>Columns respect <code>minWidth</code> and <code>maxWidth</code> constraints</li>
-                </ul>
-            </div>
+        <div class="note mt-1">
+            <div class="note-title">How it works</div>
+            <ul>
+                <li>Hover over the right edge of a column header to reveal the resize handle</li>
+                <li>Click and drag to resize the column</li>
+                <li>Release to set the new width</li>
+                <li>Columns respect <code>minWidth</code> and <code>maxWidth</code> constraints</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>RC02 · With Persistence (storage-key)</h2>
+        <p>Column widths (and order) are saved under <code>storage-key</code> and restored on page reload — by default in localStorage <code>km-state:web-grid:resize-demo-grid</code>; <code>loadStateCallback</code> / <code>saveStateCallback</code> keep them on your server instead. Try resizing a column, then refresh the page.</p>
+
+        <div class="controls">
+            <label>
+                <input type="checkbox" id="persistWidths" checked> Persist Column Widths
+            </label>
+            <button type="button" id="clearStorage">Clear Saved Widths</button>
         </div>
 
-        <div class="card">
-            <h2>With Persistence (storage-key)</h2>
-            <p>Column widths (and order) are saved under <code>storage-key</code> and restored on page reload — by default in localStorage <code>km-state:web-grid:resize-demo-grid</code>; <code>loadStateCallback</code> / <code>saveStateCallback</code> keep them on your server instead. Try resizing a column, then refresh the page.</p>
+        <web-grid id="grid2" storage-key="resize-demo-grid" persist-column-widths persist-column-order allow-column-reorder style="max-height: 300px;"></web-grid>
 
-            <div class="controls">
-                <label>
-                    <input type="checkbox" id="persistWidths" checked> Persist Column Widths
-                </label>
-                <button id="clearStorage" class="btn">Clear Saved Widths</button>
-            </div>
+        <div id="resizeLog" class="log-panel mt-1" data-empty="Resize a column to see the callback data..."></div>
 
-            <web-grid id="grid2" storage-key="resize-demo-grid" persist-column-widths persist-column-order allow-column-reorder style="max-width: 100%; max-height: 300px;"></web-grid>
+        <div class="note mt-1">
+            <div class="note-title">Configuration</div>
+            <ul>
+                <li><code>storage-key="my-grid"</code> / <code>storageKey</code> - Key of the persisted state (unset = off)</li>
+                <li><code>persist-column-widths</code> / <code>shouldPersistColumnWidths</code> - Enable automatic width persistence</li>
+                <li><code>loadStateCallback</code> / <code>saveStateCallback</code> - Keep the state yourself (<code>{ key }</code> / <code>{ key, state }</code>, the whole state); set both — either one alone switches localStorage off</li>
+                <li><code>column-resize</code> event / <code>onColumnResize</code> - Fired after resize with all column widths</li>
+            </ul>
+        </div>
+    </div>
 
-            <div id="resizeLog" style="margin-top: 1rem; font-family: monospace; font-size: 0.85rem; color: #666;">
-                Resize a column to see the callback data...
-            </div>
+    <div class="card">
+        <h2>RC03 · Per-Column Resize Opt-Out</h2>
+        <p>Individual columns can disable resizing with <code>isResizable: false</code>. Try resizing the "Status" column - you can't!</p>
 
-            <div class="note" style="margin-top: 1rem;">
-                <div class="note-title">Configuration</div>
-                <ul>
-                    <li><code>storage-key="my-grid"</code> / <code>storageKey</code> - Key of the persisted state (unset = off)</li>
-                    <li><code>persist-column-widths</code> / <code>shouldPersistColumnWidths</code> - Enable automatic width persistence</li>
-                    <li><code>loadStateCallback</code> / <code>saveStateCallback</code> - Keep the state yourself (<code>{ key }</code> / <code>{ key, state }</code>, the whole state); set both — either one alone switches localStorage off</li>
-                    <li><code>column-resize</code> event / <code>onColumnResize</code> - Fired after resize with all column widths</li>
-                </ul>
-            </div>
+        <web-grid id="grid3" style="max-height: 300px;"></web-grid>
+    </div>
+
+    <div class="card">
+        <h2>RC04 · Per-Column Reorder Opt-Out</h2>
+        <p>Individual columns can disable reordering with <code>isReorderable: false</code>. The first two columns (ID and Name) cannot be dragged, but you can still move other columns around them.</p>
+
+        <web-grid id="gridMovable" style="max-height: 300px;"></web-grid>
+    </div>
+
+    <div class="card">
+        <h2>RC05 · With Frozen Panes</h2>
+        <p>Resizable columns work with frozen panes. Frozen columns stay in place while you resize them or scroll horizontally.</p>
+
+        <div class="controls">
+            <label>
+                Freeze Columns:
+                <select id="frozenColumnCount">
+                    <option value="0">0</option>
+                    <option value="1">1</option>
+                    <option value="2" selected>2</option>
+                    <option value="3">3</option>
+                </select>
+            </label>
+            <label>
+                <input type="checkbox" id="stickyRowNumbers" checked> Sticky Row Numbers
+            </label>
         </div>
 
-        <div class="card">
-            <h2>Per-Column Resize Opt-Out</h2>
-            <p>Individual columns can disable resizing with <code>isResizable: false</code>. Try resizing the "Status" column - you can't!</p>
+        <web-grid id="gridFrozen" style="max-height: 400px;"></web-grid>
 
-            <web-grid id="grid3" style="max-width: 100%; max-height: 300px;"></web-grid>
+        <div class="note mt-1">
+            <div class="note-title">Combining Features</div>
+            <ul>
+                <li>Frozen columns can be resized - the sticky positioning adapts to the new width</li>
+                <li>Resizing a frozen column updates the left offset of subsequent frozen columns</li>
+                <li>Scroll horizontally to see frozen columns stay in place</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>RC06 · 🔀 Column Reorder by Dragging</h2>
+        <p>Drag column headers to rearrange columns. Frozen columns cannot be reordered.</p>
+
+        <div class="controls">
+            <label>
+                <input type="checkbox" id="persistOrder" checked> Persist Column Order
+            </label>
+            <button type="button" id="clearOrderStorage">Clear Saved Order</button>
+            <button type="button" id="resetOrder" class="btn-secondary">Reset to Default</button>
         </div>
 
-        <div class="card">
-            <h2>Per-Column Reorder Opt-Out</h2>
-            <p>Individual columns can disable reordering with <code>isReorderable: false</code>. The first two columns (ID and Name) cannot be dragged, but you can still move other columns around them.</p>
+        <web-grid id="gridReorder" style="max-height: 400px;"></web-grid>
 
-            <web-grid id="gridMovable" style="max-width: 100%; max-height: 300px;"></web-grid>
+        <div id="reorderLog" class="log-panel mt-1" data-empty="Drag a column header to reorder..."></div>
+
+        <div class="note mt-1">
+            <div class="note-title">How it works</div>
+            <ul>
+                <li>Hover over a non-frozen column header to see the grab cursor</li>
+                <li>Click and drag to move the column</li>
+                <li>A ghost element follows your cursor, and a drop indicator shows where the column will be placed</li>
+                <li>Frozen columns (highlighted) cannot be dragged or used as drop targets</li>
+            </ul>
         </div>
+    </div>
 
-        <div class="card">
-            <h2>With Frozen Panes</h2>
-            <p>Resizable columns work with frozen panes. Frozen columns stay in place while you resize them or scroll horizontally.</p>
+    <div class="card">
+        <h2>RC07 · Virtual Scroll + Reorder + Resize</h2>
+        <p>Combining all features: virtual scrolling with 10,000 rows, column reordering, and column resizing.</p>
 
-            <div class="controls">
-                <label>
-                    Freeze Columns:
-                    <select id="frozenColumnCount">
-                        <option value="0">0</option>
-                        <option value="1">1</option>
-                        <option value="2" selected>2</option>
-                        <option value="3">3</option>
-                    </select>
-                </label>
-                <label>
-                    <input type="checkbox" id="stickyRowNumbers" checked> Sticky Row Numbers
-                </label>
-            </div>
+        <web-grid id="gridVirtual" style="max-height: 400px;"></web-grid>
 
-            <web-grid id="gridFrozen" style="max-width: 100%; max-height: 400px;"></web-grid>
-
-            <div class="note" style="margin-top: 1rem;">
-                <div class="note-title">Combining Features</div>
-                <ul>
-                    <li>Frozen columns can be resized - the sticky positioning adapts to the new width</li>
-                    <li>Resizing a frozen column updates the left offset of subsequent frozen columns</li>
-                    <li>Scroll horizontally to see frozen columns stay in place</li>
-                </ul>
-            </div>
+        <div class="note mt-1">
+            <div class="note-title">Features Combined</div>
+            <ul>
+                <li>Virtual scroll renders only visible rows (10,000 total)</li>
+                <li>Drag column headers to reorder</li>
+                <li>Resize columns by dragging the right edge</li>
+                <li>Frozen columns stay in place while scrolling</li>
+            </ul>
         </div>
+    </div>
 
-        <div class="card">
-            <h2>🔀 Column Reorder by Dragging</h2>
-            <p>Drag column headers to rearrange columns. Frozen columns cannot be reordered.</p>
+    <div class="card">
+        <h2>RC08 · Header Context Menu</h2>
+        <p>Right-click on column headers to access sort, hide, and freeze actions. Supports predefined actions and custom items.</p>
 
-            <div class="controls">
-                <label>
-                    <input type="checkbox" id="persistOrder" checked> Persist Column Order
-                </label>
-                <button id="clearOrderStorage" class="btn">Clear Saved Order</button>
-                <button id="resetOrder" class="btn" style="background: #64748b;">Reset to Default</button>
-            </div>
+        <web-grid id="gridHeaderMenu" style="max-height: 400px;"></web-grid>
 
-            <web-grid id="gridReorder" style="max-width: 100%; max-height: 400px;"></web-grid>
+        <div id="headerMenuLog" class="log-panel mt-1" data-empty="Right-click a column header to see the context menu..."></div>
 
-            <div id="reorderLog" style="margin-top: 1rem; font-family: monospace; font-size: 0.85rem; color: #666;">
-                Drag a column header to reorder...
-            </div>
-
-            <div class="note" style="margin-top: 1rem;">
-                <div class="note-title">How it works</div>
-                <ul>
-                    <li>Hover over a non-frozen column header to see the grab cursor</li>
-                    <li>Click and drag to move the column</li>
-                    <li>A ghost element follows your cursor, and a drop indicator shows where the column will be placed</li>
-                    <li>Frozen columns (highlighted) cannot be dragged or used as drop targets</li>
-                </ul>
-            </div>
+        <div class="note mt-1">
+            <div class="note-title">Predefined Actions</div>
+            <ul>
+                <li><code>sort-asc</code> / <code>sort-desc</code> - Sort column</li>
+                <li><code>clear-sort</code> - Clear sort (only shown if sorted)</li>
+                <li><code>hide-column</code> - Hide the column</li>
+                <li><code>freeze-column</code> / <code>unfreeze-column</code> - Freeze/unfreeze</li>
+            </ul>
         </div>
+    </div>
 
-        <div class="card">
-            <h2>Virtual Scroll + Reorder + Resize</h2>
-            <p>Combining all features: virtual scrolling with 10,000 rows, column reordering, and column resizing.</p>
+    <div class="card">
+        <h2>RC09 · Configuration Options</h2>
 
-            <web-grid id="gridVirtual" style="max-width: 100%; max-height: 400px;"></web-grid>
-
-            <div class="note" style="margin-top: 1rem;">
-                <div class="note-title">Features Combined</div>
-                <ul>
-                    <li>Virtual scroll renders only visible rows (10,000 total)</li>
-                    <li>Drag column headers to reorder</li>
-                    <li>Resize columns by dragging the right edge</li>
-                    <li>Frozen columns stay in place while scrolling</li>
-                </ul>
+        <div class="grid-2">
+            <div>
+                <h3>Grid-Level Properties</h3>
+                <table class="reference-table table-compact">
+                    <tr>
+                        <td><code>storageKey</code> (<code>storage-key</code>)</td>
+                        <td>Key of the persisted column state (localStorage <code>km-state:web-grid:&lt;key&gt;</code>, or the state callbacks)</td>
+                    </tr>
+                    <tr>
+                        <td><code>shouldPersistColumnWidths</code> (<code>persist-column-widths</code>)</td>
+                        <td>Enable automatic width persistence</td>
+                    </tr>
+                    <tr>
+                        <td><code>isColumnReorderAllowed</code></td>
+                        <td>Enable drag-to-reorder columns</td>
+                    </tr>
+                    <tr>
+                        <td><code>shouldPersistColumnOrder</code> (<code>persist-column-order</code>)</td>
+                        <td>Enable automatic order persistence</td>
+                    </tr>
+                    <tr>
+                        <td><code>onColumnResize</code></td>
+                        <td>Twin of the <code>column-resize</code> event, fired after column resize</td>
+                    </tr>
+                    <tr>
+                        <td><code>onColumnReorder</code></td>
+                        <td>Twin of the <code>column-reorder</code> event, fired after column reorder</td>
+                    </tr>
+                </table>
             </div>
-        </div>
-
-        <div class="card">
-            <h2>Header Context Menu</h2>
-            <p>Right-click on column headers to access sort, hide, and freeze actions. Supports predefined actions and custom items.</p>
-
-            <web-grid id="gridHeaderMenu" style="max-width: 100%; max-height: 400px;"></web-grid>
-
-            <div id="headerMenuLog" style="margin-top: 1rem; font-family: monospace; font-size: 0.85rem; color: #666;">
-                Right-click a column header to see the context menu...
-            </div>
-
-            <div class="note" style="margin-top: 1rem;">
-                <div class="note-title">Predefined Actions</div>
-                <ul>
-                    <li><code>sort-asc</code> / <code>sort-desc</code> - Sort column</li>
-                    <li><code>clear-sort</code> - Clear sort (only shown if sorted)</li>
-                    <li><code>hide-column</code> - Hide the column</li>
-                    <li><code>freeze-column</code> / <code>unfreeze-column</code> - Freeze/unfreeze</li>
-                </ul>
+            <div>
+                <h3>Column-Level Properties</h3>
+                <table class="reference-table table-compact">
+                    <tr>
+                        <td><code>isResizable</code></td>
+                        <td>Set to <code>false</code> to disable resize</td>
+                    </tr>
+                    <tr>
+                        <td><code>minWidth</code></td>
+                        <td>Minimum column width (e.g., "50px")</td>
+                    </tr>
+                    <tr>
+                        <td><code>maxWidth</code></td>
+                        <td>Maximum column width (e.g., "300px")</td>
+                    </tr>
+                </table>
             </div>
         </div>
+    </div>
 
-        <div class="card">
-            <h2>Configuration Options</h2>
+    <div class="card">
+        <h2>RC10 · Event Details</h2>
 
-            <div class="grid-2">
-                <div>
-                    <h3>Grid-Level Properties</h3>
-                    <table class="props-table">
-                        <tr>
-                            <td><code>storageKey</code> (<code>storage-key</code>)</td>
-                            <td>Key of the persisted column state (localStorage <code>km-state:web-grid:&lt;key&gt;</code>, or the state callbacks)</td>
-                        </tr>
-                        <tr>
-                            <td><code>shouldPersistColumnWidths</code> (<code>persist-column-widths</code>)</td>
-                            <td>Enable automatic width persistence</td>
-                        </tr>
-                        <tr>
-                            <td><code>isColumnReorderAllowed</code></td>
-                            <td>Enable drag-to-reorder columns</td>
-                        </tr>
-                        <tr>
-                            <td><code>shouldPersistColumnOrder</code> (<code>persist-column-order</code>)</td>
-                            <td>Enable automatic order persistence</td>
-                        </tr>
-                        <tr>
-                            <td><code>onColumnResize</code></td>
-                            <td>Twin of the <code>column-resize</code> event, fired after column resize</td>
-                        </tr>
-                        <tr>
-                            <td><code>onColumnReorder</code></td>
-                            <td>Twin of the <code>column-reorder</code> event, fired after column reorder</td>
-                        </tr>
-                    </table>
-                </div>
-                <div>
-                    <h3>Column-Level Properties</h3>
-                    <table class="props-table">
-                        <tr>
-                            <td><code>isResizable</code></td>
-                            <td>Set to <code>false</code> to disable resize</td>
-                        </tr>
-                        <tr>
-                            <td><code>minWidth</code></td>
-                            <td>Minimum column width (e.g., "50px")</td>
-                        </tr>
-                        <tr>
-                            <td><code>maxWidth</code></td>
-                            <td>Maximum column width (e.g., "300px")</td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-        </div>
+        <h3>onColumnResize</h3>
+        <p>The <code>column-resize</code> event (and its <code>onColumnResize</code> twin) carries a detail object with:</p>
 
-        <div class="card">
-            <h2>Event Details</h2>
-
-            <h3>onColumnResize</h3>
-            <p>The <code>column-resize</code> event (and its <code>onColumnResize</code> twin) carries a detail object with:</p>
-
-            <pre style="background: #f8fafc; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.85rem;"><code>{
+        <pre data-kmwc-snippet><code>{
     field: "name",           // Which column was resized
     oldWidth: "150px",       // Previous width
     newWidth: "200px",       // New width
@@ -241,10 +222,10 @@
     ]
 }</code></pre>
 
-            <h3 style="margin-top: 1.5rem;">onColumnReorder</h3>
-            <p>The <code>column-reorder</code> event (and its <code>onColumnReorder</code> twin) carries a detail object with:</p>
+        <h3 class="mt-1">onColumnReorder</h3>
+        <p>The <code>column-reorder</code> event (and its <code>onColumnReorder</code> twin) carries a detail object with:</p>
 
-            <pre style="background: #f8fafc; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.85rem;"><code>{
+        <pre data-kmwc-snippet><code>{
     field: "email",          // Which column was moved
     fromIndex: 2,            // Original position (among non-frozen columns)
     toIndex: 0,              // New position (among non-frozen columns)
@@ -256,314 +237,284 @@
     ]
 }</code></pre>
 
-            <p style="margin-top: 1rem;">Use <code>allWidths</code> and <code>allOrder</code> to save column state to a database for per-user persistence.</p>
-        </div>
-
-        <footer>
-            <p>WebGrid Component by <a href="https://github.com/keenmate">Keenmate</a></p>
-        </footer>
+        <p class="mt-1">Use <code>allWidths</code> and <code>allOrder</code> to save column state to a database for per-user persistence.</p>
     </div>
 
-    <style>
-        .props-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.9rem;
-        }
-        .props-table td {
-            padding: 0.5rem;
-            border-bottom: 1px solid #e2e8f0;
-        }
-        .props-table td:first-child {
-            width: 40%;
-            font-family: monospace;
-            color: #6366f1;
-        }
-        .btn {
-            padding: 0.5rem 1rem;
-            background: #6366f1;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.875rem;
-        }
-        .btn:hover {
-            background: #4f46e5;
-        }
-    </style>
+<script type="module">
+    import { appendLogLine } from '@keenmate/web-components-devkit/examples'
 
-    <script type="module">
-        import '@keenmate/web-grid'
+    // Sample data
+    const sampleData = Array.from({ length: 30 }, (_, i) => ({
+        id: 1000 + i,
+        name: ['Alice', 'Bob', 'Carol', 'David', 'Eve', 'Frank', 'Grace', 'Henry'][i % 8] + ' ' + ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones'][i % 5],
+        email: `user${i}@example.com`,
+        department: ['Engineering', 'Marketing', 'Sales', 'HR', 'Finance'][i % 5],
+        salary: 50000 + (i * 1000),
+        status: i % 7 === 0 ? 'On Leave' : 'Active',
+        phone: `555-${String(i).padStart(4, '0')}`
+    }))
 
-        // Sample data
-        const sampleData = Array.from({ length: 30 }, (_, i) => ({
-            id: 1000 + i,
-            name: ['Alice', 'Bob', 'Carol', 'David', 'Eve', 'Frank', 'Grace', 'Henry'][i % 8] + ' ' + ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones'][i % 5],
-            email: `user${i}@example.com`,
-            department: ['Engineering', 'Marketing', 'Sales', 'HR', 'Finance'][i % 5],
-            salary: 50000 + (i * 1000),
-            status: i % 7 === 0 ? 'On Leave' : 'Active',
-            phone: `555-${String(i).padStart(4, '0')}`
-        }))
+    // Basic columns
+    const columns = [
+        { field: 'id', title: 'ID', width: '80px' },
+        { field: 'name', title: 'Name', width: '150px' },
+        { field: 'email', title: 'Email', width: '200px' },
+        { field: 'department', title: 'Department', width: '120px', minWidth: '40px' },
+        { field: 'salary', title: 'Salary', width: '100px', getDisplayValueCallback: ({ value: v }) => '$' + v?.toLocaleString() },
+        { field: 'status', title: 'Status', width: '100px' },
+        { field: 'phone', title: 'Phone', width: '120px' }
+    ]
 
-        // Basic columns
-        const columns = [
-            { field: 'id', title: 'ID', width: '80px' },
-            { field: 'name', title: 'Name', width: '150px' },
-            { field: 'email', title: 'Email', width: '200px' },
-            { field: 'department', title: 'Department', width: '120px', minWidth: '40px' },
-            { field: 'salary', title: 'Salary', width: '100px', getDisplayValueCallback: ({ value: v }) => '$' + v?.toLocaleString() },
-            { field: 'status', title: 'Status', width: '100px' },
-            { field: 'phone', title: 'Phone', width: '120px' }
-        ]
+    // Grid 1 - Basic resize
+    const grid = document.getElementById('grid')
+    grid.items = sampleData
+    grid.columns = columns
+    grid.isRowNumbersShown = true
+    grid.isStriped = true
+    grid.isHoverable = true
+    grid.isColumnReorderAllowed = true
+    grid.sortMode = 'multiple'
 
-        // Grid 1 - Basic resize
-        const grid = document.getElementById('grid')
-        grid.items = sampleData
-        grid.columns = columns
-        grid.isRowNumbersShown = true
-        grid.isStriped = true
-        grid.isHoverable = true
-        grid.isColumnReorderAllowed = true
-        grid.sortMode = 'multiple'
+    // Grid 2 - With persistence
+    const grid2 = document.getElementById('grid2')
+    grid2.items = sampleData.slice(0, 15)
+    grid2.columns = columns
+    grid2.isRowNumbersShown = true
+    grid2.isStriped = true
+    grid2.isHoverable = true
 
-        // Grid 2 - With persistence
-        const grid2 = document.getElementById('grid2')
-        grid2.items = sampleData.slice(0, 15)
-        grid2.columns = columns
-        grid2.isRowNumbersShown = true
-        grid2.isStriped = true
-        grid2.isHoverable = true
-
-        // Callback to show resize data
-        grid2.onColumnResize = (detail) => {
-            const log = document.getElementById('resizeLog')
-            log.innerHTML = `<strong>Last resize:</strong> ${detail.field} changed from ${detail.oldWidth} to ${detail.newWidth}<br>
-            <strong>All widths:</strong> ${JSON.stringify(detail.allWidths)}`
-        }
-
-        // Toggle persistence
-        document.getElementById('persistWidths').addEventListener('change', e => {
-            grid2.shouldPersistColumnWidths = e.target.checked
+    // Callback to show resize data
+    grid2.onColumnResize = (detail) => {
+        appendLogLine(document.getElementById('resizeLog'), {
+            name: 'column-resize',
+            detail: `${detail.field} changed from ${detail.oldWidth} to ${detail.newWidth}
+All widths: ${JSON.stringify(detail.allWidths)}`
         })
+    }
 
-        // Clear storage button
-        document.getElementById('clearStorage').addEventListener('click', () => {
-            localStorage.removeItem('km-state:web-grid:resize-demo-grid')
-            alert('Saved widths cleared! Refresh to see default widths.')
+    // Toggle persistence
+    document.getElementById('persistWidths').addEventListener('change', e => {
+        grid2.shouldPersistColumnWidths = e.target.checked
+    })
+
+    // Clear storage button
+    document.getElementById('clearStorage').addEventListener('click', () => {
+        localStorage.removeItem('km-state:web-grid:resize-demo-grid')
+        alert('Saved widths cleared! Refresh to see default widths.')
+    })
+
+    // Grid 3 - Per-column opt-out
+    const grid3 = document.getElementById('grid3')
+    grid3.items = sampleData.slice(0, 10)
+    grid3.columns = [
+        { field: 'id', title: 'ID', width: '80px' },
+        { field: 'name', title: 'Name', width: '150px' },
+        { field: 'email', title: 'Email', width: '200px' },
+        { field: 'status', title: 'Status (not resizable)', width: '80px', isResizable: false },
+        { field: 'phone', title: 'Phone', width: '120px' }
+    ]
+    grid3.isRowNumbersShown = true
+    grid3.isStriped = true
+    grid3.isHoverable = true
+    grid3.isColumnReorderAllowed = true
+
+    // Grid - Per-column reorder opt-out (isReorderable)
+    const gridMovable = document.getElementById('gridMovable')
+    gridMovable.items = sampleData.slice(0, 10)
+    gridMovable.columns = [
+        { field: 'id', title: 'ID (locked)', width: '80px', isReorderable: false },
+        { field: 'name', title: 'Name (locked)', width: '150px', isReorderable: false },
+        { field: 'email', title: 'Email', width: '200px' },
+        { field: 'status', title: 'Status (locked)', width: '100px', isReorderable: false },
+        { field: 'phone', title: 'Phone', width: '120px' }
+    ]
+    gridMovable.isRowNumbersShown = true
+    gridMovable.isStriped = true
+    gridMovable.isHoverable = true
+    gridMovable.isColumnReorderAllowed = true
+
+    // Grid 4 - Frozen panes + resizable columns
+    const wideData = Array.from({ length: 50 }, (_, i) => ({
+        id: 1000 + i,
+        name: ['Alice', 'Bob', 'Carol', 'David', 'Eve', 'Frank', 'Grace', 'Henry'][i % 8] + ' ' + ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones'][i % 5],
+        email: `user${i}@example.com`,
+        department: ['Engineering', 'Marketing', 'Sales', 'HR', 'Finance'][i % 5],
+        role: ['Manager', 'Senior', 'Junior', 'Lead', 'Director'][i % 5],
+        location: ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix'][i % 5],
+        salary: 50000 + (i * 1000),
+        startDate: `202${i % 4}-0${(i % 9) + 1}-${10 + (i % 20)}`,
+        status: i % 7 === 0 ? 'On Leave' : 'Active',
+        phone: `555-${String(i).padStart(4, '0')}`,
+        building: `Building ${String.fromCharCode(65 + (i % 5))}`,
+        floor: (i % 10) + 1
+    }))
+
+    const wideColumns = [
+        { field: 'id', title: 'ID', width: '80px', minWidth: '50px' },
+        { field: 'name', title: 'Name', width: '150px', minWidth: '80px' },
+        { field: 'email', title: 'Email', width: '200px', minWidth: '100px' },
+        { field: 'department', title: 'Department', width: '120px', minWidth: '40px' },
+        { field: 'role', title: 'Role', width: '100px' },
+        { field: 'location', title: 'Location', width: '120px' },
+        { field: 'salary', title: 'Salary', width: '100px', getDisplayValueCallback: ({ value: v }) => '$' + v?.toLocaleString() },
+        { field: 'startDate', title: 'Start Date', width: '110px' },
+        { field: 'status', title: 'Status', width: '100px' },
+        { field: 'phone', title: 'Phone', width: '120px' },
+        { field: 'building', title: 'Building', width: '100px' },
+        { field: 'floor', title: 'Floor', width: '60px' }
+    ]
+
+    const gridFrozen = document.getElementById('gridFrozen')
+    gridFrozen.items = wideData
+    gridFrozen.columns = wideColumns
+    gridFrozen.isRowNumbersShown = true
+    gridFrozen.isStickyRowNumbers = true
+    gridFrozen.frozenColumnCount = 2
+    gridFrozen.isStriped = true
+    gridFrozen.isHoverable = true
+    gridFrozen.isColumnReorderAllowed = true
+
+    // Controls for frozen grid
+    document.getElementById('frozenColumnCount').addEventListener('change', e => {
+        gridFrozen.frozenColumnCount = parseInt(e.target.value)
+    })
+
+    document.getElementById('stickyRowNumbers').addEventListener('change', e => {
+        gridFrozen.isStickyRowNumbers = e.target.checked
+    })
+
+    // Grid 5 - Column reorder
+    const reorderColumns = [
+        { field: 'id', title: 'ID (Frozen)', width: '80px' },
+        { field: 'name', title: 'Name (Frozen)', width: '150px' },
+        { field: 'email', title: 'Email', width: '200px' },
+        { field: 'department', title: 'Department', width: '120px', minWidth: '40px' },
+        { field: 'role', title: 'Role', width: '100px' },
+        { field: 'location', title: 'Location', width: '120px' },
+        { field: 'salary', title: 'Salary', width: '100px', getDisplayValueCallback: ({ value: v }) => '$' + v?.toLocaleString() },
+        { field: 'status', title: 'Status', width: '100px' }
+    ]
+
+    const gridReorder = document.getElementById('gridReorder')
+    gridReorder.items = wideData.slice(0, 20)
+    gridReorder.columns = reorderColumns
+    gridReorder.isRowNumbersShown = true
+    gridReorder.isStickyRowNumbers = true
+    gridReorder.frozenColumnCount = 2  // First 2 columns are frozen
+    gridReorder.isStriped = true
+    gridReorder.isHoverable = true
+    gridReorder.storageKey = 'reorder-demo-grid'
+    gridReorder.isColumnReorderAllowed = true
+    gridReorder.shouldPersistColumnOrder = true
+
+    // Callback to show reorder data
+    gridReorder.onColumnReorder = (detail) => {
+        appendLogLine(document.getElementById('reorderLog'), {
+            name: 'column-reorder',
+            detail: `"${detail.field}" moved from index ${detail.fromIndex} to ${detail.toIndex}
+All order: ${JSON.stringify(detail.allOrder)}`
         })
+    }
 
-        // Grid 3 - Per-column opt-out
-        const grid3 = document.getElementById('grid3')
-        grid3.items = sampleData.slice(0, 10)
-        grid3.columns = [
-            { field: 'id', title: 'ID', width: '80px' },
-            { field: 'name', title: 'Name', width: '150px' },
-            { field: 'email', title: 'Email', width: '200px' },
-            { field: 'status', title: 'Status (not resizable)', width: '80px', isResizable: false },
-            { field: 'phone', title: 'Phone', width: '120px' }
-        ]
-        grid3.isRowNumbersShown = true
-        grid3.isStriped = true
-        grid3.isHoverable = true
-        grid3.isColumnReorderAllowed = true
+    // Toggle persistence
+    document.getElementById('persistOrder').addEventListener('change', e => {
+        gridReorder.shouldPersistColumnOrder = e.target.checked
+    })
 
-        // Grid - Per-column reorder opt-out (isReorderable)
-        const gridMovable = document.getElementById('gridMovable')
-        gridMovable.items = sampleData.slice(0, 10)
-        gridMovable.columns = [
-            { field: 'id', title: 'ID (locked)', width: '80px', isReorderable: false },
-            { field: 'name', title: 'Name (locked)', width: '150px', isReorderable: false },
-            { field: 'email', title: 'Email', width: '200px' },
-            { field: 'status', title: 'Status (locked)', width: '100px', isReorderable: false },
-            { field: 'phone', title: 'Phone', width: '120px' }
-        ]
-        gridMovable.isRowNumbersShown = true
-        gridMovable.isStriped = true
-        gridMovable.isHoverable = true
-        gridMovable.isColumnReorderAllowed = true
+    // Clear storage button
+    document.getElementById('clearOrderStorage').addEventListener('click', () => {
+        localStorage.removeItem('km-state:web-grid:reorder-demo-grid')
+        alert('Saved order cleared! Refresh to see default order.')
+    })
 
-        // Grid 4 - Frozen panes + resizable columns
-        const wideData = Array.from({ length: 50 }, (_, i) => ({
-            id: 1000 + i,
-            name: ['Alice', 'Bob', 'Carol', 'David', 'Eve', 'Frank', 'Grace', 'Henry'][i % 8] + ' ' + ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones'][i % 5],
-            email: `user${i}@example.com`,
-            department: ['Engineering', 'Marketing', 'Sales', 'HR', 'Finance'][i % 5],
-            role: ['Manager', 'Senior', 'Junior', 'Lead', 'Director'][i % 5],
-            location: ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix'][i % 5],
-            salary: 50000 + (i * 1000),
-            startDate: `202${i % 4}-0${(i % 9) + 1}-${10 + (i % 20)}`,
-            status: i % 7 === 0 ? 'On Leave' : 'Active',
-            phone: `555-${String(i).padStart(4, '0')}`,
-            building: `Building ${String.fromCharCode(65 + (i % 5))}`,
-            floor: (i % 10) + 1
-        }))
+    // Reset to default order
+    document.getElementById('resetOrder').addEventListener('click', () => {
+        gridReorder.setColumnOrder([])
+        appendLogLine(document.getElementById('reorderLog'), { name: 'reset', detail: 'Column order reset to default.', variant: 'info' })
+    })
 
-        const wideColumns = [
-            { field: 'id', title: 'ID', width: '80px', minWidth: '50px' },
-            { field: 'name', title: 'Name', width: '150px', minWidth: '80px' },
-            { field: 'email', title: 'Email', width: '200px', minWidth: '100px' },
-            { field: 'department', title: 'Department', width: '120px', minWidth: '40px' },
-            { field: 'role', title: 'Role', width: '100px' },
-            { field: 'location', title: 'Location', width: '120px' },
-            { field: 'salary', title: 'Salary', width: '100px', getDisplayValueCallback: ({ value: v }) => '$' + v?.toLocaleString() },
-            { field: 'startDate', title: 'Start Date', width: '110px' },
-            { field: 'status', title: 'Status', width: '100px' },
-            { field: 'phone', title: 'Phone', width: '120px' },
-            { field: 'building', title: 'Building', width: '100px' },
-            { field: 'floor', title: 'Floor', width: '60px' }
-        ]
+    // Grid 6 - Virtual Scroll + Reorder + Resize
+    const virtualData = Array.from({ length: 10000 }, (_, i) => ({
+        id: 1000 + i,
+        name: ['Alice', 'Bob', 'Carol', 'David', 'Eve', 'Frank', 'Grace', 'Henry'][i % 8] + ' ' + ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones'][i % 5],
+        email: `user${i}@example.com`,
+        department: ['Engineering', 'Marketing', 'Sales', 'HR', 'Finance'][i % 5],
+        role: ['Manager', 'Senior', 'Junior', 'Lead', 'Director'][i % 5],
+        location: ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix'][i % 5],
+        salary: 50000 + (i * 100),
+        status: i % 7 === 0 ? 'On Leave' : 'Active'
+    }))
 
-        const gridFrozen = document.getElementById('gridFrozen')
-        gridFrozen.items = wideData
-        gridFrozen.columns = wideColumns
-        gridFrozen.isRowNumbersShown = true
-        gridFrozen.isStickyRowNumbers = true
-        gridFrozen.frozenColumnCount = 2
-        gridFrozen.isStriped = true
-        gridFrozen.isHoverable = true
-        gridFrozen.isColumnReorderAllowed = true
+    const virtualColumns = [
+        { field: 'id', title: 'ID', width: '80px' },
+        { field: 'name', title: 'Name', width: '150px' },
+        { field: 'email', title: 'Email', width: '200px' },
+        { field: 'department', title: 'Department', width: '120px' },
+        { field: 'role', title: 'Role', width: '100px' },
+        { field: 'location', title: 'Location', width: '120px' },
+        { field: 'salary', title: 'Salary', width: '100px', getDisplayValueCallback: ({ value: v }) => '$' + v?.toLocaleString() },
+        { field: 'status', title: 'Status', width: '100px' }
+    ]
 
-        // Controls for frozen grid
-        document.getElementById('frozenColumnCount').addEventListener('change', e => {
-            gridFrozen.frozenColumnCount = parseInt(e.target.value)
-        })
+    const gridVirtual = document.getElementById('gridVirtual')
+    gridVirtual.items = virtualData
+    gridVirtual.columns = virtualColumns
+    gridVirtual.isRowNumbersShown = true
+    gridVirtual.isStickyRowNumbers = true
+    gridVirtual.frozenColumnCount = 1
+    gridVirtual.isStriped = true
+    gridVirtual.isHoverable = true
+    gridVirtual.isVirtualScrollEnabled = true
+    gridVirtual.isColumnReorderAllowed = true
 
-        document.getElementById('stickyRowNumbers').addEventListener('change', e => {
-            gridFrozen.isStickyRowNumbers = e.target.checked
-        })
+    // Grid 7 - Header Context Menu
+    const headerMenuColumns = [
+        { field: 'id', title: 'ID', width: '80px' },
+        { field: 'name', title: 'Name', width: '150px' },
+        { field: 'email', title: 'Email', width: '200px' },
+        { field: 'department', title: 'Department', width: '120px' },
+        { field: 'salary', title: 'Salary', width: '100px', getDisplayValueCallback: ({ value: v }) => '$' + v?.toLocaleString() },
+        { field: 'status', title: 'Status', width: '100px' }
+    ]
 
-        // Grid 5 - Column reorder
-        const reorderColumns = [
-            { field: 'id', title: 'ID (Frozen)', width: '80px' },
-            { field: 'name', title: 'Name (Frozen)', width: '150px' },
-            { field: 'email', title: 'Email', width: '200px' },
-            { field: 'department', title: 'Department', width: '120px', minWidth: '40px' },
-            { field: 'role', title: 'Role', width: '100px' },
-            { field: 'location', title: 'Location', width: '120px' },
-            { field: 'salary', title: 'Salary', width: '100px', getDisplayValueCallback: ({ value: v }) => '$' + v?.toLocaleString() },
-            { field: 'status', title: 'Status', width: '100px' }
-        ]
+    const gridHeaderMenu = document.getElementById('gridHeaderMenu')
+    gridHeaderMenu.items = sampleData
+    gridHeaderMenu.columns = headerMenuColumns
+    gridHeaderMenu.isRowNumbersShown = true
+    gridHeaderMenu.isStriped = true
+    gridHeaderMenu.isHoverable = true
+    gridHeaderMenu.sortMode = 'multiple'
 
-        const gridReorder = document.getElementById('gridReorder')
-        gridReorder.items = wideData.slice(0, 20)
-        gridReorder.columns = reorderColumns
-        gridReorder.isRowNumbersShown = true
-        gridReorder.isStickyRowNumbers = true
-        gridReorder.frozenColumnCount = 2  // First 2 columns are frozen
-        gridReorder.isStriped = true
-        gridReorder.isHoverable = true
-        gridReorder.storageKey = 'reorder-demo-grid'
-        gridReorder.isColumnReorderAllowed = true
-        gridReorder.shouldPersistColumnOrder = true
+    // Store original columns for reset
+    const originalHeaderMenuColumns = [...headerMenuColumns]
 
-        // Callback to show reorder data
-        gridReorder.onColumnReorder = (detail) => {
-            const log = document.getElementById('reorderLog')
-            log.innerHTML = `<strong>Last reorder:</strong> "${detail.field}" moved from index ${detail.fromIndex} to ${detail.toIndex}<br>
-            <strong>All order:</strong> ${JSON.stringify(detail.allOrder)}`
-        }
-
-        // Toggle persistence
-        document.getElementById('persistOrder').addEventListener('change', e => {
-            gridReorder.shouldPersistColumnOrder = e.target.checked
-        })
-
-        // Clear storage button
-        document.getElementById('clearOrderStorage').addEventListener('click', () => {
-            localStorage.removeItem('km-state:web-grid:reorder-demo-grid')
-            alert('Saved order cleared! Refresh to see default order.')
-        })
-
-        // Reset to default order
-        document.getElementById('resetOrder').addEventListener('click', () => {
-            gridReorder.setColumnOrder([])
-            document.getElementById('reorderLog').innerHTML = 'Column order reset to default.'
-        })
-
-        // Grid 6 - Virtual Scroll + Reorder + Resize
-        const virtualData = Array.from({ length: 10000 }, (_, i) => ({
-            id: 1000 + i,
-            name: ['Alice', 'Bob', 'Carol', 'David', 'Eve', 'Frank', 'Grace', 'Henry'][i % 8] + ' ' + ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones'][i % 5],
-            email: `user${i}@example.com`,
-            department: ['Engineering', 'Marketing', 'Sales', 'HR', 'Finance'][i % 5],
-            role: ['Manager', 'Senior', 'Junior', 'Lead', 'Director'][i % 5],
-            location: ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix'][i % 5],
-            salary: 50000 + (i * 100),
-            status: i % 7 === 0 ? 'On Leave' : 'Active'
-        }))
-
-        const virtualColumns = [
-            { field: 'id', title: 'ID', width: '80px' },
-            { field: 'name', title: 'Name', width: '150px' },
-            { field: 'email', title: 'Email', width: '200px' },
-            { field: 'department', title: 'Department', width: '120px' },
-            { field: 'role', title: 'Role', width: '100px' },
-            { field: 'location', title: 'Location', width: '120px' },
-            { field: 'salary', title: 'Salary', width: '100px', getDisplayValueCallback: ({ value: v }) => '$' + v?.toLocaleString() },
-            { field: 'status', title: 'Status', width: '100px' }
-        ]
-
-        const gridVirtual = document.getElementById('gridVirtual')
-        gridVirtual.items = virtualData
-        gridVirtual.columns = virtualColumns
-        gridVirtual.isRowNumbersShown = true
-        gridVirtual.isStickyRowNumbers = true
-        gridVirtual.frozenColumnCount = 1
-        gridVirtual.isStriped = true
-        gridVirtual.isHoverable = true
-        gridVirtual.isVirtualScrollEnabled = true
-        gridVirtual.isColumnReorderAllowed = true
-
-        // Grid 7 - Header Context Menu
-        const headerMenuColumns = [
-            { field: 'id', title: 'ID', width: '80px' },
-            { field: 'name', title: 'Name', width: '150px' },
-            { field: 'email', title: 'Email', width: '200px' },
-            { field: 'department', title: 'Department', width: '120px' },
-            { field: 'salary', title: 'Salary', width: '100px', getDisplayValueCallback: ({ value: v }) => '$' + v?.toLocaleString() },
-            { field: 'status', title: 'Status', width: '100px' }
-        ]
-
-        const gridHeaderMenu = document.getElementById('gridHeaderMenu')
-        gridHeaderMenu.items = sampleData
-        gridHeaderMenu.columns = headerMenuColumns
-        gridHeaderMenu.isRowNumbersShown = true
-        gridHeaderMenu.isStriped = true
-        gridHeaderMenu.isHoverable = true
-        gridHeaderMenu.sortMode = 'multiple'
-
-        // Store original columns for reset
-        const originalHeaderMenuColumns = [...headerMenuColumns]
-
-        // Header context menu with predefined and custom actions
-        gridHeaderMenu.headerContextMenu = [
-            'sort-asc',
-            'sort-desc',
-            'clear-sort',
-            { divider: true },
-            'freeze-column',
-            'unfreeze-column',
-            { divider: true },
-            'hide-column',
-            {
-                id: 'showAllColumns',
-                text: 'Show All Columns',
-                icon: '👁',
-                onClick: () => {
-                    // Restore all columns from original
-                    gridHeaderMenu.columns = [...originalHeaderMenuColumns]
-                    document.getElementById('headerMenuLog').innerHTML = `Restored all columns`
-                }
+    // Header context menu with predefined and custom actions
+    gridHeaderMenu.headerContextMenu = [
+        'sort-asc',
+        'sort-desc',
+        'clear-sort',
+        { divider: true },
+        'freeze-column',
+        'unfreeze-column',
+        { divider: true },
+        'hide-column',
+        {
+            id: 'showAllColumns',
+            text: 'Show All Columns',
+            icon: '👁',
+            onClick: () => {
+                // Restore all columns from original
+                gridHeaderMenu.columns = [...originalHeaderMenuColumns]
+                appendLogLine(document.getElementById('headerMenuLog'), { name: 'restore', detail: 'Restored all columns', variant: 'info' })
             }
-        ]
-
-        // Runs before the header menu opens (return false to suppress it, or an array to replace it)
-        gridHeaderMenu.beforeHeaderMenuOpenCallback = (ctx) => {
-            document.getElementById('headerMenuLog').innerHTML =
-                `<strong>Menu opened:</strong> ${ctx.field} (index: ${ctx.colIndex}, frozen: ${ctx.isFrozen}, sort: ${ctx.sortDirection || 'none'})`
         }
-    </script>
-</body>
-</html>
+    ]
+
+    // Runs before the header menu opens (return false to suppress it, or an array to replace it)
+    gridHeaderMenu.beforeHeaderMenuOpenCallback = (ctx) => {
+        appendLogLine(document.getElementById('headerMenuLog'), {
+            name: 'menu opened',
+            detail: `${ctx.field} (index: ${ctx.colIndex}, frozen: ${ctx.isFrozen}, sort: ${ctx.sortDirection || 'none'})`
+        })
+    }
+</script>

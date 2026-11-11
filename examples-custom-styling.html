@@ -1,731 +1,515 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebGrid - Custom Styling Examples</title>
-    <link rel="stylesheet" href="examples-shared.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <style>
-        /* Theme toggle switch */
-        .theme-toggle {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-        .theme-toggle-label {
-            font-size: 0.875rem;
-            opacity: 0.9;
-        }
-        .theme-switch {
-            position: relative;
-            width: 52px;
-            height: 28px;
-        }
-        .theme-switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-        .theme-slider {
-            position: absolute;
-            cursor: pointer;
-            inset: 0;
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 28px;
-            transition: background 0.2s;
-        }
-        .theme-slider::before {
-            content: "";
-            position: absolute;
-            height: 20px;
-            width: 20px;
-            left: 4px;
-            bottom: 4px;
-            background: white;
-            border-radius: 50%;
-            transition: transform 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .theme-switch input:checked + .theme-slider {
-            background: rgba(0, 0, 0, 0.4);
-        }
-        .theme-switch input:checked + .theme-slider::before {
-            transform: translateX(24px);
-        }
-        .theme-icons {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 1rem;
-        }
-        .theme-icons i {
-            opacity: 0.6;
-            transition: opacity 0.2s;
-        }
-        .theme-icons .fa-sun { opacity: 1; }
-        html.dark .theme-icons .fa-sun { opacity: 0.6; }
-        html.dark .theme-icons .fa-moon { opacity: 1; }
+<meta name="kmwc:title" content="Custom Styling Examples">
+<meta name="kmwc:subtitle" content="Dynamic cell and row styling based on data values">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<!-- The demo's palette: the grid's custom classes (getCustomStylesCallback) read these
+     variables; light-dark() follows the page theme switch. -->
+<style data-kmwc-fixed-colors>
+    :root {
+        --salary-1-bg: light-dark(#fee2e2, #7f1d1d); --salary-1-color: light-dark(#991b1b, #fecaca);  /* Red */
+        --salary-2-bg: light-dark(#ffedd5, #7c2d12); --salary-2-color: light-dark(#9a3412, #fed7aa);  /* Orange */
+        --salary-3-bg: light-dark(#fef9c3, #713f12); --salary-3-color: light-dark(#854d0e, #fef08a);  /* Yellow */
+        --salary-4-bg: light-dark(#ecfccb, #365314); --salary-4-color: light-dark(#3f6212, #d9f99d);  /* Light Green */
+        --salary-5-bg: light-dark(#d1fae5, #064e3b); --salary-5-color: light-dark(#065f46, #a7f3d0);  /* Green */
+        --salary-6-bg: light-dark(#cffafe, #155e75); --salary-6-color: light-dark(#0e7490, #a5f3fc);  /* Cyan */
+        --salary-7-bg: light-dark(#dbeafe, #1e3a8a); --salary-7-color: light-dark(#1e40af, #bfdbfe);  /* Blue */
+        --salary-8-bg: light-dark(#ede9fe, #4c1d95); --salary-8-color: light-dark(#5b21b6, #ddd6fe);  /* Purple */
+        --sex-male-color: light-dark(#3b82f6, #60a5fa);
+        --sex-female-color: light-dark(#ec4899, #f472b6);
+        --sex-other-color: light-dark(#8b5cf6, #a78bfa);
+        --sex-snowman-color: light-dark(#06b6d4, #22d3ee);
+        --row-inactive-bg: light-dark(#e5e7eb, #374151);
+        --row-inactive-color: light-dark(#6b7280, #9ca3af);
+        /* Product group colors */
+        --product-electronics-bg: light-dark(#e3f2fd, #1565c0); --product-electronics-color: light-dark(#1565c0, #bbdefb);
+        --product-clothing-bg: light-dark(#f3e5f5, #6a1b9a); --product-clothing-color: light-dark(#7b1fa2, #e1bee7);
+        --product-food-bg: light-dark(#e8f5e9, #1b5e20); --product-food-color: light-dark(#2e7d32, #c8e6c9);
+    }
+</style>
 
-        /* Dark mode page styles */
-        html.dark body {
-            background: #1a1a2e;
-            color: #e0e0e0;
-        }
-        html.dark .card,
-        html.dark .example-section {
-            background: #16213e;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-        }
-        html.dark .card h2,
-        html.dark .example-section h2 {
-            color: #e0e0e0;
-        }
-        html.dark .card h3,
-        html.dark .example-section h3 {
-            color: #b0b0b0;
-        }
-        html.dark .card p,
-        html.dark .example-section p {
-            color: #a0a0a0;
-        }
-        html.dark pre {
-            background: #0f0f23;
-            border-color: #2a2a4a;
-        }
-        html.dark code {
-            background: #2a2a4a;
-            color: #a78bfa;
-        }
-        html.dark footer {
-            color: #707070;
-        }
-        html.dark li {
-            color: #b0b0b0;
-        }
+    <div class="card">
+        <h2>CS01 · Rainbow Salary + Inactive Rows</h2>
+        <p>Demonstrates <code>getCellClassCallback</code> for value-based cell styling and <code>getRowClassCallback</code> for row-level styling.</p>
 
-        /* Light mode salary colors (defaults) */
-        :root {
-            --salary-1-bg: #fee2e2; --salary-1-color: #991b1b;  /* Red */
-            --salary-2-bg: #ffedd5; --salary-2-color: #9a3412;  /* Orange */
-            --salary-3-bg: #fef9c3; --salary-3-color: #854d0e;  /* Yellow */
-            --salary-4-bg: #ecfccb; --salary-4-color: #3f6212;  /* Light Green */
-            --salary-5-bg: #d1fae5; --salary-5-color: #065f46;  /* Green */
-            --salary-6-bg: #cffafe; --salary-6-color: #0e7490;  /* Cyan */
-            --salary-7-bg: #dbeafe; --salary-7-color: #1e40af;  /* Blue */
-            --salary-8-bg: #ede9fe; --salary-8-color: #5b21b6;  /* Purple */
-            --sex-male-color: #3b82f6;
-            --sex-female-color: #ec4899;
-            --sex-other-color: #8b5cf6;
-            --sex-snowman-color: #06b6d4;
-            --row-inactive-bg: #e5e7eb;
-            --row-inactive-color: #6b7280;
-            /* Product group colors (light mode) */
-            --product-electronics-bg: #e3f2fd; --product-electronics-color: #1565c0;
-            --product-clothing-bg: #f3e5f5; --product-clothing-color: #7b1fa2;
-            --product-food-bg: #e8f5e9; --product-food-color: #2e7d32;
-        }
+        <ul>
+            <li><strong>Salary column:</strong> Rainbow gradient from red (low) through yellow/green to purple (high)</li>
+            <li><strong>Inactive rows:</strong> Grayed out with reduced opacity</li>
+        </ul>
 
-        /* Dark mode base variables for web-grid */
-        html.dark {
-            /* Accent colors */
-            --base-primary-color: #818cf8;
-            --base-primary-color-hover: #6366f1;
-            --base-primary-color-active: #4f46e5;
-            --base-primary-bg-subtle: #312e81;
-            /* Text colors */
-            --base-text-color-1: #f0f0f0;
-            --base-text-color-2: #d0d0d0;
-            --base-text-color-3: #909090;
-            --base-on-primary-text-color: #ffffff;
-            /* Surface/background colors (new naming) */
-            --base-main-bg: #1e1e32;
-            --base-elevated-bg: #252542;
-            --base-hover-bg: #2d2d52;
-            --base-dropdown-bg: #1e1e32;
-            /* Border */
-            --base-border-color: #3d3d5c;
-            /* Input */
-            --base-input-bg: #1e1e32;
-            --base-input-text-color: #f0f0f0;
-            --base-input-border: 1px solid #3d3d5c;
-            --base-input-border-hover: 1px solid #818cf8;
-            --base-input-border-focus: 1px solid #818cf8;
-            --base-input-placeholder-color: #707070;
-            /* Danger/error */
-            --base-danger-color: #f87171;
-            --base-danger-bg-subtle: #451a1a;
-            /* Dark mode salary colors */
-            --salary-1-bg: #7f1d1d; --salary-1-color: #fecaca;  /* Red */
-            --salary-2-bg: #7c2d12; --salary-2-color: #fed7aa;  /* Orange */
-            --salary-3-bg: #713f12; --salary-3-color: #fef08a;  /* Yellow */
-            --salary-4-bg: #365314; --salary-4-color: #d9f99d;  /* Light Green */
-            --salary-5-bg: #064e3b; --salary-5-color: #a7f3d0;  /* Green */
-            --salary-6-bg: #155e75; --salary-6-color: #a5f3fc;  /* Cyan */
-            --salary-7-bg: #1e3a8a; --salary-7-color: #bfdbfe;  /* Blue */
-            --salary-8-bg: #4c1d95; --salary-8-color: #ddd6fe;  /* Purple */
-            --sex-male-color: #60a5fa;
-            --sex-female-color: #f472b6;
-            --sex-other-color: #a78bfa;
-            --sex-snowman-color: #22d3ee;
-            --row-inactive-bg: #374151;
-            --row-inactive-color: #9ca3af;
-            /* Product group colors (dark mode) */
-            --product-electronics-bg: #1565c0; --product-electronics-color: #bbdefb;
-            --product-clothing-bg: #6a1b9a; --product-clothing-color: #e1bee7;
-            --product-food-bg: #1b5e20; --product-food-color: #c8e6c9;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <header>
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
-                <div>
-                    <a href="index.html" class="back-link">← Back to Examples</a>
-                    <h1>Custom Styling Examples</h1>
-                    <p class="subtitle">Dynamic cell and row styling based on data values</p>
-                </div>
-                <div class="theme-toggle">
-                    <div class="theme-icons">
-                        <i class="fa-solid fa-sun"></i>
-                    </div>
-                    <label class="theme-switch">
-                        <input type="checkbox" id="themeToggle">
-                        <span class="theme-slider"></span>
-                    </label>
-                    <div class="theme-icons">
-                        <i class="fa-solid fa-moon"></i>
-                    </div>
-                </div>
-            </div>
-        </header>
-
-        <div class="card">
-            <h2>Rainbow Salary + Inactive Rows</h2>
-            <p>Demonstrates <code>getCellClassCallback</code> for value-based cell styling and <code>getRowClassCallback</code> for row-level styling.</p>
-
-            <ul>
-                <li><strong>Salary column:</strong> Rainbow gradient from red (low) through yellow/green to purple (high)</li>
-                <li><strong>Inactive rows:</strong> Grayed out with reduced opacity</li>
-            </ul>
-
-            <div class="control-panel" style="display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem; padding: 0.75rem 1rem; background: var(--wg-elevated-bg, #f5f5f5); border-radius: 6px;">
-                <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem;">
-                    Header Height:
-                    <input type="range" id="headerHeightRange" min="24" max="60" value="32" style="width: 100px;">
-                    <span id="headerHeightValue" style="min-width: 45px;">32px</span>
-                </label>
-                <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem;">
-                    Row Min Height:
-                    <input type="range" id="rowHeightRange" min="20" max="80" value="32" style="width: 100px;">
-                    <span id="rowHeightValue" style="min-width: 45px;">32px</span>
-                </label>
-                <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem;">
-                    Bio Max Lines:
-                    <input type="range" id="maxLinesRange" min="0" max="10" value="3" style="width: 100px;">
-                    <span id="maxLinesValue" style="min-width: 45px;">3</span>
-                </label>
-            </div>
-
-            <web-grid id="grid" style="max-width: 100%; max-height: 500px; border: 1px solid #e2e8f0;"></web-grid>
+        <div class="controls">
+            <label>
+                Header Height:
+                <input type="range" id="headerHeightRange" min="24" max="60" value="32" class="w-sm">
+                <span id="headerHeightValue" class="mono">32px</span>
+            </label>
+            <label>
+                Row Min Height:
+                <input type="range" id="rowHeightRange" min="20" max="80" value="32" class="w-sm">
+                <span id="rowHeightValue" class="mono">32px</span>
+            </label>
+            <label>
+                Bio Max Lines:
+                <input type="range" id="maxLinesRange" min="0" max="10" value="3" class="w-sm">
+                <span id="maxLinesValue" class="mono">3</span>
+            </label>
         </div>
 
-        <div class="card">
-            <h2>Table Border Only (No Double Border)</h2>
-            <p>When a grid with pagination is inside a card, you get a double border effect.
-               Use <code>isTableBorderOnly</code> to place the border only around the table,
-               letting pagination float outside.</p>
+        <web-grid id="grid" style="max-height: 500px;"></web-grid>
+    </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1rem;">
-                <!-- Default: Double border issue -->
-                <div>
-                    <h3 style="margin-bottom: 0.5rem; font-size: 0.9rem; color: #666;">Default (double border)</h3>
-                    <div style="border: 2px solid #3b82f6; border-radius: 8px; padding: 1rem; background: var(--wg-elevated-bg, #f9fafb);">
-                        <web-grid id="gridDoubleBorder" style="max-height: 200px;"></web-grid>
-                    </div>
-                </div>
+    <div class="card">
+        <h2>CS02 · Table Border Only (No Double Border)</h2>
+        <p>When a grid with pagination is inside a card, you get a double border effect.
+           Use <code>isTableBorderOnly</code> to place the border only around the table,
+           letting pagination float outside.</p>
 
-                <!-- With isTableBorderOnly -->
-                <div>
-                    <h3 style="margin-bottom: 0.5rem; font-size: 0.9rem; color: #666;">isTableBorderOnly={true}</h3>
-                    <div style="border: 2px solid #3b82f6; border-radius: 8px; padding: 1rem; background: var(--wg-elevated-bg, #f9fafb);">
-                        <web-grid id="gridTableBorderOnly" table-border-only style="max-height: 200px;"></web-grid>
-                    </div>
+        <div class="grid-2 mt-1">
+            <!-- Default: Double border issue -->
+            <div>
+                <h3>Default (double border)</h3>
+                <div style="border: 2px solid var(--kmwc-accent-color); border-radius: var(--kmwc-radius-md); padding: 1rem;">
+                    <web-grid id="gridDoubleBorder" style="max-height: 200px;"></web-grid>
                 </div>
             </div>
 
-            <pre style="margin-top: 1rem;"><code>// Default - border wraps everything including pagination
+            <!-- With isTableBorderOnly -->
+            <div>
+                <h3>isTableBorderOnly={true}</h3>
+                <div style="border: 2px solid var(--kmwc-accent-color); border-radius: var(--kmwc-radius-md); padding: 1rem;">
+                    <web-grid id="gridTableBorderOnly" table-border-only style="max-height: 200px;"></web-grid>
+                </div>
+            </div>
+        </div>
+
+        <div class="code-block" data-kmwc-snippet><pre><code>// Default - border wraps everything including pagination
 &lt;web-grid ...&gt;&lt;/web-grid&gt;
 
 // Table border only - pagination floats outside the border
-&lt;web-grid table-border-only ...&gt;&lt;/web-grid&gt;</code></pre>
+&lt;web-grid table-border-only ...&gt;&lt;/web-grid&gt;</code></pre></div>
+    </div>
+
+    <div class="card">
+        <h2>CS03 · How It Works</h2>
+
+        <h3>1. getCellClassCallback (Column-level)</h3>
+        <p>Returns a CSS class based on the cell context (<code>value</code>, <code>row</code>, <code>column</code>, …):</p>
+        <div class="code-block" data-kmwc-snippet><pre><code>{
+field: 'salary',
+getCellClassCallback: ({ value, row }) =&gt; {
+    if (value &lt; 65000) return 'salary-1'
+    if (value &lt; 72000) return 'salary-2'
+    // ... more ranges
+    return 'salary-7'
+}
+}</code></pre></div>
+
+        <h3>2. getRowClassCallback (Grid-level)</h3>
+        <p>Returns a CSS class for the entire row:</p>
+        <div class="code-block" data-kmwc-snippet><pre><code>grid.getRowClassCallback = ({ row, rowIndex }) =&gt; {
+if (row.status === 'Inactive') return 'row-inactive'
+return null
+}</code></pre></div>
+
+        <h3>3. getCustomStylesCallback (Required for Shadow DOM)</h3>
+        <p>Injects CSS into the shadow root:</p>
+        <div class="code-block" data-kmwc-snippet><pre><code>grid.getCustomStylesCallback = () =&gt; `
+.salary-1 { background: #fee2e2 !important; }
+.salary-2 { background: #ffedd5 !important; }
+.row-inactive { opacity: 0.5; }
+`</code></pre></div>
+    </div>
+
+    <div class="card">
+        <h2>CS04 · customStyles — instance and page-wide CSS</h2>
+        <p><code>customStyles</code> (attribute <code>custom-styles</code>) puts CSS into one grid's shadow root;
+           <code>getCustomStylesCallback(ctx)</code> computes it and wins. <code>window.components['web-grid'].customStyles</code>
+           styles <em>every</em> grid on the page; it is applied first, so a grid's own CSS overrides it. Assigning it
+           updates live grids. An <code>@import</code> (an icon font) is also linked once in the document head.</p>
+        <div class="controls">
+            <button type="button" id="pageCssOn">Set page-wide CSS</button>
+            <button type="button" id="pageCssOff" class="btn-secondary">Clear page-wide CSS</button>
         </div>
-
-        <div class="card">
-            <h2>How It Works</h2>
-
-            <h3>1. getCellClassCallback (Column-level)</h3>
-            <p>Returns a CSS class based on the cell context (<code>value</code>, <code>row</code>, <code>column</code>, …):</p>
-            <pre><code>{
-    field: 'salary',
-    getCellClassCallback: ({ value, row }) =&gt; {
-        if (value &lt; 65000) return 'salary-1'
-        if (value &lt; 72000) return 'salary-2'
-        // ... more ranges
-        return 'salary-7'
-    }
-}</code></pre>
-
-            <h3>2. getRowClassCallback (Grid-level)</h3>
-            <p>Returns a CSS class for the entire row:</p>
-            <pre><code>grid.getRowClassCallback = ({ row, rowIndex }) =&gt; {
-    if (row.status === 'Inactive') return 'row-inactive'
-    return null
-}</code></pre>
-
-            <h3>3. getCustomStylesCallback (Required for Shadow DOM)</h3>
-            <p>Injects CSS into the shadow root:</p>
-            <pre><code>grid.getCustomStylesCallback = () =&gt; `
-    .salary-1 { background: #fee2e2 !important; }
-    .salary-2 { background: #ffedd5 !important; }
-    .row-inactive { opacity: 0.5; }
-`</code></pre>
-        </div>
-
-        <div class="card">
-            <h2>customStyles — instance and page-wide CSS</h2>
-            <p><code>customStyles</code> (attribute <code>custom-styles</code>) puts CSS into one grid's shadow root;
-               <code>getCustomStylesCallback(ctx)</code> computes it and wins. <code>window.components['web-grid'].customStyles</code>
-               styles <em>every</em> grid on the page; it is applied first, so a grid's own CSS overrides it. Assigning it
-               updates live grids. An <code>@import</code> (an icon font) is also linked once in the document head.</p>
-            <p>
-                <button type="button" id="pageCssOn">Set page-wide CSS</button>
-                <button type="button" id="pageCssOff">Clear page-wide CSS</button>
-            </p>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1rem;">
-                <div>
-                    <h3 style="margin-bottom: 0.5rem; font-size: 0.9rem;">Page-wide CSS only</h3>
-                    <web-grid id="gridPageCss" style="max-height: 220px;"></web-grid>
-                </div>
-                <div>
-                    <h3 style="margin-bottom: 0.5rem; font-size: 0.9rem;">+ its own <code>custom-styles</code> (wins)</h3>
-                    <web-grid id="gridOwnCss" style="max-height: 220px;"
-                        custom-styles=".wg__header { background: #fef3c7; } .wg__cell { color: #92400e; }"></web-grid>
-                </div>
+        <div class="grid-2">
+            <div>
+                <h3>Page-wide CSS only</h3>
+                <web-grid id="gridPageCss" style="max-height: 220px;"></web-grid>
             </div>
-            <pre style="margin-top: 1rem;"><code>// every grid on the page
+            <div>
+                <h3>+ its own <code>custom-styles</code> (wins)</h3>
+                <web-grid id="gridOwnCss" style="max-height: 220px;"
+                    custom-styles=".wg__header { background: #fef3c7; } .wg__cell { color: #92400e; }"></web-grid>
+            </div>
+        </div>
+        <div class="code-block" data-kmwc-snippet><pre><code>// every grid on the page
 window.components['web-grid'].customStyles = `
-    .wg__header { background: #dbeafe; }
-    .wg__cell { color: #1e3a8a; }
+.wg__header { background: #dbeafe; }
+.wg__cell { color: #1e3a8a; }
 `
 // one grid — applied after the page layer, so it wins
 &lt;web-grid custom-styles=".wg__header { background: #fef3c7; }"&gt;&lt;/web-grid&gt;
-grid.customStyles = '.wg__cell { color: #92400e; }'</code></pre>
-        </div>
-
-        <footer>
-            <p>WebGrid Component by <a href="https://github.com/keenmate">Keenmate</a></p>
-        </footer>
+grid.customStyles = '.wg__cell { color: #92400e; }'</code></pre></div>
     </div>
 
-    <script type="module">
-        import '@keenmate/web-grid'
+<script type="module">
+    // Sample employee data with varied salaries and statuses
+    const sampleData = [
+        { id: 1, name: 'Alice Johnson', department: 'Engineering', salary: 95000, hireDate: '2020-03-15', sex: 'F', status: 'Active', product: 'laptop', notes: 'Team lead', bio: 'Experienced software engineer with expertise in distributed systems and cloud architecture. Leads a team of 5 developers.' },
+        { id: 2, name: 'Bob Smith', department: 'Marketing', salary: 72000, hireDate: '2019-07-22', sex: 'M', status: 'Active', product: 'shirt', notes: '', bio: 'Creative marketing specialist focused on digital campaigns and brand development.' },
+        { id: 3, name: 'Carol Williams', department: 'Engineering', salary: 92000, hireDate: '2018-11-01', sex: 'F', status: 'Active', product: 'headphones', notes: 'Senior dev', bio: 'Full-stack developer with strong background in React and Node.js. Passionate about clean code and testing.' },
+        { id: 4, name: 'David Brown', department: 'Sales', salary: 68000, hireDate: '2021-01-10', sex: 'M', status: 'Inactive', product: 'coffee', notes: 'On sabbatical', bio: 'Sales representative with excellent client relationship skills. Currently on extended leave.' },
+        { id: 5, name: 'Eva Martinez', department: 'HR', salary: 65000, hireDate: '2020-06-20', sex: 'F', status: 'Active', product: 'jeans', notes: '', bio: 'HR coordinator specializing in recruitment and employee onboarding processes.' },
+        { id: 6, name: 'Frank Lee', department: 'Engineering', salary: 88000, hireDate: '2019-02-14', sex: 'M', status: 'Active', product: 'phone', notes: '', bio: 'Backend engineer with expertise in Python and microservices architecture.' },
+        { id: 7, name: 'Grace Kim', department: 'Marketing', salary: 75000, hireDate: '2020-09-05', sex: 'F', status: 'Inactive', product: 'apple', notes: 'Parental leave', bio: 'Content strategist with focus on SEO and social media marketing.' },
+        { id: 8, name: 'Henry Chen', department: 'Sales', salary: 71000, hireDate: '2021-04-18', sex: 'M', status: 'Active', product: 'bread', notes: '', bio: 'Account manager handling enterprise clients in the tech sector.' },
+        { id: 9, name: 'Ivy Wang', department: 'Engineering', salary: 98000, hireDate: '2017-08-30', sex: 'F', status: 'Active', product: 'laptop', notes: 'Architect', bio: 'Principal software architect responsible for system design and technical decisions across multiple projects.' },
+        { id: 10, name: 'Jack Davis', department: 'HR', salary: 62000, hireDate: '2022-02-01', sex: 'M', status: 'Active', product: 'sneakers', notes: '', bio: 'Junior HR assistant supporting the recruitment team.' },
+        { id: 11, name: 'Karen Wilson', department: 'Engineering', salary: 89000, hireDate: '2019-05-12', sex: 'F', status: 'Active', product: null, notes: '', bio: 'DevOps engineer managing CI/CD pipelines and cloud infrastructure on AWS and Azure.' },
+        { id: 12, name: 'Leo Garcia', department: 'Marketing', salary: 73000, hireDate: '2020-11-25', sex: 'M', status: 'Inactive', product: 'shirt', notes: 'Transitioning', bio: 'Marketing analyst with data-driven approach to campaign optimization.' },
+        { id: 13, name: 'Maria Lopez', department: 'Finance', salary: 85000, hireDate: '2018-04-08', sex: 'F', status: 'Active', product: 'coffee', notes: 'CFO assistant', bio: 'Financial analyst supporting executive team with budgeting and forecasting.' },
+        { id: 14, name: 'Frosty McSnowface', department: 'Sales', salary: 67000, hireDate: '2023-12-25', sex: 'snowman', status: 'Active', product: null, notes: 'Seasonal', bio: 'Seasonal sales associate. Melts under pressure but always keeps a cool head.' },
+        { id: 15, name: 'Olivia Moore', department: 'Engineering', salary: 102000, hireDate: '2016-03-01', sex: 'F', status: 'Active', product: 'headphones', notes: 'VP Engineering', bio: 'VP of Engineering overseeing all technical teams and driving innovation across the organization.' },
+    ]
 
-        // Sample employee data with varied salaries and statuses
-        const sampleData = [
-            { id: 1, name: 'Alice Johnson', department: 'Engineering', salary: 95000, hireDate: '2020-03-15', sex: 'F', status: 'Active', product: 'laptop', notes: 'Team lead', bio: 'Experienced software engineer with expertise in distributed systems and cloud architecture. Leads a team of 5 developers.' },
-            { id: 2, name: 'Bob Smith', department: 'Marketing', salary: 72000, hireDate: '2019-07-22', sex: 'M', status: 'Active', product: 'shirt', notes: '', bio: 'Creative marketing specialist focused on digital campaigns and brand development.' },
-            { id: 3, name: 'Carol Williams', department: 'Engineering', salary: 92000, hireDate: '2018-11-01', sex: 'F', status: 'Active', product: 'headphones', notes: 'Senior dev', bio: 'Full-stack developer with strong background in React and Node.js. Passionate about clean code and testing.' },
-            { id: 4, name: 'David Brown', department: 'Sales', salary: 68000, hireDate: '2021-01-10', sex: 'M', status: 'Inactive', product: 'coffee', notes: 'On sabbatical', bio: 'Sales representative with excellent client relationship skills. Currently on extended leave.' },
-            { id: 5, name: 'Eva Martinez', department: 'HR', salary: 65000, hireDate: '2020-06-20', sex: 'F', status: 'Active', product: 'jeans', notes: '', bio: 'HR coordinator specializing in recruitment and employee onboarding processes.' },
-            { id: 6, name: 'Frank Lee', department: 'Engineering', salary: 88000, hireDate: '2019-02-14', sex: 'M', status: 'Active', product: 'phone', notes: '', bio: 'Backend engineer with expertise in Python and microservices architecture.' },
-            { id: 7, name: 'Grace Kim', department: 'Marketing', salary: 75000, hireDate: '2020-09-05', sex: 'F', status: 'Inactive', product: 'apple', notes: 'Parental leave', bio: 'Content strategist with focus on SEO and social media marketing.' },
-            { id: 8, name: 'Henry Chen', department: 'Sales', salary: 71000, hireDate: '2021-04-18', sex: 'M', status: 'Active', product: 'bread', notes: '', bio: 'Account manager handling enterprise clients in the tech sector.' },
-            { id: 9, name: 'Ivy Wang', department: 'Engineering', salary: 98000, hireDate: '2017-08-30', sex: 'F', status: 'Active', product: 'laptop', notes: 'Architect', bio: 'Principal software architect responsible for system design and technical decisions across multiple projects.' },
-            { id: 10, name: 'Jack Davis', department: 'HR', salary: 62000, hireDate: '2022-02-01', sex: 'M', status: 'Active', product: 'sneakers', notes: '', bio: 'Junior HR assistant supporting the recruitment team.' },
-            { id: 11, name: 'Karen Wilson', department: 'Engineering', salary: 89000, hireDate: '2019-05-12', sex: 'F', status: 'Active', product: null, notes: '', bio: 'DevOps engineer managing CI/CD pipelines and cloud infrastructure on AWS and Azure.' },
-            { id: 12, name: 'Leo Garcia', department: 'Marketing', salary: 73000, hireDate: '2020-11-25', sex: 'M', status: 'Inactive', product: 'shirt', notes: 'Transitioning', bio: 'Marketing analyst with data-driven approach to campaign optimization.' },
-            { id: 13, name: 'Maria Lopez', department: 'Finance', salary: 85000, hireDate: '2018-04-08', sex: 'F', status: 'Active', product: 'coffee', notes: 'CFO assistant', bio: 'Financial analyst supporting executive team with budgeting and forecasting.' },
-            { id: 14, name: 'Frosty McSnowface', department: 'Sales', salary: 67000, hireDate: '2023-12-25', sex: 'snowman', status: 'Active', product: null, notes: 'Seasonal', bio: 'Seasonal sales associate. Melts under pressure but always keeps a cool head.' },
-            { id: 15, name: 'Olivia Moore', department: 'Engineering', salary: 102000, hireDate: '2016-03-01', sex: 'F', status: 'Active', product: 'headphones', notes: 'VP Engineering', bio: 'VP of Engineering overseeing all technical teams and driving innovation across the organization.' },
-        ]
+    // Helper function to get salary color class (rainbow gradient)
+    function getSalaryClass(salary) {
+        // Range: ~60k to ~100k mapped to rainbow colors
+        if (salary < 65000) return 'salary-1'  // Red
+        if (salary < 70000) return 'salary-2'  // Orange
+        if (salary < 75000) return 'salary-3'  // Yellow
+        if (salary < 80000) return 'salary-4'  // Light Green
+        if (salary < 85000) return 'salary-5'  // Green
+        if (salary < 90000) return 'salary-6'  // Cyan
+        if (salary < 95000) return 'salary-7'  // Blue
+        return 'salary-8'                       // Purple
+    }
 
-        // Helper function to get salary color class (rainbow gradient)
-        function getSalaryClass(salary) {
-            // Range: ~60k to ~100k mapped to rainbow colors
-            if (salary < 65000) return 'salary-1'  // Red
-            if (salary < 70000) return 'salary-2'  // Orange
-            if (salary < 75000) return 'salary-3'  // Yellow
-            if (salary < 80000) return 'salary-4'  // Light Green
-            if (salary < 85000) return 'salary-5'  // Green
-            if (salary < 90000) return 'salary-6'  // Cyan
-            if (salary < 95000) return 'salary-7'  // Blue
-            return 'salary-8'                       // Purple
-        }
+    // Options for editors
+    const departmentOptions = [
+        { value: 'Engineering', label: 'Engineering' },
+        { value: 'Marketing', label: 'Marketing' },
+        { value: 'Sales', label: 'Sales' },
+        { value: 'HR', label: 'HR' },
+        { value: 'Finance', label: 'Finance' }
+    ]
 
-        // Options for editors
-        const departmentOptions = [
-            { value: 'Engineering', label: 'Engineering' },
-            { value: 'Marketing', label: 'Marketing' },
-            { value: 'Sales', label: 'Sales' },
-            { value: 'HR', label: 'HR' },
-            { value: 'Finance', label: 'Finance' }
-        ]
+    const statusOptions = [
+        { value: 'Active', label: 'Active' },
+        { value: 'Inactive', label: 'Inactive' },
+        { value: 'On Leave', label: 'On Leave' }
+    ]
 
-        const statusOptions = [
-            { value: 'Active', label: 'Active' },
-            { value: 'Inactive', label: 'Inactive' },
-            { value: 'On Leave', label: 'On Leave' }
-        ]
+    const productOptions = [
+        { id: 'laptop', name: 'Laptop Pro 15"', group: 'Electronics', icon: '💻' },
+        { id: 'phone', name: 'Smartphone X12', group: 'Electronics', icon: '📱' },
+        { id: 'headphones', name: 'Wireless Headphones', group: 'Electronics', icon: '🎧' },
+        { id: 'shirt', name: 'Cotton T-Shirt', group: 'Clothing', icon: '👔' },
+        { id: 'jeans', name: 'Slim Fit Jeans', group: 'Clothing', icon: '👖' },
+        { id: 'sneakers', name: 'Running Sneakers', group: 'Clothing', icon: '👟' },
+        { id: 'apple', name: 'Organic Apples', group: 'Food', icon: '🍎' },
+        { id: 'bread', name: 'Whole Grain Bread', group: 'Food', icon: '🍞' },
+        { id: 'coffee', name: 'Premium Coffee', group: 'Food', icon: '☕' },
+    ]
 
-        const productOptions = [
-            { id: 'laptop', name: 'Laptop Pro 15"', group: 'Electronics', icon: '💻' },
-            { id: 'phone', name: 'Smartphone X12', group: 'Electronics', icon: '📱' },
-            { id: 'headphones', name: 'Wireless Headphones', group: 'Electronics', icon: '🎧' },
-            { id: 'shirt', name: 'Cotton T-Shirt', group: 'Clothing', icon: '👔' },
-            { id: 'jeans', name: 'Slim Fit Jeans', group: 'Clothing', icon: '👖' },
-            { id: 'sneakers', name: 'Running Sneakers', group: 'Clothing', icon: '👟' },
-            { id: 'apple', name: 'Organic Apples', group: 'Food', icon: '🍎' },
-            { id: 'bread', name: 'Whole Grain Bread', group: 'Food', icon: '🍞' },
-            { id: 'coffee', name: 'Premium Coffee', group: 'Food', icon: '☕' },
-        ]
-
-        // Column definitions
-        const columns = [
-            { field: 'id', title: 'ID', width: '60px', horizontalAlign: 'center', verticalAlign: 'top', isEditable: false },
-            { field: 'name', title: 'Name', width: '180px', editor: 'text', verticalAlign: 'middle' },
-            {
-                field: 'department',
-                title: 'Dept (combo)',
-                width: '140px',
-                editor: 'combobox',
-                editorOptions: {
-                    options: departmentOptions,
-                    editStartSelection: 'select-all'
-                }
+    // Column definitions
+    const columns = [
+        { field: 'id', title: 'ID', width: '60px', horizontalAlign: 'center', verticalAlign: 'top', isEditable: false },
+        { field: 'name', title: 'Name', width: '180px', editor: 'text', verticalAlign: 'middle' },
+        {
+            field: 'department',
+            title: 'Dept (combo)',
+            width: '140px',
+            editor: 'combobox',
+            editorOptions: {
+                options: departmentOptions,
+                editStartSelection: 'select-all'
+            }
+        },
+        {
+            field: 'salary',
+            title: 'Salary',
+            width: '120px',
+            horizontalAlign: 'right',
+            verticalAlign: 'bottom',
+            editor: 'number',
+            getDisplayValueCallback: ({ value: val }) => val != null ? `$${val.toLocaleString()}` : '',
+            // Dynamic cell styling based on salary value
+            getCellClassCallback: ({ value, row }) => getSalaryClass(value)
+        },
+        {
+            field: 'hireDate',
+            title: 'Hire Date',
+            width: '120px',
+            editor: 'date',
+            editorOptions: {
+                dateFormat: 'DD.MM.YYYY'
+            }
+        },
+        {
+            field: 'sex',
+            title: 'Sex',
+            width: '60px',
+            horizontalAlign: 'center',
+            isEditable: false,
+            // Use renderCellCallback to render Font Awesome icons
+            renderCellCallback: ({ row }) => {
+                if (row.sex === 'M') return '<i class="fa-solid fa-mars sex-male"></i>'
+                if (row.sex === 'F') return '<i class="fa-solid fa-venus sex-female"></i>'
+                if (row.sex === 'snowman') return '<i class="fa-solid fa-snowman sex-snowman"></i>'
+                return '<i class="fa-solid fa-mars-and-venus sex-other"></i>'
+            }
+        },
+        {
+            field: 'status',
+            title: 'Status',
+            width: '100px',
+            horizontalAlign: 'center',
+            editor: 'select',
+            editorOptions: {
+                options: statusOptions
+            }
+        },
+        {
+            field: 'product',
+            title: 'Product (auto)',
+            width: '180px',
+            editor: 'autocomplete',
+            // Cell styling based on selected product's group
+            getCellClassCallback: ({ value, row }) => {
+                const product = productOptions.find(p => p.id === value)
+                if (!product) return null
+                return `product-${product.group.toLowerCase()}`
             },
-            {
-                field: 'salary',
-                title: 'Salary',
-                width: '120px',
-                horizontalAlign: 'right',
-                verticalAlign: 'bottom',
-                editor: 'number',
-                getDisplayValueCallback: ({ value: val }) => val != null ? `$${val.toLocaleString()}` : '',
-                // Dynamic cell styling based on salary value
-                getCellClassCallback: ({ value, row }) => getSalaryClass(value)
-            },
-            {
-                field: 'hireDate',
-                title: 'Hire Date',
-                width: '120px',
-                editor: 'date',
-                editorOptions: {
-                    dateFormat: 'DD.MM.YYYY'
-                }
-            },
-            {
-                field: 'sex',
-                title: 'Sex',
-                width: '60px',
-                horizontalAlign: 'center',
-                isEditable: false,
-                // Use renderCellCallback to render Font Awesome icons
-                renderCellCallback: ({ row }) => {
-                    if (row.sex === 'M') return '<i class="fa-solid fa-mars sex-male"></i>'
-                    if (row.sex === 'F') return '<i class="fa-solid fa-venus sex-female"></i>'
-                    if (row.sex === 'snowman') return '<i class="fa-solid fa-snowman sex-snowman"></i>'
-                    return '<i class="fa-solid fa-mars-and-venus sex-other"></i>'
-                }
-            },
-            {
-                field: 'status',
-                title: 'Status',
-                width: '100px',
-                horizontalAlign: 'center',
-                editor: 'select',
-                editorOptions: {
-                    options: statusOptions
-                }
-            },
-            {
-                field: 'product',
-                title: 'Product (auto)',
-                width: '180px',
-                editor: 'autocomplete',
-                // Cell styling based on selected product's group
-                getCellClassCallback: ({ value, row }) => {
-                    const product = productOptions.find(p => p.id === value)
-                    if (!product) return null
-                    return `product-${product.group.toLowerCase()}`
+            editorOptions: {
+                initialOptions: productOptions,
+                searchCallback: async ({ term: query }) => {
+                    await new Promise(r => setTimeout(r, 150)) // Simulate async
+                    return productOptions.filter(p =>
+                        p.name.toLowerCase().includes(query.toLowerCase()) ||
+                        p.group.toLowerCase().includes(query.toLowerCase())
+                    )
                 },
-                editorOptions: {
-                    initialOptions: productOptions,
-                    searchCallback: async ({ term: query }) => {
-                        await new Promise(r => setTimeout(r, 150)) // Simulate async
-                        return productOptions.filter(p =>
-                            p.name.toLowerCase().includes(query.toLowerCase()) ||
-                            p.group.toLowerCase().includes(query.toLowerCase())
-                        )
-                    },
-                    valueMember: 'id',
-                    displayMember: 'name',
-                    minSearchLength: 0,
-                    debounceMs: 200,
-                    dropdownMinWidth: '220px',  // Wider than 180px cell
-                    editStartSelection: 'select-all',
-                    // Custom dropdown rendering with group colors
-                    renderOptionCallback: ({ option: opt, ...ctx }) => {
-                        const classes = ['wg__dropdown-option']
-                        if (ctx.isFocused) classes.push('wg__dropdown-option--highlighted')
-                        if (ctx.isSelected) classes.push('wg__dropdown-option--selected')
-                        const groupClass = `product-${opt.group.toLowerCase()}`
-                        return `
-                            <div class="${classes.join(' ')} ${groupClass}" data-index="${ctx.optionIndex}" style="display: flex; align-items: center;">
-                                <span style="margin-right: 8px; font-size: 1.2em;">${opt.icon}</span>
-                                <div style="flex: 1; min-width: 0;">
-                                    <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${opt.name}</div>
-                                    <div style="font-size: 0.8em; opacity: 0.7;">${opt.group}</div>
-                                </div>
+                valueMember: 'id',
+                displayMember: 'name',
+                minSearchLength: 0,
+                debounceMs: 200,
+                dropdownMinWidth: '220px',  // Wider than 180px cell
+                editStartSelection: 'select-all',
+                // Custom dropdown rendering with group colors
+                renderOptionCallback: ({ option: opt, ...ctx }) => {
+                    const classes = ['wg__dropdown-option']
+                    if (ctx.isFocused) classes.push('wg__dropdown-option--highlighted')
+                    if (ctx.isSelected) classes.push('wg__dropdown-option--selected')
+                    const groupClass = `product-${opt.group.toLowerCase()}`
+                    return `
+                        <div class="${classes.join(' ')} ${groupClass}" data-index="${ctx.optionIndex}" style="display: flex; align-items: center;">
+                            <span style="margin-right: 8px; font-size: 1.2em;">${opt.icon}</span>
+                            <div style="flex: 1; min-width: 0;">
+                                <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${opt.name}</div>
+                                <div style="font-size: 0.8em; opacity: 0.7;">${opt.group}</div>
                             </div>
-                        `
-                    }
-                }
-            },
-            {
-                field: 'notes',
-                title: 'Notes (custom)',
-                width: '150px',
-                editor: 'custom',
-                renderEditorCallback: ({ value, row, rowIndex, field, commit, cancel }) => {
-                    // Detect dark mode
-                    const isDark = document.documentElement.classList.contains('dark')
-
-                    // Create a simple custom editor with a textarea
-                    const container = document.createElement('div')
-                    container.style.cssText = `
-                        position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-                        background: ${isDark ? '#1e1e32' : 'white'};
-                        color: ${isDark ? '#f0f0f0' : '#1a1a1a'};
-                        padding: 16px; border-radius: 8px;
-                        box-shadow: 0 4px 20px rgba(0,0,0,${isDark ? '0.5' : '0.2'});
-                        border: 1px solid ${isDark ? '#3d3d5c' : '#e0e0e0'};
-                        z-index: 1000; min-width: 300px;
-                    `
-
-                    container.innerHTML = `
-                        <div style="margin-bottom: 12px; font-weight: 600;">Edit Notes for ${row.name}</div>
-                        <textarea id="customNotes" style="
-                            width: 100%; height: 80px; padding: 8px;
-                            border: 1px solid ${isDark ? '#3d3d5c' : '#ccc'};
-                            border-radius: 4px; resize: vertical;
-                            background: ${isDark ? '#252542' : 'white'};
-                            color: ${isDark ? '#f0f0f0' : '#1a1a1a'};
-                        ">${value || ''}</textarea>
-                        <div style="margin-top: 12px; display: flex; gap: 8px; justify-content: flex-end;">
-                            <button id="cancelBtn" style="
-                                padding: 6px 12px;
-                                border: 1px solid ${isDark ? '#3d3d5c' : '#ccc'};
-                                background: ${isDark ? '#252542' : 'white'};
-                                color: ${isDark ? '#f0f0f0' : '#1a1a1a'};
-                                border-radius: 4px; cursor: pointer;
-                            ">Cancel</button>
-                            <button id="saveBtn" style="
-                                padding: 6px 12px; border: none;
-                                background: ${isDark ? '#818cf8' : '#3b82f6'};
-                                color: white; border-radius: 4px; cursor: pointer;
-                            ">Save</button>
                         </div>
                     `
+                }
+            }
+        },
+        {
+            field: 'notes',
+            title: 'Notes (custom)',
+            width: '150px',
+            editor: 'custom',
+            renderEditorCallback: ({ value, row, rowIndex, field, commit, cancel }) => {
+                // Create a simple custom editor with a textarea — a kit card, so it follows the page theme
+                const container = document.createElement('div')
+                container.className = 'card'
+                container.style.cssText = `
+                    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+                    z-index: 1000; width: min(300px, 90vw);
+                `
 
-                    document.body.appendChild(container)
+                container.innerHTML = `
+                    <div class="note-title">Edit Notes for ${row.name}</div>
+                    <textarea id="customNotes" rows="4">${value || ''}</textarea>
+                    <div class="controls mt-1">
+                        <button type="button" id="cancelBtn" class="btn-secondary push-end">Cancel</button>
+                        <button type="button" id="saveBtn">Save</button>
+                    </div>
+                `
 
-                    const textarea = container.querySelector('#customNotes')
-                    textarea.focus()
-                    textarea.select()
+                document.body.appendChild(container)
 
-                    container.querySelector('#saveBtn').onclick = () => {
-                        commit(textarea.value)
-                        container.remove()
-                    }
+                const textarea = container.querySelector('#customNotes')
+                textarea.focus()
+                textarea.select()
 
-                    container.querySelector('#cancelBtn').onclick = () => {
+                container.querySelector('#saveBtn').onclick = () => {
+                    commit(textarea.value)
+                    container.remove()
+                }
+
+                container.querySelector('#cancelBtn').onclick = () => {
+                    cancel()
+                    container.remove()
+                }
+
+                // Handle Escape key
+                textarea.onkeydown = (e) => {
+                    if (e.key === 'Escape') {
                         cancel()
                         container.remove()
                     }
-
-                    // Handle Escape key
-                    textarea.onkeydown = (e) => {
-                        if (e.key === 'Escape') {
-                            cancel()
-                            container.remove()
-                        }
-                    }
                 }
-            },
-            {
-                field: 'bio',
-                title: 'Bio (justify)',
-                width: '250px',
-                horizontalAlign: 'justify',
-                textOverflow: 'wrap',
-                maxLines: 3,  // Limit to 3 visible lines with ellipsis
-                isEditable: false
             }
-        ]
+        },
+        {
+            field: 'bio',
+            title: 'Bio (justify)',
+            width: '250px',
+            horizontalAlign: 'justify',
+            textOverflow: 'wrap',
+            maxLines: 3,  // Limit to 3 visible lines with ellipsis
+            isEditable: false
+        }
+    ]
 
-        // Initialize grid
-        const grid = document.getElementById('grid')
-        grid.items = sampleData
-        grid.columns = columns
-        grid.isStriped = false  // Disable striping to better show custom colors
-        grid.isHoverable = true
-        grid.isEditingEnabled = true
-        grid.sortMode = 'multiple'  // Enable multi-column sorting
+    // Initialize grid
+    const grid = document.getElementById('grid')
+    grid.items = sampleData
+    grid.columns = columns
+    grid.isStriped = false  // Disable striping to better show custom colors
+    grid.isHoverable = true
+    grid.isEditingEnabled = true
+    grid.sortMode = 'multiple'  // Enable multi-column sorting
 
-        // Dynamic row styling - gray out inactive employees
-        grid.getRowClassCallback = ({ row, rowIndex: index }) => {
-            if (row.status === 'Inactive') return 'row-inactive'
-            return null
+    // Dynamic row styling - gray out inactive employees
+    grid.getRowClassCallback = ({ row, rowIndex: index }) => {
+        if (row.status === 'Inactive') return 'row-inactive'
+        return null
+    }
+
+    // Inject custom styles into Shadow DOM using CSS variables
+    // CSS variables inherit through shadow DOM boundary, and their light-dark() values follow
+    // the page theme switch, so dark mode works automatically
+    grid.getCustomStylesCallback = () => `
+        /* Import Font Awesome */
+        @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css');
+
+        /* Rainbow salary gradient - uses CSS variables that change with dark mode */
+        .salary-1 { background-color: var(--salary-1-bg) !important; color: var(--salary-1-color); }
+        .salary-2 { background-color: var(--salary-2-bg) !important; color: var(--salary-2-color); }
+        .salary-3 { background-color: var(--salary-3-bg) !important; color: var(--salary-3-color); }
+        .salary-4 { background-color: var(--salary-4-bg) !important; color: var(--salary-4-color); }
+        .salary-5 { background-color: var(--salary-5-bg) !important; color: var(--salary-5-color); }
+        .salary-6 { background-color: var(--salary-6-bg) !important; color: var(--salary-6-color); }
+        .salary-7 { background-color: var(--salary-7-bg) !important; color: var(--salary-7-color); }
+        .salary-8 { background-color: var(--salary-8-bg) !important; color: var(--salary-8-color); }
+
+        /* Sex icons */
+        .sex-male { color: var(--sex-male-color); font-size: 1.2em; }
+        .sex-female { color: var(--sex-female-color); font-size: 1.2em; }
+        .sex-other { color: var(--sex-other-color); font-size: 1.2em; }
+        .sex-snowman { color: var(--sex-snowman-color); font-size: 1.2em; }
+
+        /* Inactive row styling */
+        .row-inactive {
+            opacity: 0.5;
+        }
+        .row-inactive td {
+            background-color: var(--row-inactive-bg) !important;
+            color: var(--row-inactive-color) !important;
         }
 
-        // Inject custom styles into Shadow DOM using CSS variables
-        // CSS variables inherit through shadow DOM boundary, so dark mode switching works automatically
-        grid.getCustomStylesCallback = () => `
-            /* Import Font Awesome */
-            @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css');
-
-            /* Rainbow salary gradient - uses CSS variables that change with dark mode */
-            .salary-1 { background-color: var(--salary-1-bg) !important; color: var(--salary-1-color); }
-            .salary-2 { background-color: var(--salary-2-bg) !important; color: var(--salary-2-color); }
-            .salary-3 { background-color: var(--salary-3-bg) !important; color: var(--salary-3-color); }
-            .salary-4 { background-color: var(--salary-4-bg) !important; color: var(--salary-4-color); }
-            .salary-5 { background-color: var(--salary-5-bg) !important; color: var(--salary-5-color); }
-            .salary-6 { background-color: var(--salary-6-bg) !important; color: var(--salary-6-color); }
-            .salary-7 { background-color: var(--salary-7-bg) !important; color: var(--salary-7-color); }
-            .salary-8 { background-color: var(--salary-8-bg) !important; color: var(--salary-8-color); }
-
-            /* Sex icons */
-            .sex-male { color: var(--sex-male-color); font-size: 1.2em; }
-            .sex-female { color: var(--sex-female-color); font-size: 1.2em; }
-            .sex-other { color: var(--sex-other-color); font-size: 1.2em; }
-            .sex-snowman { color: var(--sex-snowman-color); font-size: 1.2em; }
-
-            /* Inactive row styling */
-            .row-inactive {
-                opacity: 0.5;
-            }
-            .row-inactive td {
-                background-color: var(--row-inactive-bg) !important;
-                color: var(--row-inactive-color) !important;
-            }
-
-            /* Product group styling */
-            .product-electronics {
-                background-color: var(--product-electronics-bg) !important;
-                color: var(--product-electronics-color);
-            }
-            .product-clothing {
-                background-color: var(--product-clothing-bg) !important;
-                color: var(--product-clothing-color);
-            }
-            .product-food {
-                background-color: var(--product-food-bg) !important;
-                color: var(--product-food-color);
-            }
-        `
-
-        // Theme toggle handler - just toggles the class, CSS variables handle the rest
-        const themeToggle = document.getElementById('themeToggle')
-        themeToggle.addEventListener('change', () => {
-            // Close any open dropdown/editor before theme switch to avoid state corruption
-            grid.cancelEdit()
-            document.documentElement.classList.toggle('dark', themeToggle.checked)
-        })
-
-        // Header height control
-        const headerHeightRange = document.getElementById('headerHeightRange')
-        const headerHeightValue = document.getElementById('headerHeightValue')
-        headerHeightRange.addEventListener('input', () => {
-            const value = headerHeightRange.value + 'px'
-            headerHeightValue.textContent = value
-            grid.style.setProperty('--wg-header-min-height', value)
-        })
-
-        // Row height control
-        const rowHeightRange = document.getElementById('rowHeightRange')
-        const rowHeightValue = document.getElementById('rowHeightValue')
-        rowHeightRange.addEventListener('input', () => {
-            const value = rowHeightRange.value + 'px'
-            rowHeightValue.textContent = value
-            grid.style.setProperty('--wg-row-min-height', value)
-        })
-
-        // Bio max lines control
-        const maxLinesRange = document.getElementById('maxLinesRange')
-        const maxLinesValue = document.getElementById('maxLinesValue')
-        maxLinesRange.addEventListener('input', () => {
-            const val = parseInt(maxLinesRange.value)
-            maxLinesValue.textContent = val === 0 ? 'none' : val
-            // Update the bio column's maxLines property
-            const bioColumn = columns.find(c => c.field === 'bio')
-            if (bioColumn) {
-                bioColumn.maxLines = val === 0 ? undefined : val
-                grid.columns = [...columns]  // Trigger re-render
-            }
-        })
-
-        // =====================================================================
-        // Table Border Only Comparison Grids
-        // =====================================================================
-        const borderDemoData = sampleData.slice(0, 8)  // Just first 8 rows
-        const borderDemoColumns = [
-            { field: 'id', title: 'ID', width: '50px', horizontalAlign: 'center' },
-            { field: 'name', title: 'Name', width: '140px' },
-            { field: 'department', title: 'Department', width: '100px' },
-            { field: 'salary', title: 'Salary', width: '90px', horizontalAlign: 'right',
-              getDisplayValueCallback: ({ value: val }) => val != null ? `$${val.toLocaleString()}` : '' }
-        ]
-
-        // Default grid (shows double border issue)
-        const gridDoubleBorder = document.getElementById('gridDoubleBorder')
-        gridDoubleBorder.items = borderDemoData
-        gridDoubleBorder.columns = borderDemoColumns
-        gridDoubleBorder.isPagingEnabled = true
-        gridDoubleBorder.pageSize = 3
-        gridDoubleBorder.paginationPosition = 'bottom-right'
-        gridDoubleBorder.paginationLayout = 'previous|page-info|next'
-
-        // Grid with isTableBorderOnly (no double border)
-        const gridTableBorderOnly = document.getElementById('gridTableBorderOnly')
-        gridTableBorderOnly.items = borderDemoData
-        gridTableBorderOnly.columns = borderDemoColumns
-        gridTableBorderOnly.isPagingEnabled = true
-        gridTableBorderOnly.pageSize = 3
-        gridTableBorderOnly.paginationPosition = 'bottom-right'
-        gridTableBorderOnly.paginationLayout = 'previous|page-info|next'
-        gridTableBorderOnly.isTableBorderOnly = true
-
-        // customStyles — instance + page-wide layers
-        for (const id of ['gridPageCss', 'gridOwnCss']) {
-            const g = document.getElementById(id)
-            g.items = borderDemoData
-            g.columns = borderDemoColumns
+        /* Product group styling */
+        .product-electronics {
+            background-color: var(--product-electronics-bg) !important;
+            color: var(--product-electronics-color);
         }
-        const PAGE_CSS = `
-            .wg__header { background: #dbeafe; }
-            .wg__cell { color: #1e3a8a; }
-        `
-        document.getElementById('pageCssOn').addEventListener('click', () => {
-            window.components['web-grid'].customStyles = PAGE_CSS
-        })
-        document.getElementById('pageCssOff').addEventListener('click', () => {
-            window.components['web-grid'].customStyles = null
-        })
+        .product-clothing {
+            background-color: var(--product-clothing-bg) !important;
+            color: var(--product-clothing-color);
+        }
+        .product-food {
+            background-color: var(--product-food-bg) !important;
+            color: var(--product-food-color);
+        }
+    `
+
+    // Header height control
+    const headerHeightRange = document.getElementById('headerHeightRange')
+    const headerHeightValue = document.getElementById('headerHeightValue')
+    headerHeightRange.addEventListener('input', () => {
+        const value = headerHeightRange.value + 'px'
+        headerHeightValue.textContent = value
+        grid.style.setProperty('--wg-header-min-height', value)
+    })
+
+    // Row height control
+    const rowHeightRange = document.getElementById('rowHeightRange')
+    const rowHeightValue = document.getElementById('rowHeightValue')
+    rowHeightRange.addEventListener('input', () => {
+        const value = rowHeightRange.value + 'px'
+        rowHeightValue.textContent = value
+        grid.style.setProperty('--wg-row-min-height', value)
+    })
+
+    // Bio max lines control
+    const maxLinesRange = document.getElementById('maxLinesRange')
+    const maxLinesValue = document.getElementById('maxLinesValue')
+    maxLinesRange.addEventListener('input', () => {
+        const val = parseInt(maxLinesRange.value)
+        maxLinesValue.textContent = val === 0 ? 'none' : val
+        // Update the bio column's maxLines property
+        const bioColumn = columns.find(c => c.field === 'bio')
+        if (bioColumn) {
+            bioColumn.maxLines = val === 0 ? undefined : val
+            grid.columns = [...columns]  // Trigger re-render
+        }
+    })
+
+    // =====================================================================
+    // Table Border Only Comparison Grids
+    // =====================================================================
+    const borderDemoData = sampleData.slice(0, 8)  // Just first 8 rows
+    const borderDemoColumns = [
+        { field: 'id', title: 'ID', width: '50px', horizontalAlign: 'center' },
+        { field: 'name', title: 'Name', width: '140px' },
+        { field: 'department', title: 'Department', width: '100px' },
+        { field: 'salary', title: 'Salary', width: '90px', horizontalAlign: 'right',
+          getDisplayValueCallback: ({ value: val }) => val != null ? `$${val.toLocaleString()}` : '' }
+    ]
+
+    // Default grid (shows double border issue)
+    const gridDoubleBorder = document.getElementById('gridDoubleBorder')
+    gridDoubleBorder.items = borderDemoData
+    gridDoubleBorder.columns = borderDemoColumns
+    gridDoubleBorder.isPagingEnabled = true
+    gridDoubleBorder.pageSize = 3
+    gridDoubleBorder.paginationPosition = 'bottom-right'
+    gridDoubleBorder.paginationLayout = 'previous|page-info|next'
+
+    // Grid with isTableBorderOnly (no double border)
+    const gridTableBorderOnly = document.getElementById('gridTableBorderOnly')
+    gridTableBorderOnly.items = borderDemoData
+    gridTableBorderOnly.columns = borderDemoColumns
+    gridTableBorderOnly.isPagingEnabled = true
+    gridTableBorderOnly.pageSize = 3
+    gridTableBorderOnly.paginationPosition = 'bottom-right'
+    gridTableBorderOnly.paginationLayout = 'previous|page-info|next'
+    gridTableBorderOnly.isTableBorderOnly = true
+
+    // customStyles — instance + page-wide layers
+    for (const id of ['gridPageCss', 'gridOwnCss']) {
+        const g = document.getElementById(id)
+        g.items = borderDemoData
+        g.columns = borderDemoColumns
+    }
+    const PAGE_CSS = `
+        .wg__header { background: #dbeafe; }
+        .wg__cell { color: #1e3a8a; }
+    `
+    document.getElementById('pageCssOn').addEventListener('click', () => {
         window.components['web-grid'].customStyles = PAGE_CSS
-    </script>
-</body>
-</html>
+    })
+    document.getElementById('pageCssOff').addEventListener('click', () => {
+        window.components['web-grid'].customStyles = null
+    })
+    window.components['web-grid'].customStyles = PAGE_CSS
+</script>

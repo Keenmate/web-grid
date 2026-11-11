@@ -1,208 +1,169 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebGrid - Freeze Panes</title>
-    <link rel="stylesheet" href="examples-shared.css">
-</head>
-<body>
-    <div class="container">
-        <header>
-            <a href="index.html" class="back-link">← Back to Examples</a>
-            <h1>❄️ Freeze Panes</h1>
-            <p class="subtitle">Excel-like frozen columns that stay visible while scrolling horizontally</p>
-        </header>
+<meta name="kmwc:title" content="❄️ Freeze Panes">
+<meta name="kmwc:subtitle" content="Excel-like frozen columns that stay visible while scrolling horizontally">
 
-        <div class="card">
-            <h2>Frozen Columns Demo</h2>
-            <p>Scroll horizontally to see frozen columns stay in place. The row numbers and first two data columns are frozen.</p>
+    <div class="card">
+        <h2>FP01 · Frozen Columns Demo</h2>
+        <p>Scroll horizontally to see frozen columns stay in place. The row numbers and first two data columns are frozen.</p>
 
-            <div class="controls">
-                <label>
-                    <input type="checkbox" id="stickyRowNumbers" checked> isStickyRowNumbers
-                </label>
-                <label>
-                    Freeze Columns:
-                    <select id="frozenColumnCount">
-                        <option value="0">0</option>
-                        <option value="1">1</option>
-                        <option value="2" selected>2</option>
-                        <option value="3">3</option>
-                    </select>
-                </label>
-                <label>
-                    <input type="checkbox" id="showRowNumbers" checked> isRowNumbersShown
-                </label>
-            </div>
-
-            <web-grid id="grid" style="max-width: 100%; max-height: 400px;"></web-grid>
-
-            <div class="note" style="margin-top: 1rem;">
-                <div class="note-title">How it works</div>
-                <ul>
-                    <li><code>isStickyRowNumbers: true</code> - Row number column stays fixed on the left</li>
-                    <li><code>frozenColumnCount: N</code> - First N columns are frozen (after visual reorder)</li>
-                    <li><code>frozen: true</code> on Column - Mark individual columns as frozen (they move to the left)</li>
-                </ul>
-            </div>
+        <div class="controls">
+            <label>
+                <input type="checkbox" id="stickyRowNumbers" checked> isStickyRowNumbers
+            </label>
+            <label>
+                Freeze Columns:
+                <select id="frozenColumnCount">
+                    <option value="0">0</option>
+                    <option value="1">1</option>
+                    <option value="2" selected>2</option>
+                    <option value="3">3</option>
+                </select>
+            </label>
+            <label>
+                <input type="checkbox" id="showRowNumbers" checked> isRowNumbersShown
+            </label>
         </div>
 
-        <div class="card">
-            <h2>Column-Level Frozen Property</h2>
-            <p>Columns can be individually marked as frozen using the <code>frozen: true</code> property. Frozen columns automatically move to the left side.</p>
+        <web-grid id="grid" style="max-height: 400px;"></web-grid>
 
-            <web-grid id="grid2" style="max-width: 100%; max-height: 300px;"></web-grid>
-
-            <div class="note" style="margin-top: 1rem;">
-                <div class="note-title">Visual Reorder</div>
-                <p>In this example, the "Status" column is defined last but has <code>frozen: true</code>, so it appears first (after row numbers). The visual order is: Row Numbers → Status → ID → Name → Email → ...</p>
-            </div>
+        <div class="note mt-1">
+            <div class="note-title">How it works</div>
+            <ul>
+                <li><code>isStickyRowNumbers: true</code> - Row number column stays fixed on the left</li>
+                <li><code>frozenColumnCount: N</code> - First N columns are frozen (after visual reorder)</li>
+                <li><code>frozen: true</code> on Column - Mark individual columns as frozen (they move to the left)</li>
+            </ul>
         </div>
-
-        <div class="card">
-            <h2>Configuration Options</h2>
-
-            <div class="grid-2">
-                <div>
-                    <h3>Grid-Level Properties</h3>
-                    <table class="props-table">
-                        <tr>
-                            <td><code>isRowNumbersShown</code></td>
-                            <td>Show row number column</td>
-                        </tr>
-                        <tr>
-                            <td><code>isStickyRowNumbers</code></td>
-                            <td>Make row numbers sticky (frozen)</td>
-                        </tr>
-                        <tr>
-                            <td><code>frozenColumnCount</code></td>
-                            <td>Number of columns to freeze from left</td>
-                        </tr>
-                    </table>
-                </div>
-                <div>
-                    <h3>Column-Level Properties</h3>
-                    <table class="props-table">
-                        <tr>
-                            <td><code>frozen</code></td>
-                            <td>Mark column as frozen (moves to left)</td>
-                        </tr>
-                        <tr>
-                            <td><code>width</code></td>
-                            <td>Explicit width recommended for frozen columns</td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <footer>
-            <p>WebGrid Component by <a href="https://github.com/keenmate">Keenmate</a></p>
-        </footer>
     </div>
 
-    <style>
-        .props-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.9rem;
-        }
-        .props-table td {
-            padding: 0.5rem;
-            border-bottom: 1px solid #e2e8f0;
-        }
-        .props-table td:first-child {
-            width: 40%;
-            font-family: monospace;
-            color: #6366f1;
-        }
-    </style>
+    <div class="card">
+        <h2>FP02 · Column-Level Frozen Property</h2>
+        <p>Columns can be individually marked as frozen using the <code>frozen: true</code> property. Frozen columns automatically move to the left side.</p>
 
-    <script type="module">
-        import '@keenmate/web-grid'
+        <web-grid id="grid2" style="max-height: 300px;"></web-grid>
 
-        // Wide dataset to demonstrate horizontal scrolling
-        const wideData = Array.from({ length: 50 }, (_, i) => ({
-            id: 1000 + i,
-            name: ['Alice', 'Bob', 'Carol', 'David', 'Eve', 'Frank', 'Grace', 'Henry'][i % 8] + ' ' + ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones'][i % 5],
-            email: `user${i}@example.com`,
-            department: ['Engineering', 'Marketing', 'Sales', 'HR', 'Finance'][i % 5],
-            role: ['Manager', 'Senior', 'Junior', 'Lead', 'Director'][i % 5],
-            location: ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix'][i % 5],
-            salary: 50000 + (i * 1000),
-            startDate: `202${i % 4}-0${(i % 9) + 1}-${10 + (i % 20)}`,
-            status: i % 7 === 0 ? 'On Leave' : 'Active',
-            phone: `555-${String(i).padStart(4, '0')}`,
-            extension: String(1000 + i),
-            building: `Building ${String.fromCharCode(65 + (i % 5))}`,
-            floor: (i % 10) + 1,
-            desk: `${String.fromCharCode(65 + (i % 26))}${i % 100}`
-        }))
+        <div class="note mt-1">
+            <div class="note-title">Visual Reorder</div>
+            <p>In this example, the "Status" column is defined last but has <code>frozen: true</code>, so it appears first (after row numbers). The visual order is: Row Numbers → Status → ID → Name → Email → ...</p>
+        </div>
+    </div>
 
-        // Columns with explicit widths (important for frozen columns)
-        const columns = [
-            { field: 'id', title: 'ID', width: '80px' },
-            { field: 'name', title: 'Name', width: '150px' },
-            { field: 'email', title: 'Email', width: '200px' },
-            { field: 'department', title: 'Department', width: '120px' },
-            { field: 'role', title: 'Role', width: '100px' },
-            { field: 'location', title: 'Location', width: '120px' },
-            { field: 'salary', title: 'Salary', width: '100px', getDisplayValueCallback: ({ value: v }) => '$' + v?.toLocaleString() },
-            { field: 'startDate', title: 'Start Date', width: '110px' },
-            { field: 'status', title: 'Status', width: '100px' },
-            { field: 'phone', title: 'Phone', width: '120px' },
-            { field: 'extension', title: 'Ext', width: '60px' },
-            { field: 'building', title: 'Building', width: '100px' },
-            { field: 'floor', title: 'Floor', width: '60px' },
-            { field: 'desk', title: 'Desk', width: '60px' }
-        ]
+    <div class="card">
+        <h2>FP03 · Configuration Options</h2>
 
-        // Initialize first grid
-        const grid = document.getElementById('grid')
-        grid.items = wideData
-        grid.columns = columns
-        grid.isRowNumbersShown = true
-        grid.isStickyRowNumbers = true
-        grid.frozenColumnCount = 2
-        grid.isStriped = true
-        grid.isHoverable = true
+        <div class="grid-2">
+            <div>
+                <h3>Grid-Level Properties</h3>
+                <table class="reference-table table-compact table-full">
+                    <tr>
+                        <td><code>isRowNumbersShown</code></td>
+                        <td>Show row number column</td>
+                    </tr>
+                    <tr>
+                        <td><code>isStickyRowNumbers</code></td>
+                        <td>Make row numbers sticky (frozen)</td>
+                    </tr>
+                    <tr>
+                        <td><code>frozenColumnCount</code></td>
+                        <td>Number of columns to freeze from left</td>
+                    </tr>
+                </table>
+            </div>
+            <div>
+                <h3>Column-Level Properties</h3>
+                <table class="reference-table table-compact table-full">
+                    <tr>
+                        <td><code>frozen</code></td>
+                        <td>Mark column as frozen (moves to left)</td>
+                    </tr>
+                    <tr>
+                        <td><code>width</code></td>
+                        <td>Explicit width recommended for frozen columns</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
 
-        // Controls for first grid
-        document.getElementById('stickyRowNumbers').addEventListener('change', e => {
-            grid.isStickyRowNumbers = e.target.checked
-        })
+<script type="module">
+    // Wide dataset to demonstrate horizontal scrolling
+    const wideData = Array.from({ length: 50 }, (_, i) => ({
+        id: 1000 + i,
+        name: ['Alice', 'Bob', 'Carol', 'David', 'Eve', 'Frank', 'Grace', 'Henry'][i % 8] + ' ' + ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones'][i % 5],
+        email: `user${i}@example.com`,
+        department: ['Engineering', 'Marketing', 'Sales', 'HR', 'Finance'][i % 5],
+        role: ['Manager', 'Senior', 'Junior', 'Lead', 'Director'][i % 5],
+        location: ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix'][i % 5],
+        salary: 50000 + (i * 1000),
+        startDate: `202${i % 4}-0${(i % 9) + 1}-${10 + (i % 20)}`,
+        status: i % 7 === 0 ? 'On Leave' : 'Active',
+        phone: `555-${String(i).padStart(4, '0')}`,
+        extension: String(1000 + i),
+        building: `Building ${String.fromCharCode(65 + (i % 5))}`,
+        floor: (i % 10) + 1,
+        desk: `${String.fromCharCode(65 + (i % 26))}${i % 100}`
+    }))
 
-        document.getElementById('frozenColumnCount').addEventListener('change', e => {
-            grid.frozenColumnCount = parseInt(e.target.value)
-        })
+    // Columns with explicit widths (important for frozen columns)
+    const columns = [
+        { field: 'id', title: 'ID', width: '80px' },
+        { field: 'name', title: 'Name', width: '150px' },
+        { field: 'email', title: 'Email', width: '200px' },
+        { field: 'department', title: 'Department', width: '120px' },
+        { field: 'role', title: 'Role', width: '100px' },
+        { field: 'location', title: 'Location', width: '120px' },
+        { field: 'salary', title: 'Salary', width: '100px', getDisplayValueCallback: ({ value: v }) => '$' + v?.toLocaleString() },
+        { field: 'startDate', title: 'Start Date', width: '110px' },
+        { field: 'status', title: 'Status', width: '100px' },
+        { field: 'phone', title: 'Phone', width: '120px' },
+        { field: 'extension', title: 'Ext', width: '60px' },
+        { field: 'building', title: 'Building', width: '100px' },
+        { field: 'floor', title: 'Floor', width: '60px' },
+        { field: 'desk', title: 'Desk', width: '60px' }
+    ]
 
-        document.getElementById('showRowNumbers').addEventListener('change', e => {
-            grid.isRowNumbersShown = e.target.checked
-        })
+    // Initialize first grid
+    const grid = document.getElementById('grid')
+    grid.items = wideData
+    grid.columns = columns
+    grid.isRowNumbersShown = true
+    grid.isStickyRowNumbers = true
+    grid.frozenColumnCount = 2
+    grid.isStriped = true
+    grid.isHoverable = true
 
-        // Second grid - demonstrating column-level frozen property
-        const grid2 = document.getElementById('grid2')
+    // Controls for first grid
+    document.getElementById('stickyRowNumbers').addEventListener('change', e => {
+        grid.isStickyRowNumbers = e.target.checked
+    })
 
-        // Status column is defined last but will appear first due to frozen: true
-        const columnsWithFrozen = [
-            { field: 'id', title: 'ID', width: '80px' },
-            { field: 'name', title: 'Name', width: '150px' },
-            { field: 'email', title: 'Email', width: '200px' },
-            { field: 'department', title: 'Department', width: '120px' },
-            { field: 'role', title: 'Role', width: '100px' },
-            { field: 'location', title: 'Location', width: '120px' },
-            { field: 'salary', title: 'Salary', width: '100px', getDisplayValueCallback: ({ value: v }) => '$' + v?.toLocaleString() },
-            { field: 'phone', title: 'Phone', width: '120px' },
-            { field: 'status', title: 'Status', width: '100px', frozen: true }  // This will move to the left
-        ]
+    document.getElementById('frozenColumnCount').addEventListener('change', e => {
+        grid.frozenColumnCount = parseInt(e.target.value)
+    })
 
-        grid2.items = wideData.slice(0, 20)
-        grid2.columns = columnsWithFrozen
-        grid2.isRowNumbersShown = true
-        grid2.isStickyRowNumbers = true
-        grid2.isStriped = true
-        grid2.isHoverable = true
-    </script>
-</body>
-</html>
+    document.getElementById('showRowNumbers').addEventListener('change', e => {
+        grid.isRowNumbersShown = e.target.checked
+    })
+
+    // Second grid - demonstrating column-level frozen property
+    const grid2 = document.getElementById('grid2')
+
+    // Status column is defined last but will appear first due to frozen: true
+    const columnsWithFrozen = [
+        { field: 'id', title: 'ID', width: '80px' },
+        { field: 'name', title: 'Name', width: '150px' },
+        { field: 'email', title: 'Email', width: '200px' },
+        { field: 'department', title: 'Department', width: '120px' },
+        { field: 'role', title: 'Role', width: '100px' },
+        { field: 'location', title: 'Location', width: '120px' },
+        { field: 'salary', title: 'Salary', width: '100px', getDisplayValueCallback: ({ value: v }) => '$' + v?.toLocaleString() },
+        { field: 'phone', title: 'Phone', width: '120px' },
+        { field: 'status', title: 'Status', width: '100px', frozen: true }  // This will move to the left
+    ]
+
+    grid2.items = wideData.slice(0, 20)
+    grid2.columns = columnsWithFrozen
+    grid2.isRowNumbersShown = true
+    grid2.isStickyRowNumbers = true
+    grid2.isStriped = true
+    grid2.isHoverable = true
+</script>

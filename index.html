@@ -1,379 +1,205 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebGrid - Examples</title>
-    <link rel="stylesheet" href="examples-shared.css">
-    <style>
-        body {
-            background: #f0f2f5;
-            min-height: 100vh;
-            padding: 2rem;
-        }
+<meta name="kmwc:layout" content="bare">
 
-        .page-container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .header-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 16px;
-            padding: 2.5rem 3rem;
-            margin-bottom: 2rem;
-            color: white;
-        }
-
-        .header-card h1 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin: 0 0 0.5rem 0;
-        }
-
-        .header-card .subtitle {
-            font-size: 1.1rem;
-            opacity: 0.9;
-            margin: 0 0 1rem 0;
-        }
-
-        .version-badge {
-            display: inline-block;
-            background: rgba(255, 255, 255, 0.2);
-            padding: 0.35rem 0.85rem;
-            border-radius: 8px;
-            font-size: 0.875rem;
-            font-weight: 500;
-        }
-
-        .category {
-            margin-bottom: 2.5rem;
-        }
-
-        .category-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: #475569;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin: 0 0 1rem 0;
-            padding-bottom: 0.5rem;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        .cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 1.5rem;
-        }
-
-        .card-link {
-            background: white;
-            border-radius: 12px;
-            padding: 1.75rem;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-            cursor: pointer;
-            text-decoration: none;
-            color: inherit;
-            display: block;
-        }
-
-        .card-link:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-            text-decoration: none;
-        }
-
-        .card-icon {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
-            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
-        }
-
-        .card-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin: 0 0 0.5rem 0;
-            color: #1a202c;
-        }
-
-        .card-description {
-            color: #64748b;
-            line-height: 1.6;
-            margin: 0;
-            font-size: 0.95rem;
-        }
-
-        .badge {
-            display: inline-block;
-            background: #f56565;
-            color: white;
-            padding: 0.15rem 0.5rem;
-            border-radius: 6px;
-            font-size: 0.65rem;
-            font-weight: 600;
-            margin-left: 0.5rem;
-            vertical-align: middle;
-            text-transform: uppercase;
-        }
-
-        footer {
-            text-align: center;
-            margin-top: 3rem;
-            color: #64748b;
-            font-size: 0.875rem;
-        }
-
-        footer a {
-            color: #667eea;
-            text-decoration: none;
-        }
-
-        footer a:hover {
-            text-decoration: underline;
-        }
-    </style>
-</head>
-<body>
-    <div class="page-container">
-        <header class="header-card">
-            <h1>Web Grid</h1>
-            <p class="subtitle">Framework-agnostic data grid web component with Excel-like editing</p>
-            <span class="version-badge" id="version-badge"></span>
-        </header>
-
-        <div id="cards"></div>
-
-        <footer>
-            <p>Created by <a href="https://github.com/keenmate" target="_blank">Keenmate</a> | <a href="https://github.com/keenmate/web-grid" target="_blank">GitHub</a></p>
-        </footer>
+<!-- Header, cards, footer, version badge and the cross-page nav are rendered by the devkit
+     (renderExamplesIndex) from the registry below + package.json#kmwc. The cards are one flat
+     grid, so the two categories are spelled out in the intro card, from the same registry. -->
+<template id="index-intro">
+    <div class="card">
+        <h2>The pages, by topic</h2>
+        <ul data-index-groups></ul>
     </div>
+</template>
 
-    <script>
-        // =====================================================
-        // Demo Page Registry
-        // Add new pages here - they'll appear automatically
-        // =====================================================
-        // Category registry - controls section titles and their display order.
-        const categories = [
-            { id: 'library',   title: 'Library' },
-            { id: 'practical', title: 'Practical Examples' }
-        ]
+<script type="module">
+    import { renderExamplesIndex, mapToEscapedHtml } from '@keenmate/web-components-devkit/examples'
 
-        const pages = [
-            {
-                href: 'examples-basic.html',
-                icon: '📦',
-                title: 'Basic Examples',
-                category: 'library',
-                description: 'Core grid features with all editor types, keyboard navigation, sorting, and pagination.'
-            },
-            {
-                href: 'examples-custom-styling.html',
-                icon: '🎨',
-                title: 'Custom Styling',
-                category: 'library',
-                description: 'Dynamic cell and row styling using callbacks and custom CSS injection into Shadow DOM.'
-            },
-            {
-                href: 'examples-theming.html',
-                icon: '🌗',
-                title: 'Theming Playground',
-                category: 'library',
-                description: 'Interactive playground for dark mode signals (page color-scheme, framework class, per-instance attribute, brand themes) with a live "winning signal" indicator.'
-            },
-            {
-                href: 'examples-row-locking.html',
-                icon: '🔒',
-                title: 'Row Locking',
-                category: 'library',
-                description: 'Collaborative editing with row-level locking via data properties, callbacks, or external API.'
-            },
-            {
-                href: 'examples-freeze-panes.html',
-                icon: '❄️',
-                title: 'Freeze Panes',
-                category: 'library',
-                description: 'Excel-like frozen columns that stay visible while scrolling horizontally.'
-            },
-            {
-                href: 'examples-resizable-columns.html',
-                icon: '↔️',
-                title: 'Resizable Columns',
-                category: 'library',
-                description: 'Drag column edges to resize with min/max constraints and localStorage persistence.'
-            },
-            {
-                href: 'examples-fill-handle.html',
-                icon: '➕',
-                title: 'Fill Handle',
-                category: 'library',
-                description: 'Excel-like autofill by dragging the handle at the corner of a focused cell.'
-            },
-            {
-                href: 'examples-sorting-paging.html',
-                icon: '🔀',
-                title: 'Sorting & Pagination',
-                category: 'library',
-                description: 'Multi-column sorting with Ctrl+Click and server-side pagination support.'
-            },
-            {
-                href: 'examples-virtual-scroll.html',
-                icon: '🚀',
-                title: 'Virtual & Infinite Scroll',
-                category: 'library',
-                description: 'Efficiently handle 10,000+ rows with virtual scrolling and progressive loading.'
-            },
-            {
-                href: 'examples-dropdowns.html',
-                icon: '🔽',
-                title: 'Dropdown Features',
-                category: 'library',
-                description: 'Advanced dropdowns with icons, subtitles, custom rendering, and async search.'
-            },
-            {
-                href: 'examples-editors.html',
-                icon: '✏️',
-                title: 'Custom Editors',
-                category: 'library',
-                description: 'Dialog-based editing with custom editor callbacks and full control over the edit flow.'
-            },
-            {
-                href: 'examples-product-search.html',
-                icon: '🔎',
-                title: 'Product Search',
-                category: 'practical',
-                badge: 'new',
-                description: 'Custom editor that opens a search dialog; stores an id and displays the resolved product name.'
-            },
-            {
-                href: 'examples-toolbar.html',
-                icon: '🛠️',
-                title: 'Row Toolbar',
-                category: 'library',
-                description: 'Floating toolbar with row actions like add, delete, duplicate, and reorder.'
-            },
-            {
-                href: 'examples-shortcuts.html',
-                icon: '⌨️',
-                title: 'Keyboard Shortcuts',
-                category: 'library',
-                description: 'Custom key bindings for row operations with help overlay showing available shortcuts.'
-            },
-            {
-                href: 'examples-selection.html',
-                icon: '☑️',
-                title: 'Selection',
-                category: 'library',
-                badge: 'new',
-                description: 'Multi-row and cell range selection with keyboard shortcuts and programmatic API.'
-            },
-            {
-                href: 'examples-contextmenu.html',
-                icon: '📋',
-                title: 'Context Menu',
-                category: 'library',
-                description: 'Right-click context menus with cell awareness, dynamic labels, and conditional visibility.'
-            },
-            {
-                href: 'examples-editable-full.html',
-                icon: '📝',
-                title: 'Full Editable',
-                category: 'library',
-                description: 'Comprehensive editing with validation, value transformation, and all editor types.'
-            },
-            {
-                href: 'examples-grid-modes.html',
-                icon: '🔄',
-                title: 'Grid Modes',
-                category: 'library',
-                description: 'Pre-configured editing modes (read-only, excel, input-matrix), edit triggers, cursor selection, and dropdown behavior.'
-            },
-            {
-                href: 'examples-edit-trigger.html',
-                icon: '🖱️',
-                title: 'Edit Trigger & Empty Row',
-                category: 'library',
-                badge: 'experimental',
-                description: 'Edit trigger modes and experimental empty row feature for inline data entry in navigate mode.'
-            },
-            {
-                href: 'examples-height-modes.html',
-                icon: '📐',
-                title: 'Height Modes',
-                category: 'library',
-                badge: 'new',
-                description: 'Container (max-height) vs full-height sizing, with an optional fixed-height wrapper to compare behaviors.'
-            },
-            {
-                href: 'examples-column-visibility.html',
-                icon: '👁',
-                title: 'Column Visibility',
-                category: 'library',
-                badge: 'new',
-                description: 'Hide and show columns via the header context menu or programmatically through the isHidden property.'
-            },
-            {
-                href: 'examples-tree.html',
-                icon: '🌲',
-                title: 'Tree / Hierarchy',
-                category: 'library',
-                badge: 'new',
-                description: 'Render tree-structured data (organizations, file systems) with indent + chevron using ltree-style path strings.'
-            },
-            {
-                href: 'examples-tree-scroll.html',
-                icon: '🧪',
-                title: 'Tree + Virtual / Infinite Scroll',
-                category: 'library',
-                badge: 'new',
-                description: 'Test view combining tree mode with virtual scroll (~12k rows in memory) and infinite scroll (lazy-load subtrees in batches).'
-            }
-        ]
+    const categories = [
+        { id: 'library', title: 'Library', hint: 'one feature surface per page' },
+        { id: 'practical', title: 'Practical Examples', hint: 'applied patterns' }
+    ]
 
-        // =====================================================
-        // Render cards from registry, grouped by category
-        // =====================================================
-        function renderCardHtml(page) {
-            return `
-                <a href="${page.href}" class="card-link">
-                    <div class="card-icon">${page.icon}</div>
-                    <h2 class="card-title">
-                        ${page.title}${page.badge ? `<span class="badge">${page.badge}</span>` : ''}
-                    </h2>
-                    <p class="card-description">${page.description}</p>
-                </a>
-            `
+    const pages = [
+        {
+            href: 'examples-basic.html',
+            icon: '📦',
+            title: 'Basic Examples',
+            category: 'library',
+            description: 'Core grid features with all editor types, keyboard navigation, sorting, and pagination.'
+        },
+        {
+            href: 'examples-custom-styling.html',
+            icon: '🎨',
+            title: 'Custom Styling',
+            category: 'library',
+            description: 'Dynamic cell and row styling using callbacks and custom CSS injection into Shadow DOM.'
+        },
+        {
+            href: 'examples-theming.html',
+            icon: '🌗',
+            title: 'Theming Playground',
+            category: 'library',
+            description: 'Interactive playground for dark mode signals (page color-scheme, framework class, per-instance attribute, brand themes) with a live "winning signal" indicator.'
+        },
+        {
+            href: 'examples-row-locking.html',
+            icon: '🔒',
+            title: 'Row Locking',
+            category: 'library',
+            description: 'Collaborative editing with row-level locking via data properties, callbacks, or external API.'
+        },
+        {
+            href: 'examples-freeze-panes.html',
+            icon: '❄️',
+            title: 'Freeze Panes',
+            category: 'library',
+            description: 'Excel-like frozen columns that stay visible while scrolling horizontally.'
+        },
+        {
+            href: 'examples-resizable-columns.html',
+            icon: '↔️',
+            title: 'Resizable Columns',
+            category: 'library',
+            description: 'Drag column edges to resize with min/max constraints and localStorage persistence.'
+        },
+        {
+            href: 'examples-fill-handle.html',
+            icon: '➕',
+            title: 'Fill Handle',
+            category: 'library',
+            description: 'Excel-like autofill by dragging the handle at the corner of a focused cell.'
+        },
+        {
+            href: 'examples-sorting-paging.html',
+            icon: '🔀',
+            title: 'Sorting & Pagination',
+            category: 'library',
+            description: 'Multi-column sorting with Ctrl+Click and server-side pagination support.'
+        },
+        {
+            href: 'examples-virtual-scroll.html',
+            icon: '🚀',
+            title: 'Virtual & Infinite Scroll',
+            category: 'library',
+            description: 'Efficiently handle 10,000+ rows with virtual scrolling and progressive loading.'
+        },
+        {
+            href: 'examples-dropdowns.html',
+            icon: '🔽',
+            title: 'Dropdown Features',
+            category: 'library',
+            description: 'Advanced dropdowns with icons, subtitles, custom rendering, and async search.'
+        },
+        {
+            href: 'examples-editors.html',
+            icon: '✏️',
+            title: 'Custom Editors',
+            category: 'library',
+            description: 'Dialog-based editing with custom editor callbacks and full control over the edit flow.'
+        },
+        {
+            href: 'examples-product-search.html',
+            icon: '🔎',
+            title: 'Product Search',
+            category: 'practical',
+            badge: 'new',
+            description: 'Custom editor that opens a search dialog; stores an id and displays the resolved product name.'
+        },
+        {
+            href: 'examples-toolbar.html',
+            icon: '🛠️',
+            title: 'Row Toolbar',
+            category: 'library',
+            description: 'Floating toolbar with row actions like add, delete, duplicate, and reorder.'
+        },
+        {
+            href: 'examples-shortcuts.html',
+            icon: '⌨️',
+            title: 'Keyboard Shortcuts',
+            category: 'library',
+            description: 'Custom key bindings for row operations with help overlay showing available shortcuts.'
+        },
+        {
+            href: 'examples-selection.html',
+            icon: '☑️',
+            title: 'Selection',
+            category: 'library',
+            badge: 'new',
+            description: 'Multi-row and cell range selection with keyboard shortcuts and programmatic API.'
+        },
+        {
+            href: 'examples-contextmenu.html',
+            icon: '📋',
+            title: 'Context Menu',
+            category: 'library',
+            description: 'Right-click context menus with cell awareness, dynamic labels, and conditional visibility.'
+        },
+        {
+            href: 'examples-editable-full.html',
+            icon: '📝',
+            title: 'Full Editable',
+            category: 'library',
+            description: 'Comprehensive editing with validation, value transformation, and all editor types.'
+        },
+        {
+            href: 'examples-grid-modes.html',
+            icon: '🔄',
+            title: 'Grid Modes',
+            category: 'library',
+            description: 'Pre-configured editing modes (read-only, excel, input-matrix), edit triggers, cursor selection, and dropdown behavior.'
+        },
+        {
+            href: 'examples-edit-trigger.html',
+            icon: '🖱️',
+            title: 'Edit Trigger & Empty Row',
+            category: 'library',
+            badge: 'experimental',
+            description: 'Edit trigger modes and experimental empty row feature for inline data entry in navigate mode.'
+        },
+        {
+            href: 'examples-height-modes.html',
+            icon: '📐',
+            title: 'Height Modes',
+            category: 'library',
+            badge: 'new',
+            description: 'Container (max-height) vs full-height sizing, with an optional fixed-height wrapper to compare behaviors.'
+        },
+        {
+            href: 'examples-column-visibility.html',
+            icon: '👁',
+            title: 'Column Visibility',
+            category: 'library',
+            badge: 'new',
+            description: 'Hide and show columns via the header context menu or programmatically through the isHidden property.'
+        },
+        {
+            href: 'examples-tree.html',
+            icon: '🌲',
+            title: 'Tree / Hierarchy',
+            category: 'library',
+            badge: 'new',
+            description: 'Render tree-structured data (organizations, file systems) with indent + chevron using ltree-style path strings.'
+        },
+        {
+            href: 'examples-tree-scroll.html',
+            icon: '🧪',
+            title: 'Tree + Virtual / Infinite Scroll',
+            category: 'library',
+            badge: 'new',
+            description: 'Test view combining tree mode with virtual scroll (~12k rows in memory) and infinite scroll (lazy-load subtrees in batches).'
         }
+    ]
 
-        function renderCards() {
-            const container = document.getElementById('cards')
-            const defaultCategory = categories[0].id
-            const groups = new Map(categories.map(c => [c.id, []]))
-            for (const page of pages) {
-                const id = groups.has(page.category) ? page.category : defaultCategory
-                groups.get(id).push(page)
-            }
-            container.innerHTML = categories
-                .filter(c => groups.get(c.id).length > 0)
-                .map(c => `
-                    <section class="category">
-                        <h2 class="category-title">${c.title}</h2>
-                        <div class="cards">
-                            ${groups.get(c.id).map(renderCardHtml).join('')}
-                        </div>
-                    </section>
-                `).join('')
-        }
+    const indexElement = renderExamplesIndex({
+        tagline: 'Framework-agnostic data grid web component with Excel-like editing',
+        pages: categories.flatMap((category) => pages.filter((page) => page.category === category.id))
+    })
 
-        renderCards()
-    </script>
-
-    <script type="module">
-        // __VERSION__ is replaced at dev/build time by the root vite.config.ts
-        // with the version from packages/web-grid/package.json.
-        document.getElementById('version-badge').textContent = 'v' + __VERSION__
-    </script>
-</body>
-</html>
+    const introFragment = document.getElementById('index-intro').content.cloneNode(true)
+    introFragment.querySelector('[data-index-groups]').innerHTML = categories
+        .map((category) => `<li><strong>${mapToEscapedHtml(category.title)}</strong> — ${mapToEscapedHtml(category.hint)}: ${pages
+            .filter((page) => page.category === category.id)
+            .map((page) => `<a href="${mapToEscapedHtml(page.href)}">${mapToEscapedHtml(page.title)}</a>`)
+            .join(', ')}</li>`)
+        .join('')
+    indexElement.querySelector('header').after(introFragment)
+</script>

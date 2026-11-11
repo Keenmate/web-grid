@@ -1,104 +1,31 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebGrid - Column Visibility</title>
-    <link rel="stylesheet" href="examples-shared.css">
-    <style>
-        .column-toggles {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.75rem;
-            padding: 0.75rem;
-            background: #f7fafc;
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
-            margin-bottom: 1rem;
-        }
+<meta name="kmwc:title" content="👁 Column Visibility">
+<meta name="kmwc:subtitle" content="Hide and show columns via context menu or API">
 
-        .column-toggle {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.35rem;
-            padding: 0.25rem 0.6rem;
-            background: white;
-            border: 1px solid #cbd5e0;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            user-select: none;
-        }
+    <div class="card">
+        <h2>CV01 · Interactive Demo</h2>
+        <p>Toggle columns with the checkboxes, the <strong>Show All</strong> / <strong>Hide All</strong> buttons, or <strong>right-click any header</strong> to use the context menu (<em>Hide Column</em> or the <em>Column Visibility</em> submenu).</p>
 
-        .column-toggle:hover {
-            border-color: #667eea;
-        }
-
-        .column-toggle input { margin: 0; }
-
-        .column-toggle.hidden {
-            opacity: 0.6;
-            background: #f3f4f6;
-            text-decoration: line-through;
-        }
-
-        .toolbar-buttons {
-            display: flex;
-            gap: 0.5rem;
-            align-items: center;
-            margin-bottom: 0.75rem;
-        }
-
-        .state-chip {
-            display: inline-block;
-            background: #edf2f7;
-            padding: 0.2rem 0.5rem;
-            border-radius: 4px;
-            font-family: 'Courier New', monospace;
-            font-size: 0.8rem;
-            color: #4a5568;
-            margin-right: 0.25rem;
-        }
-
-        .state-chip.hidden {
-            background: #fef3c7;
-            color: #92400e;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <header>
-            <a href="index.html" class="back-link">← Back to Examples</a>
-            <h1>👁 Column Visibility</h1>
-            <p class="subtitle">Hide and show columns via context menu or API</p>
-        </header>
-
-        <div class="card">
-            <h2>Interactive Demo</h2>
-            <p>Toggle columns with the checkboxes, the <strong>Show All</strong> / <strong>Hide All</strong> buttons, or <strong>right-click any header</strong> to use the context menu (<em>Hide Column</em> or the <em>Column Visibility</em> submenu).</p>
-
-            <div class="toolbar-buttons">
-                <button type="button" id="btnShowAll">Show All</button>
-                <button type="button" id="btnHideAll" class="secondary">Hide All</button>
-                <span style="margin-left: auto; color: #718096; font-size: 0.9rem;" id="visibleCount"></span>
-            </div>
-
-            <div class="column-toggles" id="columnToggles"></div>
-
-            <web-grid id="grid" style="max-height: 400px;"></web-grid>
-
-            <div style="margin-top: 1rem;">
-                <strong>Hidden columns:</strong>
-                <span id="hiddenState" style="margin-left: 0.5rem;"></span>
-            </div>
+        <div class="controls">
+            <button type="button" id="btnShowAll">Show All</button>
+            <button type="button" id="btnHideAll" class="btn-secondary">Hide All</button>
+            <span class="muted push-end" id="visibleCount"></span>
         </div>
 
-        <div class="card">
-            <h2>Header Context Menu</h2>
-            <p>Enable the predefined menu items <code>'column-visibility'</code> and <code>'hide-column'</code>:</p>
-            <div class="code-block">
-                <pre>grid.headerContextMenu = [
+        <div class="controls" id="columnToggles"></div>
+
+        <web-grid id="grid" style="max-height: 400px;"></web-grid>
+
+        <p class="mt-1">
+            <strong>Hidden columns:</strong>
+            <span id="hiddenState"></span>
+        </p>
+    </div>
+
+    <div class="card">
+        <h2>CV02 · Header Context Menu</h2>
+        <p>Enable the predefined menu items <code>'column-visibility'</code> and <code>'hide-column'</code>:</p>
+        <div class="code-block" data-kmwc-snippet>
+            <pre>grid.headerContextMenu = [
     'sort-asc',
     'sort-desc',
     'clear-sort',
@@ -106,168 +33,160 @@
     'hide-column',        // hide this column (right-click target)
     'column-visibility'   // submenu with a toggle for each column
 ]</pre>
-            </div>
-            <p style="margin-top: 0.75rem;">The <code>'column-visibility'</code> submenu is generated dynamically from the current columns and shows a <em>Show all</em> entry plus one toggle per column.</p>
         </div>
+        <p class="mt-1">The <code>'column-visibility'</code> submenu is generated dynamically from the current columns and shows a <em>Show all</em> entry plus one toggle per column.</p>
+    </div>
 
-        <div class="card">
-            <h2>Programmatic API</h2>
-            <p>Column visibility is controlled by the <code>isHidden</code> flag on each column. To trigger a re-render, reassign the <code>columns</code> array:</p>
-            <div class="code-block">
-                <pre>// Hide a specific column
+    <div class="card">
+        <h2>CV03 · Programmatic API</h2>
+        <p>Column visibility is controlled by the <code>isHidden</code> flag on each column. To trigger a re-render, reassign the <code>columns</code> array:</p>
+        <div class="code-block" data-kmwc-snippet>
+            <pre>// Hide a specific column
 grid.columns.find(c => c.field === 'email').isHidden = true
 grid.columns = [...grid.columns]  // reassign to trigger re-render
 
 // Show everything
 grid.columns.forEach(c => c.isHidden = false)
 grid.columns = [...grid.columns]</pre>
-            </div>
-            <div class="note">
-                <div class="note-title">Why reassign?</div>
-                The grid tracks changes via its setter. Mutating a column's <code>isHidden</code> in place won't trigger a render — spreading the array and reassigning does.
-            </div>
         </div>
-
-        <div class="card">
-            <h2>API Reference</h2>
-            <table style="width: 100%; border-collapse: collapse;">
-                <thead>
-                    <tr style="background: #f7fafc;">
-                        <th style="text-align: left; padding: 0.5rem; border-bottom: 2px solid #e2e8f0;">Property</th>
-                        <th style="text-align: left; padding: 0.5rem; border-bottom: 2px solid #e2e8f0;">Type</th>
-                        <th style="text-align: left; padding: 0.5rem; border-bottom: 2px solid #e2e8f0;">Description</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td style="padding: 0.5rem; border-bottom: 1px solid #e2e8f0;"><code>column.isHidden</code></td>
-                        <td style="padding: 0.5rem; border-bottom: 1px solid #e2e8f0;"><code>boolean</code></td>
-                        <td style="padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">Hide a column while keeping it in the <code>columns</code> array (so visibility toggles know about it).</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 0.5rem; border-bottom: 1px solid #e2e8f0;"><code>grid.headerContextMenu</code></td>
-                        <td style="padding: 0.5rem; border-bottom: 1px solid #e2e8f0;"><code>(string | object)[]</code></td>
-                        <td style="padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">Array of predefined items and custom entries. Include <code>'hide-column'</code> and/or <code>'column-visibility'</code>.</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 0.5rem;"><code>'column-visibility'</code></td>
-                        <td style="padding: 0.5rem;"><code>string</code></td>
-                        <td style="padding: 0.5rem;">Submenu entry — auto-generates a toggle per column plus a <em>Show all</em> row.</td>
-                    </tr>
-                </tbody>
-            </table>
+        <div class="note">
+            <div class="note-title">Why reassign?</div>
+            The grid tracks changes via its setter. Mutating a column's <code>isHidden</code> in place won't trigger a render — spreading the array and reassigning does.
         </div>
-
-        <footer>
-            <p>WebGrid Component by <a href="https://github.com/keenmate">Keenmate</a></p>
-        </footer>
     </div>
 
-    <script type="module">
-        import '@keenmate/web-grid'
+    <div class="card">
+        <h2>CV04 · API Reference</h2>
+        <table class="reference-table table-full">
+            <thead>
+                <tr>
+                    <th>Property</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>column.isHidden</code></td>
+                    <td><code>boolean</code></td>
+                    <td>Hide a column while keeping it in the <code>columns</code> array (so visibility toggles know about it).</td>
+                </tr>
+                <tr>
+                    <td><code>grid.headerContextMenu</code></td>
+                    <td><code>(string | object)[]</code></td>
+                    <td>Array of predefined items and custom entries. Include <code>'hide-column'</code> and/or <code>'column-visibility'</code>.</td>
+                </tr>
+                <tr>
+                    <td><code>'column-visibility'</code></td>
+                    <td><code>string</code></td>
+                    <td>Submenu entry — auto-generates a toggle per column plus a <em>Show all</em> row.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 
-        // ---- Sample data ----------------------------------------------------
-        const data = [
-            { id: 1847, name: 'Alice Johnson', email: 'alice@example.com', department: 'Engineering', salary: 85000, location: 'New York', phone: '555-0101' },
-            { id: 2391, name: 'Bob Smith', email: 'bob@example.com', department: 'Marketing', salary: 72000, location: 'Los Angeles', phone: '555-0102' },
-            { id: 1052, name: 'Carol Williams', email: 'carol@example.com', department: 'Engineering', salary: 92000, location: 'New York', phone: '555-0103' },
-            { id: 3764, name: 'David Brown', email: 'david@example.com', department: 'Sales', salary: 68000, location: 'Chicago', phone: '555-0104' },
-            { id: 2908, name: 'Eva Martinez', email: 'eva@example.com', department: 'HR', salary: 65000, location: 'Miami', phone: '555-0105' },
-            { id: 1523, name: 'Frank Lee', email: 'frank@example.com', department: 'Engineering', salary: 88000, location: 'New York', phone: '555-0106' },
-            { id: 4281, name: 'Grace Kim', email: 'grace@example.com', department: 'Marketing', salary: 75000, location: 'Los Angeles', phone: '555-0107' },
-            { id: 3156, name: 'Henry Chen', email: 'henry@example.com', department: 'Sales', salary: 71000, location: 'Chicago', phone: '555-0108' },
-            { id: 1739, name: 'Ivy Wang', email: 'ivy@example.com', department: 'Engineering', salary: 95000, location: 'Seattle', phone: '555-0109' },
-            { id: 4592, name: 'Jack Davis', email: 'jack@example.com', department: 'HR', salary: 62000, location: 'Miami', phone: '555-0110' }
-        ]
+<script type="module">
 
-        const columns = [
-            { field: 'id', title: 'ID', width: '70px', horizontalAlign: 'center' },
-            { field: 'name', title: 'Name', width: '160px' },
-            { field: 'email', title: 'Email', width: '200px' },
-            { field: 'department', title: 'Department', width: '140px' },
-            { field: 'salary', title: 'Salary', width: '110px', horizontalAlign: 'right', getDisplayValueCallback: ({ value: v }) => v != null ? `$${v.toLocaleString()}` : '' },
-            { field: 'location', title: 'Location', width: '130px' },
-            { field: 'phone', title: 'Phone', width: '120px' }
-        ]
+    // ---- Sample data ----------------------------------------------------
+    const data = [
+        { id: 1847, name: 'Alice Johnson', email: 'alice@example.com', department: 'Engineering', salary: 85000, location: 'New York', phone: '555-0101' },
+        { id: 2391, name: 'Bob Smith', email: 'bob@example.com', department: 'Marketing', salary: 72000, location: 'Los Angeles', phone: '555-0102' },
+        { id: 1052, name: 'Carol Williams', email: 'carol@example.com', department: 'Engineering', salary: 92000, location: 'New York', phone: '555-0103' },
+        { id: 3764, name: 'David Brown', email: 'david@example.com', department: 'Sales', salary: 68000, location: 'Chicago', phone: '555-0104' },
+        { id: 2908, name: 'Eva Martinez', email: 'eva@example.com', department: 'HR', salary: 65000, location: 'Miami', phone: '555-0105' },
+        { id: 1523, name: 'Frank Lee', email: 'frank@example.com', department: 'Engineering', salary: 88000, location: 'New York', phone: '555-0106' },
+        { id: 4281, name: 'Grace Kim', email: 'grace@example.com', department: 'Marketing', salary: 75000, location: 'Los Angeles', phone: '555-0107' },
+        { id: 3156, name: 'Henry Chen', email: 'henry@example.com', department: 'Sales', salary: 71000, location: 'Chicago', phone: '555-0108' },
+        { id: 1739, name: 'Ivy Wang', email: 'ivy@example.com', department: 'Engineering', salary: 95000, location: 'Seattle', phone: '555-0109' },
+        { id: 4592, name: 'Jack Davis', email: 'jack@example.com', department: 'HR', salary: 62000, location: 'Miami', phone: '555-0110' }
+    ]
 
-        // ---- Grid setup -----------------------------------------------------
-        const grid = document.getElementById('grid')
-        grid.items = data
-        grid.columns = columns
-        grid.isStriped = true
-        grid.isHoverable = true
-        grid.isRowNumbersShown = true
-        grid.sortMode = 'single'
+    const columns = [
+        { field: 'id', title: 'ID', width: '70px', horizontalAlign: 'center' },
+        { field: 'name', title: 'Name', width: '160px' },
+        { field: 'email', title: 'Email', width: '200px' },
+        { field: 'department', title: 'Department', width: '140px' },
+        { field: 'salary', title: 'Salary', width: '110px', horizontalAlign: 'right', getDisplayValueCallback: ({ value: v }) => v != null ? `$${v.toLocaleString()}` : '' },
+        { field: 'location', title: 'Location', width: '130px' },
+        { field: 'phone', title: 'Phone', width: '120px' }
+    ]
 
-        // Enable header context menu entries for visibility control
-        grid.headerContextMenu = [
-            'sort-asc',
-            'sort-desc',
-            'clear-sort',
-            { divider: true },
-            'hide-column',
-            'column-visibility'
-        ]
+    // ---- Grid setup -----------------------------------------------------
+    const grid = document.getElementById('grid')
+    grid.items = data
+    grid.columns = columns
+    grid.isStriped = true
+    grid.isHoverable = true
+    grid.isRowNumbersShown = true
+    grid.sortMode = 'single'
 
-        // ---- External UI ----------------------------------------------------
-        const togglesEl = document.getElementById('columnToggles')
-        const hiddenStateEl = document.getElementById('hiddenState')
-        const visibleCountEl = document.getElementById('visibleCount')
+    // Enable header context menu entries for visibility control
+    grid.headerContextMenu = [
+        'sort-asc',
+        'sort-desc',
+        'clear-sort',
+        { divider: true },
+        'hide-column',
+        'column-visibility'
+    ]
 
-        function renderToggles() {
-            togglesEl.innerHTML = grid.columns.map(col => `
-                <label class="column-toggle ${col.isHidden ? 'hidden' : ''}" data-field="${col.field}">
-                    <input type="checkbox" ${col.isHidden ? '' : 'checked'}>
-                    ${col.title}
-                </label>
-            `).join('')
+    // ---- External UI ----------------------------------------------------
+    const togglesEl = document.getElementById('columnToggles')
+    const hiddenStateEl = document.getElementById('hiddenState')
+    const visibleCountEl = document.getElementById('visibleCount')
 
-            togglesEl.querySelectorAll('.column-toggle').forEach(el => {
-                const field = el.dataset.field
-                const checkbox = el.querySelector('input')
-                checkbox.addEventListener('change', () => {
-                    const col = grid.columns.find(c => c.field === field)
-                    col.isHidden = !checkbox.checked
-                    grid.columns = [...grid.columns]
-                })
+    function renderToggles() {
+        togglesEl.innerHTML = grid.columns.map(col => `
+            <label class="column-toggle" data-field="${col.field}">
+                <input type="checkbox" ${col.isHidden ? '' : 'checked'}>
+                ${col.title}
+            </label>
+        `).join('')
+
+        togglesEl.querySelectorAll('.column-toggle').forEach(el => {
+            const field = el.dataset.field
+            const checkbox = el.querySelector('input')
+            checkbox.addEventListener('change', () => {
+                const col = grid.columns.find(c => c.field === field)
+                col.isHidden = !checkbox.checked
+                grid.columns = [...grid.columns]
             })
-        }
-
-        function renderHiddenState() {
-            const hidden = grid.columns.filter(c => c.isHidden)
-            const visible = grid.columns.length - hidden.length
-            visibleCountEl.textContent = `${visible} / ${grid.columns.length} visible`
-            if (hidden.length === 0) {
-                hiddenStateEl.innerHTML = '<em style="color: #718096;">None</em>'
-            } else {
-                hiddenStateEl.innerHTML = hidden.map(c =>
-                    `<span class="state-chip hidden">${c.field}</span>`
-                ).join('')
-            }
-        }
-
-        function refresh() {
-            renderToggles()
-            renderHiddenState()
-        }
-
-        // The grid has no dedicated "column visibility changed" event, so sync
-        // the external UI after any click inside the grid — this catches
-        // context menu actions (Hide Column, Column Visibility toggles).
-        grid.addEventListener('click', () => setTimeout(refresh, 0))
-
-        document.getElementById('btnShowAll').addEventListener('click', () => {
-            grid.columns.forEach(c => c.isHidden = false)
-            grid.columns = [...grid.columns]
         })
+    }
 
-        document.getElementById('btnHideAll').addEventListener('click', () => {
-            // Keep at least one column visible so the grid isn't empty
-            grid.columns.forEach((c, i) => c.isHidden = i > 0)
-            grid.columns = [...grid.columns]
-        })
+    function renderHiddenState() {
+        const hidden = grid.columns.filter(c => c.isHidden)
+        const visible = grid.columns.length - hidden.length
+        visibleCountEl.textContent = `${visible} / ${grid.columns.length} visible`
+        if (hidden.length === 0) {
+            hiddenStateEl.innerHTML = '<em class="muted">None</em>'
+        } else {
+            hiddenStateEl.innerHTML = hidden.map(c =>
+                `<span class="pill pill--warn mono">${c.field}</span>`
+            ).join(' ')
+        }
+    }
 
-        refresh()
-    </script>
-</body>
-</html>
+    function refresh() {
+        renderToggles()
+        renderHiddenState()
+    }
+
+    // The grid has no dedicated "column visibility changed" event, so sync
+    // the external UI after any click inside the grid — this catches
+    // context menu actions (Hide Column, Column Visibility toggles).
+    grid.addEventListener('click', () => setTimeout(refresh, 0))
+
+    document.getElementById('btnShowAll').addEventListener('click', () => {
+        grid.columns.forEach(c => c.isHidden = false)
+        grid.columns = [...grid.columns]
+    })
+
+    document.getElementById('btnHideAll').addEventListener('click', () => {
+        // Keep at least one column visible so the grid isn't empty
+        grid.columns.forEach((c, i) => c.isHidden = i > 0)
+        grid.columns = [...grid.columns]
+    })
+
+    refresh()
+</script>

@@ -1,523 +1,463 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebGrid - Grid Modes</title>
-    <link rel="stylesheet" href="examples-shared.css">
-    <style>
-        .mode-switcher {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-            margin-bottom: 1rem;
-        }
-        .mode-btn {
-            padding: 0.5rem 1rem;
-            border: 2px solid #e2e8f0;
-            border-radius: 6px;
-            background: white;
-            color: #4a5568;
-            cursor: pointer;
-            font-size: 0.875rem;
-            font-weight: 500;
-        }
-        .mode-btn:hover {
-            background: #f7fafc;
-            border-color: #cbd5e0;
-        }
-        .mode-btn.active {
-            background: #667eea;
-            color: white;
-            border-color: #667eea;
-        }
-        .mode-info {
-            margin-top: 0.75rem;
-            padding: 0.75rem 1rem;
-            background: #f7fafc;
-            border-radius: 6px;
-            border-left: 3px solid #667eea;
-            font-size: 0.85rem;
-            color: #4a5568;
-        }
-        .mode-info code {
-            font-size: 0.8em;
-        }
-        .props-list {
-            display: grid;
-            grid-template-columns: auto 1fr;
-            gap: 0.25rem 1rem;
-            margin-top: 0.5rem;
-        }
-        .props-list dt {
-            font-family: 'Courier New', monospace;
-            font-size: 0.8rem;
-            color: #667eea;
-        }
-        .props-list dd {
-            font-family: 'Courier New', monospace;
-            font-size: 0.8rem;
-            color: #2d3748;
-        }
-        .section-label {
-            font-weight: 600;
-            color: #2d3748;
-            margin-bottom: 0.5rem;
-        }
-        .checkbox-row {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin-bottom: 0.5rem;
-        }
-        .checkbox-row label {
-            cursor: pointer;
-            font-size: 0.875rem;
-        }
-        .checkbox-row small {
-            color: #9ca3af;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <header>
-            <a href="index.html" class="back-link">&larr; Back to Examples</a>
-            <h1>Grid Modes</h1>
-            <p class="subtitle">Pre-configured editing modes, edit triggers, cursor selection, and dropdown behavior</p>
-        </header>
+<meta name="kmwc:title" content="Grid Modes">
+<meta name="kmwc:subtitle" content="Pre-configured editing modes, edit triggers, cursor selection, and dropdown behavior">
 
-        <!-- GM01: Grid Modes -->
-        <div class="card">
-            <h2>GM01: Grid Modes</h2>
-            <p>The <code>mode</code> property sets sensible defaults for common use cases. Switch between modes to see how editing behavior changes.</p>
+    <!-- GM01: Grid Modes -->
+    <div class="card">
+        <h2>GM01 · Grid Modes</h2>
+        <p>The <code>mode</code> property sets sensible defaults for common use cases. Switch between modes to see how editing behavior changes.</p>
 
-            <div class="mode-switcher">
-                <button class="mode-btn active" data-mode="excel" onclick="setMode('excel', this)">excel</button>
-                <button class="mode-btn" data-mode="read-only" onclick="setMode('read-only', this)">read-only</button>
-                <button class="mode-btn" data-mode="input-matrix" onclick="setMode('input-matrix', this)">input-matrix</button>
-            </div>
-
-            <web-grid id="modesGrid" style="max-height: 300px;"></web-grid>
-
-            <div id="modeInfo" class="mode-info">
-                <strong>excel</strong> &mdash; Spreadsheet-like editing. Navigate with arrows, type or double-click to edit.
-                <div class="props-list">
-                    <dt>isEditable</dt><dd>true</dd>
-                    <dt>editTrigger</dt><dd>'navigate'</dd>
-                    <dt>dropdownToggleVisibility</dt><dd>'always'</dd>
-                    <dt>shouldShowDropdownOnFocus</dt><dd>false</dd>
-                    <dt>cellSelectionMode</dt><dd>'click'</dd>
-                </div>
-            </div>
+        <div class="controls">
+            <button class="mode-btn" data-mode="excel" onclick="setMode('excel', this)">excel</button>
+            <button class="mode-btn btn-outline" data-mode="read-only" onclick="setMode('read-only', this)">read-only</button>
+            <button class="mode-btn btn-outline" data-mode="input-matrix" onclick="setMode('input-matrix', this)">input-matrix</button>
         </div>
 
-        <!-- GM02: Edit Triggers -->
-        <div class="card">
-            <h2>GM02: Edit Triggers</h2>
-            <p>Control how users enter edit mode with <code>editTrigger</code>.</p>
+        <web-grid id="modesGrid" style="max-height: 300px;"></web-grid>
 
-            <div class="mode-switcher">
-                <button class="mode-btn" data-trigger="click" onclick="setTrigger('click', this)">click</button>
-                <button class="mode-btn active" data-trigger="dblclick" onclick="setTrigger('dblclick', this)">dblclick</button>
-                <button class="mode-btn" data-trigger="navigate" onclick="setTrigger('navigate', this)">navigate</button>
-                <button class="mode-btn" data-trigger="always" onclick="setTrigger('always', this)">always</button>
-                <button class="mode-btn" data-trigger="button" onclick="setTrigger('button', this)">button</button>
-            </div>
-
-            <web-grid id="triggerGrid" style="max-height: 300px;"></web-grid>
-
-            <div id="triggerInfo" class="mode-info">
-                <strong>dblclick</strong> &mdash; Double-click to enter edit mode. Default trigger. Prevents accidental edits.
-            </div>
+        <div id="modeInfo" class="note mt-1">
+            <strong>excel</strong> &mdash; Spreadsheet-like editing. Navigate with arrows, type or double-click to edit.
+            <dl class="mono">
+                <dt>isEditable</dt><dd>true</dd>
+                <dt>editTrigger</dt><dd>'navigate'</dd>
+                <dt>dropdownToggleVisibility</dt><dd>'always'</dd>
+                <dt>shouldShowDropdownOnFocus</dt><dd>false</dd>
+                <dt>cellSelectionMode</dt><dd>'click'</dd>
+            </dl>
         </div>
-
-        <!-- GM03: Edit Start Selection -->
-        <div class="card">
-            <h2>GM03: Edit Start Selection</h2>
-            <p>Control cursor position when entering edit mode with <code>editStartSelection</code>.</p>
-
-            <div class="mode-switcher">
-                <button class="mode-btn active" data-selection="selectAll" onclick="setSelection('selectAll', this)">selectAll</button>
-                <button class="mode-btn" data-selection="mousePosition" onclick="setSelection('mousePosition', this)">mousePosition</button>
-                <button class="mode-btn" data-selection="cursorAtStart" onclick="setSelection('cursorAtStart', this)">cursorAtStart</button>
-                <button class="mode-btn" data-selection="cursorAtEnd" onclick="setSelection('cursorAtEnd', this)">cursorAtEnd</button>
-            </div>
-
-            <web-grid id="selectionGrid" style="max-height: 300px;"></web-grid>
-
-            <div id="selectionInfo" class="mode-info">
-                <strong>selectAll</strong> &mdash; All text is selected when entering edit mode. Typing replaces the entire value. This is the default.
-            </div>
-        </div>
-
-        <!-- GM04: Dropdown Behavior -->
-        <div class="card">
-            <h2>GM04: Dropdown Behavior</h2>
-            <p>Configure dropdown toggle visibility and auto-open behavior for select, combobox, and autocomplete editors.</p>
-
-            <div style="margin-bottom: 1rem;">
-                <div class="section-label">dropdownToggleVisibility</div>
-                <div class="mode-switcher" style="margin-bottom: 0.75rem;">
-                    <button class="mode-btn active" onclick="setToggleVisibility('always', this)">always</button>
-                    <button class="mode-btn" onclick="setToggleVisibility('on-focus', this)">on-focus</button>
-                </div>
-
-                <div class="checkbox-row">
-                    <input type="checkbox" id="showOnFocus" checked onchange="setShowOnFocus(this.checked)">
-                    <label for="showOnFocus"><strong>shouldShowDropdownOnFocus</strong> <small>(auto-open dropdown on focus)</small></label>
-                </div>
-
-                <div class="checkbox-row">
-                    <input type="checkbox" id="openOnEnter" onchange="setOpenOnEnter(this.checked)">
-                    <label for="openOnEnter"><strong>shouldOpenDropdownOnEnter</strong> <small>(Enter opens dropdown vs moves down)</small></label>
-                </div>
-            </div>
-
-            <web-grid id="dropdownGrid" style="max-height: 300px;"></web-grid>
-
-            <div class="mode-info">
-                <code>always</code> shows the dropdown arrow even when not editing. <code>on-focus</code> shows it only when the cell is focused.
-            </div>
-        </div>
-
-        <!-- GM05: Playground -->
-        <div class="card">
-            <h2>GM05: Playground</h2>
-            <p>Mix and match any combination of properties to test edge cases.</p>
-
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
-                <div>
-                    <div class="section-label">isEditable</div>
-                    <div class="mode-switcher" id="pg-editable-btns">
-                        <button class="mode-btn active" onclick="pgSet('isEditable', true, this)">true</button>
-                        <button class="mode-btn" onclick="pgSet('isEditable', false, this)">false</button>
-                    </div>
-                </div>
-
-                <div>
-                    <div class="section-label">editTrigger</div>
-                    <div class="mode-switcher" id="pg-trigger-btns">
-                        <button class="mode-btn" onclick="pgSet('editTrigger', 'click', this)">click</button>
-                        <button class="mode-btn active" onclick="pgSet('editTrigger', 'dblclick', this)">dblclick</button>
-                        <button class="mode-btn" onclick="pgSet('editTrigger', 'navigate', this)">navigate</button>
-                        <button class="mode-btn" onclick="pgSet('editTrigger', 'always', this)">always</button>
-                        <button class="mode-btn" onclick="pgSet('editTrigger', 'button', this)">button</button>
-                    </div>
-                </div>
-
-                <div>
-                    <div class="section-label">editStartSelection</div>
-                    <div class="mode-switcher" id="pg-selection-btns">
-                        <button class="mode-btn active" onclick="pgSet('editStartSelection', 'selectAll', this)">selectAll</button>
-                        <button class="mode-btn" onclick="pgSet('editStartSelection', 'mousePosition', this)">mousePosition</button>
-                        <button class="mode-btn" onclick="pgSet('editStartSelection', 'cursorAtStart', this)">cursorAtStart</button>
-                        <button class="mode-btn" onclick="pgSet('editStartSelection', 'cursorAtEnd', this)">cursorAtEnd</button>
-                    </div>
-                </div>
-
-                <div>
-                    <div class="section-label">cellSelectionMode</div>
-                    <div class="mode-switcher" id="pg-cellsel-btns">
-                        <button class="mode-btn" onclick="pgSet('cellSelectionMode', 'disabled', this)">disabled</button>
-                        <button class="mode-btn active" onclick="pgSet('cellSelectionMode', 'click', this)">click</button>
-                        <button class="mode-btn" onclick="pgSet('cellSelectionMode', 'shift', this)">shift</button>
-                    </div>
-                </div>
-
-                <div>
-                    <div class="section-label">dropdownToggleVisibility</div>
-                    <div class="mode-switcher" id="pg-toggle-btns">
-                        <button class="mode-btn active" onclick="pgSet('dropdownToggleVisibility', 'always', this)">always</button>
-                        <button class="mode-btn" onclick="pgSet('dropdownToggleVisibility', 'on-focus', this)">on-focus</button>
-                    </div>
-                </div>
-
-                <div>
-                    <div class="section-label">Checkbox &amp; Dropdown</div>
-                    <div class="checkbox-row">
-                        <input type="checkbox" id="pgShowOnFocus" checked onchange="pgSet('shouldShowDropdownOnFocus', this.checked)">
-                        <label for="pgShowOnFocus">shouldShowDropdownOnFocus</label>
-                    </div>
-                    <div class="checkbox-row">
-                        <input type="checkbox" id="pgOpenOnEnter" onchange="pgSet('shouldOpenDropdownOnEnter', this.checked)">
-                        <label for="pgOpenOnEnter">shouldOpenDropdownOnEnter</label>
-                    </div>
-                    <div class="checkbox-row">
-                        <input type="checkbox" id="pgCheckboxAlways" onchange="pgSet('isCheckboxAlwaysEditable', this.checked)">
-                        <label for="pgCheckboxAlways">isCheckboxAlwaysEditable</label>
-                    </div>
-                </div>
-            </div>
-
-            <div style="margin-bottom: 1rem;">
-                <div class="section-label">Quick Presets</div>
-                <div class="mode-switcher">
-                    <button class="mode-btn" onclick="pgPreset('read-only')">read-only</button>
-                    <button class="mode-btn" onclick="pgPreset('excel')">excel</button>
-                    <button class="mode-btn" onclick="pgPreset('input-matrix')">input-matrix</button>
-                    <button class="mode-btn secondary" onclick="pgReset()" style="background: #6b7280; border-color: #6b7280; color: white;">Reset</button>
-                </div>
-            </div>
-
-            <web-grid id="playgroundGrid" style="max-height: 300px;"></web-grid>
-
-            <div id="pgState" class="mode-info" style="margin-top: 0.75rem;">
-                <div class="props-list" id="pgStateProps"></div>
-            </div>
-        </div>
-
-        <!-- GM06: Per-Column Edit Triggers -->
-        <div class="card">
-            <h2>GM06: Per-Column Edit Triggers</h2>
-            <p>The same <code>editTrigger</code> values from GM02, but applied as a <strong>per-column override</strong>. Here the buttons change the trigger only for the <strong>Status</strong> and <strong>Remote</strong> (checkbox) columns &mdash; the other columns keep the grid default of <code>dblclick</code>.</p>
-
-            <div class="mode-switcher">
-                <button class="mode-btn" data-coltrigger="click" onclick="setColTrigger('click', this)">click</button>
-                <button class="mode-btn active" data-coltrigger="dblclick" onclick="setColTrigger('dblclick', this)">dblclick</button>
-                <button class="mode-btn" data-coltrigger="navigate" onclick="setColTrigger('navigate', this)">navigate</button>
-                <button class="mode-btn" data-coltrigger="always" onclick="setColTrigger('always', this)">always</button>
-                <button class="mode-btn" data-coltrigger="button" onclick="setColTrigger('button', this)">button</button>
-            </div>
-
-            <web-grid id="colTriggerGrid" style="max-height: 300px;"></web-grid>
-
-            <div id="colTriggerInfo" class="mode-info">
-                <strong>dblclick</strong> &mdash; Only <strong>Status</strong> and <strong>Remote</strong> use this trigger. Name and Salary always require a double-click regardless of the selection.
-            </div>
-        </div>
-
-        <!-- API Reference -->
-        <div class="card">
-            <h2>API Reference</h2>
-            <table class="actions-table" style="width: 100%;">
-                <thead>
-                    <tr>
-                        <th>Property</th>
-                        <th>Type</th>
-                        <th>Default</th>
-                        <th>Description</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td><code>mode</code></td>
-                        <td><code>'read-only' | 'excel' | 'input-matrix'</code></td>
-                        <td><code>'excel'</code></td>
-                        <td>Sets sensible defaults for common use cases</td>
-                    </tr>
-                    <tr>
-                        <td><code>editTrigger</code></td>
-                        <td><code>'click' | 'dblclick' | 'navigate' | 'always' | 'button'</code></td>
-                        <td><code>'dblclick'</code></td>
-                        <td>How users enter edit mode. Per-column override available.</td>
-                    </tr>
-                    <tr>
-                        <td><code>editStartSelection</code></td>
-                        <td><code>'selectAll' | 'mousePosition' | 'cursorAtStart' | 'cursorAtEnd'</code></td>
-                        <td><code>'selectAll'</code></td>
-                        <td>Cursor/selection when entering edit. Per-column via <code>editorOptions</code>.</td>
-                    </tr>
-                    <tr>
-                        <td><code>dropdownToggleVisibility</code></td>
-                        <td><code>'always' | 'on-focus'</code></td>
-                        <td><code>'always'</code></td>
-                        <td>When to show dropdown toggle arrow. Grid-level and per-column.</td>
-                    </tr>
-                    <tr>
-                        <td><code>shouldShowDropdownOnFocus</code></td>
-                        <td><code>boolean</code></td>
-                        <td><code>true</code></td>
-                        <td>Auto-open dropdown when cell receives focus.</td>
-                    </tr>
-                    <tr>
-                        <td><code>shouldOpenDropdownOnEnter</code></td>
-                        <td><code>boolean</code></td>
-                        <td><code>false</code></td>
-                        <td>Enter opens dropdown (true) or moves to next row (false).</td>
-                    </tr>
-                    <tr>
-                        <td><code>cellSelectionMode</code></td>
-                        <td><code>'disabled' | 'click' | 'shift'</code></td>
-                        <td><code>'click'</code></td>
-                        <td>How to select cell ranges.</td>
-                    </tr>
-                    <tr>
-                        <td><code>isEditable</code></td>
-                        <td><code>boolean</code></td>
-                        <td><code>true</code></td>
-                        <td>Enable/disable editing globally. Column <code>isEditable</code> overrides.</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-
-        <footer>
-            <p>WebGrid Component by <a href="https://github.com/keenmate">Keenmate</a></p>
-        </footer>
     </div>
 
-    <script type="module">
-        import '@keenmate/web-grid'
+    <!-- GM02: Edit Triggers -->
+    <div class="card">
+        <h2>GM02 · Edit Triggers</h2>
+        <p>Control how users enter edit mode with <code>editTrigger</code>.</p>
 
-        const employees = [
-            { id: 1, name: 'Alice Johnson', department: 'Engineering', salary: 95000, status: 'active', isRemote: true },
-            { id: 2, name: 'Bob Smith', department: 'Marketing', salary: 72000, status: 'pending', isRemote: false },
-            { id: 3, name: 'Charlie Brown', department: 'Sales', salary: 88000, status: 'active', isRemote: true },
-            { id: 4, name: 'Diana Prince', department: 'Engineering', salary: 105000, status: 'active', isRemote: false },
-            { id: 5, name: 'Eve Wilson', department: 'HR', salary: 68000, status: 'inactive', isRemote: true }
-        ]
+        <div class="controls">
+            <button class="mode-btn btn-outline" data-trigger="click" onclick="setTrigger('click', this)">click</button>
+            <button class="mode-btn" data-trigger="dblclick" onclick="setTrigger('dblclick', this)">dblclick</button>
+            <button class="mode-btn btn-outline" data-trigger="navigate" onclick="setTrigger('navigate', this)">navigate</button>
+            <button class="mode-btn btn-outline" data-trigger="always" onclick="setTrigger('always', this)">always</button>
+            <button class="mode-btn btn-outline" data-trigger="button" onclick="setTrigger('button', this)">button</button>
+        </div>
 
-        const departmentOptions = [
-            { value: 'Engineering', label: 'Engineering' },
-            { value: 'Marketing', label: 'Marketing' },
-            { value: 'Sales', label: 'Sales' },
-            { value: 'HR', label: 'HR' },
-            { value: 'Finance', label: 'Finance' }
-        ]
+        <web-grid id="triggerGrid" style="max-height: 300px;"></web-grid>
 
-        const statusOptions = [
-            { value: 'active', label: 'Active' },
-            { value: 'pending', label: 'Pending' },
-            { value: 'inactive', label: 'Inactive' }
-        ]
+        <div id="triggerInfo" class="note mt-1">
+            <strong>dblclick</strong> &mdash; Double-click to enter edit mode. Default trigger. Prevents accidental edits.
+        </div>
+    </div>
 
-        const mixedColumns = [
-            { field: 'id', title: 'ID', width: '60px', isEditable: false, horizontalAlign: 'center' },
-            { field: 'name', title: 'Name', width: '140px', editor: 'text' },
-            { field: 'department', title: 'Department', width: '140px', editor: 'combobox', editorOptions: { options: departmentOptions, valueMember: 'value', displayMember: 'label' } },
-            { field: 'salary', title: 'Salary', width: '110px', editor: 'number', horizontalAlign: 'right', formatCallback: (v) => '$' + v.toLocaleString(), editorOptions: { min: 0, step: 1000 } },
-            { field: 'status', title: 'Status', width: '110px', editor: 'select', editorOptions: { options: statusOptions, valueMember: 'value', displayMember: 'label' } },
-            { field: 'isRemote', title: 'Remote', width: '80px', editor: 'checkbox', horizontalAlign: 'center' }
-        ]
+    <!-- GM03: Edit Start Selection -->
+    <div class="card">
+        <h2>GM03 · Edit Start Selection</h2>
+        <p>Control cursor position when entering edit mode with <code>editStartSelection</code>.</p>
 
-        const textColumns = [
-            { field: 'id', title: 'ID', width: '60px', isEditable: false, horizontalAlign: 'center' },
-            { field: 'name', title: 'Name', width: '150px', editor: 'text' },
-            { field: 'department', title: 'Department', width: '140px', editor: 'text' },
-            { field: 'salary', title: 'Salary', width: '120px', editor: 'number', horizontalAlign: 'right', formatCallback: (v) => '$' + v.toLocaleString(), editorOptions: { min: 0, step: 1000 } }
-        ]
+        <div class="controls">
+            <button class="mode-btn" data-selection="selectAll" onclick="setSelection('selectAll', this)">selectAll</button>
+            <button class="mode-btn btn-outline" data-selection="mousePosition" onclick="setSelection('mousePosition', this)">mousePosition</button>
+            <button class="mode-btn btn-outline" data-selection="cursorAtStart" onclick="setSelection('cursorAtStart', this)">cursorAtStart</button>
+            <button class="mode-btn btn-outline" data-selection="cursorAtEnd" onclick="setSelection('cursorAtEnd', this)">cursorAtEnd</button>
+        </div>
 
-        const dropdownColumns = [
-            { field: 'name', title: 'Name', width: '140px', editor: 'text' },
-            { field: 'department', title: 'Department', width: '150px', editor: 'combobox', editorOptions: { options: departmentOptions, valueMember: 'value', displayMember: 'label', placeholder: 'Search...' } },
-            { field: 'status', title: 'Status', width: '120px', editor: 'select', editorOptions: { options: statusOptions, valueMember: 'value', displayMember: 'label' } },
-            { field: 'salary', title: 'Salary', width: '110px', editor: 'number', horizontalAlign: 'right', formatCallback: (v) => v ? '$' + v.toLocaleString() : '' }
-        ]
+        <web-grid id="selectionGrid" style="max-height: 300px;"></web-grid>
 
-        // --- GM01: Grid Modes ---
-        const modesGrid = document.getElementById('modesGrid')
-        modesGrid.columns = mixedColumns
-        modesGrid.items = employees.map(e => ({...e}))
-        modesGrid.mode = 'excel'
-        modesGrid.isStriped = true
+        <div id="selectionInfo" class="note mt-1">
+            <strong>selectAll</strong> &mdash; All text is selected when entering edit mode. Typing replaces the entire value. This is the default.
+        </div>
+    </div>
 
-        const modeDescriptions = {
-            'read-only': {
-                text: '<strong>read-only</strong> &mdash; Data display only. No editing, no edit triggers.',
-                props: { isEditable: 'false', dropdownToggleVisibility: "'on-focus'", cellSelectionMode: "'click'" }
-            },
-            'excel': {
-                text: '<strong>excel</strong> &mdash; Spreadsheet-like editing. Navigate with arrows, type or double-click to edit.',
-                props: { isEditable: 'true', editTrigger: "'navigate'", dropdownToggleVisibility: "'always'", shouldShowDropdownOnFocus: 'false', cellSelectionMode: "'click'" }
-            },
-            'input-matrix': {
-                text: '<strong>input-matrix</strong> &mdash; All cells always in edit mode. Tab/Enter to move between cells.',
-                props: { isEditable: 'true', editTrigger: "'always'", dropdownToggleVisibility: "'always'", shouldShowDropdownOnFocus: 'true', cellSelectionMode: "'shift'" }
-            }
+    <!-- GM04: Dropdown Behavior -->
+    <div class="card">
+        <h2>GM04 · Dropdown Behavior</h2>
+        <p>Configure dropdown toggle visibility and auto-open behavior for select, combobox, and autocomplete editors.</p>
+
+        <div>
+            <div class="output-label">dropdownToggleVisibility</div>
+            <div class="controls">
+                <button class="mode-btn" onclick="setToggleVisibility('always', this)">always</button>
+                <button class="mode-btn btn-outline" onclick="setToggleVisibility('on-focus', this)">on-focus</button>
+            </div>
+
+            <div class="check-list">
+                <label><input type="checkbox" id="showOnFocus" checked onchange="setShowOnFocus(this.checked)"> <span><strong>shouldShowDropdownOnFocus</strong> <small class="muted">(auto-open dropdown on focus)</small></span></label>
+                <label><input type="checkbox" id="openOnEnter" onchange="setOpenOnEnter(this.checked)"> <span><strong>shouldOpenDropdownOnEnter</strong> <small class="muted">(Enter opens dropdown vs moves down)</small></span></label>
+            </div>
+        </div>
+
+        <web-grid id="dropdownGrid" style="max-height: 300px;"></web-grid>
+
+        <div class="note mt-1">
+            <code>always</code> shows the dropdown arrow even when not editing. <code>on-focus</code> shows it only when the cell is focused.
+        </div>
+    </div>
+
+    <!-- GM05: Playground -->
+    <div class="card">
+        <h2>GM05 · Playground</h2>
+        <p>Mix and match any combination of properties to test edge cases.</p>
+
+        <div class="grid">
+            <div>
+                <div class="output-label">isEditable</div>
+                <div class="controls" id="pg-editable-btns">
+                    <button class="mode-btn" onclick="pgSet('isEditable', true, this)">true</button>
+                    <button class="mode-btn btn-outline" onclick="pgSet('isEditable', false, this)">false</button>
+                </div>
+            </div>
+
+            <div>
+                <div class="output-label">editTrigger</div>
+                <div class="controls" id="pg-trigger-btns">
+                    <button class="mode-btn btn-outline" onclick="pgSet('editTrigger', 'click', this)">click</button>
+                    <button class="mode-btn" onclick="pgSet('editTrigger', 'dblclick', this)">dblclick</button>
+                    <button class="mode-btn btn-outline" onclick="pgSet('editTrigger', 'navigate', this)">navigate</button>
+                    <button class="mode-btn btn-outline" onclick="pgSet('editTrigger', 'always', this)">always</button>
+                    <button class="mode-btn btn-outline" onclick="pgSet('editTrigger', 'button', this)">button</button>
+                </div>
+            </div>
+
+            <div>
+                <div class="output-label">editStartSelection</div>
+                <div class="controls" id="pg-selection-btns">
+                    <button class="mode-btn" onclick="pgSet('editStartSelection', 'selectAll', this)">selectAll</button>
+                    <button class="mode-btn btn-outline" onclick="pgSet('editStartSelection', 'mousePosition', this)">mousePosition</button>
+                    <button class="mode-btn btn-outline" onclick="pgSet('editStartSelection', 'cursorAtStart', this)">cursorAtStart</button>
+                    <button class="mode-btn btn-outline" onclick="pgSet('editStartSelection', 'cursorAtEnd', this)">cursorAtEnd</button>
+                </div>
+            </div>
+
+            <div>
+                <div class="output-label">cellSelectionMode</div>
+                <div class="controls" id="pg-cellsel-btns">
+                    <button class="mode-btn btn-outline" onclick="pgSet('cellSelectionMode', 'disabled', this)">disabled</button>
+                    <button class="mode-btn" onclick="pgSet('cellSelectionMode', 'click', this)">click</button>
+                    <button class="mode-btn btn-outline" onclick="pgSet('cellSelectionMode', 'shift', this)">shift</button>
+                </div>
+            </div>
+
+            <div>
+                <div class="output-label">dropdownToggleVisibility</div>
+                <div class="controls" id="pg-toggle-btns">
+                    <button class="mode-btn" onclick="pgSet('dropdownToggleVisibility', 'always', this)">always</button>
+                    <button class="mode-btn btn-outline" onclick="pgSet('dropdownToggleVisibility', 'on-focus', this)">on-focus</button>
+                </div>
+            </div>
+
+            <div>
+                <div class="output-label">Checkbox &amp; Dropdown</div>
+                <div class="check-list">
+                    <label><input type="checkbox" id="pgShowOnFocus" checked onchange="pgSet('shouldShowDropdownOnFocus', this.checked)"> <span>shouldShowDropdownOnFocus</span></label>
+                    <label><input type="checkbox" id="pgOpenOnEnter" onchange="pgSet('shouldOpenDropdownOnEnter', this.checked)"> <span>shouldOpenDropdownOnEnter</span></label>
+                    <label><input type="checkbox" id="pgCheckboxAlways" onchange="pgSet('isCheckboxAlwaysEditable', this.checked)"> <span>isCheckboxAlwaysEditable</span></label>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-1">
+            <div class="output-label">Quick Presets</div>
+            <div class="controls">
+                <button class="btn-outline" onclick="pgPreset('read-only')">read-only</button>
+                <button class="btn-outline" onclick="pgPreset('excel')">excel</button>
+                <button class="btn-outline" onclick="pgPreset('input-matrix')">input-matrix</button>
+                <button class="btn-secondary" onclick="pgReset()">Reset</button>
+            </div>
+        </div>
+
+        <web-grid id="playgroundGrid" style="max-height: 300px;"></web-grid>
+
+        <div id="pgState" class="note mt-1">
+            <dl class="mono" id="pgStateProps"></dl>
+        </div>
+    </div>
+
+    <!-- GM06: Per-Column Edit Triggers -->
+    <div class="card">
+        <h2>GM06 · Per-Column Edit Triggers</h2>
+        <p>The same <code>editTrigger</code> values from GM02, but applied as a <strong>per-column override</strong>. Here the buttons change the trigger only for the <strong>Status</strong> and <strong>Remote</strong> (checkbox) columns &mdash; the other columns keep the grid default of <code>dblclick</code>.</p>
+
+        <div class="controls">
+            <button class="mode-btn btn-outline" data-coltrigger="click" onclick="setColTrigger('click', this)">click</button>
+            <button class="mode-btn" data-coltrigger="dblclick" onclick="setColTrigger('dblclick', this)">dblclick</button>
+            <button class="mode-btn btn-outline" data-coltrigger="navigate" onclick="setColTrigger('navigate', this)">navigate</button>
+            <button class="mode-btn btn-outline" data-coltrigger="always" onclick="setColTrigger('always', this)">always</button>
+            <button class="mode-btn btn-outline" data-coltrigger="button" onclick="setColTrigger('button', this)">button</button>
+        </div>
+
+        <web-grid id="colTriggerGrid" style="max-height: 300px;"></web-grid>
+
+        <div id="colTriggerInfo" class="note mt-1">
+            <strong>dblclick</strong> &mdash; Only <strong>Status</strong> and <strong>Remote</strong> use this trigger. Name and Salary always require a double-click regardless of the selection.
+        </div>
+    </div>
+
+    <!-- API Reference -->
+    <div class="card">
+        <h2>GM07 · API Reference</h2>
+        <table class="reference-table table-full">
+            <thead>
+                <tr>
+                    <th>Property</th>
+                    <th>Type</th>
+                    <th>Default</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>mode</code></td>
+                    <td><code>'read-only' | 'excel' | 'input-matrix'</code></td>
+                    <td><code>'excel'</code></td>
+                    <td>Sets sensible defaults for common use cases</td>
+                </tr>
+                <tr>
+                    <td><code>editTrigger</code></td>
+                    <td><code>'click' | 'dblclick' | 'navigate' | 'always' | 'button'</code></td>
+                    <td><code>'dblclick'</code></td>
+                    <td>How users enter edit mode. Per-column override available.</td>
+                </tr>
+                <tr>
+                    <td><code>editStartSelection</code></td>
+                    <td><code>'selectAll' | 'mousePosition' | 'cursorAtStart' | 'cursorAtEnd'</code></td>
+                    <td><code>'selectAll'</code></td>
+                    <td>Cursor/selection when entering edit. Per-column via <code>editorOptions</code>.</td>
+                </tr>
+                <tr>
+                    <td><code>dropdownToggleVisibility</code></td>
+                    <td><code>'always' | 'on-focus'</code></td>
+                    <td><code>'always'</code></td>
+                    <td>When to show dropdown toggle arrow. Grid-level and per-column.</td>
+                </tr>
+                <tr>
+                    <td><code>shouldShowDropdownOnFocus</code></td>
+                    <td><code>boolean</code></td>
+                    <td><code>true</code></td>
+                    <td>Auto-open dropdown when cell receives focus.</td>
+                </tr>
+                <tr>
+                    <td><code>shouldOpenDropdownOnEnter</code></td>
+                    <td><code>boolean</code></td>
+                    <td><code>false</code></td>
+                    <td>Enter opens dropdown (true) or moves to next row (false).</td>
+                </tr>
+                <tr>
+                    <td><code>cellSelectionMode</code></td>
+                    <td><code>'disabled' | 'click' | 'shift'</code></td>
+                    <td><code>'click'</code></td>
+                    <td>How to select cell ranges.</td>
+                </tr>
+                <tr>
+                    <td><code>isEditable</code></td>
+                    <td><code>boolean</code></td>
+                    <td><code>true</code></td>
+                    <td>Enable/disable editing globally. Column <code>isEditable</code> overrides.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+<script type="module">
+
+    const employees = [
+        { id: 1, name: 'Alice Johnson', department: 'Engineering', salary: 95000, status: 'active', isRemote: true },
+        { id: 2, name: 'Bob Smith', department: 'Marketing', salary: 72000, status: 'pending', isRemote: false },
+        { id: 3, name: 'Charlie Brown', department: 'Sales', salary: 88000, status: 'active', isRemote: true },
+        { id: 4, name: 'Diana Prince', department: 'Engineering', salary: 105000, status: 'active', isRemote: false },
+        { id: 5, name: 'Eve Wilson', department: 'HR', salary: 68000, status: 'inactive', isRemote: true }
+    ]
+
+    const departmentOptions = [
+        { value: 'Engineering', label: 'Engineering' },
+        { value: 'Marketing', label: 'Marketing' },
+        { value: 'Sales', label: 'Sales' },
+        { value: 'HR', label: 'HR' },
+        { value: 'Finance', label: 'Finance' }
+    ]
+
+    const statusOptions = [
+        { value: 'active', label: 'Active' },
+        { value: 'pending', label: 'Pending' },
+        { value: 'inactive', label: 'Inactive' }
+    ]
+
+    const mixedColumns = [
+        { field: 'id', title: 'ID', width: '60px', isEditable: false, horizontalAlign: 'center' },
+        { field: 'name', title: 'Name', width: '140px', editor: 'text' },
+        { field: 'department', title: 'Department', width: '140px', editor: 'combobox', editorOptions: { options: departmentOptions, valueMember: 'value', displayMember: 'label' } },
+        { field: 'salary', title: 'Salary', width: '110px', editor: 'number', horizontalAlign: 'right', formatCallback: (v) => '$' + v.toLocaleString(), editorOptions: { min: 0, step: 1000 } },
+        { field: 'status', title: 'Status', width: '110px', editor: 'select', editorOptions: { options: statusOptions, valueMember: 'value', displayMember: 'label' } },
+        { field: 'isRemote', title: 'Remote', width: '80px', editor: 'checkbox', horizontalAlign: 'center' }
+    ]
+
+    const textColumns = [
+        { field: 'id', title: 'ID', width: '60px', isEditable: false, horizontalAlign: 'center' },
+        { field: 'name', title: 'Name', width: '150px', editor: 'text' },
+        { field: 'department', title: 'Department', width: '140px', editor: 'text' },
+        { field: 'salary', title: 'Salary', width: '120px', editor: 'number', horizontalAlign: 'right', formatCallback: (v) => '$' + v.toLocaleString(), editorOptions: { min: 0, step: 1000 } }
+    ]
+
+    const dropdownColumns = [
+        { field: 'name', title: 'Name', width: '140px', editor: 'text' },
+        { field: 'department', title: 'Department', width: '150px', editor: 'combobox', editorOptions: { options: departmentOptions, valueMember: 'value', displayMember: 'label', placeholder: 'Search...' } },
+        { field: 'status', title: 'Status', width: '120px', editor: 'select', editorOptions: { options: statusOptions, valueMember: 'value', displayMember: 'label' } },
+        { field: 'salary', title: 'Salary', width: '110px', editor: 'number', horizontalAlign: 'right', formatCallback: (v) => v ? '$' + v.toLocaleString() : '' }
+    ]
+
+    // --- GM01: Grid Modes ---
+    const modesGrid = document.getElementById('modesGrid')
+    modesGrid.columns = mixedColumns
+    modesGrid.items = employees.map(e => ({...e}))
+    modesGrid.mode = 'excel'
+    modesGrid.isStriped = true
+
+    const modeDescriptions = {
+        'read-only': {
+            text: '<strong>read-only</strong> &mdash; Data display only. No editing, no edit triggers.',
+            props: { isEditable: 'false', dropdownToggleVisibility: "'on-focus'", cellSelectionMode: "'click'" }
+        },
+        'excel': {
+            text: '<strong>excel</strong> &mdash; Spreadsheet-like editing. Navigate with arrows, type or double-click to edit.',
+            props: { isEditable: 'true', editTrigger: "'navigate'", dropdownToggleVisibility: "'always'", shouldShowDropdownOnFocus: 'false', cellSelectionMode: "'click'" }
+        },
+        'input-matrix': {
+            text: '<strong>input-matrix</strong> &mdash; All cells always in edit mode. Tab/Enter to move between cells.',
+            props: { isEditable: 'true', editTrigger: "'always'", dropdownToggleVisibility: "'always'", shouldShowDropdownOnFocus: 'true', cellSelectionMode: "'shift'" }
         }
+    }
 
-        window.setMode = function(mode, btn) {
-            document.querySelectorAll('[data-mode]').forEach(b => b.classList.remove('active'))
-            btn.classList.add('active')
-            modesGrid.mode = mode
+    window.setMode = function(mode, btn) {
+        document.querySelectorAll('[data-mode]').forEach(b => b.classList.add('btn-outline'))
+        btn.classList.remove('btn-outline')
+        modesGrid.mode = mode
 
-            const desc = modeDescriptions[mode]
-            const propsHtml = Object.entries(desc.props)
-                .map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`)
-                .join('')
-            document.getElementById('modeInfo').innerHTML = `${desc.text}<div class="props-list">${propsHtml}</div>`
+        const desc = modeDescriptions[mode]
+        const propsHtml = Object.entries(desc.props)
+            .map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`)
+            .join('')
+        document.getElementById('modeInfo').innerHTML = `${desc.text}<dl class="mono">${propsHtml}</dl>`
+    }
+
+    // --- GM02: Edit Triggers ---
+    const triggerGrid = document.getElementById('triggerGrid')
+    triggerGrid.columns = textColumns
+    triggerGrid.items = employees.map(e => ({...e}))
+    triggerGrid.isEditable = true
+    triggerGrid.editTrigger = 'dblclick'
+    triggerGrid.isStriped = true
+
+    const triggerDescriptions = {
+        'click': '<strong>click</strong> &mdash; Single click enters edit mode. Simple and direct.',
+        'dblclick': '<strong>dblclick</strong> &mdash; Double-click to enter edit mode. Default trigger. Prevents accidental edits.',
+        'navigate': '<strong>navigate</strong> &mdash; Excel-like: start typing to enter edit mode. Double-click, F2, or Enter also enter editing. Arrow keys navigate between cells.',
+        'always': '<strong>always</strong> &mdash; Cells are always in edit mode. Used by input-matrix mode. Tab/Enter to move between cells.',
+        'button': '<strong>button</strong> &mdash; An edit button appears in cells. Click the button to enter edit mode.'
+    }
+
+    window.setTrigger = function(trigger, btn) {
+        document.querySelectorAll('[data-trigger]').forEach(b => b.classList.add('btn-outline'))
+        btn.classList.remove('btn-outline')
+        triggerGrid.editTrigger = trigger
+        document.getElementById('triggerInfo').innerHTML = triggerDescriptions[trigger]
+    }
+
+    // --- GM03: Edit Start Selection ---
+    const selectionGrid = document.getElementById('selectionGrid')
+    selectionGrid.columns = [
+        { field: 'name', title: 'Name', width: '180px', editor: 'text' },
+        { field: 'department', title: 'Department', width: '160px', editor: 'text' },
+        { field: 'salary', title: 'Salary', width: '120px', editor: 'number', horizontalAlign: 'right', formatCallback: (v) => '$' + v.toLocaleString() }
+    ]
+    selectionGrid.items = employees.map(e => ({...e}))
+    selectionGrid.isEditable = true
+    selectionGrid.editTrigger = 'click'
+    selectionGrid.editStartSelection = 'selectAll'
+    selectionGrid.isStriped = true
+
+    const selectionDescriptions = {
+        'selectAll': '<strong>selectAll</strong> &mdash; All text is selected when entering edit mode. Typing replaces the entire value. This is the default.',
+        'mousePosition': '<strong>mousePosition</strong> &mdash; Cursor is placed at the click position. Best for precise in-place editing.',
+        'cursorAtStart': '<strong>cursorAtStart</strong> &mdash; Cursor is placed at the beginning of the text. Good for prepending content.',
+        'cursorAtEnd': '<strong>cursorAtEnd</strong> &mdash; Cursor is placed at the end of the text. Good for appending content.'
+    }
+
+    window.setSelection = function(selection, btn) {
+        document.querySelectorAll('[data-selection]').forEach(b => b.classList.add('btn-outline'))
+        btn.classList.remove('btn-outline')
+        selectionGrid.editStartSelection = selection
+        document.getElementById('selectionInfo').innerHTML = selectionDescriptions[selection]
+    }
+
+    // --- GM04: Dropdown Behavior ---
+    const dropdownGrid = document.getElementById('dropdownGrid')
+    dropdownGrid.columns = dropdownColumns
+    dropdownGrid.items = employees.map(e => ({...e}))
+    dropdownGrid.isEditable = true
+    dropdownGrid.editTrigger = 'navigate'
+    dropdownGrid.dropdownToggleVisibility = 'always'
+    dropdownGrid.shouldShowDropdownOnFocus = true
+    dropdownGrid.shouldOpenDropdownOnEnter = false
+    dropdownGrid.isStriped = true
+
+    window.setToggleVisibility = function(value, btn) {
+        btn.parentElement.querySelectorAll('.mode-btn').forEach(b => b.classList.add('btn-outline'))
+        btn.classList.remove('btn-outline')
+        dropdownGrid.dropdownToggleVisibility = value
+    }
+
+    window.setShowOnFocus = function(checked) {
+        dropdownGrid.shouldShowDropdownOnFocus = checked
+    }
+
+    window.setOpenOnEnter = function(checked) {
+        dropdownGrid.shouldOpenDropdownOnEnter = checked
+    }
+
+    // --- GM05: Playground ---
+    const playgroundGrid = document.getElementById('playgroundGrid')
+    playgroundGrid.columns = mixedColumns
+    playgroundGrid.items = employees.map(e => ({...e}))
+    playgroundGrid.isEditable = true
+    playgroundGrid.editTrigger = 'dblclick'
+    playgroundGrid.editStartSelection = 'selectAll'
+    playgroundGrid.cellSelectionMode = 'click'
+    playgroundGrid.dropdownToggleVisibility = 'always'
+    playgroundGrid.shouldShowDropdownOnFocus = true
+    playgroundGrid.shouldOpenDropdownOnEnter = false
+    playgroundGrid.isCheckboxAlwaysEditable = false
+    playgroundGrid.isStriped = true
+
+    function pgUpdateStateDisplay() {
+        const props = {
+            isEditable: playgroundGrid.isEditable,
+            editTrigger: `'${playgroundGrid.editTrigger}'`,
+            editStartSelection: `'${playgroundGrid.editStartSelection}'`,
+            cellSelectionMode: `'${playgroundGrid.cellSelectionMode}'`,
+            dropdownToggleVisibility: `'${playgroundGrid.dropdownToggleVisibility}'`,
+            shouldShowDropdownOnFocus: playgroundGrid.shouldShowDropdownOnFocus,
+            shouldOpenDropdownOnEnter: playgroundGrid.shouldOpenDropdownOnEnter,
+            isCheckboxAlwaysEditable: playgroundGrid.isCheckboxAlwaysEditable
         }
+        document.getElementById('pgStateProps').innerHTML = Object.entries(props)
+            .map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`)
+            .join('')
+    }
 
-        // --- GM02: Edit Triggers ---
-        const triggerGrid = document.getElementById('triggerGrid')
-        triggerGrid.columns = textColumns
-        triggerGrid.items = employees.map(e => ({...e}))
-        triggerGrid.isEditable = true
-        triggerGrid.editTrigger = 'dblclick'
-        triggerGrid.isStriped = true
-
-        const triggerDescriptions = {
-            'click': '<strong>click</strong> &mdash; Single click enters edit mode. Simple and direct.',
-            'dblclick': '<strong>dblclick</strong> &mdash; Double-click to enter edit mode. Default trigger. Prevents accidental edits.',
-            'navigate': '<strong>navigate</strong> &mdash; Excel-like: start typing to enter edit mode. Double-click, F2, or Enter also enter editing. Arrow keys navigate between cells.',
-            'always': '<strong>always</strong> &mdash; Cells are always in edit mode. Used by input-matrix mode. Tab/Enter to move between cells.',
-            'button': '<strong>button</strong> &mdash; An edit button appears in cells. Click the button to enter edit mode.'
+    window.pgSet = function(prop, value, btn) {
+        playgroundGrid[prop] = value
+        // Update button group active state (only for button switchers, not checkboxes; the active one drops btn-outline)
+        if (btn && btn.classList.contains('mode-btn')) {
+            btn.parentElement.querySelectorAll('.mode-btn').forEach(b => b.classList.add('btn-outline'))
+            btn.classList.remove('btn-outline')
         }
+        pgUpdateStateDisplay()
+    }
 
-        window.setTrigger = function(trigger, btn) {
-            document.querySelectorAll('[data-trigger]').forEach(b => b.classList.remove('active'))
-            btn.classList.add('active')
-            triggerGrid.editTrigger = trigger
-            document.getElementById('triggerInfo').innerHTML = triggerDescriptions[trigger]
-        }
+    window.pgPreset = function(mode) {
+        playgroundGrid.mode = mode
+        // Sync UI controls to match what the mode set
+        pgSyncUI()
+        pgUpdateStateDisplay()
+    }
 
-        // --- GM03: Edit Start Selection ---
-        const selectionGrid = document.getElementById('selectionGrid')
-        selectionGrid.columns = [
-            { field: 'name', title: 'Name', width: '180px', editor: 'text' },
-            { field: 'department', title: 'Department', width: '160px', editor: 'text' },
-            { field: 'salary', title: 'Salary', width: '120px', editor: 'number', horizontalAlign: 'right', formatCallback: (v) => '$' + v.toLocaleString() }
-        ]
-        selectionGrid.items = employees.map(e => ({...e}))
-        selectionGrid.isEditable = true
-        selectionGrid.editTrigger = 'click'
-        selectionGrid.editStartSelection = 'selectAll'
-        selectionGrid.isStriped = true
-
-        const selectionDescriptions = {
-            'selectAll': '<strong>selectAll</strong> &mdash; All text is selected when entering edit mode. Typing replaces the entire value. This is the default.',
-            'mousePosition': '<strong>mousePosition</strong> &mdash; Cursor is placed at the click position. Best for precise in-place editing.',
-            'cursorAtStart': '<strong>cursorAtStart</strong> &mdash; Cursor is placed at the beginning of the text. Good for prepending content.',
-            'cursorAtEnd': '<strong>cursorAtEnd</strong> &mdash; Cursor is placed at the end of the text. Good for appending content.'
-        }
-
-        window.setSelection = function(selection, btn) {
-            document.querySelectorAll('[data-selection]').forEach(b => b.classList.remove('active'))
-            btn.classList.add('active')
-            selectionGrid.editStartSelection = selection
-            document.getElementById('selectionInfo').innerHTML = selectionDescriptions[selection]
-        }
-
-        // --- GM04: Dropdown Behavior ---
-        const dropdownGrid = document.getElementById('dropdownGrid')
-        dropdownGrid.columns = dropdownColumns
-        dropdownGrid.items = employees.map(e => ({...e}))
-        dropdownGrid.isEditable = true
-        dropdownGrid.editTrigger = 'navigate'
-        dropdownGrid.dropdownToggleVisibility = 'always'
-        dropdownGrid.shouldShowDropdownOnFocus = true
-        dropdownGrid.shouldOpenDropdownOnEnter = false
-        dropdownGrid.isStriped = true
-
-        window.setToggleVisibility = function(value, btn) {
-            btn.parentElement.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'))
-            btn.classList.add('active')
-            dropdownGrid.dropdownToggleVisibility = value
-        }
-
-        window.setShowOnFocus = function(checked) {
-            dropdownGrid.shouldShowDropdownOnFocus = checked
-        }
-
-        window.setOpenOnEnter = function(checked) {
-            dropdownGrid.shouldOpenDropdownOnEnter = checked
-        }
-
-        // --- GM05: Playground ---
-        const playgroundGrid = document.getElementById('playgroundGrid')
-        playgroundGrid.columns = mixedColumns
-        playgroundGrid.items = employees.map(e => ({...e}))
+    window.pgReset = function() {
         playgroundGrid.isEditable = true
         playgroundGrid.editTrigger = 'dblclick'
         playgroundGrid.editStartSelection = 'selectAll'
@@ -526,113 +466,67 @@
         playgroundGrid.shouldShowDropdownOnFocus = true
         playgroundGrid.shouldOpenDropdownOnEnter = false
         playgroundGrid.isCheckboxAlwaysEditable = false
-        playgroundGrid.isStriped = true
-
-        function pgUpdateStateDisplay() {
-            const props = {
-                isEditable: playgroundGrid.isEditable,
-                editTrigger: `'${playgroundGrid.editTrigger}'`,
-                editStartSelection: `'${playgroundGrid.editStartSelection}'`,
-                cellSelectionMode: `'${playgroundGrid.cellSelectionMode}'`,
-                dropdownToggleVisibility: `'${playgroundGrid.dropdownToggleVisibility}'`,
-                shouldShowDropdownOnFocus: playgroundGrid.shouldShowDropdownOnFocus,
-                shouldOpenDropdownOnEnter: playgroundGrid.shouldOpenDropdownOnEnter,
-                isCheckboxAlwaysEditable: playgroundGrid.isCheckboxAlwaysEditable
-            }
-            document.getElementById('pgStateProps').innerHTML = Object.entries(props)
-                .map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`)
-                .join('')
-        }
-
-        window.pgSet = function(prop, value, btn) {
-            playgroundGrid[prop] = value
-            // Update button group active state (only for button switchers, not checkboxes)
-            if (btn && btn.classList.contains('mode-btn')) {
-                btn.parentElement.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'))
-                btn.classList.add('active')
-            }
-            pgUpdateStateDisplay()
-        }
-
-        window.pgPreset = function(mode) {
-            playgroundGrid.mode = mode
-            // Sync UI controls to match what the mode set
-            pgSyncUI()
-            pgUpdateStateDisplay()
-        }
-
-        window.pgReset = function() {
-            playgroundGrid.isEditable = true
-            playgroundGrid.editTrigger = 'dblclick'
-            playgroundGrid.editStartSelection = 'selectAll'
-            playgroundGrid.cellSelectionMode = 'click'
-            playgroundGrid.dropdownToggleVisibility = 'always'
-            playgroundGrid.shouldShowDropdownOnFocus = true
-            playgroundGrid.shouldOpenDropdownOnEnter = false
-            playgroundGrid.isCheckboxAlwaysEditable = false
-            pgSyncUI()
-            pgUpdateStateDisplay()
-        }
-
-        function pgSyncUI() {
-            // Sync button groups
-            const syncBtns = (containerId, value) => {
-                const container = document.getElementById(containerId)
-                if (!container) return
-                container.querySelectorAll('.mode-btn').forEach(b => {
-                    b.classList.toggle('active', b.textContent.trim() === String(value))
-                })
-            }
-            syncBtns('pg-editable-btns', playgroundGrid.isEditable)
-            syncBtns('pg-trigger-btns', playgroundGrid.editTrigger)
-            syncBtns('pg-selection-btns', playgroundGrid.editStartSelection)
-            syncBtns('pg-cellsel-btns', playgroundGrid.cellSelectionMode)
-            syncBtns('pg-toggle-btns', playgroundGrid.dropdownToggleVisibility)
-
-            // Sync checkboxes
-            document.getElementById('pgShowOnFocus').checked = playgroundGrid.shouldShowDropdownOnFocus
-            document.getElementById('pgOpenOnEnter').checked = playgroundGrid.shouldOpenDropdownOnEnter
-            document.getElementById('pgCheckboxAlways').checked = playgroundGrid.isCheckboxAlwaysEditable
-        }
-
+        pgSyncUI()
         pgUpdateStateDisplay()
+    }
 
-        // --- GM06: Per-Column Edit Triggers ---
-        // The trigger buttons only reconfigure these two columns; the rest keep the grid default.
-        const CONTROLLED_FIELDS = ['status', 'isRemote']
-
-        const colTriggerGrid = document.getElementById('colTriggerGrid')
-        colTriggerGrid.isEditable = true
-        colTriggerGrid.editTrigger = 'dblclick'  // grid default for the non-controlled columns
-        colTriggerGrid.isStriped = true
-        colTriggerGrid.items = employees.map(e => ({...e}))
-
-        function buildColTriggerColumns(trigger) {
-            return [
-                { field: 'id', title: 'ID', width: '60px', isEditable: false, horizontalAlign: 'center' },
-                { field: 'name', title: 'Name', width: '150px', editor: 'text' },
-                { field: 'status', title: 'Status', width: '120px', editor: 'select', editTrigger: trigger, editorOptions: { options: statusOptions, valueMember: 'value', displayMember: 'label' } },
-                { field: 'salary', title: 'Salary', width: '120px', editor: 'number', horizontalAlign: 'right', formatCallback: (v) => '$' + v.toLocaleString(), editorOptions: { min: 0, step: 1000 } },
-                { field: 'isRemote', title: 'Remote', width: '90px', editor: 'checkbox', editTrigger: trigger, horizontalAlign: 'center' }
-            ]
+    function pgSyncUI() {
+        // Sync button groups
+        const syncBtns = (containerId, value) => {
+            const container = document.getElementById(containerId)
+            if (!container) return
+            container.querySelectorAll('.mode-btn').forEach(b => {
+                b.classList.toggle('btn-outline', b.textContent.trim() !== String(value))
+            })
         }
+        syncBtns('pg-editable-btns', playgroundGrid.isEditable)
+        syncBtns('pg-trigger-btns', playgroundGrid.editTrigger)
+        syncBtns('pg-selection-btns', playgroundGrid.editStartSelection)
+        syncBtns('pg-cellsel-btns', playgroundGrid.cellSelectionMode)
+        syncBtns('pg-toggle-btns', playgroundGrid.dropdownToggleVisibility)
 
-        colTriggerGrid.columns = buildColTriggerColumns('dblclick')
+        // Sync checkboxes
+        document.getElementById('pgShowOnFocus').checked = playgroundGrid.shouldShowDropdownOnFocus
+        document.getElementById('pgOpenOnEnter').checked = playgroundGrid.shouldOpenDropdownOnEnter
+        document.getElementById('pgCheckboxAlways').checked = playgroundGrid.isCheckboxAlwaysEditable
+    }
 
-        const colTriggerDescriptions = {
-            'click': '<strong>click</strong> &mdash; Only <strong>Status</strong> and <strong>Remote</strong> enter edit mode on a single click. Name and Salary still need a double-click.',
-            'dblclick': '<strong>dblclick</strong> &mdash; Only <strong>Status</strong> and <strong>Remote</strong> use this trigger. Name and Salary always require a double-click regardless of the selection.',
-            'navigate': '<strong>navigate</strong> &mdash; <strong>Status</strong> and <strong>Remote</strong> open by typing/Enter/F2 while navigating. Name and Salary still need a double-click.',
-            'always': '<strong>always</strong> &mdash; <strong>Status</strong> and <strong>Remote</strong> are always in edit mode. Name and Salary remain double-click to edit.',
-            'button': '<strong>button</strong> &mdash; An edit button appears in <strong>Status</strong> and <strong>Remote</strong> cells only. Name and Salary still need a double-click.'
-        }
+    pgUpdateStateDisplay()
 
-        window.setColTrigger = function(trigger, btn) {
-            document.querySelectorAll('[data-coltrigger]').forEach(b => b.classList.remove('active'))
-            btn.classList.add('active')
-            colTriggerGrid.columns = buildColTriggerColumns(trigger)
-            document.getElementById('colTriggerInfo').innerHTML = colTriggerDescriptions[trigger]
-        }
-    </script>
-</body>
-</html>
+    // --- GM06: Per-Column Edit Triggers ---
+    // The trigger buttons only reconfigure these two columns; the rest keep the grid default.
+    const CONTROLLED_FIELDS = ['status', 'isRemote']
+
+    const colTriggerGrid = document.getElementById('colTriggerGrid')
+    colTriggerGrid.isEditable = true
+    colTriggerGrid.editTrigger = 'dblclick'  // grid default for the non-controlled columns
+    colTriggerGrid.isStriped = true
+    colTriggerGrid.items = employees.map(e => ({...e}))
+
+    function buildColTriggerColumns(trigger) {
+        return [
+            { field: 'id', title: 'ID', width: '60px', isEditable: false, horizontalAlign: 'center' },
+            { field: 'name', title: 'Name', width: '150px', editor: 'text' },
+            { field: 'status', title: 'Status', width: '120px', editor: 'select', editTrigger: trigger, editorOptions: { options: statusOptions, valueMember: 'value', displayMember: 'label' } },
+            { field: 'salary', title: 'Salary', width: '120px', editor: 'number', horizontalAlign: 'right', formatCallback: (v) => '$' + v.toLocaleString(), editorOptions: { min: 0, step: 1000 } },
+            { field: 'isRemote', title: 'Remote', width: '90px', editor: 'checkbox', editTrigger: trigger, horizontalAlign: 'center' }
+        ]
+    }
+
+    colTriggerGrid.columns = buildColTriggerColumns('dblclick')
+
+    const colTriggerDescriptions = {
+        'click': '<strong>click</strong> &mdash; Only <strong>Status</strong> and <strong>Remote</strong> enter edit mode on a single click. Name and Salary still need a double-click.',
+        'dblclick': '<strong>dblclick</strong> &mdash; Only <strong>Status</strong> and <strong>Remote</strong> use this trigger. Name and Salary always require a double-click regardless of the selection.',
+        'navigate': '<strong>navigate</strong> &mdash; <strong>Status</strong> and <strong>Remote</strong> open by typing/Enter/F2 while navigating. Name and Salary still need a double-click.',
+        'always': '<strong>always</strong> &mdash; <strong>Status</strong> and <strong>Remote</strong> are always in edit mode. Name and Salary remain double-click to edit.',
+        'button': '<strong>button</strong> &mdash; An edit button appears in <strong>Status</strong> and <strong>Remote</strong> cells only. Name and Salary still need a double-click.'
+    }
+
+    window.setColTrigger = function(trigger, btn) {
+        document.querySelectorAll('[data-coltrigger]').forEach(b => b.classList.add('btn-outline'))
+        btn.classList.remove('btn-outline')
+        colTriggerGrid.columns = buildColTriggerColumns(trigger)
+        document.getElementById('colTriggerInfo').innerHTML = colTriggerDescriptions[trigger]
+    }
+</script>

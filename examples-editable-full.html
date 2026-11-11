@@ -1,537 +1,444 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebGrid - Full Editable Features</title>
-    <link rel="stylesheet" href="examples-shared.css">
-    <style>
-        .status-message {
-            padding: 8px 12px;
-            background: #f0f4f8;
-            border-radius: 4px;
-            font-size: 0.9rem;
-            margin-top: 1rem;
-        }
-        .status-message.success { background: #c6f6d5; color: #22543d; }
-        .status-message.error { background: #fed7d7; color: #c53030; }
 
-        .key-hint {
-            display: inline-block;
-            padding: 2px 6px;
-            background: #e2e8f0;
-            border-radius: 3px;
-            font-family: monospace;
-            font-size: 0.85em;
-        }
+<meta name="kmwc:title" content="Full Editable Features">
+<meta name="kmwc:subtitle" content="Comprehensive editing with validation, triggers, and all editor types">
 
-        .feature-list {
-            margin: 0.5rem 0 1rem 1.5rem;
-        }
-        .feature-list li {
-            margin-bottom: 0.25rem;
-        }
+    <!-- Edit Triggers Section -->
+    <div class="card">
+        <h2>EF01 · Edit Triggers</h2>
+        <table class="reference-table table-compact">
+            <tr><td><code>dblclick</code></td><td>Double-click to edit (default)</td></tr>
+            <tr><td><code>click</code></td><td>Single-click to edit</td></tr>
+            <tr><td><code>button</code></td><td>Click edit button to edit</td></tr>
+            <tr><td><code>always</code></td><td>Always in edit mode (spreadsheet-like)</td></tr>
+            <tr><td><code>navigate</code></td><td>Arrow key navigation with type-to-edit (Excel-like)</td></tr>
+        </table>
+    </div>
 
-        /* JSON Editor Dialog */
-        .json-dialog-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.5);
-            z-index: 9999;
-        }
-        .json-dialog {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-            padding: 1.5rem;
-            width: 90%;
-            max-width: 500px;
-            z-index: 10000;
-        }
-        .json-dialog h3 { margin: 0 0 1rem 0; }
-        .json-dialog textarea {
-            width: 100%;
-            height: 200px;
-            font-family: 'Consolas', monospace;
-            font-size: 13px;
-            padding: 0.75rem;
-            border: 1px solid #e2e8f0;
-            border-radius: 4px;
-            resize: vertical;
-            box-sizing: border-box;
-        }
-        .json-dialog .error { color: #c53030; margin: 0.5rem 0; font-size: 0.9rem; }
-        .json-dialog .actions {
-            display: flex;
-            justify-content: flex-end;
-            gap: 0.5rem;
-            margin-top: 1rem;
-        }
-        .json-dialog button {
-            padding: 0.5rem 1rem;
-            border: 1px solid #e2e8f0;
-            border-radius: 4px;
-            cursor: pointer;
-            background: white;
-        }
-        .json-dialog button.primary {
-            background: #667eea;
-            color: white;
-            border-color: #667eea;
-        }
-        .hidden { display: none !important; }
+    <!-- Navigate Mode Demo -->
+    <div class="card">
+        <h2>EF02 · Navigate Mode (Excel-like)</h2>
+        <p>Click a cell to focus, then use keyboard to navigate and edit:</p>
+        <ul>
+            <li><kbd>Arrow keys</kbd> Move between cells</li>
+            <li><kbd>Tab</kbd> / <kbd>Shift+Tab</kbd> Next/previous cell</li>
+            <li><kbd>Enter</kbd> / <kbd>F2</kbd> Enter edit mode</li>
+            <li><kbd>Space</kbd> Toggle checkbox or open dropdown</li>
+            <li><kbd>Escape</kbd> Cancel editing</li>
+            <li><kbd>Any character</kbd> Start typing to edit</li>
+        </ul>
+        <web-grid id="gridNavigate" isStriped isHoverable style="max-height: 350px;"></web-grid>
+        <p id="navigateStatus" class="note mt-1" hidden></p>
+    </div>
 
-        .trigger-table td { padding: 0.5rem; }
-        .trigger-table code { background: #f0f4f8; padding: 2px 6px; border-radius: 3px; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <header>
-            <a href="index.html" class="back-link">← Back to Examples</a>
-            <h1>Full Editable Features</h1>
-            <p class="subtitle">Comprehensive editing with validation, triggers, and all editor types</p>
-        </header>
+    <!-- Validation Demo -->
+    <div class="card">
+        <h2>EF03 · Validation with validateCallback</h2>
+        <p>Validation rules applied to each column. Invalid cells remain marked until fixed:</p>
+        <ul>
+            <li><strong>Name:</strong> Required, minimum 2 characters</li>
+            <li><strong>Age:</strong> Must be 0-150</li>
+            <li><strong>Score:</strong> Must be 0-100 (rounds to integer)</li>
+            <li><strong>Email:</strong> Must contain @</li>
+        </ul>
+        <web-grid id="gridValidation" isStriped isHoverable style="max-height: 350px;"></web-grid>
+        <p id="validationStatus" class="note mt-1" hidden></p>
+    </div>
 
-        <!-- Edit Triggers Section -->
-        <div class="card">
-            <h2>Edit Triggers</h2>
-            <table class="trigger-table">
-                <tr><td><code>dblclick</code></td><td>Double-click to edit (default)</td></tr>
-                <tr><td><code>click</code></td><td>Single-click to edit</td></tr>
-                <tr><td><code>button</code></td><td>Click edit button to edit</td></tr>
-                <tr><td><code>always</code></td><td>Always in edit mode (spreadsheet-like)</td></tr>
-                <tr><td><code>navigate</code></td><td>Arrow key navigation with type-to-edit (Excel-like)</td></tr>
-            </table>
-        </div>
+    <!-- All Editor Types -->
+    <div class="card">
+        <h2>EF04 · All Editor Types</h2>
+        <p>Demonstrating every editor type available:</p>
+        <web-grid id="gridAllEditors" isStriped isHoverable style="max-height: 400px;"></web-grid>
+        <p id="allEditorsStatus" class="note mt-1" hidden></p>
+    </div>
 
-        <!-- Navigate Mode Demo -->
-        <div class="card">
-            <h2>Navigate Mode (Excel-like)</h2>
-            <p>Click a cell to focus, then use keyboard to navigate and edit:</p>
-            <ul class="feature-list">
-                <li><span class="key-hint">Arrow keys</span> Move between cells</li>
-                <li><span class="key-hint">Tab</span> / <span class="key-hint">Shift+Tab</span> Next/previous cell</li>
-                <li><span class="key-hint">Enter</span> / <span class="key-hint">F2</span> Enter edit mode</li>
-                <li><span class="key-hint">Space</span> Toggle checkbox or open dropdown</li>
-                <li><span class="key-hint">Escape</span> Cancel editing</li>
-                <li><span class="key-hint">Any character</span> Start typing to edit</li>
-            </ul>
-            <web-grid id="gridNavigate" isStriped isHoverable style="max-width: 100%; max-height: 350px; border: 1px solid #e2e8f0;"></web-grid>
-            <div id="navigateStatus" class="status-message hidden"></div>
-        </div>
+    <!-- Custom JSON Editor -->
+    <div class="card">
+        <h2>EF05 · Custom Editor (JSON Dialog)</h2>
+        <p>The "Settings" column uses <code>editor: "custom"</code> with a dialog for JSON editing. Press F2, Space, or double-click to open.</p>
+        <web-grid id="gridCustomEditor" isStriped isHoverable style="max-height: 300px;"></web-grid>
+        <p id="customEditorStatus" class="note mt-1" hidden></p>
+    </div>
 
-        <!-- Validation Demo -->
-        <div class="card">
-            <h2>Validation with validateCallback</h2>
-            <p>Validation rules applied to each column. Invalid cells remain marked until fixed:</p>
-            <ul class="feature-list">
-                <li><strong>Name:</strong> Required, minimum 2 characters</li>
-                <li><strong>Age:</strong> Must be 0-150</li>
-                <li><strong>Score:</strong> Must be 0-100 (rounds to integer)</li>
-                <li><strong>Email:</strong> Must contain @</li>
-            </ul>
-            <web-grid id="gridValidation" isStriped isHoverable style="max-width: 100%; max-height: 350px; border: 1px solid #e2e8f0;"></web-grid>
-            <div id="validationStatus" class="status-message hidden"></div>
-        </div>
-
-        <!-- All Editor Types -->
-        <div class="card">
-            <h2>All Editor Types</h2>
-            <p>Demonstrating every editor type available:</p>
-            <web-grid id="gridAllEditors" isStriped isHoverable style="max-width: 100%; max-height: 400px; border: 1px solid #e2e8f0;"></web-grid>
-            <div id="allEditorsStatus" class="status-message hidden"></div>
-        </div>
-
-        <!-- Custom JSON Editor -->
-        <div class="card">
-            <h2>Custom Editor (JSON Dialog)</h2>
-            <p>The "Settings" column uses <code>editor: "custom"</code> with a dialog for JSON editing. Press F2, Space, or double-click to open.</p>
-            <web-grid id="gridCustomEditor" isStriped isHoverable style="max-width: 100%; max-height: 300px; border: 1px solid #e2e8f0;"></web-grid>
-            <div id="customEditorStatus" class="status-message hidden"></div>
-        </div>
-
-        <!-- Always Editable -->
-        <div class="card">
-            <h2>Always Editable (Spreadsheet Mode)</h2>
-            <p>All cells are always in edit mode. Use <span class="key-hint">Tab</span> to move between cells.</p>
-            <web-grid id="gridAlways" isStriped={false} isHoverable style="max-width: 100%; max-height: 300px; border: 1px solid #e2e8f0;"></web-grid>
-        </div>
+    <!-- Always Editable -->
+    <div class="card">
+        <h2>EF06 · Always Editable (Spreadsheet Mode)</h2>
+        <p>All cells are always in edit mode. Use <kbd>Tab</kbd> to move between cells.</p>
+        <web-grid id="gridAlways" isStriped={false} isHoverable style="max-height: 300px;"></web-grid>
     </div>
 
     <!-- JSON Editor Dialog -->
-    <div id="jsonDialogOverlay" class="json-dialog-overlay hidden" onclick="cancelJsonEdit()"></div>
-    <div id="jsonDialog" class="json-dialog hidden">
+    <dialog id="jsonDialog" class="card">
         <h3>Edit JSON Settings</h3>
-        <p id="jsonEditingRow" style="color: #666; margin-bottom: 0.5rem;"></p>
-        <textarea id="jsonTextarea" placeholder='{"key": "value"}'></textarea>
-        <div id="jsonError" class="error hidden"></div>
-        <div class="actions">
-            <button onclick="cancelJsonEdit()">Cancel</button>
-            <button class="primary" onclick="saveJsonEdit()">Save</button>
+        <p id="jsonEditingRow" class="muted"></p>
+        <div class="form-group">
+            <textarea id="jsonTextarea" class="mono" rows="10" cols="50" placeholder='{"key": "value"}'></textarea>
         </div>
-    </div>
+        <p id="jsonError" class="note danger" hidden></p>
+        <div class="controls">
+            <button class="btn-secondary push-end" onclick="cancelJsonEdit()">Cancel</button>
+            <button onclick="saveJsonEdit()">Save</button>
+        </div>
+    </dialog>
 
-    <script type="module">
-        import '@keenmate/web-grid'
+<script type="module">
 
-        // Helper to show status
-        function showStatus(elementId, message, type = 'info') {
-            const el = document.getElementById(elementId)
-            el.textContent = message
-            el.className = `status-message ${type}`
-            el.classList.remove('hidden')
-        }
+    // Helper to show status
+    function showStatus(elementId, message, type = 'info') {
+        const el = document.getElementById(elementId)
+        el.textContent = message
+        el.className = `note mt-1 ${type === 'error' ? 'danger' : type}`
+        el.hidden = false
+    }
 
-        // =============================================================
-        // Navigate Mode Grid
-        // =============================================================
-        const navigateData = [
-            { id: 1, name: 'Alice Johnson', age: 28, city: 'New York', active: true, role: 'admin' },
-            { id: 2, name: 'Bob Smith', age: 34, city: 'Los Angeles', active: true, role: 'user' },
-            { id: 3, name: 'Carol White', age: 26, city: 'Chicago', active: false, role: 'user' },
-            { id: 4, name: 'David Brown', age: 42, city: 'Houston', active: true, role: 'moderator' },
-            { id: 5, name: 'Eve Davis', age: 31, city: 'Phoenix', active: true, role: 'user' },
-        ]
+    // =============================================================
+    // Navigate Mode Grid
+    // =============================================================
+    const navigateData = [
+        { id: 1, name: 'Alice Johnson', age: 28, city: 'New York', active: true, role: 'admin' },
+        { id: 2, name: 'Bob Smith', age: 34, city: 'Los Angeles', active: true, role: 'user' },
+        { id: 3, name: 'Carol White', age: 26, city: 'Chicago', active: false, role: 'user' },
+        { id: 4, name: 'David Brown', age: 42, city: 'Houston', active: true, role: 'moderator' },
+        { id: 5, name: 'Eve Davis', age: 31, city: 'Phoenix', active: true, role: 'user' },
+    ]
 
-        const navigateColumns = [
-            { field: 'id', title: 'ID', width: '60px', horizontalAlign: 'center' },
-            { field: 'name', title: 'Name', isEditable: true, editor: 'text' },
-            { field: 'age', title: 'Age', width: '80px', horizontalAlign: 'center', isEditable: true, editor: 'number', editorOptions: { min: 0, max: 120 } },
-            { field: 'city', title: 'City', isEditable: true, editor: 'text' },
-            { field: 'active', title: 'Active', width: '80px', horizontalAlign: 'center', isEditable: true, editor: 'checkbox' },
-            {
-                field: 'role',
-                title: 'Role',
-                width: '130px',
-                isEditable: true,
-                editor: 'select',
-                editorOptions: {
-                    options: [
-                        { value: 'admin', label: 'Administrator' },
-                        { value: 'moderator', label: 'Moderator' },
-                        { value: 'user', label: 'User' }
-                    ]
-                }
-            }
-        ]
-
-        const gridNavigate = document.getElementById('gridNavigate')
-        gridNavigate.items = navigateData
-        gridNavigate.columns = navigateColumns
-        gridNavigate.isEditingEnabled = true
-        gridNavigate.editTrigger = 'navigate'
-        gridNavigate.onRowChange = (detail) => {
-            if (detail.isValid) {
-                navigateData[detail.rowIndex] = { ...detail.draftRow }
-                showStatus('navigateStatus', `Changed ${detail.field}: "${detail.oldValue}" → "${detail.newValue}"`, 'success')
+    const navigateColumns = [
+        { field: 'id', title: 'ID', width: '60px', horizontalAlign: 'center' },
+        { field: 'name', title: 'Name', isEditable: true, editor: 'text' },
+        { field: 'age', title: 'Age', width: '80px', horizontalAlign: 'center', isEditable: true, editor: 'number', editorOptions: { min: 0, max: 120 } },
+        { field: 'city', title: 'City', isEditable: true, editor: 'text' },
+        { field: 'active', title: 'Active', width: '80px', horizontalAlign: 'center', isEditable: true, editor: 'checkbox' },
+        {
+            field: 'role',
+            title: 'Role',
+            width: '130px',
+            isEditable: true,
+            editor: 'select',
+            editorOptions: {
+                options: [
+                    { value: 'admin', label: 'Administrator' },
+                    { value: 'moderator', label: 'Moderator' },
+                    { value: 'user', label: 'User' }
+                ]
             }
         }
+    ]
 
-        // =============================================================
-        // Validation Grid
-        // =============================================================
-        const validationData = [
-            { id: 1, name: 'Alice', age: 28, score: 85, email: 'alice@example.com' },
-            { id: 2, name: 'Bob', age: 34, score: 92, email: 'bob@example.com' },
-            { id: 3, name: 'Carol', age: 26, score: 78, email: 'carol@example.com' },
-            { id: 4, name: '', age: -5, score: 150, email: 'invalid-email' },  // Pre-invalid
-            { id: 5, name: 'Eve', age: 31, score: 88, email: 'eve@example.com' },
-        ]
+    const gridNavigate = document.getElementById('gridNavigate')
+    gridNavigate.items = navigateData
+    gridNavigate.columns = navigateColumns
+    gridNavigate.isEditingEnabled = true
+    gridNavigate.editTrigger = 'navigate'
+    gridNavigate.onRowChange = (detail) => {
+        if (detail.isValid) {
+            navigateData[detail.rowIndex] = { ...detail.draftRow }
+            showStatus('navigateStatus', `Changed ${detail.field}: "${detail.oldValue}" → "${detail.newValue}"`, 'success')
+        }
+    }
 
-        const validationColumns = [
-            { field: 'id', title: 'ID', width: '60px', horizontalAlign: 'center' },
-            {
-                field: 'name',
-                title: 'Name',
-                isEditable: true,
-                editor: 'text',
-                validateCallback: ({ value }) => {
-                    const str = String(value || '').trim()
-                    if (!str) return 'Name is required'
-                    if (str.length < 2) return 'Name must be at least 2 characters'
-                    return { valid: true, transformedValue: str.charAt(0).toUpperCase() + str.slice(1) }
-                }
-            },
-            {
-                field: 'age',
-                title: 'Age',
-                width: '80px',
-                horizontalAlign: 'center',
-                isEditable: true,
-                editor: 'number',
-                validateCallback: ({ value }) => {
-                    const num = Number(value)
-                    if (isNaN(num)) return 'Age must be a number'
-                    if (num < 0) return 'Age cannot be negative'
-                    if (num > 150) return 'Age seems unrealistic'
-                    return true
-                }
-            },
-            {
-                field: 'score',
-                title: 'Score',
-                width: '80px',
-                horizontalAlign: 'center',
-                isEditable: true,
-                editor: 'number',
-                validateCallback: ({ value }) => {
-                    const num = Number(value)
-                    if (num < 0 || num > 100) return 'Score must be 0-100'
-                    return { valid: true, transformedValue: Math.round(num) }
-                }
-            },
-            {
-                field: 'email',
-                title: 'Email',
-                isEditable: true,
-                editor: 'text',
-                validateCallback: ({ value }) => {
-                    const str = String(value || '')
-                    if (!str.includes('@')) return 'Invalid email format'
-                    return { valid: true, transformedValue: str.toLowerCase() }
-                }
+    // =============================================================
+    // Validation Grid
+    // =============================================================
+    const validationData = [
+        { id: 1, name: 'Alice', age: 28, score: 85, email: 'alice@example.com' },
+        { id: 2, name: 'Bob', age: 34, score: 92, email: 'bob@example.com' },
+        { id: 3, name: 'Carol', age: 26, score: 78, email: 'carol@example.com' },
+        { id: 4, name: '', age: -5, score: 150, email: 'invalid-email' },  // Pre-invalid
+        { id: 5, name: 'Eve', age: 31, score: 88, email: 'eve@example.com' },
+    ]
+
+    const validationColumns = [
+        { field: 'id', title: 'ID', width: '60px', horizontalAlign: 'center' },
+        {
+            field: 'name',
+            title: 'Name',
+            isEditable: true,
+            editor: 'text',
+            validateCallback: ({ value }) => {
+                const str = String(value || '').trim()
+                if (!str) return 'Name is required'
+                if (str.length < 2) return 'Name must be at least 2 characters'
+                return { valid: true, transformedValue: str.charAt(0).toUpperCase() + str.slice(1) }
             }
-        ]
-
-        const gridValidation = document.getElementById('gridValidation')
-        gridValidation.items = validationData
-        gridValidation.columns = validationColumns
-        gridValidation.isEditingEnabled = true
-        gridValidation.editTrigger = 'navigate'
-        gridValidation.onRowChange = (detail) => {
-            if (detail.isValid) {
-                validationData[detail.rowIndex] = { ...detail.draftRow }
-                showStatus('validationStatus', `✓ ${detail.field} updated to "${detail.newValue}"`, 'success')
-            } else {
-                showStatus('validationStatus', `✗ ${detail.field}: ${detail.validationError}`, 'error')
+        },
+        {
+            field: 'age',
+            title: 'Age',
+            width: '80px',
+            horizontalAlign: 'center',
+            isEditable: true,
+            editor: 'number',
+            validateCallback: ({ value }) => {
+                const num = Number(value)
+                if (isNaN(num)) return 'Age must be a number'
+                if (num < 0) return 'Age cannot be negative'
+                if (num > 150) return 'Age seems unrealistic'
+                return true
+            }
+        },
+        {
+            field: 'score',
+            title: 'Score',
+            width: '80px',
+            horizontalAlign: 'center',
+            isEditable: true,
+            editor: 'number',
+            validateCallback: ({ value }) => {
+                const num = Number(value)
+                if (num < 0 || num > 100) return 'Score must be 0-100'
+                return { valid: true, transformedValue: Math.round(num) }
+            }
+        },
+        {
+            field: 'email',
+            title: 'Email',
+            isEditable: true,
+            editor: 'text',
+            validateCallback: ({ value }) => {
+                const str = String(value || '')
+                if (!str.includes('@')) return 'Invalid email format'
+                return { valid: true, transformedValue: str.toLowerCase() }
             }
         }
+    ]
 
-        // =============================================================
-        // All Editor Types Grid
-        // =============================================================
+    const gridValidation = document.getElementById('gridValidation')
+    gridValidation.items = validationData
+    gridValidation.columns = validationColumns
+    gridValidation.isEditingEnabled = true
+    gridValidation.editTrigger = 'navigate'
+    gridValidation.onRowChange = (detail) => {
+        if (detail.isValid) {
+            validationData[detail.rowIndex] = { ...detail.draftRow }
+            showStatus('validationStatus', `✓ ${detail.field} updated to "${detail.newValue}"`, 'success')
+        } else {
+            showStatus('validationStatus', `✗ ${detail.field}: ${detail.validationError}`, 'error')
+        }
+    }
 
-        // Country options for autocomplete
-        const allCountries = [
-            { value: 'US', label: 'United States' },
-            { value: 'GB', label: 'United Kingdom' },
-            { value: 'DE', label: 'Germany' },
-            { value: 'FR', label: 'France' },
-            { value: 'IT', label: 'Italy' },
-            { value: 'ES', label: 'Spain' },
-            { value: 'CA', label: 'Canada' },
-            { value: 'AU', label: 'Australia' },
-            { value: 'JP', label: 'Japan' },
-            { value: 'KR', label: 'South Korea' },
-        ]
+    // =============================================================
+    // All Editor Types Grid
+    // =============================================================
 
-        // City options for combobox
-        const cityOptions = [
-            { value: 'new_york', label: 'New York' },
-            { value: 'los_angeles', label: 'Los Angeles' },
-            { value: 'chicago', label: 'Chicago' },
-            { value: 'houston', label: 'Houston' },
-            { value: 'phoenix', label: 'Phoenix' },
-        ]
+    // Country options for autocomplete
+    const allCountries = [
+        { value: 'US', label: 'United States' },
+        { value: 'GB', label: 'United Kingdom' },
+        { value: 'DE', label: 'Germany' },
+        { value: 'FR', label: 'France' },
+        { value: 'IT', label: 'Italy' },
+        { value: 'ES', label: 'Spain' },
+        { value: 'CA', label: 'Canada' },
+        { value: 'AU', label: 'Australia' },
+        { value: 'JP', label: 'Japan' },
+        { value: 'KR', label: 'South Korea' },
+    ]
 
-        // Async search for autocomplete
-        async function searchCountries({ term: query, signal }) {
-            await new Promise((resolve, reject) => {
-                const timeout = setTimeout(resolve, 300)
-                signal?.addEventListener('abort', () => {
-                    clearTimeout(timeout)
-                    reject(new DOMException('Aborted', 'AbortError'))
-                })
+    // City options for combobox
+    const cityOptions = [
+        { value: 'new_york', label: 'New York' },
+        { value: 'los_angeles', label: 'Los Angeles' },
+        { value: 'chicago', label: 'Chicago' },
+        { value: 'houston', label: 'Houston' },
+        { value: 'phoenix', label: 'Phoenix' },
+    ]
+
+    // Async search for autocomplete
+    async function searchCountries({ term: query, signal }) {
+        await new Promise((resolve, reject) => {
+            const timeout = setTimeout(resolve, 300)
+            signal?.addEventListener('abort', () => {
+                clearTimeout(timeout)
+                reject(new DOMException('Aborted', 'AbortError'))
             })
-            const lower = query.toLowerCase()
-            return allCountries.filter(c => c.label.toLowerCase().includes(lower) || c.value.toLowerCase().includes(lower))
-        }
+        })
+        const lower = query.toLowerCase()
+        return allCountries.filter(c => c.label.toLowerCase().includes(lower) || c.value.toLowerCase().includes(lower))
+    }
 
-        const allEditorsData = [
-            { id: 1, name: 'Alice', status: 'active', city: 'new_york', country: 'US', birthdate: '1995-03-15', verified: true, notes: 'Team lead' },
-            { id: 2, name: 'Bob', status: 'active', city: 'chicago', country: 'GB', birthdate: '1989-07-22', verified: true, notes: 'Remote' },
-            { id: 3, name: 'Carol', status: 'pending', city: 'phoenix', country: 'DE', birthdate: '1997-11-08', verified: false, notes: '' },
-        ]
+    const allEditorsData = [
+        { id: 1, name: 'Alice', status: 'active', city: 'new_york', country: 'US', birthdate: '1995-03-15', verified: true, notes: 'Team lead' },
+        { id: 2, name: 'Bob', status: 'active', city: 'chicago', country: 'GB', birthdate: '1989-07-22', verified: true, notes: 'Remote' },
+        { id: 3, name: 'Carol', status: 'pending', city: 'phoenix', country: 'DE', birthdate: '1997-11-08', verified: false, notes: '' },
+    ]
 
-        const allEditorsColumns = [
-            { field: 'id', title: 'ID', width: '50px', horizontalAlign: 'center' },
-            { field: 'name', title: 'Text', width: '100px', isEditable: true, editor: 'text' },
-            {
-                field: 'status',
-                title: 'Select',
-                width: '110px',
-                isEditable: true,
-                editor: 'select',
-                editorOptions: {
-                    options: [
-                        { value: 'active', label: 'Active' },
-                        { value: 'inactive', label: 'Inactive' },
-                        { value: 'pending', label: 'Pending' }
-                    ]
-                }
-            },
-            {
-                field: 'city',
-                title: 'Combobox',
-                width: '130px',
-                isEditable: true,
-                editor: 'combobox',
-                getDisplayValueCallback: ({ value: v }) => cityOptions.find(c => c.value === v)?.label || v,
-                editorOptions: {
-                    options: cityOptions,
-                    valueMember: 'value',
-                    displayMember: 'label',
-                    placeholder: 'Type to filter...'
-                }
-            },
-            {
-                field: 'country',
-                title: 'Autocomplete',
-                width: '150px',
-                isEditable: true,
-                editor: 'autocomplete',
-                getDisplayValueCallback: ({ value: v }) => allCountries.find(c => c.value === v)?.label || v,
-                editorOptions: {
-                    initialOptions: allCountries.slice(0, 5),
-                    searchCallback: searchCountries,
-                    minSearchLength: 1,
-                    debounceMs: 200,
-                    valueMember: 'value',
-                    displayMember: 'label',
-                    isEmptyAllowed: true,
-                    placeholder: 'Search...'
-                }
-            },
-            {
-                field: 'birthdate',
-                title: 'Date',
-                width: '130px',
-                isEditable: true,
-                editor: 'date',
-                editorOptions: {
-                    dateFormat: 'YYYY-MM-DD'
-                }
-            },
-            { field: 'verified', title: 'Checkbox', width: '90px', horizontalAlign: 'center', isEditable: true, editor: 'checkbox' },
-        ]
-
-        const gridAllEditors = document.getElementById('gridAllEditors')
-        gridAllEditors.items = allEditorsData
-        gridAllEditors.columns = allEditorsColumns
-        gridAllEditors.isEditingEnabled = true
-        gridAllEditors.editTrigger = 'navigate'
-        gridAllEditors.onRowChange = (detail) => {
-            if (detail.isValid) {
-                allEditorsData[detail.rowIndex] = { ...detail.draftRow }
-                showStatus('allEditorsStatus', `Changed ${detail.field}: ${JSON.stringify(detail.newValue)}`, 'success')
+    const allEditorsColumns = [
+        { field: 'id', title: 'ID', width: '50px', horizontalAlign: 'center' },
+        { field: 'name', title: 'Text', width: '100px', isEditable: true, editor: 'text' },
+        {
+            field: 'status',
+            title: 'Select',
+            width: '110px',
+            isEditable: true,
+            editor: 'select',
+            editorOptions: {
+                options: [
+                    { value: 'active', label: 'Active' },
+                    { value: 'inactive', label: 'Inactive' },
+                    { value: 'pending', label: 'Pending' }
+                ]
             }
-        }
-
-        // =============================================================
-        // Custom JSON Editor Grid
-        // =============================================================
-        let jsonEditorContext = null
-
-        const customEditorData = [
-            { id: 1, name: 'Alice', settings: { theme: 'dark', notifications: true } },
-            { id: 2, name: 'Bob', settings: { theme: 'light', language: 'en' } },
-            { id: 3, name: 'Carol', settings: null },
-        ]
-
-        const customEditorColumns = [
-            { field: 'id', title: 'ID', width: '60px', horizontalAlign: 'center' },
-            { field: 'name', title: 'Name', isEditable: true, editor: 'text' },
-            {
-                field: 'settings',
-                title: 'Settings (JSON)',
-                isEditable: true,
-                editor: 'custom',
-                getDisplayValueCallback: ({ value: v }) => v ? JSON.stringify(v).substring(0, 30) + (JSON.stringify(v).length > 30 ? '...' : '') : '(empty)',
-                renderEditorCallback: (context) => {
-                    jsonEditorContext = context
-                    document.getElementById('jsonEditingRow').textContent = `Editing: ${context.row.name}`
-                    document.getElementById('jsonTextarea').value = context.value ? JSON.stringify(context.value, null, 2) : ''
-                    document.getElementById('jsonError').classList.add('hidden')
-                    document.getElementById('jsonDialogOverlay').classList.remove('hidden')
-                    document.getElementById('jsonDialog').classList.remove('hidden')
-                    document.getElementById('jsonTextarea').focus()
-                }
+        },
+        {
+            field: 'city',
+            title: 'Combobox',
+            width: '130px',
+            isEditable: true,
+            editor: 'combobox',
+            getDisplayValueCallback: ({ value: v }) => cityOptions.find(c => c.value === v)?.label || v,
+            editorOptions: {
+                options: cityOptions,
+                valueMember: 'value',
+                displayMember: 'label',
+                placeholder: 'Type to filter...'
             }
-        ]
+        },
+        {
+            field: 'country',
+            title: 'Autocomplete',
+            width: '150px',
+            isEditable: true,
+            editor: 'autocomplete',
+            getDisplayValueCallback: ({ value: v }) => allCountries.find(c => c.value === v)?.label || v,
+            editorOptions: {
+                initialOptions: allCountries.slice(0, 5),
+                searchCallback: searchCountries,
+                minSearchLength: 1,
+                debounceMs: 200,
+                valueMember: 'value',
+                displayMember: 'label',
+                isEmptyAllowed: true,
+                placeholder: 'Search...'
+            }
+        },
+        {
+            field: 'birthdate',
+            title: 'Date',
+            width: '130px',
+            isEditable: true,
+            editor: 'date',
+            editorOptions: {
+                dateFormat: 'YYYY-MM-DD'
+            }
+        },
+        { field: 'verified', title: 'Checkbox', width: '90px', horizontalAlign: 'center', isEditable: true, editor: 'checkbox' },
+    ]
 
-        const gridCustomEditor = document.getElementById('gridCustomEditor')
-        gridCustomEditor.items = customEditorData
-        gridCustomEditor.columns = customEditorColumns
-        gridCustomEditor.isEditingEnabled = true
-        gridCustomEditor.editTrigger = 'navigate'
-        gridCustomEditor.onRowChange = (detail) => {
-            if (detail.isValid) {
-                customEditorData[detail.rowIndex] = { ...detail.draftRow }
-                showStatus('customEditorStatus', `Updated settings for ${detail.row.name}`, 'success')
+    const gridAllEditors = document.getElementById('gridAllEditors')
+    gridAllEditors.items = allEditorsData
+    gridAllEditors.columns = allEditorsColumns
+    gridAllEditors.isEditingEnabled = true
+    gridAllEditors.editTrigger = 'navigate'
+    gridAllEditors.onRowChange = (detail) => {
+        if (detail.isValid) {
+            allEditorsData[detail.rowIndex] = { ...detail.draftRow }
+            showStatus('allEditorsStatus', `Changed ${detail.field}: ${JSON.stringify(detail.newValue)}`, 'success')
+        }
+    }
+
+    // =============================================================
+    // Custom JSON Editor Grid
+    // =============================================================
+    let jsonEditorContext = null
+
+    const customEditorData = [
+        { id: 1, name: 'Alice', settings: { theme: 'dark', notifications: true } },
+        { id: 2, name: 'Bob', settings: { theme: 'light', language: 'en' } },
+        { id: 3, name: 'Carol', settings: null },
+    ]
+
+    const customEditorColumns = [
+        { field: 'id', title: 'ID', width: '60px', horizontalAlign: 'center' },
+        { field: 'name', title: 'Name', isEditable: true, editor: 'text' },
+        {
+            field: 'settings',
+            title: 'Settings (JSON)',
+            isEditable: true,
+            editor: 'custom',
+            getDisplayValueCallback: ({ value: v }) => v ? JSON.stringify(v).substring(0, 30) + (JSON.stringify(v).length > 30 ? '...' : '') : '(empty)',
+            renderEditorCallback: (context) => {
+                jsonEditorContext = context
+                document.getElementById('jsonEditingRow').textContent = `Editing: ${context.row.name}`
+                document.getElementById('jsonTextarea').value = context.value ? JSON.stringify(context.value, null, 2) : ''
+                document.getElementById('jsonError').hidden = true
+                document.getElementById('jsonDialog').showModal()
+                document.getElementById('jsonTextarea').focus()
             }
         }
+    ]
 
-        // JSON dialog functions
-        window.saveJsonEdit = function() {
-            if (!jsonEditorContext) return
-            const textarea = document.getElementById('jsonTextarea')
-            const errorEl = document.getElementById('jsonError')
-            try {
-                const parsed = textarea.value.trim() ? JSON.parse(textarea.value) : null
-                jsonEditorContext.commit(parsed)
-                closeJsonDialog()
-            } catch (e) {
-                errorEl.textContent = 'Invalid JSON: ' + e.message
-                errorEl.classList.remove('hidden')
-            }
+    const gridCustomEditor = document.getElementById('gridCustomEditor')
+    gridCustomEditor.items = customEditorData
+    gridCustomEditor.columns = customEditorColumns
+    gridCustomEditor.isEditingEnabled = true
+    gridCustomEditor.editTrigger = 'navigate'
+    gridCustomEditor.onRowChange = (detail) => {
+        if (detail.isValid) {
+            customEditorData[detail.rowIndex] = { ...detail.draftRow }
+            showStatus('customEditorStatus', `Updated settings for ${detail.row.name}`, 'success')
         }
+    }
 
-        window.cancelJsonEdit = function() {
-            if (jsonEditorContext) {
-                jsonEditorContext.cancel()
-            }
+    // JSON dialog functions
+    window.saveJsonEdit = function() {
+        if (!jsonEditorContext) return
+        const textarea = document.getElementById('jsonTextarea')
+        const errorEl = document.getElementById('jsonError')
+        try {
+            const parsed = textarea.value.trim() ? JSON.parse(textarea.value) : null
+            jsonEditorContext.commit(parsed)
             closeJsonDialog()
+        } catch (e) {
+            errorEl.textContent = 'Invalid JSON: ' + e.message
+            errorEl.hidden = false
         }
+    }
 
-        function closeJsonDialog() {
-            document.getElementById('jsonDialogOverlay').classList.add('hidden')
-            document.getElementById('jsonDialog').classList.add('hidden')
-            jsonEditorContext = null
+    window.cancelJsonEdit = function() {
+        if (jsonEditorContext) {
+            jsonEditorContext.cancel()
         }
+        closeJsonDialog()
+    }
 
-        // =============================================================
-        // Always Editable Grid (Spreadsheet Mode)
-        // =============================================================
-        const alwaysEditableData = [
-            { id: 1, name: 'Item 1', qty: 10, price: 25.00 },
-            { id: 2, name: 'Item 2', qty: 5, price: 49.99 },
-            { id: 3, name: 'Item 3', qty: 20, price: 12.50 },
-        ]
+    function closeJsonDialog() {
+        jsonEditorContext = null
+        document.getElementById('jsonDialog').close()
+    }
 
-        const alwaysEditableColumns = [
-            { field: 'id', title: 'ID', width: '50px', horizontalAlign: 'center' },
-            { field: 'name', title: 'Name', isEditable: true, editor: 'text', editTrigger: 'always' },
-            { field: 'qty', title: 'Quantity', width: '100px', horizontalAlign: 'center', isEditable: true, editor: 'number', editTrigger: 'always' },
-            { field: 'price', title: 'Price', width: '100px', horizontalAlign: 'right', isEditable: true, editor: 'number', editTrigger: 'always', getDisplayValueCallback: ({ value: v }) => `$${v.toFixed(2)}` }
-        ]
+    // Escape and a click on the backdrop cancel, like the old overlay did
+    const jsonDialog = document.getElementById('jsonDialog')
+    jsonDialog.addEventListener('cancel', (e) => {
+        e.preventDefault()
+        window.cancelJsonEdit()
+    })
+    jsonDialog.addEventListener('click', (e) => {
+        if (e.target === jsonDialog) window.cancelJsonEdit()
+    })
 
-        const gridAlways = document.getElementById('gridAlways')
-        gridAlways.items = alwaysEditableData
-        gridAlways.columns = alwaysEditableColumns
-        gridAlways.isEditingEnabled = true
-        gridAlways.onRowChange = (detail) => {
-            if (detail.isValid) {
-                alwaysEditableData[detail.rowIndex] = { ...detail.draftRow }
-            }
+    // =============================================================
+    // Always Editable Grid (Spreadsheet Mode)
+    // =============================================================
+    const alwaysEditableData = [
+        { id: 1, name: 'Item 1', qty: 10, price: 25.00 },
+        { id: 2, name: 'Item 2', qty: 5, price: 49.99 },
+        { id: 3, name: 'Item 3', qty: 20, price: 12.50 },
+    ]
+
+    const alwaysEditableColumns = [
+        { field: 'id', title: 'ID', width: '50px', horizontalAlign: 'center' },
+        { field: 'name', title: 'Name', isEditable: true, editor: 'text', editTrigger: 'always' },
+        { field: 'qty', title: 'Quantity', width: '100px', horizontalAlign: 'center', isEditable: true, editor: 'number', editTrigger: 'always' },
+        { field: 'price', title: 'Price', width: '100px', horizontalAlign: 'right', isEditable: true, editor: 'number', editTrigger: 'always', getDisplayValueCallback: ({ value: v }) => `$${v.toFixed(2)}` }
+    ]
+
+    const gridAlways = document.getElementById('gridAlways')
+    gridAlways.items = alwaysEditableData
+    gridAlways.columns = alwaysEditableColumns
+    gridAlways.isEditingEnabled = true
+    gridAlways.onRowChange = (detail) => {
+        if (detail.isValid) {
+            alwaysEditableData[detail.rowIndex] = { ...detail.draftRow }
         }
-    </script>
-</body>
-</html>
+    }
+</script>

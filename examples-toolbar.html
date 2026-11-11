@@ -1,164 +1,111 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebGrid - Row Toolbar</title>
-    <link rel="stylesheet" href="examples-shared.css">
-    <style>
-        .toast {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            padding: 12px 24px;
-            background: #667eea;
-            color: white;
-            border-radius: 6px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-            animation: slideIn 0.3s ease;
-            z-index: 1000;
-        }
-        @keyframes slideIn {
-            from { transform: translateY(100px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        .toast.error { background: #e53e3e; }
-        .toast.success { background: #38a169; }
+<meta name="kmwc:title" content="🛠️ Row Toolbar">
+<meta name="kmwc:subtitle" content="Floating toolbar with row actions, rich tooltips, and keyboard shortcuts">
 
-        .actions-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 1rem;
-        }
-        .actions-table th,
-        .actions-table td {
-            padding: 0.75rem;
-            text-align: left;
-            border-bottom: 1px solid #e2e8f0;
-        }
-        .actions-table th {
-            background: #f7fafc;
-            font-weight: 600;
-            color: #4a5568;
-        }
-        .actions-table code {
-            background: #edf2f7;
-            padding: 0.2rem 0.5rem;
-            border-radius: 4px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <header>
-            <a href="index.html" class="back-link">← Back to Examples</a>
-            <h1>🛠️ Row Toolbar</h1>
-            <p class="subtitle">Floating toolbar with row actions, rich tooltips, and keyboard shortcuts</p>
-        </header>
+    <div class="card">
+        <h2>TB01 · Controls</h2>
+        <div class="controls">
+            <label>
+                Toolbar Trigger:
+                <select id="triggerSelect">
+                    <option value="hover">Hover</option>
+                    <option value="click">Click</option>
+                    <option value="button">Button</option>
+                </select>
+            </label>
+            <label>
+                Toolbar Position:
+                <select id="positionSelect">
+                    <option value="auto">Auto (default)</option>
+                    <option value="left">Left</option>
+                    <option value="right">Right</option>
+                    <option value="top">Top</option>
+                    <option value="inline">Inline (column)</option>
+                </select>
+            </label>
+            <label>
+                Vertical Align:
+                <select id="verticalAlignSelect">
+                    <option value="top">Top (rows above)</option>
+                    <option value="center">Center</option>
+                    <option value="bottom">Bottom (default)</option>
+                </select>
+            </label>
+            <label>
+                Horizontal Align:
+                <select id="horizontalAlignSelect">
+                    <option value="start">Start</option>
+                    <option value="center">Center (default)</option>
+                    <option value="end">End</option>
+                    <option value="cursor">Cursor</option>
+                </select>
+            </label>
+            <label>
+                Toolbar Column:
+                <select id="toolbarColumnSelect">
+                    <option value="">None (use align)</option>
+                    <option value="title">Over "Task" column</option>
+                    <option value="priority">Over "Priority" column</option>
+                    <option value="status">Over "Status" column</option>
+                </select>
+            </label>
+            <label>
+                <input type="checkbox" id="followCursorCheck">
+                Follow Cursor
+            </label>
+            <label>
+                Cell Toolbar Offset:
+                <input type="text" id="cellToolbarOffsetInput" value="0.2" placeholder="0.2 or 2rem" class="w-sm">
+            </label>
+            <label>
+                Btn Min Width:
+                <input type="text" id="btnMinWidthInput" value="" placeholder="e.g. 40px" class="w-sm">
+            </label>
+        </div>
+        <p class="note mt-1">
+            <strong>Horizontal Align</strong> only applies when toolbar appears above the row (top position).<br>
+            <strong>Toolbar Column</strong> positions the toolbar over a specific column (overrides horizontal align).<br>
+            <strong>Follow Cursor</strong> makes the toolbar follow your mouse horizontally.<br>
+            <strong>Cell Toolbar Offset</strong> controls horizontal position within the cell. Number 0-1 as fraction (0.2 = 20% from left), or CSS length (e.g. "2rem", "24px").<br>
+            <strong>Btn Min Width</strong> sets minimum width for toolbar buttons (e.g. "40px"). Leave empty for default.
+        </p>
+    </div>
 
+    <div class="card">
+        <h2>TB02 · Tasks List with Row Actions</h2>
+        <p>Hover over a row to see the toolbar. Press <kbd>D</kbd> to duplicate, <kbd>Delete</kbd> to delete, or <kbd>↑</kbd>/<kbd>↓</kbd> to move.</p>
+
+        <web-grid id="grid" isStriped isHoverable style="max-height: 400px;"></web-grid>
+        <div class="output-label mt-1">Action log</div>
+        <div class="log-panel" id="gridLog"></div>
+    </div>
+
+    <div class="grid-2">
         <div class="card">
-            <h2>Controls</h2>
-            <div class="controls">
-                <label>
-                    Toolbar Trigger:
-                    <select id="triggerSelect">
-                        <option value="hover">Hover</option>
-                        <option value="click">Click</option>
-                        <option value="button">Button</option>
-                    </select>
-                </label>
-                <label>
-                    Toolbar Position:
-                    <select id="positionSelect">
-                        <option value="auto">Auto (default)</option>
-                        <option value="left">Left</option>
-                        <option value="right">Right</option>
-                        <option value="top">Top</option>
-                        <option value="inline">Inline (column)</option>
-                    </select>
-                </label>
-                <label>
-                    Vertical Align:
-                    <select id="verticalAlignSelect">
-                        <option value="top">Top (rows above)</option>
-                        <option value="center">Center</option>
-                        <option value="bottom">Bottom (default)</option>
-                    </select>
-                </label>
-                <label>
-                    Horizontal Align:
-                    <select id="horizontalAlignSelect">
-                        <option value="start">Start</option>
-                        <option value="center">Center (default)</option>
-                        <option value="end">End</option>
-                        <option value="cursor">Cursor</option>
-                    </select>
-                </label>
-                <label>
-                    Toolbar Column:
-                    <select id="toolbarColumnSelect">
-                        <option value="">None (use align)</option>
-                        <option value="title">Over "Task" column</option>
-                        <option value="priority">Over "Priority" column</option>
-                        <option value="status">Over "Status" column</option>
-                    </select>
-                </label>
-                <label style="display: flex; align-items: center; gap: 0.5rem;">
-                    <input type="checkbox" id="followCursorCheck">
-                    Follow Cursor
-                </label>
-                <label>
-                    Cell Toolbar Offset:
-                    <input type="text" id="cellToolbarOffsetInput" value="0.2" placeholder="0.2 or 2rem" style="width: 80px;">
-                </label>
-                <label>
-                    Btn Min Width:
-                    <input type="text" id="btnMinWidthInput" value="" placeholder="e.g. 40px" style="width: 80px;">
-                </label>
-            </div>
-            <p class="note" style="margin-top: 0.5rem; font-size: 0.875rem; color: #666;">
-                <strong>Horizontal Align</strong> only applies when toolbar appears above the row (top position).<br>
-                <strong>Toolbar Column</strong> positions the toolbar over a specific column (overrides horizontal align).<br>
-                <strong>Follow Cursor</strong> makes the toolbar follow your mouse horizontally.<br>
-                <strong>Cell Toolbar Offset</strong> controls horizontal position within the cell. Number 0-1 as fraction (0.2 = 20% from left), or CSS length (e.g. "2rem", "24px").<br>
-                <strong>Btn Min Width</strong> sets minimum width for toolbar buttons (e.g. "40px"). Leave empty for default.
-            </p>
+            <h2>TB03 · Built-in Toolbar Items</h2>
+            <p>Use these built-in names (as strings, or as <code>action</code> on an item to override its icon / text) for common row actions. Built-ins <strong>do the work</strong> after the <code>action</code> event: you don't insert / remove / move the row yourself.</p>
+
+            <table class="reference-table table-compact">
+                <thead>
+                    <tr>
+                        <th>action</th>
+                        <th>Icon</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>add</code></td><td><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg></td><td>Insert <code>createEmptyRowCallback(ctx)</code>'s row (else a blank row) below</td></tr>
+                    <tr><td><code>delete</code></td><td><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3l10 10M13 3L3 13"/></svg></td><td>Delete current row (danger style)</td></tr>
+                    <tr><td><code>duplicate</code></td><td><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="8" height="8" rx="1"/><path d="M3 11V4a1 1 0 011-1h7"/></svg></td><td>Insert <code>createDuplicateRowCallback({ row })</code>'s copy (else a shallow copy, <code>idMember</code> cleared) below</td></tr>
+                    <tr><td><code>move-up</code></td><td><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V3M4 7l4-4 4 4"/></svg></td><td>Swap with the displayed row above</td></tr>
+                    <tr><td><code>move-down</code></td><td><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v10M4 9l4 4 4-4"/></svg></td><td>Swap with the displayed row below</td></tr>
+                </tbody>
+            </table>
         </div>
 
         <div class="card">
-            <h2>Tasks List with Row Actions</h2>
-            <p>Hover over a row to see the toolbar. Press <kbd>D</kbd> to duplicate, <kbd>Delete</kbd> to delete, or <kbd>↑</kbd>/<kbd>↓</kbd> to move.</p>
-
-            <web-grid id="grid" isStriped isHoverable style="max-width: 100%; max-height: 400px; border: 1px solid #e2e8f0;"></web-grid>
-        </div>
-
-        <div class="grid-2">
-            <div class="card">
-                <h2>Built-in Toolbar Items</h2>
-                <p>Use these built-in names (as strings, or as <code>action</code> on an item to override its icon / text) for common row actions. Built-ins <strong>do the work</strong> after the <code>action</code> event: you don't insert / remove / move the row yourself.</p>
-
-                <table class="actions-table">
-                    <thead>
-                        <tr>
-                            <th>action</th>
-                            <th>Icon</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr><td><code>add</code></td><td><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg></td><td>Insert <code>createEmptyRowCallback(ctx)</code>'s row (else a blank row) below</td></tr>
-                        <tr><td><code>delete</code></td><td><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3l10 10M13 3L3 13"/></svg></td><td>Delete current row (danger style)</td></tr>
-                        <tr><td><code>duplicate</code></td><td><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="8" height="8" rx="1"/><path d="M3 11V4a1 1 0 011-1h7"/></svg></td><td>Insert <code>createDuplicateRowCallback({ row })</code>'s copy (else a shallow copy, <code>idMember</code> cleared) below</td></tr>
-                        <tr><td><code>move-up</code></td><td><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V3M4 7l4-4 4 4"/></svg></td><td>Swap with the displayed row above</td></tr>
-                        <tr><td><code>move-down</code></td><td><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v10M4 9l4 4 4-4"/></svg></td><td>Swap with the displayed row below</td></tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="card">
-                <h2>Usage</h2>
-                <div class="code-block">
-                    <pre>// Enable toolbar with built-in actions
+            <h2>TB04 · Usage</h2>
+            <div class="code-block" data-kmwc-snippet>
+                <pre>// Enable toolbar with built-in actions
 grid.isRowToolbarShown = true
 grid.rowToolbar = ['add', 'delete', 'duplicate', 'move-up', 'move-down']
 grid.toolbarTrigger = 'hover' // or 'click', 'button'
@@ -177,15 +124,15 @@ grid.onAction = ({ action, id, row, rowIndex, source }) => {
 grid.beforeActionCallback = ({ action, row }) => {
     if (action === 'delete') return confirm(`Delete ${row.title}?`)
 }</pre>
-                </div>
             </div>
         </div>
+    </div>
 
-        <div class="card">
-            <h2>Custom Toolbar Items</h2>
-            <p>Define custom items (an <code>id</code>, no built-in <code>action</code>) with icons, texts, and handlers:</p>
-            <div class="code-block">
-                <pre>grid.rowToolbar = [
+    <div class="card">
+        <h2>TB05 · Custom Toolbar Items</h2>
+        <p>Define custom items (an <code>id</code>, no built-in <code>action</code>) with icons, texts, and handlers:</p>
+        <div class="code-block" data-kmwc-snippet>
+            <pre>grid.rowToolbar = [
     'add',  // Built-in shorthand
     'delete',
     { divider: true },
@@ -208,14 +155,14 @@ grid.beforeActionCallback = ({ action, row }) => {
         }
     }
 ]</pre>
-            </div>
         </div>
+    </div>
 
-        <div class="card">
-            <h2>Rich Tooltips</h2>
-            <p>Toolbar buttons show a rich tooltip: <code>text</code> is the heading, <code>tooltip</code> the description, <code>shortcut</code> the key line. Hover over a button to see it in action!</p>
-            <div class="code-block">
-                <pre>// Static tooltip with description
+    <div class="card">
+        <h2>TB06 · Rich Tooltips</h2>
+        <p>Toolbar buttons show a rich tooltip: <code>text</code> is the heading, <code>tooltip</code> the description, <code>shortcut</code> the key line. Hover over a button to see it in action!</p>
+        <div class="code-block" data-kmwc-snippet>
+            <pre>// Static tooltip with description
 grid.rowToolbar = [
     {
         action: 'duplicate',
@@ -236,18 +183,18 @@ grid.rowToolbar = [
         getTooltipCallback: ({ row }) => `Task #${row.id} · <em>${esc(row.title)}</em>`
     }
 ]</pre>
-            </div>
-            <p class="note" style="margin-top: 0.5rem; font-size: 0.875rem; color: #666;">
-                <strong>Note:</strong> When toolbar items have a matching <code>rowShortcuts</code> entry (same <code>id</code> or built-in <code>action</code>),
-                the keyboard shortcut is automatically shown in the tooltip.
-            </p>
         </div>
+        <p class="note mt-1">
+            <strong>Note:</strong> When toolbar items have a matching <code>rowShortcuts</code> entry (same <code>id</code> or built-in <code>action</code>),
+            the keyboard shortcut is automatically shown in the tooltip.
+        </p>
+    </div>
 
-        <div class="card">
-            <h2>Keyboard Shortcuts on Hover</h2>
-            <p>When the toolbar is visible (hovering over a row), keyboard shortcuts work on that row - no cell focus required!</p>
-            <div class="code-block">
-                <pre>// Shortcuts are action items bound to a key; `action` may name a row built-in
+    <div class="card">
+        <h2>TB07 · Keyboard Shortcuts on Hover</h2>
+        <p>When the toolbar is visible (hovering over a row), keyboard shortcuts work on that row - no cell focus required!</p>
+        <div class="code-block" data-kmwc-snippet>
+            <pre>// Shortcuts are action items bound to a key; `action` may name a row built-in
 grid.rowShortcuts = [
     { shortcut: 'd', action: 'duplicate', text: 'Duplicate row' },
     { shortcut: 'Delete', action: 'delete', text: 'Delete row' },
@@ -259,15 +206,17 @@ grid.rowShortcuts = [
         onClick: ({ row, rowIndex }) => exportRow(row)  // custom item
     }
 ]</pre>
-            </div>
         </div>
+    </div>
 
-        <div class="card">
-            <h2>Multi-Row Toolbar with Dividers</h2>
-            <p>Use the <code>row</code> property and <code>{ divider: true }</code> entries to organize toolbar buttons into multiple rows and groups:</p>
-            <web-grid id="grid2" isStriped isHoverable style="max-width: 100%; max-height: 400px; border: 1px solid #e2e8f0;"></web-grid>
-            <div class="code-block" style="margin-top: 1rem;">
-                <pre>// Row 1: Move actions | CRUD actions
+    <div class="card">
+        <h2>TB08 · Multi-Row Toolbar with Dividers</h2>
+        <p>Use the <code>row</code> property and <code>{ divider: true }</code> entries to organize toolbar buttons into multiple rows and groups:</p>
+        <web-grid id="grid2" isStriped isHoverable style="max-height: 400px;"></web-grid>
+        <div class="output-label mt-1">Action log</div>
+        <div class="log-panel" id="grid2Log"></div>
+        <div class="code-block mt-1" data-kmwc-snippet>
+            <pre>// Row 1: Move actions | CRUD actions
 // Row 2: Custom actions (one with a visible text label)
 grid.rowToolbar = [
     { action: 'move-up', icon: '↑', text: 'Move up', row: 1 },
@@ -282,17 +231,19 @@ grid.rowToolbar = [
     { divider: true },
     { id: 'archive', icon: '📦', text: 'Archive', row: 2 }
 ]</pre>
-            </div>
         </div>
+    </div>
 
-        <div class="card">
-            <h2>Cell-Aware Toolbar</h2>
-            <p>Use the <code>getCellToolbarItemsCallback</code> callback to show different toolbar options based on which cell the user is hovering over
-               (merged over <code>rowToolbar</code> by <code>id</code> / <code>action</code>).
-               Combined with <code>shouldToolbarFollowCursor</code>, the toolbar follows your mouse and updates its buttons per column.</p>
-            <web-grid id="grid4" isStriped isHoverable style="max-width: 100%; max-height: 400px; border: 1px solid #e2e8f0;"></web-grid>
-            <div class="code-block" style="margin-top: 1rem;">
-                <pre>grid.toolbarPosition = 'top'
+    <div class="card">
+        <h2>TB09 · Cell-Aware Toolbar</h2>
+        <p>Use the <code>getCellToolbarItemsCallback</code> callback to show different toolbar options based on which cell the user is hovering over
+           (merged over <code>rowToolbar</code> by <code>id</code> / <code>action</code>).
+           Combined with <code>shouldToolbarFollowCursor</code>, the toolbar follows your mouse and updates its buttons per column.</p>
+        <web-grid id="grid4" isStriped isHoverable style="max-height: 400px;"></web-grid>
+        <div class="output-label mt-1">Action log</div>
+        <div class="log-panel" id="grid4Log"></div>
+        <div class="code-block mt-1" data-kmwc-snippet>
+            <pre>grid.toolbarPosition = 'top'
 grid.shouldToolbarFollowCursor = true  // Toolbar follows mouse
 grid.cellToolbarOffset = 0.2     // Position at 20% from cell left edge (0-1)
 
@@ -317,18 +268,20 @@ grid.getCellToolbarItemsCallback = ({ field }) => {
 }
 
 grid.onAction = ({ id, row }) => { /* id === 'setHigh', ... */ }</pre>
-            </div>
         </div>
+    </div>
 
-        <div class="card">
-            <h2>Inline Actions Column</h2>
-            <p>Use <code>toolbarPosition="inline"</code> to render toolbar buttons as a fixed column instead of a floating popup.
-               Buttons are always visible, with support for <code>getIsDisabledCallback</code> and <code>getIsVisibleCallback</code> per row.
-               Keyboard shortcuts via <code>rowShortcuts</code> work when hovering over a row (try <kbd>Delete</kbd> or <kbd>A</kbd>);
-               <code>beforeActionCallback</code> vetoes deleting high-priority tasks.</p>
-            <web-grid id="grid3" isStriped isHoverable style="max-width: 100%; max-height: 400px; border: 1px solid #e2e8f0;"></web-grid>
-            <div class="code-block" style="margin-top: 1rem;">
-                <pre>grid.isRowToolbarShown = true
+    <div class="card">
+        <h2>TB10 · Inline Actions Column</h2>
+        <p>Use <code>toolbarPosition="inline"</code> to render toolbar buttons as a fixed column instead of a floating popup.
+           Buttons are always visible, with support for <code>getIsDisabledCallback</code> and <code>getIsVisibleCallback</code> per row.
+           Keyboard shortcuts via <code>rowShortcuts</code> work when hovering over a row (try <kbd>Delete</kbd> or <kbd>A</kbd>);
+           <code>beforeActionCallback</code> vetoes deleting high-priority tasks.</p>
+        <web-grid id="grid3" isStriped isHoverable style="max-height: 400px;"></web-grid>
+        <div class="output-label mt-1">Action log</div>
+        <div class="log-panel" id="grid3Log"></div>
+        <div class="code-block mt-1" data-kmwc-snippet>
+            <pre>grid.isRowToolbarShown = true
 grid.toolbarPosition = 'inline'  // Renders as column
 grid.labels = { inlineActionsHeader: 'Actions' }  // Optional header ('' = blank)
 
@@ -356,363 +309,357 @@ grid.rowToolbar = [
 grid.beforeActionCallback = ({ action, row }) => {
     if (action === 'delete' && row.priority === 'High') return false
 }</pre>
-            </div>
         </div>
     </div>
 
-    <script type="module">
-        import '@keenmate/web-grid'
+<script type="module">
+    import { appendLogLine } from '@keenmate/web-components-devkit/examples'
 
-        // localStorage keys
-        const STORAGE_TRIGGER = 'wg-toolbar-trigger'
-        const STORAGE_POSITION = 'wg-toolbar-position'
-        const STORAGE_VERTICAL_ALIGN = 'wg-toolbar-vertical-align'
-        const STORAGE_HORIZONTAL_ALIGN = 'wg-toolbar-horizontal-align'
-        const STORAGE_TOOLBAR_COLUMN = 'wg-toolbar-column'
-        const STORAGE_FOLLOW_CURSOR = 'wg-toolbar-follow-cursor'
-        const STORAGE_CELL_TOOLBAR_OFFSET = 'wg-cell-toolbar-offset'
-        const STORAGE_BTN_MIN_WIDTH = 'wg-toolbar-btn-min-width'
+    // localStorage keys
+    const STORAGE_TRIGGER = 'wg-toolbar-trigger'
+    const STORAGE_POSITION = 'wg-toolbar-position'
+    const STORAGE_VERTICAL_ALIGN = 'wg-toolbar-vertical-align'
+    const STORAGE_HORIZONTAL_ALIGN = 'wg-toolbar-horizontal-align'
+    const STORAGE_TOOLBAR_COLUMN = 'wg-toolbar-column'
+    const STORAGE_FOLLOW_CURSOR = 'wg-toolbar-follow-cursor'
+    const STORAGE_CELL_TOOLBAR_OFFSET = 'wg-cell-toolbar-offset'
+    const STORAGE_BTN_MIN_WIDTH = 'wg-toolbar-btn-min-width'
 
-        // Load saved settings
-        const savedTrigger = localStorage.getItem(STORAGE_TRIGGER) || 'hover'
-        const savedPosition = localStorage.getItem(STORAGE_POSITION) || 'auto'
-        const savedVerticalAlign = localStorage.getItem(STORAGE_VERTICAL_ALIGN) || 'bottom'
-        const savedHorizontalAlign = localStorage.getItem(STORAGE_HORIZONTAL_ALIGN) || 'center'
-        const savedToolbarColumn = localStorage.getItem(STORAGE_TOOLBAR_COLUMN) || ''
-        const savedFollowCursor = localStorage.getItem(STORAGE_FOLLOW_CURSOR) === 'true'
-        const savedCellToolbarOffsetRaw = localStorage.getItem(STORAGE_CELL_TOOLBAR_OFFSET) || '0.2'
-        const savedCellToolbarOffset = /^[\d.]+$/.test(savedCellToolbarOffsetRaw) ? parseFloat(savedCellToolbarOffsetRaw) : savedCellToolbarOffsetRaw
-        const savedBtnMinWidth = localStorage.getItem(STORAGE_BTN_MIN_WIDTH) || ''
+    // Load saved settings
+    const savedTrigger = localStorage.getItem(STORAGE_TRIGGER) || 'hover'
+    const savedPosition = localStorage.getItem(STORAGE_POSITION) || 'auto'
+    const savedVerticalAlign = localStorage.getItem(STORAGE_VERTICAL_ALIGN) || 'bottom'
+    const savedHorizontalAlign = localStorage.getItem(STORAGE_HORIZONTAL_ALIGN) || 'center'
+    const savedToolbarColumn = localStorage.getItem(STORAGE_TOOLBAR_COLUMN) || ''
+    const savedFollowCursor = localStorage.getItem(STORAGE_FOLLOW_CURSOR) === 'true'
+    const savedCellToolbarOffsetRaw = localStorage.getItem(STORAGE_CELL_TOOLBAR_OFFSET) || '0.2'
+    const savedCellToolbarOffset = /^[\d.]+$/.test(savedCellToolbarOffsetRaw) ? parseFloat(savedCellToolbarOffsetRaw) : savedCellToolbarOffsetRaw
+    const savedBtnMinWidth = localStorage.getItem(STORAGE_BTN_MIN_WIDTH) || ''
 
-        // Set select values from storage
-        document.getElementById('triggerSelect').value = savedTrigger
-        document.getElementById('positionSelect').value = savedPosition
-        document.getElementById('verticalAlignSelect').value = savedVerticalAlign
-        document.getElementById('horizontalAlignSelect').value = savedHorizontalAlign
-        document.getElementById('toolbarColumnSelect').value = savedToolbarColumn
-        document.getElementById('followCursorCheck').checked = savedFollowCursor
-        document.getElementById('cellToolbarOffsetInput').value = savedCellToolbarOffset
-        document.getElementById('btnMinWidthInput').value = savedBtnMinWidth
+    // Set select values from storage
+    document.getElementById('triggerSelect').value = savedTrigger
+    document.getElementById('positionSelect').value = savedPosition
+    document.getElementById('verticalAlignSelect').value = savedVerticalAlign
+    document.getElementById('horizontalAlignSelect').value = savedHorizontalAlign
+    document.getElementById('toolbarColumnSelect').value = savedToolbarColumn
+    document.getElementById('followCursorCheck').checked = savedFollowCursor
+    document.getElementById('cellToolbarOffsetInput').value = savedCellToolbarOffset
+    document.getElementById('btnMinWidthInput').value = savedBtnMinWidth
 
-        // Sample data
-        // Escape row data for the HTML tooltip description
-        const esc = (text) => String(text ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
+    // Sample data
+    // Escape row data for the HTML tooltip description
+    const esc = (text) => String(text ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
 
-        const tasks = [
-            { id: 1, title: 'Design system architecture', priority: 'High', status: 'In Progress', assignee: 'Alice' },
-            { id: 2, title: 'Implement user authentication', priority: 'High', status: 'Todo', assignee: 'Bob' },
-            { id: 3, title: 'Create database schema', priority: 'Medium', status: 'Done', assignee: 'Carol' },
-            { id: 4, title: 'Write API documentation', priority: 'Low', status: 'Todo', assignee: 'David' },
-            { id: 5, title: 'Set up CI/CD pipeline', priority: 'Medium', status: 'In Progress', assignee: 'Eve' },
-            { id: 6, title: 'Performance optimization', priority: 'Low', status: 'Todo', assignee: 'Frank' },
-            { id: 7, title: 'Unit test coverage', priority: 'High', status: 'In Progress', assignee: 'Alice' },
-            { id: 8, title: 'Code review process', priority: 'Medium', status: 'Done', assignee: 'Bob' },
-            { id: 9, title: 'Security audit', priority: 'High', status: 'Todo', assignee: 'Carol' },
-            { id: 10, title: 'Load testing', priority: 'Medium', status: 'Todo', assignee: 'David' },
-            { id: 11, title: 'Mobile responsiveness', priority: 'High', status: 'In Progress', assignee: 'Eve' },
-            { id: 12, title: 'Accessibility compliance', priority: 'Medium', status: 'Todo', assignee: 'Frank' },
-            { id: 13, title: 'Error handling', priority: 'High', status: 'Done', assignee: 'Alice' },
-            { id: 14, title: 'Logging implementation', priority: 'Low', status: 'Todo', assignee: 'Bob' },
-            { id: 15, title: 'Cache optimization', priority: 'Medium', status: 'In Progress', assignee: 'Carol' },
-            { id: 16, title: 'Database indexing', priority: 'High', status: 'Todo', assignee: 'David' },
-            { id: 17, title: 'API rate limiting', priority: 'Medium', status: 'Done', assignee: 'Eve' },
-            { id: 18, title: 'User notifications', priority: 'Low', status: 'Todo', assignee: 'Frank' },
-            { id: 19, title: 'Data export feature', priority: 'Medium', status: 'In Progress', assignee: 'Alice' },
-            { id: 20, title: 'Search functionality', priority: 'High', status: 'Todo', assignee: 'Bob' },
-            { id: 21, title: 'File upload system', priority: 'Medium', status: 'Done', assignee: 'Carol' },
-            { id: 22, title: 'Email integration', priority: 'Low', status: 'Todo', assignee: 'David' },
-            { id: 23, title: 'Analytics dashboard', priority: 'High', status: 'In Progress', assignee: 'Eve' },
-            { id: 24, title: 'Backup strategy', priority: 'Medium', status: 'Todo', assignee: 'Frank' },
-            { id: 25, title: 'Disaster recovery plan', priority: 'High', status: 'Done', assignee: 'Alice' },
-            { id: 26, title: 'Third-party integrations', priority: 'Low', status: 'Todo', assignee: 'Bob' }
-        ]
+    const tasks = [
+        { id: 1, title: 'Design system architecture', priority: 'High', status: 'In Progress', assignee: 'Alice' },
+        { id: 2, title: 'Implement user authentication', priority: 'High', status: 'Todo', assignee: 'Bob' },
+        { id: 3, title: 'Create database schema', priority: 'Medium', status: 'Done', assignee: 'Carol' },
+        { id: 4, title: 'Write API documentation', priority: 'Low', status: 'Todo', assignee: 'David' },
+        { id: 5, title: 'Set up CI/CD pipeline', priority: 'Medium', status: 'In Progress', assignee: 'Eve' },
+        { id: 6, title: 'Performance optimization', priority: 'Low', status: 'Todo', assignee: 'Frank' },
+        { id: 7, title: 'Unit test coverage', priority: 'High', status: 'In Progress', assignee: 'Alice' },
+        { id: 8, title: 'Code review process', priority: 'Medium', status: 'Done', assignee: 'Bob' },
+        { id: 9, title: 'Security audit', priority: 'High', status: 'Todo', assignee: 'Carol' },
+        { id: 10, title: 'Load testing', priority: 'Medium', status: 'Todo', assignee: 'David' },
+        { id: 11, title: 'Mobile responsiveness', priority: 'High', status: 'In Progress', assignee: 'Eve' },
+        { id: 12, title: 'Accessibility compliance', priority: 'Medium', status: 'Todo', assignee: 'Frank' },
+        { id: 13, title: 'Error handling', priority: 'High', status: 'Done', assignee: 'Alice' },
+        { id: 14, title: 'Logging implementation', priority: 'Low', status: 'Todo', assignee: 'Bob' },
+        { id: 15, title: 'Cache optimization', priority: 'Medium', status: 'In Progress', assignee: 'Carol' },
+        { id: 16, title: 'Database indexing', priority: 'High', status: 'Todo', assignee: 'David' },
+        { id: 17, title: 'API rate limiting', priority: 'Medium', status: 'Done', assignee: 'Eve' },
+        { id: 18, title: 'User notifications', priority: 'Low', status: 'Todo', assignee: 'Frank' },
+        { id: 19, title: 'Data export feature', priority: 'Medium', status: 'In Progress', assignee: 'Alice' },
+        { id: 20, title: 'Search functionality', priority: 'High', status: 'Todo', assignee: 'Bob' },
+        { id: 21, title: 'File upload system', priority: 'Medium', status: 'Done', assignee: 'Carol' },
+        { id: 22, title: 'Email integration', priority: 'Low', status: 'Todo', assignee: 'David' },
+        { id: 23, title: 'Analytics dashboard', priority: 'High', status: 'In Progress', assignee: 'Eve' },
+        { id: 24, title: 'Backup strategy', priority: 'Medium', status: 'Todo', assignee: 'Frank' },
+        { id: 25, title: 'Disaster recovery plan', priority: 'High', status: 'Done', assignee: 'Alice' },
+        { id: 26, title: 'Third-party integrations', priority: 'Low', status: 'Todo', assignee: 'Bob' }
+    ]
 
-        const columns = [
-            { field: 'id', title: 'ID', width: '60px', horizontalAlign: 'center' },
-            { field: 'title', title: 'Task', isSortable: true },
-            { field: 'priority', title: 'Priority', width: '100px', isSortable: true },
-            { field: 'status', title: 'Status', width: '120px' },
-            { field: 'assignee', title: 'Assignee', width: '100px' }
-        ]
+    const columns = [
+        { field: 'id', title: 'ID', width: '60px', horizontalAlign: 'center' },
+        { field: 'title', title: 'Task', isSortable: true },
+        { field: 'priority', title: 'Priority', width: '100px', isSortable: true },
+        { field: 'status', title: 'Status', width: '120px' },
+        { field: 'assignee', title: 'Assignee', width: '100px' }
+    ]
 
-        // Toast notification
-        function showToast(message, type = 'info') {
-            const toast = document.createElement('div')
-            toast.className = `toast ${type}`
-            toast.textContent = message
-            document.body.appendChild(toast)
-            setTimeout(() => toast.remove(), 3000)
-        }
+    // Action log: one line in the log panel under the grid that fired it
+    const LOG_VARIANTS = { info: 'info', success: 'success', error: 'danger' }
+    function logAction(g, message, type = 'info') {
+        appendLogLine(document.getElementById(`${g.id}Log`), { name: type, detail: message, variant: LOG_VARIANTS[type] })
+    }
 
-        const nextId = (rows) => Math.max(0, ...rows.map(t => t.id)) + 1
+    const nextId = (rows) => Math.max(0, ...rows.map(t => t.id)) + 1
 
-        // The row built-ins (add / delete / duplicate / move-up / move-down) do the work;
-        // these factories shape the rows `add` / `duplicate` insert, and onAction toasts.
-        function wireStandard(g) {
-            g.createEmptyRowCallback = () => ({ id: nextId(g.items), title: 'New Task', priority: 'Medium', status: 'Todo', assignee: '' })
-            g.createDuplicateRowCallback = ({ row }) => ({ ...row, id: nextId(g.items), title: row.title + ' (copy)' })
-            g.onAction = (detail) => {
-                const { action, row, rowIndex, source } = detail
-                console.log('Action:', action, detail.id, rowIndex, source)
-                switch (action) {
-                    case 'add': showToast(`Added new task at row ${rowIndex + 2}`, 'success'); break
-                    case 'delete': showToast(`Deleted: ${row.title}`, 'error'); break
-                    case 'duplicate': showToast(`Duplicated: ${row.title}`, 'success'); break
-                    case 'move-up': showToast(`Moved "${row.title}" up`); break
-                    case 'move-down': showToast(`Moved "${row.title}" down`); break
-                }
+    // The row built-ins (add / delete / duplicate / move-up / move-down) do the work;
+    // these factories shape the rows `add` / `duplicate` insert, and onAction logs.
+    function wireStandard(g) {
+        g.createEmptyRowCallback = () => ({ id: nextId(g.items), title: 'New Task', priority: 'Medium', status: 'Todo', assignee: '' })
+        g.createDuplicateRowCallback = ({ row }) => ({ ...row, id: nextId(g.items), title: row.title + ' (copy)' })
+        g.onAction = (detail) => {
+            const { action, row, rowIndex, source } = detail
+            console.log('Action:', action, detail.id, rowIndex, source)
+            switch (action) {
+                case 'add': logAction(g, `Added new task at row ${rowIndex + 2}`, 'success'); break
+                case 'delete': logAction(g, `Deleted: ${row.title}`, 'error'); break
+                case 'duplicate': logAction(g, `Duplicated: ${row.title}`, 'success'); break
+                case 'move-up': logAction(g, `Moved "${row.title}" up`); break
+                case 'move-down': logAction(g, `Moved "${row.title}" down`); break
             }
         }
+    }
 
-        // Initialize grid
-        const grid = document.getElementById('grid')
-        grid.items = tasks
-        grid.columns = columns
-        grid.isRowToolbarShown = true
-        // A divider separates move and CRUD actions
-        // Tooltips show text + description + keyboard shortcut (auto-detected from rowShortcuts)
-        grid.rowToolbar = [
-            { action: 'move-up', icon: '↑', text: 'Move up', tooltip: 'Move this task higher in the list' },
-            { action: 'move-down', icon: '↓', text: 'Move down', tooltip: 'Move this task lower in the list' },
-            { divider: true },
-            { action: 'add', icon: '+', text: 'Add', tooltip: 'Insert a new task below this one' },
-            { action: 'duplicate', icon: '⧉', text: 'Duplicate', tooltip: 'Create a copy of this task' },
-            {
-                action: 'delete', icon: '−', text: 'Delete',
-                // Dynamic description from the row (escaped — the description renders as HTML):
-                // italic task title + a status chip. Text only, nothing clickable in a tooltip.
-                getTooltipCallback: ({ row }) => `Permanently remove <em>${esc(row.title)}</em>`
-                    + `<br><span style="display: inline-block; margin-top: .25rem; padding: 0 .45rem; border-radius: 999px; font-size: .85em; color: #fff; background: ${row.status === 'Done' ? '#16a34a' : row.priority === 'High' ? '#dc2626' : '#6366f1'};">`
-                    + `${esc(row.status)} · ${esc(row.priority)} · ${esc(row.assignee)}</span>`
-            }
-        ]
-        grid.toolbarTrigger = savedTrigger
-        grid.toolbarPosition = savedPosition
-        grid.toolbarVerticalAlign = savedVerticalAlign
-        grid.toolbarHorizontalAlign = savedHorizontalAlign
-        grid.toolbarColumn = savedToolbarColumn || undefined
-        grid.shouldToolbarFollowCursor = savedFollowCursor
-        grid.cellToolbarOffset = savedCellToolbarOffset
-        if (savedBtnMinWidth) grid.toolbarBtnMinWidth = savedBtnMinWidth
-
-        // Keyboard shortcuts - work on hovered row when toolbar is visible.
-        // They run the same built-ins (and fire the same `action` event, source: 'keyboard').
-        grid.rowShortcuts = [
-            { shortcut: 'd', action: 'duplicate', text: 'Duplicate row' },
-            { shortcut: 'Delete', action: 'delete', text: 'Delete row' },
-            { shortcut: 'ArrowUp', action: 'move-up', text: 'Move row up' },
-            { shortcut: 'ArrowDown', action: 'move-down', text: 'Move row down' }
-        ]
-        wireStandard(grid)
-
-        // Trigger control
-        document.getElementById('triggerSelect').addEventListener('change', (e) => {
-            const value = e.target.value
-            localStorage.setItem(STORAGE_TRIGGER, value)
-            grid.toolbarTrigger = value
-            grid2.toolbarTrigger = value
-            // Force re-render to apply new trigger mode
-            grid.items = [...grid.items]
-            grid2.items = [...grid2.items]
-        })
-
-        // Position control
-        document.getElementById('positionSelect').addEventListener('change', (e) => {
-            const value = e.target.value
-            localStorage.setItem(STORAGE_POSITION, value)
-            grid.toolbarPosition = value
-            grid2.toolbarPosition = value
-        })
-
-        // Vertical align control
-        document.getElementById('verticalAlignSelect').addEventListener('change', (e) => {
-            const value = e.target.value
-            localStorage.setItem(STORAGE_VERTICAL_ALIGN, value)
-            grid.toolbarVerticalAlign = value
-            grid2.toolbarVerticalAlign = value
-        })
-
-        // Horizontal align control
-        document.getElementById('horizontalAlignSelect').addEventListener('change', (e) => {
-            const value = e.target.value
-            localStorage.setItem(STORAGE_HORIZONTAL_ALIGN, value)
-            grid.toolbarHorizontalAlign = value
-            grid2.toolbarHorizontalAlign = value
-        })
-
-        // Toolbar column control
-        document.getElementById('toolbarColumnSelect').addEventListener('change', (e) => {
-            const value = e.target.value
-            localStorage.setItem(STORAGE_TOOLBAR_COLUMN, value)
-            grid.toolbarColumn = value || undefined
-            grid2.toolbarColumn = value || undefined
-        })
-
-        // Follow cursor control
-        document.getElementById('followCursorCheck').addEventListener('change', (e) => {
-            const value = e.target.checked
-            localStorage.setItem(STORAGE_FOLLOW_CURSOR, value)
-            grid.shouldToolbarFollowCursor = value
-            grid2.shouldToolbarFollowCursor = value
-        })
-
-        // Cell toolbar offset control
-        document.getElementById('cellToolbarOffsetInput').addEventListener('change', (e) => {
-            const raw = e.target.value.trim()
-            const value = /^[\d.]+$/.test(raw) ? parseFloat(raw) : raw
-            localStorage.setItem(STORAGE_CELL_TOOLBAR_OFFSET, raw)
-            grid.cellToolbarOffset = value
-            grid4.cellToolbarOffset = value
-        })
-
-        // Button min-width control
-        document.getElementById('btnMinWidthInput').addEventListener('change', (e) => {
-            const value = e.target.value.trim()
-            localStorage.setItem(STORAGE_BTN_MIN_WIDTH, value)
-            grid.toolbarBtnMinWidth = value || undefined
-            grid4.toolbarBtnMinWidth = value || undefined
-        })
-
-        // ============================================================
-        // Multi-row toolbar example
-        // ============================================================
-        const grid2 = document.getElementById('grid2')
-        grid2.items = tasks.map(t => ({...t}))  // Clone for independent data
-        grid2.columns = columns
-
-        grid2.isRowToolbarShown = true
-        grid2.toolbarTrigger = savedTrigger
-        grid2.toolbarPosition = savedPosition
-        grid2.toolbarVerticalAlign = savedVerticalAlign
-        grid2.toolbarHorizontalAlign = savedHorizontalAlign
-
-        // Multi-row toolbar configuration
-        grid2.rowToolbar = [
-            // Row 1: Move actions | CRUD actions
-            { action: 'move-up', icon: '↑', text: 'Move up', row: 1 },
-            { action: 'move-down', icon: '↓', text: 'Move down', row: 1 },
-            { divider: true },
-            { action: 'add', icon: '+', text: 'Add', row: 1 },
-            { action: 'duplicate', icon: '⧉', text: 'Duplicate', row: 1 },
-            { action: 'delete', icon: '−', text: 'Delete', isDanger: true, row: 1 },
-
-            // Row 2: Custom actions
-            { id: 'export', icon: '📤', text: 'Export row', row: 2 },
-            { id: 'preview', icon: '👁', text: 'View', isTextVisible: true, row: 2 },
-            { divider: true },
-            { id: 'archive', icon: '📦', text: 'Archive', row: 2 }
-        ]
-
-        wireStandard(grid2)
-        const standardAction2 = grid2.onAction
-        grid2.onAction = (detail) => {
-            standardAction2(detail)
-            if (detail.action === 'custom') showToast(`${detail.item.text}: ${detail.row.title}`)
+    // Initialize grid
+    const grid = document.getElementById('grid')
+    grid.items = tasks
+    grid.columns = columns
+    grid.isRowToolbarShown = true
+    // A divider separates move and CRUD actions
+    // Tooltips show text + description + keyboard shortcut (auto-detected from rowShortcuts)
+    grid.rowToolbar = [
+        { action: 'move-up', icon: '↑', text: 'Move up', tooltip: 'Move this task higher in the list' },
+        { action: 'move-down', icon: '↓', text: 'Move down', tooltip: 'Move this task lower in the list' },
+        { divider: true },
+        { action: 'add', icon: '+', text: 'Add', tooltip: 'Insert a new task below this one' },
+        { action: 'duplicate', icon: '⧉', text: 'Duplicate', tooltip: 'Create a copy of this task' },
+        {
+            action: 'delete', icon: '−', text: 'Delete',
+            // Dynamic description from the row (escaped — the description renders as HTML):
+            // italic task title + a status chip. Text only, nothing clickable in a tooltip.
+            getTooltipCallback: ({ row }) => `Permanently remove <em>${esc(row.title)}</em>`
+                + `<br><span data-kmwc-fixed-colors style="display: inline-block; margin-top: .25rem; padding: 0 .45rem; border-radius: 999px; font-size: .85em; color: #fff; background: ${row.status === 'Done' ? '#16a34a' : row.priority === 'High' ? '#dc2626' : '#6366f1'};">`
+                + `${esc(row.status)} · ${esc(row.priority)} · ${esc(row.assignee)}</span>`
         }
+    ]
+    grid.toolbarTrigger = savedTrigger
+    grid.toolbarPosition = savedPosition
+    grid.toolbarVerticalAlign = savedVerticalAlign
+    grid.toolbarHorizontalAlign = savedHorizontalAlign
+    grid.toolbarColumn = savedToolbarColumn || undefined
+    grid.shouldToolbarFollowCursor = savedFollowCursor
+    grid.cellToolbarOffset = savedCellToolbarOffset
+    if (savedBtnMinWidth) grid.toolbarBtnMinWidth = savedBtnMinWidth
 
-        // ============================================================
-        // Cell-aware toolbar example
-        // ============================================================
-        const grid4 = document.getElementById('grid4')
-        grid4.items = tasks.map(t => ({...t}))  // Clone for independent data
-        grid4.columns = columns
+    // Keyboard shortcuts - work on hovered row when toolbar is visible.
+    // They run the same built-ins (and fire the same `action` event, source: 'keyboard').
+    grid.rowShortcuts = [
+        { shortcut: 'd', action: 'duplicate', text: 'Duplicate row' },
+        { shortcut: 'Delete', action: 'delete', text: 'Delete row' },
+        { shortcut: 'ArrowUp', action: 'move-up', text: 'Move row up' },
+        { shortcut: 'ArrowDown', action: 'move-down', text: 'Move row down' }
+    ]
+    wireStandard(grid)
 
-        grid4.isRowToolbarShown = true
-        grid4.toolbarPosition = 'top'
-        grid4.shouldToolbarFollowCursor = true  // Toolbar follows mouse horizontally
-        grid4.cellToolbarOffset = savedCellToolbarOffset
-        if (savedBtnMinWidth) grid4.toolbarBtnMinWidth = savedBtnMinWidth
+    // Trigger control
+    document.getElementById('triggerSelect').addEventListener('change', (e) => {
+        const value = e.target.value
+        localStorage.setItem(STORAGE_TRIGGER, value)
+        grid.toolbarTrigger = value
+        grid2.toolbarTrigger = value
+        // Force re-render to apply new trigger mode
+        grid.items = [...grid.items]
+        grid2.items = [...grid2.items]
+    })
 
-        // Default toolbar items
-        grid4.rowToolbar = ['add', 'delete', 'duplicate']
+    // Position control
+    document.getElementById('positionSelect').addEventListener('change', (e) => {
+        const value = e.target.value
+        localStorage.setItem(STORAGE_POSITION, value)
+        grid.toolbarPosition = value
+        grid2.toolbarPosition = value
+    })
 
-        // Cell-specific toolbar - different actions per column
-        grid4.getCellToolbarItemsCallback = ({ field }) => {
-            switch (field) {
-                case 'priority':
-                    return [
-                        { id: 'setHigh', icon: '🔴', text: 'Set High Priority' },
-                        { id: 'setMedium', icon: '🟡', text: 'Set Medium Priority' },
-                        { id: 'setLow', icon: '🟢', text: 'Set Low Priority' }
-                    ]
-                case 'status':
-                    return [
-                        { id: 'setTodo', icon: '📋', text: 'Set Todo' },
-                        { id: 'setProgress', icon: '🔄', text: 'Set In Progress' },
-                        { id: 'setDone', icon: '✅', text: 'Set Done' }
-                    ]
-                default:
-                    return undefined  // Use default toolbar
-            }
+    // Vertical align control
+    document.getElementById('verticalAlignSelect').addEventListener('change', (e) => {
+        const value = e.target.value
+        localStorage.setItem(STORAGE_VERTICAL_ALIGN, value)
+        grid.toolbarVerticalAlign = value
+        grid2.toolbarVerticalAlign = value
+    })
+
+    // Horizontal align control
+    document.getElementById('horizontalAlignSelect').addEventListener('change', (e) => {
+        const value = e.target.value
+        localStorage.setItem(STORAGE_HORIZONTAL_ALIGN, value)
+        grid.toolbarHorizontalAlign = value
+        grid2.toolbarHorizontalAlign = value
+    })
+
+    // Toolbar column control
+    document.getElementById('toolbarColumnSelect').addEventListener('change', (e) => {
+        const value = e.target.value
+        localStorage.setItem(STORAGE_TOOLBAR_COLUMN, value)
+        grid.toolbarColumn = value || undefined
+        grid2.toolbarColumn = value || undefined
+    })
+
+    // Follow cursor control
+    document.getElementById('followCursorCheck').addEventListener('change', (e) => {
+        const value = e.target.checked
+        localStorage.setItem(STORAGE_FOLLOW_CURSOR, value)
+        grid.shouldToolbarFollowCursor = value
+        grid2.shouldToolbarFollowCursor = value
+    })
+
+    // Cell toolbar offset control
+    document.getElementById('cellToolbarOffsetInput').addEventListener('change', (e) => {
+        const raw = e.target.value.trim()
+        const value = /^[\d.]+$/.test(raw) ? parseFloat(raw) : raw
+        localStorage.setItem(STORAGE_CELL_TOOLBAR_OFFSET, raw)
+        grid.cellToolbarOffset = value
+        grid4.cellToolbarOffset = value
+    })
+
+    // Button min-width control
+    document.getElementById('btnMinWidthInput').addEventListener('change', (e) => {
+        const value = e.target.value.trim()
+        localStorage.setItem(STORAGE_BTN_MIN_WIDTH, value)
+        grid.toolbarBtnMinWidth = value || undefined
+        grid4.toolbarBtnMinWidth = value || undefined
+    })
+
+    // ============================================================
+    // Multi-row toolbar example
+    // ============================================================
+    const grid2 = document.getElementById('grid2')
+    grid2.items = tasks.map(t => ({...t}))  // Clone for independent data
+    grid2.columns = columns
+
+    grid2.isRowToolbarShown = true
+    grid2.toolbarTrigger = savedTrigger
+    grid2.toolbarPosition = savedPosition
+    grid2.toolbarVerticalAlign = savedVerticalAlign
+    grid2.toolbarHorizontalAlign = savedHorizontalAlign
+
+    // Multi-row toolbar configuration
+    grid2.rowToolbar = [
+        // Row 1: Move actions | CRUD actions
+        { action: 'move-up', icon: '↑', text: 'Move up', row: 1 },
+        { action: 'move-down', icon: '↓', text: 'Move down', row: 1 },
+        { divider: true },
+        { action: 'add', icon: '+', text: 'Add', row: 1 },
+        { action: 'duplicate', icon: '⧉', text: 'Duplicate', row: 1 },
+        { action: 'delete', icon: '−', text: 'Delete', isDanger: true, row: 1 },
+
+        // Row 2: Custom actions
+        { id: 'export', icon: '📤', text: 'Export row', row: 2 },
+        { id: 'preview', icon: '👁', text: 'View', isTextVisible: true, row: 2 },
+        { divider: true },
+        { id: 'archive', icon: '📦', text: 'Archive', row: 2 }
+    ]
+
+    wireStandard(grid2)
+    const standardAction2 = grid2.onAction
+    grid2.onAction = (detail) => {
+        standardAction2(detail)
+        if (detail.action === 'custom') logAction(grid2, `${detail.item.text}: ${detail.row.title}`)
+    }
+
+    // ============================================================
+    // Cell-aware toolbar example
+    // ============================================================
+    const grid4 = document.getElementById('grid4')
+    grid4.items = tasks.map(t => ({...t}))  // Clone for independent data
+    grid4.columns = columns
+
+    grid4.isRowToolbarShown = true
+    grid4.toolbarPosition = 'top'
+    grid4.shouldToolbarFollowCursor = true  // Toolbar follows mouse horizontally
+    grid4.cellToolbarOffset = savedCellToolbarOffset
+    if (savedBtnMinWidth) grid4.toolbarBtnMinWidth = savedBtnMinWidth
+
+    // Default toolbar items
+    grid4.rowToolbar = ['add', 'delete', 'duplicate']
+
+    // Cell-specific toolbar - different actions per column
+    grid4.getCellToolbarItemsCallback = ({ field }) => {
+        switch (field) {
+            case 'priority':
+                return [
+                    { id: 'setHigh', icon: '🔴', text: 'Set High Priority' },
+                    { id: 'setMedium', icon: '🟡', text: 'Set Medium Priority' },
+                    { id: 'setLow', icon: '🟢', text: 'Set Low Priority' }
+                ]
+            case 'status':
+                return [
+                    { id: 'setTodo', icon: '📋', text: 'Set Todo' },
+                    { id: 'setProgress', icon: '🔄', text: 'Set In Progress' },
+                    { id: 'setDone', icon: '✅', text: 'Set Done' }
+                ]
+            default:
+                return undefined  // Use default toolbar
         }
+    }
 
-        // add / delete / duplicate are built-ins (wireStandard); the cell items are custom
-        wireStandard(grid4)
-        const standardAction4 = grid4.onAction
-        const cellUpdates = {
-            setHigh: ['priority', 'High', 'error'], setMedium: ['priority', 'Medium', 'info'], setLow: ['priority', 'Low', 'success'],
-            setTodo: ['status', 'Todo', 'info'], setProgress: ['status', 'In Progress', 'info'], setDone: ['status', 'Done', 'success']
+    // add / delete / duplicate are built-ins (wireStandard); the cell items are custom
+    wireStandard(grid4)
+    const standardAction4 = grid4.onAction
+    const cellUpdates = {
+        setHigh: ['priority', 'High', 'error'], setMedium: ['priority', 'Medium', 'info'], setLow: ['priority', 'Low', 'success'],
+        setTodo: ['status', 'Todo', 'info'], setProgress: ['status', 'In Progress', 'info'], setDone: ['status', 'Done', 'success']
+    }
+    grid4.onAction = (detail) => {
+        standardAction4(detail)
+        const update = cellUpdates[detail.id]
+        if (detail.action !== 'custom' || !update) return
+        const [field, value, logType] = update
+        grid4.items = grid4.items.map(r => r === detail.row ? { ...r, [field]: value } : r)
+        logAction(grid4, `Set "${detail.row.title}" to ${value}${field === 'priority' ? ' priority' : ''}`, logType)
+    }
+
+    // ============================================================
+    // Inline actions column example
+    // ============================================================
+    const grid3 = document.getElementById('grid3')
+    grid3.items = tasks.map(t => ({...t}))  // Clone for independent data
+    grid3.columns = columns
+
+    grid3.isRowToolbarShown = true
+    grid3.toolbarPosition = 'inline'  // Key setting: renders as column
+
+    // Inline toolbar with disabled / visible callbacks
+    grid3.rowToolbar = [
+        {
+            id: 'edit',
+            icon: '✏️',
+            text: 'Edit task',
+            getIsDisabledCallback: ({ row }) => row.status === 'Done'  // Disable for completed
+        },
+        {
+            action: 'delete',
+            icon: '🗑️',
+            text: 'Delete task',
+            isDanger: true,
+            getIsVisibleCallback: ({ row }) => row.priority !== 'High'  // Hide for high priority
+        },
+        {
+            id: 'archive',
+            icon: '📦',
+            text: 'Archive task'
         }
-        grid4.onAction = (detail) => {
-            standardAction4(detail)
-            const update = cellUpdates[detail.id]
-            if (detail.action !== 'custom' || !update) return
-            const [field, value, toastType] = update
-            grid4.items = grid4.items.map(r => r === detail.row ? { ...r, [field]: value } : r)
-            showToast(`Set "${detail.row.title}" to ${value}${field === 'priority' ? ' priority' : ''}`, toastType)
+    ]
+
+    // Keyboard shortcuts - triggered by hovering a row and pressing the key
+    grid3.rowShortcuts = [
+        { shortcut: 'Delete', action: 'delete', text: 'Delete row' },
+        { shortcut: 'a', id: 'archive', text: 'Archive row' }
+    ]
+
+    // The Delete shortcut doesn't know the button is hidden for high priority — veto it
+    grid3.beforeActionCallback = ({ action, row }) => {
+        if (action === 'delete' && row.priority === 'High') {
+            logAction(grid3, 'Cannot delete high priority tasks', 'error')
+            return false
         }
+    }
 
-        // ============================================================
-        // Inline actions column example
-        // ============================================================
-        const grid3 = document.getElementById('grid3')
-        grid3.items = tasks.map(t => ({...t}))  // Clone for independent data
-        grid3.columns = columns
-
-        grid3.isRowToolbarShown = true
-        grid3.toolbarPosition = 'inline'  // Key setting: renders as column
-
-        // Inline toolbar with disabled / visible callbacks
-        grid3.rowToolbar = [
-            {
-                id: 'edit',
-                icon: '✏️',
-                text: 'Edit task',
-                getIsDisabledCallback: ({ row }) => row.status === 'Done'  // Disable for completed
-            },
-            {
-                action: 'delete',
-                icon: '🗑️',
-                text: 'Delete task',
-                isDanger: true,
-                getIsVisibleCallback: ({ row }) => row.priority !== 'High'  // Hide for high priority
-            },
-            {
-                id: 'archive',
-                icon: '📦',
-                text: 'Archive task'
-            }
-        ]
-
-        // Keyboard shortcuts - triggered by hovering a row and pressing the key
-        grid3.rowShortcuts = [
-            { shortcut: 'Delete', action: 'delete', text: 'Delete row' },
-            { shortcut: 'a', id: 'archive', text: 'Archive row' }
-        ]
-
-        // The Delete shortcut doesn't know the button is hidden for high priority — veto it
-        grid3.beforeActionCallback = ({ action, row }) => {
-            if (action === 'delete' && row.priority === 'High') {
-                showToast('Cannot delete high priority tasks', 'error')
-                return false
-            }
-        }
-
-        grid3.onAction = ({ action, id, row }) => {
-            if (id === 'edit') showToast(`Editing: ${row.title}`)
-            else if (action === 'delete') showToast(`Deleted: ${row.title}`, 'error')
-            else if (id === 'archive') showToast(`Archived: ${row.title}`, 'success')
-        }
-    </script>
-</body>
-</html>
+    grid3.onAction = ({ action, id, row }) => {
+        if (id === 'edit') logAction(grid3, `Editing: ${row.title}`)
+        else if (action === 'delete') logAction(grid3, `Deleted: ${row.title}`, 'error')
+        else if (id === 'archive') logAction(grid3, `Archived: ${row.title}`, 'success')
+    }
+</script>

@@ -1,423 +1,398 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebGrid - Basic Examples</title>
-    <link rel="stylesheet" href="examples-shared.css">
-</head>
-<body>
-    <div class="container">
-        <header>
-            <a href="index.html" class="back-link">← Back to Examples</a>
-            <h1>📦 Basic Examples</h1>
-            <p class="subtitle">Core grid features with all editor types</p>
-        </header>
+<meta name="kmwc:title" content="📦 Basic Examples">
+<meta name="kmwc:subtitle" content="Core grid features with all editor types">
 
-        <div class="card">
-            <h2>Employee Grid</h2>
-            <p>A comprehensive example showing text, number, date, select, combobox, and autocomplete editors with keyboard navigation.
-                Hover a <strong>Name</strong> or <strong>Salary</strong> cell: the <code>getTooltipCallback</code> tooltip is built from the cell context when it opens —
-                select a row (click its #) or edit a salary and hover again to see the chip follow the row state.</p>
+    <div class="card">
+        <h2>BU01 · Employee Grid</h2>
+        <p>A comprehensive example showing text, number, date, select, combobox, and autocomplete editors with keyboard navigation.
+            Hover a <strong>Name</strong> or <strong>Salary</strong> cell: the <code>getTooltipCallback</code> tooltip is built from the cell context when it opens —
+            select a row (click its #) or edit a salary and hover again to see the chip follow the row state.</p>
 
-            <div class="controls">
-                <label>
-                    <input type="checkbox" id="isStriped" checked> Striped
-                </label>
-                <label>
-                    <input type="checkbox" id="isHoverable" checked> Hoverable
-                </label>
-                <label>
-                    <input type="checkbox" id="sortable" checked> Sortable
-                </label>
-                <label>
-                    <input type="checkbox" id="isPagingEnabled"> Pageable
-                </label>
-                <label>
-                    <input type="checkbox" id="isEditable" checked> Editable
-                </label>
-                <label>
-                    <input type="checkbox" id="navigate" checked> Navigate Mode
-                </label>
-                <label>
-                    <input type="checkbox" id="isDirtyIndicatorShown" checked> Dirty Indicator
-                </label>
-            </div>
-
-            <web-grid id="grid" style="max-width: 100%; max-height: 400px; border: 1px solid #e2e8f0;"></web-grid>
-
-            <div style="margin-top: 1rem;">
-                <strong>Current Sort:</strong>
-                <span id="sortState" style="color: #666; margin-left: 0.5rem;">No sorting applied</span>
-                <small style="display: block; color: #999; margin-top: 0.25rem;">Click column header to sort. Ctrl+Click to add columns (cascading sort).</small>
-            </div>
-
-            <div style="margin-top: 0.5rem;">
-                <strong>Focused Row:</strong>
-                <span id="focusedRowState" style="color: #666; margin-left: 0.5rem;">None</span>
-            </div>
+        <div class="controls">
+            <label>
+                <input type="checkbox" id="isStriped" checked> Striped
+            </label>
+            <label>
+                <input type="checkbox" id="isHoverable" checked> Hoverable
+            </label>
+            <label>
+                <input type="checkbox" id="sortable" checked> Sortable
+            </label>
+            <label>
+                <input type="checkbox" id="isPagingEnabled"> Pageable
+            </label>
+            <label>
+                <input type="checkbox" id="isEditable" checked> Editable
+            </label>
+            <label>
+                <input type="checkbox" id="navigate" checked> Navigate Mode
+            </label>
+            <label>
+                <input type="checkbox" id="isDirtyIndicatorShown" checked> Dirty Indicator
+            </label>
         </div>
 
-        <div class="card">
-            <h2>Keyboard Navigation</h2>
-            <p>Navigate mode enables Excel-like keyboard navigation. Use the controls above to toggle it on/off.</p>
+        <web-grid id="grid" style="max-height: 400px;"></web-grid>
 
-            <div class="grid-2">
-                <div>
-                    <h3>Cell Navigation</h3>
-                    <ul>
-                        <li><code>Arrow Up/Down</code> - Move between rows</li>
-                        <li><code>Arrow Left/Right</code> - Move between columns</li>
-                        <li><code>Tab / Shift+Tab</code> - Next/previous editable cell</li>
-                        <li><code>Home / End</code> - First/last cell in row</li>
-                        <li><code>PageUp / PageDown</code> - Move up/down by ~10 rows</li>
-                    </ul>
-                </div>
-                <div>
-                    <h3>Jump Navigation</h3>
-                    <ul>
-                        <li><code>Ctrl+Home</code> - First cell in grid</li>
-                        <li><code>Ctrl+End</code> - Last cell in grid</li>
-                        <li><code>Ctrl+PageUp</code> - First cell in column</li>
-                        <li><code>Ctrl+PageDown</code> - Last cell in column</li>
-                    </ul>
-                </div>
-            </div>
+        <p class="mt-1">
+            <strong>Current Sort:</strong>
+            <span id="sortState" class="muted">No sorting applied</span><br>
+            <small class="muted">Click column header to sort. Ctrl+Click to add columns (cascading sort).</small>
+        </p>
 
-            <div class="note" style="margin-top: 1.5rem;">
-                <div class="note-title">Editing Keys</div>
+        <p>
+            <strong>Focused Row:</strong>
+            <span id="focusedRowState" class="muted">None</span>
+        </p>
+    </div>
+
+    <div class="card">
+        <h2>BU02 · Keyboard Navigation</h2>
+        <p>Navigate mode enables Excel-like keyboard navigation. Use the controls above to toggle it on/off.</p>
+
+        <div class="grid-2">
+            <div>
+                <h3>Cell Navigation</h3>
                 <ul>
-                    <li><code>Enter / F2</code> - Start editing the focused cell</li>
-                    <li><code>Space</code> - Toggle checkbox or open dropdown/datepicker</li>
-                    <li><code>Escape</code> - Cancel edit and clear focus</li>
-                    <li><code>Type any character</code> - Start editing with that character</li>
+                    <li><code>Arrow Up/Down</code> - Move between rows</li>
+                    <li><code>Arrow Left/Right</code> - Move between columns</li>
+                    <li><code>Tab / Shift+Tab</code> - Next/previous editable cell</li>
+                    <li><code>Home / End</code> - First/last cell in row</li>
+                    <li><code>PageUp / PageDown</code> - Move up/down by ~10 rows</li>
+                </ul>
+            </div>
+            <div>
+                <h3>Jump Navigation</h3>
+                <ul>
+                    <li><code>Ctrl+Home</code> - First cell in grid</li>
+                    <li><code>Ctrl+End</code> - Last cell in grid</li>
+                    <li><code>Ctrl+PageUp</code> - First cell in column</li>
+                    <li><code>Ctrl+PageDown</code> - Last cell in column</li>
                 </ul>
             </div>
         </div>
 
-        <div class="card">
-            <h2>Disabled / Readonly States</h2>
-            <div class="grid">
-                <div class="form-group">
-                    <label>Disabled Grid</label>
-                    <web-grid id="grid-disabled" disabled style="border: 1px solid #e2e8f0;"></web-grid>
-                    <small>No interaction, not focusable</small>
-                </div>
-
-                <div class="form-group">
-                    <label>Readonly Grid</label>
-                    <web-grid id="grid-readonly" readonly style="border: 1px solid #e2e8f0;"></web-grid>
-                    <small>The value can't change; still focusable and copyable</small>
-                </div>
-            </div>
+        <div class="note mt-1">
+            <div class="note-title">Editing Keys</div>
+            <ul>
+                <li><code>Enter / F2</code> - Start editing the focused cell</li>
+                <li><code>Space</code> - Toggle checkbox or open dropdown/datepicker</li>
+                <li><code>Escape</code> - Cancel edit and clear focus</li>
+                <li><code>Type any character</code> - Start editing with that character</li>
+            </ul>
         </div>
-
-        <footer>
-            <p>WebGrid Component by <a href="https://github.com/keenmate">Keenmate</a></p>
-        </footer>
     </div>
 
-    <script type="module">
-        import '@keenmate/web-grid'
+    <div class="card">
+        <h2>BU03 · Disabled / Readonly States</h2>
+        <div class="grid">
+            <div class="form-group">
+                <label>Disabled Grid</label>
+                <web-grid id="grid-disabled" disabled></web-grid>
+                <small>No interaction, not focusable</small>
+            </div>
 
-        // Sample employee data
-        const sampleData = [
-            { id: 1847, name: 'Alice Johnson', email: 'alice@example.com', department: 'Engineering', salary: 85000, startDate: '2020-03-15', status: 'Active', statusTooltip: 'Employee is currently working', manager: 'John Doe', location: 'New York', phone: '555-0101' },
-            { id: 2391, name: 'Bob Smith', email: 'bob@example.com', department: 'Marketing', salary: 72000, startDate: '2019-07-22', status: 'Active', statusTooltip: 'Employee is currently working', manager: 'Jane Smith', location: 'Los Angeles', phone: '555-0102' },
-            { id: 1052, name: 'Carol Williams', email: 'carol@example.com', department: 'Engineering', salary: 92000, startDate: '2018-11-01', status: 'Active', statusTooltip: 'Employee is currently working', manager: 'John Doe', location: 'New York', phone: '555-0103' },
-            { id: 3764, name: 'David Brown', email: 'david@example.com', department: 'Sales', salary: 68000, startDate: '2021-01-10', status: 'Active', statusTooltip: 'Employee is currently working', manager: 'Mike Johnson', location: 'Chicago', phone: '555-0104' },
-            { id: 2908, name: 'Eva Martinez', email: 'eva@example.com', department: 'HR', salary: 65000, startDate: '2020-06-20', status: 'Active', statusTooltip: 'Employee is currently working', manager: 'Sarah Lee', location: 'Miami', phone: '555-0105' },
-            { id: 1523, name: 'Frank Lee', email: 'frank@example.com', department: 'Engineering', salary: 88000, startDate: '2019-02-14', status: 'Active', statusTooltip: 'Employee is currently working', manager: 'John Doe', location: 'New York', phone: '555-0106' },
-            { id: 4281, name: 'Grace Kim', email: 'grace@example.com', department: 'Marketing', salary: 75000, startDate: '2020-09-05', status: 'On Leave', statusTooltip: 'On parental leave until March 2025', manager: 'Jane Smith', location: 'Los Angeles', phone: '555-0107' },
-            { id: 3156, name: 'Henry Chen', email: 'henry@example.com', department: 'Sales', salary: 71000, startDate: '2021-04-18', status: 'Active', statusTooltip: 'Employee is currently working', manager: 'Mike Johnson', location: 'Chicago', phone: '555-0108' },
-            { id: 1739, name: 'Ivy Wang', email: 'ivy@example.com', department: 'Engineering', salary: 95000, startDate: '2017-08-30', status: 'Active', statusTooltip: 'Employee is currently working', manager: 'John Doe', location: 'Seattle', phone: '555-0109' },
-            { id: 4592, name: 'Jack Davis', email: 'jack@example.com', department: 'HR', salary: 62000, startDate: '2022-02-01', status: 'Active', statusTooltip: 'Employee is currently working', manager: 'Sarah Lee', location: 'Miami', phone: '555-0110' },
-            { id: 2847, name: 'Karen Wilson', email: 'karen@example.com', department: 'Engineering', salary: 89000, startDate: '2019-05-12', status: 'Active', statusTooltip: 'Employee is currently working', manager: 'John Doe', location: 'New York', phone: '555-0111' },
-            { id: 3620, name: 'Leo Garcia', email: 'leo@example.com', department: 'Marketing', salary: 73000, startDate: '2020-11-25', status: 'Active', statusTooltip: 'Employee is currently working', manager: 'Jane Smith', location: 'Los Angeles', phone: '555-0112' },
-        ]
+            <div class="form-group">
+                <label>Readonly Grid</label>
+                <web-grid id="grid-readonly" readonly></web-grid>
+                <small>The value can't change; still focusable and copyable</small>
+            </div>
+        </div>
+    </div>
 
-        // Options for select editors
-        const departmentOptions = [
-            { value: 'Engineering', label: 'Engineering', icon: '⚙️', subtitle: 'Product & Development' },
-            { value: 'Marketing', label: 'Marketing', icon: '📢', subtitle: 'Brand & Communications' },
-            { value: 'Sales', label: 'Sales', icon: '💼', subtitle: 'Revenue & Growth' },
-            { value: 'HR', label: 'HR', icon: '👥', subtitle: 'People & Culture' },
-            { value: 'Finance', label: 'Finance', icon: '💰', subtitle: 'Accounting & Budget' },
-            { value: 'Legal', label: 'Legal', icon: '⚖️', subtitle: 'Compliance', disabled: true },
-            { value: 'Operations', label: 'Operations', icon: '🔧', subtitle: 'Infrastructure & Support' },
-            { value: 'Research', label: 'Research', icon: '🔬', subtitle: 'R&D & Innovation' },
-            { value: 'Design', label: 'Design', icon: '🎨', subtitle: 'UX & Visual Design' },
-            { value: 'Quality', label: 'Quality Assurance', icon: '✅', subtitle: 'Testing & QA' },
-            { value: 'Security', label: 'Security', icon: '🔒', subtitle: 'InfoSec & Compliance' },
-            { value: 'Data', label: 'Data Science', icon: '📊', subtitle: 'Analytics & ML' },
-            { value: 'DevOps', label: 'DevOps', icon: '🚀', subtitle: 'CI/CD & Automation' },
-            { value: 'Support', label: 'Customer Support', icon: '🎧', subtitle: 'Help & Service' },
-            { value: 'Training', label: 'Training', icon: '📚', subtitle: 'Learning & Development' },
-            { value: 'Procurement', label: 'Procurement', icon: '📦', subtitle: 'Purchasing & Vendors' },
-            { value: 'Facilities', label: 'Facilities', icon: '🏢', subtitle: 'Office & Maintenance' },
-            { value: 'Communications', label: 'Communications', icon: '📣', subtitle: 'Internal & External Comms' },
-            { value: 'Strategy', label: 'Strategy', icon: '🎯', subtitle: 'Planning & Analysis' },
-            { value: 'Partnerships', label: 'Partnerships', icon: '🤝', subtitle: 'Business Development' },
-            { value: 'Compliance', label: 'Compliance', icon: '📋', subtitle: 'Regulatory Affairs' },
-            { value: 'IT', label: 'IT Services', icon: '💻', subtitle: 'Tech Support & Systems' },
-            { value: 'Product', label: 'Product Management', icon: '📱', subtitle: 'Roadmap & Features' },
-            { value: 'Executive', label: 'Executive', icon: '👔', subtitle: 'C-Suite & Leadership' }
-        ]
+<script type="module">
+    // Sample employee data
+    const sampleData = [
+        { id: 1847, name: 'Alice Johnson', email: 'alice@example.com', department: 'Engineering', salary: 85000, startDate: '2020-03-15', status: 'Active', statusTooltip: 'Employee is currently working', manager: 'John Doe', location: 'New York', phone: '555-0101' },
+        { id: 2391, name: 'Bob Smith', email: 'bob@example.com', department: 'Marketing', salary: 72000, startDate: '2019-07-22', status: 'Active', statusTooltip: 'Employee is currently working', manager: 'Jane Smith', location: 'Los Angeles', phone: '555-0102' },
+        { id: 1052, name: 'Carol Williams', email: 'carol@example.com', department: 'Engineering', salary: 92000, startDate: '2018-11-01', status: 'Active', statusTooltip: 'Employee is currently working', manager: 'John Doe', location: 'New York', phone: '555-0103' },
+        { id: 3764, name: 'David Brown', email: 'david@example.com', department: 'Sales', salary: 68000, startDate: '2021-01-10', status: 'Active', statusTooltip: 'Employee is currently working', manager: 'Mike Johnson', location: 'Chicago', phone: '555-0104' },
+        { id: 2908, name: 'Eva Martinez', email: 'eva@example.com', department: 'HR', salary: 65000, startDate: '2020-06-20', status: 'Active', statusTooltip: 'Employee is currently working', manager: 'Sarah Lee', location: 'Miami', phone: '555-0105' },
+        { id: 1523, name: 'Frank Lee', email: 'frank@example.com', department: 'Engineering', salary: 88000, startDate: '2019-02-14', status: 'Active', statusTooltip: 'Employee is currently working', manager: 'John Doe', location: 'New York', phone: '555-0106' },
+        { id: 4281, name: 'Grace Kim', email: 'grace@example.com', department: 'Marketing', salary: 75000, startDate: '2020-09-05', status: 'On Leave', statusTooltip: 'On parental leave until March 2025', manager: 'Jane Smith', location: 'Los Angeles', phone: '555-0107' },
+        { id: 3156, name: 'Henry Chen', email: 'henry@example.com', department: 'Sales', salary: 71000, startDate: '2021-04-18', status: 'Active', statusTooltip: 'Employee is currently working', manager: 'Mike Johnson', location: 'Chicago', phone: '555-0108' },
+        { id: 1739, name: 'Ivy Wang', email: 'ivy@example.com', department: 'Engineering', salary: 95000, startDate: '2017-08-30', status: 'Active', statusTooltip: 'Employee is currently working', manager: 'John Doe', location: 'Seattle', phone: '555-0109' },
+        { id: 4592, name: 'Jack Davis', email: 'jack@example.com', department: 'HR', salary: 62000, startDate: '2022-02-01', status: 'Active', statusTooltip: 'Employee is currently working', manager: 'Sarah Lee', location: 'Miami', phone: '555-0110' },
+        { id: 2847, name: 'Karen Wilson', email: 'karen@example.com', department: 'Engineering', salary: 89000, startDate: '2019-05-12', status: 'Active', statusTooltip: 'Employee is currently working', manager: 'John Doe', location: 'New York', phone: '555-0111' },
+        { id: 3620, name: 'Leo Garcia', email: 'leo@example.com', department: 'Marketing', salary: 73000, startDate: '2020-11-25', status: 'Active', statusTooltip: 'Employee is currently working', manager: 'Jane Smith', location: 'Los Angeles', phone: '555-0112' },
+    ]
 
-        const statusOptions = [
-            { value: 'Active', label: 'Active', icon: '✅' },
-            { value: 'Inactive', label: 'Inactive', icon: '⏸️' },
-            { value: 'On Leave', label: 'On Leave', icon: '🏖️' },
-            { value: 'Terminated', label: 'Terminated', icon: '❌', disabled: true }
-        ]
+    // Options for select editors
+    const departmentOptions = [
+        { value: 'Engineering', label: 'Engineering', icon: '⚙️', subtitle: 'Product & Development' },
+        { value: 'Marketing', label: 'Marketing', icon: '📢', subtitle: 'Brand & Communications' },
+        { value: 'Sales', label: 'Sales', icon: '💼', subtitle: 'Revenue & Growth' },
+        { value: 'HR', label: 'HR', icon: '👥', subtitle: 'People & Culture' },
+        { value: 'Finance', label: 'Finance', icon: '💰', subtitle: 'Accounting & Budget' },
+        { value: 'Legal', label: 'Legal', icon: '⚖️', subtitle: 'Compliance', disabled: true },
+        { value: 'Operations', label: 'Operations', icon: '🔧', subtitle: 'Infrastructure & Support' },
+        { value: 'Research', label: 'Research', icon: '🔬', subtitle: 'R&D & Innovation' },
+        { value: 'Design', label: 'Design', icon: '🎨', subtitle: 'UX & Visual Design' },
+        { value: 'Quality', label: 'Quality Assurance', icon: '✅', subtitle: 'Testing & QA' },
+        { value: 'Security', label: 'Security', icon: '🔒', subtitle: 'InfoSec & Compliance' },
+        { value: 'Data', label: 'Data Science', icon: '📊', subtitle: 'Analytics & ML' },
+        { value: 'DevOps', label: 'DevOps', icon: '🚀', subtitle: 'CI/CD & Automation' },
+        { value: 'Support', label: 'Customer Support', icon: '🎧', subtitle: 'Help & Service' },
+        { value: 'Training', label: 'Training', icon: '📚', subtitle: 'Learning & Development' },
+        { value: 'Procurement', label: 'Procurement', icon: '📦', subtitle: 'Purchasing & Vendors' },
+        { value: 'Facilities', label: 'Facilities', icon: '🏢', subtitle: 'Office & Maintenance' },
+        { value: 'Communications', label: 'Communications', icon: '📣', subtitle: 'Internal & External Comms' },
+        { value: 'Strategy', label: 'Strategy', icon: '🎯', subtitle: 'Planning & Analysis' },
+        { value: 'Partnerships', label: 'Partnerships', icon: '🤝', subtitle: 'Business Development' },
+        { value: 'Compliance', label: 'Compliance', icon: '📋', subtitle: 'Regulatory Affairs' },
+        { value: 'IT', label: 'IT Services', icon: '💻', subtitle: 'Tech Support & Systems' },
+        { value: 'Product', label: 'Product Management', icon: '📱', subtitle: 'Roadmap & Features' },
+        { value: 'Executive', label: 'Executive', icon: '👔', subtitle: 'C-Suite & Leadership' }
+    ]
 
-        const locationOptions = [
-            { value: 'New York', label: 'New York' },
-            { value: 'Los Angeles', label: 'Los Angeles' },
-            { value: 'Chicago', label: 'Chicago' },
-            { value: 'Miami', label: 'Miami' },
-            { value: 'Seattle', label: 'Seattle' },
-            { value: 'Boston', label: 'Boston' }
-        ]
+    const statusOptions = [
+        { value: 'Active', label: 'Active', icon: '✅' },
+        { value: 'Inactive', label: 'Inactive', icon: '⏸️' },
+        { value: 'On Leave', label: 'On Leave', icon: '🏖️' },
+        { value: 'Terminated', label: 'Terminated', icon: '❌', disabled: true }
+    ]
 
-        // Escape row data for the HTML tooltip below
-        const esc = (text) => String(text ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
+    const locationOptions = [
+        { value: 'New York', label: 'New York' },
+        { value: 'Los Angeles', label: 'Los Angeles' },
+        { value: 'Chicago', label: 'Chicago' },
+        { value: 'Miami', label: 'Miami' },
+        { value: 'Seattle', label: 'Seattle' },
+        { value: 'Boston', label: 'Boston' }
+    ]
 
-        // Column definitions
-        const columns = [
-            { field: 'id', title: 'ID', width: '60px', horizontalAlign: 'center', isEditable: false },
-            {
-                field: 'name',
-                title: 'Name',
-                width: '150px',
-                headerInfo: 'Full name of the employee',
-                editor: 'text',
-                // Rich tooltip built from the cell ctx, resolved each time it opens: bold name,
-                // italic department / manager, and a chip from the row's live state (selected /
-                // unsaved / locked) — select a row (click its #) or edit it, then hover again.
-                // Row data is escaped (isTooltipHtml renders markup); no interactive content —
-                // tooltips are pointer-events: none and close when the pointer leaves the cell.
-                isTooltipHtml: true,
-                getTooltipCallback: ({ value: val, row, rowIndex, controller }) => {
-                    const [chipText, chipColor] = controller.isRowSelected(rowIndex) ? ['✓ selected row', '#16a34a']
-                        : controller.isRowDirty(rowIndex) ? ['✎ unsaved changes', '#d97706']
-                        : controller.isRowLocked(row) ? [`🔒 locked · ${row.status}`, '#6b7280']
-                        : ['click # to select', '#6366f1']
-                    return `<div style="display: grid; gap: .25rem;">`
-                        + `<strong style="font-size: 1.05em;">${esc(val)}</strong>`
-                        + `<em style="opacity: .8;">${esc(row.department)} · reports to ${esc(row.manager)}</em>`
-                        + `<span style="justify-self: start; padding: 0 .45rem; border-radius: 999px; font-size: .85em; background: ${chipColor}; color: #fff;">${esc(chipText)}</span>`
-                        + `</div>`
-                }
-            },
-            { field: 'email', title: 'Email', width: '180px', editor: 'text' },
-            {
-                field: 'department',
-                title: 'Dept (select)',
-                width: '160px',
-                editor: 'select',
-                editorOptions: {
-                    options: departmentOptions,
-                    showOnFocus: false,
-                    iconMember: 'icon',
-                    subtitleMember: 'subtitle',
-                    disabledMember: 'disabled'
-                },
-                dropdownToggleVisibility: 'on-focus'
-            },
-            {
-                field: 'salary',
-                title: 'Salary',
-                width: '100px',
-                horizontalAlign: 'right',
-                editor: 'number',
-                cellClass: 'salary-highlight',
-                getCellClassCallback: ({ value: val, row }) => val >= 90000 ? 'salary-high' : null,
-                getDisplayValueCallback: ({ value: val }) => val != null ? `$${val.toLocaleString()}` : '',
-                // The draft value (ctx.value) while the row has unsaved edits — edit it and hover again
-                isTooltipHtml: true,
-                getTooltipCallback: ({ value: val, row, rowIndex, controller }) => {
-                    if (val == null) return null
-                    const isEdited = controller.isCellDirty(rowIndex, 'salary')
-                    return `<div style="display: grid; gap: .25rem;">`
-                        + `<strong style="font-size: 1.05em;">$${val.toLocaleString()} / year</strong>`
-                        + `<em style="opacity: .8;">${esc(row.name)} · ≈ $${Math.round(val / 12).toLocaleString()} / month</em>`
-                        + `<span style="justify-self: start; padding: 0 .45rem; border-radius: 999px; font-size: .85em; color: #fff; background: ${isEdited ? '#d97706' : val >= 90000 ? '#059669' : '#6366f1'};">`
-                        + `${isEdited ? '✎ edited, not saved' : val >= 90000 ? '★ 90k+ band' : 'standard band'}</span>`
-                        + `</div>`
-                }
-            },
-            {
-                field: 'startDate',
-                title: 'Start Date',
-                width: '140px',
-                editor: 'date',
-                editorOptions: {
-                    dateFormat: 'DD.MM.YYYY',
-                    minDate: '2015-01-01',
-                    maxDate: '2030-12-31',
-                    outputFormat: 'iso',
-                    editStartSelection: 'select-all'
-                },
-                getDisplayValueCallback: ({ value: val }) => {
-                    if (!val) return ''
-                    const date = new Date(val)
-                    const day = String(date.getDate()).padStart(2, '0')
-                    const month = String(date.getMonth() + 1).padStart(2, '0')
-                    const year = date.getFullYear()
-                    return `${day}.${month}.${year}`
-                }
-            },
-            {
-                field: 'status',
-                title: 'Status (select)',
-                width: '140px',
-                editor: 'select',
-                editorOptions: {
-                    options: statusOptions,
-                    showOnFocus: false,
-                    iconMember: 'icon',
-                    disabledMember: 'disabled'
-                },
-                shouldOpenDropdownOnEnter: true,
-                tooltipMember: 'statusTooltip'
-            },
-            {
-                field: 'manager',
-                title: 'Manager (auto)',
-                width: '160px',
-                editor: 'autocomplete',
-                editorOptions: {
-                    editStartSelection: 'select-all',
-                    initialOptions: [
-                        { value: 'John Doe', label: 'John Doe' },
-                        { value: 'Jane Smith', label: 'Jane Smith' }
-                    ],
-                    placeholder: 'Search managers...',
-                    minSearchLength: 2,
-                    debounceMs: 300,
-                    showOnFocus: false,
-                    searchCallback: async ({ term: query, row, signal }) => {
-                        await new Promise(resolve => setTimeout(resolve, 500))
-                        const allManagers = [
-                            { value: 'John Doe', label: 'John Doe' },
-                            { value: 'Jane Smith', label: 'Jane Smith' },
-                            { value: 'Mike Johnson', label: 'Mike Johnson' },
-                            { value: 'Sarah Lee', label: 'Sarah Lee' },
-                            { value: 'Robert Williams', label: 'Robert Williams' },
-                            { value: 'Emily Brown', label: 'Emily Brown' }
-                        ]
-                        return allManagers.filter(m =>
-                            m.label.toLowerCase().includes(query.toLowerCase())
-                        )
-                    }
-                }
-            },
-            {
-                field: 'location',
-                title: 'Location (combo)',
-                width: '150px',
-                editor: 'combobox',
-                editorOptions: { options: locationOptions, showOnFocus: false }
-            },
-            { field: 'phone', title: 'Phone', width: '100px', editor: 'text' }
-        ]
+    // Escape row data for the HTML tooltip below
+    const esc = (text) => String(text ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
 
-        // Initialize grid
-        const grid = document.getElementById('grid')
-        grid.items = sampleData
-        grid.columns = columns
-        grid.pageSize = 5
-        grid.isEditingEnabled = true
-        grid.editTrigger = 'navigate'
-        grid.isRowNumbersShown = true
-        grid.sortMode = 'multiple'
-        grid.tooltipShowDelay = 0
-        grid.tooltipHideDelay = 100
-
-        // Lock rows that are On Leave or Inactive
-        grid.rowLocking = {
-            getIsLockedCallback: ({ row }) => row.status === 'On Leave' || row.status === 'Inactive'
-        }
-
-        // Inject custom styles for dynamic classes (Shadow DOM requires this)
-        grid.getCustomStylesCallback = () => `
-            .salary-highlight { background-color: #fef9c3 !important; }
-            .salary-high { background-color: #d1fae5 !important; color: #065f46; }
-            .row-inactive { opacity: 0.6; background-color: #f3f4f6 !important; }
-        `
-
-        // Dynamic row styling based on status
-        grid.getRowClassCallback = ({ row, rowIndex: index }) => {
-            if (row.status === 'On Leave' || row.status === 'Inactive') return 'row-inactive'
-            return null
-        }
-
-        // Ctrl+Delete runs the `delete` built-in: confirm first (veto), the grid removes the row
-        grid.beforeActionCallback = ({ action, row }) => action !== 'delete' || confirm(`Delete ${row.name}?`)
-        grid.onRowDelete = ({ rows }) => console.log('deleted', rows.map(r => r.name))
-
-        // Display focused row
-        const focusedRowEl = document.getElementById('focusedRowState')
-        grid.onFocusChange = ({ rowIndex, row }) => {
-            focusedRowEl.innerHTML = `Row ${rowIndex} — <strong>${row.name}</strong> (${row.department}, $${row.salary?.toLocaleString()})`
-        }
-
-        // Display current sort state (cascading sort)
-        const sortStateEl = document.getElementById('sortState')
-        grid.onDataRequest = ({ sort }) => {
-            if (!sort || sort.length === 0) {
-                sortStateEl.textContent = 'No sorting applied'
-                sortStateEl.style.color = '#666'
-            } else {
-                sortStateEl.innerHTML = sort.map((s, i) =>
-                    `<span style="background: #667eea; color: white; padding: 2px 8px; border-radius: 12px; margin-right: 4px;">
-                        <sup style="opacity: 0.7;">${i + 1}</sup> ${s.column} ${s.direction === 'asc' ? '▲' : '▼'}
-                    </span>`
-                ).join('')
+    // Column definitions
+    const columns = [
+        { field: 'id', title: 'ID', width: '60px', horizontalAlign: 'center', isEditable: false },
+        {
+            field: 'name',
+            title: 'Name',
+            width: '150px',
+            headerInfo: 'Full name of the employee',
+            editor: 'text',
+            // Rich tooltip built from the cell ctx, resolved each time it opens: bold name,
+            // italic department / manager, and a chip from the row's live state (selected /
+            // unsaved / locked) — select a row (click its #) or edit it, then hover again.
+            // Row data is escaped (isTooltipHtml renders markup); no interactive content —
+            // tooltips are pointer-events: none and close when the pointer leaves the cell.
+            isTooltipHtml: true,
+            getTooltipCallback: ({ value: val, row, rowIndex, controller }) => {
+                const [chipText, chipColor] = controller.isRowSelected(rowIndex) ? ['✓ selected row', '#16a34a']
+                    : controller.isRowDirty(rowIndex) ? ['✎ unsaved changes', '#d97706']
+                    : controller.isRowLocked(row) ? [`🔒 locked · ${row.status}`, '#6b7280']
+                    : ['click # to select', '#6366f1']
+                return `<div style="display: grid; gap: .25rem;">`
+                    + `<strong style="font-size: 1.05em;">${esc(val)}</strong>`
+                    + `<em style="opacity: .8;">${esc(row.department)} · reports to ${esc(row.manager)}</em>`
+                    + `<span data-kmwc-fixed-colors style="justify-self: start; padding: 0 .45rem; border-radius: 999px; font-size: .85em; background: ${chipColor}; color: #fff;">${esc(chipText)}</span>`
+                    + `</div>`
             }
+        },
+        { field: 'email', title: 'Email', width: '180px', editor: 'text' },
+        {
+            field: 'department',
+            title: 'Dept (select)',
+            width: '160px',
+            editor: 'select',
+            editorOptions: {
+                options: departmentOptions,
+                showOnFocus: false,
+                iconMember: 'icon',
+                subtitleMember: 'subtitle',
+                disabledMember: 'disabled'
+            },
+            dropdownToggleVisibility: 'on-focus'
+        },
+        {
+            field: 'salary',
+            title: 'Salary',
+            width: '100px',
+            horizontalAlign: 'right',
+            editor: 'number',
+            cellClass: 'salary-highlight',
+            getCellClassCallback: ({ value: val, row }) => val >= 90000 ? 'salary-high' : null,
+            getDisplayValueCallback: ({ value: val }) => val != null ? `$${val.toLocaleString()}` : '',
+            // The draft value (ctx.value) while the row has unsaved edits — edit it and hover again
+            isTooltipHtml: true,
+            getTooltipCallback: ({ value: val, row, rowIndex, controller }) => {
+                if (val == null) return null
+                const isEdited = controller.isCellDirty(rowIndex, 'salary')
+                return `<div style="display: grid; gap: .25rem;">`
+                    + `<strong style="font-size: 1.05em;">$${val.toLocaleString()} / year</strong>`
+                    + `<em style="opacity: .8;">${esc(row.name)} · ≈ $${Math.round(val / 12).toLocaleString()} / month</em>`
+                    + `<span data-kmwc-fixed-colors style="justify-self: start; padding: 0 .45rem; border-radius: 999px; font-size: .85em; color: #fff; background: ${isEdited ? '#d97706' : val >= 90000 ? '#059669' : '#6366f1'};">`
+                    + `${isEdited ? '✎ edited, not saved' : val >= 90000 ? '★ 90k+ band' : 'standard band'}</span>`
+                    + `</div>`
+            }
+        },
+        {
+            field: 'startDate',
+            title: 'Start Date',
+            width: '140px',
+            editor: 'date',
+            editorOptions: {
+                dateFormat: 'DD.MM.YYYY',
+                minDate: '2015-01-01',
+                maxDate: '2030-12-31',
+                outputFormat: 'iso',
+                editStartSelection: 'select-all'
+            },
+            getDisplayValueCallback: ({ value: val }) => {
+                if (!val) return ''
+                const date = new Date(val)
+                const day = String(date.getDate()).padStart(2, '0')
+                const month = String(date.getMonth() + 1).padStart(2, '0')
+                const year = date.getFullYear()
+                return `${day}.${month}.${year}`
+            }
+        },
+        {
+            field: 'status',
+            title: 'Status (select)',
+            width: '140px',
+            editor: 'select',
+            editorOptions: {
+                options: statusOptions,
+                showOnFocus: false,
+                iconMember: 'icon',
+                disabledMember: 'disabled'
+            },
+            shouldOpenDropdownOnEnter: true,
+            tooltipMember: 'statusTooltip'
+        },
+        {
+            field: 'manager',
+            title: 'Manager (auto)',
+            width: '160px',
+            editor: 'autocomplete',
+            editorOptions: {
+                editStartSelection: 'select-all',
+                initialOptions: [
+                    { value: 'John Doe', label: 'John Doe' },
+                    { value: 'Jane Smith', label: 'Jane Smith' }
+                ],
+                placeholder: 'Search managers...',
+                minSearchLength: 2,
+                debounceMs: 300,
+                showOnFocus: false,
+                searchCallback: async ({ term: query, row, signal }) => {
+                    await new Promise(resolve => setTimeout(resolve, 500))
+                    const allManagers = [
+                        { value: 'John Doe', label: 'John Doe' },
+                        { value: 'Jane Smith', label: 'Jane Smith' },
+                        { value: 'Mike Johnson', label: 'Mike Johnson' },
+                        { value: 'Sarah Lee', label: 'Sarah Lee' },
+                        { value: 'Robert Williams', label: 'Robert Williams' },
+                        { value: 'Emily Brown', label: 'Emily Brown' }
+                    ]
+                    return allManagers.filter(m =>
+                        m.label.toLowerCase().includes(query.toLowerCase())
+                    )
+                }
+            }
+        },
+        {
+            field: 'location',
+            title: 'Location (combo)',
+            width: '150px',
+            editor: 'combobox',
+            editorOptions: { options: locationOptions, showOnFocus: false }
+        },
+        { field: 'phone', title: 'Phone', width: '100px', editor: 'text' }
+    ]
+
+    // Initialize grid
+    const grid = document.getElementById('grid')
+    grid.items = sampleData
+    grid.columns = columns
+    grid.pageSize = 5
+    grid.isEditingEnabled = true
+    grid.editTrigger = 'navigate'
+    grid.isRowNumbersShown = true
+    grid.sortMode = 'multiple'
+    grid.tooltipShowDelay = 0
+    grid.tooltipHideDelay = 100
+
+    // Lock rows that are On Leave or Inactive
+    grid.rowLocking = {
+        getIsLockedCallback: ({ row }) => row.status === 'On Leave' || row.status === 'Inactive'
+    }
+
+    // Inject custom styles for dynamic classes (Shadow DOM requires this)
+    grid.getCustomStylesCallback = () => `
+        .salary-highlight { background-color: #fef9c3 !important; }
+        .salary-high { background-color: #d1fae5 !important; color: #065f46; }
+        .row-inactive { opacity: 0.6; background-color: #f3f4f6 !important; }
+    `
+
+    // Dynamic row styling based on status
+    grid.getRowClassCallback = ({ row, rowIndex: index }) => {
+        if (row.status === 'On Leave' || row.status === 'Inactive') return 'row-inactive'
+        return null
+    }
+
+    // Ctrl+Delete runs the `delete` built-in: confirm first (veto), the grid removes the row
+    grid.beforeActionCallback = ({ action, row }) => action !== 'delete' || confirm(`Delete ${row.name}?`)
+    grid.onRowDelete = ({ rows }) => console.log('deleted', rows.map(r => r.name))
+
+    // Display focused row
+    const focusedRowEl = document.getElementById('focusedRowState')
+    grid.onFocusChange = ({ rowIndex, row }) => {
+        focusedRowEl.innerHTML = `Row ${rowIndex} — <strong>${row.name}</strong> (${row.department}, $${row.salary?.toLocaleString()})`
+    }
+
+    // Display current sort state (cascading sort)
+    const sortStateEl = document.getElementById('sortState')
+    grid.onDataRequest = ({ sort }) => {
+        if (!sort || sort.length === 0) {
+            sortStateEl.textContent = 'No sorting applied'
+        } else {
+            sortStateEl.innerHTML = sort.map((s, i) =>
+                `<span class="pill pill--info"><sup>${i + 1}</sup> ${s.column} ${s.direction === 'asc' ? '▲' : '▼'}</span>`
+            ).join(' ')
         }
+    }
 
-        // Disabled / Readonly States — a few editable rows (the attribute blocks the edits)
-        for (const id of ['grid-disabled', 'grid-readonly']) {
-            const stateGrid = document.getElementById(id)
-            stateGrid.items = sampleData.slice(0, 4).map(row => ({ ...row }))
-            stateGrid.columns = [
-                { field: 'name', title: 'Name', editor: 'text' },
-                { field: 'department', title: 'Department', editor: 'text' },
-                { field: 'salary', title: 'Salary', horizontalAlign: 'right', editor: 'number' },
-            ]
-            stateGrid.isEditingEnabled = true
-        }
+    // Disabled / Readonly States — a few editable rows (the attribute blocks the edits)
+    for (const id of ['grid-disabled', 'grid-readonly']) {
+        const stateGrid = document.getElementById(id)
+        stateGrid.items = sampleData.slice(0, 4).map(row => ({ ...row }))
+        stateGrid.columns = [
+            { field: 'name', title: 'Name', editor: 'text' },
+            { field: 'department', title: 'Department', editor: 'text' },
+            { field: 'salary', title: 'Salary', horizontalAlign: 'right', editor: 'number' },
+        ]
+        stateGrid.isEditingEnabled = true
+    }
 
-        // Wire up controls
-        document.getElementById('isStriped').addEventListener('change', (e) => {
-            grid.isStriped = e.target.checked
-        })
+    // Wire up controls
+    document.getElementById('isStriped').addEventListener('change', (e) => {
+        grid.isStriped = e.target.checked
+    })
 
-        document.getElementById('isHoverable').addEventListener('change', (e) => {
-            grid.isHoverable = e.target.checked
-        })
+    document.getElementById('isHoverable').addEventListener('change', (e) => {
+        grid.isHoverable = e.target.checked
+    })
 
-        document.getElementById('sortable').addEventListener('change', (e) => {
-            grid.sortMode = e.target.checked ? 'multiple' : 'none'
-        })
+    document.getElementById('sortable').addEventListener('change', (e) => {
+        grid.sortMode = e.target.checked ? 'multiple' : 'none'
+    })
 
-        document.getElementById('isPagingEnabled').addEventListener('change', (e) => {
-            grid.isPagingEnabled = e.target.checked
-        })
+    document.getElementById('isPagingEnabled').addEventListener('change', (e) => {
+        grid.isPagingEnabled = e.target.checked
+    })
 
-        document.getElementById('isEditable').addEventListener('change', (e) => {
-            grid.isEditingEnabled = e.target.checked
-        })
+    document.getElementById('isEditable').addEventListener('change', (e) => {
+        grid.isEditingEnabled = e.target.checked
+    })
 
-        document.getElementById('navigate').addEventListener('change', (e) => {
-            grid.editTrigger = e.target.checked ? 'navigate' : 'dblclick'
-        })
+    document.getElementById('navigate').addEventListener('change', (e) => {
+        grid.editTrigger = e.target.checked ? 'navigate' : 'dblclick'
+    })
 
-        document.getElementById('isDirtyIndicatorShown').addEventListener('change', (e) => {
-            grid.isDirtyIndicatorShown = e.target.checked
-        })
-    </script>
-</body>
-</html>
+    document.getElementById('isDirtyIndicatorShown').addEventListener('change', (e) => {
+        grid.isDirtyIndicatorShown = e.target.checked
+    })
+</script>

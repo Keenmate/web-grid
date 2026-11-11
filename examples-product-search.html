@@ -1,198 +1,124 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebGrid - Product Search (Custom Editor)</title>
-    <link rel="stylesheet" href="examples-shared.css">
-    <style>
-        /* ---- Product search dialog ---- */
-        .ps-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(15, 23, 42, 0.45);
-            display: flex;
-            align-items: flex-start;
-            justify-content: center;
-            padding-top: 10vh;
-            z-index: 9999;
-        }
 
-        .ps-dialog {
-            background: white;
-            width: min(560px, 92vw);
-            border-radius: 12px;
-            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.25);
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            max-height: 70vh;
-        }
+<meta name="kmwc:title" content="🔎 Product Search (Custom Editor)">
+<meta name="kmwc:subtitle" content="Dialog-based custom editor with search, keyboard navigation, and cached display value">
 
-        .ps-header {
-            padding: 0.9rem 1rem;
-            border-bottom: 1px solid #e2e8f0;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
+<!-- The search dialog below IS the custom editor this page demonstrates (renderEditorCallback
+     builds it), so its layout stays here; colours come from the kit tokens (dark mode). -->
+<style>
+    .ps-overlay {
+        position: fixed;
+        inset: 0;
+        background: var(--kmwc-overlay-bg);
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        padding-top: 10vh;
+        z-index: 9999;
+    }
 
-        .ps-header .ps-title {
-            font-weight: 600;
-            color: #1e293b;
-            flex: 0 0 auto;
-        }
+    .ps-dialog {
+        background: var(--kmwc-main-bg);
+        width: min(560px, 92vw);
+        border-radius: var(--kmwc-radius-lg);
+        box-shadow: 0 30px 60px var(--kmwc-shadow-color);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        max-height: 70vh;
+    }
 
-        .ps-input {
-            flex: 1;
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
-            padding: 0.5rem 0.75rem;
-            font-size: 0.95rem;
-            outline: none;
-        }
+    .ps-header {
+        padding: 0.9rem 1rem;
+        border-bottom: 1px solid var(--kmwc-border-color);
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.75rem;
+    }
 
-        .ps-input:focus {
-            border-color: #6366f1;
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
-        }
+    .ps-header input {
+        flex: 1;
+        min-width: 0;
+    }
 
-        .ps-results {
-            overflow-y: auto;
-            max-height: 360px;
-        }
+    .ps-results {
+        overflow-y: auto;
+        max-height: 360px;
+    }
 
-        .ps-row {
-            padding: 0.65rem 1rem;
-            cursor: pointer;
-            border-bottom: 1px solid #f1f5f9;
-            display: grid;
-            grid-template-columns: 72px 1fr 80px;
-            align-items: center;
-            gap: 0.75rem;
-        }
+    .ps-row {
+        padding: 0.65rem 1rem;
+        cursor: pointer;
+        border-bottom: 1px solid var(--kmwc-border-color);
+        display: grid;
+        grid-template-columns: 72px 1fr 80px;
+        align-items: center;
+        gap: 0.75rem;
+    }
 
-        .ps-row:hover,
-        .ps-row.active {
-            background: #eef2ff;
-        }
+    .ps-row:hover,
+    .ps-row.active {
+        background: var(--kmwc-accent-light-bg);
+    }
 
-        .ps-row .ps-sku {
-            font-family: 'Courier New', monospace;
-            font-size: 0.8rem;
-            color: #64748b;
-        }
+    .ps-category {
+        font-size: 0.75rem;
+        color: var(--kmwc-accent-color);
+        margin-left: 0.5rem;
+    }
 
-        .ps-row .ps-name {
-            color: #1e293b;
-            font-weight: 500;
-        }
+    .ps-price {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        font-weight: 600;
+    }
 
-        .ps-row .ps-category {
-            font-size: 0.75rem;
-            color: #6366f1;
-            margin-left: 0.5rem;
-        }
+    .ps-empty {
+        padding: 2rem 1rem;
+        text-align: center;
+    }
 
-        .ps-row .ps-price {
-            text-align: right;
-            font-variant-numeric: tabular-nums;
-            color: #0f172a;
-            font-weight: 600;
-        }
+    .ps-footer {
+        padding: 0.6rem 1rem;
+        border-top: 1px solid var(--kmwc-border-color);
+        font-size: 0.75rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        justify-content: space-between;
+    }
+</style>
 
-        .ps-empty {
-            padding: 2rem 1rem;
-            text-align: center;
-            color: #94a3b8;
-            font-size: 0.9rem;
-        }
+    <div class="card">
+        <h2>PS01 · Interactive Demo</h2>
+        <p>
+            The <strong>Product</strong> column stores a product <code>id</code> but displays the product name.
+            Press <kbd>F2</kbd>, <kbd>Space</kbd>, or double-click a cell in that column to open the search dialog.
+            Type to filter, use <kbd>↑</kbd>/<kbd>↓</kbd> to navigate, <kbd>Enter</kbd> to select, <kbd>Esc</kbd> to cancel.
+        </p>
 
-        .ps-footer {
-            padding: 0.6rem 1rem;
-            border-top: 1px solid #e2e8f0;
-            font-size: 0.75rem;
-            color: #64748b;
-            display: flex;
-            justify-content: space-between;
-        }
+        <web-grid id="grid" style="max-height: 420px;"></web-grid>
 
-        .ps-footer kbd {
-            background: #f1f5f9;
-            border: 1px solid #cbd5e1;
-            border-bottom-width: 2px;
-            border-radius: 4px;
-            padding: 1px 5px;
-            font-size: 0.7rem;
-            font-family: 'Courier New', monospace;
-            color: #334155;
-        }
+        <p class="mt-1"><strong>Event Log:</strong></p>
+        <div id="eventLog" class="log-panel"></div>
+    </div>
 
-        .ps-highlight {
-            background: #fde68a;
-            color: #78350f;
-            border-radius: 2px;
-            padding: 0 1px;
-        }
-
-        .event-log {
-            background: #1a1a2e;
-            color: #a0aec0;
-            padding: 1rem;
-            border-radius: 6px;
-            font-family: 'Courier New', monospace;
-            font-size: 0.8rem;
-            max-height: 140px;
-            overflow-y: auto;
-            margin-top: 1rem;
-        }
-
-        .event-log .event-time { color: #667eea; }
-        .event-log .event-action { color: #48bb78; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <header>
-            <a href="index.html" class="back-link">← Back to Examples</a>
-            <h1>🔎 Product Search (Custom Editor)</h1>
-            <p class="subtitle">Dialog-based custom editor with search, keyboard navigation, and cached display value</p>
-        </header>
-
+    <div class="grid-2">
         <div class="card">
-            <h2>Interactive Demo</h2>
-            <p>
-                The <strong>Product</strong> column stores a product <code>id</code> but displays the product name.
-                Press <kbd>F2</kbd>, <kbd>Space</kbd>, or double-click a cell in that column to open the search dialog.
-                Type to filter, use <kbd>↑</kbd>/<kbd>↓</kbd> to navigate, <kbd>Enter</kbd> to select, <kbd>Esc</kbd> to cancel.
-            </p>
-
-            <web-grid id="grid" style="max-width: 100%; max-height: 420px; border: 1px solid #e2e8f0;"></web-grid>
-
-            <div style="margin-top: 1rem;">
-                <strong>Event Log:</strong>
-                <div id="eventLog" class="event-log">
-                    <div><span class="event-time">[Ready]</span> Edit the Product column to open the search dialog.</div>
-                </div>
-            </div>
+            <h2>PS02 · How it works</h2>
+            <ol>
+                <li>The cell stores a <code>productId</code> (number).</li>
+                <li><code>getDisplayValueCallback</code> looks up the product in the catalog and returns its name for display.</li>
+                <li><code>renderEditorCallback</code> opens a modal search dialog instead of inline editing.</li>
+                <li>When the user picks a product, <code>context.commit(id)</code> saves the id and the grid re-renders the name automatically.</li>
+                <li>Sibling columns (<em>SKU</em>, <em>Price</em>) also read from the catalog using the same id.</li>
+            </ol>
         </div>
 
-        <div class="grid-2">
-            <div class="card">
-                <h2>How it works</h2>
-                <ol style="margin-left: 1.25rem; color: #4a5568; line-height: 1.8;">
-                    <li>The cell stores a <code>productId</code> (number).</li>
-                    <li><code>getDisplayValueCallback</code> looks up the product in the catalog and returns its name for display.</li>
-                    <li><code>renderEditorCallback</code> opens a modal search dialog instead of inline editing.</li>
-                    <li>When the user picks a product, <code>context.commit(id)</code> saves the id and the grid re-renders the name automatically.</li>
-                    <li>Sibling columns (<em>SKU</em>, <em>Price</em>) also read from the catalog using the same id.</li>
-                </ol>
-            </div>
-
-            <div class="card">
-                <h2>Column definition</h2>
-                <div class="code-block">
-                    <pre>{
+        <div class="card">
+            <h2>PS03 · Column definition</h2>
+            <div class="code-block" data-kmwc-snippet>
+                <pre>{
     field: 'productId',
     title: 'Product',
     editor: 'custom',
@@ -206,317 +132,308 @@
         // or context.cancel()
     }
 }</pre>
-                </div>
             </div>
         </div>
-
-        <div class="card">
-            <h2>Notes</h2>
-            <ul style="margin-left: 1.5rem;">
-                <li><strong>Single source of truth:</strong> the row only stores the id — all other product fields are derived at render time.</li>
-                <li><strong>Keyboard-first:</strong> the dialog listens for arrows, Enter, and Escape so it feels native in the grid flow.</li>
-                <li><strong>Commit vs cancel:</strong> always call exactly one of <code>context.commit(value)</code> or <code>context.cancel()</code> — the grid stays in edit state until you do.</li>
-                <li><strong>Focus return:</strong> after commit/cancel, the grid moves focus back to the edited cell automatically.</li>
-                <li>
-                    <strong>Refreshing dependent cells:</strong> the grid re-renders only the cell that was edited.
-                    When other columns derive their display from the edited field (SKU/Category/Price/Total here),
-                    reassign <code>grid.items = [...rows]</code> in <code>onRowChange</code> to force a full re-render.
-                    If you instead store real product fields on the row, you don't need this.
-                </li>
-            </ul>
-        </div>
-
-        <footer>
-            <p>WebGrid Component by <a href="https://github.com/keenmate">Keenmate</a></p>
-        </footer>
     </div>
 
-    <script type="module">
-        import '@keenmate/web-grid'
+    <div class="card">
+        <h2>PS04 · Notes</h2>
+        <ul>
+            <li><strong>Single source of truth:</strong> the row only stores the id — all other product fields are derived at render time.</li>
+            <li><strong>Keyboard-first:</strong> the dialog listens for arrows, Enter, and Escape so it feels native in the grid flow.</li>
+            <li><strong>Commit vs cancel:</strong> always call exactly one of <code>context.commit(value)</code> or <code>context.cancel()</code> — the grid stays in edit state until you do.</li>
+            <li><strong>Focus return:</strong> after commit/cancel, the grid moves focus back to the edited cell automatically.</li>
+            <li>
+                <strong>Refreshing dependent cells:</strong> the grid re-renders only the cell that was edited.
+                When other columns derive their display from the edited field (SKU/Category/Price/Total here),
+                reassign <code>grid.items = [...rows]</code> in <code>onRowChange</code> to force a full re-render.
+                If you instead store real product fields on the row, you don't need this.
+            </li>
+        </ul>
+    </div>
 
-        // ---- Catalog ----------------------------------------------------------
-        const catalog = [
-            { id: 101, sku: 'KB-MX-BLK', name: 'Mechanical Keyboard',      category: 'Peripherals', price: 129.00 },
-            { id: 102, sku: 'MS-WL-ERG', name: 'Ergonomic Wireless Mouse',  category: 'Peripherals', price:  49.90 },
-            { id: 103, sku: 'MON-27-4K', name: '27" 4K Monitor',            category: 'Displays',    price: 399.00 },
-            { id: 104, sku: 'MON-32-UW', name: '32" Ultrawide Monitor',     category: 'Displays',    price: 549.00 },
-            { id: 105, sku: 'HS-BT-ANC', name: 'Bluetooth Headset (ANC)',   category: 'Audio',       price: 179.00 },
-            { id: 106, sku: 'SPK-DESK',  name: 'Desk Speakers',             category: 'Audio',       price:  89.00 },
-            { id: 107, sku: 'WEB-1080',  name: 'HD Webcam 1080p',           category: 'Video',       price:  69.00 },
-            { id: 108, sku: 'WEB-4K',    name: '4K Studio Webcam',          category: 'Video',       price: 199.00 },
-            { id: 109, sku: 'DOCK-USBC', name: 'USB-C Docking Station',     category: 'Accessories', price: 159.00 },
-            { id: 110, sku: 'HUB-USB3',  name: 'USB 3.0 Hub (7-port)',      category: 'Accessories', price:  29.90 },
-            { id: 111, sku: 'CBL-HDMI',  name: 'HDMI 2.1 Cable (2m)',       category: 'Accessories', price:  12.50 },
-            { id: 112, sku: 'CBL-USBC',  name: 'USB-C Cable (1m)',          category: 'Accessories', price:   8.90 },
-            { id: 113, sku: 'STAND-LT',  name: 'Laptop Stand',              category: 'Ergonomics',  price:  39.00 },
-            { id: 114, sku: 'STAND-MON', name: 'Monitor Arm (dual)',        category: 'Ergonomics',  price:  99.00 },
-            { id: 115, sku: 'CHAIR-ERG', name: 'Ergonomic Office Chair',    category: 'Furniture',   price: 459.00 },
-            { id: 116, sku: 'DESK-SIT',  name: 'Sit/Stand Desk',            category: 'Furniture',   price: 399.00 },
-            { id: 117, sku: 'LIGHT-BAR', name: 'Monitor Light Bar',         category: 'Lighting',    price:  79.00 },
-            { id: 118, sku: 'LIGHT-KEY', name: 'Key Light',                 category: 'Lighting',    price: 149.00 },
-            { id: 119, sku: 'SSD-2TB',   name: 'Portable SSD 2TB',          category: 'Storage',     price: 189.00 },
-            { id: 120, sku: 'HDD-EXT-4', name: 'External HDD 4TB',          category: 'Storage',     price: 109.00 }
-        ]
+<script type="module">
+    import { appendLogLine } from '@keenmate/web-components-devkit/examples'
 
-        const productById = new Map(catalog.map(p => [p.id, p]))
+    // ---- Catalog ----------------------------------------------------------
+    const catalog = [
+        { id: 101, sku: 'KB-MX-BLK', name: 'Mechanical Keyboard',      category: 'Peripherals', price: 129.00 },
+        { id: 102, sku: 'MS-WL-ERG', name: 'Ergonomic Wireless Mouse',  category: 'Peripherals', price:  49.90 },
+        { id: 103, sku: 'MON-27-4K', name: '27" 4K Monitor',            category: 'Displays',    price: 399.00 },
+        { id: 104, sku: 'MON-32-UW', name: '32" Ultrawide Monitor',     category: 'Displays',    price: 549.00 },
+        { id: 105, sku: 'HS-BT-ANC', name: 'Bluetooth Headset (ANC)',   category: 'Audio',       price: 179.00 },
+        { id: 106, sku: 'SPK-DESK',  name: 'Desk Speakers',             category: 'Audio',       price:  89.00 },
+        { id: 107, sku: 'WEB-1080',  name: 'HD Webcam 1080p',           category: 'Video',       price:  69.00 },
+        { id: 108, sku: 'WEB-4K',    name: '4K Studio Webcam',          category: 'Video',       price: 199.00 },
+        { id: 109, sku: 'DOCK-USBC', name: 'USB-C Docking Station',     category: 'Accessories', price: 159.00 },
+        { id: 110, sku: 'HUB-USB3',  name: 'USB 3.0 Hub (7-port)',      category: 'Accessories', price:  29.90 },
+        { id: 111, sku: 'CBL-HDMI',  name: 'HDMI 2.1 Cable (2m)',       category: 'Accessories', price:  12.50 },
+        { id: 112, sku: 'CBL-USBC',  name: 'USB-C Cable (1m)',          category: 'Accessories', price:   8.90 },
+        { id: 113, sku: 'STAND-LT',  name: 'Laptop Stand',              category: 'Ergonomics',  price:  39.00 },
+        { id: 114, sku: 'STAND-MON', name: 'Monitor Arm (dual)',        category: 'Ergonomics',  price:  99.00 },
+        { id: 115, sku: 'CHAIR-ERG', name: 'Ergonomic Office Chair',    category: 'Furniture',   price: 459.00 },
+        { id: 116, sku: 'DESK-SIT',  name: 'Sit/Stand Desk',            category: 'Furniture',   price: 399.00 },
+        { id: 117, sku: 'LIGHT-BAR', name: 'Monitor Light Bar',         category: 'Lighting',    price:  79.00 },
+        { id: 118, sku: 'LIGHT-KEY', name: 'Key Light',                 category: 'Lighting',    price: 149.00 },
+        { id: 119, sku: 'SSD-2TB',   name: 'Portable SSD 2TB',          category: 'Storage',     price: 189.00 },
+        { id: 120, sku: 'HDD-EXT-4', name: 'External HDD 4TB',          category: 'Storage',     price: 109.00 }
+    ]
 
-        // ---- Rows -------------------------------------------------------------
-        const rows = [
-            { line: 1, productId: 103, qty: 1 },
-            { line: 2, productId: 102, qty: 2 },
-            { line: 3, productId: null, qty: 1 },
-            { line: 4, productId: 109, qty: 1 },
-            { line: 5, productId: 115, qty: 1 },
-            { line: 6, productId: null, qty: 1 }
-        ]
+    const productById = new Map(catalog.map(p => [p.id, p]))
 
-        // ---- Event log --------------------------------------------------------
-        function logEvent(action, detail) {
-            const log = document.getElementById('eventLog')
-            const time = new Date().toLocaleTimeString()
-            const entry = document.createElement('div')
-            entry.innerHTML = `<span class="event-time">[${time}]</span> <span class="event-action">${action}</span> ${detail}`
-            log.insertBefore(entry, log.firstChild)
-            while (log.children.length > 30) log.removeChild(log.lastChild)
+    // ---- Rows -------------------------------------------------------------
+    const rows = [
+        { line: 1, productId: 103, qty: 1 },
+        { line: 2, productId: 102, qty: 2 },
+        { line: 3, productId: null, qty: 1 },
+        { line: 4, productId: 109, qty: 1 },
+        { line: 5, productId: 115, qty: 1 },
+        { line: 6, productId: null, qty: 1 }
+    ]
+
+    // ---- Event log --------------------------------------------------------
+    function logEvent(action, detail, variant = 'success') {
+        const log = document.getElementById('eventLog')
+        appendLogLine(log, { name: action, detail, variant })
+        while (log.children.length > 30) log.removeChild(log.firstChild)
+    }
+    logEvent('Ready', 'Edit the Product column to open the search dialog.', 'info')
+
+    // ---- Grid -------------------------------------------------------------
+    const lookupProduct = (id) => (id != null ? productById.get(id) : null)
+
+    const columns = [
+        { field: 'line', title: '#', width: '50px', horizontalAlign: 'center', isEditable: false },
+        {
+            field: 'productId',
+            title: 'Product',
+            width: '240px',
+            editor: 'custom',
+            getDisplayValueCallback: ({ value: id }) => {
+                const p = lookupProduct(id)
+                return p ? p.name : '— click to search —'
+            },
+            renderEditorCallback: (context) => openProductSearch(context)
+        },
+        {
+            field: 'sku',
+            title: 'SKU',
+            width: '120px',
+            isEditable: false,
+            getDisplayValueCallback: ({ row }) => lookupProduct(row.productId)?.sku ?? ''
+        },
+        {
+            field: 'category',
+            title: 'Category',
+            width: '130px',
+            isEditable: false,
+            getDisplayValueCallback: ({ row }) => lookupProduct(row.productId)?.category ?? ''
+        },
+        {
+            field: 'unitPrice',
+            title: 'Unit Price',
+            width: '110px',
+            horizontalAlign: 'right',
+            isEditable: false,
+            getDisplayValueCallback: ({ row }) => {
+                const p = lookupProduct(row.productId)
+                return p ? '$' + p.price.toFixed(2) : ''
+            }
+        },
+        { field: 'qty', title: 'Qty', width: '80px', horizontalAlign: 'right', editor: 'number' },
+        {
+            field: 'total',
+            title: 'Total',
+            width: '110px',
+            horizontalAlign: 'right',
+            isEditable: false,
+            getDisplayValueCallback: ({ row }) => {
+                const p = lookupProduct(row.productId)
+                if (!p) return ''
+                return '$' + (p.price * (row.qty || 0)).toFixed(2)
+            }
+        }
+    ]
+
+    const grid = document.getElementById('grid')
+    grid.items = rows
+    grid.columns = columns
+    grid.isEditingEnabled = true
+    grid.editTrigger = 'navigate'
+    grid.isHoverable = true
+
+    grid.onRowChange = (detail) => {
+        if (!detail.isValid) return
+        rows[detail.rowIndex] = { ...detail.draftRow }
+        if (detail.field === 'productId') {
+            const p = lookupProduct(detail.newValue)
+            logEvent('Product selected', p ? `row ${detail.rowIndex + 1} → ${p.name} (${p.sku})` : `row ${detail.rowIndex + 1} cleared`)
+        } else {
+            logEvent('Cell changed', `row ${detail.rowIndex + 1}, ${detail.field} = ${detail.newValue}`)
+        }
+        // SKU / Category / Unit Price / Total all derive their display from
+        // other fields via getDisplayValueCallback (productId → catalog lookup; Total
+        // also depends on qty). The grid only re-renders the cell that was
+        // edited, so we reassign items to force a full re-render and refresh
+        // the dependent cells.
+        grid.items = [...rows]
+    }
+
+    // ---- Product search dialog -------------------------------------------
+    function openProductSearch(context) {
+        logEvent('Dialog opened', `row ${context.rowIndex + 1}`)
+
+        const overlay = document.createElement('div')
+        overlay.className = 'ps-overlay'
+
+        const dialog = document.createElement('div')
+        dialog.className = 'ps-dialog'
+        dialog.innerHTML = `
+            <div class="ps-header">
+                <strong>Find product</strong>
+                <input type="text" class="ps-input" placeholder="Search name, SKU or category…" />
+            </div>
+            <div class="ps-results"></div>
+            <div class="ps-footer">
+                <span class="muted"><kbd>↑</kbd><kbd>↓</kbd> navigate · <kbd>Enter</kbd> select · <kbd>Esc</kbd> cancel</span>
+                <span id="psCount" class="muted"></span>
+            </div>
+        `
+
+        const input = dialog.querySelector('.ps-input')
+        const resultsEl = dialog.querySelector('.ps-results')
+        const countEl = dialog.querySelector('#psCount')
+
+        let filtered = catalog.slice()
+        let activeIndex = 0
+
+        // Pre-select the currently-assigned product if any
+        if (context.value != null) {
+            const idx = filtered.findIndex(p => p.id === context.value)
+            if (idx >= 0) activeIndex = idx
         }
 
-        // ---- Grid -------------------------------------------------------------
-        const lookupProduct = (id) => (id != null ? productById.get(id) : null)
+        const escapeHtml = (s) => String(s).replace(/[&<>"']/g, c => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[c]))
 
-        const columns = [
-            { field: 'line', title: '#', width: '50px', horizontalAlign: 'center', isEditable: false },
-            {
-                field: 'productId',
-                title: 'Product',
-                width: '240px',
-                editor: 'custom',
-                getDisplayValueCallback: ({ value: id }) => {
-                    const p = lookupProduct(id)
-                    return p ? p.name : '— click to search —'
-                },
-                renderEditorCallback: (context) => openProductSearch(context)
-            },
-            {
-                field: 'sku',
-                title: 'SKU',
-                width: '120px',
-                isEditable: false,
-                getDisplayValueCallback: ({ row }) => lookupProduct(row.productId)?.sku ?? ''
-            },
-            {
-                field: 'category',
-                title: 'Category',
-                width: '130px',
-                isEditable: false,
-                getDisplayValueCallback: ({ row }) => lookupProduct(row.productId)?.category ?? ''
-            },
-            {
-                field: 'unitPrice',
-                title: 'Unit Price',
-                width: '110px',
-                horizontalAlign: 'right',
-                isEditable: false,
-                getDisplayValueCallback: ({ row }) => {
-                    const p = lookupProduct(row.productId)
-                    return p ? '$' + p.price.toFixed(2) : ''
-                }
-            },
-            { field: 'qty', title: 'Qty', width: '80px', horizontalAlign: 'right', editor: 'number' },
-            {
-                field: 'total',
-                title: 'Total',
-                width: '110px',
-                horizontalAlign: 'right',
-                isEditable: false,
-                getDisplayValueCallback: ({ row }) => {
-                    const p = lookupProduct(row.productId)
-                    if (!p) return ''
-                    return '$' + (p.price * (row.qty || 0)).toFixed(2)
-                }
-            }
-        ]
-
-        const grid = document.getElementById('grid')
-        grid.items = rows
-        grid.columns = columns
-        grid.isEditingEnabled = true
-        grid.editTrigger = 'navigate'
-        grid.isHoverable = true
-
-        grid.onRowChange = (detail) => {
-            if (!detail.isValid) return
-            rows[detail.rowIndex] = { ...detail.draftRow }
-            if (detail.field === 'productId') {
-                const p = lookupProduct(detail.newValue)
-                logEvent('Product selected', p ? `row ${detail.rowIndex + 1} → ${p.name} (${p.sku})` : `row ${detail.rowIndex + 1} cleared`)
-            } else {
-                logEvent('Cell changed', `row ${detail.rowIndex + 1}, ${detail.field} = ${detail.newValue}`)
-            }
-            // SKU / Category / Unit Price / Total all derive their display from
-            // other fields via getDisplayValueCallback (productId → catalog lookup; Total
-            // also depends on qty). The grid only re-renders the cell that was
-            // edited, so we reassign items to force a full re-render and refresh
-            // the dependent cells.
-            grid.items = [...rows]
+        const highlight = (text, query) => {
+            if (!query) return escapeHtml(text)
+            const q = query.toLowerCase()
+            const lower = text.toLowerCase()
+            const i = lower.indexOf(q)
+            if (i < 0) return escapeHtml(text)
+            return (
+                escapeHtml(text.slice(0, i)) +
+                '<mark>' + escapeHtml(text.slice(i, i + q.length)) + '</mark>' +
+                escapeHtml(text.slice(i + q.length))
+            )
         }
 
-        // ---- Product search dialog -------------------------------------------
-        function openProductSearch(context) {
-            logEvent('Dialog opened', `row ${context.rowIndex + 1}`)
+        const render = () => {
+            const query = input.value.trim()
+            const q = query.toLowerCase()
+            filtered = q
+                ? catalog.filter(p =>
+                    p.name.toLowerCase().includes(q) ||
+                    p.sku.toLowerCase().includes(q) ||
+                    p.category.toLowerCase().includes(q))
+                : catalog.slice()
 
-            const overlay = document.createElement('div')
-            overlay.className = 'ps-overlay'
+            if (activeIndex >= filtered.length) activeIndex = filtered.length - 1
+            if (activeIndex < 0) activeIndex = 0
 
-            const dialog = document.createElement('div')
-            dialog.className = 'ps-dialog'
-            dialog.innerHTML = `
-                <div class="ps-header">
-                    <div class="ps-title">Find product</div>
-                    <input type="text" class="ps-input" placeholder="Search name, SKU or category…" />
+            countEl.textContent = filtered.length + (filtered.length === 1 ? ' match' : ' matches')
+
+            if (filtered.length === 0) {
+                resultsEl.innerHTML = '<div class="ps-empty muted">No products match your search.</div>'
+                return
+            }
+
+            resultsEl.innerHTML = filtered.map((p, i) => `
+                <div class="ps-row${i === activeIndex ? ' active' : ''}" data-index="${i}">
+                    <span class="mono muted">${escapeHtml(p.sku)}</span>
+                    <span>
+                        <strong>${highlight(p.name, query)}</strong>
+                        <span class="ps-category">${highlight(p.category, query)}</span>
+                    </span>
+                    <span class="ps-price">$${p.price.toFixed(2)}</span>
                 </div>
-                <div class="ps-results"></div>
-                <div class="ps-footer">
-                    <span><kbd>↑</kbd><kbd>↓</kbd> navigate · <kbd>Enter</kbd> select · <kbd>Esc</kbd> cancel</span>
-                    <span id="psCount"></span>
-                </div>
-            `
+            `).join('')
 
-            const input = dialog.querySelector('.ps-input')
-            const resultsEl = dialog.querySelector('.ps-results')
-            const countEl = dialog.querySelector('#psCount')
+            // Keep active row visible
+            const activeEl = resultsEl.querySelector('.ps-row.active')
+            if (activeEl) activeEl.scrollIntoView({ block: 'nearest' })
+        }
 
-            let filtered = catalog.slice()
-            let activeIndex = 0
+        const select = (product) => {
+            if (!product) return
+            cleanup()
+            context.commit(product.id)
+        }
 
-            // Pre-select the currently-assigned product if any
-            if (context.value != null) {
-                const idx = filtered.findIndex(p => p.id === context.value)
-                if (idx >= 0) activeIndex = idx
-            }
+        const doCancel = () => {
+            cleanup()
+            context.cancel()
+            logEvent('Dialog cancelled', `row ${context.rowIndex + 1}`, 'warning')
+        }
 
-            const escapeHtml = (s) => String(s).replace(/[&<>"']/g, c => ({
-                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-            }[c]))
+        const cleanup = () => {
+            document.removeEventListener('keydown', onKey, true)
+            overlay.remove()
+        }
 
-            const highlight = (text, query) => {
-                if (!query) return escapeHtml(text)
-                const q = query.toLowerCase()
-                const lower = text.toLowerCase()
-                const i = lower.indexOf(q)
-                if (i < 0) return escapeHtml(text)
-                return (
-                    escapeHtml(text.slice(0, i)) +
-                    '<span class="ps-highlight">' + escapeHtml(text.slice(i, i + q.length)) + '</span>' +
-                    escapeHtml(text.slice(i + q.length))
-                )
-            }
-
-            const render = () => {
-                const query = input.value.trim()
-                const q = query.toLowerCase()
-                filtered = q
-                    ? catalog.filter(p =>
-                        p.name.toLowerCase().includes(q) ||
-                        p.sku.toLowerCase().includes(q) ||
-                        p.category.toLowerCase().includes(q))
-                    : catalog.slice()
-
-                if (activeIndex >= filtered.length) activeIndex = filtered.length - 1
-                if (activeIndex < 0) activeIndex = 0
-
-                countEl.textContent = filtered.length + (filtered.length === 1 ? ' match' : ' matches')
-
-                if (filtered.length === 0) {
-                    resultsEl.innerHTML = '<div class="ps-empty">No products match your search.</div>'
-                    return
-                }
-
-                resultsEl.innerHTML = filtered.map((p, i) => `
-                    <div class="ps-row${i === activeIndex ? ' active' : ''}" data-index="${i}">
-                        <span class="ps-sku">${escapeHtml(p.sku)}</span>
-                        <span>
-                            <span class="ps-name">${highlight(p.name, query)}</span>
-                            <span class="ps-category">${highlight(p.category, query)}</span>
-                        </span>
-                        <span class="ps-price">$${p.price.toFixed(2)}</span>
-                    </div>
-                `).join('')
-
-                // Keep active row visible
-                const activeEl = resultsEl.querySelector('.ps-row.active')
-                if (activeEl) activeEl.scrollIntoView({ block: 'nearest' })
-            }
-
-            const select = (product) => {
-                if (!product) return
-                cleanup()
-                context.commit(product.id)
-            }
-
-            const doCancel = () => {
-                cleanup()
-                context.cancel()
-                logEvent('Dialog cancelled', `row ${context.rowIndex + 1}`)
-            }
-
-            const cleanup = () => {
-                document.removeEventListener('keydown', onKey, true)
-                overlay.remove()
-            }
-
-            const onKey = (e) => {
-                if (e.key === 'Escape') {
-                    e.preventDefault(); e.stopPropagation()
-                    doCancel()
-                } else if (e.key === 'ArrowDown') {
-                    e.preventDefault(); e.stopPropagation()
-                    if (filtered.length === 0) return
-                    activeIndex = (activeIndex + 1) % filtered.length
-                    render()
-                } else if (e.key === 'ArrowUp') {
-                    e.preventDefault(); e.stopPropagation()
-                    if (filtered.length === 0) return
-                    activeIndex = (activeIndex - 1 + filtered.length) % filtered.length
-                    render()
-                } else if (e.key === 'Enter') {
-                    e.preventDefault(); e.stopPropagation()
-                    select(filtered[activeIndex])
-                }
-            }
-
-            input.addEventListener('input', () => {
-                activeIndex = 0
+        const onKey = (e) => {
+            if (e.key === 'Escape') {
+                e.preventDefault(); e.stopPropagation()
+                doCancel()
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault(); e.stopPropagation()
+                if (filtered.length === 0) return
+                activeIndex = (activeIndex + 1) % filtered.length
                 render()
-            })
-
-            resultsEl.addEventListener('click', (e) => {
-                const row = e.target.closest('.ps-row')
-                if (!row) return
-                const idx = Number(row.dataset.index)
-                select(filtered[idx])
-            })
-
-            resultsEl.addEventListener('mousemove', (e) => {
-                const row = e.target.closest('.ps-row')
-                if (!row) return
-                const idx = Number(row.dataset.index)
-                if (idx !== activeIndex) {
-                    activeIndex = idx
-                    render()
-                }
-            })
-
-            overlay.addEventListener('click', (e) => {
-                if (e.target === overlay) doCancel()
-            })
-
-            document.addEventListener('keydown', onKey, true)
-
-            overlay.appendChild(dialog)
-            document.body.appendChild(overlay)
-            render()
-            input.focus()
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault(); e.stopPropagation()
+                if (filtered.length === 0) return
+                activeIndex = (activeIndex - 1 + filtered.length) % filtered.length
+                render()
+            } else if (e.key === 'Enter') {
+                e.preventDefault(); e.stopPropagation()
+                select(filtered[activeIndex])
+            }
         }
-    </script>
-</body>
-</html>
+
+        input.addEventListener('input', () => {
+            activeIndex = 0
+            render()
+        })
+
+        resultsEl.addEventListener('click', (e) => {
+            const row = e.target.closest('.ps-row')
+            if (!row) return
+            const idx = Number(row.dataset.index)
+            select(filtered[idx])
+        })
+
+        resultsEl.addEventListener('mousemove', (e) => {
+            const row = e.target.closest('.ps-row')
+            if (!row) return
+            const idx = Number(row.dataset.index)
+            if (idx !== activeIndex) {
+                activeIndex = idx
+                render()
+            }
+        })
+
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) doCancel()
+        })
+
+        document.addEventListener('keydown', onKey, true)
+
+        overlay.appendChild(dialog)
+        document.body.appendChild(overlay)
+        render()
+        input.focus()
+    }
+</script>

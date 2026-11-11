@@ -1,65 +1,27 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebGrid - Custom Editor & Context Menu</title>
-    <link rel="stylesheet" href="examples-shared.css">
-    <style>
-        .event-log {
-            background: #1a1a2e;
-            color: #a0aec0;
-            padding: 1rem;
-            border-radius: 6px;
-            font-family: 'Courier New', monospace;
-            font-size: 0.8rem;
-            max-height: 150px;
-            overflow-y: auto;
-        }
-        .event-log .event {
-            margin-bottom: 0.25rem;
-        }
-        .event-log .event-time {
-            color: #667eea;
-        }
-        .event-log .event-action {
-            color: #48bb78;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <header>
-            <a href="index.html" class="back-link">← Back to Examples</a>
-            <h1>✏️ Custom Editor & Context Menu</h1>
-            <p class="subtitle">Dialog-based editing and right-click context menus</p>
-        </header>
+<meta name="kmwc:title" content="✏️ Custom Editor &amp; Context Menu">
+<meta name="kmwc:subtitle" content="Dialog-based editing and right-click context menus">
 
+    <div class="card">
+        <h2>ED01 · Interactive Demo</h2>
+        <p>Try these features:</p>
+        <ul>
+            <li><strong>Custom Editor (Notes column):</strong> Press F2, Space, or double-click to open a dialog</li>
+            <li><strong>Context Menu:</strong> Right-click any cell to see the context menu</li>
+        </ul>
+
+        <web-grid id="grid" style="max-height: 350px;"></web-grid>
+
+        <p class="mt-1"><strong>Event Log:</strong></p>
+        <div id="eventLog" class="log-panel"></div>
+    </div>
+
+    <div class="grid-2">
         <div class="card">
-            <h2>Interactive Demo</h2>
-            <p>Try these features:</p>
-            <ul style="margin-bottom: 1.5rem;">
-                <li><strong>Custom Editor (Notes column):</strong> Press F2, Space, or double-click to open a dialog</li>
-                <li><strong>Context Menu:</strong> Right-click any cell to see the context menu</li>
-            </ul>
+            <h2>ED02 · Custom Editor</h2>
+            <p>Use <code>editor: "custom"</code> with <code>renderEditorCallback</code> for dialog-based editing.</p>
 
-            <web-grid id="grid" style="max-width: 100%; max-height: 350px; border: 1px solid #e2e8f0;"></web-grid>
-
-            <div style="margin-top: 1rem;">
-                <strong>Event Log:</strong>
-                <div id="eventLog" class="event-log">
-                    <div class="event"><span class="event-time">[Ready]</span> Right-click cells or edit the Notes column</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="grid-2">
-            <div class="card">
-                <h2>Custom Editor</h2>
-                <p>Use <code>editor: "custom"</code> with <code>renderEditorCallback</code> for dialog-based editing.</p>
-
-                <div class="code-block">
-                    <pre>{
+            <div class="code-block" data-kmwc-snippet>
+                <pre>{
     field: 'notes',
     editor: 'custom',
     renderEditorCallback: (context) => {
@@ -79,20 +41,20 @@
         }
     }
 }</pre>
-                </div>
-
-                <div class="note">
-                    <div class="note-title">Triggers</div>
-                    <p>Custom editor opens on: F2, Space, double-click, or navigate mode entry</p>
-                </div>
             </div>
 
-            <div class="card">
-                <h2>Context Menu</h2>
-                <p>Set <code>contextMenu</code> array on the grid element.</p>
+            <div class="note">
+                <div class="note-title">Triggers</div>
+                <p>Custom editor opens on: F2, Space, double-click, or navigate mode entry</p>
+            </div>
+        </div>
 
-                <div class="code-block">
-                    <pre>grid.contextMenu = [
+        <div class="card">
+            <h2>ED03 · Context Menu</h2>
+            <p>Set <code>contextMenu</code> array on the grid element.</p>
+
+            <div class="code-block" data-kmwc-snippet>
+                <pre>grid.contextMenu = [
     {
         id: 'copy',
         text: 'Copy value',
@@ -111,202 +73,192 @@
         onClick: (ctx) => { ... }
     }
 ]</pre>
-                </div>
             </div>
         </div>
-
-        <div class="card">
-            <h2>Context Menu Item Properties</h2>
-
-            <div class="grid-2">
-                <div>
-                    <h3>Static Properties</h3>
-                    <ul>
-                        <li><code>id</code> - Identifies a custom item</li>
-                        <li><code>action</code> - A built-in instead (<code>'add'</code>, <code>'duplicate'</code>, <code>'delete'</code>, <code>'move-up'</code>, <code>'move-down'</code>, tree <code>'expand'</code>…)</li>
-                        <li><code>text</code> - Display text</li>
-                        <li><code>icon</code> - Emoji or HTML for icon</li>
-                        <li><code>shortcut</code> - Key hint (also activates the item while the menu is open)</li>
-                        <li><code>isDanger</code> - Red styling for destructive actions</li>
-                        <li><code>{ divider: true, text? }</code> - A separator entry (optionally labelled)</li>
-                    </ul>
-                </div>
-                <div>
-                    <h3>Dynamic Properties</h3>
-                    <ul>
-                        <li><code>isVisible</code> / <code>getIsVisibleCallback(ctx)</code> - Show/hide</li>
-                        <li><code>isDisabled</code> / <code>getIsDisabledCallback(ctx)</code> - Disable item</li>
-                        <li><code>getTextCallback(ctx)</code> / <code>getIconCallback(ctx)</code> - Dynamic text / icon</li>
-                        <li><code>children</code> / <code>getChildrenCallback(ctx)</code> - Submenu</li>
-                        <li><code>onClick(detail)</code> - Click handler (also reported by the <code>action</code> event / <code>onAction</code>)</li>
-                    </ul>
-
-                    <h3 style="margin-top: 1rem;">Context Object</h3>
-                    <ul>
-                        <li><code>value</code> - Cell value</li>
-                        <li><code>row</code> - Full row data</li>
-                        <li><code>rowIndex</code> - Row index</li>
-                        <li><code>field</code> - Column field name</li>
-                        <li><code>column</code> / <code>colIndex</code> - Column definition / index</li>
-                        <li><code>controller</code> / <code>element</code> - The grid controller and host element</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-
-        <footer>
-            <p>WebGrid Component by <a href="https://github.com/keenmate">Keenmate</a></p>
-        </footer>
     </div>
 
-    <script type="module">
-        import '@keenmate/web-grid'
+    <div class="card">
+        <h2>ED04 · Context Menu Item Properties</h2>
 
-        const sampleData = [
-            { id: 1, name: 'Alice Johnson', department: 'Engineering', status: 'Active', notes: 'Team lead', protected: false },
-            { id: 2, name: 'Bob Smith', department: 'Marketing', status: 'Active', notes: 'Remote worker', protected: false },
-            { id: 3, name: 'Carol Williams', department: 'Engineering', status: 'Active', notes: '', protected: false },
-            { id: 4, name: 'David Brown', department: 'Sales', status: 'Active', notes: 'New hire', protected: false },
-            { id: 5, name: 'Eva Martinez', department: 'HR', status: 'On Leave', notes: 'Back in March', protected: true },
-            { id: 6, name: 'Frank Lee', department: 'Engineering', status: 'Active', notes: '', protected: false },
-        ]
+        <div class="grid-2">
+            <div>
+                <h3>Static Properties</h3>
+                <ul>
+                    <li><code>id</code> - Identifies a custom item</li>
+                    <li><code>action</code> - A built-in instead (<code>'add'</code>, <code>'duplicate'</code>, <code>'delete'</code>, <code>'move-up'</code>, <code>'move-down'</code>, tree <code>'expand'</code>…)</li>
+                    <li><code>text</code> - Display text</li>
+                    <li><code>icon</code> - Emoji or HTML for icon</li>
+                    <li><code>shortcut</code> - Key hint (also activates the item while the menu is open)</li>
+                    <li><code>isDanger</code> - Red styling for destructive actions</li>
+                    <li><code>{ divider: true, text? }</code> - A separator entry (optionally labelled)</li>
+                </ul>
+            </div>
+            <div>
+                <h3>Dynamic Properties</h3>
+                <ul>
+                    <li><code>isVisible</code> / <code>getIsVisibleCallback(ctx)</code> - Show/hide</li>
+                    <li><code>isDisabled</code> / <code>getIsDisabledCallback(ctx)</code> - Disable item</li>
+                    <li><code>getTextCallback(ctx)</code> / <code>getIconCallback(ctx)</code> - Dynamic text / icon</li>
+                    <li><code>children</code> / <code>getChildrenCallback(ctx)</code> - Submenu</li>
+                    <li><code>onClick(detail)</code> - Click handler (also reported by the <code>action</code> event / <code>onAction</code>)</li>
+                </ul>
 
-        const departmentOptions = [
-            { value: 'Engineering', label: 'Engineering' },
-            { value: 'Marketing', label: 'Marketing' },
-            { value: 'Sales', label: 'Sales' },
-            { value: 'HR', label: 'HR' },
-        ]
+                <h3 class="mt-1">Context Object</h3>
+                <ul>
+                    <li><code>value</code> - Cell value</li>
+                    <li><code>row</code> - Full row data</li>
+                    <li><code>rowIndex</code> - Row index</li>
+                    <li><code>field</code> - Column field name</li>
+                    <li><code>column</code> / <code>colIndex</code> - Column definition / index</li>
+                    <li><code>controller</code> / <code>element</code> - The grid controller and host element</li>
+                </ul>
+            </div>
+        </div>
+    </div>
 
-        const statusOptions = [
-            { value: 'Active', label: 'Active' },
-            { value: 'Inactive', label: 'Inactive' },
-            { value: 'On Leave', label: 'On Leave' },
-        ]
+<script type="module">
+    import { appendLogLine } from '@keenmate/web-components-devkit/examples'
 
-        // Event logging helper
-        const eventLog = document.getElementById('eventLog')
-        function logEvent(action, details) {
-            const time = new Date().toLocaleTimeString()
-            const event = document.createElement('div')
-            event.className = 'event'
-            event.innerHTML = `<span class="event-time">[${time}]</span> <span class="event-action">${action}</span> ${details}`
-            eventLog.insertBefore(event, eventLog.firstChild)
-            // Keep only last 20 events
-            while (eventLog.children.length > 20) {
-                eventLog.removeChild(eventLog.lastChild)
+    const sampleData = [
+        { id: 1, name: 'Alice Johnson', department: 'Engineering', status: 'Active', notes: 'Team lead', protected: false },
+        { id: 2, name: 'Bob Smith', department: 'Marketing', status: 'Active', notes: 'Remote worker', protected: false },
+        { id: 3, name: 'Carol Williams', department: 'Engineering', status: 'Active', notes: '', protected: false },
+        { id: 4, name: 'David Brown', department: 'Sales', status: 'Active', notes: 'New hire', protected: false },
+        { id: 5, name: 'Eva Martinez', department: 'HR', status: 'On Leave', notes: 'Back in March', protected: true },
+        { id: 6, name: 'Frank Lee', department: 'Engineering', status: 'Active', notes: '', protected: false },
+    ]
+
+    const departmentOptions = [
+        { value: 'Engineering', label: 'Engineering' },
+        { value: 'Marketing', label: 'Marketing' },
+        { value: 'Sales', label: 'Sales' },
+        { value: 'HR', label: 'HR' },
+    ]
+
+    const statusOptions = [
+        { value: 'Active', label: 'Active' },
+        { value: 'Inactive', label: 'Inactive' },
+        { value: 'On Leave', label: 'On Leave' },
+    ]
+
+    // Event logging helper
+    const eventLog = document.getElementById('eventLog')
+    function logEvent(action, details, variant = 'success') {
+        appendLogLine(eventLog, { name: action, detail: details, variant })
+        // Keep only last 20 events
+        while (eventLog.children.length > 20) {
+            eventLog.removeChild(eventLog.firstChild)
+        }
+    }
+    logEvent('Ready', 'Right-click cells or edit the Notes column', 'info')
+
+    const columns = [
+        { field: 'id', title: 'ID', width: '50px', isEditable: false },
+        { field: 'name', title: 'Name', width: '150px', editor: 'text' },
+        {
+            field: 'department',
+            title: 'Department',
+            width: '130px',
+            editor: 'select',
+            editorOptions: { options: departmentOptions }
+        },
+        {
+            field: 'status',
+            title: 'Status',
+            width: '100px',
+            editor: 'select',
+            editorOptions: { options: statusOptions }
+        },
+        {
+            field: 'notes',
+            title: 'Notes (custom)',
+            width: '150px',
+            editor: 'custom',
+            renderEditorCallback: (context) => {
+                logEvent('Custom Editor', `opened for ${context.field} (row ${context.rowIndex + 1})`)
+
+                const newValue = prompt('Edit notes:', context.value || '')
+                if (newValue !== null) {
+                    logEvent('Commit', `"${newValue}" saved to ${context.field}`)
+                    context.commit(newValue)
+                } else {
+                    logEvent('Cancel', `edit cancelled for ${context.field}`)
+                    context.cancel()
+                }
+            }
+        },
+        {
+            field: 'protected',
+            title: 'Protected',
+            width: '80px',
+            horizontalAlign: 'center',
+            editor: 'checkbox',
+            getDisplayValueCallback: ({ value: val }) => val ? '✅' : '❌'
+        }
+    ]
+
+    const grid = document.getElementById('grid')
+    grid.items = sampleData
+    grid.columns = columns
+    grid.isEditingEnabled = true
+    grid.editTrigger = 'navigate'
+
+    // Context menu items
+    grid.contextMenu = [
+        {
+            id: 'copy',
+            text: 'Copy value',
+            icon: '📋',
+            onClick: (ctx) => {
+                navigator.clipboard.writeText(String(ctx.value || ''))
+                logEvent('Copy', `"${ctx.value}" copied to clipboard`)
+            }
+        },
+        {
+            id: 'edit',
+            getTextCallback: (ctx) => `Edit ${ctx.column.field}`,
+            icon: '✏️',
+            onClick: (ctx) => {
+                logEvent('Edit', `requested for ${ctx.column.field} = "${ctx.value}"`)
+            }
+        },
+        { divider: true },
+        {
+            id: 'view-row',
+            text: 'View row details',
+            onClick: (ctx) => {
+                logEvent('View', `row ${ctx.rowIndex + 1} details`)
+                alert(JSON.stringify(ctx.row, null, 2))
+            }
+        },
+        {
+            id: 'toggle-protection',
+            getTextCallback: (ctx) => ctx.row.protected ? 'Unprotect row' : 'Protect row',
+            getIconCallback: (ctx) => ctx.row.protected ? '🔓' : '🔒',
+            onClick: (ctx) => {
+                ctx.row.protected = !ctx.row.protected
+                grid.items = [...grid.items] // Trigger re-render
+                logEvent('Toggle', `row ${ctx.rowIndex + 1} protection: ${ctx.row.protected}`)
+            }
+        },
+        { divider: true },
+        {
+            id: 'delete',
+            text: 'Delete row',
+            icon: '🗑️',
+            isDanger: true,
+            getIsDisabledCallback: (ctx) => ctx.row.protected,
+            onClick: (ctx) => {
+                if (confirm(`Delete ${ctx.row.name}?`)) {
+                    grid.items = grid.items.filter(item => item.id !== ctx.row.id)
+                    logEvent('Delete', `row ${ctx.rowIndex + 1} (${ctx.row.name}) deleted`)
+                }
             }
         }
+    ]
 
-        const columns = [
-            { field: 'id', title: 'ID', width: '50px', isEditable: false },
-            { field: 'name', title: 'Name', width: '150px', editor: 'text' },
-            {
-                field: 'department',
-                title: 'Department',
-                width: '130px',
-                editor: 'select',
-                editorOptions: { options: departmentOptions }
-            },
-            {
-                field: 'status',
-                title: 'Status',
-                width: '100px',
-                editor: 'select',
-                editorOptions: { options: statusOptions }
-            },
-            {
-                field: 'notes',
-                title: 'Notes (custom)',
-                width: '150px',
-                editor: 'custom',
-                renderEditorCallback: (context) => {
-                    logEvent('Custom Editor', `opened for ${context.field} (row ${context.rowIndex + 1})`)
-
-                    const newValue = prompt('Edit notes:', context.value || '')
-                    if (newValue !== null) {
-                        logEvent('Commit', `"${newValue}" saved to ${context.field}`)
-                        context.commit(newValue)
-                    } else {
-                        logEvent('Cancel', `edit cancelled for ${context.field}`)
-                        context.cancel()
-                    }
-                }
-            },
-            {
-                field: 'protected',
-                title: 'Protected',
-                width: '80px',
-                horizontalAlign: 'center',
-                editor: 'checkbox',
-                getDisplayValueCallback: ({ value: val }) => val ? '✅' : '❌'
-            }
-        ]
-
-        const grid = document.getElementById('grid')
-        grid.items = sampleData
-        grid.columns = columns
-        grid.isEditingEnabled = true
-        grid.editTrigger = 'navigate'
-
-        // Context menu items
-        grid.contextMenu = [
-            {
-                id: 'copy',
-                text: 'Copy value',
-                icon: '📋',
-                onClick: (ctx) => {
-                    navigator.clipboard.writeText(String(ctx.value || ''))
-                    logEvent('Copy', `"${ctx.value}" copied to clipboard`)
-                }
-            },
-            {
-                id: 'edit',
-                getTextCallback: (ctx) => `Edit ${ctx.column.field}`,
-                icon: '✏️',
-                onClick: (ctx) => {
-                    logEvent('Edit', `requested for ${ctx.column.field} = "${ctx.value}"`)
-                }
-            },
-            { divider: true },
-            {
-                id: 'view-row',
-                text: 'View row details',
-                onClick: (ctx) => {
-                    logEvent('View', `row ${ctx.rowIndex + 1} details`)
-                    alert(JSON.stringify(ctx.row, null, 2))
-                }
-            },
-            {
-                id: 'toggle-protection',
-                getTextCallback: (ctx) => ctx.row.protected ? 'Unprotect row' : 'Protect row',
-                getIconCallback: (ctx) => ctx.row.protected ? '🔓' : '🔒',
-                onClick: (ctx) => {
-                    ctx.row.protected = !ctx.row.protected
-                    grid.items = [...grid.items] // Trigger re-render
-                    logEvent('Toggle', `row ${ctx.rowIndex + 1} protection: ${ctx.row.protected}`)
-                }
-            },
-            { divider: true },
-            {
-                id: 'delete',
-                text: 'Delete row',
-                icon: '🗑️',
-                isDanger: true,
-                getIsDisabledCallback: (ctx) => ctx.row.protected,
-                onClick: (ctx) => {
-                    if (confirm(`Delete ${ctx.row.name}?`)) {
-                        grid.items = grid.items.filter(item => item.id !== ctx.row.id)
-                        logEvent('Delete', `row ${ctx.rowIndex + 1} (${ctx.row.name}) deleted`)
-                    }
-                }
-            }
-        ]
-
-        // Runs before the context menu opens (return false to suppress it, or an entries array to replace it)
-        grid.beforeContextMenuOpenCallback = (ctx) => {
-            logEvent('Context Menu', `opened at row ${ctx.rowIndex + 1}, column "${ctx.column.field}"`)
-        }
-    </script>
-</body>
-</html>
+    // Runs before the context menu opens (return false to suppress it, or an entries array to replace it)
+    grid.beforeContextMenuOpenCallback = (ctx) => {
+        logEvent('Context Menu', `opened at row ${ctx.rowIndex + 1}, column "${ctx.column.field}"`)
+    }
+</script>
