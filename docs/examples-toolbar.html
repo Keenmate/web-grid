@@ -232,7 +232,8 @@ grid.rowToolbar = [
         id: 'info',
         icon: 'ℹ',
         text: 'Info',
-        getTooltipCallback: ({ row }) => `Task #${row.id} · ${row.priority} · ${row.assignee}`
+        // the description renders as HTML: escape row data
+        getTooltipCallback: ({ row }) => `Task #${row.id} · <em>${esc(row.title)}</em>`
     }
 ]</pre>
             </div>
@@ -394,6 +395,9 @@ grid.beforeActionCallback = ({ action, row }) => {
         document.getElementById('btnMinWidthInput').value = savedBtnMinWidth
 
         // Sample data
+        // Escape row data for the HTML tooltip description
+        const esc = (text) => String(text ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
+
         const tasks = [
             { id: 1, title: 'Design system architecture', priority: 'High', status: 'In Progress', assignee: 'Alice' },
             { id: 2, title: 'Implement user authentication', priority: 'High', status: 'Todo', assignee: 'Bob' },
@@ -473,7 +477,14 @@ grid.beforeActionCallback = ({ action, row }) => {
             { divider: true },
             { action: 'add', icon: '+', text: 'Add', tooltip: 'Insert a new task below this one' },
             { action: 'duplicate', icon: '⧉', text: 'Duplicate', tooltip: 'Create a copy of this task' },
-            { action: 'delete', icon: '−', text: 'Delete', tooltip: 'Permanently remove this task' }
+            {
+                action: 'delete', icon: '−', text: 'Delete',
+                // Dynamic description from the row (escaped — the description renders as HTML):
+                // italic task title + a status chip. Text only, nothing clickable in a tooltip.
+                getTooltipCallback: ({ row }) => `Permanently remove <em>${esc(row.title)}</em>`
+                    + `<br><span style="display: inline-block; margin-top: .25rem; padding: 0 .45rem; border-radius: 999px; font-size: .85em; color: #fff; background: ${row.status === 'Done' ? '#16a34a' : row.priority === 'High' ? '#dc2626' : '#6366f1'};">`
+                    + `${esc(row.status)} · ${esc(row.priority)} · ${esc(row.assignee)}</span>`
+            }
         ]
         grid.toolbarTrigger = savedTrigger
         grid.toolbarPosition = savedPosition

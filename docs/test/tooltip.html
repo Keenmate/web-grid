@@ -13,6 +13,8 @@
 
 	<web-grid id="grid" tooltip-show-delay="0" tooltip-hide-delay="0" enable-editing edit-trigger="navigate" style="max-width: 700px;"></web-grid>
 
+	<web-grid id="sized" tooltip-show-delay="0" tooltip-hide-delay="0" style="max-width: 700px; margin-top: 2rem;"></web-grid>
+
 	<script type="module">
 		import '@keenmate/web-grid'
 
@@ -24,7 +26,13 @@
 		 *               column getValidationTooltipCallback → "<i>Fix: error</i>"
 		 * col 4 qty   — validateCallback (>= 0); no column tooltip callback → grid-level
 		 *               getValidationTooltipCallback is set by the spec when needed
+		 * col 5 state — getTooltipCallback reads page state (window.tooltipState, changed by
+		 *               the spec without a re-render) — proves it's resolved when the tooltip opens
+		 *
+		 * #sized — one column, tooltipMember 'tip' (row 0 short "OK", row 1 long text);
+		 *          the spec sets --wg-tooltip-width / -min-width / -max-width on it
 		 */
+		window.tooltipState = 'before'
 		const grid = document.getElementById('grid')
 		grid.idMember = 'id'
 		grid.columns = [
@@ -35,11 +43,21 @@
 				validateCallback: ({ value }) => /^[A-Z]{3}$/.test(String(value)) ? null : 'Code must be 3 capital letters',
 				getValidationTooltipCallback: (ctx) => `<i>Fix: ${ctx.error}</i>` },
 			{ field: 'qty', title: 'Qty', width: '80px', editor: 'number',
-				validateCallback: ({ value }) => Number(value) >= 0 ? null : 'Must not be negative' }
+				validateCallback: ({ value }) => Number(value) >= 0 ? null : 'Must not be negative' },
+			{ field: 'state', title: 'State', width: '80px',
+				getTooltipCallback: (ctx) => `${ctx.value}: ${window.tooltipState}` }
 		]
 		grid.items = [
-			{ id: 1, name: 'Alpha', note: 'n1', hint: 'Hint one', rich: 'r1', code: 'AAA', qty: 1 },
-			{ id: 2, name: 'Beta', note: 'n2', hint: null, rich: 'r2', code: 'BBB', qty: 2 }
+			{ id: 1, name: 'Alpha', note: 'n1', hint: 'Hint one', rich: 'r1', code: 'AAA', qty: 1, state: 's1' },
+			{ id: 2, name: 'Beta', note: 'n2', hint: null, rich: 'r2', code: 'BBB', qty: 2, state: 's2' }
+		]
+
+		const sized = document.getElementById('sized')
+		sized.idMember = 'id'
+		sized.columns = [{ field: 'label', title: 'Label', width: '200px', tooltipMember: 'tip' }]
+		sized.items = [
+			{ id: 1, label: 'short', tip: 'OK' },
+			{ id: 2, label: 'long', tip: 'A long tooltip text that keeps going well past any sensible single line width, so the max-width cap has to wrap it onto several lines.' }
 		]
 	</script>
 </body>

@@ -200,6 +200,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Tooltip / editor attribute escaping, no attribute injection from row data (#21 fixed) | ✓ | `tooltip.spec.ts`, `editors.spec.ts` | `tooltip.html`, `editors.html` |
 | Validation tooltip right after the commit, cleared by a valid one (#22 fixed) | ✓ | `tooltip.spec.ts` | `tooltip.html` |
 | `tooltipHideDelay` (#23 fixed) | ✓ | `tooltip.spec.ts` | `tooltip.html` |
+| Tooltip content resolved on show (no stale callback text); `--wg-tooltip-width` / `-min-width` / `-max-width` on an open tooltip | ✓ | `tooltip.spec.ts` | `tooltip.html` |
 | `shortcutsHelpPosition`, `renderShortcutsHelpCallback`, help visibility | ✓ | `display-options.spec.ts` | `display-options.html` |
 | `readonly` / `disabled`: presence rule (`="false"` still counts), reflected, the read-only preset reflects `readonly` | ✓ | `inputs.spec.ts` | `inputs.html` |
 | Validated inputs: pagination / summary positions + pager layout (pipe lists), CSS lengths (`scrollMaxHeight`, `columnMinWidth`; number = px), `cellToolbarOffset`, `show-pagination` → `input-rejected` | ✓ | `inputs.spec.ts` | `inputs.html` |

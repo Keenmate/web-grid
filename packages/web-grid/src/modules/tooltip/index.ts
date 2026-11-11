@@ -5,7 +5,8 @@
 export {
 	showTooltip,
 	hideTooltip,
-	createTooltip
+	createTooltip,
+	type TooltipResolver
 } from './tooltip.js'
 
 export { TooltipService } from './tooltip-service.js'

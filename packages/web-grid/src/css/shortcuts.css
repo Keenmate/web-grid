@@ -53,6 +53,8 @@
 	border: 1px solid var(--wg-border-color);
 	border-radius: var(--wg-border-radius-md);
 	box-shadow: var(--wg-dialog-shadow);
+	/* A panel, not a tooltip: its own 200px floor and natural width; it shares
+	   only the tooltip's max-width cap (--wg-tooltip-width / -min-width don't apply). */
 	min-width: 200px;
 	max-width: var(--wg-tooltip-max-width);
 	z-index: 100;

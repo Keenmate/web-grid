@@ -10,6 +10,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Added — tooltip width variables (2026-11-11)
+- **`--wg-tooltip-width` (`auto`) and `--wg-tooltip-min-width` (`0`)** next to `--wg-tooltip-max-width`
+  (`300px`) on `.wg__tooltip` — one surface for cell, validation, header-info, row-lock and toolbar tooltips.
+  They size the content box (`--wg-tooltip-padding` on top), like the other Keenmate components. The
+  keyboard-shortcuts help overlay is a panel, not a tooltip: it keeps its own `200px` floor and shares only
+  the max-width cap. Manifest, `docs/theming.md` (new Tooltip table), README variable count (223).
+
+### Fixed — tooltips (2026-11-11)
+- **A cell tooltip's content is resolved when it opens**, not read from what was rendered.
+  `getTooltipCallback` / `tooltipMember` / the validation tooltip run again at show time, so a callback
+  reading state that changed without a cell re-render (row selection, dirty state, anything outside the
+  grid) no longer shows stale text, and one returning nothing now shows no tooltip.
+- **A tooltip shown on another cell right after leaving one is no longer removed** by the previous
+  tooltip's fade-out (it removed whichever tooltip was current 100 ms later).
+
+### Examples and docs — tooltips (2026-11-11)
+- Basic: the Name and Salary `getTooltipCallback` tooltips are pronounced HTML built from the cell ctx —
+  bold name / amount, italic department · manager / monthly rate, and a state chip (selected row, unsaved
+  changes, locked; edited salary / band) read from `ctx.controller` when the tooltip opens. Row data escaped.
+- Toolbar: the Delete button's description is a live `getTooltipCallback` (italic task title + status chip).
+- Theming: new "Tooltip width" card with width / min-width / max-width controls.
+- No interactive content in any tooltip demo.
+
 ### Changed — the row toolbar in the core overlay tree (2026-11-11)
 - **The floating row toolbar closes through core's overlay tree** (`registerOverlay`) instead of its own
   document `click` listener (deleted, with `ToolbarService.outsideClickAttached`). Positioning stays

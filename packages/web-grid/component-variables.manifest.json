@@ -225,7 +225,9 @@
 
     { "name": "wg-tooltip-bg", "category": "tooltip", "usage": "Tooltip and validation message popup background (dark)" },
     { "name": "wg-tooltip-color", "category": "tooltip", "usage": "Tooltip and validation message text color (white)" },
-    { "name": "wg-tooltip-max-width", "category": "tooltip", "usage": "Maximum tooltip width (300px)" },
+    { "name": "wg-tooltip-width", "category": "tooltip", "usage": "Tooltip content width (auto = shrink to fit; content box, padding excluded)" },
+    { "name": "wg-tooltip-min-width", "category": "tooltip", "usage": "Minimum tooltip content width (0)" },
+    { "name": "wg-tooltip-max-width", "category": "tooltip", "usage": "Maximum tooltip content width (300px); also caps the shortcuts help overlay" },
     { "name": "wg-tooltip-arrow-size", "category": "tooltip", "usage": "Tooltip arrow dimensions (8px)" },
     { "name": "wg-tooltip-padding", "category": "tooltip", "usage": "Tooltip content padding" },
     { "name": "wg-tooltip-shadow", "category": "tooltip", "usage": "Tooltip box shadow" },

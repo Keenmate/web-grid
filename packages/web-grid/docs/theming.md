@@ -160,6 +160,26 @@ Headline variables you'll override most often:
 
 The full table lives in [the manifest](../component-variables.manifest.json).
 
+### Tooltip
+
+One surface for every grid tooltip — cell (`getTooltipCallback` / `tooltipMember`), validation
+(`getValidationTooltipCallback`), header `headerInfo`, row lock and toolbar-button tooltips.
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `--wg-tooltip-bg` | `--base-tooltip-bg`, else inverse of `--wg-main-bg` | Background (and arrow) |
+| `--wg-tooltip-color` | `--base-tooltip-text-color`, else `--wg-main-bg` | Text color |
+| `--wg-tooltip-padding` | `calc(0.6 * var(--wg-rem)) calc(1.0 * var(--wg-rem))` | Content padding |
+| `--wg-tooltip-shadow` | `0 2px 8px var(--wg-shadow-color)` | Box shadow |
+| `--wg-tooltip-arrow-size` | `8px` | Arrow size |
+| `--wg-tooltip-width` | `auto` | Width — `auto` shrinks to the text; a length fixes it |
+| `--wg-tooltip-min-width` | `0` | Width floor |
+| `--wg-tooltip-max-width` | `300px` | Width cap (long text wraps); also caps the keyboard-shortcuts help overlay |
+
+The widths size the **content box** — `--wg-tooltip-padding` comes on top. There are no `--base-*`
+width tokens (a tooltip's width depends on its content, so it's set per component). The shortcuts
+help overlay is a panel, not a tooltip: it keeps its own `200px` floor and shares only the max-width cap.
+
 ### `--base-*` variables consumed
 
 `@keenmate/web-grid` reads roughly 37 `--base-*` variables across these categories. Setting any of them on `:root` themes every Keenmate component on the page at once.

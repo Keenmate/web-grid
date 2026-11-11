@@ -230,6 +230,22 @@
 		</div>
 
 		<div class="card">
+			<h2>Tooltip width</h2>
+			<p>
+				Every grid tooltip (cell, validation, header info, toolbar) sizes its content box with
+				<code>--wg-tooltip-width</code> (<code>auto</code> = shrink to the text), floored by <code>--wg-tooltip-min-width</code>
+				(<code>0</code>) and capped by <code>--wg-tooltip-max-width</code> (<code>300px</code>, long text wraps). Padding comes on top.
+				Hover a <strong>Note</strong> cell; leave a field empty for the default.
+			</p>
+			<div class="controls">
+				<label>width <input type="number" id="ttWidth" min="0" step="10" placeholder="auto" style="width: 6rem;"> px</label>
+				<label>min-width <input type="number" id="ttMinWidth" min="0" step="10" placeholder="0" style="width: 6rem;"> px</label>
+				<label>max-width <input type="number" id="ttMaxWidth" min="0" step="10" placeholder="300" style="width: 6rem;"> px</label>
+			</div>
+			<web-grid id="tooltipWidthGrid" tooltip-show-delay="0"></web-grid>
+		</div>
+
+		<div class="card">
 			<h2>How the precedence works</h2>
 			<p>The grid resolves its rendered theme by walking signals in this order, highest priority first:</p>
 			<ol style="margin-left: 1.5rem; color: #4a5568; line-height: 1.8;">
@@ -543,6 +559,27 @@
 				case 'data-theme-light':   return '[data-theme="light"]'
 				default: return null
 			}
+		}
+
+		// ============================================================================
+		// Tooltip width demo — the three --wg-tooltip-*width variables on one grid
+		// ============================================================================
+		const tooltipGrid = document.getElementById('tooltipWidthGrid')
+		tooltipGrid.columns = [
+			{ field: 'name', title: 'Name', width: '140px' },
+			{ field: 'note', title: 'Note', width: '320px', tooltipMember: 'note' }
+		]
+		tooltipGrid.items = [
+			{ id: 1, name: 'Short', note: 'OK' },
+			{ id: 2, name: 'Medium', note: 'Waiting for the signed order form.' },
+			{ id: 3, name: 'Long', note: 'Customer asked to split the delivery into two shipments: the first half before the end of the quarter, the rest once the warehouse confirms stock.' }
+		]
+		for (const [id, cssVar] of [['ttWidth', '--wg-tooltip-width'], ['ttMinWidth', '--wg-tooltip-min-width'], ['ttMaxWidth', '--wg-tooltip-max-width']]) {
+			document.getElementById(id).addEventListener('input', (e) => {
+				const v = e.target.value
+				if (v === '') tooltipGrid.style.removeProperty(cssVar)
+				else tooltipGrid.style.setProperty(cssVar, `${v}px`)
+			})
 		}
 
 		// Initial render

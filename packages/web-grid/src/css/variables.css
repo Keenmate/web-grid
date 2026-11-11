@@ -301,6 +301,10 @@
      dark mode). Themed via the shared --base-tooltip-bg. */
   --wg-tooltip-bg: var(--base-tooltip-bg, light-dark(color-mix(in srgb, var(--wg-text-color-1) 85%, var(--wg-main-bg)), oklch(from var(--wg-main-bg) calc(l + 0.15) c h)));
   --wg-tooltip-color: var(--base-tooltip-text-color, light-dark(var(--wg-main-bg), var(--wg-text-color-1)));
+  /* Width of the tooltip CONTENT box (padding excluded): auto = shrink to fit
+     the text, floored by min-width and capped by max-width. */
+  --wg-tooltip-width: auto;
+  --wg-tooltip-min-width: 0;
   --wg-tooltip-max-width: 300px;
   --wg-tooltip-arrow-size: 8px;
 

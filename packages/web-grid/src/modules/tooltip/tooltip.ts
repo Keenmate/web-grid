@@ -6,13 +6,18 @@
 import { anchor as anchorTo } from '@keenmate/web-components-core/positioning'
 import type { GridHost } from '../grid-context.js'
 
+/** Tooltip content resolved when the tooltip is created (after the show delay). */
+export type TooltipResolver = () => { text: string; isHtml: boolean } | null
+
 /**
- * Show tooltip for an element
+ * Show tooltip for an element. `text` is the content, or a resolver run when
+ * the show delay elapses (so the content reflects the state at show time;
+ * `null` shows nothing).
  */
 export function showTooltip<T>(
 	ctx: GridHost<T>,
 	anchor: HTMLElement,
-	text: string,
+	text: string | TooltipResolver,
 	delay?: number,
 	isHtml?: boolean
 ): void {
@@ -31,7 +36,13 @@ export function showTooltip<T>(
 	ctx.tooltip.clearShowTimer()
 
 	ctx.tooltip.setShowTimer(setTimeout(() => {
-		createTooltip(ctx, anchor, text, isHtml)
+		ctx.tooltip.setShowTimer(null)
+		if (typeof text === 'string') {
+			createTooltip(ctx, anchor, text, isHtml)
+			return
+		}
+		const resolved = text()
+		if (resolved) createTooltip(ctx, anchor, resolved.text, resolved.isHtml)
 	}, showDelay))
 }
 
@@ -52,10 +63,11 @@ export function hideTooltip<T>(ctx: GridHost<T>, delay?: number): void {
 		const el = ctx.tooltip.element
 		if (el) {
 			el.classList.remove('wg__tooltip--visible')
-			// Remove after transition
+			// Remove after transition — this tooltip only: one shown for another
+			// anchor in the meantime stays
 			setTimeout(() => {
-				ctx.tooltip.element?.remove()
-				ctx.tooltip.clearMounted()
+				el.remove()
+				if (ctx.tooltip.element === el) ctx.tooltip.clearMounted()
 			}, 100)
 		}
 	}, hideDelay))

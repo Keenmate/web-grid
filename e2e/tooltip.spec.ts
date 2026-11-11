@@ -142,3 +142,78 @@ test.describe('delays', () => {
 		expect(await onGrid(page, el => [el.tooltipShowDelay, el.tooltipHideDelay])).toEqual([200, 100])
 	})
 })
+
+test.describe('content is resolved when the tooltip opens', () => {
+	test('a getTooltipCallback reading state that changed without a re-render is not stale', async ({ page }) => {
+		await hover(page, cell(page, 0, 5))
+		await expect(tipContent(page)).toHaveText('s1: before')
+		await page.mouse.move(5, 5)
+		await expect(tip(page)).toHaveCount(0)
+		await page.evaluate(() => { (window as any).tooltipState = 'after' })
+		await hover(page, cell(page, 0, 5))
+		await expect(tipContent(page)).toHaveText('s1: after')
+	})
+
+	test('a callback that returns nothing at show time shows no tooltip', async ({ page }) => {
+		await onGrid(page, el => { el.columns = el.columns.map((c: any) => c.field === 'state'
+			? { ...c, getTooltipCallback: () => (window as any).tooltipState === 'off' ? null : 'on' } : c) })
+		await expect(cell(page, 0, 5)).toHaveAttribute('data-tooltip', 'on')
+		await page.evaluate(() => { (window as any).tooltipState = 'off' })
+		await hover(page, cell(page, 0, 5))
+		await page.waitForTimeout(200)
+		await expect(tip(page)).toHaveCount(0)
+	})
+})
+
+test.describe('width variables', () => {
+	const SIZED = 'sized'
+	const sizedTip = (page: Page) => gridLocator(page, SIZED).locator('.wg__tooltip')
+
+	/** Open the tooltip of #sized row `row` and return its computed (content-box) widths. */
+	async function openAndMeasure(page: Page, row: number) {
+		await page.mouse.move(0, 0)
+		await expect(sizedTip(page)).toHaveCount(0)
+		await cell(page, SIZED, row, 0).hover()
+		await expect(sizedTip(page)).toHaveClass(/wg__tooltip--visible/)
+		return sizedTip(page).evaluate(el => {
+			const cs = getComputedStyle(el)
+			return { width: parseFloat(cs.width), minWidth: cs.minWidth, maxWidth: cs.maxWidth, boxSizing: cs.boxSizing }
+		})
+	}
+
+	test('defaults: auto width, 0 floor, 300px cap (content box)', async ({ page }) => {
+		await waitForRows(page, SIZED)
+		const short = await openAndMeasure(page, 0)
+		expect(short.boxSizing).toBe('content-box')
+		expect(short.minWidth).toBe('0px')
+		expect(short.maxWidth).toBe('300px')
+		expect(short.width).toBeLessThan(60)
+		const long = await openAndMeasure(page, 1)
+		expect(long.width).toBeCloseTo(300, 0)
+	})
+
+	test('--wg-tooltip-min-width floors a short tooltip', async ({ page }) => {
+		await waitForRows(page, SIZED)
+		await gridLocator(page, SIZED).evaluate(el => (el as HTMLElement).style.setProperty('--wg-tooltip-min-width', '150px'))
+		const short = await openAndMeasure(page, 0)
+		expect(short.minWidth).toBe('150px')
+		expect(short.width).toBeCloseTo(150, 0)
+	})
+
+	test('--wg-tooltip-max-width caps a long tooltip', async ({ page }) => {
+		await waitForRows(page, SIZED)
+		await gridLocator(page, SIZED).evaluate(el => (el as HTMLElement).style.setProperty('--wg-tooltip-max-width', '200px'))
+		const long = await openAndMeasure(page, 1)
+		expect(long.maxWidth).toBe('200px')
+		expect(long.width).toBeCloseTo(200, 0)
+	})
+
+	test('--wg-tooltip-width fixes the width (padding excluded)', async ({ page }) => {
+		await waitForRows(page, SIZED)
+		await gridLocator(page, SIZED).evaluate(el => (el as HTMLElement).style.setProperty('--wg-tooltip-width', '250px'))
+		const short = await openAndMeasure(page, 0)
+		expect(short.width).toBeCloseTo(250, 0)
+		const box = await sizedTip(page).evaluate(el => el.getBoundingClientRect().width)
+		expect(box).toBeGreaterThan(250) // + --wg-tooltip-padding
+	})
+})

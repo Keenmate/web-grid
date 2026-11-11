@@ -16,7 +16,9 @@
 
         <div class="card">
             <h2>Employee Grid</h2>
-            <p>A comprehensive example showing text, number, date, select, combobox, and autocomplete editors with keyboard navigation.</p>
+            <p>A comprehensive example showing text, number, date, select, combobox, and autocomplete editors with keyboard navigation.
+                Hover a <strong>Name</strong> or <strong>Salary</strong> cell: the <code>getTooltipCallback</code> tooltip is built from the cell context when it opens —
+                select a row (click its #) or edit a salary and hover again to see the chip follow the row state.</p>
 
             <div class="controls">
                 <label>
@@ -178,6 +180,9 @@
             { value: 'Boston', label: 'Boston' }
         ]
 
+        // Escape row data for the HTML tooltip below
+        const esc = (text) => String(text ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
+
         // Column definitions
         const columns = [
             { field: 'id', title: 'ID', width: '60px', horizontalAlign: 'center', isEditable: false },
@@ -187,7 +192,23 @@
                 width: '150px',
                 headerInfo: 'Full name of the employee',
                 editor: 'text',
-                getTooltipCallback: ({ value: val, row }) => `${val} - ${row.department}\nManager: ${row.manager}`
+                // Rich tooltip built from the cell ctx, resolved each time it opens: bold name,
+                // italic department / manager, and a chip from the row's live state (selected /
+                // unsaved / locked) — select a row (click its #) or edit it, then hover again.
+                // Row data is escaped (isTooltipHtml renders markup); no interactive content —
+                // tooltips are pointer-events: none and close when the pointer leaves the cell.
+                isTooltipHtml: true,
+                getTooltipCallback: ({ value: val, row, rowIndex, controller }) => {
+                    const [chipText, chipColor] = controller.isRowSelected(rowIndex) ? ['✓ selected row', '#16a34a']
+                        : controller.isRowDirty(rowIndex) ? ['✎ unsaved changes', '#d97706']
+                        : controller.isRowLocked(row) ? [`🔒 locked · ${row.status}`, '#6b7280']
+                        : ['click # to select', '#6366f1']
+                    return `<div style="display: grid; gap: .25rem;">`
+                        + `<strong style="font-size: 1.05em;">${esc(val)}</strong>`
+                        + `<em style="opacity: .8;">${esc(row.department)} · reports to ${esc(row.manager)}</em>`
+                        + `<span style="justify-self: start; padding: 0 .45rem; border-radius: 999px; font-size: .85em; background: ${chipColor}; color: #fff;">${esc(chipText)}</span>`
+                        + `</div>`
+                }
             },
             { field: 'email', title: 'Email', width: '180px', editor: 'text' },
             {
@@ -213,7 +234,18 @@
                 cellClass: 'salary-highlight',
                 getCellClassCallback: ({ value: val, row }) => val >= 90000 ? 'salary-high' : null,
                 getDisplayValueCallback: ({ value: val }) => val != null ? `$${val.toLocaleString()}` : '',
-                getTooltipCallback: ({ value: val, row }) => val != null ? `${row.name}'s salary: $${val.toLocaleString()}/year` : ''
+                // The draft value (ctx.value) while the row has unsaved edits — edit it and hover again
+                isTooltipHtml: true,
+                getTooltipCallback: ({ value: val, row, rowIndex, controller }) => {
+                    if (val == null) return null
+                    const isEdited = controller.isCellDirty(rowIndex, 'salary')
+                    return `<div style="display: grid; gap: .25rem;">`
+                        + `<strong style="font-size: 1.05em;">$${val.toLocaleString()} / year</strong>`
+                        + `<em style="opacity: .8;">${esc(row.name)} · ≈ $${Math.round(val / 12).toLocaleString()} / month</em>`
+                        + `<span style="justify-self: start; padding: 0 .45rem; border-radius: 999px; font-size: .85em; color: #fff; background: ${isEdited ? '#d97706' : val >= 90000 ? '#059669' : '#6366f1'};">`
+                        + `${isEdited ? '✎ edited, not saved' : val >= 90000 ? '★ 90k+ band' : 'standard band'}</span>`
+                        + `</div>`
+                }
             },
             {
                 field: 'startDate',

@@ -12,6 +12,8 @@
 .wg__tooltip {
   position: absolute;
   z-index: var(--wg-z-tooltip);
+  width: var(--wg-tooltip-width);
+  min-width: var(--wg-tooltip-min-width);
   max-width: var(--wg-tooltip-max-width);
   padding: var(--wg-tooltip-padding);
   background: var(--wg-tooltip-bg);

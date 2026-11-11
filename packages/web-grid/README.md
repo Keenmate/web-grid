@@ -20,7 +20,7 @@ Works **standalone** out of the box — no theme provider required. Reads `--bas
 - Floating, inline, or cell-specific row toolbars; cell + header context menus and keyboard shortcuts — all one action-item shape, with built-ins that do the work and a single `action` event.
 - Frozen columns, drag-to-resize, drag-to-reorder, fill handle, virtual scroll, infinite scroll.
 - ltree-style tree mode with chevron + indent, per-row custom shortcuts, optimistic row locking.
-- 209 `--wg-*` CSS variables with `--base-*` fallback for cross-component themes.
+- 223 `--wg-*` CSS variables with `--base-*` fallback for cross-component themes.
 - TypeScript-first — full type definitions exported.
 
 ## What's new
