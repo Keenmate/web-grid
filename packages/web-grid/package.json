@@ -6,6 +6,8 @@
 	"main": "./dist/web-grid.umd.js",
 	"module": "./dist/web-grid.js",
 	"types": "./dist/index.d.ts",
+	"customElements": "custom-elements.json",
+	"web-types": "web-types.json",
 	"exports": {
 		".": {
 			"types": "./dist/index.d.ts",
@@ -29,19 +31,24 @@
 		"src/css",
 		"ai",
 		"component-variables.manifest.json",
-		"release-notes"
+		"release-notes",
+		"custom-elements.json",
+		"web-types.json",
+		"vscode.html-custom-data.json",
+		"vscode.css-custom-data.json"
 	],
 	"scripts": {
 		"dev": "vite --port 12500",
 		"check:contract": "base-contract-check src",
-		"build": "npm run clean:dist && npm run check:contract && tsc && vite build",
+		"build": "npm run clean:dist && npm run check:contract && npm run analyze && tsc && vite build",
 		"build:types": "tsc",
 		"preview": "vite preview",
 		"clean": "rimraf dist --glob \"*.tgz\"",
 		"clean:dist": "rimraf dist",
 		"test": "vitest run",
 		"test:watch": "vitest",
-		"test:ui": "vitest --ui"
+		"test:ui": "vitest --ui",
+		"analyze": "cem analyze"
 	},
 	"keywords": [
 		"grid",
@@ -61,7 +68,9 @@
 		"context-menu",
 		"row-toolbar",
 		"keyboard-navigation",
-		"keenmate"
+		"keenmate",
+		"web-components",
+		"custom-elements"
 	],
 	"author": "Keenmate",
 	"license": "MIT",
@@ -74,8 +83,11 @@
 	},
 	"homepage": "https://github.com/KeenMate/web-grid#readme",
 	"devDependencies": {
+		"@custom-elements-manifest/analyzer": "^0.11.0",
 		"@keenmate/base-css-variables": "^2.0.1",
 		"@vitest/ui": "^4.1.10",
+		"custom-element-jet-brains-integration": "^1.8.0",
+		"custom-element-vs-code-integration": "^1.5.0",
 		"happy-dom": "^20.10.6",
 		"rimraf": "^5.0.5",
 		"typescript": "^5.3.3",

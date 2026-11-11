@@ -110,7 +110,7 @@ export { GridElement as default } from './web-component.js'
 // Logging bundle (core /logging) + global registration (core §12.3)
 import { registerComponent } from '@keenmate/web-components-core'
 import { logging } from './logger.js'
-import { GridElement as _GridElement } from './web-component.js'
+import { GridElement } from './web-component.js'
 
 // Build-time constants (injected by Vite define)
 declare const __VERSION__: string
@@ -123,7 +123,7 @@ declare const __HOMEPAGE__: string
 // Defines <web-grid> and publishes window.components['web-grid'] = { version, config,
 // logging, register, getInstances }. The logging controls reach every GRID:* category:
 //   window.components['web-grid'].logging.enableLogging()
-registerComponent('web-grid', _GridElement as unknown as CustomElementConstructor, {
+registerComponent('web-grid', GridElement as unknown as CustomElementConstructor, {
 	config: {
 		name: typeof __PACKAGE_NAME__ !== 'undefined' ? __PACKAGE_NAME__ : '@keenmate/web-grid',
 		version: typeof __VERSION__ !== 'undefined' ? __VERSION__ : '0.0.0',

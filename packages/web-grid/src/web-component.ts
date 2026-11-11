@@ -336,72 +336,205 @@ const EVENTS: readonly EventDef[] = [
  */
 export interface GridElementConfig<T = unknown> {
 	// Filtering & pagination
+	/** Show the filter row (an input under the header of every column with `isFilterable: true`) and apply `filters`. Default: `false`. */
 	isFilteringEnabled: boolean
-	/** 'server': the grid doesn't filter `items` — handle `filter-change` and replace `items`. */
+	/**
+	 * Who filters the rows. Default: `client`.
+	 *
+	 * - `client` — the grid filters `items` itself
+	 * - `server` — the grid does not filter — handle `filter-change` (`{ filters }`) and replace `items`
+	 */
 	filterMode: 'client' | 'server'
+	/** Split the rows into pages and show the pager. Default: `false`. */
 	isPagingEnabled: boolean
+	/** Rows per page (at least 1). Default: `10`. */
 	pageSize: number
+	/**
+	 * Who pages the rows. Default: `client`.
+	 *
+	 * - `client` — the grid slices `items` into pages
+	 * - `server` — `items` already is the current page — handle `data-request` and set `totalItems`
+	 */
 	paginationMode: 'client' | 'server'
+	/**
+	 * When the pager is shown. Default: `true`.
+	 *
+	 * - `true` — always
+	 * - `false` — never
+	 * - `auto` — hidden while there is at most one page
+	 */
 	isPaginationShown: boolean | 'auto'
-	/** Pager position(s), `|`-separated: `'bottom-center'`, `'top-right|bottom-right'`, … */
+	/**
+	 * Where the pager sits: one area or several `|`-separated ones (`top-right|bottom-right`); any other value is refused. Default: `bottom-center`.
+	 *
+	 * - `top-left` — above the table, left
+	 * - `top-center` — above the table, centered
+	 * - `top-right` — above the table, right
+	 * - `bottom-left` — below the table, left
+	 * - `bottom-center` — below the table, centered
+	 * - `bottom-right` — below the table, right
+	 */
 	paginationPosition: string
-	/** Pager parts in order, `|`-separated (`'page-size|previous|page-info|next'`). */
+	/**
+	 * The pager parts in order, `|`-separated (`first|previous|page-info|next|last`). Default: `page-size|previous|page-info|next`.
+	 *
+	 * - `first` — go to the first page
+	 * - `previous` — go one page back
+	 * - `page-info` — the "page X of Y" text
+	 * - `next` — go one page forward
+	 * - `last` — go to the last page
+	 * - `page-size` — the rows-per-page selector (options from `pageSizes`)
+	 */
 	paginationLayout: string
 	// Appearance
+	/** Alternate the row background colors. Default: `true`. */
 	isStriped: boolean
+	/** Highlight the row under the pointer. Default: `true`. */
 	isHoverable: boolean
+	/** Draw the border around the table only, not around the pager / summary areas. Default: `false`. */
 	isTableBorderOnly: boolean
+	/** Make the grid its own scroll container, capped at `scrollMaxHeight`. Default: `false`. */
 	isScrollable: boolean
-	/** CSS length; a number means pixels (stored as `'<n>px'`). */
+	/** Max height of the scroll container while `isScrollable` is on — a CSS length; a number means pixels (`240` → `240px`); an invalid length is refused. Default: `100vh`. */
 	scrollMaxHeight: string | number
 	// Editing
+	/** Allow editing cells (columns opt in with `isEditable`). Default: `false`. */
 	isEditingEnabled: boolean
-	editTrigger: EditTrigger
 	/**
-	 * The edit button's content — an HTML string (default `✎`), e.g. an icon font /
-	 * sprite: `'<span class="lucide-pencil"></span>'`. Shown in editable cells with
-	 * `editTrigger: 'button'` (or `column.isEditButtonShown`); its accessible name is
-	 * `labels.editCell`.
+	 * How editing a cell starts (a column’s own `editTrigger` wins). Default: `dblclick`.
+	 *
+	 * - `click` — a single click opens the editor
+	 * - `dblclick` — a double click opens the editor
+	 * - `button` — an edit button in editable cells (on hover and in the focused cell); F2 / Enter too
+	 * - `always` — every editable cell is always an editor
+	 * - `navigate` — Excel-like: arrows move the focus, typing starts editing the focused cell
 	 */
+	editTrigger: EditTrigger
+	/** Content of the edit button — an HTML string, e.g. `<span class="lucide-pencil"></span>`. Shown in editable cells with `editTrigger: 'button'` (or `column.isEditButtonShown`); its accessible name is `labels.editCell`. Default: `✎`. */
 	editButtonIcon: string
+	/**
+	 * Where the caret goes when an editor opens. Default: `mouse-position`.
+	 *
+	 * - `mouse-position` — at the clicked character
+	 * - `select-all` — the whole value selected
+	 * - `cursor-at-start` — caret before the first character
+	 * - `cursor-at-end` — caret after the last character
+	 */
 	editStartSelection: EditStartSelection
+	/** Clicking another cell while editing commits the value (through `beforeCommitCallback` / `validateCallback`); `false` discards it. Default: `true`. */
 	shouldCommitOnClickAway: boolean
-	/** Preset (`'read-only'` | `'excel'` | `'input-matrix'`): sets editing / selection defaults; `read-only` also sets `isReadonly`. */
+	/**
+	 * Sets editing / selection defaults in one go; inputs set explicitly in the same batch win. Default: `excel`.
+	 *
+	 * - `read-only` — no editing, a click selects cells; also sets `isReadonly`
+	 * - `excel` — editing on, `editTrigger: navigate`, a drag selects a cell range
+	 * - `input-matrix` — every cell is always an editor (`editTrigger: always`), Shift+click selects cells, dropdowns open on focus
+	 */
 	preset: GridPreset
-	/** Values can't change (no edit / paste / fill / row add-delete-move); the grid stays focusable, selectable and copyable. Attribute `readonly` (presence, reflects). */
+	/** Values cannot change (no edit / paste / fill / row add-delete-move); the grid stays focusable, selectable and copyable. Attribute `readonly` — presence decides (`readonly="false"` is still read-only), reflects. Default: `false`. */
 	isReadonly: boolean
-	/** No interaction at all (not focusable, dimmed). Attribute `disabled` (presence, reflects). */
+	/** No interaction at all (not focusable, dimmed). Attribute `disabled` — presence decides, reflects. Default: `false`. */
 	isDisabled: boolean
+	/**
+	 * How a cell range is selected. In every mode but `none`, Shift+Arrow grows / shrinks the range from the focused cell. Default: `click`.
+	 *
+	 * - `none` — no cell-range selection
+	 * - `click` — a drag selects; Shift+click extends from the focused cell
+	 * - `shift` — Shift+click twice or Shift+drag selects
+	 */
 	cellSelectionMode: CellSelectionMode
 	// Dropdown editor
+	/**
+	 * When the ▼ toggle of a dropdown cell is shown (a column’s own setting wins). Default: `always`.
+	 *
+	 * - `always` — in every dropdown cell
+	 * - `on-focus` — only in the focused cell
+	 */
 	dropdownToggleVisibility: ToggleVisibility
+	/** Open a dropdown editor as soon as its cell gets focus. Default: `true`. */
 	shouldOpenDropdownOnFocus: boolean
+	/** Enter on a dropdown cell opens the dropdown (`true`) or moves to the next row (`false`); a column’s own setting wins. Default: `false`. */
 	shouldOpenDropdownOnEnter: boolean
+	/** Checkbox cells toggle with one click, even in `navigate` mode. Default: `false`. */
 	isCheckboxAlwaysEditable: boolean
 	// Row numbers & indicators
+	/** Show the row-number column (a click / Ctrl / Shift / drag on it selects rows). Default: `false`. */
 	isRowNumbersShown: boolean
+	/** Mark cells with unsaved changes (drafts). Default: `true`. */
 	isDirtyIndicatorShown: boolean
+	/** Keep the row-number column in place while scrolling horizontally. Default: `false`. */
 	isStickyRowNumbers: boolean
+	/** Freeze the first N columns while scrolling horizontally (counted after the reorder by `column.isFrozen`). Default: `0`. */
 	frozenColumnCount: number
 	// Row toolbar
+	/** Show the row toolbar (`rowToolbar` entries) next to the hovered / focused row. Default: `false`. */
 	isRowToolbarShown: boolean
+	/**
+	 * Vertical alignment of the row toolbar in the `left` / `right` positions. Default: `bottom`.
+	 *
+	 * - `top` — aligned to the row top (extends upwards)
+	 * - `center` — centered on the row
+	 * - `bottom` — aligned to the row bottom (extends downwards)
+	 */
 	toolbarVerticalAlign: 'top' | 'center' | 'bottom'
+	/**
+	 * Horizontal alignment of the row toolbar in the `top` position. Default: `center`.
+	 *
+	 * - `start` — at the start of the row / `toolbarColumn`
+	 * - `center` — centered
+	 * - `end` — at the end
+	 * - `cursor` — at the pointer position
+	 */
 	toolbarHorizontalAlign: 'start' | 'center' | 'end' | 'cursor'
+	/**
+	 * How the row toolbar opens. Default: `hover`.
+	 *
+	 * - `hover` — on row hover
+	 * - `click` — on a click in the row
+	 * - `button` — from a trigger button in the row
+	 */
 	toolbarTrigger: 'hover' | 'click' | 'button'
+	/**
+	 * Preferred position of the row toolbar. Default: `auto`.
+	 *
+	 * - `auto` — the side with room
+	 * - `left` — left of the row
+	 * - `right` — right of the row
+	 * - `top` — above the row (see `toolbarHorizontalAlign`, `toolbarColumn`)
+	 * - `inline` — inside the row
+	 */
 	toolbarPosition: ToolbarPosition
+	/** The row toolbar follows the pointer horizontally. Default: `false`. */
 	shouldToolbarFollowCursor: boolean
-	/** A number is an em multiplier (0–1), a string any CSS length. */
+	/** Horizontal offset of the cell toolbar: a number 0–1 is a fraction of the cell width, a string any CSS length (`2rem`). Default: `0.2`. */
 	cellToolbarOffset: number | string
 	// Context menu
+	/** Horizontal offset (px) of the context menu from the click point. Default: `8`. */
 	contextMenuXOffset: number
+	/** Vertical offset (px) of the context menu from the click point. Default: `0`. */
 	contextMenuYOffset: number
 	// Shortcuts help
+	/** Show the keyboard-shortcuts help icon. Default: `false`. */
 	isShortcutsHelpShown: boolean
+	/**
+	 * Corner of the keyboard-shortcuts help icon. Default: `top-right`.
+	 *
+	 * - `top-right` — top right corner
+	 * - `top-left` — top left corner
+	 */
 	shortcutsHelpPosition: 'top-right' | 'top-left'
 	// Columns
-	/** Default `min-width` (CSS length; a number means pixels) of every column header without its own `minWidth`; `undefined` = none. */
+	/** Default `min-width` of every column without its own `minWidth` — a CSS length; a number means pixels. Unset = none. */
 	columnMinWidth: string | number | undefined
+	/** Let the user drag headers to reorder columns. Default: `false`. */
 	isColumnReorderAllowed: boolean
+	/**
+	 * Header-click sorting. Default: `none`.
+	 *
+	 * - `none` — sorting off
+	 * - `single` — one sorted column at a time
+	 * - `multiple` — several sorted columns (Ctrl+click adds a column)
+	 */
 	sortMode: SortMode
 	// Persisted UI state (core SPEC §12.17)
 	/** Key of the persisted column state; unset / empty = off. Default store: `localStorage['km-state:web-grid:<key>']`. */
@@ -415,32 +548,79 @@ export interface GridElementConfig<T = unknown> {
 	/** Store `ctx.state` — the WHOLE `GridPersistenceState` — for `ctx.key`; may be async. Set both callbacks; either one alone switches localStorage off. */
 	saveStateCallback: SaveStateCallback<GridPersistenceState> | null
 	// Summary
-	/** Summary position(s), `|`-separated like `paginationPosition`; `null` = no summary. */
+	/**
+	 * Where the summary bar (`renderSummaryCallback`) sits: one area or several `|`-separated ones, like `paginationPosition`. Unset = no summary.
+	 *
+	 * - `top-left` — above the table, left
+	 * - `top-center` — above the table, centered
+	 * - `top-right` — above the table, right
+	 * - `bottom-left` — below the table, left
+	 * - `bottom-center` — below the table, centered
+	 * - `bottom-right` — below the table, right
+	 */
 	summaryPosition: string | null
+	/** The summary shares one line with the pager when both sit in the same area. Default: `true`. */
 	isSummaryInline: boolean
 	// Virtual & infinite scroll
+	/** Render only the visible rows (give the grid a capped height). Default: `false`. */
 	isVirtualScrollEnabled: boolean
+	/** Row count from which the engine's automatic virtual scroll turns on. Default: `100`. */
 	virtualScrollThreshold: number
+	/** Fixed row height (px) virtual scroll computes with. Default: `38`. */
 	virtualScrollItemHeight: number
+	/** Extra rows rendered above / below the viewport in virtual scroll. Default: `10`. */
 	virtualScrollOverscan: number
+	/** Ask for more rows (`data-request`, `trigger: load-more`) when scrolled near the end, until `hasMoreItems` is `false`. Default: `false`. */
 	isInfiniteScrollEnabled: boolean
+	/** Distance (px) from the bottom that triggers the next infinite-scroll load. Default: `100`. */
 	infiniteScrollThreshold: number
 	// New empty row
+	/** Experimental: an always-present empty row for entering a new record. Default: `false`. */
 	isNewRowEnabled: boolean
+	/**
+	 * Experimental: where the empty new row sits. Default: `bottom`.
+	 *
+	 * - `top` — above the data rows
+	 * - `bottom` — below the data rows
+	 */
 	newRowPosition: NewRowPosition
+	/** Experimental: text shown in the row-number cell of the empty new row. Default: `+`. */
 	newRowIndicator: string
 	// Tree
+	/** Tree data: trust the order of `items` (the grid never re-sorts — pair with `data-request` for sort changes); `false` sorts siblings depth-first. Default: `false`. */
 	isTreeDataSorted: boolean
+	/**
+	 * What a double-click on a tree-column cell does. Default: `none`.
+	 *
+	 * - `none` — nothing tree-specific (editing may start)
+	 * - `toggle` — expands / collapses the row
+	 */
 	treeDoubleClickBehavior: TreeDoubleClickBehavior
+	/** HTML / text of the chevron of an expanded tree row. Equal to `treeCollapsedGlyph` → CSS rotates the glyph; different → the glyph is swapped. Default: `▶`. */
 	treeExpandedGlyph: string
+	/** HTML / text of the chevron of a collapsed tree row. Default: `▶`. */
 	treeCollapsedGlyph: string
 	// Paste / clipboard
+	/** Copying a cell range also copies the column headers. Default: `false`. */
 	shouldCopyWithHeaders: boolean
+	/**
+	 * How a multi-cell paste treats cells that are not editable. Default: `skip-non-editable`.
+	 *
+	 * - `skip-non-editable` — skips them, pastes the rest
+	 * - `all-columns` — pastes into them anyway
+	 * - `editable-only` — refuses them (reported as skipped and invalid)
+	 */
 	pasteMode: PasteMode
+	/** Run `validateCallback` on every pasted cell. Default: `true`. */
 	shouldValidateOnPaste: boolean
-	/** Fill-handle drag direction for the whole grid (`'vertical'` | `'all'`); a column's `fillDirection` wins. */
+	/**
+	 * Fill-handle drag direction for the whole grid; a column’s own `fillDirection` wins. Default: `vertical`.
+	 *
+	 * - `vertical` — fills the source column only
+	 * - `all` — also fills across columns
+	 */
 	fillDirection: FillDirection
-	/** UI strings — a partial object (JSON attribute `labels`) merged per key over the English defaults. Reads back what was assigned. */
+	/** UI strings (i18n) — a partial object (JSON attribute `labels`) merged per key over the English defaults: `noData`, `noResults`, `loading`, pager / go-to-row / menu texts, …. Reads back what was assigned. */
 	labels: GridLabelsInput | undefined
 	/** CSS for the grid's shadow root, after the page-wide `window.components['web-grid'].customStyles`. */
 	customStyles: string | null
@@ -450,7 +630,9 @@ export interface GridElementConfig<T = unknown> {
 	renderLoadingCallback: RenderLoaderCallback | null
 	/** Runs before the grid scrolls a cell / row into view on its own: `false` skips, a partial `options` replaces the defaults (synchronous). */
 	beforeScrollCallback: ((ctx: GridBeforeScrollContext<T>) => false | Partial<GridScrollOptions> | void) | null
+	/** Delay (ms) before a cell tooltip shows. Default: `200`. */
 	tooltipShowDelay: number
+	/** Delay (ms) before a cell tooltip hides. Default: `100`. */
 	tooltipHideDelay: number
 	/**
 	 * Scope the "one overlay open at a time" coordination to a named group. Overlays
@@ -492,67 +674,140 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	// filters, focusedRowIndex, totalItems, expandedPaths, hasMoreItems)
 	// deliberately stay property-only.
 	// `as const` keeps the configKey literals: they type GridResponsiveConfig.
+	/** @internal */
 	static inputs = [
 		// Filtering & pagination
-		{ configKey: 'isFilteringEnabled', attribute: 'enable-filtering', converter: toBool('default-false'), default: false, on: 'update' },
-		{ configKey: 'filterMode', attribute: 'filter-mode', converter: toEnum(FILTER_MODES, { default: 'client' }), default: 'client', on: 'update' },
-		{ configKey: 'isPagingEnabled', attribute: 'enable-paging', converter: toBool('default-false'), default: false, on: 'update' },
-		{ configKey: 'pageSize', attribute: 'page-size', converter: toInt({ min: 1, default: 10 }), default: 10, on: 'update' },
-		{ configKey: 'paginationMode', attribute: 'pagination-mode', converter: toEnum(PAGINATION_MODES, { default: 'client' }), default: 'client', on: 'update' },
-		{ configKey: 'isPaginationShown', attribute: 'show-pagination', converter: toBoolOrAuto(true), default: true, on: 'update', type: "boolean | 'auto'" },
-		{ configKey: 'paginationPosition', attribute: 'pagination-position', converter: toPipeList(AREA_POSITIONS, { default: 'bottom-center' }), default: 'bottom-center', on: 'update', type: 'string' },
-		{ configKey: 'paginationLayout', attribute: 'pagination-layout', converter: toPipeList(PAGINATION_PARTS, { default: 'page-size|previous|page-info|next' }), default: 'page-size|previous|page-info|next', on: 'update', type: 'string' },
+		{ configKey: 'isFilteringEnabled', attribute: 'enable-filtering', converter: toBool('default-false'), default: false, on: 'update', description: 'Show the filter row (an input under the header of every column with `isFilterable: true`) and apply `filters`. Default: `false`.' },
+		{ configKey: 'filterMode', attribute: 'filter-mode', converter: toEnum(FILTER_MODES, { default: 'client' }), default: 'client', on: 'update', description: `Who filters the rows. Default: \`client\`.
+
+- \`client\` — the grid filters \`items\` itself
+- \`server\` — the grid does not filter — handle \`filter-change\` (\`{ filters }\`) and replace \`items\`` },
+		{ configKey: 'isPagingEnabled', attribute: 'enable-paging', converter: toBool('default-false'), default: false, on: 'update', description: 'Split the rows into pages and show the pager. Default: `false`.' },
+		{ configKey: 'pageSize', attribute: 'page-size', converter: toInt({ min: 1, default: 10 }), default: 10, on: 'update', description: 'Rows per page (at least 1). Default: `10`.' },
+		{ configKey: 'paginationMode', attribute: 'pagination-mode', converter: toEnum(PAGINATION_MODES, { default: 'client' }), default: 'client', on: 'update', description: `Who pages the rows. Default: \`client\`.
+
+- \`client\` — the grid slices \`items\` into pages
+- \`server\` — \`items\` already is the current page — handle \`data-request\` and set \`totalItems\`` },
+		{ configKey: 'isPaginationShown', attribute: 'show-pagination', converter: toBoolOrAuto(true), default: true, on: 'update', type: "boolean | 'auto'", description: `When the pager is shown. Default: \`true\`.
+
+- \`true\` — always
+- \`false\` — never
+- \`auto\` — hidden while there is at most one page` },
+		{ configKey: 'paginationPosition', attribute: 'pagination-position', converter: toPipeList(AREA_POSITIONS, { default: 'bottom-center' }), default: 'bottom-center', on: 'update', type: 'string', description: `Where the pager sits: one area or several \`|\`-separated ones (\`top-right|bottom-right\`); any other value is refused. Default: \`bottom-center\`.
+
+- \`top-left\` — above the table, left
+- \`top-center\` — above the table, centered
+- \`top-right\` — above the table, right
+- \`bottom-left\` — below the table, left
+- \`bottom-center\` — below the table, centered
+- \`bottom-right\` — below the table, right` },
+		{ configKey: 'paginationLayout', attribute: 'pagination-layout', converter: toPipeList(PAGINATION_PARTS, { default: 'page-size|previous|page-info|next' }), default: 'page-size|previous|page-info|next', on: 'update', type: 'string', description: `The pager parts in order, \`|\`-separated (\`first|previous|page-info|next|last\`). Default: \`page-size|previous|page-info|next\`.
+
+- \`first\` — go to the first page
+- \`previous\` — go one page back
+- \`page-info\` — the "page X of Y" text
+- \`next\` — go one page forward
+- \`last\` — go to the last page
+- \`page-size\` — the rows-per-page selector (options from \`pageSizes\`)` },
 		// Appearance
-		{ configKey: 'isStriped', attribute: 'striped', converter: toBool('default-true'), default: true, on: 'update' },
-		{ configKey: 'isHoverable', attribute: 'hoverable', converter: toBool('default-true'), default: true, on: 'update' },
-		{ configKey: 'isTableBorderOnly', attribute: 'table-border-only', converter: toBool('default-false'), default: false, on: 'update' },
-		{ configKey: 'isScrollable', attribute: 'scrollable', converter: toBool('default-false'), default: false, on: 'update' },
-		{ configKey: 'scrollMaxHeight', attribute: 'scroll-max-height', converter: toCssLength({ default: '100vh' }), default: '100vh', on: 'update', type: 'string | number' },
+		{ configKey: 'isStriped', attribute: 'striped', converter: toBool('default-true'), default: true, on: 'update', description: 'Alternate the row background colors. Default: `true`.' },
+		{ configKey: 'isHoverable', attribute: 'hoverable', converter: toBool('default-true'), default: true, on: 'update', description: 'Highlight the row under the pointer. Default: `true`.' },
+		{ configKey: 'isTableBorderOnly', attribute: 'table-border-only', converter: toBool('default-false'), default: false, on: 'update', description: 'Draw the border around the table only, not around the pager / summary areas. Default: `false`.' },
+		{ configKey: 'isScrollable', attribute: 'scrollable', converter: toBool('default-false'), default: false, on: 'update', description: 'Make the grid its own scroll container, capped at `scrollMaxHeight`. Default: `false`.' },
+		{ configKey: 'scrollMaxHeight', attribute: 'scroll-max-height', converter: toCssLength({ default: '100vh' }), default: '100vh', on: 'update', type: 'string | number', description: 'Max height of the scroll container while `isScrollable` is on — a CSS length; a number means pixels (`240` → `240px`); an invalid length is refused. Default: `100vh`.' },
 		// Editing
-		{ configKey: 'isEditingEnabled', attribute: 'enable-editing', converter: toBool('default-false'), default: false, on: 'update' },
-		{ configKey: 'editTrigger', attribute: 'edit-trigger', converter: toEnum(EDIT_TRIGGERS, { default: 'dblclick' }), default: 'dblclick', on: 'update' },
+		{ configKey: 'isEditingEnabled', attribute: 'enable-editing', converter: toBool('default-false'), default: false, on: 'update', description: 'Allow editing cells (columns opt in with `isEditable`). Default: `false`.' },
+		{ configKey: 'editTrigger', attribute: 'edit-trigger', converter: toEnum(EDIT_TRIGGERS, { default: 'dblclick' }), default: 'dblclick', on: 'update', description: `How editing a cell starts (a column’s own \`editTrigger\` wins). Default: \`dblclick\`.
+
+- \`click\` — a single click opens the editor
+- \`dblclick\` — a double click opens the editor
+- \`button\` — an edit button in editable cells (on hover and in the focused cell); F2 / Enter too
+- \`always\` — every editable cell is always an editor
+- \`navigate\` — Excel-like: arrows move the focus, typing starts editing the focused cell` },
 		// HTML of the edit button (editTrigger 'button'), e.g. '<span class="lucide-pencil"></span>'
-		{ configKey: 'editButtonIcon', attribute: 'edit-button-icon', converter: toText({ default: '✎' }), default: '✎', on: 'update' },
-		{ configKey: 'editStartSelection', attribute: 'edit-start-selection', converter: toEnum(EDIT_START_SELECTIONS, { default: 'mouse-position' }), default: 'mouse-position', on: 'update' },
-		{ configKey: 'shouldCommitOnClickAway', attribute: 'commit-on-click-away', converter: toBool('default-true'), default: true, on: 'update' },
+		{ configKey: 'editButtonIcon', attribute: 'edit-button-icon', converter: toText({ default: '✎' }), default: '✎', on: 'update', description: 'Content of the edit button — an HTML string, e.g. `<span class="lucide-pencil"></span>`. Shown in editable cells with `editTrigger: \'button\'` (or `column.isEditButtonShown`); its accessible name is `labels.editCell`. Default: `✎`.' },
+		{ configKey: 'editStartSelection', attribute: 'edit-start-selection', converter: toEnum(EDIT_START_SELECTIONS, { default: 'mouse-position' }), default: 'mouse-position', on: 'update', description: `Where the caret goes when an editor opens. Default: \`mouse-position\`.
+
+- \`mouse-position\` — at the clicked character
+- \`select-all\` — the whole value selected
+- \`cursor-at-start\` — caret before the first character
+- \`cursor-at-end\` — caret after the last character` },
+		{ configKey: 'shouldCommitOnClickAway', attribute: 'commit-on-click-away', converter: toBool('default-true'), default: true, on: 'update', description: 'Clicking another cell while editing commits the value (through `beforeCommitCallback` / `validateCallback`); `false` discards it. Default: `true`.' },
 		// A preset: also sets isEditingEnabled / isReadonly / editTrigger / dropdown flags / cellSelectionMode
 		// in the same batch; inputs set explicitly in that batch win (core getBatchValuesCallback).
-		{ configKey: 'preset', attribute: 'preset', converter: toEnum(GRID_PRESETS_LIST, { default: 'excel' }), default: 'excel', on: 'update',
+		{ configKey: 'preset', attribute: 'preset', converter: toEnum(GRID_PRESETS_LIST, { default: 'excel' }), default: 'excel', on: 'update', description: `Sets editing / selection defaults in one go; inputs set explicitly in the same batch win. Default: \`excel\`.
+
+- \`read-only\` — no editing, a click selects cells; also sets \`isReadonly\`
+- \`excel\` — editing on, \`editTrigger: navigate\`, a drag selects a cell range
+- \`input-matrix\` — every cell is always an editor (\`editTrigger: always\`), Shift+click selects cells, dropdowns open on focus`,
 			getBatchValuesCallback: (preset) => GRID_PRESETS[preset as GridPreset] ?? null },
 		// Values can't change; still focusable / selectable / copyable (the read-only preset sets it).
 		// Native rule (core SPEC §6.4): the attribute's presence decides, `readonly="false"` is still read-only; reflects.
-		{ configKey: 'isReadonly', attribute: 'readonly', converter: toBool('presence'), default: false, on: 'update', shouldReflect: true },
+		{ configKey: 'isReadonly', attribute: 'readonly', converter: toBool('presence'), default: false, on: 'update', shouldReflect: true, description: 'Values cannot change (no edit / paste / fill / row add-delete-move); the grid stays focusable, selectable and copyable. Attribute `readonly` — presence decides (`readonly="false"` is still read-only), reflects. Default: `false`.' },
 		// No interaction at all (applied via core disabledChanged(), not update()); presence rule, reflects
-		{ configKey: 'isDisabled', attribute: 'disabled', converter: toBool('presence'), default: false, on: 'update', shouldReflect: true },
-		{ configKey: 'cellSelectionMode', attribute: 'cell-selection-mode', converter: toEnum(CELL_SELECTION_MODES, { default: 'click' }), default: 'click', on: 'update' },
+		{ configKey: 'isDisabled', attribute: 'disabled', converter: toBool('presence'), default: false, on: 'update', shouldReflect: true, description: 'No interaction at all (not focusable, dimmed). Attribute `disabled` — presence decides, reflects. Default: `false`.' },
+		{ configKey: 'cellSelectionMode', attribute: 'cell-selection-mode', converter: toEnum(CELL_SELECTION_MODES, { default: 'click' }), default: 'click', on: 'update', description: `How a cell range is selected. In every mode but \`none\`, Shift+Arrow grows / shrinks the range from the focused cell. Default: \`click\`.
+
+- \`none\` — no cell-range selection
+- \`click\` — a drag selects; Shift+click extends from the focused cell
+- \`shift\` — Shift+click twice or Shift+drag selects` },
 		// Dropdown editor
-		{ configKey: 'dropdownToggleVisibility', attribute: 'dropdown-toggle-visibility', converter: toEnum(TOGGLE_VISIBILITIES, { default: 'always' }), default: 'always', on: 'update' },
-		{ configKey: 'shouldOpenDropdownOnFocus', attribute: 'open-dropdown-on-focus', converter: toBool('default-true'), default: true, on: 'update' },
-		{ configKey: 'shouldOpenDropdownOnEnter', attribute: 'open-dropdown-on-enter', converter: toBool('default-false'), default: false, on: 'update' },
-		{ configKey: 'isCheckboxAlwaysEditable', attribute: 'checkbox-always-editable', converter: toBool('default-false'), default: false, on: 'update' },
+		{ configKey: 'dropdownToggleVisibility', attribute: 'dropdown-toggle-visibility', converter: toEnum(TOGGLE_VISIBILITIES, { default: 'always' }), default: 'always', on: 'update', description: `When the ▼ toggle of a dropdown cell is shown (a column’s own setting wins). Default: \`always\`.
+
+- \`always\` — in every dropdown cell
+- \`on-focus\` — only in the focused cell` },
+		{ configKey: 'shouldOpenDropdownOnFocus', attribute: 'open-dropdown-on-focus', converter: toBool('default-true'), default: true, on: 'update', description: 'Open a dropdown editor as soon as its cell gets focus. Default: `true`.' },
+		{ configKey: 'shouldOpenDropdownOnEnter', attribute: 'open-dropdown-on-enter', converter: toBool('default-false'), default: false, on: 'update', description: 'Enter on a dropdown cell opens the dropdown (`true`) or moves to the next row (`false`); a column’s own setting wins. Default: `false`.' },
+		{ configKey: 'isCheckboxAlwaysEditable', attribute: 'checkbox-always-editable', converter: toBool('default-false'), default: false, on: 'update', description: 'Checkbox cells toggle with one click, even in `navigate` mode. Default: `false`.' },
 		// Row numbers & indicators
-		{ configKey: 'isRowNumbersShown', attribute: 'show-row-numbers', converter: toBool('default-false'), default: false, on: 'update' },
-		{ configKey: 'isDirtyIndicatorShown', attribute: 'show-dirty-indicator', converter: toBool('default-true'), default: true, on: 'update' },
-		{ configKey: 'isStickyRowNumbers', attribute: 'sticky-row-numbers', converter: toBool('default-false'), default: false, on: 'update' },
-		{ configKey: 'frozenColumnCount', attribute: 'frozen-column-count', converter: toInt({ min: 0, default: 0 }), default: 0, on: 'update' },
+		{ configKey: 'isRowNumbersShown', attribute: 'show-row-numbers', converter: toBool('default-false'), default: false, on: 'update', description: 'Show the row-number column (a click / Ctrl / Shift / drag on it selects rows). Default: `false`.' },
+		{ configKey: 'isDirtyIndicatorShown', attribute: 'show-dirty-indicator', converter: toBool('default-true'), default: true, on: 'update', description: 'Mark cells with unsaved changes (drafts). Default: `true`.' },
+		{ configKey: 'isStickyRowNumbers', attribute: 'sticky-row-numbers', converter: toBool('default-false'), default: false, on: 'update', description: 'Keep the row-number column in place while scrolling horizontally. Default: `false`.' },
+		{ configKey: 'frozenColumnCount', attribute: 'frozen-column-count', converter: toInt({ min: 0, default: 0 }), default: 0, on: 'update', description: 'Freeze the first N columns while scrolling horizontally (counted after the reorder by `column.isFrozen`). Default: `0`.' },
 		// Row toolbar
-		{ configKey: 'isRowToolbarShown', attribute: 'show-row-toolbar', converter: toBool('default-false'), default: false, on: 'update' },
-		{ configKey: 'toolbarVerticalAlign', attribute: 'toolbar-vertical-align', converter: toEnum(TOOLBAR_VERTICAL_ALIGNS, { default: 'bottom' }), default: 'bottom', on: 'update' },
-		{ configKey: 'toolbarHorizontalAlign', attribute: 'toolbar-horizontal-align', converter: toEnum(TOOLBAR_HORIZONTAL_ALIGNS, { default: 'center' }), default: 'center', on: 'update' },
-		{ configKey: 'toolbarTrigger', attribute: 'toolbar-trigger', converter: toEnum(TOOLBAR_TRIGGERS, { default: 'hover' }), default: 'hover', on: 'update' },
-		{ configKey: 'toolbarPosition', attribute: 'toolbar-position', converter: toEnum(TOOLBAR_POSITIONS, { default: 'auto' }), default: 'auto', on: 'update' },
-		{ configKey: 'shouldToolbarFollowCursor', attribute: 'toolbar-follow-cursor', converter: toBool('default-false'), default: false, on: 'update' },
-		{ configKey: 'cellToolbarOffset', attribute: 'cell-toolbar-offset', converter: toNumberOrLength(0.2), default: 0.2, on: 'update', type: 'number | string' },
+		{ configKey: 'isRowToolbarShown', attribute: 'show-row-toolbar', converter: toBool('default-false'), default: false, on: 'update', description: 'Show the row toolbar (`rowToolbar` entries) next to the hovered / focused row. Default: `false`.' },
+		{ configKey: 'toolbarVerticalAlign', attribute: 'toolbar-vertical-align', converter: toEnum(TOOLBAR_VERTICAL_ALIGNS, { default: 'bottom' }), default: 'bottom', on: 'update', description: `Vertical alignment of the row toolbar in the \`left\` / \`right\` positions. Default: \`bottom\`.
+
+- \`top\` — aligned to the row top (extends upwards)
+- \`center\` — centered on the row
+- \`bottom\` — aligned to the row bottom (extends downwards)` },
+		{ configKey: 'toolbarHorizontalAlign', attribute: 'toolbar-horizontal-align', converter: toEnum(TOOLBAR_HORIZONTAL_ALIGNS, { default: 'center' }), default: 'center', on: 'update', description: `Horizontal alignment of the row toolbar in the \`top\` position. Default: \`center\`.
+
+- \`start\` — at the start of the row / \`toolbarColumn\`
+- \`center\` — centered
+- \`end\` — at the end
+- \`cursor\` — at the pointer position` },
+		{ configKey: 'toolbarTrigger', attribute: 'toolbar-trigger', converter: toEnum(TOOLBAR_TRIGGERS, { default: 'hover' }), default: 'hover', on: 'update', description: `How the row toolbar opens. Default: \`hover\`.
+
+- \`hover\` — on row hover
+- \`click\` — on a click in the row
+- \`button\` — from a trigger button in the row` },
+		{ configKey: 'toolbarPosition', attribute: 'toolbar-position', converter: toEnum(TOOLBAR_POSITIONS, { default: 'auto' }), default: 'auto', on: 'update', description: `Preferred position of the row toolbar. Default: \`auto\`.
+
+- \`auto\` — the side with room
+- \`left\` — left of the row
+- \`right\` — right of the row
+- \`top\` — above the row (see \`toolbarHorizontalAlign\`, \`toolbarColumn\`)
+- \`inline\` — inside the row` },
+		{ configKey: 'shouldToolbarFollowCursor', attribute: 'toolbar-follow-cursor', converter: toBool('default-false'), default: false, on: 'update', description: 'The row toolbar follows the pointer horizontally. Default: `false`.' },
+		{ configKey: 'cellToolbarOffset', attribute: 'cell-toolbar-offset', converter: toNumberOrLength(0.2), default: 0.2, on: 'update', type: 'number | string', description: 'Horizontal offset of the cell toolbar: a number 0–1 is a fraction of the cell width, a string any CSS length (`2rem`). Default: `0.2`.' },
 		// Context menu
-		{ configKey: 'contextMenuXOffset', attribute: 'context-menu-x-offset', converter: toInt({ default: 8 }), default: 8, on: 'update' },
-		{ configKey: 'contextMenuYOffset', attribute: 'context-menu-y-offset', converter: toInt({ default: 0 }), default: 0, on: 'update' },
+		{ configKey: 'contextMenuXOffset', attribute: 'context-menu-x-offset', converter: toInt({ default: 8 }), default: 8, on: 'update', description: 'Horizontal offset (px) of the context menu from the click point. Default: `8`.' },
+		{ configKey: 'contextMenuYOffset', attribute: 'context-menu-y-offset', converter: toInt({ default: 0 }), default: 0, on: 'update', description: 'Vertical offset (px) of the context menu from the click point. Default: `0`.' },
 		// Shortcuts help
-		{ configKey: 'isShortcutsHelpShown', attribute: 'show-shortcuts-help', converter: toBool('default-false'), default: false, on: 'update' },
-		{ configKey: 'shortcutsHelpPosition', attribute: 'shortcuts-help-position', converter: toEnum(SHORTCUTS_HELP_POSITIONS, { default: 'top-right' }), default: 'top-right', on: 'update' },
+		{ configKey: 'isShortcutsHelpShown', attribute: 'show-shortcuts-help', converter: toBool('default-false'), default: false, on: 'update', description: 'Show the keyboard-shortcuts help icon. Default: `false`.' },
+		{ configKey: 'shortcutsHelpPosition', attribute: 'shortcuts-help-position', converter: toEnum(SHORTCUTS_HELP_POSITIONS, { default: 'top-right' }), default: 'top-right', on: 'update', description: `Corner of the keyboard-shortcuts help icon. Default: \`top-right\`.
+
+- \`top-right\` — top right corner
+- \`top-left\` — top left corner` },
 		// Columns
-		{ configKey: 'columnMinWidth', attribute: 'column-min-width', converter: toCssLength(), on: 'update', type: 'string | number | undefined' },
-		{ configKey: 'isColumnReorderAllowed', attribute: 'allow-column-reorder', converter: toBool('default-false'), default: false, on: 'update' },
-		{ configKey: 'sortMode', attribute: 'sort-mode', converter: toEnum(SORT_MODES, { default: 'none' }), default: 'none', on: 'update' },
+		{ configKey: 'columnMinWidth', attribute: 'column-min-width', converter: toCssLength(), on: 'update', type: 'string | number | undefined', description: 'Default `min-width` of every column without its own `minWidth` — a CSS length; a number means pixels. Unset = none.' },
+		{ configKey: 'isColumnReorderAllowed', attribute: 'allow-column-reorder', converter: toBool('default-false'), default: false, on: 'update', description: 'Let the user drag headers to reorder columns. Default: `false`.' },
+		{ configKey: 'sortMode', attribute: 'sort-mode', converter: toEnum(SORT_MODES, { default: 'none' }), default: 'none', on: 'update', description: `Header-click sorting. Default: \`none\`.
+
+- \`none\` — sorting off
+- \`single\` — one sorted column at a time
+- \`multiple\` — several sorted columns (Ctrl+click adds a column)` },
 		// Persisted UI state (core createStateStore(), SPEC §12.17 / rulebook C-CA-17): column widths / order
 		// the user arranged, kept under `storage-key` (localStorage `km-state:web-grid:<key>`, or the callbacks).
 		{ configKey: 'storageKey', attribute: 'storage-key', converter: toText({ isNullable: true }), default: null, on: 'update', type: 'string | null', description: 'Key of the persisted column state (widths / order the user arranged; core SPEC §12.17). Unset / empty = off; set = localStorage `km-state:web-grid:<key>`, or `loadStateCallback` / `saveStateCallback`.' },
@@ -561,33 +816,53 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		{ configKey: 'loadStateCallback', converter: toFunction<LoadStateCallback<GridPersistenceState>>(), on: 'update', type: 'LoadStateCallback<GridPersistenceState> | null', description: 'Persisted column state source: `(ctx) => GridPersistenceState | null | Promise<…>`, `ctx`: `{ key }` + context. Set both callbacks; either one alone switches localStorage off.' },
 		{ configKey: 'saveStateCallback', converter: toFunction<SaveStateCallback<GridPersistenceState>>(), on: 'none', type: 'SaveStateCallback<GridPersistenceState> | null', description: 'Persisted column state sink: `ctx`: `{ key, state }` + context, `state` = the WHOLE `GridPersistenceState` (`{ columnWidths?, columnOrder? }`). Set both callbacks; either one alone switches localStorage off.' },
 		// Summary
-		{ configKey: 'summaryPosition', attribute: 'summary-position', converter: toPipeList(AREA_POSITIONS, { isNullable: true }), default: null, on: 'update', type: 'string | null' },
-		{ configKey: 'isSummaryInline', attribute: 'summary-inline', converter: toBool('default-true'), default: true, on: 'update' },
+		{ configKey: 'summaryPosition', attribute: 'summary-position', converter: toPipeList(AREA_POSITIONS, { isNullable: true }), default: null, on: 'update', type: 'string | null', description: `Where the summary bar (\`renderSummaryCallback\`) sits: one area or several \`|\`-separated ones, like \`paginationPosition\`. Unset = no summary.
+
+- \`top-left\` — above the table, left
+- \`top-center\` — above the table, centered
+- \`top-right\` — above the table, right
+- \`bottom-left\` — below the table, left
+- \`bottom-center\` — below the table, centered
+- \`bottom-right\` — below the table, right` },
+		{ configKey: 'isSummaryInline', attribute: 'summary-inline', converter: toBool('default-true'), default: true, on: 'update', description: 'The summary shares one line with the pager when both sit in the same area. Default: `true`.' },
 		// Virtual & infinite scroll
-		{ configKey: 'isVirtualScrollEnabled', attribute: 'enable-virtual-scroll', converter: toBool('default-false'), default: false, on: 'update' },
-		{ configKey: 'virtualScrollThreshold', attribute: 'virtual-scroll-threshold', converter: toInt({ min: 0, default: 100 }), default: 100, on: 'update' },
-		{ configKey: 'virtualScrollItemHeight', attribute: 'virtual-scroll-item-height', converter: toInt({ min: 1, default: 38 }), default: 38, on: 'update' },
-		{ configKey: 'virtualScrollOverscan', attribute: 'virtual-scroll-overscan', converter: toInt({ min: 0, default: 10 }), default: 10, on: 'update' },
-		{ configKey: 'isInfiniteScrollEnabled', attribute: 'enable-infinite-scroll', converter: toBool('default-false'), default: false, on: 'update' },
-		{ configKey: 'infiniteScrollThreshold', attribute: 'infinite-scroll-threshold', converter: toInt({ min: 0, default: 100 }), default: 100, on: 'update' },
+		{ configKey: 'isVirtualScrollEnabled', attribute: 'enable-virtual-scroll', converter: toBool('default-false'), default: false, on: 'update', description: 'Render only the visible rows (give the grid a capped height). Default: `false`.' },
+		{ configKey: 'virtualScrollThreshold', attribute: 'virtual-scroll-threshold', converter: toInt({ min: 0, default: 100 }), default: 100, on: 'update', description: 'Row count from which the engine\'s automatic virtual scroll turns on. Default: `100`.' },
+		{ configKey: 'virtualScrollItemHeight', attribute: 'virtual-scroll-item-height', converter: toInt({ min: 1, default: 38 }), default: 38, on: 'update', description: 'Fixed row height (px) virtual scroll computes with. Default: `38`.' },
+		{ configKey: 'virtualScrollOverscan', attribute: 'virtual-scroll-overscan', converter: toInt({ min: 0, default: 10 }), default: 10, on: 'update', description: 'Extra rows rendered above / below the viewport in virtual scroll. Default: `10`.' },
+		{ configKey: 'isInfiniteScrollEnabled', attribute: 'enable-infinite-scroll', converter: toBool('default-false'), default: false, on: 'update', description: 'Ask for more rows (`data-request`, `trigger: load-more`) when scrolled near the end, until `hasMoreItems` is `false`. Default: `false`.' },
+		{ configKey: 'infiniteScrollThreshold', attribute: 'infinite-scroll-threshold', converter: toInt({ min: 0, default: 100 }), default: 100, on: 'update', description: 'Distance (px) from the bottom that triggers the next infinite-scroll load. Default: `100`.' },
 		// New empty row
-		{ configKey: 'isNewRowEnabled', attribute: 'enable-new-row', converter: toBool('default-false'), default: false, on: 'update' },
-		{ configKey: 'newRowPosition', attribute: 'new-row-position', converter: toEnum(NEW_ROW_POSITIONS, { default: 'bottom' }), default: 'bottom', on: 'update' },
-		{ configKey: 'newRowIndicator', attribute: 'new-row-indicator', converter: toText({ default: '+' }), default: '+', on: 'update' },
+		{ configKey: 'isNewRowEnabled', attribute: 'enable-new-row', converter: toBool('default-false'), default: false, on: 'update', description: 'Experimental: an always-present empty row for entering a new record. Default: `false`.' },
+		{ configKey: 'newRowPosition', attribute: 'new-row-position', converter: toEnum(NEW_ROW_POSITIONS, { default: 'bottom' }), default: 'bottom', on: 'update', description: `Experimental: where the empty new row sits. Default: \`bottom\`.
+
+- \`top\` — above the data rows
+- \`bottom\` — below the data rows` },
+		{ configKey: 'newRowIndicator', attribute: 'new-row-indicator', converter: toText({ default: '+' }), default: '+', on: 'update', description: 'Experimental: text shown in the row-number cell of the empty new row. Default: `+`.' },
 		// Tree
-		{ configKey: 'isTreeDataSorted', attribute: 'tree-data-sorted', converter: toBool('default-false'), default: false, on: 'update' },
-		{ configKey: 'treeDoubleClickBehavior', attribute: 'tree-double-click-behavior', converter: toEnum(TREE_DOUBLE_CLICK_BEHAVIORS, { default: 'none' }), default: 'none', on: 'update' },
-		{ configKey: 'treeExpandedGlyph', attribute: 'tree-expanded-glyph', converter: toText({ default: '▶' }), default: '▶', on: 'update' },
-		{ configKey: 'treeCollapsedGlyph', attribute: 'tree-collapsed-glyph', converter: toText({ default: '▶' }), default: '▶', on: 'update' },
+		{ configKey: 'isTreeDataSorted', attribute: 'tree-data-sorted', converter: toBool('default-false'), default: false, on: 'update', description: 'Tree data: trust the order of `items` (the grid never re-sorts — pair with `data-request` for sort changes); `false` sorts siblings depth-first. Default: `false`.' },
+		{ configKey: 'treeDoubleClickBehavior', attribute: 'tree-double-click-behavior', converter: toEnum(TREE_DOUBLE_CLICK_BEHAVIORS, { default: 'none' }), default: 'none', on: 'update', description: `What a double-click on a tree-column cell does. Default: \`none\`.
+
+- \`none\` — nothing tree-specific (editing may start)
+- \`toggle\` — expands / collapses the row` },
+		{ configKey: 'treeExpandedGlyph', attribute: 'tree-expanded-glyph', converter: toText({ default: '▶' }), default: '▶', on: 'update', description: 'HTML / text of the chevron of an expanded tree row. Equal to `treeCollapsedGlyph` → CSS rotates the glyph; different → the glyph is swapped. Default: `▶`.' },
+		{ configKey: 'treeCollapsedGlyph', attribute: 'tree-collapsed-glyph', converter: toText({ default: '▶' }), default: '▶', on: 'update', description: 'HTML / text of the chevron of a collapsed tree row. Default: `▶`.' },
 		// Paste / clipboard
-		{ configKey: 'shouldCopyWithHeaders', attribute: 'copy-with-headers', converter: toBool('default-false'), default: false, on: 'update' },
-		{ configKey: 'pasteMode', attribute: 'paste-mode', converter: toEnum(PASTE_MODES, { default: 'skip-non-editable' }), default: 'skip-non-editable', on: 'update' },
-		{ configKey: 'shouldValidateOnPaste', attribute: 'validate-on-paste', converter: toBool('default-true'), default: true, on: 'update' },
+		{ configKey: 'shouldCopyWithHeaders', attribute: 'copy-with-headers', converter: toBool('default-false'), default: false, on: 'update', description: 'Copying a cell range also copies the column headers. Default: `false`.' },
+		{ configKey: 'pasteMode', attribute: 'paste-mode', converter: toEnum(PASTE_MODES, { default: 'skip-non-editable' }), default: 'skip-non-editable', on: 'update', description: `How a multi-cell paste treats cells that are not editable. Default: \`skip-non-editable\`.
+
+- \`skip-non-editable\` — skips them, pastes the rest
+- \`all-columns\` — pastes into them anyway
+- \`editable-only\` — refuses them (reported as skipped and invalid)` },
+		{ configKey: 'shouldValidateOnPaste', attribute: 'validate-on-paste', converter: toBool('default-true'), default: true, on: 'update', description: 'Run `validateCallback` on every pasted cell. Default: `true`.' },
 		// Fill handle — grid-wide drag direction; a column's own `fillDirection` wins
-		{ configKey: 'fillDirection', attribute: 'fill-direction', converter: toEnum(FILL_DIRECTIONS, { default: 'vertical' }), default: 'vertical', on: 'update' },
+		{ configKey: 'fillDirection', attribute: 'fill-direction', converter: toEnum(FILL_DIRECTIONS, { default: 'vertical' }), default: 'vertical', on: 'update', description: `Fill-handle drag direction for the whole grid; a column’s own \`fillDirection\` wins. Default: \`vertical\`.
+
+- \`vertical\` — fills the source column only
+- \`all\` — also fills across columns` },
 		// UI strings (i18n): a partial object (also a JSON attribute) merged per key over the
 		// English defaults — `noData` / `noResults`, `loading`, `dropdownNoData`, pagination / go-to-row / menu texts, … (see labels.ts)
-		{ configKey: 'labels', attribute: 'labels', converter: toObject(), on: 'update', type: 'GridLabelsInput' },
+		{ configKey: 'labels', attribute: 'labels', converter: toObject(), on: 'update', type: 'GridLabelsInput', description: 'UI strings (i18n) — a partial object (JSON attribute `labels`) merged per key over the English defaults: `noData`, `noResults`, `loading`, pager / go-to-row / menu texts, …. Reads back what was assigned.' },
 		// Custom CSS for the shadow root (core createCustomStyles(), rulebook C-CA-15): applied after the
 		// page-wide `window.components['web-grid'].customStyles`; the callback wins over the string.
 		{ configKey: 'customStyles', attribute: 'custom-styles', converter: toText({ isNullable: true }), on: 'update', type: 'string | null', description: "CSS injected into the grid's shadow root (after the page-wide `window.components['web-grid'].customStyles`); an `@import`ed font is also linked in the document head." },
@@ -601,34 +876,54 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		{ configKey: 'beforeScrollCallback', converter: toFunction<(ctx: GridBeforeScrollContext) => unknown>(), on: 'update', type: '((ctx: GridBeforeScrollContext) => false | Partial<GridScrollOptions> | void) | null', description: 'Runs before the grid scrolls a cell / row into view on its own (`ctx.source`: keyboard | scroll-to-row | go-to-row); `false` skips, a partial `options` replaces the defaults. Synchronous.' },
 		// Tooltip timing (element-local, not on the engine — the bridge's `in this.engine`
 		// guard skips them; readers use the input's getter)
-		{ configKey: 'tooltipShowDelay', attribute: 'tooltip-show-delay', converter: toInt({ min: 0, default: 200 }), default: 200, on: 'update' },
-		{ configKey: 'tooltipHideDelay', attribute: 'tooltip-hide-delay', converter: toInt({ min: 0, default: 100 }), default: 100, on: 'update' },
+		{ configKey: 'tooltipShowDelay', attribute: 'tooltip-show-delay', converter: toInt({ min: 0, default: 200 }), default: 200, on: 'update', description: 'Delay (ms) before a cell tooltip shows. Default: `200`.' },
+		{ configKey: 'tooltipHideDelay', attribute: 'tooltip-hide-delay', converter: toInt({ min: 0, default: 100 }), default: 100, on: 'update', description: 'Delay (ms) before a cell tooltip hides. Default: `100`.' },
 		// Overlay tree group of the cell dropdown + date editor (element-local, read at each open — so `update`, no rebuild)
 		{ configKey: 'overlayGroup', attribute: 'overlay-group', converter: toText({ isNullable: true }), on: 'update', type: 'string | null', description: 'Scope the "one overlay open at a time" coordination to a named group. Overlays (the cell dropdown, the row toolbar with a click / button trigger, multiselects, datepickers, external popovers) sharing a group dismiss each other when one opens; different groups are independent. Unset = the default (ungrouped) group.' },
 	] as const satisfies readonly InputDef[]
 
+	/** @internal */
 	static events = EVENTS
 
 	// Type-only: core installs the `on<Name>` twins at runtime (§12.5); each is
 	// called with the event detail (not the CustomEvent), right before the event.
+	/** Twin of the `row-change` event: called with its detail, right before the event. */
 	declare onRowChange: ((detail: GridEventMap<T>['row-change']) => void) | null
+	/** Twin of the `cell-edit-start` event: called with its detail, right before the event. */
 	declare onCellEditStart: ((detail: GridEventMap<T>['cell-edit-start']) => void) | null
+	/** Twin of the `cell-edit-cancel` event: called with its detail, right before the event. */
 	declare onCellEditCancel: ((detail: GridEventMap<T>['cell-edit-cancel']) => void) | null
+	/** Twin of the `validation-error` event: called with its detail, right before the event. */
 	declare onValidationError: ((detail: GridEventMap<T>['validation-error']) => void) | null
+	/** Twin of the `focus-change` event: called with its detail, right before the event. */
 	declare onFocusChange: ((detail: GridEventMap<T>['focus-change']) => void) | null
+	/** Twin of the `row-delete` event: called with its detail, right before the event. */
 	declare onRowDelete: ((detail: GridEventMap<T>['row-delete']) => void) | null
+	/** Twin of the `cell-selection-change` event: called with its detail, right before the event. */
 	declare onCellSelectionChange: ((detail: GridEventMap<T>['cell-selection-change']) => void) | null
+	/** Twin of the `row-selection-change` event: called with its detail, right before the event. */
 	declare onRowSelectionChange: ((detail: GridEventMap<T>['row-selection-change']) => void) | null
+	/** Twin of the `column-selection-change` event: called with its detail, right before the event. */
 	declare onColumnSelectionChange: ((detail: GridEventMap<T>['column-selection-change']) => void) | null
+	/** Twin of the `data-request` event: called with its detail, right before the event. */
 	declare onDataRequest: ((detail: GridEventMap<T>['data-request']) => void) | null
+	/** Twin of the `filter-change` event: called with its detail, right before the event. */
 	declare onFilterChange: ((detail: GridEventMap<T>['filter-change']) => void) | null
+	/** Twin of the `column-resize` event: called with its detail, right before the event. */
 	declare onColumnResize: ((detail: GridEventMap<T>['column-resize']) => void) | null
+	/** Twin of the `column-reorder` event: called with its detail, right before the event. */
 	declare onColumnReorder: ((detail: GridEventMap<T>['column-reorder']) => void) | null
+	/** Twin of the `row-expand` event: called with its detail, right before the event. */
 	declare onRowExpand: ((detail: GridEventMap<T>['row-expand']) => void) | null
+	/** Twin of the `row-collapse` event: called with its detail, right before the event. */
 	declare onRowCollapse: ((detail: GridEventMap<T>['row-collapse']) => void) | null
+	/** Twin of the `expanded-change` event: called with its detail, right before the event. */
 	declare onExpandedChange: ((detail: GridEventMap<T>['expanded-change']) => void) | null
+	/** Twin of the `row-lock-change` event: called with its detail, right before the event. */
 	declare onRowLockChange: ((detail: GridEventMap<T>['row-lock-change']) => void) | null
+	/** Twin of the `cell-paste` event: called with its detail, right before the event. */
 	declare onCellPaste: ((detail: GridEventMap<T>['cell-paste']) => void) | null
+	/** Twin of the `action` event: called with its detail, right before the event. */
 	declare onAction: ((detail: GridEventMap<T>['action']) => void) | null
 
 	/**
@@ -639,6 +934,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	readonly engine: GridEngine<T>
 
 	// Shadow DOM root
+	/** @internal */
 	readonly shadow: ShadowRoot
 
 	// Style element (for initial CSS injection)
@@ -648,9 +944,11 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	private updatePending = false
 
 	// Flag to prevent blur from committing when keyboard already handled it
+	/** @internal */
 	isCommittingFromKeyboard = false
 
 	// Flag to prevent blur from cancelling edit when switching between dropdown cells
+	/** @internal */
 	isTransitioningCells = false
 
 	// Flag to track if clickEvents subscriptions have been added (only subscribe once)
@@ -662,12 +960,15 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	// Floating-toolbar runtime state — owned by ToolbarService (hover hide-timeout,
 	// hover/move flags, hovered cell, cell-items JSON snapshot, document keydown handlers
 	// for both floating and inline modes).
+	/** @internal */
 	toolbar = new ToolbarService()
 
 	// Filter row runtime state — typed text not applied yet + debounce timers.
+	/** @internal */
 	filterRow = new FilterRowService()
 
 	/** The filter-row text typed for `field` but not applied yet (survives re-renders). */
+	/** @internal */
 	filterInputText(field: string): string | undefined {
 		return this.filterRow.pendingText.get(field)
 	}
@@ -675,39 +976,52 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	// Dropdown runtime state — owned by DropdownService (open flag, options, highlight,
 	// filter text, race-condition flags: isOpening / isClosingViaToggle / justSelected /
 	// userInteracted / isUserFiltering).
+	/** @internal */
 	dropdown = new DropdownService()
 
 	// Autocomplete async state
 	// Autocomplete async state — owned by AutocompleteService (debounce timer, abort controller, search-in-flight flag).
+	/** @internal */
 	autocomplete = new AutocompleteService()
 
 	// Tooltip runtime state — owned by TooltipService (element, arrow, anchor, show/hide timers).
+	/** @internal */
 	tooltip = new TooltipService()
 
 	// DatePicker instance (for date editor) - exposed via GridHost for pipeline access
+	/** @internal */
 	datepicker: DatePicker | null = null
 
 	// The open cell / header menu (core openMenu(), in the shadow root) - exposed via GridHost for pipeline access
+	/** @internal */
 	menu: MenuHandle | null = null
 
 	// Virtual scroll state — owned by VirtualScrollService (visible-range, load-more flag, programmatic-scroll guard).
+	/** @internal */
 	virtualScroll = new VirtualScrollService()
 
 	// Scroll event manager (pub/sub for scroll events)
+	/** @internal */
 	readonly scrollEvents: ScrollEventManager
 
 	// Focus event manager (pub/sub for blur/focusout events)
+	/** @internal */
 	readonly focusEvents: FocusEventManager
 
 	// Click event manager (pub/sub for click inside/outside events)
+	/** @internal */
 	readonly clickEvents: ClickEventManager
 
 	// Action pipeline adapter (for 'always' editTrigger mode)
+	/** @internal */
 	pipelineAdapter: ActionPipelineAdapter<T> | null = null
 
+	/** function Object() { [native code] } */
 	constructor() {
 		super()
+		/** @internal */
 		this.shadow = this.attachShadow({ mode: 'open' })
+		/** @internal */
 		this.engine = new GridEngine<T>()
 		this.engine.setStateStore(this.#stateStore)
 		// Every ctx / detail carries `controller` + `element`; the engine's
@@ -718,8 +1032,11 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 			if (name === 'row-change') this.scheduleSummaryRefresh()
 		})
 
+		/** @internal */
 		this.scrollEvents = createScrollEventManager()
+		/** @internal */
 		this.clickEvents = createClickEventManager()
+		/** @internal */
 		this.focusEvents = createFocusEventManager(
 			() => ({
 				isCommittingFromKeyboard: this.isCommittingFromKeyboard,
@@ -731,20 +1048,31 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		)
 
 		// Inject styles immediately to prevent FOUC
-		this.styleElement = document.createElement('style')
-		this.styleElement.textContent = styles
-		this.shadow.appendChild(this.styleElement)
+		const styleElement = document.createElement('style')
+		/** @internal */
+		styleElement.textContent = styles
+		/** @internal */
+		this.styleElement = styleElement
+		this.shadow.appendChild(styleElement)
 
 		// Override requestUpdate to invalidate the data-pipeline cache and trigger DOM render.
 		// Every state-changing setter on GridEngine funnels through requestUpdate(), so this is
 		// the single canonical point to drop cached paginatedItems / displayItems.
-		;(this.engine as unknown as { requestUpdate: () => void }).requestUpdate = () => {
+		// (A typed local, not `(this.engine as …).x = …`: the CEM analyzer would list those as element fields.)
+		const engineHooks = this.engine as unknown as {
+			requestUpdate: () => void
+			_onInteractionChange: ((type: string, detail: { prev: unknown, current: unknown }) => void) | null
+			_onCommitApplied: ((rowIndex: number, field: string) => void) | null
+		}
+		/** @internal */
+		engineHooks.requestUpdate = () => {
 			this.engine.invalidateDisplayCache()
 			this.requestUpdate()
 		}
 
 		// Handle interaction changes (cleanup dropdown when editing is cancelled externally)
-		;(this.engine as unknown as { _onInteractionChange: ((type: string, detail: { prev: unknown, current: unknown }) => void) | null })._onInteractionChange = (type, detail) => {
+		/** @internal */
+		engineHooks._onInteractionChange = (type, detail) => {
 			if (type === 'editingCell' && detail.current === null) {
 				// The edit ended (saved / cancelled, any path) - close its dropdown / date picker
 				// ('api': whoever ended the edit already saved or cancelled it)
@@ -758,7 +1086,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 
 		// An async validateCallback's result arrived after the edit ended: show it (the value, a
 		// transform, the invalid mark). A cell being edited again keeps its editor.
-		;(this.engine as unknown as { _onCommitApplied: ((rowIndex: number, field: string) => void) | null })._onCommitApplied = (rowIndex, field) => {
+		/** @internal */
+		engineHooks._onCommitApplied = (rowIndex, field) => {
 			if (this.engine.isEditing(rowIndex, field)) return
 			const colIndex = this.engine.columns.findIndex(c => String(c.field) === field)
 			if (colIndex >= 0) renderCell(this, rowIndex, colIndex)
@@ -894,6 +1223,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	// Public API - Proxy to GridEngine
 	// ==========================================================================
 
+	/** Row data. Reading returns the live rows: after `insertRow` / `removeRows` / `moveRow`, the row built-ins and a committed new row (cell edits stay in drafts — `getDrafts()`). */
 	get items(): T[] { return this.engine.items }
 	set items(value: T[]) {
 		// Reset infinite scroll loading flag (before the re-render, so the
@@ -909,36 +1239,47 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		if (wasEditing && !this.engine.editingCell && hadFocus) this.#isEditedRowGone = true
 	}
 
+	/** Column definitions (`Column<T>[]`, at least a `field` each): title, width, alignment, editor, validation, tooltip, … */
 	get columns(): Column<T>[] { return this.engine.columns }
 	set columns(value: Column<T>[]) { this.engine.columns = value }
 
+	/** Current filter text per field. Assigning is silent (no `filter-change`), like a native `input.value`; `setFilter()` fires it. */
 	get filters(): Record<string, string> { this.flush(); return this.engine.filters }
 	/** Assignment is silent (no `filter-change`), like a native `input.value`; use `setFilter()` to fire it. */
 	set filters(value: Record<string, string>) { this.engine.filters = value }
 	/** Set (or clear, with `''`) one column filter; fires `filter-change` unless `{ isSilent: true }`. */
 	setFilter(field: string, value: string, options?: { isSilent?: boolean }): void { this.flush(); this.engine.setFilter(field, value, options) }
 
+	/** Options of the pager’s rows-per-page selector, e.g. `[10, 25, 50, 100]`. */
 	get pageSizes(): number[] { return this.engine.pageSizes }
 	set pageSizes(value: number[]) { this.engine.pageSizes = value }
 
+	/** Static row editability for the whole grid (`getIsRowEditableCallback` decides per row). */
 	get isRowEditable(): boolean | undefined { return this.engine.isRowEditable }
 	set isRowEditable(value: boolean | undefined) { this.engine.isRowEditable = value }
 
+	/** Decides editability per row: `(ctx: { row }) => boolean`. */
 	get getIsRowEditableCallback(): ((ctx: RowDataContext<T>) => boolean) | undefined { return this.engine.getIsRowEditableCallback }
 	set getIsRowEditableCallback(value: ((ctx: RowDataContext<T>) => boolean) | undefined) { this.engine.getIsRowEditableCallback = value }
 
+	/** Whether the cell has an unsaved change (a draft value). */
 	isCellDirty(rowIndex: number, field: string): boolean { this.flush(); return this.engine.isCellDirty(rowIndex, field) }
+	/** Whether the row has any unsaved change (a draft). */
 	isRowDirty(rowIndex: number): boolean { this.flush(); return this.engine.isRowDirty(rowIndex) }
 
+	/** External validation state: `{ rowIndex, field, error }[]` marks cells invalid (with the tooltip). */
 	get invalidCells(): CellValidationState[] { return this.engine.invalidCells }
 	set invalidCells(value: CellValidationState[]) { this.engine.invalidCells = value }
 
+	/** Row toolbar entries — built-in names (`add`, `delete`, `duplicate`, `move-up`, …), action items, dividers. Default: `['add', 'delete', 'duplicate']`. */
 	get rowToolbar(): GridToolbarEntry<T>[] { return this.engine.rowToolbar }
 	set rowToolbar(value: GridToolbarEntry<T>[]) { this.engine.rowToolbar = value }
 
+	/** The column (field or index) the row toolbar is pinned over in the `top` position. */
 	get toolbarColumn(): string | number | undefined { return this.engine.toolbarColumn }
 	set toolbarColumn(value: string | number | undefined) { this.engine.toolbarColumn = value }
 
+	/** Cell-specific toolbar items, merged over `rowToolbar` by `id` / `action`: `(ctx: CellContext) => entries | null`. */
 	get getCellToolbarItemsCallback(): ((ctx: CellContext<T>) => GridToolbarEntry<T>[] | null | undefined) | undefined {
 		return this.engine.getCellToolbarItemsCallback
 	}
@@ -946,14 +1287,17 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		this.engine.getCellToolbarItemsCallback = value
 	}
 
+	/** Min width (CSS length) of the row toolbar buttons; overrides `--wg-toolbar-btn-min-width`. */
 	get toolbarBtnMinWidth(): string | undefined { return this.engine.toolbarBtnMinWidth }
 	set toolbarBtnMinWidth(value: string | undefined) { this.engine.toolbarBtnMinWidth = value }
 
 
+	/** Cell / row context menu entries: built-in names, menu items, dividers. Unset = no grid menu. */
 	get contextMenu(): GridMenuEntry<T>[] | undefined { return this.engine.contextMenu }
 	set contextMenu(value: GridMenuEntry<T>[] | undefined) { this.engine.contextMenu = value }
 
 	// Header context menu
+	/** Header context menu entries: built-in names (column visibility, sort, …), menu items, dividers. */
 	get headerContextMenu(): GridHeaderMenuEntry<T>[] | undefined { return this.engine.headerContextMenu }
 	set headerContextMenu(value: GridHeaderMenuEntry<T>[] | undefined) { this.engine.headerContextMenu = value }
 
@@ -970,10 +1314,12 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	set beforeActionCallback(value: ((detail: GridActionEventDetail<T>) => unknown) | undefined) { this.engine.beforeActionCallback = value }
 
 	// Row keyboard shortcuts
+	/** Action items bound to a key on the focused / hovered row. */
 	get rowShortcuts(): GridShortcut<T>[] | undefined { return this.engine.rowShortcuts }
 	set rowShortcuts(value: GridShortcut<T>[] | undefined) { this.engine.rowShortcuts = value }
 
 	// Range shortcuts (selected rows / cell range)
+	/** Action items bound to a key on the selected rows / cell range. */
 	get rangeShortcuts(): GridRangeShortcut<T>[] { return this.engine.rangeShortcuts }
 	set rangeShortcuts(value: GridRangeShortcut<T>[]) { this.engine.rangeShortcuts = value }
 
@@ -982,25 +1328,35 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	get selectedRows(): T[] { this.flush(); return this.engine.selectedRows }
 	/** Display indices of the selected rows, ascending. */
 	get selectedRowIndices(): number[] { this.flush(); return this.engine.selectedRowIndices }
+	/** Select a row by display index: `replace` (default) the selection, `toggle` it in / out, or extend a `range` from the anchor. Fires `row-selection-change` on a real change. */
 	selectRow(rowIndex: number, mode: 'replace' | 'toggle' | 'range' = 'replace'): void { this.flush(); this.engine.selectRow(rowIndex, mode) }
+	/** Select the rows between two display indices (inclusive). Fires `row-selection-change` on a real change. */
 	selectRowRange(fromIndex: number, toIndex: number): void { this.flush(); this.engine.selectRowRange(fromIndex, toIndex) }
 	/** Clear every selection kind: rows, the cell range and columns. */
 	clearSelection(): void { this.flush(); this.engine.clearSelection() }
 	/** Clear only the row selection. */
 	clearRowSelection(): void { this.flush(); this.engine.clearRowSelection() }
+	/** Whether the row at this display index is selected. */
 	isRowSelected(rowIndex: number): boolean { this.flush(); return this.engine.isRowSelected(rowIndex) }
+	/** Copy the selected rows (tab-separated) to the clipboard; resolves `false` when nothing was copied. */
 	copySelectedRowsToClipboard(): Promise<boolean> { this.flush(); return this.engine.copySelectedRowsToClipboard() }
 
 	// Cell range selection
 
+	/** The selected cell range (`startRowIndex` / `endRowIndex`, on-screen `startColIndex` / `endColIndex`, `startField` / `endField`) or `null`. */
 	get selectedCellRange() { return this.engine.selectedCellRange }
+	/** Select a cell range (`{ startRowIndex, endRowIndex, startColIndex, endColIndex }`). Fires `cell-selection-change` on a real change. */
 	selectCellRange(range: any): void { this.flush(); this.engine.selectCellRange(range) }
+	/** Clear only the cell range selection. */
 	clearCellSelection(): void { this.flush(); this.engine.clearCellSelection() }
+	/** The cells of the selected range, as cell contexts (`row`, `rowIndex`, `column`, `field`, `value`, …). */
 	getSelectedCells() { this.flush(); return this.engine.getSelectedCells() }
+	/** Copy the selected cell range (tab-separated, headers with `shouldCopyWithHeaders`) to the clipboard; resolves `false` when nothing was copied. */
 	copyCellSelectionToClipboard(): Promise<boolean> { this.flush(); return this.engine.copyCellSelectionToClipboard() }
 
 	// New empty row (inline data entry) — EXPERIMENTAL: API may change
 
+	/** The row the `add` built-in (and the experimental new row) inserts: `(ctx) => T | Promise<T>`. Default: a blank row. */
 	get createEmptyRowCallback() { return this.engine.createEmptyRowCallback }
 	set createEmptyRowCallback(value) { this.engine.createEmptyRowCallback = value }
 
@@ -1017,15 +1373,19 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	set idMember(value: string | null) { this.engine.idMember = value }
 
 	// Tree / hierarchy
+	/** Tree data: the field holding a row’s path (`"1.2.3"`); setting it turns the grid into a tree. */
 	get pathMember(): string | null { return this.engine.pathMember }
 	set pathMember(value: string | null) { this.engine.pathMember = value }
 
+	/** Tree data: the field holding a row’s depth, when the data has levels instead of paths. */
 	get levelMember(): string | null { return this.engine.levelMember }
 	set levelMember(value: string | null) { this.engine.levelMember = value }
 
+	/** Tree data: the field holding the parent row’s path. */
 	get parentPathMember(): string | null { return this.engine.parentPathMember }
 	set parentPathMember(value: string | null) { this.engine.parentPathMember = value }
 
+	/** Tree data: the path separator. `null` = auto-detect. */
 	get treePathSeparator(): string | null { return this.engine.treePathSeparator }
 	set treePathSeparator(value: string | null) { this.engine.treePathSeparator = value }
 
@@ -1033,9 +1393,11 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	get expandedPaths(): string[] { return this.engine.expandedPaths }
 	set expandedPaths(value: string[] | null | undefined) { this.engine.expandedPaths = value }
 
+	/** Tree data: show the tree to this depth (`0` = only the roots, `1` = the roots expanded, …). `null` = everything expanded. */
 	get expandLevel(): number | null { return this.engine.expandLevel }
 	set expandLevel(value: number | null) { this.engine.expandLevel = value }
 
+	/** Whether the tree row with this path is expanded. */
 	isPathExpanded(path: string): boolean { this.flush(); return this.engine.isPathExpanded(path) }
 	/** Expand / collapse one tree row (`row-expand` / `row-collapse` + `expanded-change`). */
 	toggleRowExpanded(path: string, options?: ExpandOptions): void { this.flush(); this.engine.toggleRowExpanded(path, options) }
@@ -1048,12 +1410,15 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	/** Collapse the whole tree (`null`) — or the given rows and everything under them (`expanded-change` only). */
 	collapseAll(paths?: string | string[] | null, options?: ExpandOptions): void { this.flush(); this.engine.collapseAll(paths, options) }
 
+	/** Custom HTML of a tree row’s chevron: `(ctx) => string`. */
 	get renderChevronCallback(): ChevronCallback<T> | undefined { return this.engine.renderChevronCallback }
 	set renderChevronCallback(value: ChevronCallback<T> | undefined) { this.engine.renderChevronCallback = value }
 
+	/** Custom HTML shown alongside the keyboard-shortcuts list: `(ctx) => string`. */
 	get renderShortcutsHelpCallback(): ((ctx: GridCallbackContext<T>) => string) | undefined { return this.engine.renderShortcutsHelpCallback }
 	set renderShortcutsHelpCallback(value: ((ctx: GridCallbackContext<T>) => string) | undefined) { this.engine.renderShortcutsHelpCallback = value }
 
+	/** Custom HTML of the validation-error tooltip (grid-level default; a column’s own wins): `(ctx: CellContext & { error }) => string | null`. */
 	get getValidationTooltipCallback(): ((ctx: ValidationTooltipContext<T>) => string | null) | undefined {
 		return this.engine.getValidationTooltipCallback
 	}
@@ -1061,29 +1426,37 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		this.engine.getValidationTooltipCallback = value
 	}
 
+	/** The focused row (display index) or `null`. Assigning is silent (no `focus-change`), like a native `input.value`. */
 	get focusedRowIndex(): number | null { return this.engine.focusedRowIndex }
 	/** Assignment is silent (no `focus-change`), like a native `input.value`. */
 	set focusedRowIndex(value: number | null) { this.engine.focusedRowIndex = value }
 
 	// Sorting & Pagination
+	/** Current sort state (`{ column, direction }[]`) — set it for an initial / server-side sort. */
 	get sort(): SortState[] { return this.engine.sort }
 	set sort(value: SortState[]) { this.engine.sort = value }
 
+	/** Current page (1-based). A filter change resets it to 1; a shorter `items` clamps it. */
 	get currentPage(): number { return this.engine.currentPage }
 	set currentPage(value: number) { this.engine.currentPage = value }
 
+	/** Total row count for server-side paging. `null` = `items.length`. */
 	get totalItems(): number | null { return this.engine.totalItems }
 	set totalItems(value: number | null) { this.engine.totalItems = value }
 
+	/** Customize / translate the pager texts: `(ctx: { currentPage, totalPages, totalItems, pageSize }) => Partial<PaginationLabels>`. */
 	get getPaginationLabelsCallback(): PaginationLabelsCallback<T> | undefined { return this.engine.getPaginationLabelsCallback }
 	set getPaginationLabelsCallback(value: PaginationLabelsCallback<T> | undefined) { this.engine.getPaginationLabelsCallback = value }
 
+	/** The summary bar HTML (`summaryPosition`): `(ctx: { items, allItems, totalItems, currentPage, pageSize, metadata, drafts }) => string`. */
 	get renderSummaryCallback(): SummaryCallback<T> | undefined { return this.engine.renderSummaryCallback }
 	set renderSummaryCallback(value: SummaryCallback<T> | undefined) { this.engine.renderSummaryCallback = value }
 
+	/** Dynamic CSS class of a row: `(ctx: { row, rowIndex }) => string | null`. */
 	get getRowClassCallback(): ((ctx: RowContext<T>) => string | null) | undefined { return this.engine.getRowClassCallback }
 	set getRowClassCallback(value: ((ctx: RowContext<T>) => string | null) | undefined) { this.engine.getRowClassCallback = value }
 
+	/** Server-provided data passed to `renderSummaryCallback` as `ctx.metadata`. */
 	get summaryMetadata(): unknown { return this.engine.summaryMetadata }
 	set summaryMetadata(value: unknown) { this.engine.summaryMetadata = value }
 
@@ -1093,6 +1466,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	set getIdCallback(value: ((ctx: RowDataContext<T>) => unknown) | undefined) { this.engine.getIdCallback = value }
 
 	// Row locking
+	/** Row locking options (`isLockedMember`, `lockInfoMember`, `getIsLockedCallback`, `lockedEditBehavior`, …). */
 	get rowLocking(): RowLockingOptions<T> | undefined { return this.engine.rowLocking }
 	set rowLocking(value: RowLockingOptions<T> | undefined) { this.engine.rowLocking = value }
 
@@ -1108,6 +1482,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	get beforePageChangeCallback(): ((ctx: BeforePageChangeContext<T>) => boolean | number | void | Promise<boolean | number | void>) | undefined { return this.engine.beforePageChangeCallback }
 	set beforePageChangeCallback(value: ((ctx: BeforePageChangeContext<T>) => boolean | number | void | Promise<boolean | number | void>) | undefined) { this.engine.beforePageChangeCallback = value }
 
+	/** Runs before a fill-handle drag applies: `(ctx: { sourceCell, targetCells, direction }) => boolean | void | Promise<…>`; `false` cancels (async OK). */
 	get beforeFillCallback(): ((ctx: FillContext<T>) => boolean | void | Promise<boolean | void>) | undefined { return this.engine.beforeFillCallback }
 	set beforeFillCallback(value: ((ctx: FillContext<T>) => boolean | void | Promise<boolean | void>) | undefined) { this.engine.beforeFillCallback = value }
 
@@ -1117,6 +1492,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 
 	// Infinite scroll
 
+	/** Infinite scroll: set `false` when the server has no more rows. Default: `true`. */
 	get hasMoreItems(): boolean { return this.engine.hasMoreItems }
 	set hasMoreItems(value: boolean) {
 		this.engine.hasMoreItems = value
@@ -1137,13 +1513,19 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	set createRowCallback(value: CreateRowCallback<T> | undefined) { this.engine.createRowCallback = value }
 
 	// Computed properties
+	/** The rows currently displayed (filtered, sorted, paged), read-only. */
 	get displayItems(): T[] { this.flush(); return this.engine.displayItems }
+	/** Page count of the current rows, read-only. */
 	get totalPages(): number { this.flush(); return this.engine.totalPages }
+	/** Whether the grid is in the Excel-like `navigate` editing mode, read-only. */
 	get isNavigateMode(): boolean { this.flush(); return this.engine.isNavigateMode }
 
 	// Draft row methods
+	/** The draft (unsaved copy) of the row at this display index, or `undefined`. */
 	getRowDraft(rowIndex: number): T | undefined { this.flush(); return this.engine.getRowDraft(rowIndex) }
+	/** Whether the row at this display index has a draft. */
 	hasRowDraft(rowIndex: number): boolean { this.flush(); return this.engine.hasRowDraft(rowIndex) }
+	/** Display indices of every displayed row with a draft. */
 	getDraftRowIndices(): number[] { this.flush(); return this.engine.getDraftRowIndices() }
 	/**
 	 * Every unsaved draft `{ row, draftRow, changedFields, isValid }` — incl. rows on other
@@ -1153,13 +1535,17 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	getDrafts(): DraftInfo<T>[] { this.flush(); return this.engine.getDrafts() }
 	/** Drop the draft (and invalid-cell markers) of `row` — the row object, its id-equal copy, or the draft. */
 	discardDraft(row: T): void { this.flush(); this.engine.discardDraft(row) }
+	/** Drop every draft and invalid-cell marker. */
 	discardAllDrafts(): void { this.flush(); this.engine.discardAllDrafts() }
 
 	// Validation methods
+	/** Whether the cell is marked invalid (validation or `invalidCells`). */
 	isCellInvalid(rowIndex: number, field: string): boolean { this.flush(); return this.engine.isCellInvalid(rowIndex, field) }
+	/** The validation error of the cell, or `null`. */
 	getCellValidationError(rowIndex: number, field: string): string | null { this.flush(); return this.engine.getCellValidationError(rowIndex, field) }
 
 	// Row identification methods
+	/** The row’s id (`getIdCallback`, else `idMember`), or `undefined`. */
 	getRowId(row: T): unknown | undefined { this.flush(); return this.engine.getRowId(row) }
 	/** The row with this ID (`idMember` / `getIdCallback`), or null. */
 	getRowById(id: unknown): T | null { this.flush(); return this.engine.getRowById(id) }
@@ -1167,27 +1553,41 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	getRowIndex(row: T): number { this.flush(); return this.engine.getRowIndex(row) }
 
 	// Row locking methods
+	/** Whether the row (object or id) is locked. */
 	isRowLocked(rowOrId: T | unknown): boolean { this.flush(); return this.engine.isRowLocked(rowOrId) }
+	/** The lock info (`RowLock`) of the row (object or id), or `null`. */
 	getRowLockInfo(rowOrId: T | unknown): RowLock | null { this.flush(); return this.engine.getRowLockInfo(rowOrId) }
+	/** Lock a row by id from outside (e.g. another user edits it); fires `row-lock-change`. Returns `false` when no row has the id. */
 	lockRowById(id: unknown, lockerInfo?: Partial<RowLock>): boolean { this.flush(); return this.engine.lockRowById(id, lockerInfo) }
+	/** Remove an external lock; fires `row-lock-change`. Returns `false` when the row was not locked externally. */
 	unlockRowById(id: unknown): boolean { this.flush(); return this.engine.unlockRowById(id) }
+	/** Every external lock (`lockRowById`), id → `RowLock`. */
 	getExternalLocks(): Map<unknown, RowLock> { this.flush(); return this.engine.getExternalLocks() }
+	/** Remove every external lock. */
 	clearExternalLocks(): void { this.flush(); this.engine.clearExternalLocks() }
 
 	// Row update methods (for WebSocket/external updates)
+	/** Merge `newData` into the row with this id (e.g. a WebSocket update). Returns `false` when no row has the id. */
 	updateRowById(id: unknown, newData: Partial<T>): boolean { this.flush(); return this.engine.updateRowById(id, newData) }
+	/** Replace the row with this id by `newRow` (drops its draft). Returns `false` when no row has the id. */
 	replaceRowById(id: unknown, newRow: T): boolean { this.flush(); return this.engine.replaceRowById(id, newRow) }
 
 	// Edit permission check
+	/** Whether the cell is editable now (grid, column, row, lock and read-only rules). */
 	canEditCell(rowIndex: number, field: string): boolean { this.flush(); return this.engine.canEditCell(rowIndex, field) }
 
 	// Column width methods
+	/** Set one column’s width (CSS length). */
 	setColumnWidth(field: string, width: string): void { this.flush(); this.engine.setColumnWidth(field, width) }
+	/** Set several column widths (`{ field, width }[]` — the `getColumnWidthsState()` format). */
 	setColumnWidths(widths: ColumnWidthState[]): void { this.flush(); this.engine.setColumnWidths(widths) }
+	/** The current column widths, `{ field, width }[]` — save it, restore with `setColumnWidths()`. */
 	getColumnWidthsState(): ColumnWidthState[] { this.flush(); return this.engine.getColumnWidthsState() }
 
 	// Column order methods
+	/** Set the column order (`{ field, order }[]` — the `getColumnOrderState()` format). */
 	setColumnOrder(order: ColumnOrderState[]): void { this.flush(); this.engine.setColumnOrder(order) }
+	/** The current column order, `{ field, order }[]` — save it, restore with `setColumnOrder()`. */
 	getColumnOrderState(): ColumnOrderState[] { this.flush(); return this.engine.getColumnOrderState() }
 
 	// Public methods for focus and editing
@@ -1272,18 +1672,21 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	// GridHost Implementation - Required by module functions
 	// ==========================================================================
 
+	/** @internal */
 	getCurrentEditingColumn(): Column<T> | null {
 		const editingCell = this.engine.editingCell
 		if (!editingCell) return null
 		return this.engine.columns.find(c => String(c.field) === editingCell.field) || null
 	}
 
+	/** @internal */
 	getCurrentEditorOptions(): EditorOptions<T> {
 		const column = this.getCurrentEditingColumn()
 		return column?.editorOptions || {}
 	}
 
 	// Delegate to module function - needed for lifecycle module
+	/** @internal */
 	moveFocusAfterCommit(rowIndex: number, field: string, direction: 'down' | 'up' | 'next' | 'prev'): void {
 		moveFocusAfterCommit(this, rowIndex, field, direction)
 	}
@@ -1336,6 +1739,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	// ==========================================================================
 
 	/** Tracks whether a mouse button is currently pressed on the table (mousedown→mouseup) */
+	/** @internal */
 	isMouseDown = false
 
 	private attachEventListeners(): void {
@@ -1514,6 +1918,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		return renderShortcutsHelpIconModule(this)
 	}
 
+	/** @internal */
 	render(): void {
 		// Drop any stale data-pipeline cache. Normally requestUpdate() has already
 		// done this, but render() is also called directly in a few places.
@@ -1781,16 +2186,19 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	}
 
 	/** SVG connector arrow for toolbar row tracking — see modules/toolbar/connector-renderer.ts */
+	/** @internal */
 	renderConnector(): void {
 		renderConnectorModule(this)
 	}
 
 	/** Surgical clear-all-selections (no render) — see modules/selection-border/clear-all.ts */
+	/** @internal */
 	clearAllSelections(): void {
 		clearAllSelectionsModule(this)
 	}
 
 	/** Excel-like commit-on-click-away — see modules/editing/commit-on-transition.ts */
+	/** @internal */
 	commitOrCancelEditOnTransition(): void {
 		commitOrCancelEditOnTransitionModule(this)
 	}
@@ -1799,6 +2207,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	 * Surgically update row focus visual (add/remove wg__row--focused class)
 	 * Avoids full re-render to preserve cell focus
 	 */
+	/** @internal */
 	updateRowFocusVisual(prevRowIndex: number | null, newRowIndex: number | null): void {
 		if (prevRowIndex === newRowIndex) return
 
@@ -1813,6 +2222,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	}
 
 	/** "Go to row" dialog (Ctrl+G) — see modules/navigation/go-to-row-dialog.ts */
+	/** @internal */
 	openGoToRowDialog(colIndex: number): void {
 		openGoToRowDialogModule(this, colIndex)
 	}

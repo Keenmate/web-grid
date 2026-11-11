@@ -40,6 +40,22 @@ Or via CDN (no bundler):
 <script type="module" src="https://unpkg.com/@keenmate/web-grid"></script>
 ```
 
+### Editor IntelliSense
+
+The package ships a Custom Elements Manifest (`custom-elements.json`) and editor metadata, so you get
+autocomplete and hover docs for `<web-grid>`'s attributes, events and `--wg-*` CSS custom properties.
+All of it is generated from the component's source on every build.
+
+- **JetBrains** (WebStorm / IntelliJ) — works automatically via the `web-types` field in `package.json`.
+- **VS Code** — point your workspace at the data files once, in `.vscode/settings.json`, then reload the window:
+
+  ```json
+  {
+    "html.customData": ["./node_modules/@keenmate/web-grid/vscode.html-custom-data.json"],
+    "css.customData": ["./node_modules/@keenmate/web-grid/vscode.css-custom-data.json"]
+  }
+  ```
+
 ## Getting Started
 
 ### Step 1 — Import the component

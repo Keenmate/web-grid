@@ -41,6 +41,15 @@ Then drop it into your markup and bind data:
 
 `max-height` (or `height`) on the host controls sizing — see [Height & scroll](#height--scroll).
 
+**Editor IntelliSense.** The package ships `custom-elements.json` (+ `web-types.json` for JetBrains, auto-discovered). For VS Code add once to `.vscode/settings.json`:
+
+```json
+{
+  "html.customData": ["./node_modules/@keenmate/web-grid/vscode.html-custom-data.json"],
+  "css.customData": ["./node_modules/@keenmate/web-grid/vscode.css-custom-data.json"]
+}
+```
+
 ## Presets
 
 The `preset` property (attribute `preset`; `mode` before v2) sets sensible defaults for common use cases:

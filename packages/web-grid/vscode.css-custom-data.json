@@ -1,0 +1,1112 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vscode-css-languageservice/main/docs/customData.schema.json",
+  "version": 1.1,
+  "properties": [
+    {
+      "name": "--wg-rem",
+      "description": "Base sizing unit for proportional scaling (default 10px, set to 1rem for Pure Admin)",
+      "values": []
+    },
+    {
+      "name": "--wg-accent-color",
+      "description": "Editor focus outline, active pagination, sorted column indicator",
+      "values": []
+    },
+    {
+      "name": "--wg-accent-color-hover",
+      "description": "Hover state for Go button in dialogs",
+      "values": []
+    },
+    {
+      "name": "--wg-accent-color-active",
+      "description": "Active/pressed state for accent elements",
+      "values": []
+    },
+    {
+      "name": "--wg-accent-color-light",
+      "description": "Light accent for subtle selected backgrounds",
+      "values": []
+    },
+    {
+      "name": "--wg-text-color-1",
+      "description": "Primary text in cells, headers, toolbar buttons",
+      "values": []
+    },
+    {
+      "name": "--wg-text-color-2",
+      "description": "Row numbers, shortcut help labels, secondary info",
+      "values": []
+    },
+    {
+      "name": "--wg-text-color-3",
+      "description": "Placeholder text, disabled text, empty state message, date trigger",
+      "values": []
+    },
+    {
+      "name": "--wg-text-on-accent",
+      "description": "Text on accent backgrounds (Go button, active pagination)",
+      "values": []
+    },
+    {
+      "name": "--wg-main-bg",
+      "description": "Table body, cell backgrounds, filter input background",
+      "values": []
+    },
+    {
+      "name": "--wg-elevated-bg",
+      "description": "Header row, striped even rows, shortcut key badges",
+      "values": []
+    },
+    {
+      "name": "--wg-disabled-bg",
+      "description": "Read-only cells, locked rows (the contract's disabled surface)",
+      "values": []
+    },
+    {
+      "name": "--wg-disabled-opacity",
+      "description": "Disabled dimming: disabled grid, toolbar / inline action buttons, dropdown options, pagination buttons (→ --base-disabled-opacity, 0.65)",
+      "values": []
+    },
+    {
+      "name": "--wg-shadow-color",
+      "description": "Shadow tone for toolbar, dialog, tooltip, frozen-column edge (one tone with pure-admin)",
+      "values": []
+    },
+    {
+      "name": "--wg-dropdown-bg",
+      "description": "Floating toolbar background, context menu, dropdown panels",
+      "values": []
+    },
+    {
+      "name": "--wg-border-color",
+      "description": "Table border, cell borders, header bottom, toolbar dividers",
+      "values": []
+    },
+    {
+      "name": "--wg-border-color-hover",
+      "description": "Pagination button border on hover",
+      "values": []
+    },
+    {
+      "name": "--wg-input-bg",
+      "description": "Filter input background, editor backgrounds",
+      "values": []
+    },
+    {
+      "name": "--wg-input-color",
+      "description": "Text color in filter inputs and editors",
+      "values": []
+    },
+    {
+      "name": "--wg-input-border-color",
+      "description": "Filter / editor input outline color, stronger than --wg-border-color",
+      "values": []
+    },
+    {
+      "name": "--wg-input-border",
+      "description": "Filter input border (1px solid color)",
+      "values": []
+    },
+    {
+      "name": "--wg-input-border-hover",
+      "description": "Filter input border on mouse hover",
+      "values": []
+    },
+    {
+      "name": "--wg-input-border-focus",
+      "description": "Filter input border when focused (accent color)",
+      "values": []
+    },
+    {
+      "name": "--wg-input-placeholder-color",
+      "description": "Placeholder text in filter and editor inputs",
+      "values": []
+    },
+    {
+      "name": "--wg-danger-color",
+      "description": "Validation error text, error indicator triangle, delete button",
+      "values": []
+    },
+    {
+      "name": "--wg-danger-bg-light",
+      "description": "Invalid cell background tint, danger button hover",
+      "values": []
+    },
+    {
+      "name": "--wg-drop-indicator-color",
+      "description": "Column-reorder drop indicator line and arrow (chains --base-drop-target-border-color)",
+      "values": []
+    },
+    {
+      "name": "--wg-hover-bg",
+      "description": "Generic hover background for buttons, rows, cells",
+      "values": []
+    },
+    {
+      "name": "--wg-active-bg",
+      "description": "Generic active/pressed background for buttons",
+      "values": []
+    },
+    {
+      "name": "--wg-font-family",
+      "description": "Font family for all grid text (cells, headers, inputs)",
+      "values": []
+    },
+    {
+      "name": "--wg-font-size-base",
+      "description": "Cell text, editor text, dialog labels (14px)",
+      "values": []
+    },
+    {
+      "name": "--wg-font-size-sm",
+      "description": "Filter input, pagination text, row numbers (12px)",
+      "values": []
+    },
+    {
+      "name": "--wg-font-size-xs",
+      "description": "Error messages, shortcut key badges (11px)",
+      "values": []
+    },
+    {
+      "name": "--wg-font-size-lg",
+      "description": "Large text elements (16px)",
+      "values": []
+    },
+    {
+      "name": "--wg-line-height-base",
+      "description": "Base line height for all text (1.5 multiplier)",
+      "values": []
+    },
+    {
+      "name": "--wg-font-weight-normal",
+      "description": "Normal text weight for cell content (400)",
+      "values": []
+    },
+    {
+      "name": "--wg-font-weight-semibold",
+      "description": "Header text, shortcut keys, dialog titles (600)",
+      "values": []
+    },
+    {
+      "name": "--wg-font-family-mono",
+      "description": "Keyboard shortcut key badges (monospace)",
+      "values": []
+    },
+    {
+      "name": "--wg-border-radius-sm",
+      "description": "Toolbar buttons, inputs, filter fields (4px)",
+      "values": []
+    },
+    {
+      "name": "--wg-border-radius-md",
+      "description": "Go-to dialog, context menu (6px)",
+      "values": []
+    },
+    {
+      "name": "--wg-border-radius-lg",
+      "description": "Large rounded elements (8px)",
+      "values": []
+    },
+    {
+      "name": "--wg-spacing-xs",
+      "description": "Tight gaps: filter padding, shortcut help position (4px)",
+      "values": []
+    },
+    {
+      "name": "--wg-spacing-sm",
+      "description": "Standard gaps: cell padding vertical, header padding vertical (8px)",
+      "values": []
+    },
+    {
+      "name": "--wg-spacing-md",
+      "description": "Comfortable gaps: cell padding horizontal, shortcut item gap (12px)",
+      "values": []
+    },
+    {
+      "name": "--wg-spacing-lg",
+      "description": "Large gaps: dialog padding, shortcut overlay padding (16px)",
+      "values": []
+    },
+    {
+      "name": "--wg-spacing-xl",
+      "description": "Extra large gaps: empty state padding (24px)",
+      "values": []
+    },
+    {
+      "name": "--wg-table-bg",
+      "description": "Table container background color",
+      "values": []
+    },
+    {
+      "name": "--wg-table-border",
+      "description": "Table outer border (1px solid)",
+      "values": []
+    },
+    {
+      "name": "--wg-row-number-width",
+      "description": "Row number column width (40px)",
+      "values": []
+    },
+    {
+      "name": "--wg-actions-column-width",
+      "description": "Inline actions column width (32px)",
+      "values": []
+    },
+    {
+      "name": "--wg-header-bg",
+      "description": "Column header row background, row number cells",
+      "values": []
+    },
+    {
+      "name": "--wg-header-bg-hover",
+      "description": "Sortable column header on hover",
+      "values": []
+    },
+    {
+      "name": "--wg-header-bg-sorted",
+      "description": "Currently sorted column header background",
+      "values": []
+    },
+    {
+      "name": "--wg-header-color",
+      "description": "Header text color",
+      "values": []
+    },
+    {
+      "name": "--wg-header-border",
+      "description": "Bottom border below header row (2px solid)",
+      "values": []
+    },
+    {
+      "name": "--wg-header-separator",
+      "description": "Vertical separator between column headers",
+      "values": []
+    },
+    {
+      "name": "--wg-header-padding",
+      "description": "Header cell padding (8px 12px)",
+      "values": []
+    },
+    {
+      "name": "--wg-header-font-weight",
+      "description": "Header text weight (semibold)",
+      "values": []
+    },
+    {
+      "name": "--wg-header-min-height",
+      "description": "Minimum header row height (default: auto)",
+      "values": []
+    },
+    {
+      "name": "--wg-cell-padding",
+      "description": "Cell content padding shorthand (8px 12px)",
+      "values": []
+    },
+    {
+      "name": "--wg-cell-padding-block",
+      "description": "Cell vertical padding for editors (8px)",
+      "values": []
+    },
+    {
+      "name": "--wg-cell-padding-inline",
+      "description": "Cell horizontal padding for editors (12px)",
+      "values": []
+    },
+    {
+      "name": "--wg-row-min-height",
+      "description": "Minimum row height (default: auto)",
+      "values": []
+    },
+    {
+      "name": "--wg-cell-color",
+      "description": "Default cell text color",
+      "values": []
+    },
+    {
+      "name": "--wg-cell-border",
+      "description": "Cell border (1px solid)",
+      "values": []
+    },
+    {
+      "name": "--wg-cell-splitter-color",
+      "description": "Vertical splitter between cells (box-shadow based)",
+      "values": []
+    },
+    {
+      "name": "--wg-cell-splitter-width",
+      "description": "Vertical splitter width between cells (1px)",
+      "values": []
+    },
+    {
+      "name": "--wg-cell-bg-hover",
+      "description": "Cell background on row hover",
+      "values": []
+    },
+    {
+      "name": "--wg-cell-bg-editing",
+      "description": "Cell background when in edit mode",
+      "values": []
+    },
+    {
+      "name": "--wg-cell-readonly-bg",
+      "description": "Read-only column cell background (disabled tint)",
+      "values": []
+    },
+    {
+      "name": "--wg-row-border",
+      "description": "Border between rows (1px solid)",
+      "values": []
+    },
+    {
+      "name": "--wg-row-bg-even",
+      "description": "Even row background in striped mode",
+      "values": []
+    },
+    {
+      "name": "--wg-row-bg-hover",
+      "description": "Row background on hover when hoverable enabled",
+      "values": []
+    },
+    {
+      "name": "--wg-filter-bg",
+      "description": "Filter row background",
+      "values": []
+    },
+    {
+      "name": "--wg-filter-border",
+      "description": "Filter row bottom border",
+      "values": []
+    },
+    {
+      "name": "--wg-filter-padding",
+      "description": "Filter cell padding around input (4px 8px)",
+      "values": []
+    },
+    {
+      "name": "--wg-filter-input-padding",
+      "description": "Padding inside filter text input (4px 8px)",
+      "values": []
+    },
+    {
+      "name": "--wg-filter-input-bg",
+      "description": "Filter input background color",
+      "values": []
+    },
+    {
+      "name": "--wg-filter-input-border",
+      "description": "Filter input border style",
+      "values": []
+    },
+    {
+      "name": "--wg-filter-input-border-focus",
+      "description": "Filter input border when focused (accent)",
+      "values": []
+    },
+    {
+      "name": "--wg-filter-input-border-radius",
+      "description": "Filter input corner radius",
+      "values": []
+    },
+    {
+      "name": "--wg-filter-input-font-size",
+      "description": "Filter input text size (12px)",
+      "values": []
+    },
+    {
+      "name": "--wg-sort-indicator-size",
+      "description": "Sort arrow icon size (14px)",
+      "values": []
+    },
+    {
+      "name": "--wg-sort-indicator-opacity",
+      "description": "Active sort arrow opacity (0.9)",
+      "values": []
+    },
+    {
+      "name": "--wg-sort-placeholder-opacity",
+      "description": "Inactive sortable arrow opacity (0.3)",
+      "values": []
+    },
+    {
+      "name": "--wg-sort-priority-size",
+      "description": "Multi-sort priority number size (11px)",
+      "values": []
+    },
+    {
+      "name": "--wg-pagination-padding",
+      "description": "Pagination bar padding (12px)",
+      "values": []
+    },
+    {
+      "name": "--wg-pagination-gap",
+      "description": "Gap between pagination elements (16px)",
+      "values": []
+    },
+    {
+      "name": "--wg-pagination-bg",
+      "description": "Pagination bar background",
+      "values": []
+    },
+    {
+      "name": "--wg-pagination-border",
+      "description": "Pagination bar top border",
+      "values": []
+    },
+    {
+      "name": "--wg-pagination-btn-padding",
+      "description": "Pagination button padding (6px 16px)",
+      "values": []
+    },
+    {
+      "name": "--wg-pagination-btn-bg",
+      "description": "Pagination button default background",
+      "values": []
+    },
+    {
+      "name": "--wg-pagination-btn-bg-hover",
+      "description": "Pagination button hover background",
+      "values": []
+    },
+    {
+      "name": "--wg-pagination-btn-bg-active",
+      "description": "Current page button background",
+      "values": []
+    },
+    {
+      "name": "--wg-pagination-btn-border",
+      "description": "Pagination button border",
+      "values": []
+    },
+    {
+      "name": "--wg-pagination-btn-border-hover",
+      "description": "Pagination button border on hover",
+      "values": []
+    },
+    {
+      "name": "--wg-pagination-btn-border-radius",
+      "description": "Pagination button corner radius",
+      "values": []
+    },
+    {
+      "name": "--wg-pagination-btn-disabled-opacity",
+      "description": "Disabled prev/next button opacity (default --wg-disabled-opacity)",
+      "values": []
+    },
+    {
+      "name": "--wg-empty-padding",
+      "description": "Empty state message padding (24px)",
+      "values": []
+    },
+    {
+      "name": "--wg-empty-color",
+      "description": "Empty state 'No data' text color (muted)",
+      "values": []
+    },
+    {
+      "name": "--wg-error-cell-bg",
+      "description": "Invalid cell background (light red tint)",
+      "values": []
+    },
+    {
+      "name": "--wg-error-cell-border",
+      "description": "Invalid cell border (red)",
+      "values": []
+    },
+    {
+      "name": "--wg-error-message-color",
+      "description": "Validation error message text color (red)",
+      "values": []
+    },
+    {
+      "name": "--wg-error-message-font-size",
+      "description": "Validation error message font size (11px)",
+      "values": []
+    },
+    {
+      "name": "--wg-error-indicator-color",
+      "description": "Error triangle indicator color (red)",
+      "values": []
+    },
+    {
+      "name": "--wg-editor-bg",
+      "description": "Cell background when editing",
+      "values": []
+    },
+    {
+      "name": "--wg-editor-outline",
+      "description": "Active editor cell outline (2px solid accent)",
+      "values": []
+    },
+    {
+      "name": "--wg-editor-outline-offset",
+      "description": "Editor outline offset (-2px inset)",
+      "values": []
+    },
+    {
+      "name": "--wg-editor-validating-opacity",
+      "description": "Cell opacity during async validation (0.7)",
+      "values": []
+    },
+    {
+      "name": "--wg-editor-hitbox-height",
+      "description": "Invisible click target height for toggle/trigger buttons (48px)",
+      "values": []
+    },
+    {
+      "name": "--wg-checkbox-scale",
+      "description": "Checkbox input scale factor (1.2)",
+      "values": []
+    },
+    {
+      "name": "--wg-date-trigger-size",
+      "description": "Date picker calendar icon button width (28px)",
+      "values": []
+    },
+    {
+      "name": "--wg-dropdown-toggle-right",
+      "description": "Dropdown arrow right position (12px from edge)",
+      "values": []
+    },
+    {
+      "name": "--wg-dropdown-toggle-size",
+      "description": "Dropdown arrow icon size (12px)",
+      "values": []
+    },
+    {
+      "name": "--wg-dropdown-toggle-hitbox",
+      "description": "Dropdown arrow clickable area (24px)",
+      "values": []
+    },
+    {
+      "name": "--wg-dropdown-max-height",
+      "description": "Dropdown option list maximum height (200px)",
+      "values": []
+    },
+    {
+      "name": "--wg-dropdown-option-gap",
+      "description": "Gap between option icon and text",
+      "values": []
+    },
+    {
+      "name": "--wg-dropdown-option-padding",
+      "description": "Padding inside dropdown options",
+      "values": []
+    },
+    {
+      "name": "--wg-dropdown-empty-padding",
+      "description": "Padding for 'No options' empty state message",
+      "values": []
+    },
+    {
+      "name": "--wg-toolbar-bg",
+      "description": "Floating row toolbar background",
+      "values": []
+    },
+    {
+      "name": "--wg-toolbar-border",
+      "description": "Floating row toolbar border",
+      "values": []
+    },
+    {
+      "name": "--wg-toolbar-border-radius",
+      "description": "Floating row toolbar corner radius",
+      "values": []
+    },
+    {
+      "name": "--wg-toolbar-shadow",
+      "description": "Floating row toolbar drop shadow",
+      "values": []
+    },
+    {
+      "name": "--wg-toolbar-divider-color",
+      "description": "Vertical divider between toolbar button groups",
+      "values": []
+    },
+    {
+      "name": "--wg-toolbar-divider-height",
+      "description": "Toolbar divider line height (16px)",
+      "values": []
+    },
+    {
+      "name": "--wg-toolbar-row-height",
+      "description": "Toolbar row height for multi-row toolbars (37px)",
+      "values": []
+    },
+    {
+      "name": "--wg-toolbar-icon-size",
+      "description": "Toolbar SVG icon dimensions (16px)",
+      "values": []
+    },
+    {
+      "name": "--wg-toolbar-btn-min-width",
+      "description": "Toolbar button minimum width (24px)",
+      "values": []
+    },
+    {
+      "name": "--wg-toolbar-btn-padding",
+      "description": "Toolbar button padding (0 4px)",
+      "values": []
+    },
+    {
+      "name": "--wg-toolbar-btn-border-radius",
+      "description": "Toolbar button corner radius",
+      "values": []
+    },
+    {
+      "name": "--wg-toolbar-btn-bg-hover",
+      "description": "Toolbar button hover background",
+      "values": []
+    },
+    {
+      "name": "--wg-toolbar-btn-bg-active",
+      "description": "Toolbar button active/pressed background",
+      "values": []
+    },
+    {
+      "name": "--wg-toolbar-btn-color",
+      "description": "Toolbar button icon and text color",
+      "values": []
+    },
+    {
+      "name": "--wg-toolbar-btn-toggled-color",
+      "description": "Toolbar / inline button color while toggled on (isToggled, aria-pressed)",
+      "values": []
+    },
+    {
+      "name": "--wg-toolbar-btn-bg-pressed",
+      "description": "Toolbar / inline button background while toggled on (isToggled, aria-pressed)",
+      "values": []
+    },
+    {
+      "name": "--wg-toolbar-btn-gap",
+      "description": "Gap between toolbar buttons (4px)",
+      "values": []
+    },
+    {
+      "name": "--wg-toolbar-row-gap",
+      "description": "Gap between toolbar rows (2px)",
+      "values": []
+    },
+    {
+      "name": "--wg-toolbar-row-padding",
+      "description": "Padding inside toolbar rows",
+      "values": []
+    },
+    {
+      "name": "--wg-toolbar-label-font-size",
+      "description": "Toolbar button label font size (12px)",
+      "values": []
+    },
+    {
+      "name": "--wg-toolbar-trigger-color",
+      "description": "Toolbar trigger button (3-dot) default color",
+      "values": []
+    },
+    {
+      "name": "--wg-toolbar-trigger-color-hover",
+      "description": "Toolbar trigger button color on hover",
+      "values": []
+    },
+    {
+      "name": "--wg-toolbar-trigger-bg-hover",
+      "description": "Toolbar trigger button background on hover",
+      "values": []
+    },
+    {
+      "name": "--wg-inline-actions-padding",
+      "description": "Inline actions cell padding",
+      "values": []
+    },
+    {
+      "name": "--wg-inline-actions-gap",
+      "description": "Gap between inline action buttons (2px)",
+      "values": []
+    },
+    {
+      "name": "--wg-overlay-bg",
+      "description": "Modal overlay background (semi-transparent black)",
+      "values": []
+    },
+    {
+      "name": "--wg-dialog-shadow",
+      "description": "Dialog and popup box shadow",
+      "values": []
+    },
+    {
+      "name": "--wg-tooltip-bg",
+      "description": "Tooltip and validation message popup background (dark)",
+      "values": []
+    },
+    {
+      "name": "--wg-tooltip-color",
+      "description": "Tooltip and validation message text color (white)",
+      "values": []
+    },
+    {
+      "name": "--wg-tooltip-width",
+      "description": "Tooltip content width (auto = shrink to fit; content box, padding excluded)",
+      "values": []
+    },
+    {
+      "name": "--wg-tooltip-min-width",
+      "description": "Minimum tooltip content width (0)",
+      "values": []
+    },
+    {
+      "name": "--wg-tooltip-max-width",
+      "description": "Maximum tooltip content width (300px); also caps the shortcuts help overlay",
+      "values": []
+    },
+    {
+      "name": "--wg-tooltip-arrow-size",
+      "description": "Tooltip arrow dimensions (8px)",
+      "values": []
+    },
+    {
+      "name": "--wg-tooltip-padding",
+      "description": "Tooltip content padding",
+      "values": []
+    },
+    {
+      "name": "--wg-tooltip-shadow",
+      "description": "Tooltip box shadow",
+      "values": []
+    },
+    {
+      "name": "--wg-context-menu-bg",
+      "description": "Cell / header menu background (unset → --km-menu-bg → --base-dropdown-bg)",
+      "values": []
+    },
+    {
+      "name": "--wg-context-menu-bg-hover",
+      "description": "Menu item hover / focus background (unset → --km-menu-hover-bg → --base-hover-bg)",
+      "values": []
+    },
+    {
+      "name": "--wg-context-menu-hover-color",
+      "description": "Menu item text color on hover / focus (unset → --km-menu-hover-color; default unchanged)",
+      "values": []
+    },
+    {
+      "name": "--wg-context-menu-text-color",
+      "description": "Menu text color (unset → --km-menu-text-color → --base-text-color-1)",
+      "values": []
+    },
+    {
+      "name": "--wg-context-menu-shortcut-color",
+      "description": "Shortcut hint color (unset → --km-menu-shortcut-color → --base-text-color-3)",
+      "values": []
+    },
+    {
+      "name": "--wg-context-menu-border",
+      "description": "Menu border (unset → --km-menu-border → --base-dropdown-border)",
+      "values": []
+    },
+    {
+      "name": "--wg-context-menu-border-radius",
+      "description": "Menu border radius (unset → --km-menu-border-radius, 4px)",
+      "values": []
+    },
+    {
+      "name": "--wg-context-menu-shadow",
+      "description": "Menu box shadow (unset → --km-menu-shadow → --base-dropdown-box-shadow)",
+      "values": []
+    },
+    {
+      "name": "--wg-context-menu-min-width",
+      "description": "Menu minimum width (unset → --km-menu-min-width, 160px)",
+      "values": []
+    },
+    {
+      "name": "--wg-context-menu-padding",
+      "description": "Menu padding (unset → --km-menu-padding, 4px 0)",
+      "values": []
+    },
+    {
+      "name": "--wg-context-menu-font-size",
+      "description": "Menu font size (unset → --km-menu-font-size, 14px)",
+      "values": []
+    },
+    {
+      "name": "--wg-context-menu-item-padding",
+      "description": "Menu item padding (unset → --km-menu-item-padding, 6px 12px)",
+      "values": []
+    },
+    {
+      "name": "--wg-context-menu-item-gap",
+      "description": "Gap between icon, label, shortcut (unset → --km-menu-item-gap, 8px)",
+      "values": []
+    },
+    {
+      "name": "--wg-context-menu-toggled-color",
+      "description": "Toggled-on item color, e.g. a visible column in Column Visibility (unset → --km-menu-toggled-color → --base-primary-color)",
+      "values": []
+    },
+    {
+      "name": "--wg-context-menu-icon-width",
+      "description": "Icon column width (unset → --km-menu-icon-size, 16px)",
+      "values": []
+    },
+    {
+      "name": "--wg-context-menu-icon-font-size",
+      "description": "Icon font size (unset → --km-menu-icon-font-size, inherit)",
+      "values": []
+    },
+    {
+      "name": "--wg-context-menu-arrow-font-size",
+      "description": "Submenu arrow font size (unset → --km-menu-arrow-font-size, 0.8em)",
+      "values": []
+    },
+    {
+      "name": "--wg-context-menu-danger-color",
+      "description": "Danger item text color (unset → --km-menu-danger-color → --base-danger-color)",
+      "values": []
+    },
+    {
+      "name": "--wg-context-menu-danger-bg-hover",
+      "description": "Danger item hover background (unset → --km-menu-danger-hover-bg → --base-danger-bg-subtle)",
+      "values": []
+    },
+    {
+      "name": "--wg-context-menu-divider-color",
+      "description": "Divider line color (unset → --km-menu-divider-color → --base-border-color)",
+      "values": []
+    },
+    {
+      "name": "--wg-context-menu-divider-margin",
+      "description": "Divider margin (unset → --km-menu-divider-margin, 4px 0)",
+      "values": []
+    },
+    {
+      "name": "--wg-context-menu-disabled-opacity",
+      "description": "Disabled item opacity (unset → --km-menu-disabled-opacity → --base-disabled-opacity)",
+      "values": []
+    },
+    {
+      "name": "--wg-context-menu-z-index",
+      "description": "Menu stacking order (unset → --km-menu-z-index, 10000)",
+      "values": []
+    },
+    {
+      "name": "--wg-focus-outline",
+      "description": "Navigate mode focused cell outline (2px solid accent)",
+      "values": []
+    },
+    {
+      "name": "--wg-focus-outline-offset",
+      "description": "Focused cell outline offset (-2px inset)",
+      "values": []
+    },
+    {
+      "name": "--wg-focus-bg",
+      "description": "Focused cell background tint",
+      "values": []
+    },
+    {
+      "name": "--wg-selection-bg",
+      "description": "Selected row/column background (15% accent)",
+      "values": []
+    },
+    {
+      "name": "--wg-selection-row-number-bg",
+      "description": "Selected row number cell background (accent)",
+      "values": []
+    },
+    {
+      "name": "--wg-selection-row-number-color",
+      "description": "Selected row number text color (white on accent)",
+      "values": []
+    },
+    {
+      "name": "--wg-selection-border-width",
+      "description": "Border width around selected row/column range (2px)",
+      "values": []
+    },
+    {
+      "name": "--wg-selection-border-color",
+      "description": "Border color around selected row/column range (accent)",
+      "values": []
+    },
+    {
+      "name": "--wg-row-focus-bg",
+      "description": "Focused row background for master/detail (10% accent)",
+      "values": []
+    },
+    {
+      "name": "--wg-row-focus-row-number-bg",
+      "description": "Focused row number background (30% accent)",
+      "values": []
+    },
+    {
+      "name": "--wg-cell-selection-bg",
+      "description": "Cell range selection background (10% accent)",
+      "values": []
+    },
+    {
+      "name": "--wg-cell-selection-border",
+      "description": "Cell range selection border color (accent)",
+      "values": []
+    },
+    {
+      "name": "--wg-cell-selection-border-width",
+      "description": "Cell range selection border width (2px)",
+      "values": []
+    },
+    {
+      "name": "--wg-row-locked-bg",
+      "description": "Locked row background color",
+      "values": []
+    },
+    {
+      "name": "--wg-row-locked-opacity",
+      "description": "Locked row content opacity (0.7)",
+      "values": []
+    },
+    {
+      "name": "--wg-frozen-column-bg",
+      "description": "Frozen column cell background",
+      "values": []
+    },
+    {
+      "name": "--wg-frozen-header-bg",
+      "description": "Frozen column header background (accent tint)",
+      "values": []
+    },
+    {
+      "name": "--wg-frozen-column-shadow",
+      "description": "Frozen column drop shadow",
+      "values": []
+    },
+    {
+      "name": "--wg-frozen-column-shadow-active",
+      "description": "Enhanced shadow when scrolled past frozen column",
+      "values": []
+    },
+    {
+      "name": "--wg-frozen-column-border",
+      "description": "Border on last frozen column (2px solid)",
+      "values": []
+    },
+    {
+      "name": "--wg-frozen-column-shadow-gradient",
+      "description": "Gradient pseudo-element for frozen column edge",
+      "values": []
+    },
+    {
+      "name": "--wg-frozen-column-shadow-width",
+      "description": "Width of gradient shadow pseudo-element (8px)",
+      "values": []
+    },
+    {
+      "name": "--wg-resize-handle-width",
+      "description": "Column resize handle hitbox width (12px)",
+      "values": []
+    },
+    {
+      "name": "--wg-resize-handle-offset",
+      "description": "Resize handle offset from the header cell's right edge (0px — inside the cell; the header clips overflow)",
+      "values": []
+    },
+    {
+      "name": "--wg-resize-handle-line-width",
+      "description": "Resize handle visible line width (2px)",
+      "values": []
+    },
+    {
+      "name": "--wg-resize-handle-color",
+      "description": "Resize handle default color (border color)",
+      "values": []
+    },
+    {
+      "name": "--wg-resize-handle-active-color",
+      "description": "Resize handle color when dragging (accent)",
+      "values": []
+    },
+    {
+      "name": "--wg-fill-handle-size",
+      "description": "Fill handle square size at cell corner (8px)",
+      "values": []
+    },
+    {
+      "name": "--wg-fill-handle-bg",
+      "description": "Fill handle background color",
+      "values": []
+    },
+    {
+      "name": "--wg-fill-handle-border-color",
+      "description": "Fill handle border color (accent)",
+      "values": []
+    },
+    {
+      "name": "--wg-fill-handle-border-width",
+      "description": "Fill handle border width (2px)",
+      "values": []
+    },
+    {
+      "name": "--wg-fill-range-bg",
+      "description": "Fill range highlight background (15% accent)",
+      "values": []
+    },
+    {
+      "name": "--wg-fill-range-border-color",
+      "description": "Fill range border color (accent)",
+      "values": []
+    },
+    {
+      "name": "--wg-transition-fast",
+      "description": "Duration of hover fades, tree chevron, tooltip, pagination (→ --base-duration-fast, 0.1s; 0s = off, reduced motion = 0s)",
+      "values": []
+    },
+    {
+      "name": "--wg-transition-normal",
+      "description": "Standard duration (→ --base-duration-normal, 0.15s; 0s = off, reduced motion = 0s)",
+      "values": []
+    },
+    {
+      "name": "--wg-easing",
+      "description": "Easing of every transition (→ --base-ease-standard)",
+      "values": []
+    },
+    {
+      "name": "--wg-loader-icon",
+      "description": "Loader shape — an SVG used as a mask, drawn in currentColor (→ --base-loader-icon, an arc)",
+      "values": []
+    },
+    {
+      "name": "--wg-loader-rotate",
+      "description": "Loader rotation per cycle (→ --base-loader-rotate, 1turn; 0 = the SVG animates itself)",
+      "values": []
+    },
+    {
+      "name": "--wg-loader-duration",
+      "description": "Loader cycle (→ --base-loader-duration, 0.8s; reduced motion slows it, never stops)",
+      "values": []
+    },
+    {
+      "name": "--wg-loader-size",
+      "description": "Loader size (→ --base-loader-size, 1.25em — scales with text): infinite-scroll row and autocomplete search",
+      "values": []
+    },
+    {
+      "name": "--wg-tree-indent",
+      "description": "Tree column indent per level (→ --base-tree-indent × --wg-rem, 16px)",
+      "values": []
+    },
+    {
+      "name": "--wg-z-dropdown",
+      "description": "Dropdown/combobox popup stacking (9999)",
+      "values": []
+    },
+    {
+      "name": "--wg-z-toolbar",
+      "description": "Floating row toolbar stacking (1000)",
+      "values": []
+    },
+    {
+      "name": "--wg-z-tooltip",
+      "description": "Tooltip stacking - highest layer (10000)",
+      "values": []
+    }
+  ],
+  "pseudoElements": []
+}
