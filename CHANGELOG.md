@@ -10,6 +10,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Changed — rulebook leftovers (2026-11-11)
+- **BREAKING (CSS class):** the filter-row input refused by `filterCallback` (`null`) carries
+  `.wg__filter-input--invalid` (BEM, rulebook C-NC-8 / C-CSS-7) instead of the bare `.invalid` — a
+  `customStyles` rule on `.invalid` must be renamed. `aria-invalid="true"` is unchanged.
+- **`scrollable` caps at `100dvh`** (was `100vh`) when `scroll-max-height` keeps its default — the
+  dynamic viewport, so on a phone the grid's bottom no longer sits behind the browser bar (C-RO-4).
+- **The Ctrl+G "go to row" dialog stays inside the safe area** (notch, home indicator, landscape side bars:
+  `env(safe-area-inset-*)` on its backdrop, C-RO-9).
+
+### Internal — rulebook leftovers (2026-11-11)
+- `component-variables.manifest.json`: the published `$schema`; `--base-loader-*` (read by the loader CSS)
+  added; `--base-scroll-behavior` marked `readBy` (the date editor's inline CSS); the 23
+  `--wg-context-menu-*` knobs marked `"input": true` (unset by design — they map onto core's
+  `--_km-menu-*`); 20 undocumented `--wg-*` variables added (dirty indicator, focus border, tree chevron,
+  z-index layers); `--wg-scroll-max-height` is a runtime internal (`kmwc.cssVariables.internalVariables`).
+  Rulebook C-BV-3 / C-BV-6 pass; README / theming.md counts (51 base, 241 component) and schema link.
+- `controller.ts` takes `GridController` from `types.ts` (re-exported there) instead of
+  `interaction.ts` (C-CST-4).
+- The package README (`packages/web-grid/README.md`, the short one npm ships) has the canonical
+  `## What's New in v…` blocks (C-RS-16) and an Editor IntelliSense note. The root README gains "Demos & docs",
+  "What is it", "Quick start", "About" (canonical text), "Built with BlissFramework" and `- **…** — …`
+  What's New bullets. The package's `prepack` script mirrors `ai/` into the package; `make package` no
+  longer copies the root README over the package README. `/publish` (`.claude/commands/publish.md`)
+  follows the new build / pack flow, keeps the two READMEs' What's New blocks in sync and stages the
+  Custom Elements Manifest files.
+- Root `package.json` version follows the package (`2.0.0-rc01`) — the examples site's version badge
+  reads it.
+
 ### Internal — the repo on the devkit (2026-11-11)
 - **`@keenmate/web-components-devkit`** runs the examples site and the e2e server: `package.json#kmwc`
   (monorepo: `packages: [packages/web-grid]`), ports **12600** (dev) / **12610** (examples image) — the old

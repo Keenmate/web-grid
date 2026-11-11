@@ -1,21 +1,32 @@
 # @keenmate/web-grid
 
+## Demos & docs
+
+- 📘 [Usage / API reference](./packages/web-grid/docs/usage.md) — every attribute, property, event, method and column field.
+- 🎨 [Theming](./packages/web-grid/docs/theming.md) — the `--wg-*` variables, dark mode, the `--base-*` contract.
+- 📚 [Examples / cookbook](./packages/web-grid/docs/examples.md) — recipes matching the example pages.
+- ♿ [Accessibility](./packages/web-grid/docs/accessibility.md) — keyboard model, ARIA, focus.
+- 📝 [Changelog](https://github.com/KeenMate/web-grid/blob/prod/CHANGELOG.md)
+- 📦 [Package README](./packages/web-grid/README.md) — the short README published to npm.
+
+## What is it
+
 A feature-rich, framework-agnostic data grid web component built with TypeScript. Sorting, filtering, pagination, inline editing (8 editor types), cell range selection, clipboard support, row toolbar, context menus, frozen columns, column reorder/resize, fill handle, virtual scroll, dark mode, and full CSS variable theming — all in a Shadow DOM encapsulated `<web-grid>` element.
 
 ## What's New in v2.0.0-rc01
 
 A major release — see the CHANGELOG for every rename (no aliases).
 
-- **Shared interaction model** (`@keenmate/web-components-core`): every callback takes one `ctx` (with `controller` + `element`), every event has an `on*` twin, the row toolbar / cell and header menus / shortcuts are core action items, and both menus run on core `openMenu()`.
-- **Suite-wide naming**: boolean attributes in the short HTML form (`enable-filtering`, `enable-editing`, `show-row-numbers`, `enable-virtual-scroll`, …), kebab-case enum values, `preset` (was `mode`), tree API with web-treeview names (`toggleRowExpanded`, `expandRows` / `expandAll(paths?)` with `ExpandOptions`, `expandedPaths: string[]`, `row-expand` / `row-collapse` / `expanded-change`), `cell-edit-start` / `cell-paste` / `focus-change` events, state as same-named properties on the element and `el.controller` (`selectedRows`, `selectedRowIndices`, `items`, …).
-- **`readonly` and `disabled`**: `readonly` blocks edits, paste, fill and row add / delete / move but keeps selection and copy; `disabled` makes the grid inert. The `read-only` preset sets `readonly`.
-- **Ctrl+Delete deletes**: the `delete` built-in removes the row (veto with `beforeActionCallback`) and `row-delete` reports it after the fact.
-- **Core lifecycle**: `defer` / `release()` hold the first render, then `ready` / `:state(ready)` / `whenReady()`; `destroy()`.
-- **`labels`** is also a JSON attribute, with `labels.noData` / `labels.noResults` for the empty table (`''` = blank), `labels.loading` for a pending infinite-scroll load; `scrollToRow(rowIndex)` resolves when the row is in view.
-- **Dropdowns**: `editorOptions.isEmptyAllowed` adds an empty first item (→ `null`); "no options" vs "no matching options" texts.
-- **Shared loader**: the infinite-scroll row and async dropdown search draw one loader (`--base-loader-*` tokens); swap it with `renderLoadingCallback` or page-wide `window.components.renderLoadingCallback`.
-- **Lookups**: `getRowById(id)` → row or `null`, `getRowIndex(row)` → display index or `-1`.
-- **Core 1.0.0-rc20/rc21**: every input is a typed property (`GridElementConfig`); `customStyles` / `custom-styles` next to `getCustomStylesCallback`, plus page-wide `window.components['web-grid'].customStyles`; `beforeScrollCallback` gates every scroll the grid makes on its own (keyboard, `scrollToRow`, go-to-row), which now scrolls only the grid's container (`scrollToRow` centres the row and brings the grid on screen); `readonly` / `disabled` follow the native presence rule and reflect; position / layout / CSS-length inputs are validated (`input-rejected`).
+- **Shared interaction model** (`@keenmate/web-components-core`) — every callback takes one `ctx` (with `controller` + `element`), every event has an `on*` twin, the row toolbar / cell and header menus / shortcuts are core action items, and both menus run on core `openMenu()`.
+- **Suite-wide naming** — boolean attributes in the short HTML form (`enable-filtering`, `enable-editing`, `show-row-numbers`, `enable-virtual-scroll`, …), kebab-case enum values, `preset` (was `mode`), tree API with web-treeview names (`toggleRowExpanded`, `expandRows` / `expandAll(paths?)` with `ExpandOptions`, `expandedPaths: string[]`, `row-expand` / `row-collapse` / `expanded-change`), `cell-edit-start` / `cell-paste` / `focus-change` events, state as same-named properties on the element and `el.controller` (`selectedRows`, `selectedRowIndices`, `items`, …).
+- **`readonly` and `disabled`** — `readonly` blocks edits, paste, fill and row add / delete / move but keeps selection and copy; `disabled` makes the grid inert. The `read-only` preset sets `readonly`.
+- **Ctrl+Delete deletes** — the `delete` built-in removes the row (veto with `beforeActionCallback`) and `row-delete` reports it after the fact.
+- **Core lifecycle** — `defer` / `release()` hold the first render, then `ready` / `:state(ready)` / `whenReady()`; `destroy()`.
+- **`labels`** — also a JSON attribute, with `labels.noData` / `labels.noResults` for the empty table (`''` = blank), `labels.loading` for a pending infinite-scroll load; `scrollToRow(rowIndex)` resolves when the row is in view.
+- **Dropdowns** — `editorOptions.isEmptyAllowed` adds an empty first item (→ `null`); "no options" vs "no matching options" texts.
+- **Shared loader** — the infinite-scroll row and async dropdown search draw one loader (`--base-loader-*` tokens); swap it with `renderLoadingCallback` or page-wide `window.components.renderLoadingCallback`.
+- **Lookups** — `getRowById(id)` → row or `null`, `getRowIndex(row)` → display index or `-1`.
+- **Core 1.0.0-rc20/rc21** — every input is a typed property (`GridElementConfig`); `customStyles` / `custom-styles` next to `getCustomStylesCallback`, plus page-wide `window.components['web-grid'].customStyles`; `beforeScrollCallback` gates every scroll the grid makes on its own (keyboard, `scrollToRow`, go-to-row), which now scrolls only the grid's container (`scrollToRow` centres the row and brings the grid on screen); `readonly` / `disabled` follow the native presence rule and reflect; position / layout / CSS-length inputs are validated (`input-rejected`).
 
 ## What's New in v1.2.0-rc02
 
@@ -56,7 +67,7 @@ All of it is generated from the component's source on every build.
   }
   ```
 
-## Getting Started
+## Quick start
 
 ### Step 1 — Import the component
 
@@ -536,7 +547,7 @@ window.components.renderLoadingCallback = ({ context, containerElement }) => {
 | `filters` | `Record<string, string>` | `{}` | Current filter value per field. Assigning it is silent (no `filter-change`, like a native `input.value`); `setFilter(field, text, { isSilent? })` fires it |
 | `filterMode` | `'client' \| 'server'` | `'client'` | `'server'`: the grid doesn't filter `items` — listen to `filter-change` (`{ filters }`) and load the rows. Attribute `filter-mode` |
 
-**Filter row.** With `isFilteringEnabled`, a row under the header gets a text input for every column with `isFilterable: true` (labelled "Filter &lt;column&gt;" via `labels.filterColumn`; Tab-reachable). Typing is debounced (300 ms; Enter applies at once, Escape clears) → `setFilter(field, text)` → page 1. A `filterCallback` returning `null` marks the input `.invalid` (red border, `aria-invalid`) and ignores that filter. In server pagination a filter change runs `beforePageChangeCallback` (trigger `'filter'`) and fires `data-request` (trigger `'filter'`). Styled by the `--wg-filter-*` variables. A filter change (UI or `setFilter` / `filters`) resets `currentPage` to 1.
+**Filter row.** With `isFilteringEnabled`, a row under the header gets a text input for every column with `isFilterable: true` (labelled "Filter &lt;column&gt;" via `labels.filterColumn`; Tab-reachable). Typing is debounced (300 ms; Enter applies at once, Escape clears) → `setFilter(field, text)` → page 1. A `filterCallback` returning `null` marks the input `.wg__filter-input--invalid` (red border, `aria-invalid`) and ignores that filter. In server pagination a filter change runs `beforePageChangeCallback` (trigger `'filter'`) and fires `data-request` (trigger `'filter'`). Styled by the `--wg-filter-*` variables. A filter change (UI or `setFilter` / `filters`) resets `currentPage` to 1.
 
 ### Styling
 
@@ -1286,11 +1297,11 @@ A machine-readable manifest documenting all CSS variables is included in the pac
 import manifest from '@keenmate/web-grid/manifest'
 
 console.log(manifest.prefix)              // "wg"
-console.log(manifest.baseVariables)       // 43 --base-* variables consumed
-console.log(manifest.componentVariables)  // 214 --wg-* variables exposed
+console.log(manifest.baseVariables)       // 51 --base-* variables consumed
+console.log(manifest.componentVariables)  // 241 --wg-* variables exposed
 ```
 
-The manifest follows the [component-variables schema](https://raw.githubusercontent.com/keenmate/schemas/main/component-variables.schema.json) and contains:
+The manifest follows the [component-variables schema](https://schemas.keenmate.dev/component-variables/v1.schema.json) and contains:
 
 - **baseVariables** — Theme variables (`--base-*`) the component consumes from `@keenmate/theme-designer`
 - **componentVariables** — Component-specific variables (`--wg-*`) with category and usage descriptions
@@ -1414,6 +1425,21 @@ window.components['web-grid'].getInstances()                  // Live <web-grid>
 - Chrome/Edge 88+
 - Firefox 78+
 - Safari 14+
+
+## About
+
+Authored and maintained by [Keenmate s.r.o.](https://keenmate.com/).
+The component ships standalone with sensible light/dark defaults;
+when mounted inside [Pure Admin](https://pureadmin.io/) — or any
+host that publishes the `--base-*` taxonomy via
+[`@keenmate/theme-designer`](https://www.npmjs.com/package/@keenmate/theme-designer) — it adopts the host's colors,
+typography, and sizing automatically. There is no runtime
+dependency on Pure Admin; the integration is opt-in via CSS
+variables.
+
+## Built with BlissFramework
+
+Follows the [BlissFramework component guidelines](https://blissframework.dev/) for structure, theming, color-scheme, and accessibility.
 
 ## License
 

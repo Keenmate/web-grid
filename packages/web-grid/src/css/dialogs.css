@@ -9,6 +9,10 @@
 .wg__goto-overlay {
   position: fixed;
   inset: 0;
+  /* Keep the centred dialog inside the safe area (notch, home indicator, landscape side
+     bars / camera cutout — rulebook C-RO-9); the backdrop itself stays full-bleed. */
+  box-sizing: border-box;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   background: var(--wg-overlay-bg);
   display: flex;
   align-items: center;

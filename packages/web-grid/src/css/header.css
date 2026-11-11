@@ -176,11 +176,11 @@
 }
 
 /* filterCallback returned null — the typed filter is incomplete / not understood */
-.wg__filter-input.invalid {
+.wg__filter-input.wg__filter-input--invalid {
   border-color: var(--wg-danger-color);
 }
 
-.wg__filter-input.invalid:focus {
+.wg__filter-input.wg__filter-input--invalid:focus {
   border-color: var(--wg-danger-color);
   box-shadow: 0 0 0 1px var(--wg-danger-color);
 }

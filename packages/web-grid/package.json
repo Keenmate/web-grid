@@ -48,7 +48,8 @@
 		"test": "vitest run",
 		"test:watch": "vitest",
 		"test:ui": "vitest --ui",
-		"analyze": "cem analyze"
+		"analyze": "cem analyze",
+		"prepack": "node -e \"const fs=require('fs');fs.rmSync('ai',{recursive:true,force:true});fs.cpSync('../../ai','ai',{recursive:true})\""
 	},
 	"keywords": [
 		"grid",

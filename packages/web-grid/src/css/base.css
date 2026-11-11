@@ -31,7 +31,7 @@ web-grid:not(:defined) {
 
 /* Scrollable mode - constrains grid to viewport when no external height set */
 .wg--scrollable {
-  max-height: var(--wg-scroll-max-height, 100vh);
+  max-height: var(--wg-scroll-max-height, 100dvh);
 }
 
 /* ==============================================================================

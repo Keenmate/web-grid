@@ -3,9 +3,10 @@
 # warning; that is how the monorepo's publish flow replaces the single-package one.
 #
 # web-grid is an npm-workspaces monorepo: the root is private and builds only the
-# examples site; packages/web-grid publishes. The root README.md and ai/ are the
-# canonical copies — `prepare-package` copies them into the package (gitignored there)
-# before every pack / publish. Release gates per publish-command.md:
+# examples site; packages/web-grid publishes with its OWN short README (packages/web-grid/README.md,
+# tracked; the root README.md is the long repo README). The root ai/ is canonical — the
+# package's `prepack` script (and `make prepare-package`) copies it into the package
+# (gitignored there) before every pack / publish. Release gates per publish-command.md:
 # `kmwc check-release` for the package, then the e2e suite.
 
 GRID_PACKAGE := @keenmate/web-grid
@@ -13,8 +14,8 @@ GRID_DIR     := packages/web-grid
 
 .PHONY: prepare-package create-link unlink update-deps
 
-prepare-package: ## Copy the root README.md and ai/ into the package (they ship from there)
-	node -e "const fs=require('fs');fs.copyFileSync('README.md','$(GRID_DIR)/README.md');fs.rmSync('$(GRID_DIR)/ai',{recursive:true,force:true});fs.cpSync('ai','$(GRID_DIR)/ai',{recursive:true})"
+prepare-package: ## Copy the root ai/ into the package (npm pack / publish also do it: prepack)
+	npm run prepack -w $(GRID_PACKAGE)
 
 package: build prepare-package ## Pack the package (a .tgz in packages/web-grid)
 	npm pack -w $(GRID_PACKAGE)

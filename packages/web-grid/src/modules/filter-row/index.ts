@@ -12,7 +12,7 @@
 //   - the typed-but-not-yet-applied text survives a re-render (the thead is
 //     rebuilt on every render), and so does focus + caret (capture / restore).
 //
-// `filterCallback` returning null marks the input `.invalid` (red border) via
+// `filterCallback` returning null marks the input `.wg__filter-input--invalid` (red border) via
 // `getInvalidFilterFields()`.
 
 import type { GridHost } from '../grid-context.js'

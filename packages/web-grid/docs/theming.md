@@ -136,10 +136,10 @@ import manifest from '@keenmate/web-grid/manifest'
 
 console.log(manifest.prefix)             // "wg"
 console.log(manifest.baseVariables)      // 37 --base-* variables consumed
-console.log(manifest.componentVariables) // 209 --wg-* variables exposed
+console.log(manifest.componentVariables) // 241 --wg-* variables exposed
 ```
 
-The manifest conforms to the [component-variables schema](https://raw.githubusercontent.com/keenmate/schemas/main/component-variables.schema.json) and lists every variable with a category and a one-line usage description. Treat it as the source of truth — `variables.css` and this doc both derive from the same surface.
+The manifest conforms to the [component-variables schema](https://schemas.keenmate.dev/component-variables/v1.schema.json) and lists every variable with a category and a one-line usage description. Treat it as the source of truth — `variables.css` and this doc both derive from the same surface.
 
 ### Key variables
 

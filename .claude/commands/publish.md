@@ -31,10 +31,10 @@ Monorepo. The publishable package lives at `packages/web-grid/`; the workspace r
 
 - **`./packages/web-grid/package.json`** — `version` field is the source of truth.
 - **`./CHANGELOG.md`** — at the workspace root. Topmost `## [X.Y.Z] - YYYY-MM-DD` heading **without** the `[PUBLISHED]` marker is the WIP section.
-- **`./README.md`** — at the workspace root. Carries `## What's New in vX.Y.Z` sections near the top (one per release, the **two most recent** retained). Mirrored to `./packages/web-grid/README.md` during build (`make package`) so the package on npm carries the same README as the repo root.
+- **`./README.md`** — at the workspace root. Carries `## What's New in vX.Y.Z` sections near the top (one per release, the **two most recent** retained). The package on npm carries its OWN short README, `./packages/web-grid/README.md` (tracked, rulebook readme-structure: ≤ 400 lines) — it repeats the two `## What's New in v…` blocks; keep both READMEs' blocks in sync.
 - **`./packages/web-grid/dist/`** — gitignored. Produced by `make package` (tsc + Vite). Never staged.
 - **`./packages/web-grid/component-variables.manifest.json`** — published with the package. Edit if the variable surface changes.
-- **Build gotcha:** use `make package`, not `make build`. `make build` produces `dist/` but **skips** the README + `ai/` mirror step that copies `./README.md` → `./packages/web-grid/README.md` and `./ai/` → `./packages/web-grid/ai/`. Shipping with `make build` would publish a stale package README.
+- **Build gotcha:** use `make package`, not `make build`. `make build` produces `dist/` (and the Custom Elements Manifest) but **skips** the `ai/` mirror step that copies `./ai/` → `./packages/web-grid/ai/` (`npm publish` runs `prepack`, which mirrors it too).
 
 ## CHANGELOG convention in this repo [canonical]
 
@@ -75,7 +75,7 @@ If `WIP_VERSION` ≠ `NEW_VERSION` (e.g. the WIP is `X.Y.Z-rcN` but the user ask
 
 ### 1. Sanity checks [canonical]
 
-- Run `git status`. The repo intentionally keeps `.claude/`, `test-results/`, and `docs/build/` untracked — those are fine. If there are **other** uncommitted changes that aren't `CHANGELOG.md`, `README.md`, or `packages/web-grid/package.json`, list them and ask the user before continuing. (Typical case: substantive source changes belonging in this release that haven't been committed yet — confirm they're intended for this version before bumping.)
+- Run `git status`. The repo intentionally keeps `test-results/` and `dist-examples/` untracked — those are fine. If there are **other** uncommitted changes that aren't `CHANGELOG.md`, `README.md`, or `packages/web-grid/package.json`, list them and ask the user before continuing. (Typical case: substantive source changes belonging in this release that haven't been committed yet — confirm they're intended for this version before bumping.)
 - **Verify the new version isn't already on npm.** Run `npm view @keenmate/web-grid@<NEW_VERSION> version 2>/dev/null` — if it returns the version string, that version is already published and **stop**: bumping over it would fail at publish time and pollute the commit.
 - **Verify the registry hasn't drifted past you.** Run `npm view @keenmate/web-grid version` to fetch the latest published version on the `latest` tag; if it's higher than `NEW_VERSION` (e.g. someone shipped from another machine, or there's a registry-vs-local mismatch from before the [PUBLISHED] convention landed), warn the user and ask before continuing.
 - Confirm the WIP CHANGELOG section has at least one bullet of substantive content under `### Added`, `### Changed`, `### Removed`, `### Fixed`, or `### Internal`. If empty, stop — there's nothing meaningful to release.
@@ -122,7 +122,7 @@ For `rc` arg this is normally a no-op on the heading itself — only trims if so
 
 Each What's New section opens with its upgrade-guide line (`Upgrade guide: the [NEW_VERSION release notes](release-notes/NEW_VERSION.md); …`); add it if missing. When a section is trimmed, move its release-notes link to the front of the `Earlier releases:` line below the retained sections.
 
-**Mirror the root README into the package directory.** Because this is a monorepo and the package on npm needs its own `README.md`, copy `./README.md` → `./packages/web-grid/README.md` after the root edits settle. The `make package` build also does this, but stage the mirrored file in this step so the commit captures it. After copying, run `diff ./README.md ./packages/web-grid/README.md` and confirm it produces no output — any drift between the two means the mirror didn't take.
+**Sync the package README.** The package on npm ships `./packages/web-grid/README.md` (the short README, tracked — NOT a copy of the root one). Apply the same What's New edits there (same two version blocks, same bullets), and run `readme-structure.checks.sh packages/web-grid` — it must pass.
 
 ### 5. Validate README reflects the release [canonical]
 
@@ -150,19 +150,20 @@ If Playwright complains that chromium isn't installed, suggest `make test-e2e-in
 
 ### 8. Build the package [per-repo]
 
-Run `make package` from the workspace root. **Use `make package`, not `make build`** — `make build` produces `dist/` but skips the README + `ai/` mirror step, so the published package would carry a stale README.
+Run `make package` from the workspace root. **Use `make package`, not `make build`** — `make build` produces `dist/` but skips the `ai/` mirror step and the tarball.
 
-`make package`:
-- Cleans `./packages/web-grid/dist/`.
-- Runs `tsc` for type emit + Vite for the JS/CSS bundle.
-- Copies `./README.md` → `./packages/web-grid/README.md`.
-- Copies `./ai/` → `./packages/web-grid/ai/`.
+`make package` (Makefile.local):
+- Runs `npm run build` → the package's build: cleans `dist/`, `check:contract`, `cem analyze` (regenerates `custom-elements.json`, `web-types.json`, `vscode.html-custom-data.json`, `vscode.css-custom-data.json`), `tsc` for type emit + Vite for the JS bundle.
+- Copies `./ai/` → `./packages/web-grid/ai/` (`prepack`).
+- Packs the tarball (`npm pack -w @keenmate/web-grid`).
+
+The Custom Elements Manifest files are generated AND tracked: if `git status` shows them changed after the build, the API changed (or the last commit forgot to re-analyze) — they go into the release commit (Step 10).
 
 If the build errors, stop and report.
 
 After build, do a quick smoke check on the emitted artifacts:
 - `./packages/web-grid/dist/` contains the built JS bundle (ESM + UMD) and type declarations.
-- `./packages/web-grid/README.md` exists and matches `./README.md` (run `diff` to confirm byte-equality).
+- `./packages/web-grid/README.md` carries the same What's New blocks as `./README.md`.
 - `./packages/web-grid/ai/` exists and mirrors `./ai/`.
 
 ### 9. Verify the package contents [per-repo]
@@ -173,8 +174,9 @@ From `./packages/web-grid/`, run `npm pack --dry-run` and confirm the file list 
 - `src/css/` (raw CSS files exposed via the `./css` export)
 - `ai/` (prose-doc bundle for AI consumers; mirrored from workspace root by `make package`)
 - `component-variables.manifest.json`
+- `custom-elements.json`, `web-types.json`, `vscode.html-custom-data.json`, `vscode.css-custom-data.json` (generated by `cem analyze`)
 - `release-notes/` (the upgrade guide for every published version)
-- `README.md` (mirrored from workspace root by `make package`)
+- `README.md` (the package's own short README)
 - `LICENSE`
 - `package.json`
 
@@ -190,6 +192,7 @@ Stage:
 - `./README.md`
 - `./packages/web-grid/README.md`
 - `./packages/web-grid/package.json`
+- `./packages/web-grid/custom-elements.json`, `web-types.json`, `vscode.html-custom-data.json`, `vscode.css-custom-data.json` — when the build changed them
 - `./packages/web-grid/release-notes/NEW_VERSION.md`
 
 Do **not** stage `dist/` — it's gitignored.
@@ -245,6 +248,6 @@ Report back with:
 
 ### Repo-specific don'ts
 
-- **Do not use `make build` in place of `make package`** — `make build` skips the README + `ai/` mirror step, so the package on npm would ship with a stale README.
-- **Do not edit `./packages/web-grid/README.md` directly** — it's a mirror of `./README.md` produced by `make package`. Edit the root README; the mirror is regenerated.
+- **Do not use `make build` in place of `make package`** — `make build` skips the `ai/` mirror step and the tarball.
+- **Do not copy `./README.md` over `./packages/web-grid/README.md`** — the package README is its own short, rulebook-shaped README (≤ 400 lines); only its What's New blocks follow the root README.
 - **Do not stage `dist/`, `docs/build/`, `e2e/`, or `test-results/`** — they're either gitignored or test artifacts.

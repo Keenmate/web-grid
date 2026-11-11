@@ -148,6 +148,26 @@
       "values": []
     },
     {
+      "name": "--wg-dirty-indicator-color",
+      "description": "Dirty-cell corner marker colour (unsaved draft value)",
+      "values": []
+    },
+    {
+      "name": "--wg-dirty-indicator-size",
+      "description": "Dirty-cell corner marker size",
+      "values": []
+    },
+    {
+      "name": "--wg-dirty-cell-bg",
+      "description": "Background tint of a cell with an unsaved draft value",
+      "values": []
+    },
+    {
+      "name": "--wg-dirty-row-number-border-color",
+      "description": "Row-number cell border of a row with unsaved drafts",
+      "values": []
+    },
+    {
       "name": "--wg-font-family",
       "description": "Font family for all grid text (cells, headers, inputs)",
       "values": []
@@ -903,6 +923,16 @@
       "values": []
     },
     {
+      "name": "--wg-focus-border-width",
+      "description": "Focused-cell border width (navigate mode)",
+      "values": []
+    },
+    {
+      "name": "--wg-focus-border-color",
+      "description": "Focused-cell border colour (navigate mode)",
+      "values": []
+    },
+    {
       "name": "--wg-selection-bg",
       "description": "Selected row/column background (15% accent)",
       "values": []
@@ -1093,6 +1123,21 @@
       "values": []
     },
     {
+      "name": "--wg-tree-chevron-size",
+      "description": "Tree chevron width / height (also the leaf spacer)",
+      "values": []
+    },
+    {
+      "name": "--wg-tree-chevron-color",
+      "description": "Tree chevron colour",
+      "values": []
+    },
+    {
+      "name": "--wg-tree-chevron-gap",
+      "description": "Gap between the tree chevron and the cell content",
+      "values": []
+    },
+    {
       "name": "--wg-z-dropdown",
       "description": "Dropdown/combobox popup stacking (9999)",
       "values": []
@@ -1105,6 +1150,61 @@
     {
       "name": "--wg-z-tooltip",
       "description": "Tooltip stacking - highest layer (10000)",
+      "values": []
+    },
+    {
+      "name": "--wg-z-cell-highlight",
+      "description": "Cell in-range / selection highlight layer",
+      "values": []
+    },
+    {
+      "name": "--wg-z-selection-border",
+      "description": "Range / row / column selection border layer",
+      "values": []
+    },
+    {
+      "name": "--wg-z-frozen",
+      "description": "Frozen (sticky) columns layer",
+      "values": []
+    },
+    {
+      "name": "--wg-z-header",
+      "description": "Sticky header row layer",
+      "values": []
+    },
+    {
+      "name": "--wg-z-frozen-header",
+      "description": "Frozen header corner cell layer (sticky both ways)",
+      "values": []
+    },
+    {
+      "name": "--wg-z-fill-handle-area",
+      "description": "Fill-handle drag area layer",
+      "values": []
+    },
+    {
+      "name": "--wg-z-fill-handle",
+      "description": "Fill-handle dot layer",
+      "values": []
+    },
+    {
+      "name": "--wg-z-resize-handle",
+      "description": "Column resize handle layer",
+      "values": []
+    },
+    {
+      "name": "--wg-z-shortcuts-help",
+      "description": "Keyboard-shortcuts help overlay layer",
+      "values": []
+    },
+    {
+      "name": "--wg-z-reorder-indicator",
+      "description": "Column reorder drop indicator layer",
+      "values": []
+    },
+    {
+      "name": "--wg-z-reorder-ghost",
+      "description": "Column reorder drag ghost layer",
       "values": []
     }
   ],

@@ -1,5 +1,5 @@
 {
-  "$schema": "https://raw.githubusercontent.com/keenmate/schemas/main/component-variables.schema.json",
+  "$schema": "https://schemas.keenmate.dev/component-variables/v1.schema.json",
   "component": "@keenmate/web-grid",
   "prefix": "wg",
   "baseVariables": [
@@ -44,12 +44,16 @@
     { "name": "base-duration-fast", "required": false, "usage": "Hover fades, tree chevron, tooltip, pagination (0.1s; 0s = motion off)" },
     { "name": "base-duration-normal", "required": false, "usage": "Standard transition speed (0.15s; 0s = motion off)" },
     { "name": "base-ease-standard", "required": false, "usage": "Easing of every grid transition" },
-    { "name": "base-scroll-behavior", "required": false, "usage": "Datepicker rolling month/year lists (smooth; auto under reduced motion)" },
+    { "name": "base-scroll-behavior", "required": false, "usage": "Datepicker rolling month/year lists (smooth; auto under reduced motion)", "readBy": "src/modules/datepicker/datepicker.ts (the date editor's inline CSS)" },
     { "name": "base-tree-indent", "required": false, "usage": "Tree column indent per level — unitless multiplier of --wg-rem (1.6 = 16px)" },
     { "name": "base-line-height-normal", "required": false, "usage": "Base line height multiplier (1.5)" },
     { "name": "base-border-radius-sm", "required": false, "usage": "Buttons, inputs, toolbar corners (4px scale)" },
     { "name": "base-border-radius-md", "required": false, "usage": "Dialogs, cards (6px scale)" },
-    { "name": "base-border-radius-lg", "required": false, "usage": "Large rounded elements (8px scale)" }
+    { "name": "base-border-radius-lg", "required": false, "usage": "Large rounded elements (8px scale)" },
+    { "name": "base-loader-icon", "required": false, "usage": "Loader shape (single-colour mask) for the .wg__loader" },
+    { "name": "base-loader-rotate", "required": false, "usage": "Loader rotation per cycle (0 = self-animating SVG)" },
+    { "name": "base-loader-duration", "required": false, "usage": "Loader cycle duration (slows under reduced motion)" },
+    { "name": "base-loader-size", "required": false, "usage": "Loader size" }
   ],
   "componentVariables": [
     { "name": "wg-rem", "category": "sizing", "usage": "Base sizing unit for proportional scaling (default 10px, set to 1rem for Pure Admin)" },
@@ -67,7 +71,9 @@
     { "name": "wg-main-bg", "category": "surface", "usage": "Table body, cell backgrounds, filter input background" },
     { "name": "wg-elevated-bg", "category": "surface", "usage": "Header row, striped even rows, shortcut key badges" },
     { "name": "wg-disabled-bg", "category": "surface", "usage": "Read-only cells, locked rows (the contract's disabled surface)" },
+
     { "name": "wg-disabled-opacity", "category": "state", "usage": "Disabled dimming: disabled grid, toolbar / inline action buttons, dropdown options, pagination buttons (→ --base-disabled-opacity, 0.65)" },
+
     { "name": "wg-shadow-color", "category": "surface", "usage": "Shadow tone for toolbar, dialog, tooltip, frozen-column edge (one tone with pure-admin)" },
     { "name": "wg-dropdown-bg", "category": "surface", "usage": "Floating toolbar background, context menu, dropdown panels" },
 
@@ -84,10 +90,15 @@
 
     { "name": "wg-danger-color", "category": "danger", "usage": "Validation error text, error indicator triangle, delete button" },
     { "name": "wg-danger-bg-light", "category": "danger", "usage": "Invalid cell background tint, danger button hover" },
+
     { "name": "wg-drop-indicator-color", "category": "reorder", "usage": "Column-reorder drop indicator line and arrow (chains --base-drop-target-border-color)" },
 
     { "name": "wg-hover-bg", "category": "state", "usage": "Generic hover background for buttons, rows, cells" },
     { "name": "wg-active-bg", "category": "state", "usage": "Generic active/pressed background for buttons" },
+    { "name": "wg-dirty-indicator-color", "category": "state", "usage": "Dirty-cell corner marker colour (unsaved draft value)" },
+    { "name": "wg-dirty-indicator-size", "category": "state", "usage": "Dirty-cell corner marker size" },
+    { "name": "wg-dirty-cell-bg", "category": "state", "usage": "Background tint of a cell with an unsaved draft value" },
+    { "name": "wg-dirty-row-number-border-color", "category": "state", "usage": "Row-number cell border of a row with unsaved drafts" },
 
     { "name": "wg-font-family", "category": "typography", "usage": "Font family for all grid text (cells, headers, inputs)" },
     { "name": "wg-font-size-base", "category": "typography", "usage": "Cell text, editor text, dialog labels (14px)" },
@@ -232,33 +243,35 @@
     { "name": "wg-tooltip-padding", "category": "tooltip", "usage": "Tooltip content padding" },
     { "name": "wg-tooltip-shadow", "category": "tooltip", "usage": "Tooltip box shadow" },
 
-    { "name": "wg-context-menu-bg", "category": "context-menu", "usage": "Cell / header menu background (unset → --km-menu-bg → --base-dropdown-bg)" },
-    { "name": "wg-context-menu-bg-hover", "category": "context-menu", "usage": "Menu item hover / focus background (unset → --km-menu-hover-bg → --base-hover-bg)" },
-    { "name": "wg-context-menu-hover-color", "category": "context-menu", "usage": "Menu item text color on hover / focus (unset → --km-menu-hover-color; default unchanged)" },
-    { "name": "wg-context-menu-text-color", "category": "context-menu", "usage": "Menu text color (unset → --km-menu-text-color → --base-text-color-1)" },
-    { "name": "wg-context-menu-shortcut-color", "category": "context-menu", "usage": "Shortcut hint color (unset → --km-menu-shortcut-color → --base-text-color-3)" },
-    { "name": "wg-context-menu-border", "category": "context-menu", "usage": "Menu border (unset → --km-menu-border → --base-dropdown-border)" },
-    { "name": "wg-context-menu-border-radius", "category": "context-menu", "usage": "Menu border radius (unset → --km-menu-border-radius, 4px)" },
-    { "name": "wg-context-menu-shadow", "category": "context-menu", "usage": "Menu box shadow (unset → --km-menu-shadow → --base-dropdown-box-shadow)" },
-    { "name": "wg-context-menu-min-width", "category": "context-menu", "usage": "Menu minimum width (unset → --km-menu-min-width, 160px)" },
-    { "name": "wg-context-menu-padding", "category": "context-menu", "usage": "Menu padding (unset → --km-menu-padding, 4px 0)" },
-    { "name": "wg-context-menu-font-size", "category": "context-menu", "usage": "Menu font size (unset → --km-menu-font-size, 14px)" },
-    { "name": "wg-context-menu-item-padding", "category": "context-menu", "usage": "Menu item padding (unset → --km-menu-item-padding, 6px 12px)" },
-    { "name": "wg-context-menu-item-gap", "category": "context-menu", "usage": "Gap between icon, label, shortcut (unset → --km-menu-item-gap, 8px)" },
-    { "name": "wg-context-menu-toggled-color", "category": "context-menu", "usage": "Toggled-on item color, e.g. a visible column in Column Visibility (unset → --km-menu-toggled-color → --base-primary-color)" },
-    { "name": "wg-context-menu-icon-width", "category": "context-menu", "usage": "Icon column width (unset → --km-menu-icon-size, 16px)" },
-    { "name": "wg-context-menu-icon-font-size", "category": "context-menu", "usage": "Icon font size (unset → --km-menu-icon-font-size, inherit)" },
-    { "name": "wg-context-menu-arrow-font-size", "category": "context-menu", "usage": "Submenu arrow font size (unset → --km-menu-arrow-font-size, 0.8em)" },
-    { "name": "wg-context-menu-danger-color", "category": "context-menu", "usage": "Danger item text color (unset → --km-menu-danger-color → --base-danger-color)" },
-    { "name": "wg-context-menu-danger-bg-hover", "category": "context-menu", "usage": "Danger item hover background (unset → --km-menu-danger-hover-bg → --base-danger-bg-subtle)" },
-    { "name": "wg-context-menu-divider-color", "category": "context-menu", "usage": "Divider line color (unset → --km-menu-divider-color → --base-border-color)" },
-    { "name": "wg-context-menu-divider-margin", "category": "context-menu", "usage": "Divider margin (unset → --km-menu-divider-margin, 4px 0)" },
-    { "name": "wg-context-menu-disabled-opacity", "category": "context-menu", "usage": "Disabled item opacity (unset → --km-menu-disabled-opacity → --base-disabled-opacity)" },
-    { "name": "wg-context-menu-z-index", "category": "context-menu", "usage": "Menu stacking order (unset → --km-menu-z-index, 10000)" },
+    { "name": "wg-context-menu-bg", "category": "context-menu", "usage": "Cell / header menu background (unset → --km-menu-bg → --base-dropdown-bg)", "input": true },
+    { "name": "wg-context-menu-bg-hover", "category": "context-menu", "usage": "Menu item hover / focus background (unset → --km-menu-hover-bg → --base-hover-bg)", "input": true },
+    { "name": "wg-context-menu-hover-color", "category": "context-menu", "usage": "Menu item text color on hover / focus (unset → --km-menu-hover-color; default unchanged)", "input": true },
+    { "name": "wg-context-menu-text-color", "category": "context-menu", "usage": "Menu text color (unset → --km-menu-text-color → --base-text-color-1)", "input": true },
+    { "name": "wg-context-menu-shortcut-color", "category": "context-menu", "usage": "Shortcut hint color (unset → --km-menu-shortcut-color → --base-text-color-3)", "input": true },
+    { "name": "wg-context-menu-border", "category": "context-menu", "usage": "Menu border (unset → --km-menu-border → --base-dropdown-border)", "input": true },
+    { "name": "wg-context-menu-border-radius", "category": "context-menu", "usage": "Menu border radius (unset → --km-menu-border-radius, 4px)", "input": true },
+    { "name": "wg-context-menu-shadow", "category": "context-menu", "usage": "Menu box shadow (unset → --km-menu-shadow → --base-dropdown-box-shadow)", "input": true },
+    { "name": "wg-context-menu-min-width", "category": "context-menu", "usage": "Menu minimum width (unset → --km-menu-min-width, 160px)", "input": true },
+    { "name": "wg-context-menu-padding", "category": "context-menu", "usage": "Menu padding (unset → --km-menu-padding, 4px 0)", "input": true },
+    { "name": "wg-context-menu-font-size", "category": "context-menu", "usage": "Menu font size (unset → --km-menu-font-size, 14px)", "input": true },
+    { "name": "wg-context-menu-item-padding", "category": "context-menu", "usage": "Menu item padding (unset → --km-menu-item-padding, 6px 12px)", "input": true },
+    { "name": "wg-context-menu-item-gap", "category": "context-menu", "usage": "Gap between icon, label, shortcut (unset → --km-menu-item-gap, 8px)", "input": true },
+    { "name": "wg-context-menu-toggled-color", "category": "context-menu", "usage": "Toggled-on item color, e.g. a visible column in Column Visibility (unset → --km-menu-toggled-color → --base-primary-color)", "input": true },
+    { "name": "wg-context-menu-icon-width", "category": "context-menu", "usage": "Icon column width (unset → --km-menu-icon-size, 16px)", "input": true },
+    { "name": "wg-context-menu-icon-font-size", "category": "context-menu", "usage": "Icon font size (unset → --km-menu-icon-font-size, inherit)", "input": true },
+    { "name": "wg-context-menu-arrow-font-size", "category": "context-menu", "usage": "Submenu arrow font size (unset → --km-menu-arrow-font-size, 0.8em)", "input": true },
+    { "name": "wg-context-menu-danger-color", "category": "context-menu", "usage": "Danger item text color (unset → --km-menu-danger-color → --base-danger-color)", "input": true },
+    { "name": "wg-context-menu-danger-bg-hover", "category": "context-menu", "usage": "Danger item hover background (unset → --km-menu-danger-hover-bg → --base-danger-bg-subtle)", "input": true },
+    { "name": "wg-context-menu-divider-color", "category": "context-menu", "usage": "Divider line color (unset → --km-menu-divider-color → --base-border-color)", "input": true },
+    { "name": "wg-context-menu-divider-margin", "category": "context-menu", "usage": "Divider margin (unset → --km-menu-divider-margin, 4px 0)", "input": true },
+    { "name": "wg-context-menu-disabled-opacity", "category": "context-menu", "usage": "Disabled item opacity (unset → --km-menu-disabled-opacity → --base-disabled-opacity)", "input": true },
+    { "name": "wg-context-menu-z-index", "category": "context-menu", "usage": "Menu stacking order (unset → --km-menu-z-index, 10000)", "input": true },
 
     { "name": "wg-focus-outline", "category": "focus", "usage": "Navigate mode focused cell outline (2px solid accent)" },
     { "name": "wg-focus-outline-offset", "category": "focus", "usage": "Focused cell outline offset (-2px inset)" },
     { "name": "wg-focus-bg", "category": "focus", "usage": "Focused cell background tint" },
+    { "name": "wg-focus-border-width", "category": "focus", "usage": "Focused-cell border width (navigate mode)" },
+    { "name": "wg-focus-border-color", "category": "focus", "usage": "Focused-cell border colour (navigate mode)" },
 
     { "name": "wg-selection-bg", "category": "selection", "usage": "Selected row/column background (15% accent)" },
     { "name": "wg-selection-row-number-bg", "category": "selection", "usage": "Selected row number cell background (accent)" },
@@ -307,9 +320,23 @@
     { "name": "wg-loader-size", "category": "loader", "usage": "Loader size (→ --base-loader-size, 1.25em — scales with text): infinite-scroll row and autocomplete search" },
 
     { "name": "wg-tree-indent", "category": "tree", "usage": "Tree column indent per level (→ --base-tree-indent × --wg-rem, 16px)" },
+    { "name": "wg-tree-chevron-size", "category": "tree", "usage": "Tree chevron width / height (also the leaf spacer)" },
+    { "name": "wg-tree-chevron-color", "category": "tree", "usage": "Tree chevron colour" },
+    { "name": "wg-tree-chevron-gap", "category": "tree", "usage": "Gap between the tree chevron and the cell content" },
 
     { "name": "wg-z-dropdown", "category": "z-index", "usage": "Dropdown/combobox popup stacking (9999)" },
     { "name": "wg-z-toolbar", "category": "z-index", "usage": "Floating row toolbar stacking (1000)" },
-    { "name": "wg-z-tooltip", "category": "z-index", "usage": "Tooltip stacking - highest layer (10000)" }
+    { "name": "wg-z-tooltip", "category": "z-index", "usage": "Tooltip stacking - highest layer (10000)" },
+    { "name": "wg-z-cell-highlight", "category": "z-index", "usage": "Cell in-range / selection highlight layer" },
+    { "name": "wg-z-selection-border", "category": "z-index", "usage": "Range / row / column selection border layer" },
+    { "name": "wg-z-frozen", "category": "z-index", "usage": "Frozen (sticky) columns layer" },
+    { "name": "wg-z-header", "category": "z-index", "usage": "Sticky header row layer" },
+    { "name": "wg-z-frozen-header", "category": "z-index", "usage": "Frozen header corner cell layer (sticky both ways)" },
+    { "name": "wg-z-fill-handle-area", "category": "z-index", "usage": "Fill-handle drag area layer" },
+    { "name": "wg-z-fill-handle", "category": "z-index", "usage": "Fill-handle dot layer" },
+    { "name": "wg-z-resize-handle", "category": "z-index", "usage": "Column resize handle layer" },
+    { "name": "wg-z-shortcuts-help", "category": "z-index", "usage": "Keyboard-shortcuts help overlay layer" },
+    { "name": "wg-z-reorder-indicator", "category": "z-index", "usage": "Column reorder drop indicator layer" },
+    { "name": "wg-z-reorder-ghost", "category": "z-index", "usage": "Column reorder drag ghost layer" }
   ]
 }

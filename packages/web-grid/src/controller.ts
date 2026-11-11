@@ -4,7 +4,7 @@
 // The object every callback ctx and event detail carries as `controller`.
 // Delegates to the live element / engine; never exposes the engine itself.
 
-import type { GridController } from './interaction.js'
+import type { GridController } from './types.js'
 import type { GridElement } from './web-component.js'
 import { closeGridMenu } from './modules/contextmenu/index.js'
 import { closeToolbarAndReset } from './modules/toolbar/index.js'

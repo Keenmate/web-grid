@@ -3,7 +3,7 @@ import { test, expect, type Page, gridLocator, cell, onGrid, domEvents, clearEve
 /**
  * Built-in filter row (NOTES.md #4) — grid `isFilterable` + `column.isFilterable`
  * text inputs; debounced `setFilter` → page 1; Enter / Escape; invalid
- * `filterCallback` input (`.invalid`); focus survives the re-render; frozen +
+ * `filterCallback` input (`.wg__filter-input--invalid`); focus survives the re-render; frozen +
  * sticky cells; server pagination → `beforePageChangeCallback` (trigger 'filter')
  * + `data-request` (trigger 'filter').
  *
@@ -114,10 +114,10 @@ test.describe('typing', () => {
 })
 
 test.describe('filterCallback', () => {
-	test('null (incomplete input) → .invalid red border, the filter is ignored', async ({ page }) => {
+	test('null (incomplete input) → .wg__filter-input--invalid red border, the filter is ignored', async ({ page }) => {
 		await input(page, 'salary').fill('>')
 		await page.keyboard.press('Enter')
-		await expect(input(page, 'salary')).toHaveClass(/invalid/)
+		await expect(input(page, 'salary')).toHaveClass(/wg__filter-input--invalid/)
 		await expect(input(page, 'salary')).toHaveAttribute('aria-invalid', 'true')
 		await expect(pageInfo(page)).toContainText('13 items')
 		const color = await input(page, 'salary').evaluate(el => getComputedStyle(el).borderTopColor)
@@ -132,7 +132,7 @@ test.describe('filterCallback', () => {
 		expect(color).toBe(danger)
 		await input(page, 'salary').fill('>90000')
 		await page.keyboard.press('Enter')
-		await expect(input(page, 'salary')).not.toHaveClass(/invalid/)
+		await expect(input(page, 'salary')).not.toHaveClass(/wg__filter-input--invalid/)
 		await expect(pageInfo(page)).toContainText('2 items')
 	})
 })

@@ -35,6 +35,10 @@ import type {
 	BeforePageChangeContext
 } from './interaction.js'
 
+// The controller facade's type, for the facade module (controller.ts) — types.ts is the one type hub
+// the component's modules import from (rulebook C-CST-4: no module-to-module imports).
+export type { GridController } from './interaction.js'
+
 // Editor type options
 export type Editor = "text" | "number" | "checkbox" | "select" | "combobox" | "date" | "autocomplete" | "custom"
 
@@ -176,7 +180,7 @@ export type Column<T> = {
 	// Custom filter predicate for this column. Replaces the built-in case-insensitive substring
 	// match. Return true → row passes filter; false → row excluded; null → input is incomplete
 	// (e.g. user typed `>` without a number) — grid ignores this filter (all rows pass) AND adds
-	// a visual `.invalid` class to the input so the user gets a red border instead of an empty grid.
+	// a visual `.wg__filter-input--invalid` class to the input so the user gets a red border instead of an empty grid.
 	filterCallback?: (ctx: FilterContext<T>) => boolean | null
 	horizontalAlign?: "left" | "center" | "right" | "justify"  // Horizontal alignment for cells (default: "left", also used by dropdown options)
 	verticalAlign?: "top" | "middle" | "bottom"  // Vertical alignment for cells (default: "middle")
