@@ -73,6 +73,7 @@ import {
 	getOptionValue,
 	renderDropdown,
 	removeDropdown,
+	applyDropdownPresentation,
 	selectDropdownOption,
 	updateDropdownHighlight,
 	scrollHighlightedIntoView,
@@ -279,6 +280,8 @@ import {
 	type RenderLoaderCallback,
 	type ResponsiveMap,
 	type ResponsiveCallback,
+	type EnvironmentSnapshot,
+	resolvePresentation,
 } from '@keenmate/web-components-core'
 import type { MenuHandle } from '@keenmate/web-components-core/menu'
 
@@ -1001,6 +1004,11 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	/** @internal */
 	datepicker: DatePicker | null = null
 
+	// Phone presentation of the cell dropdown / date editor (core resolvePresentation(): fullscreen
+	// on a phone) — set by environmentChanged(), read by the two popups (see modules/sheet)
+	/** @internal */
+	isPhoneSheet = false
+
 	// The open cell / header menu (core openMenu(), in the shadow root) - exposed via GridHost for pipeline access
 	/** @internal */
 	menu: MenuHandle | null = null
@@ -1166,6 +1174,20 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		// Persisted column widths / order (async; waits for `columns` when there are none yet)
 		this.engine.loadPersistedState()
 		this.#isBuilt = true
+	}
+
+	/**
+	 * Device / viewport / orientation changed (core §12.9; fires on connect with the current
+	 * snapshot): on a phone the cell dropdown and the date editor are an edge-to-edge sheet
+	 * (rulebook D-RO-3 = C — core resolvePresentation(), no width literal). An open one switches
+	 * in place (same popover, anchored ⇄ un-anchored).
+	 */
+	protected override environmentChanged(env: EnvironmentSnapshot): void {
+		const isPhoneSheet = resolvePresentation('auto', env) === 'fullscreen'
+		if (isPhoneSheet === this.isPhoneSheet) return
+		this.isPhoneSheet = isPhoneSheet
+		applyDropdownPresentation(this)
+		this.datepicker?.setSheet(isPhoneSheet)
 	}
 
 	protected override disabledChanged(isDisabled: boolean): void {
@@ -1838,6 +1860,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 				if (this.focusEvents.shouldSkipBlur()) return
 				const isLeavingGrid = !relatedTarget || !this.shadow.contains(relatedTarget)
 				if (isLeavingGrid) return
+				// Into the cell's own phone sheet (dropdown / date editor): the edit goes on there
+				if (relatedTarget.closest('.wg__dropdown, .wg-datepicker-container')) return
 				handleInternalBlur(this, target, relatedTarget)
 			})
 			this.focusEventsSubscribed = true

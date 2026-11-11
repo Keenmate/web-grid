@@ -6,11 +6,11 @@ import type { PopoverCloseReason } from '@keenmate/web-components-core/positioni
 
 /**
  * Why the picker closed: core's popover reasons (`'escape'`, `'outside-click'`, `'scroll'`,
- * `'overlay'`, `'parent'`, `'reference-removed'`, `'api'` = close() / destroy() / a pick), or
+ * `'overlay'`, `'parent'`, `'reference-removed'`, `'api'` = close() / destroy() / a pick),
  * `'dismiss'` — the picker's own close without a pick (dismiss(): the trigger toggled it, Tab with
- * no focused day).
+ * no focused day), or `'close'` — the phone sheet's close button / the phone Back gesture.
  */
-export type DatePickerCloseReason = PopoverCloseReason | 'dismiss'
+export type DatePickerCloseReason = PopoverCloseReason | 'dismiss' | 'close'
 
 /**
  * Date picker configuration options
@@ -41,6 +41,12 @@ export interface DatePickerOptions {
 
 	// The page-wide overlay tree group (core createPopover overlayGroup; undefined = the default group)
 	overlayGroup?: string
+
+	// The phone sheet (an edge-to-edge, un-anchored panel with a title + close button; setSheet()
+	// switches it while open). Title = the column's title, closeLabel = labels.sheetClose.
+	isSheet?: boolean
+	sheetTitle?: string
+	sheetCloseLabel?: string
 
 	// Callbacks
 	onSelect?: (date: Date | null, direction?: 'down' | 'next' | 'prev') => void

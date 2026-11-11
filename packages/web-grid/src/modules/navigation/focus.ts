@@ -548,6 +548,8 @@ function isInsideOwnedPopover<T>(ctx: GridHost<T>, node: Node | null): boolean {
 	if (!node) return false
 	const dpEl = ctx.datepicker?.getElement() ?? null
 	if (dpEl && dpEl.contains(node)) return true
+	// The cell dropdown (its phone sheet takes the focus)
+	if ((node instanceof Element ? node : node.parentElement)?.closest('.wg__dropdown') && ctx.shadow.contains(node)) return true
 	if (isInGridMenu(ctx, node)) return true
 	return false
 }

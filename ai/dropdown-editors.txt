@@ -184,6 +184,12 @@ isEmptyAllowed (boolean, default false)
   the value to null. Shown for the unfiltered list only (not for a typed
   filter / search).
 
+PHONE SHEET: on a phone (core resolvePresentation(): touch-primary + short viewport side) the
+  dropdown and the date editor are an edge-to-edge sheet: column title, close button, a search
+  field for combobox / autocomplete (types into the cell editor). Close button / phone Back = leave
+  the cell = SAVE (select without a pick: no change); Escape cancels; a pick saves. Labels
+  sheetClose / sheetSearch. Desktop / tablet: the anchored panel (unchanged).
+
 labels ({ dropdownNoData?, dropdownNoResults?, dropdownSearching?, dropdownEmptyOption? })
   This column's dropdown texts, per key over the grid's labels ('' = blank):
   dropdownNoData - the editor has no options at all ("No options");

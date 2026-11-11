@@ -1298,7 +1298,7 @@ import manifest from '@keenmate/web-grid/manifest'
 
 console.log(manifest.prefix)              // "wg"
 console.log(manifest.baseVariables)       // 51 --base-* variables consumed
-console.log(manifest.componentVariables)  // 241 --wg-* variables exposed
+console.log(manifest.componentVariables)  // 242 --wg-* variables exposed
 ```
 
 The manifest follows the [component-variables schema](https://schemas.keenmate.dev/component-variables/v1.schema.json) and contains:
@@ -1358,6 +1358,8 @@ grid.labels = {
   dropdownNoResults: 'No matching options',  // a typed filter / search matched nothing
   dropdownSearching: 'Searching…',
   dropdownEmptyOption: '—',              // the empty first item (editorOptions.isEmptyAllowed)
+  sheetClose: 'Close',                   // the phone sheet's close button (leaves the cell: saves)
+  sheetSearch: 'Search…',                // the phone sheet's search field (combobox / autocomplete)
   rowLocked: 'This row is locked',
   rowLockedBy: 'Locked by {lockedBy}',
   goToRow: 'Go to row (1-{max}):',  // Ctrl/Cmd+G dialog

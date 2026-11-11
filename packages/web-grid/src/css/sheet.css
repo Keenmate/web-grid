@@ -1,0 +1,129 @@
+/* ==============================================================================
+   PHONE SHEET — the cell dropdown and the date editor on a phone
+   ==============================================================================
+   Responsive overlay (rulebook D-RO-*): D-RO-2 = A full-screen, D-RO-3 = C — the
+   switch is core resolvePresentation() in JS (the device class: touch-primary +
+   the shorter viewport side), so there is NO phone @media here: the element sets
+   the BEM modifier (`.wg__dropdown--sheet`, `.wg-datepicker-container--sheet`) on
+   the same popover panel, un-anchored (core setAnchored(false)) with its inline
+   anchored geometry removed — D-RO-5 = B, nothing to beat with !important.
+   The date editor's sheet rules live with its other styles (DATEPICKER_STYLES in
+   modules/datepicker/datepicker.ts — the picker's classes are `wg-datepicker*`);
+   the header below is shared by both.
+   D-RO-6: explicit close button + Escape + the phone Back gesture; D-RO-7 = A
+   (44px, --base-touch-target-min); D-RO-8 = A (dvh / dvw); D-RO-9 = A (four-edge
+   safe area); D-RO-10 = A (in-place position: fixed in the shadow root, page
+   scroll locked by core lockBodyScroll, overscroll-behavior: contain).
+   Geometry only: no colour literals, no variable redeclarations. */
+
+/* ==========================================================================
+   THE DROPDOWN SHEET
+   ==========================================================================
+   Edge-to-edge 100dvw x 100dvh; box-sizing + env(safe-area-inset-*) keep the
+   rows out of the landscape side bars / home indicator while the background
+   stays full-bleed. The top inset is on the sticky header (it bleeds its
+   background under the status bar). The sheet itself scrolls (the header sticks). */
+.wg__dropdown.wg__dropdown--sheet {
+  position: fixed;
+  inset: 0;
+  box-sizing: border-box;
+  width: 100dvw;
+  height: 100dvh;
+  min-width: 0;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  background: var(--wg-dropdown-bg);
+  z-index: var(--wg-z-dropdown);
+}
+
+.wg__dropdown--sheet:focus {
+  outline: none;
+}
+
+/* ==========================================================================
+   HEADER — title, close button, the search field (combobox / autocomplete)
+   ========================================================================== */
+.wg__sheet-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--wg-spacing-sm);
+  padding: max(var(--wg-spacing-sm), env(safe-area-inset-top)) var(--wg-spacing-sm) var(--wg-spacing-sm) var(--wg-spacing-md);
+  background: var(--wg-dropdown-bg);
+  border-bottom: 1px solid var(--wg-border-color);
+  font-family: inherit;
+}
+
+.wg__sheet-title {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--wg-font-size-base);
+  font-weight: var(--wg-font-weight-semibold);
+  color: var(--wg-text-color-1);
+}
+
+.wg__sheet-close {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--wg-touch-target-min);
+  min-height: var(--wg-touch-target-min);
+  padding: 0;
+  border: none;
+  border-radius: var(--wg-border-radius-sm);
+  background: transparent;
+  color: var(--wg-text-color-1);
+  cursor: pointer;
+}
+
+.wg__sheet-close:hover {
+  background: var(--wg-hover-bg);
+}
+
+.wg__sheet-close:focus-visible {
+  outline: 2px solid var(--wg-accent-color);
+  outline-offset: -2px;
+}
+
+/* Its own row under the title (the soft keyboard types here; the cell is covered) */
+.wg__sheet-search {
+  flex: 1 1 100%;
+  min-width: 0;
+  min-height: var(--wg-touch-target-min);
+  box-sizing: border-box;
+  padding: 0 var(--wg-spacing-sm);
+  border: 1px solid var(--wg-input-border-color);
+  border-radius: var(--wg-border-radius-sm);
+  background: var(--wg-input-bg);
+  color: var(--wg-input-color);
+  font-family: inherit;
+  /* 16px+ keeps iOS Safari from zooming the page in on focus */
+  font-size: max(1rem, var(--wg-font-size-base));
+}
+
+.wg__sheet-search:focus {
+  outline: 2px solid var(--wg-accent-color);
+  outline-offset: -1px;
+}
+
+/* ==========================================================================
+   TOUCH TARGETS (D-RO-7)
+   ========================================================================== */
+.wg__dropdown--sheet .wg__dropdown-option {
+  min-height: var(--wg-touch-target-min);
+  box-sizing: border-box;
+}

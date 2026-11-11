@@ -45,6 +45,7 @@
 @import './dirty-indicator.css' layer(component);
 @import './editors.css'         layer(component);
 @import './dropdown.css'        layer(component);
+@import './sheet.css'           layer(component);
 @import './navigation.css'      layer(component);
 @import './pagination.css'      layer(component);
 @import './toolbar.css'         layer(component);

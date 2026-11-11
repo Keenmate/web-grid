@@ -7,7 +7,7 @@ import { syncLoader } from '../rendering/loader.js'
 import type { EditorOptions } from '../../types.js'
 import type { GridHost } from '../grid-context.js'
 import { getOptionValue, getOptionLabel, isOptionDisabled, withEmptyOption } from './options.js'
-import { renderDropdown, removeDropdown } from './rendering.js'
+import { renderDropdown, removeDropdown, isDropdownSheet } from './rendering.js'
 import { renderCell } from '../rendering/index.js'
 import { returnFocusToCell } from '../navigation/focus.js'
 import { scrollIntoContainer } from '@keenmate/web-components-core'
@@ -241,7 +241,8 @@ export function openDropdownForCurrentEditor<T>(ctx: GridHost<T>): void {
 			 .wg__autocomplete-input[data-row="${rowIndex}"][data-field="${field}"]`
 		) as HTMLElement
 		const focusTarget = selectTrigger || input
-		if (focusTarget && focusTarget !== ctx.shadow.activeElement) {
+		// (the phone sheet took the focus into itself)
+		if (focusTarget && focusTarget !== ctx.shadow.activeElement && !isDropdownSheet(dropdown)) {
 			focusTarget.focus()
 		}
 		// Clear flag after next frame to allow scroll events again
@@ -262,6 +263,9 @@ export function toggleDropdown<T>(ctx: GridHost<T>): void {
 	}
 }
 
+/** Dropdown panels whose listeners are attached (see attachDropdownListeners()). */
+const listenedPanels = new WeakSet<HTMLElement>()
+
 /**
  * Attach event listeners to dropdown element
  */
@@ -269,8 +273,14 @@ export function attachDropdownListeners<T>(
 	ctx: GridHost<T>,
 	dropdown: HTMLElement
 ): void {
+	// Once per panel (the phone sheet re-renders its options in the same panel)
+	if (listenedPanels.has(dropdown)) return
+	listenedPanels.add(dropdown)
+
 	// Click on option - don't move to next row, just save and stay
 	dropdown.addEventListener('mousedown', (e) => {
+		// The phone sheet's search field takes the focus / caret like any input
+		if ((e.target as HTMLElement).closest('.wg__sheet-search')) return
 		e.preventDefault() // Prevent blur
 		const option = (e.target as HTMLElement).closest('.wg__dropdown-option')
 		if (option && !option.hasAttribute('data-disabled')) {

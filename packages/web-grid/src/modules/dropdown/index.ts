@@ -19,7 +19,9 @@ export {
 // Rendering
 export {
 	renderDropdown,
-	removeDropdown
+	removeDropdown,
+	applyDropdownPresentation,
+	isDropdownSheet
 } from './rendering.js'
 
 // Interaction

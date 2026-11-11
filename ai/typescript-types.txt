@@ -568,6 +568,8 @@ GRIDLABELS
     dropdownNoResults: string     "No matching options"
     dropdownSearching: string     "Searching…"
     dropdownEmptyOption: string   "—" (editorOptions.isEmptyAllowed)
+    sheetClose: string            "Close" — the phone sheet's close button (leaves the cell: saves)
+    sheetSearch: string           "Search…" — the phone sheet's search field (combobox / autocomplete)
     rowLocked / rowLockedBy / goToRow / goToRowGo / goToRowCancel /
     treeExpand / treeCollapse: string
     editCell: string               "Edit" (edit button aria-label / title)

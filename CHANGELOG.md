@@ -10,6 +10,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Added — phone presentation of the cell dropdown and the date editor (2026-11-11)
+- **On a phone the cell dropdown (select / combobox / autocomplete) and the date editor are an
+  edge-to-edge sheet** (rulebook responsive-overlay, C-RO-2): the column title, a close button and, for a
+  combobox / autocomplete, a search field that types into the cell's editor (the cell is covered).
+  Tablets and desktops keep the anchored panel, unchanged. It is the same core `createPopover()`,
+  un-anchored (`setAnchored(false)`) and dressed by `.wg__dropdown--sheet` /
+  `.wg-datepicker-container--sheet`; crossing the line while open (rotation, resize) switches in place.
+- **Edit semantics unchanged (Excel rule):** the close button and the phone Back gesture leave the cell →
+  SAVE (a select without a pick changes nothing, `cell-edit-cancel`); Escape cancels (a combobox /
+  autocomplete with typed text: the first Escape restores the text, as in the cell); a pick saves; the
+  arrow keys / Enter / Tab are the editor's own. Focus moves into the sheet and back to the cell on close.
+- Page scroll is locked while a sheet is open (core `lockBodyScroll`), the sheet stays above the soft
+  keyboard (core `observeKeyboardInset`), sizes in `dvh` / `dvw`, four-edge `env(safe-area-inset-*)`,
+  tap targets `--wg-touch-target-min` (new, → `--base-touch-target-min`, 44px). New labels
+  `sheetClose` ("Close"), `sheetSearch` ("Search…"). Consumer page setup (`viewport-fit=cover`,
+  `interactive-widget=resizes-content`) in docs/usage.md "Phone presentation".
+- Decisions: D-RO-1 A (opens panels) · D-RO-2 A full-screen · D-RO-3 C core `resolvePresentation()` (device
+  class, no width literal) · D-RO-4 A anchored on tablet / desktop · D-RO-5 B (JS un-anchors; no
+  `!important`) · D-RO-6 close button + Escape + Back · D-RO-7 A 44px · D-RO-8 A dvh / dvw · D-RO-9 A ·
+  D-RO-10 A in-place `position: fixed` in the shadow root + scroll lock + `overscroll-behavior: contain`.
+  The cell / header context menus are core `/menu`'s (no phone presentation there yet); the row toolbar
+  stays an anchored action strip (not an opened panel).
+
 ### Fixed — an open edit keeps its typed text through a re-render (2026-11-11)
 - **A text / number / combobox / autocomplete editor keeps what was typed** (and the caret) when the grid
   re-renders while it is open — `items` replaced with the edited row still there, which includes the

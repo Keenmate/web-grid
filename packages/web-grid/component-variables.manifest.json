@@ -53,7 +53,8 @@
     { "name": "base-loader-icon", "required": false, "usage": "Loader shape (single-colour mask) for the .wg__loader" },
     { "name": "base-loader-rotate", "required": false, "usage": "Loader rotation per cycle (0 = self-animating SVG)" },
     { "name": "base-loader-duration", "required": false, "usage": "Loader cycle duration (slows under reduced motion)" },
-    { "name": "base-loader-size", "required": false, "usage": "Loader size" }
+    { "name": "base-loader-size", "required": false, "usage": "Loader size" },
+    { "name": "base-touch-target-min", "required": false, "usage": "Minimum tap size of the phone sheet's controls (drives --wg-touch-target-min)" }
   ],
   "componentVariables": [
     { "name": "wg-rem", "category": "sizing", "usage": "Base sizing unit for proportional scaling (default 10px, set to 1rem for Pure Admin)" },
@@ -200,6 +201,7 @@
     { "name": "wg-dropdown-toggle-size", "category": "dropdown", "usage": "Dropdown arrow icon size (12px)" },
     { "name": "wg-dropdown-toggle-hitbox", "category": "dropdown", "usage": "Dropdown arrow clickable area (24px)" },
     { "name": "wg-dropdown-max-height", "category": "dropdown", "usage": "Dropdown option list maximum height (200px)" },
+    { "name": "wg-touch-target-min", "category": "sizing", "usage": "Minimum tap size of the phone sheet's controls — close button, dropdown options, search field, date picker buttons (44px; base: --base-touch-target-min)" },
     { "name": "wg-dropdown-option-gap", "category": "dropdown", "usage": "Gap between option icon and text" },
     { "name": "wg-dropdown-option-padding", "category": "dropdown", "usage": "Padding inside dropdown options" },
     { "name": "wg-dropdown-empty-padding", "category": "dropdown", "usage": "Padding for 'No options' empty state message" },

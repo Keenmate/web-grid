@@ -6337,7 +6337,7 @@
           "type": {
             "text": "GridLabels"
           },
-          "default": "{ // Toolbar rowActions: 'Row actions', inlineActionsHeader: 'Actions', // Shortcuts help keyboardShortcuts: 'Keyboard shortcuts', rangeShortcuts: 'Selection shortcuts', // Pagination paginationFirst: '⏮', paginationPrevious: '◀', paginationNext: '▶', paginationLast: '⏭', paginationPageInfo: 'Page {current} of {total}', paginationItemCount: '{count} items', paginationPerPage: 'per page', // Empty table / loading noData: 'No items to display', noResults: 'No matching items', loading: 'Loading…', // Dropdown dropdownNoData: 'No options', dropdownNoResults: 'No matching options', dropdownSearching: 'Searching…', dropdownEmptyOption: '—', // Row locking rowLocked: 'This row is locked', rowLockedBy: 'Locked by {lockedBy}', // Go-to-row dialog goToRow: 'Go to row (1-{max}):', goToRowGo: 'Go', goToRowCancel: 'Cancel', // Tree chevron treeExpand: 'Expand', treeCollapse: 'Collapse', // Filter row filterColumn: 'Filter {column}', // Edit button (editTrigger: 'button') editCell: 'Edit', // Built-in value checks invalidNumber: 'Not a number', numberMin: 'Must be at least {min}', numberMax: 'Must be at most {max}', numberNegative: 'Must not be negative', invalidBoolean: 'Not a yes / no value', invalidDate: 'Not a valid date', // Built-in row / tree actions actions: { add: 'Add row', delete: 'Delete row', duplicate: 'Duplicate row', moveUp: 'Move up', moveDown: 'Move down', expand: 'Expand', collapse: 'Collapse', expandSubtree: 'Expand subtree', collapseSubtree: 'Collapse subtree', expandAll: 'Expand all', collapseAll: 'Collapse all' }, // Header context menu contextMenu: { sortAsc: 'Sort Ascending', sortDesc: 'Sort Descending', clearSort: 'Clear Sort', hideColumn: 'Hide Column', freezeColumn: 'Freeze Column', unfreezeColumn: 'Unfreeze Column', columnVisibility: 'Column Visibility', showAll: 'Show all' } }",
+          "default": "{ // Toolbar rowActions: 'Row actions', inlineActionsHeader: 'Actions', // Shortcuts help keyboardShortcuts: 'Keyboard shortcuts', rangeShortcuts: 'Selection shortcuts', // Pagination paginationFirst: '⏮', paginationPrevious: '◀', paginationNext: '▶', paginationLast: '⏭', paginationPageInfo: 'Page {current} of {total}', paginationItemCount: '{count} items', paginationPerPage: 'per page', // Empty table / loading noData: 'No items to display', noResults: 'No matching items', loading: 'Loading…', // Dropdown dropdownNoData: 'No options', dropdownNoResults: 'No matching options', dropdownSearching: 'Searching…', dropdownEmptyOption: '—', // Phone sheet (the cell dropdown / date editor on a phone) sheetClose: 'Close', sheetSearch: 'Search…', // Row locking rowLocked: 'This row is locked', rowLockedBy: 'Locked by {lockedBy}', // Go-to-row dialog goToRow: 'Go to row (1-{max}):', goToRowGo: 'Go', goToRowCancel: 'Cancel', // Tree chevron treeExpand: 'Expand', treeCollapse: 'Collapse', // Filter row filterColumn: 'Filter {column}', // Edit button (editTrigger: 'button') editCell: 'Edit', // Built-in value checks invalidNumber: 'Not a number', numberMin: 'Must be at least {min}', numberMax: 'Must be at most {max}', numberNegative: 'Must not be negative', invalidBoolean: 'Not a yes / no value', invalidDate: 'Not a valid date', // Built-in row / tree actions actions: { add: 'Add row', delete: 'Delete row', duplicate: 'Duplicate row', moveUp: 'Move up', moveDown: 'Move down', expand: 'Expand', collapse: 'Collapse', expandSubtree: 'Expand subtree', collapseSubtree: 'Collapse subtree', expandAll: 'Expand all', collapseAll: 'Collapse all' }, // Header context menu contextMenu: { sortAsc: 'Sort Ascending', sortDesc: 'Sort Descending', clearSort: 'Clear Sort', hideColumn: 'Hide Column', freezeColumn: 'Freeze Column', unfreezeColumn: 'Unfreeze Column', columnVisibility: 'Column Visibility', showAll: 'Show all' } }",
           "description": "The built-in UI strings (English only)."
         },
         {
@@ -8927,13 +8927,23 @@
             },
             {
               "kind": "field",
-              "name": "isDismissing",
+              "name": "closingAs",
               "type": {
-                "text": "boolean"
+                "text": "'dismiss' | 'close' | null"
               },
               "privacy": "private",
-              "default": "false",
-              "description": "Set while dismiss() closes the popover: its 'api' close is reported as 'dismiss'."
+              "default": "null",
+              "description": "Set while dismiss() / the sheet's close closes the popover: its 'api' close is reported as this."
+            },
+            {
+              "kind": "field",
+              "name": "sheet",
+              "type": {
+                "text": "{ header: HTMLElement; endSession: () => void } | null"
+              },
+              "privacy": "private",
+              "default": "null",
+              "description": "The open picker is the phone sheet: its header + how to undo it (null: anchored / closed)."
             },
             {
               "kind": "field",
@@ -9057,6 +9067,76 @@
                 }
               },
               "description": "Close without a pick as the user's own dismissal (the trigger button toggled it, Tab with\nno focused day): `options.onClose('dismiss')`."
+            },
+            {
+              "kind": "method",
+              "name": "closeAs",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "reason",
+                  "type": {
+                    "text": "'dismiss' | 'close'"
+                  }
+                }
+              ],
+              "description": "Close as the user's own close without a pick: `options.onClose(reason)`."
+            },
+            {
+              "kind": "method",
+              "name": "setSheet",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "isSheet",
+                  "type": {
+                    "text": "boolean"
+                  }
+                }
+              ],
+              "description": "Present the picker as the phone sheet (or back as the anchored panel). The open picker\nswitches in place: the same popover, un-anchored ⇄ anchored."
+            },
+            {
+              "kind": "method",
+              "name": "enterSheet",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "description": "The phone sheet: a header (the column's title + a close button that leaves the cell — the\nowner saves, `'close'`), the page scroll locked, the Back gesture = the close button. The\nfocus moves into the sheet (the calendar keys keep working: they are document-level)."
+            },
+            {
+              "kind": "method",
+              "name": "endSheet",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "description": "Undo the sheet (no-op when anchored)."
+            },
+            {
+              "kind": "method",
+              "name": "activeElementInRoot",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "Element | null"
+                }
+              },
+              "description": "The focused element in the picker's root (its shadow root, else the document)."
             },
             {
               "kind": "method",
@@ -11734,6 +11814,22 @@
         },
         {
           "kind": "js",
+          "name": "applyDropdownPresentation",
+          "declaration": {
+            "name": "applyDropdownPresentation",
+            "module": "./rendering.js"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "isDropdownSheet",
+          "declaration": {
+            "name": "isDropdownSheet",
+            "module": "./rendering.js"
+          }
+        },
+        {
+          "kind": "js",
           "name": "selectDropdownOption",
           "declaration": {
             "name": "selectDropdownOption",
@@ -12627,6 +12723,24 @@
       "declarations": [
         {
           "kind": "function",
+          "name": "isDropdownSheet",
+          "return": {
+            "type": {
+              "text": "boolean"
+            }
+          },
+          "parameters": [
+            {
+              "name": "panel",
+              "type": {
+                "text": "Element | null | undefined"
+              }
+            }
+          ],
+          "description": "Whether the dropdown panel is currently the phone sheet (css/sheet.css `.wg__dropdown--sheet`)."
+        },
+        {
+          "kind": "function",
           "name": "renderDropdown",
           "return": {
             "type": {
@@ -12678,9 +12792,35 @@
             }
           ],
           "description": "Close the dropdown (its popover reports `'api'`: the caller does the save / cancel)"
+        },
+        {
+          "kind": "function",
+          "name": "applyDropdownPresentation",
+          "return": {
+            "type": {
+              "text": "void"
+            }
+          },
+          "parameters": [
+            {
+              "name": "ctx",
+              "type": {
+                "text": "GridHost<T>"
+              }
+            }
+          ],
+          "description": "The phone line was crossed (`ctx.isPhoneSheet` changed, core environment): switch the open\ndropdown between the sheet and the anchored panel in place — same popover, setAnchored()."
         }
       ],
       "exports": [
+        {
+          "kind": "js",
+          "name": "isDropdownSheet",
+          "declaration": {
+            "name": "isDropdownSheet",
+            "module": "src/modules/dropdown/rendering.ts"
+          }
+        },
         {
           "kind": "js",
           "name": "renderDropdown",
@@ -12694,6 +12834,14 @@
           "name": "removeDropdown",
           "declaration": {
             "name": "removeDropdown",
+            "module": "src/modules/dropdown/rendering.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "applyDropdownPresentation",
+          "declaration": {
+            "name": "applyDropdownPresentation",
             "module": "src/modules/dropdown/rendering.ts"
           }
         }
@@ -16695,6 +16843,14 @@
         },
         {
           "kind": "js",
+          "name": "captureEditorText",
+          "declaration": {
+            "name": "captureEditorText",
+            "module": "./post-render-focus.js"
+          }
+        },
+        {
+          "kind": "js",
           "name": "openGoToRowDialog",
           "declaration": {
             "name": "openGoToRowDialog",
@@ -16707,6 +16863,24 @@
       "kind": "javascript-module",
       "path": "src/modules/navigation/post-render-focus.ts",
       "declarations": [
+        {
+          "kind": "function",
+          "name": "captureEditorText",
+          "return": {
+            "type": {
+              "text": "EditorText | null"
+            }
+          },
+          "parameters": [
+            {
+              "name": "ctx",
+              "type": {
+                "text": "GridHost<T>"
+              }
+            }
+          ],
+          "description": "The text typed into the open cell editor (text / number / combobox / autocomplete input), read\nbefore a render rebuilds the body (`items` replaced, the normal ⇄ virtual switch, …): the edit\ngoes on, so restoreFocusAfterRender() puts the typed text and caret back into the new editor.\nThe date input is left to the date picker's own reopen (it copies the text itself)."
+        },
         {
           "kind": "function",
           "name": "restoreFocusAfterRender",
@@ -16733,12 +16907,27 @@
               "type": {
                 "text": "FocusedCell | null"
               }
+            },
+            {
+              "name": "editorText",
+              "default": "null",
+              "type": {
+                "text": "EditorText | null"
+              }
             }
           ],
           "description": "Restore focus after a render — either to the in-progress editor (with\nthe configured selection behavior) or to the previously focused cell."
         }
       ],
       "exports": [
+        {
+          "kind": "js",
+          "name": "captureEditorText",
+          "declaration": {
+            "name": "captureEditorText",
+            "module": "src/modules/navigation/post-render-focus.ts"
+          }
+        },
         {
           "kind": "js",
           "name": "restoreFocusAfterRender",
@@ -18980,6 +19169,104 @@
           "declaration": {
             "name": "handleEscapeKey",
             "module": "src/modules/selection/index.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/modules/sheet/index.ts",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "buildSheetHeader",
+          "return": {
+            "type": {
+              "text": "HTMLElement"
+            }
+          },
+          "parameters": [
+            {
+              "name": "options",
+              "type": {
+                "text": "SheetHeaderOptions"
+              }
+            }
+          ],
+          "description": "Build the sheet header: `.wg__sheet-header` with the title, the optional\n`.wg__sheet-search` input and the `.wg__sheet-close` button."
+        },
+        {
+          "kind": "function",
+          "name": "setSheetSemantics",
+          "return": {
+            "type": {
+              "text": "void"
+            }
+          },
+          "parameters": [
+            {
+              "name": "panel",
+              "type": {
+                "text": "HTMLElement"
+              }
+            },
+            {
+              "name": "title",
+              "type": {
+                "text": "string | null"
+              }
+            }
+          ],
+          "description": "Mark `panel` as a sheet (a modal dialog named by its title) or back as a plain panel."
+        },
+        {
+          "kind": "function",
+          "name": "startSheetSession",
+          "return": {
+            "type": {
+              "text": "() => void"
+            }
+          },
+          "parameters": [
+            {
+              "name": "panel",
+              "type": {
+                "text": "HTMLElement"
+              }
+            },
+            {
+              "name": "back",
+              "type": {
+                "text": "() => void"
+              }
+            }
+          ],
+          "description": "Start the session of an open sheet: page scroll locked, `panel` kept above the soft\nkeyboard, the Back gesture calls `back`. Returns the cleanup (idempotent)."
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "buildSheetHeader",
+          "declaration": {
+            "name": "buildSheetHeader",
+            "module": "src/modules/sheet/index.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "setSheetSemantics",
+          "declaration": {
+            "name": "setSheetSemantics",
+            "module": "src/modules/sheet/index.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "startSheetSession",
+          "declaration": {
+            "name": "startSheetSession",
+            "module": "src/modules/sheet/index.ts"
           }
         }
       ]
@@ -21265,6 +21552,25 @@
                   "text": "void"
                 }
               }
+            },
+            {
+              "kind": "method",
+              "name": "environmentChanged",
+              "privacy": "protected",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "env",
+                  "type": {
+                    "text": "EnvironmentSnapshot"
+                  }
+                }
+              ],
+              "description": "Device / viewport / orientation changed (core §12.9; fires on connect with the current\nsnapshot): on a phone the cell dropdown and the date editor are an edge-to-edge sheet\n(rulebook D-RO-3 = C — core resolvePresentation(), no width literal). An open one switches\nin place (same popover, anchored ⇄ un-anchored)."
             },
             {
               "kind": "method",
@@ -25036,6 +25342,10 @@
             {
               "name": "--wg-dropdown-max-height",
               "description": "Dropdown option list maximum height (200px)"
+            },
+            {
+              "name": "--wg-touch-target-min",
+              "description": "Minimum tap size of the phone sheet's controls — close button, dropdown options, search field, date picker buttons (44px; base: --base-touch-target-min)"
             },
             {
               "name": "--wg-dropdown-option-gap",

@@ -8,6 +8,7 @@ import { createPopover, type PopoverCloseReason, type PopoverHandle } from '@kee
 import type { DatePickerOptions, DatePickerState, LocaleStrings, FormatSpec } from './types.js'
 import { DEFAULT_LOCALE_STRINGS } from './types.js'
 import { parseFormat, formatDate, normalizeDate, toISODateString } from './formatting.js'
+import { buildSheetHeader, setSheetSemantics, startSheetSession } from '../sheet/index.js'
 
 // Datepicker styles (adopted into the mount root: the grid's shadow root, else document.head)
 const DATEPICKER_STYLES = `
@@ -277,8 +278,57 @@ const DATEPICKER_STYLES = `
 }
 `
 
+// The phone sheet (DatePicker.setSheet(); responsive-overlay D-RO-*, css/sheet.css holds the shared
+// header): edge-to-edge 100dvw x 100dvh, four-edge safe area (the top one on the sticky header),
+// overscroll contained, tap targets >= --wg-touch-target-min (44px). Geometry only.
+const DATEPICKER_SHEET_STYLES = `
+.wg-datepicker-container.wg-datepicker-container--sheet {
+	position: fixed;
+	inset: 0;
+	box-sizing: border-box;
+	width: 100dvw;
+	height: 100dvh;
+	margin: 0;
+	padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	background: var(--wg-dp-background);
+	z-index: var(--wg-z-dropdown, var(--wg-dp-z-index, 9999));
+}
+
+.wg-datepicker-container--sheet:focus {
+	outline: none;
+}
+
+/* The calendar fills the sheet's width (its day cells are square: 7 columns of it) */
+.wg-datepicker-container--sheet .wg-datepicker {
+	box-sizing: border-box;
+	min-width: 0;
+	max-width: 48rem;
+	margin: 0 auto;
+	border: none;
+	border-radius: 0;
+	box-shadow: none;
+}
+
+.wg-datepicker-container--sheet .wg-datepicker__nav,
+.wg-datepicker-container--sheet .wg-datepicker__month-year,
+.wg-datepicker-container--sheet .wg-datepicker__today-btn,
+.wg-datepicker-container--sheet .wg-datepicker__rolling-item {
+	min-height: var(--wg-touch-target-min, 44px);
+}
+
+.wg-datepicker-container--sheet .wg-datepicker__nav {
+	min-width: var(--wg-touch-target-min, 44px);
+}
+
+.wg-datepicker-container--sheet .wg-datepicker__rolling-list {
+	max-height: 50dvh;
+}
+`
+
 // In a shadow root the picker sits next to the grid's own CSS: same `component` layer.
-const LAYERED_DATEPICKER_STYLES = `@layer component {\n${DATEPICKER_STYLES}\n}`
+const LAYERED_DATEPICKER_STYLES = `@layer component {\n${DATEPICKER_STYLES}\n${DATEPICKER_SHEET_STYLES}\n}`
 
 let stylesInjected = false
 import {
@@ -311,8 +361,10 @@ export class DatePicker {
 	private anchor: HTMLElement | null = null
 	/** The open picker's core popover (positioning + Escape / outside click / scroll / overlay tree). */
 	private popover: PopoverHandle | null = null
-	/** Set while dismiss() closes the popover: its 'api' close is reported as 'dismiss'. */
-	private isDismissing = false
+	/** Set while dismiss() / the sheet's close closes the popover: its 'api' close is reported as this. */
+	private closingAs: 'dismiss' | 'close' | null = null
+	/** The open picker is the phone sheet: its header + how to undo it (null: anchored / closed). */
+	private sheet: { header: HTMLElement; endSession: () => void } | null = null
 	/** Stops following the cell's input (see followInput()). */
 	private unfollowInput: (() => void) | null = null
 	/** The followed input holds text that is not a date the picker accepts (see followInput()). */
@@ -404,7 +456,7 @@ export class DatePicker {
 
 		const style = document.createElement('style')
 		style.id = 'wg-datepicker-styles'
-		style.textContent = DATEPICKER_STYLES
+		style.textContent = DATEPICKER_STYLES + DATEPICKER_SHEET_STYLES
 		document.head.appendChild(style)
 		stylesInjected = true
 	}
@@ -464,13 +516,21 @@ export class DatePicker {
 			shouldCloseOnOutsideClick: true,
 			// The owner moves focus itself (to the cell)
 			returnFocusTo: null,
-			shouldCloseOnScroll: this.options.shouldCloseOnScroll ?? false,
+			// The phone sheet opens un-anchored (css/sheet.css places it)
+			isAnchored: !this.options.isSheet,
+			// Never as the phone sheet: it locks the page, nothing under it moves
+			shouldCloseOnScroll: () => {
+				if (this.sheet) return false
+				const rule = this.options.shouldCloseOnScroll ?? false
+				return typeof rule === 'function' ? rule() : rule
+			},
 			shouldCloseOnResize: false,
 			overlayGroup: this.options.overlayGroup,
 			onClose: (reason) => this.handlePopoverClose(popover, reason),
 		})
 		this.popover = popover
 		popover.open()
+		if (this.options.isSheet) this.enterSheet()
 
 		// Keyboard handler (calendar navigation, Enter / Tab pick; Escape is the popover's)
 		document.addEventListener('keydown', this.boundHandleKeyDown)
@@ -493,19 +553,89 @@ export class DatePicker {
 	 * no focused day): `options.onClose('dismiss')`.
 	 */
 	dismiss(): void {
+		this.closeAs('dismiss')
+	}
+
+	/** Close as the user's own close without a pick: `options.onClose(reason)`. */
+	private closeAs(reason: 'dismiss' | 'close'): void {
 		if (!this.popover) return
-		this.isDismissing = true
+		this.closingAs = reason
 		try {
 			this.popover.destroy()
 		} finally {
-			this.isDismissing = false
+			this.closingAs = null
 		}
+	}
+
+	/**
+	 * Present the picker as the phone sheet (or back as the anchored panel). The open picker
+	 * switches in place: the same popover, un-anchored ⇄ anchored.
+	 */
+	setSheet(isSheet: boolean): void {
+		this.options.isSheet = isSheet
+		if (!this.popover) return
+		if (isSheet) {
+			this.enterSheet()
+			return
+		}
+		if (!this.sheet || !this.element) return
+		const hadFocus = this.element.contains(this.activeElementInRoot())
+		this.endSheet()
+		this.popover.setAnchored(true)
+		// Focus back to the cell's input (the anchored picker follows it)
+		if (hadFocus && this.followedInput?.isConnected) this.followedInput.focus({ preventScroll: true })
+	}
+
+	/**
+	 * The phone sheet: a header (the column's title + a close button that leaves the cell — the
+	 * owner saves, `'close'`), the page scroll locked, the Back gesture = the close button. The
+	 * focus moves into the sheet (the calendar keys keep working: they are document-level).
+	 */
+	private enterSheet(): void {
+		if (this.sheet || !this.element || !this.popover) return
+		const title = this.options.sheetTitle ?? ''
+		const header = buildSheetHeader({
+			title,
+			closeLabel: this.options.sheetCloseLabel ?? 'Close',
+			onClose: () => this.closeAs('close'),
+		})
+		const panel = this.element
+		// Un-anchored first (core puts back the inline position it found), then the anchored
+		// geometry goes: css/sheet.css places the sheet
+		this.popover.setAnchored(false)
+		panel.style.cssText = ''
+		panel.classList.add('wg-datepicker-container--sheet')
+		setSheetSemantics(panel, title)
+		panel.prepend(header)
+		const endSession = startSheetSession(panel, () => this.closeAs('close'))
+		this.sheet = { header, endSession }
+		panel.focus({ preventScroll: true })
+	}
+
+	/** Undo the sheet (no-op when anchored). */
+	private endSheet(): void {
+		const sheet = this.sheet
+		if (!sheet) return
+		this.sheet = null
+		sheet.endSession()
+		sheet.header.remove()
+		if (this.element) {
+			this.element.classList.remove('wg-datepicker-container--sheet')
+			setSheetSemantics(this.element, null)
+		}
+	}
+
+	/** The focused element in the picker's root (its shadow root, else the document). */
+	private activeElementInRoot(): Element | null {
+		const root = this.element?.getRootNode()
+		return root instanceof ShadowRoot || root instanceof Document ? root.activeElement : null
 	}
 
 	/** The popover closed (any reason; core already unmounted the panel): tear down, tell the owner why. */
 	private handlePopoverClose(popover: PopoverHandle, reason: PopoverCloseReason): void {
 		if (this.popover !== popover) return
 		this.popover = null
+		this.endSheet()
 		popover.destroy()
 		document.removeEventListener('keydown', this.boundHandleKeyDown)
 		this.unfollowInput?.()
@@ -513,7 +643,7 @@ export class DatePicker {
 		this.element = null
 		this.state.isOpen = false
 		this.state.rollingSelectorOpen = false
-		this.options.onClose?.(reason === 'api' && this.isDismissing ? 'dismiss' : reason)
+		this.options.onClose?.(reason === 'api' && this.closingAs ? this.closingAs : reason)
 	}
 
 	/**
@@ -612,6 +742,10 @@ export class DatePicker {
 	 * Handle keyboard events
 	 */
 	private handleKeyDown(e: KeyboardEvent): void {
+		// Enter / Space on the phone sheet's close button press the button (not the focused day)
+		const origin = e.composedPath()[0] as Element | undefined
+		if ((e.key === 'Enter' || e.key === ' ') && origin?.closest?.('.wg__sheet-close')) return
+
 		// The typed text is not a date (invalid / incomplete / out of range): Enter / Tab leave the
 		// cell with that text — `onSelect(null)`, the owner saves it as invalid (Excel: leaving saves)
 		const input = this.followedInput

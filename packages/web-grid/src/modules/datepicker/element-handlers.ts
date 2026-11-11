@@ -58,6 +58,7 @@ type PickerCell = {
  * | 'escape' / 'dismiss'   | Escape; the trigger toggled it / Tab with no focused day | CANCEL the edit, focus to the cell       |
  * | 'scroll'               | the page or the grid body scrolled and the cell moved    | CANCEL the edit, focus to the cell (the  |
  * |                        | (veto: a cell transition, the grid detached)             | grid when its row is no longer rendered) |
+ * | 'close'                | the phone sheet's close button, the phone Back gesture   | SAVE the edit, focus to the cell         |
  * | 'outside-click'        | a click in the grid but outside the picker and the cell  | SAVE the edit (commitEditorValue)        |
  * |                        | editor (header, toolbar, empty area) — a click outside   |                                          |
  * |                        | the grid is the grid's outside-click (it saves; 'api')   |                                          |
@@ -81,6 +82,7 @@ function onDatePickerClose<T>(ctx: GridHost<T>, picker: DatePicker, reason: Date
 	if (reason === 'api' || reason === 'resize') return
 	if (at.isAlwaysMode) {
 		renderCell(ctx, at.rowIndex, at.colIndex)
+		if (reason === 'close') returnFocusToCell(ctx, at.rowIndex, at.colIndex)
 		return
 	}
 	const editing = ctx.engine.editingCell
@@ -89,13 +91,14 @@ function onDatePickerClose<T>(ctx: GridHost<T>, picker: DatePicker, reason: Date
 	const active = ctx.shadow.activeElement
 	const hadFocus = !!active && !!cell?.contains(active)
 	const isCancel = reason === 'escape' || reason === 'dismiss' || reason === 'scroll'
+	const isSheetClose = reason === 'close'
 	clearEditingVisual(ctx)
 	if (isCancel) ctx.engine.cancelEdit()
 	else commitEditorValue(ctx)
 	// Re-render the cell to restore display mode content
 	renderCell(ctx, at.rowIndex, at.colIndex)
 	// Keyboard focus stays with the cell (the grid when its row is no longer rendered)
-	if (isCancel || ((reason === 'overlay' || reason === 'parent') && hadFocus)) {
+	if (isCancel || isSheetClose || ((reason === 'overlay' || reason === 'parent') && hadFocus)) {
 		returnFocusToCell(ctx, at.rowIndex, at.colIndex)
 	}
 }
@@ -166,6 +169,10 @@ export function openCellDatePicker<T>(
 		shouldCloseOnScroll: () => !ctx.isTransitioningCells && ctx.shadow.host.isConnected,
 		// The page-wide overlay tree, in the `overlay-group` input's group (unset = the default)
 		overlayGroup: ctx.overlayGroup || undefined,
+		// On a phone: the edge-to-edge sheet (core resolvePresentation(); see modules/sheet)
+		isSheet: ctx.isPhoneSheet,
+		sheetTitle: column?.title || at.field,
+		sheetCloseLabel: ctx.engine.labels.sheetClose,
 		onSelect: (date, direction) => onSelect(date, direction, input),
 		onClose: (reason) => onDatePickerClose(ctx, picker, reason, at),
 	})

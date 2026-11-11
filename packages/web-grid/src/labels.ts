@@ -41,6 +41,10 @@ export const DEFAULT_LABELS: GridLabels = {
 	dropdownSearching: 'Searching…',
 	dropdownEmptyOption: '—',
 
+	// Phone sheet (the cell dropdown / date editor on a phone)
+	sheetClose: 'Close',
+	sheetSearch: 'Search…',
+
 	// Row locking
 	rowLocked: 'This row is locked',
 	rowLockedBy: 'Locked by {lockedBy}',

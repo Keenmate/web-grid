@@ -622,6 +622,10 @@ export type GridLabels = {
 	dropdownSearching: string       // "Searching…" — a typed async search is in flight
 	dropdownEmptyOption: string     // "—" — the empty first item of an `isEmptyAllowed` dropdown
 
+	// Phone sheet (the cell dropdown / date editor on a phone)
+	sheetClose: string              // "Close" — the sheet's close button (leaves the cell: saves)
+	sheetSearch: string             // "Search…" — the search field of a combobox / autocomplete sheet
+
 	// Row locking (row-number / row tooltip)
 	rowLocked: string               // "This row is locked" - no lockedBy known
 	rowLockedBy: string             // "Locked by {lockedBy}"

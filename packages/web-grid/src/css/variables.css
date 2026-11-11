@@ -465,6 +465,9 @@
   --wg-dropdown-option-gap: var(--wg-spacing-sm);
   --wg-dropdown-option-padding: calc(0.6 * var(--wg-rem)) var(--wg-spacing-sm) calc(0.6 * var(--wg-rem)) calc(var(--wg-spacing-sm) - 1px);
   --wg-dropdown-empty-padding: calc(0.8 * var(--wg-rem)) var(--wg-spacing-sm) calc(0.8 * var(--wg-rem)) calc(var(--wg-spacing-sm) - 1px);
+  /* Minimum tap size of the phone sheet's controls (close button, options, search;
+     responsive-overlay D-RO-7) */
+  --wg-touch-target-min: var(--base-touch-target-min, 44px);
 
   /* ==========================================================================
      INLINE ACTIONS (Component-Specific)

@@ -44,6 +44,9 @@ export interface GridHost<T = unknown> {
 	// Datepicker state
 	datepicker: DatePicker | null
 
+	/** The cell dropdown / date editor are the phone sheet (core resolvePresentation(), see modules/sheet). */
+	readonly isPhoneSheet: boolean
+
 	// Autocomplete async state — owned by AutocompleteService.
 	readonly autocomplete: AutocompleteService
 

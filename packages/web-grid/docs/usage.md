@@ -589,6 +589,34 @@ The typed text is parsed strictly (`Number()` + `isFinite`, trimmed; blank → `
 | `dateFormat` | `string` | — | Display format: `'YYYY-MM-DD'`, `'DD.MM.YYYY'`, etc. |
 | `outputFormat` | `DateOutputFormat` | — | What to store: `'date'` (Date object), `'iso'` (ISO string), `'timestamp'` (number) |
 
+### Phone presentation (the cell dropdown and the date editor)
+
+On a phone the cell dropdown (select / combobox / autocomplete) and the date editor open as an
+**edge-to-edge sheet** instead of a panel under the cell: the column title, a close button and — for
+a combobox / autocomplete — a search field (the cell itself is covered; what you type there goes to
+the cell's editor). Tablets and desktops keep the anchored panel. The switch is core's
+`resolvePresentation()` (the device class: a touch-primary device with a short viewport side — a
+narrowed desktop window stays anchored); rotating or resizing across it switches an open popup in place.
+
+Edit semantics are the same as in the cell (the Excel rule):
+
+| In the sheet | Result |
+|---|---|
+| Pick an option / tap a day | Saves, like a click on the option / day |
+| The close button (✕) | Leaves the cell → **saves** what the editor holds (a select without a pick: no change, `cell-edit-cancel`) |
+| The phone Back gesture / button | Same as the close button (saves); it never leaves the page |
+| Escape | **Cancels** (a combobox / autocomplete with typed text: the first Escape restores the text, the second cancels — as in the cell) |
+| Arrow keys / Enter / Tab | The editor's own keys (highlight / pick / leave) |
+
+Focus moves into the sheet and returns to the cell when it closes. While it is open the page behind
+does not scroll and the sheet sits above the soft keyboard. Texts: `labels.sheetClose` ("Close"),
+`labels.sheetSearch` ("Search…"); tap size `--wg-touch-target-min` (→ `--base-touch-target-min`, 44px).
+
+Page setup (the component can't set it): `<meta name="viewport" content="width=device-width,
+initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">` — `viewport-fit=cover` makes
+the sheet's safe-area insets (notch, home indicator, landscape side bars) non-zero, and
+`interactive-widget=resizes-content` lets the page resize with the soft keyboard.
+
 ### Shared dropdown options
 
 Used by `select`, `combobox`, and `autocomplete`.

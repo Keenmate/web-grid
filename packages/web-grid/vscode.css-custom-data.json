@@ -603,6 +603,11 @@
       "values": []
     },
     {
+      "name": "--wg-touch-target-min",
+      "description": "Minimum tap size of the phone sheet's controls — close button, dropdown options, search field, date picker buttons (44px; base: --base-touch-target-min)",
+      "values": []
+    },
+    {
       "name": "--wg-dropdown-option-gap",
       "description": "Gap between option icon and text",
       "values": []

@@ -5,6 +5,11 @@
       "token": "--base-font-family",
       "rule": "C2",
       "reason": "Standalone the grid (and its datepicker popup) inherits the page font instead of imposing the contract's system stack."
+    },
+    {
+      "token": "--base-touch-target-min",
+      "rule": "C1",
+      "reason": "The rulebook (responsive-overlay C-RO-7 / D-RO-7) names --base-touch-target-min for phone-mode tap targets, but base-css-variables does not define it yet; read with the rulebook's 44px fallback (--wg-touch-target-min)."
     }
   ]
 }

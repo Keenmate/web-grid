@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
+	<title>Test — phone sheet (cell dropdown / date editor) fixture</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>phone-sheet fixture</h1>
+	<p>
+		Targeted by <code>e2e/phone-sheet.spec.ts</code>. On a phone (core <code>resolvePresentation()</code>:
+		touch-primary, short viewport side) the cell dropdown and the date editor are an edge-to-edge sheet with a
+		close button; on a desktop the anchored panel. Reload resets all state.
+	</p>
+
+	<h2>#grid — select / combobox / autocomplete / date (navigate mode, F2 or Enter edits)</h2>
+	<web-grid id="grid" style="max-width: 100%; max-height: 320px;"></web-grid>
+
+	<!-- Room to scroll the page (the sheet locks it) -->
+	<div style="height: 1500px"></div>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+		import { installEventLog } from './event-log.js'
+
+		/*
+		 *  col index:  0    1 status    2 product    3 assignee      4 due
+		 *              id   select      combobox     autocomplete    date (YYYY-MM-DD, iso out)
+		 *  row r: status ['open','done','hold'][r % 3], product 'laptop' / 'phone', assignee 'Alice',
+		 *         due 2026-06-<10 + r % 10>
+		 */
+		const statuses = ['open', 'done', 'hold']
+		const seed = (n) => Array.from({ length: n }, (_, r) => ({
+			id: r + 1,
+			status: statuses[r % 3],
+			product: r % 2 ? 'phone' : 'laptop',
+			assignee: 'Alice',
+			due: `2026-06-${10 + (r % 10)}`
+		}))
+
+		const users = ['Alice', 'Bob', 'Carol', 'Dave'].map((u) => ({ value: u, label: u }))
+		const grid = document.getElementById('grid')
+		grid.items = seed(12)
+		grid.columns = [
+			{ field: 'id', title: 'ID', width: '40px', isEditable: false },
+			{ field: 'status', title: 'Status', width: '110px', editor: 'select', editorOptions: { options: [
+				{ value: 'open', label: 'Open' },
+				{ value: 'done', label: 'Done' },
+				{ value: 'hold', label: 'On hold' }
+			] } },
+			{ field: 'product', title: 'Product', width: '120px', editor: 'combobox', editorOptions: { options: [
+				{ value: 'laptop', label: 'Laptop' },
+				{ value: 'phone', label: 'Phone' },
+				{ value: 'tablet', label: 'Tablet' }
+			] } },
+			{
+				field: 'assignee', title: 'Assignee', width: '120px', editor: 'autocomplete',
+				editorOptions: {
+					initialOptions: users,
+					minSearchLength: 1,
+					debounceMs: 0,
+					searchCallback: async ({ term }) => users.filter((u) => u.label.toLowerCase().includes(term.toLowerCase()))
+				}
+			},
+			{ field: 'due', title: 'Due date', width: '130px', editor: 'date', editorOptions: { dateFormat: 'YYYY-MM-DD', outputFormat: 'iso' } }
+		]
+		grid.isEditingEnabled = true
+		grid.editTrigger = 'navigate'
+
+		installEventLog(grid, 'grid', ['row-change', 'cell-edit-start', 'cell-edit-cancel'])
+	</script>
+</body>
+</html>
