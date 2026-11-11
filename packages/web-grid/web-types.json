@@ -294,12 +294,12 @@
             },
             {
               "name": "enable-virtual-scroll",
-              "description": "Render only the visible rows (give the grid a capped height). Default: `false`.",
-              "value": { "type": "boolean", "default": "false" }
+              "description": "Render only the visible rows (give the grid a capped height). `true` / `false` force it; unset = automatic from `virtualScrollThreshold` rows. Default: `null` (automatic).",
+              "value": { "type": "boolean | null", "default": "null" }
             },
             {
               "name": "virtual-scroll-threshold",
-              "description": "Row count from which the engine's automatic virtual scroll turns on. Default: `100`.",
+              "description": "Displayed row count from which automatic virtual scroll (`isVirtualScrollEnabled` unset) turns on. Default: `100`.",
               "value": { "type": "number", "default": "100" }
             },
             {
@@ -1122,12 +1122,12 @@
               },
               {
                 "name": "isVirtualScrollEnabled",
-                "description": "Render only the visible rows (give the grid a capped height). Default: `false`.",
-                "type": "boolean"
+                "description": "Render only the visible rows (give the grid a capped height). `true` / `false` force it; unset = automatic from `virtualScrollThreshold` rows. Default: `null` (automatic).",
+                "type": "boolean | null"
               },
               {
                 "name": "virtualScrollThreshold",
-                "description": "Row count from which the engine's automatic virtual scroll turns on. Default: `100`.",
+                "description": "Displayed row count from which automatic virtual scroll (`isVirtualScrollEnabled` unset) turns on. Default: `100`.",
                 "type": "number"
               },
               {

@@ -562,9 +562,17 @@ export interface GridElementConfig<T = unknown> {
 	/** The summary shares one line with the pager when both sit in the same area. Default: `true`. */
 	isSummaryInline: boolean
 	// Virtual & infinite scroll
-	/** Render only the visible rows (give the grid a capped height). Default: `false`. */
-	isVirtualScrollEnabled: boolean
-	/** Row count from which the engine's automatic virtual scroll turns on. Default: `100`. */
+	/**
+	 * Render only the visible rows (give the grid a capped height). Tristate:
+	 * - `true` — always virtual
+	 * - `false` — never virtual
+	 * - `null` — automatic: virtual once the displayed row count reaches `virtualScrollThreshold`,
+	 *   re-checked on every render (so `items` growing / shrinking across it switches)
+	 *
+	 * Removing the attribute (or setting `undefined` / `null`) returns to automatic. Default: `null` (automatic).
+	 */
+	isVirtualScrollEnabled: boolean | null
+	/** Displayed row count from which automatic virtual scroll (`isVirtualScrollEnabled` unset) turns on. Default: `100`. */
 	virtualScrollThreshold: number
 	/** Fixed row height (px) virtual scroll computes with. Default: `38`. */
 	virtualScrollItemHeight: number
@@ -826,8 +834,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 - \`bottom-right\` — below the table, right` },
 		{ configKey: 'isSummaryInline', attribute: 'summary-inline', converter: toBool('default-true'), default: true, on: 'update', description: 'The summary shares one line with the pager when both sit in the same area. Default: `true`.' },
 		// Virtual & infinite scroll
-		{ configKey: 'isVirtualScrollEnabled', attribute: 'enable-virtual-scroll', converter: toBool('default-false'), default: false, on: 'update', description: 'Render only the visible rows (give the grid a capped height). Default: `false`.' },
-		{ configKey: 'virtualScrollThreshold', attribute: 'virtual-scroll-threshold', converter: toInt({ min: 0, default: 100 }), default: 100, on: 'update', description: 'Row count from which the engine\'s automatic virtual scroll turns on. Default: `100`.' },
+		{ configKey: 'isVirtualScrollEnabled', attribute: 'enable-virtual-scroll', converter: toBool('tristate'), default: null, on: 'update', description: 'Render only the visible rows (give the grid a capped height). `true` / `false` force it; unset = automatic from `virtualScrollThreshold` rows. Default: `null` (automatic).' },
+		{ configKey: 'virtualScrollThreshold', attribute: 'virtual-scroll-threshold', converter: toInt({ min: 0, default: 100 }), default: 100, on: 'update', description: 'Displayed row count from which automatic virtual scroll (`isVirtualScrollEnabled` unset) turns on. Default: `100`.' },
 		{ configKey: 'virtualScrollItemHeight', attribute: 'virtual-scroll-item-height', converter: toInt({ min: 1, default: 38 }), default: 38, on: 'update', description: 'Fixed row height (px) virtual scroll computes with. Default: `38`.' },
 		{ configKey: 'virtualScrollOverscan', attribute: 'virtual-scroll-overscan', converter: toInt({ min: 0, default: 10 }), default: 10, on: 'update', description: 'Extra rows rendered above / below the viewport in virtual scroll. Default: `10`.' },
 		{ configKey: 'isInfiniteScrollEnabled', attribute: 'enable-infinite-scroll', converter: toBool('default-false'), default: false, on: 'update', description: 'Ask for more rows (`data-request`, `trigger: load-more`) when scrolled near the end, until `hasMoreItems` is `false`. Default: `false`.' },

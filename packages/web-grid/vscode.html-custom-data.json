@@ -295,12 +295,12 @@
         },
         {
           "name": "enable-virtual-scroll",
-          "description": "Render only the visible rows (give the grid a capped height). Default: `false`.",
+          "description": "Render only the visible rows (give the grid a capped height). `true` / `false` force it; unset = automatic from `virtualScrollThreshold` rows. Default: `null` (automatic).",
           "values": []
         },
         {
           "name": "virtual-scroll-threshold",
-          "description": "Row count from which the engine's automatic virtual scroll turns on. Default: `100`.",
+          "description": "Displayed row count from which automatic virtual scroll (`isVirtualScrollEnabled` unset) turns on. Default: `100`.",
           "values": []
         },
         {

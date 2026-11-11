@@ -256,7 +256,7 @@ export class GridEngine<T = unknown> {
 	protected _isTableBorderOnly: boolean = false
 
 	// Virtual scroll
-	protected _isVirtualScrollEnabled: boolean = false
+	protected _isVirtualScrollEnabled: boolean | null = null
 	protected _virtualScrollThreshold: number = 100
 	protected _virtualScrollItemHeight: number = 38
 	protected _virtualScrollOverscan: number = 10
@@ -960,9 +960,10 @@ export class GridEngine<T = unknown> {
 
 
 	// Virtual scroll
-	get isVirtualScrollEnabled(): boolean { return this._isVirtualScrollEnabled }
-	set isVirtualScrollEnabled(value: boolean) {
-		this._isVirtualScrollEnabled = value
+	/** `true` / `false` force virtual scroll on / off; `null` (default) = auto by `virtualScrollThreshold`. */
+	get isVirtualScrollEnabled(): boolean | null { return this._isVirtualScrollEnabled }
+	set isVirtualScrollEnabled(value: boolean | null | undefined) {
+		this._isVirtualScrollEnabled = value ?? null
 		this.requestUpdate()
 	}
 

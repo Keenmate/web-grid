@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — automatic virtual scroll fixture</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>virtual-auto fixture</h1>
+	<p>
+		Targeted by <code>e2e/virtual-auto.spec.ts</code>. <code>isVirtualScrollEnabled</code> unset = automatic:
+		virtual once the row count reaches <code>virtual-scroll-threshold</code> (20 here). Rows are set by the
+		spec through <code>window.setRows(n, id)</code>. Reload resets all state.
+	</p>
+
+	<h2>#grid — automatic (no enable-virtual-scroll), threshold 20</h2>
+	<web-grid id="grid" virtual-scroll-threshold="20" style="max-width: 600px; max-height: 300px;"></web-grid>
+
+	<h2>#forcedOn — enable-virtual-scroll, threshold 20</h2>
+	<web-grid id="forcedOn" enable-virtual-scroll virtual-scroll-threshold="20" style="max-width: 600px; max-height: 300px;"></web-grid>
+
+	<h2>#forcedOff — enable-virtual-scroll="false", threshold 20</h2>
+	<web-grid id="forcedOff" enable-virtual-scroll="false" virtual-scroll-threshold="20" style="max-width: 600px; max-height: 300px;"></web-grid>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+
+		const columns = [
+			{ field: 'id',   title: 'ID',   width: '70px' },
+			{ field: 'name', title: 'Name', width: '200px', editor: 'text' }
+		]
+		const generate = (count) => Array.from({ length: count }, (_, i) => ({ id: i + 1, name: `Row ${i + 1}` }))
+
+		/** Replace the rows of `#<id>` (default `#grid`) with `n` generated ones. */
+		window.setRows = (n, id = 'grid') => { document.getElementById(id).items = generate(n) }
+
+		for (const id of ['grid', 'forcedOn', 'forcedOff']) {
+			const grid = document.getElementById(id)
+			grid.columns = columns
+			grid.items = generate(10)
+		}
+	</script>
+</body>
+</html>

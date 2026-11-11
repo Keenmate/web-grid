@@ -323,9 +323,9 @@ With `filterMode: 'server'` the grid bypasses internal client-side filtering —
 ### Virtual scroll for large datasets
 
 ```javascript
-grid.isVirtualScrollEnabled = true
 grid.virtualScrollItemHeight = 38      // must be fixed
-grid.virtualScrollThreshold = 1000    // auto-enable when items >= threshold
+grid.virtualScrollThreshold = 1000     // automatic (isVirtualScrollEnabled unset): virtual from 1000 displayed rows
+// grid.isVirtualScrollEnabled = true  // or force it on (false forces it off)
 ```
 
 See [`examples-virtual-scroll.html`](../../../examples-virtual-scroll.html).

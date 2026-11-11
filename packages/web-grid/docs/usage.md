@@ -391,8 +391,8 @@ For full-height mode, also set `isTableBorderOnly = true`.
 
 | Property | Type | Default | Description |
 |---|---|---|---|
-| `isVirtualScrollEnabled` | `boolean` | `false` | Enable virtual scroll |
-| `virtualScrollThreshold` | `number` | `100` | Auto-enable when `items.length >= threshold` |
+| `isVirtualScrollEnabled` | `boolean \| null` | `null` | `true` / `false` force virtual scroll on / off; unset (`null`) = automatic by `virtualScrollThreshold` |
+| `virtualScrollThreshold` | `number` | `100` | Automatic mode: virtual once the displayed rows (after filtering / paging) reach the threshold; re-checked when `items` changes |
 | `virtualScrollItemHeight` | `number` | `38` | Fixed row height in pixels |
 | `virtualScrollOverscan` | `number` | `10` | Extra rows rendered above/below the viewport |
 

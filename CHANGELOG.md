@@ -10,6 +10,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Fixed — automatic virtual scroll (2026-11-11)
+- **`virtualScrollThreshold` works:** `isVirtualScrollEnabled` (`enable-virtual-scroll`) is a tristate —
+  `true` / `false` force virtual scroll on / off, unset (`null`) = automatic: virtual once the displayed rows
+  (after filtering / paging) reach `virtual-scroll-threshold` (default `100`). Re-checked on every render, so
+  replacing `items` across the threshold (or changing the threshold) switches modes; focus and scroll
+  position are restored like on any re-render. Removing the attribute, or assigning `undefined` / `null`,
+  returns to automatic.
+- **Default changed from `false` to automatic (`null`).** Before, the default was `false` (in 1.x too), so
+  the threshold never applied and every grid rendered all its rows unless virtual scroll was switched on. Now
+  a grid showing 100+ rows renders virtually without opting in — give it a capped height (as virtual scroll
+  needs), or set `enable-virtual-scroll="false"` / `isVirtualScrollEnabled = false` to keep rendering every
+  row. The getter answers `null` (not `false`) when unset. Explicit `true` / `false` behave as before.
+
 ### Examples and docs — the example pages on the devkit shell (2026-11-11)
 - **Every example page is a devkit fragment page**: the devkit header / chapter nav / Ctrl+K spotlight /
   theme switch (light / dark / auto) / footer instead of the page-local chrome; `index.html` is
