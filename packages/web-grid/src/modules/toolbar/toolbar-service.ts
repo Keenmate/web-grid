@@ -23,7 +23,6 @@ export class ToolbarService {
 	private _currentCellItemsJson: string | null = null
 	private _shortcutHandler: ToolbarShortcutHandler | null = null
 	private _inlineShortcutHandler: ToolbarShortcutHandler | null = null
-	private _outsideClickAttached = false
 
 	/** Pending hide-timeout handle, or null if no hide is scheduled. */
 	get hideTimeout(): ReturnType<typeof setTimeout> | null { return this._hideTimeout }
@@ -64,10 +63,6 @@ export class ToolbarService {
 	/** The keydown handler registered on document for inline-mode shortcuts (hover-driven). */
 	get inlineShortcutHandler(): ToolbarShortcutHandler | null { return this._inlineShortcutHandler }
 	setInlineShortcutHandler(handler: ToolbarShortcutHandler | null): void { this._inlineShortcutHandler = handler }
-
-	/** True once the document-level outside-click listener has been installed (one-shot guard). */
-	get outsideClickAttached(): boolean { return this._outsideClickAttached }
-	markOutsideClickAttached(): void { this._outsideClickAttached = true }
 
 	/**
 	 * Reset hover / move-in-progress flags, clear the hovered-cell cache, drop the

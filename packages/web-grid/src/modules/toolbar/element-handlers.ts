@@ -11,12 +11,13 @@ import type { GridHost } from '../grid-context.js'
 import type { CellContext, GridToolbarEntry } from '../../interaction.js'
 import { showTooltip, hideTooltip } from '../tooltip/index.js'
 import { activateGridItem, handleRowShortcut, rowCellFields } from '../items/index.js'
+import { returnFocusToCell } from '../navigation/focus.js'
+import { deepActiveElement, registerOverlay, type OverlayDismissReason } from '@keenmate/web-components-core'
 import {
 	getActiveToolbar,
 	getActiveToolbarButtons,
 	getActiveToolbarRowIndex,
 	getActiveToolbarRowItem,
-	isToolbarOwnedBy,
 	openToolbar,
 	closeToolbar,
 	resolveToolbar,
@@ -24,6 +25,7 @@ import {
 	renderToolbarHTML,
 	renderToolbarButton,
 	setActiveToolbarButtons,
+	setActiveToolbarOverlay,
 	updateConnector,
 	buildToolbarTooltipHtml,
 	type ToolbarButton
@@ -56,10 +58,10 @@ export function setupToolbarShortcuts<T>(ctx: GridHost<T>): void {
 			return
 		}
 
-		if (getActiveToolbarRowIndex() === null || !isToolbarOwnedBy(ctx.shadow)) return
+		if (getActiveToolbarRowIndex(ctx) === null) return
 
 		// The toolbar's row at its CURRENT position (a move keeps the toolbar open on it)
-		const row = getActiveToolbarRowItem<T>()
+		const row = getActiveToolbarRowItem<T>(ctx)
 		const rowIndex = row === null ? -1 : ctx.engine.displayItems.indexOf(row)
 		if (row === null || rowIndex === -1) return
 
@@ -71,7 +73,7 @@ export function setupToolbarShortcuts<T>(ctx: GridHost<T>): void {
 		handleRowShortcut(ctx, e, fields, true, (d) => {
 			// Same follow-up as a toolbar click: close when the row is gone, else refresh
 			// the open toolbar's button states (and the connector after a move)
-			if (getActiveToolbarRowItem<T>() !== row) return
+			if (getActiveToolbarRowItem<T>(ctx) !== row) return
 			if (d.action === 'delete' || ctx.engine.displayItems.indexOf(row) === -1) {
 				closeToolbarAndReset(ctx)
 				return
@@ -209,6 +211,7 @@ export function showToolbarForRow<T>(
 		},
 		cursorX
 	)
+	joinOverlayTree(ctx, rowElement, rowIndex)
 
 	// Add document-level shortcut listener for toolbar row
 	setupToolbarShortcuts(ctx)
@@ -262,6 +265,85 @@ export function showToolbarForRow<T>(
 }
 
 /**
+ * The open toolbar joins the page-wide overlay tree (core `registerOverlay`). Core decides the
+ * outside click (when the click ENDS), routes Escape (deepest overlay first) and closes the
+ * toolbar when another overlay of its group opens, when `dismissAllOverlays()` runs or when the
+ * overlay it was opened from closes; overlays opened from a toolbar button become its children.
+ *
+ * - click / button trigger: a menu the user opened → the grid's `overlayGroup`, so opening it
+ *   closes the group's other overlays (the grid's own cell dropdown / date editor too: leaving the
+ *   cell saves) and they close it.
+ * - hover trigger: a hover affordance, like a tooltip → a group of its own: moving the pointer
+ *   over the rows must not close (and save) an open cell dropdown or a page popover. Only
+ *   `dismissAllOverlays()` reaches it.
+ *
+ * Outside: a click outside the toolbar; the whole grid counts as inside for hover / click (rows
+ * toggle it themselves), only the trigger buttons for 'button'. Escape: when focus is in the
+ * toolbar, or (click / button) when no cell edit is open — an edit's Escape is the editor's.
+ */
+function joinOverlayTree<T>(ctx: GridHost<T>, rowElement: HTMLElement, rowIndex: number): void {
+	const trigger = ctx.engine.toolbarTrigger
+	const isHover = trigger === 'hover'
+	const host = (ctx.shadow as ShadowRoot).host
+	const overlay = registerOverlay(
+		(reason) => onToolbarDismiss(ctx, reason),
+		isHover ? {} : (ctx.overlayGroup || undefined),
+		{
+			getElement: () => getActiveToolbar(ctx)?.container ?? null,
+			shouldCloseOnOutsideClick: true,
+			getInsideElements: () => trigger === 'button'
+				? [...ctx.shadow.querySelectorAll('.wg__toolbar-trigger')]
+				: [host],
+			shouldCloseOnEscape: () => isFocusInToolbar(ctx) || (!isHover && ctx.engine.editingCell === null)
+		}
+	)
+	setActiveToolbarOverlay(ctx, overlay)
+	const triggerBtn = trigger === 'button'
+		? ctx.shadow.querySelector(`[data-toolbar-trigger="${rowIndex}"]`) as HTMLElement | null
+		: null
+	// Focus after Escape is the grid's (onToolbarDismiss): the row / trigger at its current index
+	overlay.activate({ trigger: triggerBtn ?? rowElement, returnFocusTo: null })
+}
+
+/** Is keyboard focus inside the grid's open toolbar? */
+function isFocusInToolbar<T>(ctx: GridHost<T>): boolean {
+	const container = getActiveToolbar(ctx)?.container
+	const active = deepActiveElement()
+	return !!container && !!active && container.contains(active)
+}
+
+/**
+ * Core closed the toolbar: Escape, an outside click, another overlay of its group, the parent
+ * overlay or `dismissAllOverlays()`. It just closes — toolbar actions are not edits. Focus that
+ * was in the toolbar (or lost to <body> on Escape) returns to its row: the trigger button
+ * ('button'), else the row's focused cell (its first cell when another row's cell has focus).
+ */
+function onToolbarDismiss<T>(ctx: GridHost<T>, reason: OverlayDismissReason): void {
+	if (!getActiveToolbar(ctx)) return
+	const active = deepActiveElement()
+	const hadFocus = isFocusInToolbar(ctx) || (reason === 'escape' && (!active || active === document.body))
+	const row = getActiveToolbarRowItem<T>(ctx)
+	closeToolbarAndReset(ctx)
+	if (!hadFocus || row === null) return
+	const rowIndex = ctx.engine.displayItems.indexOf(row)
+	if (rowIndex === -1) {
+		(ctx.shadow.querySelector('.wg') as HTMLElement | null)?.focus({ preventScroll: true })
+		return
+	}
+	if (ctx.engine.toolbarTrigger === 'button') {
+		const triggerBtn = ctx.shadow.querySelector(`[data-toolbar-trigger="${rowIndex}"]`) as HTMLElement | null
+		if (triggerBtn) {
+			triggerBtn.focus({ preventScroll: true })
+			return
+		}
+	}
+	const focused = ctx.engine.focusedCell
+	const firstCell = ctx.shadow.querySelector(`td.wg__cell[data-row="${rowIndex}"][data-col]`) as HTMLElement | null
+	const colIndex = focused?.rowIndex === rowIndex ? focused.colIndex : Number(firstCell?.dataset.col ?? 0)
+	returnFocusToCell(ctx, rowIndex, colIndex)
+}
+
+/**
  * Close the floating toolbar and reset the ToolbarService's transient state
  * (hover / move flags, hovered-cell cache, cell-items snapshot, hide-timeout).
  * Removes the document-level shortcut listener and dismisses any tooltip.
@@ -278,7 +360,7 @@ export function closeToolbarAndReset<T>(ctx: GridHost<T>): void {
 	toolbarEntries.delete(ctx)
 	// Hide any toolbar tooltip (mouseleave won't fire when DOM is removed)
 	hideToolbarTooltip(ctx)
-	closeToolbar()
+	closeToolbar(ctx)
 }
 
 /**
@@ -303,7 +385,7 @@ export function updateToolbarWithCellItems<T>(
 	const buttons = resolveToolbar(ctx, merged, ctx.engine.ctx(cell))
 		.sort((a, b) => a.row - b.row)
 
-	const activeToolbar = getActiveToolbar()
+	const activeToolbar = getActiveToolbar(ctx)
 	if (!activeToolbar) return
 
 	const temp = document.createElement('div')
@@ -317,7 +399,7 @@ export function updateToolbarWithCellItems<T>(
 		activeToolbar.toolbar.style.top = top
 		activeToolbar.toolbar.style.position = position
 		activeToolbar.toolbar.style.visibility = visibility
-		setActiveToolbarButtons(buttons)
+		setActiveToolbarButtons(ctx, buttons)
 		setActiveToolbarCell(ctx, cell)
 		toolbarEntries.set(ctx, merged)
 
@@ -341,8 +423,8 @@ const toolbarEntries = new WeakMap<object, GridToolbarEntry<any>[]>()
  * A changed layout (an item shown / hidden) re-renders the toolbar content.
  */
 function refreshOpenToolbar<T>(ctx: GridHost<T>, row: T, rowIndex: number): void {
-	const active = getActiveToolbar()
-	const previous = getActiveToolbarButtons<T>()
+	const active = getActiveToolbar(ctx)
+	const previous = getActiveToolbarButtons<T>(ctx)
 	if (!active || !previous) return
 	const cell = toolbarCells.get(ctx)
 	const isCell = !!cell && cell.row === row
@@ -362,7 +444,7 @@ function refreshOpenToolbar<T>(ctx: GridHost<T>, row: T, rowIndex: number): void
 		const temp = document.createElement('div')
 		temp.innerHTML = renderToolbarHTML(buttons, ctx.engine.toolbarVerticalAlign !== 'top')
 		active.toolbar.innerHTML = temp.querySelector('.wg__toolbar')?.innerHTML ?? ''
-		setActiveToolbarButtons(buttons)
+		setActiveToolbarButtons(ctx, buttons)
 		setupToolbarTooltips(ctx, buttons)
 		return
 	}
@@ -380,7 +462,7 @@ function refreshOpenToolbar<T>(ctx: GridHost<T>, row: T, rowIndex: number): void
 		el.replaceWith(fresh)
 		replaced.push(fresh)
 	})
-	setActiveToolbarButtons(buttons)
+	setActiveToolbarButtons(ctx, buttons)
 	if (replaced.length) setupToolbarTooltips(ctx, buttons, replaced)
 }
 

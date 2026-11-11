@@ -10,6 +10,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Changed — the row toolbar in the core overlay tree (2026-11-11)
+- **The floating row toolbar closes through core's overlay tree** (`registerOverlay`) instead of its own
+  document `click` listener (deleted, with `ToolbarService.outsideClickAttached`). Positioning stays
+  core `anchor()`. Pinned by `e2e/toolbar-close.spec.ts` (every open / close path per `toolbarTrigger`).
+  - Outside click is decided when the click ENDS, by a pointer click only: Enter / Space on a page
+    button no longer closes it. With 'hover' / 'click' the whole grid still counts as inside; with
+    'button' the toolbar and the trigger buttons.
+  - **Escape closes it**, topmost overlay first (a popover opened from a toolbar button closes before
+    it): with focus in the toolbar, or (`toolbar-trigger` click / button) whenever no cell edit is open —
+    an edit's Escape stays the editor's. Focus goes back to the row's focused cell (its first cell) or,
+    with 'button', its trigger. Was: Escape did nothing (with focus on a cell it dropped to `<body>`).
+  - **'click' / 'button' toolbars join the grid's `overlay-group`**: another overlay of the group
+    opening closes the toolbar, and opening it closes the group's other overlays — the grid's own cell
+    dropdown / date editor too (that saves the edit: leaving a cell saves). A 'hover' toolbar is a hover
+    affordance: it dismisses nothing and only `dismissAllOverlays()` closes it.
+  - `dismissAllOverlays()` closes it; popovers opened from a toolbar button are its children (a click
+    in them doesn't close it, closing the toolbar closes them).
+- **Fixed: the toolbar state is per grid.** It was one module-wide toolbar: a grid leaving the page (or
+  being disabled) closed another grid's open toolbar, and another grid's render / scroll / mousemove
+  could act on it.
+- **Fixed: a toolbar closed after a move action left its connector line on screen.**
+- Disconnect / `isDisabled` also drop the toolbar's row-shortcut `keydown` listener (was left on `document`).
+
 ### Fixed — keyboard moves in a virtual grid (2026-11-11)
 - **Arrow keys, Page Up / Down, Home / End, Ctrl+Home / End and Enter (also saving an edit) land on
   the target cell when its row is outside the rendered window** (Excel rule). Was: the grid moved its

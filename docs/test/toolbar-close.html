@@ -9,6 +9,9 @@
 		/* room on the left so the toolbar keeps its preferred side ('auto' = left) */
 		.stage { padding: 12px 0 12px 220px; }
 		.tail { height: 2000px; }
+		/* fixed: clicking / focusing it never scrolls the page (a page scroll closes the toolbar) */
+		#outside { position: fixed; top: 4px; right: 4px; z-index: 5; }
+		#child { padding: 8px; background: #eee; border: 1px solid #999; }
 	</style>
 </head>
 <body>
@@ -78,6 +81,25 @@
 				shouldCloseOnResize: false,
 				returnFocusTo: null,
 			})
+		}
+		// window.__openChild(reference): a popover opened from a toolbar button (a child overlay)
+		let child = null
+		window.__openChild = (reference) => {
+			child?.destroy()
+			// mounted per open (createPopover appends it to <body>, removes it on close)
+			const panel = document.createElement('div')
+			panel.id = 'child'
+			panel.innerHTML = '<button type="button" id="child-btn">inside the child</button>'
+			child = createPopover({
+				reference,
+				panel,
+				shouldCloseOnOutsideClick: true,
+				shouldCloseOnEscape: true,
+				shouldCloseOnScroll: false,
+				shouldCloseOnResize: false,
+			})
+			child.open()
+			window.__child = child
 		}
 	</script>
 </body>

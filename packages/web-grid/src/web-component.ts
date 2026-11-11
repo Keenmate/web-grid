@@ -152,7 +152,6 @@ import {
 	handleFillerContextMenu
 } from './modules/contextmenu/index.js'
 import {
-	closeToolbar,
 	getActiveToolbarRowIndex,
 	getConnectorState,
 	updateConnector,
@@ -455,9 +454,10 @@ export interface GridElementConfig<T = unknown> {
 	tooltipHideDelay: number
 	/**
 	 * Scope the "one overlay open at a time" coordination to a named group. Overlays
-	 * (the cell dropdown, multiselects, datepickers, external popovers) sharing a group dismiss each
-	 * other when one opens; different groups are independent. Unset = the default (ungrouped)
-	 * group, in which every ungrouped overlay coordinates. Read when the cell dropdown / date editor opens.
+	 * (the cell dropdown, the row toolbar with a click / button trigger, multiselects, datepickers,
+	 * external popovers) sharing a group dismiss each other when one opens; different groups are
+	 * independent. Unset = the default (ungrouped) group, in which every ungrouped overlay
+	 * coordinates. Read when the cell dropdown / date editor / row toolbar opens.
 	 * (internal: overlayGroup)
 	 */
 	overlayGroup: string | null
@@ -604,7 +604,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		{ configKey: 'tooltipShowDelay', attribute: 'tooltip-show-delay', converter: toInt({ min: 0, default: 200 }), default: 200, on: 'update' },
 		{ configKey: 'tooltipHideDelay', attribute: 'tooltip-hide-delay', converter: toInt({ min: 0, default: 100 }), default: 100, on: 'update' },
 		// Overlay tree group of the cell dropdown + date editor (element-local, read at each open — so `update`, no rebuild)
-		{ configKey: 'overlayGroup', attribute: 'overlay-group', converter: toText({ isNullable: true }), on: 'update', type: 'string | null', description: 'Scope the "one overlay open at a time" coordination to a named group. Overlays (the cell dropdown, multiselects, datepickers, external popovers) sharing a group dismiss each other when one opens; different groups are independent. Unset = the default (ungrouped) group.' },
+		{ configKey: 'overlayGroup', attribute: 'overlay-group', converter: toText({ isNullable: true }), on: 'update', type: 'string | null', description: 'Scope the "one overlay open at a time" coordination to a named group. Overlays (the cell dropdown, the row toolbar with a click / button trigger, multiselects, datepickers, external popovers) sharing a group dismiss each other when one opens; different groups are independent. Unset = the default (ungrouped) group.' },
 	] as const satisfies readonly InputDef[]
 
 	static events = EVENTS
@@ -834,7 +834,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		this.engine.isDisabled = isDisabled
 		if (isDisabled) {
 			closeGridMenu(this)
-			closeToolbar()
+			closeToolbarAndReset(this)
 		}
 	}
 
@@ -883,7 +883,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		}
 		closeGridMenu(this)
 		// Close any open toolbar
-		closeToolbar()
+		closeToolbarAndReset(this)
 		// Cleanup inline shortcuts
 		removeInlineShortcuts(this)
 		// Cleanup selection borders

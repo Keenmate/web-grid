@@ -6,6 +6,7 @@
 import { escapeHtml } from '@keenmate/web-components-core'
 import type { GridHost } from '../grid-context.js'
 import type { GridAction, GridToolbarEntry, GridToolbarItem } from '../../interaction.js'
+import type { OverlayHandle } from '@keenmate/web-components-core'
 import { anchor as anchorTo, type AnchorHandle, type Placement } from '@keenmate/web-components-core/positioning'
 import { isMenuDivider, resolveActionItem, type ResolvedActionItem } from '@keenmate/web-components-core/actions'
 import { normalizeEntry, rowActionDefaults } from '../items/index.js'
@@ -42,11 +43,12 @@ export type ConnectorState = {
 	arrowDir: 'left' | 'right' | 'down' | 'up'
 }
 
-// State for the connector arrow that tracks row movement
-let connectorState: ConnectorState = {
-	path: null,
-	arrowPos: null,
-	arrowDir: 'right'
+// Per grid: the connector arrow that tracks row movement (absent = no connector)
+const connectorStates = new WeakMap<object, ConnectorState>()
+const NO_CONNECTOR: ConnectorState = { path: null, arrowPos: null, arrowDir: 'right' }
+function setConnector(ctx: object, state: ConnectorState): void {
+	if (state.path) connectorStates.set(ctx, state)
+	else connectorStates.delete(ctx)
 }
 
 // =============================================================================
@@ -176,7 +178,7 @@ export function renderToolbarHTML<T>(buttons: ToolbarButton<T>[], reverseRows: b
 // Open/Close Toolbar
 // =============================================================================
 
-let activeToolbar: {
+type ActiveToolbar = {
 	container: HTMLElement
 	toolbar: HTMLElement
 	rowIndex: number
@@ -186,7 +188,12 @@ let activeToolbar: {
 	hasRowMoved: boolean
 	cursorX?: number  // Store cursor X for connector in 'cursor' mode
 	cleanup: () => void
-} | null = null
+	/** Its place in the core overlay tree (set by showToolbarForRow; destroyed on close). */
+	overlay: OverlayHandle | null
+}
+
+// Per grid: the open floating toolbar (other grids' toolbars close through the overlay tree)
+const activeToolbars = new WeakMap<object, ActiveToolbar>()
 
 /**
  * Open toolbar for a specific row
@@ -200,8 +207,8 @@ export function openToolbar<T>(
 	onItemClick: (button: ToolbarButton<T>, event: MouseEvent, triggerElement: HTMLElement) => void,
 	cursorX?: number  // For 'cursor' mode positioning
 ): void {
-	// Close any existing toolbar
-	closeToolbar()
+	// Close this grid's open toolbar
+	closeToolbar(ctx)
 
 	// CSS uses column-reverse, so Row 1 in HTML ends up at BOTTOM visually
 	// For 'bottom' (toolbar top at row level), we need Row 1 at TOP → reverse
@@ -236,7 +243,7 @@ export function openToolbar<T>(
 		// Re-query row element fresh from shadow DOM (original might be stale)
 		const freshRow = ctx.shadow.querySelector(`tr[data-row-index="${rowIndex}"]`) as HTMLElement
 		if (!freshRow) {
-			closeToolbar()
+			closeToolbar(ctx)
 			return
 		}
 
@@ -381,8 +388,9 @@ export function openToolbar<T>(
 				toolbarPosition = finalPlacement.split('-')[0] as 'left' | 'right' | 'top'
 
 				// Store position for connector calculations
-				if (activeToolbar) {
-					activeToolbar.position = toolbarPosition
+				const active = activeToolbars.get(ctx)
+				if (active) {
+					active.position = toolbarPosition
 				}
 			}
 		})
@@ -391,8 +399,9 @@ export function openToolbar<T>(
 	// Handle button clicks — reads the CURRENT buttons (a cell toolbar swaps them)
 	const handleClick = (e: MouseEvent) => {
 		const btn = (e.target as HTMLElement).closest('.wg__toolbar-btn') as HTMLButtonElement
-		if (btn && !btn.disabled && activeToolbar) {
-			const button = activeToolbar.buttons[Number(btn.dataset.wgIndex)] as ToolbarButton<T> | undefined
+		const active = activeToolbars.get(ctx)
+		if (btn && !btn.disabled && active) {
+			const button = active.buttons[Number(btn.dataset.wgIndex)] as ToolbarButton<T> | undefined
 			if (button) onItemClick(button, e, btn)
 		}
 	}
@@ -400,7 +409,7 @@ export function openToolbar<T>(
 	container.addEventListener('click', handleClick)
 
 	// Store cleanup and row reference for connector tracking
-	activeToolbar = {
+	const active: ActiveToolbar = {
 		container,
 		toolbar,
 		rowIndex,
@@ -413,76 +422,83 @@ export function openToolbar<T>(
 			placementHandle?.destroy()
 			container.removeEventListener('click', handleClick)
 			container.remove()
-		}
+		},
+		overlay: null
 	}
+	activeToolbars.set(ctx, active)
 
 	// Reset connector state
-	connectorState = { path: null, arrowPos: null, arrowDir: 'right' }
+	setConnector(ctx, NO_CONNECTOR)
 }
 
 /**
- * Close the active toolbar
+ * Close the grid's open toolbar: out of the overlay tree, its DOM and its connector line removed.
  */
-export function closeToolbar(): void {
-	if (activeToolbar) {
-		activeToolbar.cleanup()
-		activeToolbar = null
+export function closeToolbar<T>(ctx: GridHost<T>): void {
+	const active = activeToolbars.get(ctx)
+	if (active) {
+		activeToolbars.delete(ctx)
+		active.cleanup()
+		active.overlay?.destroy()
 	}
-	// Reset connector state
-	connectorState = { path: null, arrowPos: null, arrowDir: 'right' }
+	// Reset connector state, and take a drawn connector line down with the toolbar
+	setConnector(ctx, NO_CONNECTOR)
+	ctx.shadow.querySelector('.wg__connector')?.remove()
+}
+
+/** Hand the open toolbar its overlay-tree registration (destroyed when the toolbar closes). */
+export function setActiveToolbarOverlay<T>(ctx: GridHost<T>, overlay: OverlayHandle): void {
+	const active = activeToolbars.get(ctx)
+	if (active) active.overlay = overlay
+	else overlay.destroy()
 }
 
 /**
- * Get currently active toolbar row index
+ * Get the grid's open toolbar row index
  */
-export function getActiveToolbarRowIndex(): number | null {
-	return activeToolbar?.rowIndex ?? null
+export function getActiveToolbarRowIndex<T>(ctx: GridHost<T>): number | null {
+	return activeToolbars.get(ctx)?.rowIndex ?? null
 }
 
 /**
- * Check if active toolbar belongs to a specific shadow root
+ * Check if the grid's toolbar is open for a specific row
  */
-export function isToolbarOwnedBy(shadow: ShadowRoot): boolean {
-	return activeToolbar?.container.getRootNode() === shadow
+export function isToolbarOpenForRow<T>(ctx: GridHost<T>, rowIndex: number): boolean {
+	return activeToolbars.get(ctx)?.rowIndex === rowIndex
 }
 
 /**
- * Check if toolbar is open for a specific row
+ * Get the row item reference for the grid's open toolbar
  */
-export function isToolbarOpenForRow(rowIndex: number): boolean {
-	return activeToolbar?.rowIndex === rowIndex
+export function getActiveToolbarRowItem<T>(ctx: GridHost<T>): T | null {
+	return activeToolbars.get(ctx)?.rowItem as T ?? null
 }
 
 /**
- * Get the row item reference for the active toolbar
+ * Get the grid's current connector state for rendering
  */
-export function getActiveToolbarRowItem<T>(): T | null {
-	return activeToolbar?.rowItem as T ?? null
+export function getConnectorState<T>(ctx: GridHost<T>): ConnectorState {
+	return connectorStates.get(ctx) ?? NO_CONNECTOR
 }
 
 /**
- * Get the current connector state for rendering
+ * Get the grid's open toolbar element (for position updates)
  */
-export function getConnectorState(): ConnectorState {
-	return connectorState
+export function getActiveToolbar<T>(ctx: GridHost<T>): { toolbar: HTMLElement; container: HTMLElement } | null {
+	const active = activeToolbars.get(ctx)
+	if (!active) return null
+	return { toolbar: active.toolbar, container: active.container }
 }
 
-/**
- * Get the active toolbar element (for position updates)
- */
-export function getActiveToolbar(): { toolbar: HTMLElement; container: HTMLElement } | null {
-	if (!activeToolbar) return null
-	return { toolbar: activeToolbar.toolbar, container: activeToolbar.container }
+/** The open toolbar's current buttons (as rendered). */
+export function getActiveToolbarButtons<T>(ctx: GridHost<T>): ToolbarButton<T>[] | null {
+	return (activeToolbars.get(ctx)?.buttons as ToolbarButton<T>[] | undefined) ?? null
 }
 
-/** The active toolbar's current buttons (as rendered). */
-export function getActiveToolbarButtons<T>(): ToolbarButton<T>[] | null {
-	return (activeToolbar?.buttons as ToolbarButton<T>[] | undefined) ?? null
-}
-
-/** Replace the active toolbar's buttons (a cell toolbar swapped its items in). */
-export function setActiveToolbarButtons<T>(buttons: ToolbarButton<T>[]): void {
-	if (activeToolbar) activeToolbar.buttons = buttons
+/** Replace the open toolbar's buttons (a cell toolbar swapped its items in). */
+export function setActiveToolbarButtons<T>(ctx: GridHost<T>, buttons: ToolbarButton<T>[]): void {
+	const active = activeToolbars.get(ctx)
+	if (active) active.buttons = buttons
 }
 
 /**
@@ -491,7 +507,8 @@ export function setActiveToolbarButtons<T>(buttons: ToolbarButton<T>[]): void {
  * @param rowElement - The row element for Y position reference
  * @param align - How to align toolbar: 'center' (default) or 'start' (left edge at targetX)
  */
-export function updateToolbarPosition(targetX: number, rowElement: HTMLElement, align: 'center' | 'start' = 'center'): void {
+export function updateToolbarPosition<T>(ctx: GridHost<T>, targetX: number, rowElement: HTMLElement, align: 'center' | 'start' = 'center'): void {
+	const activeToolbar = activeToolbars.get(ctx)
 	if (!activeToolbar || activeToolbar.position !== 'top') {
 		return
 	}
@@ -529,8 +546,9 @@ export function updateConnector<T>(
 	ctx: GridHost<T>,
 	displayItems: T[]
 ): void {
+	const activeToolbar = activeToolbars.get(ctx)
 	if (!activeToolbar) {
-		connectorState = { path: null, arrowPos: null, arrowDir: 'right' }
+		setConnector(ctx, NO_CONNECTOR)
 		return
 	}
 
@@ -539,14 +557,14 @@ export function updateConnector<T>(
 	// Find current index of the row item (it may have moved)
 	const currentIndex = displayItems.findIndex(item => item === rowItem)
 	if (currentIndex === -1) {
-		connectorState = { path: null, arrowPos: null, arrowDir: 'right' }
+		setConnector(ctx, NO_CONNECTOR)
 		return
 	}
 
 	// Get the current row element
 	const currentRowEl = ctx.shadow.querySelector(`tr[data-row-index="${currentIndex}"]`) as HTMLElement
 	if (!currentRowEl) {
-		connectorState = { path: null, arrowPos: null, arrowDir: 'right' }
+		setConnector(ctx, NO_CONNECTOR)
 		return
 	}
 
@@ -560,7 +578,7 @@ export function updateConnector<T>(
 
 	// If row has never moved, no connector needed
 	if (!activeToolbar.hasRowMoved) {
-		connectorState = { path: null, arrowPos: null, arrowDir: 'right' }
+		setConnector(ctx, NO_CONNECTOR)
 		return
 	}
 
@@ -574,7 +592,7 @@ export function updateConnector<T>(
 	const containerRect = container?.getBoundingClientRect()
 
 	if (!tableRect || !containerRect) {
-		connectorState = { path: null, arrowPos: null, arrowDir: 'right' }
+		setConnector(ctx, NO_CONNECTOR)
 		return
 	}
 
@@ -613,7 +631,7 @@ export function updateConnector<T>(
 		if (!isRowVisible) {
 			// Row out of view - L-shape to corner, then vertical down/up
 			const path = `M ${startX} ${startY} H ${cornerX} V ${endY}`
-			connectorState = { path, arrowPos: { x: cornerX, y: endY }, arrowDir }
+			setConnector(ctx, { path, arrowPos: { x: cornerX, y: endY }, arrowDir })
 			return
 		}
 
@@ -621,7 +639,7 @@ export function updateConnector<T>(
 		const endX = isRTL ? containerRect.right - 8 : containerRect.left + 8
 		arrowDir = isRTL ? 'left' : 'right'
 		const path = `M ${startX} ${startY} H ${cornerX} V ${endY} H ${endX}`
-		connectorState = { path, arrowPos: { x: endX, y: endY }, arrowDir }
+		setConnector(ctx, { path, arrowPos: { x: endX, y: endY }, arrowDir })
 		return
 	} else if (position === 'right') {
 		// Popup is to the right - connect from left side of popup to right side of row
@@ -632,7 +650,7 @@ export function updateConnector<T>(
 		if (!isRowVisible) {
 			// Row out of view - L-shape to corner, then vertical down/up
 			const path = `M ${startX} ${startY} H ${cornerX} V ${endY}`
-			connectorState = { path, arrowPos: { x: cornerX, y: endY }, arrowDir }
+			setConnector(ctx, { path, arrowPos: { x: cornerX, y: endY }, arrowDir })
 			return
 		}
 
@@ -640,7 +658,7 @@ export function updateConnector<T>(
 		const endX = isRTL ? containerRect.left + 8 : containerRect.right - 8
 		arrowDir = isRTL ? 'right' : 'left'
 		const path = `M ${startX} ${startY} H ${cornerX} V ${endY} H ${endX}`
-		connectorState = { path, arrowPos: { x: endX, y: endY }, arrowDir }
+		setConnector(ctx, { path, arrowPos: { x: endX, y: endY }, arrowDir })
 		return
 	} else {
 		// Position: 'top' - L-shaped connector from right side of toolbar
@@ -664,7 +682,7 @@ export function updateConnector<T>(
 				targetY = containerRect.bottom - arrowSize
 			}
 			const path = `M ${startX} ${startY} H ${turnX} V ${targetY}`
-			connectorState = { path, arrowPos: { x: turnX, y: targetY }, arrowDir: 'down' }
+			setConnector(ctx, { path, arrowPos: { x: turnX, y: targetY }, arrowDir: 'down' })
 			return
 		} else if (length === -1) {
 			// Row one position above (behind toolbar) - U-turn loop on right side
@@ -674,7 +692,7 @@ export function updateConnector<T>(
 			const loopX = popupRect.right + loopWidth
 			const endX = popupRect.right + arrowSize  // Leave space for arrow
 			const path = `M ${popupRect.right} ${startLoopY} H ${loopX} V ${endLoopY} H ${endX}`
-			connectorState = { path, arrowPos: { x: endX, y: endLoopY }, arrowDir: 'left' }
+			setConnector(ctx, { path, arrowPos: { x: endX, y: endLoopY }, arrowDir: 'left' })
 			return
 		} else if (length < 0) {
 			// Row above toolbar - L goes UP, arrow points UP
@@ -684,7 +702,7 @@ export function updateConnector<T>(
 				targetY = containerRect.top + arrowSize
 			}
 			const path = `M ${startX} ${startY} H ${turnX} V ${targetY}`
-			connectorState = { path, arrowPos: { x: turnX, y: targetY }, arrowDir: 'up' }
+			setConnector(ctx, { path, arrowPos: { x: turnX, y: targetY }, arrowDir: 'up' })
 			return
 		} else {
 			// Row below toolbar - L goes DOWN, arrow points DOWN
@@ -694,7 +712,7 @@ export function updateConnector<T>(
 				targetY = containerRect.bottom - arrowSize
 			}
 			const path = `M ${startX} ${startY} H ${turnX} V ${targetY}`
-			connectorState = { path, arrowPos: { x: turnX, y: targetY }, arrowDir: 'down' }
+			setConnector(ctx, { path, arrowPos: { x: turnX, y: targetY }, arrowDir: 'down' })
 			return
 		}
 	}

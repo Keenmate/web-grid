@@ -6,6 +6,14 @@ import { test, expect, type Page, gridLocator, cell, openToolbarOn } from './fix
  * Pins: toolbar open or gone, the row it is next to, the focused element, the `action` events.
  * Columns: 0 id (read-only) · 1 name (text) · 2 status (select) · 3 qty. Items: ping (custom, keeps
  * it open) · move-down · delete. Each test opens row 2's toolbar first.
+ *
+ * The toolbar is in the core overlay tree (WP3, `_agent-progress/grid-overlay-wp3-toolbar.md`); rows
+ * marked `T<n>` changed with it: T1 a keyboard click (Enter on a page button) no longer closes it
+ * (core: only a pointer click is outside) · T2 the connector line goes with the toolbar · T3 Escape
+ * closes it (click / button: unless a cell edit is open; hover: only with focus in the toolbar),
+ * focus back to the row's cell / trigger · T4 click / button: another overlay of the group opening
+ * closes it, and it closes the group's other overlays (the grid's own cell dropdown too) · T5
+ * `dismissAllOverlays()` closes it · T6 another grid leaving the page no longer closes it (per-grid state).
  */
 
 const PAGE = '/test/toolbar-close.html'
@@ -246,24 +254,29 @@ for (const id of MODES) {
 	})
 }
 
-// Mode-specific expectations (today's behaviour).
+// Mode-specific expectations.
 const EXPECT = {
 	// the toolbar button never keeps focus: the re-render after the action restores the focused cell, else <body>
 	pingFocus: { gh: 'body', gc: 'gc 2:1', gb: 'body' } as Record<Mode, string>,
-	// BUG (pinned): a toolbar closed after a move leaves its connector line on screen
-	outsideConnector: { gh: 1, gc: 0, gb: 0 } as Record<Mode, number>,
-	keyboardClick: { gh: 0, gc: 0, gb: 0 } as Record<Mode, number>,
+	// T2: the connector line goes with the toolbar (was left on screen)
+	outsideConnector: { gh: 0, gc: 0, gb: 0 } as Record<Mode, number>,
+	// T1: core takes only a pointer click as outside (was: closed)
+	keyboardClick: { gh: 1, gc: 1, gb: 1 } as Record<Mode, number>,
 	otherRow: { gh: { toolbar: 1, row: 4 }, gc: { toolbar: 1, row: 4 }, gb: { toolbar: 0, row: null } } as Record<Mode, { toolbar: number; row: number | null }>,
 	sameRow: { gh: { toolbar: 1, row: 2 }, gc: { toolbar: 0, row: null }, gb: { toolbar: 0, row: null } } as Record<Mode, { toolbar: number; row: number | null }>,
-	// a header click stops propagation (sort): the document listener never sees it
+	// a header press never ends in a click (the header re-renders under it): nothing decides it
 	header: { gh: 1, gc: 1, gb: 1 } as Record<Mode, number>,
-	// Escape on a focused cell (no edit) blurs it to <body> (the grid's own Escape)
-	escape: { gh: { toolbar: 1 }, gc: { toolbar: 1, focus: 'body' }, gb: { toolbar: 1, focus: 'gb trigger:2' } } as Record<Mode, Partial<Snap>>,
-	escapeInToolbar: { gh: { toolbar: 1, focus: 'gh toolbar:ping' }, gc: { toolbar: 1, focus: 'gc toolbar:ping' }, gb: { toolbar: 1, focus: 'gb toolbar:ping' } } as Record<Mode, Partial<Snap>>,
+	// T3: click / button: Escape closes it, focus stays on / returns to the row (was: open, gc focus to <body>)
+	escape: { gh: { toolbar: 1 }, gc: { toolbar: 0, focus: 'gc 2:1' }, gb: { toolbar: 0, focus: 'gb trigger:2' } } as Record<Mode, Partial<Snap>>,
+	// T3: focus in the toolbar → Escape closes it; focus to the row's (first) cell / its trigger (was: open)
+	escapeInToolbar: { gh: { toolbar: 0, focus: 'gh 2:0' }, gc: { toolbar: 0, focus: 'gc 2:1' }, gb: { toolbar: 0, focus: 'gb trigger:2' } } as Record<Mode, Partial<Snap>>,
 	rowRemoved: { gh: 1, gc: 1, gb: 1 } as Record<Mode, number>,
-	otherOverlay: { gh: 1, gc: 1, gb: 1 } as Record<Mode, number>,
-	dismissAll: { gh: 1, gc: 1, gb: 1 } as Record<Mode, number>,
-	leavesPop: { gh: true, gc: true, gb: true } as Record<Mode, boolean>
+	// T4: click / button are in the grid's group (hover: a group of its own)
+	otherOverlay: { gh: 1, gc: 0, gb: 0 } as Record<Mode, number>,
+	// T5
+	dismissAll: { gh: 0, gc: 0, gb: 0 } as Record<Mode, number>,
+	// T4
+	leavesPop: { gh: true, gc: false, gb: false } as Record<Mode, boolean>
 }
 
 test.describe('toolbar close paths — hover only (#gh)', () => {
@@ -307,7 +320,7 @@ test.describe('toolbar close paths — hover only (#gh)', () => {
 })
 
 test.describe('toolbar close paths — click mode with an edit (#gc)', () => {
-	test('F2 on a select cell of the toolbar row: the dropdown opens', async ({ page }) => {
+	test('F2 on a select cell of the toolbar row: the dropdown opens (T4: and closes the toolbar)', async ({ page }) => {
 		await load(page, 'gc')
 		await page.keyboard.press('ArrowRight')
 		await page.keyboard.press('F2')
@@ -336,15 +349,67 @@ test.describe('toolbar close paths — click mode with an edit (#gc)', () => {
 		await page.keyboard.press('Escape')
 		await expect(gridLocator(page, 'gc').locator('.wg__cell--editing')).toHaveCount(0)
 		await expect(cell(page, 'gc', 2, 1)).toHaveText('Row 3')
+		await expect(toolbar(page, 'gc')).toHaveCount(1)
+		// T3: the next Escape (no edit open) closes the toolbar; focus stays on the cell
+		await page.keyboard.press('Escape')
+		await expect(toolbar(page, 'gc')).toHaveCount(0)
+		expect((await snap(page, 'gc')).focus).toBe('gc 2:1')
+	})
+
+	test('a row click elsewhere while a cell dropdown is open: the edit ends, the toolbar opens there', async ({ page }) => {
+		await load(page, 'gc')
+		await page.keyboard.press('ArrowRight')
+		await page.keyboard.press('F2')
+		await expect(gridLocator(page, 'gc').locator('.wg__dropdown')).toBeVisible()
+		await page.waitForTimeout(100)
+		await cell(page, 'gc', 4, 0).click()
+		await expect(gridLocator(page, 'gc').locator('.wg__dropdown')).toHaveCount(0)
+		await expect(gridLocator(page, 'gc').locator('.wg__cell--editing')).toHaveCount(0)
+		await expect(cell(page, 'gc', 2, 2)).toHaveText(/Open/)
+		expect((await snap(page, 'gc')).row).toBe(4)
 	})
 })
 
-const EXPECT_EDIT = { dropdownOpens: 1 }
+test.describe('toolbar close paths — nested overlays (Escape topmost-first)', () => {
+	for (const id of MODES) {
+		test(`#${id}: a popover opened from a toolbar button is its child`, async ({ page }) => {
+			await load(page, id)
+			await button(page, id, 'ping').evaluate((b) => (window as unknown as { __openChild(r: Element): void }).__openChild(b))
+			await expect(page.locator('#child')).toBeVisible()
+			// a click inside the child is inside the toolbar's subtree (hover: focus only — the pointer
+			// travelling over other rows would re-open the hover toolbar there)
+			if (id === 'gh') await page.locator('#child-btn').focus()
+			else await page.locator('#child-btn').click()
+			await page.waitForTimeout(100)
+			expect((await snap(page, id)).toolbar).toBe(1)
+			await expect(page.locator('#child')).toBeVisible()
+			// Escape: the child first (focus is in it) ...
+			await page.keyboard.press('Escape')
+			await expect(page.locator('#child')).toHaveCount(0)
+			expect((await snap(page, id)).toolbar).toBe(1)
+			// ... focus went back to its reference, the toolbar button → the next Escape closes the toolbar
+			expect((await snap(page, id)).focus).toBe(`${id} toolbar:ping`)
+			await page.keyboard.press('Escape')
+			expect((await snap(page, id)).toolbar).toBe(0)
+		})
+	}
+
+	test('closing the toolbar closes its child (parent)', async ({ page }) => {
+		await load(page, 'gc')
+		await button(page, 'gc', 'ping').evaluate((b) => (window as unknown as { __openChild(r: Element): void }).__openChild(b))
+		await expect(page.locator('#child')).toBeVisible()
+		await page.locator('#outside').click()
+		await expect(page.locator('#child')).toHaveCount(0)
+		expect((await snap(page, 'gc')).toolbar).toBe(0)
+	})
+})
+
+const EXPECT_EDIT = { dropdownOpens: 0 }
 
 test.describe('toolbar close paths — two grids', () => {
 	test('a second grid opening its toolbar closes the first one (default group)', async ({ page }) => {
 		await load(page, 'gc')
-		await trigger(page, 'gb', 1).click()
+		await trigger(page, 'gb', 1).evaluate((b) => (b as HTMLElement).click()) // no scroll: a page scroll closes toolbars
 		await expect(toolbar(page, 'gb')).toHaveCSS('visibility', 'visible')
 		expect((await snap(page, 'gc')).toolbar).toBe(0)
 	})
@@ -355,6 +420,26 @@ test.describe('toolbar close paths — two grids', () => {
 		await page.waitForTimeout(100)
 		expect((await snap(page, 'gc')).toolbar).toBe(TWO_GRIDS.otherRemoved)
 	})
+
+	test('overlay-group: different groups keep both toolbars open; the group decides what closes it', async ({ page }) => {
+		await page.goto(PAGE)
+		await expect(gridLocator(page, 'gc').locator('tbody tr.wg__row').first()).toBeVisible()
+		await gridLocator(page, 'gc').evaluate((g) => { (g as unknown as { overlayGroup: string }).overlayGroup = 'a' })
+		await gridLocator(page, 'gc').evaluate((el) => el.scrollIntoView({ block: 'center' })) // core-adoption: allow — the test positions the page
+		await open(page, 'gc')
+		await trigger(page, 'gb', 1).evaluate((b) => (b as HTMLElement).click()) // no scroll: a page scroll closes toolbars
+		await expect(toolbar(page, 'gb')).toHaveCSS('visibility', 'visible')
+		expect((await snap(page, 'gc')).toolbar).toBe(1)
+		const pop = (key: string) => page.evaluate((key) => (window as unknown as { __pop: Record<string, { open(): void }> }).__pop[key].open(), key)
+		await pop('default')
+		await page.waitForTimeout(100)
+		expect((await snap(page, 'gc')).toolbar).toBe(1)
+		expect((await snap(page, 'gb')).toolbar).toBe(0)
+		await pop('a')
+		await page.waitForTimeout(100)
+		expect((await snap(page, 'gc')).toolbar).toBe(0)
+	})
 })
 
-const TWO_GRIDS = { otherRemoved: 0 }
+// T6: per-grid toolbar state (was: any grid's disconnect closed the open toolbar)
+const TWO_GRIDS = { otherRemoved: 1 }

@@ -9,18 +9,14 @@
 //     drive the cell-aware toolbar that swaps items as the cursor traverses
 //     cells.
 //   - Row click (click mode) — toggle the toolbar for one row.
-//   - Document-level outside click — close the toolbar when the user clicks
-//     anywhere outside its container or the table.
 //
-// The document-level listener is a one-shot — guarded by
-// `ToolbarService.outsideClickAttached` so re-running attachEventListeners on
-// every render doesn't pile up duplicates.
+// Outside click / Escape / other overlays close it through the core overlay
+// tree (element-handlers.ts `joinOverlayTree`), not here.
 
 import type { GridHost } from '../grid-context.js'
 import {
 	getActiveToolbarRowIndex,
 	isToolbarOpenForRow,
-	isToolbarOwnedBy,
 	resolveToolbarOffset,
 	updateToolbarPosition
 } from './index.js'
@@ -35,9 +31,7 @@ import {
 
 /**
  * Attach every floating-toolbar event listener (button-mode trigger, inline
- * action click, row hover/leave/move, click-mode row click, outside click) to
- * the table. Idempotent w.r.t. the document-level outside-click listener
- * thanks to the `outsideClickAttached` one-shot guard on the ToolbarService.
+ * action click, row hover/leave/move, click-mode row click) to the table.
  */
 export function attachToolbarListeners<T>(ctx: GridHost<T>, table: Element): void {
 	// Toolbar trigger button click (button mode)
@@ -51,7 +45,7 @@ export function attachToolbarListeners<T>(ctx: GridHost<T>, table: Element): voi
 			const rowElement = table.querySelector(`tr[data-row-index="${rowIndex}"]`) as HTMLElement
 			if (rowElement) {
 				// Toggle toolbar for this row
-				if (isToolbarOpenForRow(rowIndex)) {
+				if (isToolbarOpenForRow(ctx, rowIndex)) {
 					closeToolbarAndReset(ctx)
 					// No render() needed — closeToolbar() surgically removes toolbar
 				} else {
@@ -94,7 +88,7 @@ export function attachToolbarListeners<T>(ctx: GridHost<T>, table: Element): voi
 			if (ctx.engine.toolbarTrigger === 'hover' && ctx.engine.toolbarPosition !== 'inline') {
 				// Cancel any pending hide timeout when entering a row
 				ctx.toolbar.clearHideTimeout()
-				if (!isToolbarOpenForRow(rowIndex)) {
+				if (!isToolbarOpenForRow(ctx, rowIndex)) {
 					showToolbarForRow(ctx, row, rowIndex, mouseEvent.clientX)
 				}
 			}
@@ -149,7 +143,7 @@ export function attachToolbarListeners<T>(ctx: GridHost<T>, table: Element): voi
 		if (!row) return
 
 		const rowIndex = parseInt(row.dataset.rowIndex || '0', 10)
-		const toolbarRowIndex = getActiveToolbarRowIndex()
+		const toolbarRowIndex = getActiveToolbarRowIndex(ctx)
 
 		// Only process if toolbar is open for this row and in 'top' position
 		if (toolbarRowIndex !== rowIndex || ctx.engine.toolbarPosition !== 'top') return
@@ -161,9 +155,9 @@ export function attachToolbarListeners<T>(ctx: GridHost<T>, table: Element): voi
 			if (cell) {
 				const cellRect = cell.getBoundingClientRect()
 				const targetX = resolveToolbarOffset(cellRect, ctx.engine.cellToolbarOffset)
-				updateToolbarPosition(targetX, row, 'start')
+				updateToolbarPosition(ctx, targetX, row, 'start')
 			} else {
-				updateToolbarPosition(mouseEvent.clientX, row)
+				updateToolbarPosition(ctx, mouseEvent.clientX, row)
 			}
 		}
 
@@ -204,7 +198,7 @@ export function attachToolbarListeners<T>(ctx: GridHost<T>, table: Element): voi
 						// Position toolbar at configured offset from cell left edge
 						const cellRect = cell.getBoundingClientRect()
 						const targetX = resolveToolbarOffset(cellRect, ctx.engine.cellToolbarOffset)
-						updateToolbarPosition(targetX, row, 'start')
+						updateToolbarPosition(ctx, targetX, row, 'start')
 					}
 				}
 			}
@@ -221,7 +215,7 @@ export function attachToolbarListeners<T>(ctx: GridHost<T>, table: Element): voi
 		if (row && !target.closest('.wg__cell--editing')) {
 			const rowIndex = parseInt(row.dataset.rowIndex || '0', 10)
 			// Toggle toolbar
-			if (isToolbarOpenForRow(rowIndex)) {
+			if (isToolbarOpenForRow(ctx, rowIndex)) {
 				closeToolbarAndReset(ctx)
 				// No render() needed — closeToolbar() surgically removes toolbar
 			} else {
@@ -229,36 +223,4 @@ export function attachToolbarListeners<T>(ctx: GridHost<T>, table: Element): voi
 			}
 		}
 	})
-
-	// Close toolbar on outside click — one-shot per grid (guarded by ToolbarService)
-	if (!ctx.toolbar.outsideClickAttached) {
-		ctx.toolbar.markOutsideClickAttached()
-		document.addEventListener('click', (e: MouseEvent) => {
-			// Only handle if this grid owns the active toolbar
-			if (!isToolbarOwnedBy(ctx.shadow)) {
-				return
-			}
-
-			const composedPath = e.composedPath()
-			const isInToolbar = composedPath.some(el => (el as HTMLElement).classList?.contains('wg__toolbar-container'))
-			const isInTrigger = composedPath.some(el => (el as HTMLElement).classList?.contains('wg__toolbar-trigger'))
-
-			if (isInToolbar || isInTrigger) {
-				return
-			}
-			// Don't close if clicking inside grid (hover/click mode handles that)
-			// The `host` lookup goes through ShadowRoot.host because composedPath()
-			// includes the shadow boundary, and the grid element itself is the host.
-			const host = (ctx.shadow as ShadowRoot).host
-			const isInGrid = composedPath.includes(host)
-			if (isInGrid && (ctx.engine.toolbarTrigger === 'hover' || ctx.engine.toolbarTrigger === 'click')) {
-				return
-			}
-			// Close toolbar if clicking outside
-			if (getActiveToolbarRowIndex() !== null) {
-				closeToolbarAndReset(ctx)
-				// No render() needed — closeToolbar() surgically removes toolbar
-			}
-		})
-	}
 }

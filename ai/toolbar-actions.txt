@@ -76,6 +76,18 @@ Toolbar trigger controls how the toolbar appears:
 When toolbarTrigger is 'button', a column with a vertical ellipsis
 button is rendered. Clicking the button opens the floating toolbar.
 
+Closing: the open toolbar is in the page-wide overlay tree (core). A pointer
+click outside it closes it (with 'hover' / 'click' the whole grid counts as
+inside; with 'button' only the toolbar and the trigger buttons), Escape closes
+it (with focus in the toolbar, or for 'click' / 'button' whenever no cell edit
+is open; focus goes back to the row's cell / trigger button), and so do a
+page scroll and dismissAllOverlays(). A 'click' / 'button' toolbar joins the
+grid's overlay-group: opening it closes the group's other overlays (the grid's
+own cell dropdown / date editor too, saving the edit) and they close it. A
+'hover' toolbar dismisses nothing (it is a hover affordance). Popovers opened
+from a toolbar button are its children: they don't close it, and closing the
+toolbar closes them.
+
 
 TOOLBAR ITEMS
 -------------

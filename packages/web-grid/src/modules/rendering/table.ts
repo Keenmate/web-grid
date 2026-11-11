@@ -264,7 +264,7 @@ export function renderDataRows<T>(ctx: GridHost<T>): string {
 
 	if (items.length === 0) return renderEmptyRow(ctx, colspanWithExtras)
 
-	const activeToolbarRow = getActiveToolbarRowIndex()
+	const activeToolbarRow = getActiveToolbarRowIndex(ctx)
 
 	// Pre-calculate column widths for offset computation
 	const columnWidths = visualColumns.map(({ column }) =>
@@ -488,7 +488,7 @@ export function renderDataRowsVirtual<T>(ctx: GridHost<T>, params: VirtualScroll
 
 	if (items.length === 0) return renderEmptyRow(ctx, colspanWithExtras)
 
-	const activeToolbarRow = getActiveToolbarRowIndex()
+	const activeToolbarRow = getActiveToolbarRowIndex(ctx)
 
 	// Pre-calculate column widths for offset computation
 	const columnWidths = visualColumns.map(({ column }) =>

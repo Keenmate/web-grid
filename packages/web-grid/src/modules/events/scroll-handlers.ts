@@ -47,7 +47,7 @@ export function handleContainerScroll<T>(
 	}
 
 	// Update connector position when scrolling (clips at container boundary)
-	if (getActiveToolbarRowIndex() !== null) {
+	if (getActiveToolbarRowIndex(ctx) !== null) {
 		updateConnector(ctx, ctx.engine.displayItems)
 		ctx.renderConnector()
 	}
@@ -68,7 +68,7 @@ export function handleContainerScroll<T>(
  * Window scroll handler — close transient overlays so they don't drift.
  */
 export function handleWindowScroll<T>(ctx: GridHost<T>): void {
-	if (getActiveToolbarRowIndex() !== null) {
+	if (getActiveToolbarRowIndex(ctx) !== null) {
 		closeToolbarAndReset(ctx)
 	}
 }

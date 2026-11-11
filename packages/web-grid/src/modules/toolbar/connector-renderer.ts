@@ -25,7 +25,7 @@ export function renderConnector<T>(ctx: GridHost<T>): void {
 		existingConnector.remove()
 	}
 
-	const state = getConnectorState()
+	const state = getConnectorState(ctx)
 	if (!state.path || !state.arrowPos) {
 		return
 	}
