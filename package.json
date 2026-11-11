@@ -2,18 +2,80 @@
 	"name": "web-grid-workspace",
 	"version": "1.0.0",
 	"private": true,
+	"description": "Monorepo for @keenmate/web-grid (the data grid web component) and its examples site.",
+	"type": "module",
 	"workspaces": [
-		"packages/*",
-		"docs"
+		"packages/*"
 	],
 	"scripts": {
-		"dev": "npm run dev -w docs",
+		"dev": "vite",
+		"build": "npm run build -w @keenmate/web-grid",
+		"build:examples": "vite build --mode examples",
+		"preview:examples": "vite preview --mode examples",
+		"clean:dist": "npm run clean:dist -w @keenmate/web-grid",
+		"clean": "npm run clean -w @keenmate/web-grid && rimraf dist-examples node_modules/.vite",
+		"test": "npm run test:unit && npm run test:e2e",
+		"test:unit": "npm run test -w @keenmate/web-grid",
 		"test:e2e": "playwright test",
 		"test:e2e:ui": "playwright test --ui",
 		"test:e2e:headed": "playwright test --headed",
-		"test:e2e:install": "playwright install chromium"
+		"test:e2e:install": "playwright install chromium firefox webkit",
+		"doctor": "kmwc doctor",
+		"check:vars": "kmwc check-vars",
+		"check:pages": "kmwc check-pages"
+	},
+	"author": "Keenmate",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/KeenMate/web-grid.git"
+	},
+	"homepage": "https://github.com/KeenMate/web-grid#readme",
+	"bugs": {
+		"url": "https://github.com/KeenMate/web-grid/issues"
+	},
+	"kmwc": {
+		"id": "web-grid",
+		"title": "Web Grid",
+		"tagline": "Framework-agnostic data grid web component with sorting, filtering, inline editing, and keyboard navigation",
+		"tag": "web-grid",
+		"prefix": "wg",
+		"library": {
+			"shouldBuild": false,
+			"entry": "packages/web-grid/src/index.ts"
+		},
+		"ports": {
+			"dev": 12600,
+			"image": 12610
+		},
+		"image": {
+			"name": "registry.km8.es/web-grid-examples:prod",
+			"runner": "podman",
+			"packageJsonPaths": [
+				"package.json",
+				"packages/web-grid/package.json"
+			]
+		},
+		"cssVariables": {
+			"sources": [
+				"packages/web-grid/src/css"
+			],
+			"manifest": "packages/web-grid/component-variables.manifest.json"
+		},
+		"packages": [
+			{
+				"path": "packages/web-grid",
+				"kind": "component"
+			}
+		]
 	},
 	"devDependencies": {
-		"@playwright/test": "^1.59.1"
+		"@keenmate/web-components-devkit": "^1.0.0-rc12",
+		"@playwright/test": "^1.62.1",
+		"rimraf": "^5.0.10",
+		"vite": "^7.3.8"
+	},
+	"allowScripts": {
+		"esbuild@0.28.2": true
 	}
 }

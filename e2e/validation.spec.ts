@@ -1,7 +1,7 @@
 import { test, expect, Page, gridLocator, cell } from './fixtures'
 
 /**
- * E2E coverage for cell validation (docs/test/validation.html) — a 5-row grid
+ * E2E coverage for cell validation (test/validation.html) — a 5-row grid
  * in navigate mode with four validated columns:
  *   name  — validateCallback returns a STRING error when empty
  *   email — validateCallback returns a ValidationResult object when no '@'

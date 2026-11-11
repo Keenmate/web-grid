@@ -1,7 +1,7 @@
 import { test, expect, Page, gridLocator, cell } from './fixtures'
 
 /**
- * E2E coverage for custom styling (docs/test/custom-styling.html) — a 6-row grid
+ * E2E coverage for custom styling (test/custom-styling.html) — a 6-row grid
  * exercising:
  *   - static `cellClass` on a column (name)
  *   - `getCellClassCallback` bucketing values into classes (salary)

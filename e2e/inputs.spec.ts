@@ -11,7 +11,7 @@ import { test, expect, type Page } from './fixtures'
  *   - invalid property values are rejected (warned, previous value kept)
  *   - UI-driven input changes (page-size selector) update the element property
  *
- * Fixture: docs/test/inputs.html (module only) — grids are created on the fly.
+ * Fixture: test/inputs.html (module only) — grids are created on the fly.
  */
 
 const PAGE = '/test/inputs.html'

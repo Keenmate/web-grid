@@ -6,7 +6,7 @@ import { test, expect, type Page, gridLocator, cell, header, onGrid, waitForRows
  * `getValidationTooltipCallback`, plain error fallback), `tooltipShowDelay` /
  * `tooltipHideDelay`.
  *
- * Fixture: docs/test/tooltip.html — delays 0/0; cols 0=name, 1=note, 2=rich,
+ * Fixture: test/tooltip.html — delays 0/0; cols 0=name, 1=note, 2=rich,
  * 3=code (validated, column validation tooltip), 4=qty (validated).
  */
 

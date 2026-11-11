@@ -4,7 +4,7 @@ import { test, expect, type Page, gridLocator, cell, header, onGrid, waitForRows
  * i18n — `labels` across the row toolbar, header context menu, pagination,
  * shortcuts help, dropdown "no options", and the go-to-row dialog.
  *
- * Fixture: docs/test/i18n.html — toolbar built-ins, header-menu built-ins,
+ * Fixture: test/i18n.html — toolbar built-ins, header-menu built-ins,
  * pagination (page-size 2, 3 rows), shortcuts help, a combobox.
  */
 

@@ -343,7 +343,7 @@ FIXES ALREADY APPLIED (uncommitted since last commit 34ae118):
 5. Diagnostic logging in openDropdownForCurrentEditor (interaction.ts)
 
 TEST PAGE:
-http://localhost:12400/examples-grid-modes.html
+http://localhost:12600/examples-grid-modes.html
 Use the "GM05 - Playground" grid, set mode to "input-matrix" (which sets
 editTrigger='always'). Department = combobox, Status = select.
 

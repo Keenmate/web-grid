@@ -1,7 +1,7 @@
 import { test, expect, Page, Locator, gridLocator, clickMenuItem, menuRoot, dispatchContextMenu } from './fixtures'
 
 /**
- * Smoke tests for tree mode against the tree fixture (docs/test/tree.html).
+ * Smoke tests for tree mode against the tree fixture (test/tree.html).
  * The page hosts four grids:
  *   #grid        — editTrigger:'navigate', treeDoubleClickBehavior:'toggle',
  *                  expandLevel:2. Exercises chevron toggle, dblclick

@@ -5,7 +5,7 @@ import { test, expect, type Page, gridLocator, cell, onGrid, domEvents, clearEve
  * `createEmptyRowCallback` (the empty row's initial values), `createRowCallback`
  * (rows created by a paste past the last row).
  *
- * Fixture: docs/test/new-row.html — Alpha, Beta + the empty row (bottom);
+ * Fixture: test/new-row.html — Alpha, Beta + the empty row (bottom);
  * cols 0=id (read-only), 1=name, 2=qty.
  */
 

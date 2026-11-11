@@ -1,7 +1,7 @@
 import { test, expect, Page, Locator, gridLocator, cell, dispatchContextMenu } from './fixtures'
 
 /**
- * E2E coverage for the editors fixture (docs/test/editors.html), which exercises:
+ * E2E coverage for the editors fixture (test/editors.html), which exercises:
  *  - text editor       (Name, col 1)
  *  - select editor     (Department, col 2; Status, col 3)
  *  - custom editor     (Notes, col 4 — opens a native prompt via renderEditorCallback)

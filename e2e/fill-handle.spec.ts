@@ -2,7 +2,7 @@ import { test, expect, Page, Locator, gridLocator, cell } from './fixtures'
 
 /**
  * E2E coverage for the fill-handle (Excel-like autofill) fixture
- * (docs/test/fill-handle.html). The page hosts four grids:
+ * (test/fill-handle.html). The page hosts four grids:
  *   #grid           — basic fill, logs every operation to [data-testid="fill-log"].
  *   #grid2          — same columns, but beforeFillCallback returns false for the
  *                     'status' column, cancelling the fill (logs to fill-log-2).

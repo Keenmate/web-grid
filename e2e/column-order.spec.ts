@@ -7,7 +7,7 @@ import { test, expect, type Page, gridLocator, header, onGrid, domEvents, clearE
  * `saveStateCallback`), `setColumnOrder` / `getColumnOrderState`,
  * `isColumnReorderAllowed` off → no drag.
  *
- * Fixture: docs/test/column-order.html — #persist (storage-key 'co-test',
+ * Fixture: test/column-order.html — #persist (storage-key 'co-test',
  * persist order, reorder allowed), #late (key set after the columns), #cb
  * (callbacks, in-memory sink), #nokey (no key) and #locked (reorder not
  * allowed); columns id / name / city / qty.

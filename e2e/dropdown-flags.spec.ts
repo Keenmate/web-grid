@@ -5,7 +5,7 @@ import { test, expect, type Page, gridLocator, cell, onGrid, domEvents, clearEve
  * `shouldOpenDropdownOnFocus`, `shouldOpenDropdownOnEnter` (grid + column),
  * checkbox toggling in navigate mode, `isCheckboxAlwaysEditable`.
  *
- * Fixture: docs/test/dropdown-flags.html — navigate mode,
+ * Fixture: test/dropdown-flags.html — navigate mode,
  * open-dropdown-on-focus="false"; cols 0=name, 1=status (select),
  * 2=done (checkbox), 3=owner (select, column shouldOpenDropdownOnEnter: true).
  */

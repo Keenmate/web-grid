@@ -5,7 +5,7 @@ import { test, expect, type Page, gridLocator, cell, onGrid, domEvents, clearEve
  * `paginationLayout` / `paginationPosition`, `isPaginationShown: 'auto'`,
  * `getPaginationLabelsCallback` / `labels`.
  *
- * Fixture: docs/test/pagination.html — #grid: 23 rows, page-size 5, pageSizes
+ * Fixture: test/pagination.html — #grid: 23 rows, page-size 5, pageSizes
  * [5,10,25]; #server: server mode, totalItems 47, answers `data-request` with a
  * slice.
  */

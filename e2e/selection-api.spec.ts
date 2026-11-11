@@ -6,7 +6,7 @@ import { test, expect, type Page, gridLocator, cell, onGrid, domEvents, clearEve
  * `selectCellRange` / `getSelectedCells` / `clearCellSelection`, and the
  * 'none' / 'shift' cell-selection modes.
  *
- * Fixture: docs/test/selection-api.html — 6 rows (id 1-6, name A-F, qty id*10),
+ * Fixture: test/selection-api.html — 6 rows (id 1-6, name A-F, qty id*10),
  * navigate mode, row numbers; cols 0=id, 1=name, 2=qty. Default mode 'click'.
  */
 

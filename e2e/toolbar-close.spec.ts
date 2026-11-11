@@ -2,7 +2,7 @@ import { test, expect, type Page, gridLocator, cell, openToolbarOn } from './fix
 
 /**
  * Characterization of every way the floating row toolbar opens and closes
- * (docs/test/toolbar-close.html), per `toolbarTrigger`: #gh hover (default), #gc click, #gb button.
+ * (test/toolbar-close.html), per `toolbarTrigger`: #gh hover (default), #gc click, #gb button.
  * Pins: toolbar open or gone, the row it is next to, the focused element, the `action` events.
  * Columns: 0 id (read-only) · 1 name (text) · 2 status (select) · 3 qty. Items: ping (custom, keeps
  * it open) · move-down · delete. Each test opens row 2's toolbar first.

@@ -2,7 +2,7 @@ import { test, expect, Page } from './fixtures'
 
 /**
  * E2E coverage for tree-mode combined with virtual + infinite scroll
- * (docs/test/tree-scroll.html).
+ * (test/tree-scroll.html).
  *
  * #vsGrid: 850-row tree (50 roots × 4 subs × 3 teams), expandLevel=1,
  * virtual scroll on. Initial render shows roots + their subs (550 visible items)

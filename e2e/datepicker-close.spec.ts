@@ -2,7 +2,7 @@ import { test, expect, type Page, gridLocator, cell } from './fixtures'
 
 /**
  * Characterization of every way an open date editor (the cell datepicker) closes
- * (docs/test/datepicker-close.html): a scrolling grid and a virtual-scroll grid. Pins the result
+ * (test/datepicker-close.html): a scrolling grid and a virtual-scroll grid. Pins the result
  * of each close path — value saved or not (the cell's display text), edit mode, the cell holding
  * focus, the picker gone, and the exact `cell-edit-start` / `cell-edit-cancel` / `row-change`
  * events (names + count). Excel model: leaving a cell any way but Escape SAVES, Escape cancels,

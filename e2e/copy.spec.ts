@@ -5,7 +5,7 @@ import { test, expect, type Page, gridLocator, cell, header, onGrid, waitForRows
  * selection (TSV), `shouldCopyWithHeaders`, column `getCopyValueCallback`,
  * `copySelectedRowsToClipboard()` / `copyCellSelectionToClipboard()`.
  *
- * Fixture: docs/test/copy.html — 3 rows × (id, name, price, note); price has a
+ * Fixture: test/copy.html — 3 rows × (id, name, price, note); price has a
  * getCopyValueCallback rendering "12.50 EUR"; Banana's note is null.
  */
 

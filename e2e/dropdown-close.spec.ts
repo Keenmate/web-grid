@@ -1,7 +1,7 @@
 import { test, expect, type Page, gridLocator, cell } from './fixtures'
 
 /**
- * Characterization of every way an open cell dropdown closes (docs/test/dropdown-close.html):
+ * Characterization of every way an open cell dropdown closes (test/dropdown-close.html):
  * select / combobox / autocomplete on a scrolling grid, plus a virtual-scroll grid. Pins the
  * result of each close path — value saved or not (the cell's display text), edit mode, the cell
  * holding focus, the dropdown gone, and the exact `cell-edit-start` / `cell-edit-cancel` /

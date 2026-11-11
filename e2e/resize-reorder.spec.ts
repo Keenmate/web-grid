@@ -2,7 +2,7 @@ import { test, expect, Page, Locator, gridLocator, header, dispatchContextMenu }
 
 /**
  * E2E coverage for column resize + drag-to-reorder
- * (docs/test/resize-reorder.html). The page hosts six grids:
+ * (test/resize-reorder.html). The page hosts six grids:
  *   #grid           — basic resize + multi-sort.
  *   #grid2          — resize + persistence (storageKey + shouldPersistColumnWidths)
  *                     and onColumnResize logging to [data-testid="resize-log"].

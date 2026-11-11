@@ -177,7 +177,7 @@ export function contrastRatio(a: RGBA, b: RGBA): number {
 }
 
 // =============================================================================
-// Event log (fixtures that use docs/test/event-log.js)
+// Event log (fixtures that use test/event-log.js)
 // =============================================================================
 
 export type LoggedEvent = { type: string; via: 'event' | 'twin'; grid: string; detail: any }

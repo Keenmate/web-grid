@@ -1,7 +1,7 @@
 import { test, expect, Page, gridLocator } from './fixtures'
 
 /**
- * E2E coverage for height modes (docs/test/height-modes.html). Two grids:
+ * E2E coverage for height modes (test/height-modes.html). Two grids:
  *   #containerGrid — host capped with `max-height: 200px`; the `.wg` scroll
  *                    container inherits the cap and scrolls internally (30 rows).
  *   #fullGrid      — host has no cap and `isTableBorderOnly = true`; the grid sizes

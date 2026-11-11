@@ -1,7 +1,7 @@
 import { test, expect, Page, gridLocator, header } from './fixtures'
 
 /**
- * E2E coverage for the frozen-columns fixture (docs/test/freeze-panes.html).
+ * E2E coverage for the frozen-columns fixture (test/freeze-panes.html).
  * The page hosts two grids:
  *   #grid   — 8-col / 10-row dataset, frozenColumnCount=2, isRowNumbers visible +
  *             sticky. A frozenColumnCount <select> drives grid.frozenColumnCount live.

@@ -6,7 +6,7 @@ import { test, expect, type Page, gridLocator, cell, onGrid, waitForRows } from 
  * shortcuts help (`shortcutsHelpPosition`, `renderShortcutsHelpCallback`), tree
  * chevrons (`treeExpandedGlyph`, `treeCollapsedGlyph`, `renderChevronCallback`).
  *
- * Fixture: docs/test/display-options.html — #flat (30 rows, row numbers, a row
+ * Fixture: test/display-options.html — #flat (30 rows, row numbers, a row
  * shortcut, help visible, 660px of columns in a 500px host) and #tree.
  */
 

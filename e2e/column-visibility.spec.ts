@@ -1,7 +1,7 @@
 import { test, expect, Page, Locator, gridLocator, header, clickMenuItem, dispatchContextMenu } from './fixtures'
 
 /**
- * E2E coverage for column visibility (docs/test/column-visibility.html).
+ * E2E coverage for column visibility (test/column-visibility.html).
  *
  * The fixture has one grid with six columns (id, name, email, department,
  * salary, phone). All initially visible. headerContextMenu includes the two

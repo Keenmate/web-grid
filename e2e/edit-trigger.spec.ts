@@ -1,7 +1,7 @@
 import { test, expect, Page, Locator, gridLocator, cell } from './fixtures'
 
 /**
- * E2E coverage for editTrigger modes (docs/test/edit-trigger.html). The page
+ * E2E coverage for editTrigger modes (test/edit-trigger.html). The page
  * hosts three identical 5-row grids, one per mode:
  *   #clickGrid    — editTrigger='click': a single click opens the editor;
  *                   editStartSelection='select-all' selects the whole value.

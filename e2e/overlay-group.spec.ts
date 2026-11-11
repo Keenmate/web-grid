@@ -1,7 +1,7 @@
 import { test, expect, type Page, gridLocator, cell } from './fixtures'
 
 /**
- * `overlay-group` (docs/test/overlay-group.html): the cell dropdown and the date editor (col 2)
+ * `overlay-group` (test/overlay-group.html): the cell dropdown and the date editor (col 2)
  * join the core overlay tree in the grid's group. #ga = group "a", #gb = group "b", #gd = unset (the default group). The other
  * overlay is a page createPopover() per group (`window.__pop.a / .b / .default`) — it opens without
  * taking focus, so the grid's own close-on-blur stays out of the way (two GRID dropdowns are never

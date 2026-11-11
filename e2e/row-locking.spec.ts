@@ -7,7 +7,7 @@ import { test, expect, type Page, gridLocator, cell, onGrid, domEvents, eventsOf
  * `row-lock-change`, `lockedEditBehavior` + `getCanEditLockedCallback`, F2 / paste
  * blocked, the lock marker + tooltip.
  *
- * Fixture: docs/test/row-locking.html — Alpha/Beta/Gamma/Delta (id 1-4); Beta is
+ * Fixture: test/row-locking.html — Alpha/Beta/Gamma/Delta (id 1-4); Beta is
  * locked by "Carol" through getLockInfoCallback. Columns 0=id, 1=name, 2=qty.
  */
 

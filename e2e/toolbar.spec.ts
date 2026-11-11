@@ -1,7 +1,7 @@
 import { test, expect, Page, Locator, gridLocator, openToolbarOn } from './fixtures'
 
 /**
- * E2E coverage for the row-toolbar fixture (docs/test/toolbar.html). The page
+ * E2E coverage for the row-toolbar fixture (test/toolbar.html). The page
  * hosts four grids, each exercising a different toolbar configuration:
  *   #grid   — floating toolbar, hover trigger (default), 5 row built-ins in 2
  *             groups split by a divider entry (move-up/move-down | add/duplicate/delete).

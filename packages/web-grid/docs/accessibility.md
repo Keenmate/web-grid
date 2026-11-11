@@ -114,4 +114,4 @@ If you need WCAG 2.2 AA compliance for a grid with explicit cell-selection or vi
 
 - [Usage / API reference](./usage.md) — `isShortcutsHelpShown`, `rowShortcuts`, `editStartSelection`, the `row-delete` event.
 - [Theming → color-scheme contract](./theming.md#color-scheme-contract) — contrast and dark-mode flips.
-- [`examples-shortcuts.html`](../../../docs/examples-shortcuts.html) — interactive demo of custom shortcuts + help overlay.
+- [`examples-shortcuts.html`](../../../examples-shortcuts.html) — interactive demo of custom shortcuts + help overlay.

@@ -1,7 +1,7 @@
 import { test, expect, Page, gridLocator, cell } from './fixtures'
 
 /**
- * E2E coverage for the date editor (docs/test/datepicker.html).
+ * E2E coverage for the date editor (test/datepicker.html).
  *
  * The picker renders in the grid's shadow root (next to the table, like the cell dropdown)
  * with the class prefix `wg-datepicker` (single hyphen, like the context menu).

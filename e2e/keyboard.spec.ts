@@ -6,7 +6,7 @@ import { test, expect, type Page, gridLocator, cell, onGrid, domEvents, clearEve
  * extension, `rangeShortcuts`, typing to start an edit (number columns accept
  * digits only — GRID-1).
  *
- * Fixture: docs/test/keyboard.html — 25 rows (id, name "Row NN", qty = id*10,
+ * Fixture: test/keyboard.html — 25 rows (id, name "Row NN", qty = id*10,
  * note "nN"); cols 0=id (read-only), 1=name, 2=qty (number), 3=note.
  */
 

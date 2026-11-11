@@ -1,5 +1,5 @@
 /*
- * Styling for the e2e test fixture pages in docs/test/.
+ * Styling for the e2e test fixture pages in test/.
  *
  * Deliberately minimal — no marketing chrome. Just enough to lay out the
  * grid(s) and a state panel that the Playwright specs read via data-testid

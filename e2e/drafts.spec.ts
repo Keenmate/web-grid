@@ -6,7 +6,7 @@ import { test, expect, type Page, gridLocator, cell, header, onGrid, domEvents, 
  * `getRowDraft` / `hasRowDraft` / `getDraftRowIndices`, `getDrafts`,
  * `discardDraft` / `discardAllDrafts`, drafts never pruned by `items`, and the `row-change` detail.
  *
- * Fixture: docs/test/drafts.html — rows Alpha/Beta/Gamma/Delta (id 1-4), qty
+ * Fixture: test/drafts.html — rows Alpha/Beta/Gamma/Delta (id 1-4), qty
  * 10..40; columns 0=id (read-only), 1=name (text, sortable), 2=qty (number).
  */
 

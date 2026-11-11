@@ -6,7 +6,7 @@ import { test, expect, gridLocator, cell, onGrid, type Page } from './fixtures'
  * page), and every such scroll runs `beforeScrollCallback` first — `false` skips it, a
  * partial `options` replaces the defaults.
  *
- * Fixture: docs/test/scroll.html — #grid (top, 200px container), #below (below the fold),
+ * Fixture: test/scroll.html — #grid (top, 200px container), #below (below the fold),
  * #virtual (virtual scroll); 60 rows each, columns id / name.
  */
 

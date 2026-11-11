@@ -5,7 +5,7 @@ import { test, expect, type Page, gridLocator, cell, onGrid, domEvents, clearEve
  * negatives), `editTrigger` 'always' / 'button' / per-column override,
  * `editStartSelection` (grid + per-column).
  *
- * Fixture: docs/test/edit-modes.html — grid edit-trigger="dblclick"; cols 0=name
+ * Fixture: test/edit-modes.html — grid edit-trigger="dblclick"; cols 0=name
  * (text), 1=qty (number), 2=price (number, min 0 / max 100 / 2 decimals / no
  * negatives), 3=note (text, column editTrigger 'click'). Rows Alpha / Beta.
  */

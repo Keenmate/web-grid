@@ -7,7 +7,7 @@ import { test, expect, type Page, gridLocator, cell, header, onGrid, eventsOf, d
  * camelCase `on*` twin runs first with the very same detail object, and the
  * detail carries non-enumerable `controller` + `element`.
  *
- * Fixture: docs/test/events.html — #grid (Alpha/Beta/Gamma, navigate mode,
+ * Fixture: test/events.html — #grid (Alpha/Beta/Gamma, navigate mode,
  * click cell-selection, row numbers; 0=id, 1=name, 2=qty) and #tree (Root › Child A › Leaf A1,
  * Child B; Other root).
  */

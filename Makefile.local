@@ -1,0 +1,58 @@
+# Repo-specific make targets — included at the end of the generated Makefile
+# (`kmwc sync`). A target redefined here wins, with a make "overriding recipe"
+# warning; that is how the monorepo's publish flow replaces the single-package one.
+#
+# web-grid is an npm-workspaces monorepo: the root is private and builds only the
+# examples site; packages/web-grid publishes. The root README.md and ai/ are the
+# canonical copies — `prepare-package` copies them into the package (gitignored there)
+# before every pack / publish. Release gates per publish-command.md:
+# `kmwc check-release` for the package, then the e2e suite.
+
+GRID_PACKAGE := @keenmate/web-grid
+GRID_DIR     := packages/web-grid
+
+.PHONY: prepare-package create-link unlink update-deps
+
+prepare-package: ## Copy the root README.md and ai/ into the package (they ship from there)
+	node -e "const fs=require('fs');fs.copyFileSync('README.md','$(GRID_DIR)/README.md');fs.rmSync('$(GRID_DIR)/ai',{recursive:true,force:true});fs.cpSync('ai','$(GRID_DIR)/ai',{recursive:true})"
+
+package: build prepare-package ## Pack the package (a .tgz in packages/web-grid)
+	npm pack -w $(GRID_PACKAGE)
+
+publish-dry: prepare-package ## Dry-run publish of the package (clean build first)
+	npm run clean:dist
+	npm run build
+	npm publish --dry-run --tag rc -w $(GRID_PACKAGE)
+
+publish: ## Publish the package to npm as 'latest' (release versions only)
+	npx kmwc check-release --tag latest --root $(GRID_DIR)
+	@echo "WARNING: publishing $(GRID_PACKAGE) under the 'latest' dist-tag. Use 'make publish-rc' for pre-releases."
+	@$(CONFIRM)
+	npm run clean:dist
+	npm run build
+	npm run test:e2e
+	$(MAKE) prepare-package
+	npm publish --access public -w $(GRID_PACKAGE)
+
+publish-rc: ## Publish the package under the 'rc' dist-tag (does NOT touch 'latest')
+	npx kmwc check-release --tag rc --root $(GRID_DIR)
+	@echo "WARNING: publishing $(GRID_PACKAGE) under the 'rc' dist-tag."
+	@$(CONFIRM)
+	npm run clean:dist
+	npm run build
+	npm run test:e2e
+	$(MAKE) prepare-package
+	npm publish --access public --tag rc -w $(GRID_PACKAGE)
+
+check-version: ## Show the package version
+	@node -p "require('./$(GRID_DIR)/package.json').version"
+
+create-link: package ## Create a global npm link for @keenmate/web-grid
+	cd $(GRID_DIR) && npm link
+	@echo "Link created. In your project: npm link $(GRID_PACKAGE)"
+
+unlink: ## Remove the global npm link for @keenmate/web-grid
+	cd $(GRID_DIR) && npm unlink
+
+update-deps: ## Update dependencies (root + workspaces)
+	npm update

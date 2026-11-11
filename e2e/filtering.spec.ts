@@ -5,7 +5,7 @@ import { test, expect, type Page, gridLocator, cell, onGrid, domEvents, eventsOf
  * `filter-change` (+ `onFilterChange` twin), column `filterCallback`,
  * `filterMode: 'server'`.
  *
- * Fixture: docs/test/filtering.html — 6 rows (see the seed table there),
+ * Fixture: test/filtering.html — 6 rows (see the seed table there),
  * `enable-filtering` set in markup, salary column has a `>N` / `<N` / `N`
  * filterCallback. The columns aren't `isFilterable`, so no filter row renders —
  * filters are driven through the element API (the filter row: filter-row.spec.ts).

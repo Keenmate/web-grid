@@ -4,7 +4,7 @@ import { test, expect, cell, onGrid, domEvents, clearEvents, waitForRows, editor
  * Row API — identity (`idMember`, default `'id'`, and `getIdCallback` — NOTES.md #11), `getRowId`, `findRowById`, `updateRowById`, `replaceRowById`,
  * `focusCell`, `startEditing`.
  *
- * Fixture: docs/test/row-api.html — Alpha/Beta/Gamma (id 1-3, code A-1/B-2/G-3);
+ * Fixture: test/row-api.html — Alpha/Beta/Gamma (id 1-3, code A-1/B-2/G-3);
  * cols 0=id, 1=name, 2=qty, 3=code. idMember left at its default 'id'.
  */
 

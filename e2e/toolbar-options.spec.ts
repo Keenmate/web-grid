@@ -5,7 +5,7 @@ import { test, expect, type Page, gridLocator, cell, onGrid, waitForRows, header
  * 'left' / 'right' / 'top', `toolbarHorizontalAlign`, `toolbarColumn`,
  * `toolbarVerticalAlign`, attribute removal.
  *
- * Fixture: docs/test/toolbar-options.html — 4 rows inside a padded stage so
+ * Fixture: test/toolbar-options.html — 4 rows inside a padded stage so
  * floating-ui keeps the preferred side; toolbar-trigger="click"; items
  * add / delete / ping.
  */

@@ -1,7 +1,7 @@
 import { test, expect, Page, Locator, gridLocator, cell, header, clickMenuItem, dispatchContextMenu as dispatchContextMenuAt } from './fixtures'
 
 /**
- * E2E coverage for the context menu module (docs/test/contextmenu.html).
+ * E2E coverage for the context menu module (test/contextmenu.html).
  *
  * Three grids:
  *   #grid        — cell context menu with dynamic labels, conditional

@@ -1,41 +1,41 @@
 # Examples & cookbook
 
-Runnable examples live in the monorepo `docs/` folder and each focuses on one feature surface. The recipes below are tight code snippets that match those examples — use them as starting points to drop into your own page.
+Runnable examples are the `examples-*.html` pages at the monorepo root (the devkit examples site) and each focuses on one feature surface. The recipes below are tight code snippets that match those examples — use them as starting points to drop into your own page.
 
 To run any example locally:
 
 ```bash
 make dev
-# Then visit http://localhost:12500/examples-<feature>.html
+# Then visit http://localhost:12600/examples-<feature>.html
 ```
 
 ## Runnable demos
 
 | Example | What it shows |
 |---|---|
-| [`examples-basic.html`](../../../docs/examples-basic.html) | Minimum viable grid — `items` + `columns` + nothing else |
-| [`examples-sorting-paging.html`](../../../docs/examples-sorting-paging.html) | Single / multi-column sort, pagination, page-size selector |
-| [`examples-editable-full.html`](../../../docs/examples-editable-full.html) | Inline editing across all 8 editor types |
-| [`examples-editors.html`](../../../docs/examples-editors.html) | Editor configuration: select, combobox, autocomplete options |
-| [`examples-edit-trigger.html`](../../../docs/examples-edit-trigger.html) | Click / dblclick / button / always / navigate triggers |
-| [`examples-grid-modes.html`](../../../docs/examples-grid-modes.html) | `read-only` / `excel` / `input-matrix` mode comparison |
-| [`examples-dropdowns.html`](../../../docs/examples-dropdowns.html) | Dropdown rendering, group headers, custom option HTML |
-| [`examples-selection.html`](../../../docs/examples-selection.html) | Row selection, cell range selection, multi-select |
-| [`examples-fill-handle.html`](../../../docs/examples-fill-handle.html) | Excel-like autofill by dragging the cell corner |
-| [`examples-freeze-panes.html`](../../../docs/examples-freeze-panes.html) | Frozen columns with horizontal scroll |
-| [`examples-resizable-columns.html`](../../../docs/examples-resizable-columns.html) | Drag-to-resize with min/max and localStorage persistence |
-| [`examples-column-visibility.html`](../../../docs/examples-column-visibility.html) | Hide / show columns from the header context menu |
-| [`examples-toolbar.html`](../../../docs/examples-toolbar.html) | Floating, inline, cell-specific toolbars; positioning options |
-| [`examples-contextmenu.html`](../../../docs/examples-contextmenu.html) | Cell + header context menus, predefined and custom items |
-| [`examples-shortcuts.html`](../../../docs/examples-shortcuts.html) | Row + range custom keyboard shortcuts, help overlay |
-| [`examples-row-locking.html`](../../../docs/examples-row-locking.html) | Optimistic locking with external `RowLock` info |
-| [`examples-tree.html`](../../../docs/examples-tree.html) | ltree-style hierarchical data with chevron + expand-all |
-| [`examples-tree-scroll.html`](../../../docs/examples-tree-scroll.html) | Tree with virtual / infinite scroll |
-| [`examples-virtual-scroll.html`](../../../docs/examples-virtual-scroll.html) | Virtual scroll for 10k+ row datasets |
-| [`examples-product-search.html`](../../../docs/examples-product-search.html) | End-to-end pattern: filterable, editable product catalog |
-| [`examples-height-modes.html`](../../../docs/examples-height-modes.html) | Capped container vs. full-page height vs. `isTableBorderOnly` |
-| [`examples-theming.html`](../../../docs/examples-theming.html) | `--base-*` overrides, custom palette, dark-mode toggling |
-| [`examples-custom-styling.html`](../../../docs/examples-custom-styling.html) | `getCustomStylesCallback`, `getRowClassCallback`, `getCellClassCallback` |
+| [`examples-basic.html`](../../../examples-basic.html) | Minimum viable grid — `items` + `columns` + nothing else |
+| [`examples-sorting-paging.html`](../../../examples-sorting-paging.html) | Single / multi-column sort, pagination, page-size selector |
+| [`examples-editable-full.html`](../../../examples-editable-full.html) | Inline editing across all 8 editor types |
+| [`examples-editors.html`](../../../examples-editors.html) | Editor configuration: select, combobox, autocomplete options |
+| [`examples-edit-trigger.html`](../../../examples-edit-trigger.html) | Click / dblclick / button / always / navigate triggers |
+| [`examples-grid-modes.html`](../../../examples-grid-modes.html) | `read-only` / `excel` / `input-matrix` mode comparison |
+| [`examples-dropdowns.html`](../../../examples-dropdowns.html) | Dropdown rendering, group headers, custom option HTML |
+| [`examples-selection.html`](../../../examples-selection.html) | Row selection, cell range selection, multi-select |
+| [`examples-fill-handle.html`](../../../examples-fill-handle.html) | Excel-like autofill by dragging the cell corner |
+| [`examples-freeze-panes.html`](../../../examples-freeze-panes.html) | Frozen columns with horizontal scroll |
+| [`examples-resizable-columns.html`](../../../examples-resizable-columns.html) | Drag-to-resize with min/max and localStorage persistence |
+| [`examples-column-visibility.html`](../../../examples-column-visibility.html) | Hide / show columns from the header context menu |
+| [`examples-toolbar.html`](../../../examples-toolbar.html) | Floating, inline, cell-specific toolbars; positioning options |
+| [`examples-contextmenu.html`](../../../examples-contextmenu.html) | Cell + header context menus, predefined and custom items |
+| [`examples-shortcuts.html`](../../../examples-shortcuts.html) | Row + range custom keyboard shortcuts, help overlay |
+| [`examples-row-locking.html`](../../../examples-row-locking.html) | Optimistic locking with external `RowLock` info |
+| [`examples-tree.html`](../../../examples-tree.html) | ltree-style hierarchical data with chevron + expand-all |
+| [`examples-tree-scroll.html`](../../../examples-tree-scroll.html) | Tree with virtual / infinite scroll |
+| [`examples-virtual-scroll.html`](../../../examples-virtual-scroll.html) | Virtual scroll for 10k+ row datasets |
+| [`examples-product-search.html`](../../../examples-product-search.html) | End-to-end pattern: filterable, editable product catalog |
+| [`examples-height-modes.html`](../../../examples-height-modes.html) | Capped container vs. full-page height vs. `isTableBorderOnly` |
+| [`examples-theming.html`](../../../examples-theming.html) | `--base-*` overrides, custom palette, dark-mode toggling |
+| [`examples-custom-styling.html`](../../../examples-custom-styling.html) | `getCustomStylesCallback`, `getRowClassCallback`, `getCellClassCallback` |
 
 ## Cookbook
 
@@ -45,7 +45,7 @@ make dev
 grid.sortMode = 'multiple'              // or 'single'; click headers to sort, Ctrl+click to add
 ```
 
-See [`examples-sorting-paging.html`](../../../docs/examples-sorting-paging.html).
+See [`examples-sorting-paging.html`](../../../examples-sorting-paging.html).
 
 ### Paginated grid with top + bottom pager
 
@@ -68,7 +68,7 @@ grid.isEditingEnabled = true
 grid.editTrigger = 'navigate'
 ```
 
-See [`examples-edit-trigger.html`](../../../docs/examples-edit-trigger.html) for the 5 triggers compared.
+See [`examples-edit-trigger.html`](../../../examples-edit-trigger.html) for the 5 triggers compared.
 
 ### Per-column editors
 
@@ -87,7 +87,7 @@ grid.columns = [
 ]
 ```
 
-See [`examples-editors.html`](../../../docs/examples-editors.html).
+See [`examples-editors.html`](../../../examples-editors.html).
 
 ### Async autocomplete with cancellation
 
@@ -154,7 +154,7 @@ grid.headerContextMenu = [
 ]
 ```
 
-See [`examples-column-visibility.html`](../../../docs/examples-column-visibility.html).
+See [`examples-column-visibility.html`](../../../examples-column-visibility.html).
 
 ### Hide a column programmatically
 
@@ -182,7 +182,7 @@ grid.addEventListener('action', (e) => {
 
 Don't insert / remove rows yourself in an `action` listener for `add` / `delete` / `duplicate` / `move-up` / `move-down` — the row would change twice. For consumer-side handling, use a custom item (`id`, no `action`).
 
-See [`examples-toolbar.html`](../../../docs/examples-toolbar.html).
+See [`examples-toolbar.html`](../../../examples-toolbar.html).
 
 ### Cell-specific toolbar
 
@@ -214,7 +214,7 @@ grid.shouldCopyWithHeaders = true     // include header row when copying
 await grid.copyCellSelectionToClipboard()
 ```
 
-See [`examples-selection.html`](../../../docs/examples-selection.html).
+See [`examples-selection.html`](../../../examples-selection.html).
 
 ### Excel-like fill handle
 
@@ -228,7 +228,7 @@ grid.beforeFillCallback = ({ sourceCell, targetCells, direction }) => {
 }
 ```
 
-See [`examples-fill-handle.html`](../../../docs/examples-fill-handle.html).
+See [`examples-fill-handle.html`](../../../examples-fill-handle.html).
 
 ### Row locking with external locks (WebSocket pattern)
 
@@ -247,7 +247,7 @@ socket.on('row-locked', ({ id, userName }) => {
 socket.on('row-unlocked', ({ id }) => grid.unlockRowById(id))
 ```
 
-See [`examples-row-locking.html`](../../../docs/examples-row-locking.html).
+See [`examples-row-locking.html`](../../../examples-row-locking.html).
 
 ### Live row updates (WebSocket / live data)
 
@@ -282,7 +282,7 @@ grid.pathMember = 'path'
 grid.expandLevel = 1           // show roots + first level on load
 ```
 
-The `isTree: true` column renders the chevron + indent. See [`examples-tree.html`](../../../docs/examples-tree.html).
+The `isTree: true` column renders the chevron + indent. See [`examples-tree.html`](../../../examples-tree.html).
 
 ### Server-side pagination + sort
 
@@ -328,7 +328,7 @@ grid.virtualScrollItemHeight = 38      // must be fixed
 grid.virtualScrollThreshold = 1000    // auto-enable when items >= threshold
 ```
 
-See [`examples-virtual-scroll.html`](../../../docs/examples-virtual-scroll.html).
+See [`examples-virtual-scroll.html`](../../../examples-virtual-scroll.html).
 
 ### Infinite scroll (load-more pattern)
 
@@ -361,7 +361,7 @@ grid.rowShortcuts = [
 grid.isShortcutsHelpShown = true    // shows help icon top-right
 ```
 
-See [`examples-shortcuts.html`](../../../docs/examples-shortcuts.html).
+See [`examples-shortcuts.html`](../../../examples-shortcuts.html).
 
 ### TypeScript
 
@@ -405,7 +405,7 @@ grid.onRowChange = (detail: GridEventMap<Employee>['row-change']) => {
 <web-grid id="grid"></web-grid>
 ```
 
-Every Keenmate component on the page picks up the theme. See [`examples-theming.html`](../../../docs/examples-theming.html) and the [theming contract](./theming.md).
+Every Keenmate component on the page picks up the theme. See [`examples-theming.html`](../../../examples-theming.html) and the [theming contract](./theming.md).
 
 ### Per-instance dark mode
 

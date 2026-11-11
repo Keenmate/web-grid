@@ -1,7 +1,7 @@
 import { test, expect, Page, cell, onGrid, gridLocator } from './fixtures'
 
 /**
- * Keyboard moves in a VIRTUAL grid past the rendered window (docs/test/virtual-scroll.html,
+ * Keyboard moves in a VIRTUAL grid past the rendered window (test/virtual-scroll.html,
  * #editGrid: 1,000 rows x 38px, overscan 5, ~10 rows visible, Name editable).
  *
  * Excel rule: every move lands on its target cell — the grid renders the target's window

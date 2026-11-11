@@ -7,7 +7,7 @@ import { test, expect, type Page } from './fixtures'
  * both. Overrides never reflect to attributes. Only input-table keys can be set
  * (columns / items are properties, not inputs).
  *
- * Fixture: docs/test/inputs.html (module only) — grids are created on the fly.
+ * Fixture: test/inputs.html (module only) — grids are created on the fly.
  * Viewport 1440 px, no touch → device class `desktop`, breakpoint `desktop`.
  * Maps have two axes: `device` (classifyDevice — touch capability, then short
  * side) and `breakpoint` (window width).

@@ -35,14 +35,14 @@
 		"custom-elements.json",
 		"web-types.json",
 		"vscode.html-custom-data.json",
-		"vscode.css-custom-data.json"
+		"vscode.css-custom-data.json",
+		"!**/CLAUDE.md",
+		"!**/.claude"
 	],
 	"scripts": {
-		"dev": "vite --port 12500",
 		"check:contract": "base-contract-check src",
 		"build": "npm run clean:dist && npm run check:contract && npm run analyze && tsc && vite build",
 		"build:types": "tsc",
-		"preview": "vite preview",
 		"clean": "rimraf dist --glob \"*.tgz\"",
 		"clean:dist": "rimraf dist",
 		"test": "vitest run",
@@ -91,7 +91,7 @@
 		"happy-dom": "^20.10.6",
 		"rimraf": "^5.0.5",
 		"typescript": "^5.3.3",
-		"vite": "^8.1.4",
+		"vite": "^7.3.7",
 		"vitest": "^4.1.10"
 	},
 	"dependencies": {

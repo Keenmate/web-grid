@@ -1,7 +1,7 @@
 import { test, expect, Page, gridLocator, cell, header, dragSelect } from './fixtures'
 
 /**
- * E2E coverage for selection (docs/test/selection.html) — an 8-row / 4-col grid
+ * E2E coverage for selection (test/selection.html) — an 8-row / 4-col grid
  * in navigate mode with cellSelectionMode='click' and row numbers visible.
  *
  * Covers:

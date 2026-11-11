@@ -5,7 +5,7 @@ import { test, expect, gridLocator, onGrid } from './fixtures'
  * `columns` / `items` accessors and the `pageSize` input are applied at upgrade, the
  * accessors are no longer shadowed by an own data property, and later writes work.
  *
- * Fixture: docs/test/pre-upgrade.html (a classic script sets them before the module loads).
+ * Fixture: test/pre-upgrade.html (a classic script sets them before the module loads).
  */
 
 test.beforeEach(async ({ page }) => {

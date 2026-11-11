@@ -7,7 +7,7 @@ import { test, expect, type Page, gridLocator, cell, onGrid, domEvents, clearEve
  * sticky cells; server pagination → `beforePageChangeCallback` (trigger 'filter')
  * + `data-request` (trigger 'filter').
  *
- * Fixture: docs/test/filter-row.html — #grid (13 rows, page-size 4, row numbers,
+ * Fixture: test/filter-row.html — #grid (13 rows, page-size 4, row numbers,
  * 1 frozen column; name / city / salary filterable) and #server (server paging +
  * server filtering).
  */

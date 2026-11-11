@@ -5,7 +5,7 @@ import { contractParity } from '@keenmate/base-css-variables/testing/parity';
 /**
  * The grid looks the same with and without @keenmate/base-css-variables.
  *
- * Renders docs/test/contract-parity.html standalone and with the contract injected, in light
+ * Renders test/contract-parity.html standalone and with the contract injected, in light
  * and dark, and compares every color-valued --wg-* token. A second pass sets a different
  * accent (--wg-accent-color standalone vs --base-primary-color with the contract): the derived
  * fallbacks are the contract's formulas on --wg-accent-color, so they follow.

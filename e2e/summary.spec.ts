@@ -5,7 +5,7 @@ import { test, expect, type Page, gridLocator, cell, onGrid, waitForRows, editCe
  * currentPage / pageSize / metadata), `summaryPosition`, `isSummaryInline`,
  * `summaryMetadata`; re-rendered after paging and edits.
  *
- * Fixture: docs/test/summary.html — 7 rows (qty 1..7), page-size 3,
+ * Fixture: test/summary.html — 7 rows (qty 1..7), page-size 3,
  * summary-position="bottom-right".
  */
 

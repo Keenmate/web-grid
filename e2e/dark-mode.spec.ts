@@ -1,7 +1,7 @@
 import { test, expect, Page, Locator, gridLocator, cell, parseColor, relativeLuminance, composite, contrastRatio, type RGBA } from './fixtures'
 
 /**
- * E2E contrast suite for dark-mode rendering (docs/test/dark-mode.html).
+ * E2E contrast suite for dark-mode rendering (test/dark-mode.html).
  *
  * Three grids stack on a dark page:
  *   #fullyThemed — full --base-* palette override

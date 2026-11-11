@@ -1,7 +1,7 @@
 import { test, expect, Page, gridLocator, cell } from './fixtures'
 
 /**
- * E2E coverage for dropdown editors (docs/test/dropdowns.html) — a 5-row grid
+ * E2E coverage for dropdown editors (test/dropdowns.html) — a 5-row grid
  * in navigate mode with four dropdown columns:
  *   country  — select with custom member mapping (code/name/flag/region) + a
  *              disabled option

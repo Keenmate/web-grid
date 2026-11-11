@@ -1,6 +1,6 @@
 # Test infrastructure notes
 
-Running notes from building the e2e harness (`e2e/` + fixtures in `docs/test/`).
+Running notes from building the e2e harness (`e2e/` + fixtures in `test/`).
 Each entry is something noticed while writing fixtures + specs that looks like a
 bug, friction point, or worth-revisiting design decision in the **component** —
 not a problem with the tests. Tests that pin a bug are marked
@@ -51,7 +51,7 @@ clipboard executor.
 
 **Note (WP0):** the pageerror guard surfaced an *unhandled* clipboard rejection
 in the existing suite, but it came from the fixture page
-(`docs/test/editors.html`, a context-menu `onClick` writing to the clipboard
+(`test/editors.html`, a context-menu `onClick` writing to the clipboard
 without permission), not the component — fixed in the fixture with `.catch`.
 
 ## 3. GRID-3 — Ctrl+G go-to-row ignores `metaKey` — FIXED
@@ -69,7 +69,7 @@ shortcut accepts `ctrlKey || metaKey`.
 
 ## 4. No built-in filter UI — `isFilterable` is API-only — FIXED
 
-**Fixed:** built the filter row — grid `isFilterable` renders `.wg__filter-row` under the header with a text input (`.wg__filter-input`, aria-label `labels.filterColumn`) for each `column.isFilterable` column; debounced → `setFilter` → page 1 (Enter / Escape); `filterCallback` null → `.invalid` via `getInvalidFilterFields()`; server pagination → `beforePageChangeCallback` + `data-request` (trigger `'filter'`). Focus / caret / typed text survive re-renders; frozen + sticky. Demo + tests: `docs/test/filter-row.html`, `filter-row.spec.ts`.
+**Fixed:** built the filter row — grid `isFilterable` renders `.wg__filter-row` under the header with a text input (`.wg__filter-input`, aria-label `labels.filterColumn`) for each `column.isFilterable` column; debounced → `setFilter` → page 1 (Enter / Escape); `filterCallback` null → `.invalid` via `getInvalidFilterFields()`; server pagination → `beforePageChangeCallback` + `data-request` (trigger `'filter'`). Focus / caret / typed text survive re-renders; frozen + sticky. Demo + tests: `test/filter-row.html`, `filter-row.spec.ts`.
 
 **Where:** `packages/web-grid/src/grid.ts:2034-2095` (`filteredItems`, `filters`,
 `setFilter`, `getInvalidFilterFields`); `src/css/header.css:146-160`

@@ -33,3 +33,6 @@ playwright-report/
 
 # Local agent state
 .claude/scheduled_tasks.lock
+# kmwc
+dist-examples/
+.makefile.env

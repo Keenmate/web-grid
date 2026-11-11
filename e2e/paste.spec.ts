@@ -1,7 +1,7 @@
 import { test, expect, Page, gridLocator, cell } from './fixtures'
 
 /**
- * E2E coverage for clipboard paste (docs/test/paste.html).
+ * E2E coverage for clipboard paste (test/paste.html).
  *
  * The fixture is a 4×5 grid in navigate mode. id (col 0) is non-editable, email
  * (col 2) lowercases pasted text via beforePasteCallback, age (col 3) rejects

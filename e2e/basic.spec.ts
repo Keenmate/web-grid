@@ -2,7 +2,7 @@ import { test, expect, Page, gridLocator, cell } from './fixtures'
 
 /**
  * Basic-usage smoke tests against the dedicated fixture page
- * docs/test/basic.html.
+ * test/basic.html.
  *
  * The fixture is an 8-row, 5-column grid (id, name, email, salary, status) in
  * navigate mode with sorting + editing + dirty indicator on. It surfaces sort

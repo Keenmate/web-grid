@@ -9,12 +9,12 @@ is one user-observable feature. Status legend:
 - `✗ fail` — pinned by a `test.fail` test (component bug, see `NOTES.md`)
 
 When a row is `✓`/`△`, **Spec** points at the file under `e2e/` and **Fixture**
-at the dedicated page under `docs/test/` (specs hit fixture pages only, never the
-docs example pages). Known component bugs are tracked in `NOTES.md`; tests that
+at the dedicated page under `test/` (specs hit fixture pages only, never the
+example pages). Known component bugs are tracked in `NOTES.md`; tests that
 pin one are `test.fail(true, 'NOTES.md #N')`.
 
-Run: `npx playwright test -c node_modules/.pw-12530.config.mjs --workers=2`
-(private port 12530; the default config uses the dev server on 12400). Projects: chromium,
+Run: `npm run test:e2e` (the devkit preset starts `npm run dev` on 12600, `package.json#kmwc.ports.dev`;
+a scratch run on a private port overrides `use.baseURL` + `webServer`). Projects: chromium,
 firefox, webkit (run webkit in its own invocation on Windows). `copy.spec.ts` uses the real
 clipboard in Chromium only (Playwright grants `clipboard-read` only there); Firefox / WebKit get an
 in-page `navigator.clipboard`. Platform skip: the responsive phone describe in Firefox (no `isMobile`).

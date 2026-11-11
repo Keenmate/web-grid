@@ -1,7 +1,7 @@
 import { test, expect, Page, gridLocator, cell } from './fixtures'
 
 /**
- * E2E coverage for rowShortcuts (docs/test/shortcuts.html) — a 6-row grid in
+ * E2E coverage for rowShortcuts (test/shortcuts.html) — a 6-row grid in
  * navigate mode. rowShortcuts fire against the currently focused row:
  *   Ctrl+K  — delete the focused row
  *   Ctrl+D  — duplicate the focused row

@@ -11,7 +11,7 @@ import { openToolbarOn as hoverToolbarTrigger, dispatchContextMenu } from './hel
  *   - ctx / details carry `controller` / `element` (non-enumerable)
  *   - camelCase `on*` twins receive the detail
  *
- * Fixture: docs/test/interaction-model.html.
+ * Fixture: test/interaction-model.html.
  */
 
 const PAGE = '/test/interaction-model.html'

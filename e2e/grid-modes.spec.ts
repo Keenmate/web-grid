@@ -1,7 +1,7 @@
 import { test, expect, Page, gridLocator, cell } from './fixtures'
 
 /**
- * E2E coverage for the `preset` input (docs/test/grid-modes.html). One grid +
+ * E2E coverage for the `preset` input (test/grid-modes.html). One grid +
  * three preset buttons. `preset` is a convenience setter that applies a bundle of
  * property defaults; the fixture reads the resolved properties back into
  * [data-testid="resolved"] after each switch.

@@ -2,7 +2,7 @@ import { test, expect, Page, gridLocator } from './fixtures'
 
 /**
  * E2E coverage for virtual scrolling + infinite scrolling
- * (docs/test/virtual-scroll.html).
+ * (test/virtual-scroll.html).
  *
  * #grid renders 1,000 rows with virtual scroll enabled — the body only
  * contains a small window of rendered <tr class="wg__row"> elements plus

@@ -5,7 +5,7 @@ import { test, expect, type Page, cell, header, onGrid, waitForRows } from './fi
  * (enableLogging / disableLogging / setLogLevel / setCategoryLevel /
  * getCategories) switches it at runtime.
  *
- * Fixture: docs/test/logging.html — sortable, editable 2-row grid.
+ * Fixture: test/logging.html — sortable, editable 2-row grid.
  */
 
 const PAGE = '/test/logging.html'

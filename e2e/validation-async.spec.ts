@@ -1,7 +1,7 @@
 import { test, expect, type Page, gridLocator, cell } from './fixtures'
 
 /**
- * Moving between cells while an async `validateCallback` is pending (docs/test/validation-async.html).
+ * Moving between cells while an async `validateCallback` is pending (test/validation-async.html).
  * Excel rule: each move SAVES the edit exactly once (one `row-change`, no `cell-edit-cancel`), the edit
  * ends at the move (the next cell is never caught by the old commit), the cell shows the typed value at
  * once, and the validation result marks the cell when it arrives (invalid → `wg__cell--invalid` +
