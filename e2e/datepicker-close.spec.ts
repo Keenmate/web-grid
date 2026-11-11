@@ -368,9 +368,11 @@ test.describe('date editor: another cell\'s in-cell button saves the open edit',
 
 	test('typed date → another cell\'s date trigger: saves the date, opens the picker there', async ({ page }) => {
 		await openTypedEdit(page, 3, 1, TYPED)
-		await cell(page, 'grid', 6, 1).locator('.wg__date-trigger').click()
+		// row 2: above the picker. Row 6's trigger is under the open picker: no user can click it, and
+		// Playwright's actionability retry would scroll the grid first (a scroll with no move: cancel)
+		await cell(page, 'grid', 2, 1).locator('.wg__date-trigger').click()
 		await page.waitForTimeout(300)
-		expect(await snap(page, 'grid', 3, 1)).toEqual({ picker: 1, editing: ['6:1'], focus: '6:1/editor', value: TYPED, events: ['cell-edit-start(3.due)', `row-change(3.due=${TYPED})`, 'cell-edit-start(6.due)'] })
+		expect(await snap(page, 'grid', 3, 1)).toEqual({ picker: 1, editing: ['2:1'], focus: '2:1/editor', value: TYPED, events: ['cell-edit-start(3.due)', `row-change(3.due=${TYPED})`, 'cell-edit-start(2.due)'] })
 	})
 
 	test('typed date → another cell\'s select toggle: saves the date, opens the dropdown there', async ({ page }) => {
