@@ -108,6 +108,7 @@ import {
 	handleTableFocusOut,
 	handleCellKeyDown,
 	restoreFocusAfterRender,
+	captureEditorText,
 	openGoToRowDialog as openGoToRowDialogModule
 } from './modules/navigation/index.js'
 
@@ -1939,6 +1940,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		const oldContainer = this.shadow.querySelector('.wg') as HTMLElement
 		// A focused filter-row input (+ caret) is restored after the thead is rebuilt
 		const filterFocus = captureFilterFocus(this)
+		// The open editor's typed text (+ caret): the edit goes on through the re-render
+		const editorText = captureEditorText(this)
 		const oldScrollContainer = this.engine.isTableBorderOnly
 			? (this.shadow.querySelector('.wg__table-container') as HTMLElement) || oldContainer
 			: oldContainer
@@ -2142,7 +2145,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		// Post-render focus restore (editor focus + selection / focused-cell restore)
 		// Extracted to modules/navigation/post-render-focus.ts
 		// (a focused filter-row input keeps the focus — the cell isn't re-focused)
-		restoreFocusAfterRender(this, container, filterFocus ? null : focusedCell)
+		restoreFocusAfterRender(this, container, filterFocus ? null : focusedCell, editorText)
 		restoreFilterFocus(this, filterFocus)
 		if (this.#isEditedRowGone) {
 			this.#isEditedRowGone = false

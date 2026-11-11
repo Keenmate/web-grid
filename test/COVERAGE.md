@@ -39,6 +39,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Column visibility (`isHidden`, hide-column / column-visibility menu) | ✓ | `column-visibility.spec.ts` | `column-visibility.html` |
 | Virtual scroll (1,000 rows) + infinite scroll | ✓ | `virtual-scroll.spec.ts` | `virtual-scroll.html` |
 | Automatic virtual scroll (`isVirtualScrollEnabled` unset): below / above `virtualScrollThreshold`, `items` growing / shrinking across it, threshold change, explicit `true` / `false` (attribute + property) force, removing the attribute / `undefined` / `null` → automatic, focus kept | ✓ | `virtual-auto.spec.ts` | `virtual-auto.html` |
+| An open edit (text, select dropdown, date picker) while `items` switches the grid between normal and virtual rendering: the edit goes on with its overlay and typed text, Enter / a pick saves; the edited row gone → cancelled once, focus on the grid | ✓ | `virtual-switch-edit.spec.ts` | `virtual-switch-edit.html` |
 | Virtual grid keyboard moves past the rendered window (arrows one by one + held, Page Up / Down, Home / End, Ctrl+Home / End, Shift+Arrow range, Enter saving an edit) — focus lands on the target, dblclick + navigate modes | ✓ | `virtual-keyboard.spec.ts` | `virtual-scroll.html` (`#editGrid`, `?editTrigger=`) |
 
 ## 2. Sorting, filtering, pagination

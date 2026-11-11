@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — open edit across the automatic virtual-scroll switch</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>virtual-switch-edit fixture</h1>
+	<p>
+		Targeted by <code>e2e/virtual-switch-edit.spec.ts</code>. Automatic virtual scroll
+		(<code>isVirtualScrollEnabled</code> unset, threshold 20): replacing <code>items</code> while a cell edit
+		(text / select / date) is open switches the grid between normal and virtual rendering. Rows are set by the
+		spec through <code>window.setRows(n)</code>. Reload resets all state.
+	</p>
+
+	<h2>#grid — automatic virtual scroll, threshold 20</h2>
+	<web-grid id="grid" virtual-scroll-threshold="20" style="max-width: 640px; max-height: 300px;"></web-grid>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+		import { installEventLog } from './event-log.js'
+
+		/*
+		 *  col index:  0    1 note (text)   2 tag (select)   3 due (date, YYYY-MM-DD, iso out)
+		 *  row r: note 'n<r>', tag 'open', due 2026-06-<10 + r % 10>  (navigate mode, F2 edits)
+		 */
+		const seed = (n) => Array.from({ length: n }, (_, r) => ({
+			id: r + 1,
+			note: 'n' + r,
+			tag: 'open',
+			due: `2026-06-${10 + (r % 10)}`
+		}))
+		/** Replace the rows with `n` generated ones (the kept rows hold the same data). */
+		window.setRows = (n) => { document.getElementById('grid').items = seed(n) }
+
+		const grid = document.getElementById('grid')
+		grid.columns = [
+			{ field: 'id', title: 'ID', width: '50px', isEditable: false },
+			{ field: 'note', title: 'Note', width: '140px' },
+			{ field: 'tag', title: 'Tag', width: '130px', editor: 'select', editorOptions: { options: [
+				{ value: 'open', label: 'Open' },
+				{ value: 'done', label: 'Done' },
+				{ value: 'hold', label: 'On hold' }
+			] } },
+			{ field: 'due', title: 'Due', width: '160px', editor: 'date', editorOptions: { dateFormat: 'YYYY-MM-DD', outputFormat: 'iso' } }
+		]
+		grid.items = seed(10)
+		grid.isEditingEnabled = true
+		grid.editTrigger = 'navigate'
+
+		installEventLog(grid, 'grid', ['row-change', 'cell-edit-start', 'cell-edit-cancel'])
+	</script>
+</body>
+</html>

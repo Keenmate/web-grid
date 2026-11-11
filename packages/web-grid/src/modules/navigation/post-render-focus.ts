@@ -22,6 +22,43 @@ import type { GridHost } from '../grid-context.js'
 import type { FocusedCell } from '../../types.js'
 import { focusCellTd } from './focus.js'
 
+/** The open editor's text (+ caret) before a render replaced it — see captureEditorText(). */
+export type EditorText = {
+	rowIndex: number
+	field: string
+	value: string
+	selectionStart: number | null
+	selectionEnd: number | null
+	selectionDirection: 'forward' | 'backward' | 'none' | null
+}
+
+/**
+ * The text typed into the open cell editor (text / number / combobox / autocomplete input), read
+ * before a render rebuilds the body (`items` replaced, the normal ⇄ virtual switch, …): the edit
+ * goes on, so restoreFocusAfterRender() puts the typed text and caret back into the new editor.
+ * The date input is left to the date picker's own reopen (it copies the text itself).
+ */
+export function captureEditorText<T>(ctx: GridHost<T>): EditorText | null {
+	const editing = ctx.engine.editingCell
+	if (!editing) return null
+	const input = ctx.shadow.querySelector(
+		`input.wg__editor--text[data-row="${editing.rowIndex}"][data-field="${editing.field}"],
+		 input.wg__editor--number[data-row="${editing.rowIndex}"][data-field="${editing.field}"],
+		 .wg__combobox-input[data-row="${editing.rowIndex}"][data-field="${editing.field}"],
+		 .wg__autocomplete-input[data-row="${editing.rowIndex}"][data-field="${editing.field}"]`
+	) as HTMLInputElement | null
+	if (!input) return null
+	let selectionStart: number | null = null
+	let selectionEnd: number | null = null
+	let selectionDirection: EditorText['selectionDirection'] = null
+	try {
+		selectionStart = input.selectionStart
+		selectionEnd = input.selectionEnd
+		selectionDirection = input.selectionDirection
+	} catch { /* no selection API (number input) */ }
+	return { rowIndex: editing.rowIndex, field: editing.field, value: input.value, selectionStart, selectionEnd, selectionDirection }
+}
+
 /**
  * Restore focus after a render — either to the in-progress editor (with
  * the configured selection behavior) or to the previously focused cell.
@@ -29,7 +66,8 @@ import { focusCellTd } from './focus.js'
 export function restoreFocusAfterRender<T>(
 	ctx: GridHost<T>,
 	container: HTMLElement,
-	focusedCell: FocusedCell | null
+	focusedCell: FocusedCell | null,
+	editorText: EditorText | null = null
 ): void {
 	// Auto-focus editor if in edit mode
 	if (ctx.engine.editingCell) {
@@ -46,7 +84,20 @@ export function restoreFocusAfterRender<T>(
 				`.wg__editor[data-row="${rowIndex}"][data-field="${field}"]`
 			) as HTMLElement
 		}
-		if (editor) {
+		// The same edit re-rendered (not a fresh one): its typed text + caret come back
+		const kept = editorText && editorText.rowIndex === rowIndex && editorText.field === field
+			&& editor instanceof HTMLInputElement && editor.classList.contains('wg__date-input') === false
+			? editorText : null
+		if (editor && kept) {
+			const input = editor as HTMLInputElement
+			input.value = kept.value
+			input.focus()
+			if (kept.selectionStart !== null && kept.selectionEnd !== null) {
+				try {
+					input.setSelectionRange(kept.selectionStart, kept.selectionEnd, kept.selectionDirection ?? undefined)
+				} catch { /* no selection API (number input) */ }
+			}
+		} else if (editor) {
 			editor.focus()
 			if (editor instanceof HTMLInputElement && editor.type === 'text') {
 				const cursorPos = ctx.engine.editingCell.cursorPosition

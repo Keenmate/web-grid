@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Fixed — an open edit keeps its typed text through a re-render (2026-11-11)
+- **A text / number / combobox / autocomplete editor keeps what was typed** (and the caret) when the grid
+  re-renders while it is open — `items` replaced with the edited row still there, which includes the
+  automatic switch between normal and virtual rendering. Before, the editor came back with the cell's
+  saved value and the typed text was lost (the date editor already kept it: its picker reopens).
+
 ### Fixed — automatic virtual scroll (2026-11-11)
 - **`virtualScrollThreshold` works:** `isVirtualScrollEnabled` (`enable-virtual-scroll`) is a tristate —
   `true` / `false` force virtual scroll on / off, unset (`null`) = automatic: virtual once the displayed rows
