@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — row toolbar close paths fixture</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+	<style>
+		/* room on the left so the toolbar keeps its preferred side ('auto' = left) */
+		.stage { padding: 12px 0 12px 220px; }
+		.tail { height: 2000px; }
+	</style>
+</head>
+<body>
+	<h1>toolbar-close fixture</h1>
+	<p>Targeted by <code>e2e/toolbar-close.spec.ts</code> — every way the floating row toolbar opens and
+	closes, per <code>toolbarTrigger</code>. Reload resets all state.</p>
+
+	<button type="button" id="outside">outside</button>
+
+	<div class="stage"><web-grid id="gh" style="width: 460px; max-height: 190px;"></web-grid></div>
+	<div class="stage"><web-grid id="gc" toolbar-trigger="click" style="width: 460px; max-height: 190px;"></web-grid></div>
+	<div class="stage"><web-grid id="gb" toolbar-trigger="button" style="width: 460px; max-height: 190px;"></web-grid></div>
+
+	<!-- Page overlays: core createPopover() panels (opening one doesn't move focus) -->
+	<button type="button" id="anchor">anchor</button>
+	<div id="pop-default" hidden>page overlay, default group</div>
+	<div id="pop-a" hidden>page overlay, group a</div>
+	<div class="tail"></div>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+		import { createPopover } from '@keenmate/web-components-core/positioning'
+		import { installEventLog } from './event-log.js'
+
+		/*
+		 *  every grid: 8 rows (the body scrolls)
+		 *  col index:  0    1            2                3
+		 *  field:      id   name (text)  status (select)  qty
+		 *  rowToolbar: ping (custom, keeps it open) · move-down · delete
+		 */
+		const statusOptions = [
+			{ value: 'open', label: 'Open' },
+			{ value: 'done', label: 'Done' },
+			{ value: 'hold', label: 'On hold' }
+		]
+		for (const id of ['gh', 'gc', 'gb']) {
+			const g = document.getElementById(id)
+			g.items = Array.from({ length: 8 }, (_, r) => ({ id: r + 1, name: 'Row ' + (r + 1), status: 'open', qty: r }))
+			g.columns = [
+				{ field: 'id', title: 'ID', width: '50px', isEditable: false },
+				{ field: 'name', title: 'Name', width: '140px' },
+				{ field: 'status', title: 'Status', width: '120px', editor: 'select', editorOptions: { options: statusOptions } },
+				{ field: 'qty', title: 'Qty', width: '60px' }
+			]
+			g.isEditingEnabled = true
+			g.editTrigger = 'navigate'
+			g.isRowToolbarShown = true
+			g.rowToolbar = [{ id: 'ping', text: 'Ping', icon: '•' }, 'move-down', 'delete']
+			installEventLog(g, id, ['action', 'cell-edit-start', 'cell-edit-cancel', 'row-change'])
+		}
+
+		const outside = document.getElementById('outside')
+		window.__outsideClicks = 0
+		outside.addEventListener('click', () => { window.__outsideClicks++ })
+
+		// window.__pop.<default|a>.open() / .isOpen — closes only through the overlay tree
+		const anchor = document.getElementById('anchor')
+		window.__pop = {}
+		for (const [key, group] of [['default', undefined], ['a', 'a']]) {
+			window.__pop[key] = createPopover({
+				reference: anchor,
+				panel: document.getElementById('pop-' + key),
+				overlayGroup: group,
+				shouldCloseOnOutsideClick: false,
+				shouldCloseOnEscape: false,
+				shouldCloseOnScroll: false,
+				shouldCloseOnResize: false,
+				returnFocusTo: null,
+			})
+		}
+	</script>
+</body>
+</html>

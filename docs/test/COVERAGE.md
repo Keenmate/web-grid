@@ -137,6 +137,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Menu CSS-variable chain (`--wg-context-menu-*` → `--km-menu-*` → `--base-*` → default; per instance, both menus; hover colour; z-index) | ✓ | `context-menu-theming.spec.ts` | `contextmenu.html` |
 | Row toolbar (floating / multi-row / inline / cell-aware) | ✓ | `toolbar.spec.ts` | `toolbar.html` |
 | `toolbarTrigger` click / button, `toolbarPosition` left / right / top / inline, `toolbarHorizontalAlign`, `toolbarColumn`, `labels.inlineActionsHeader` | ✓ | `toolbar-options.spec.ts` | `toolbar-options.html` |
+| Row toolbar close paths per `toolbarTrigger` (hover / click / button): action click, outside click (pointer / keyboard), another row, same row, header, Escape, page / body scroll, items replaced, row removed, other overlays, `isDisabled`, a cell dropdown in the row, two grids | ✓ | `toolbar-close.spec.ts` | `toolbar-close.html` |
 | Inline actions header default label (#28 fixed), explicit `""` → blank header | ✓ | `toolbar-options.spec.ts` | `toolbar-options.html` |
 | Core action items, contexts, `on*` twins, controller | ✓ | `interaction-model.spec.ts` | `interaction-model.html` |
 | Range shortcuts in the shortcuts help (#16 fixed) | ✓ | `interaction-model.spec.ts` | `interaction-model.html` |
