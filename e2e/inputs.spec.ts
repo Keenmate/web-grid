@@ -143,8 +143,8 @@ test.describe('every input (table-driven)', () => {
 				customStyles: ['.wg { outline: 1px solid red; }', '.wg { outline: 1px solid red; }'],
 				storageKey: ['inputs-spec', 'inputs-spec'],
 				overlayGroup: ['grp', 'grp'],
-				// tristate (default null = automatic by virtualScrollThreshold)
-				isVirtualScrollEnabled: ['false', false]
+				// true / false / "auto" (property null); default false — the opt-in value
+				isVirtualScrollEnabled: ['auto', null]
 			}
 			const sample = (d: any): [string, unknown] | null => {
 				if (SPECIAL[d.configKey]) return SPECIAL[d.configKey]
@@ -188,6 +188,22 @@ test.describe('every input (table-driven)', () => {
 			expect.soft(r.afterProp, `${r.key}: property write → read-back`).toEqual(r.parsed)
 		}
 		expect(results.length).toBeGreaterThan(55)
+	})
+
+	test('enable-virtual-scroll: default false, "auto" → null, junk refused (previous value kept)', async ({ page }) => {
+		await mount(page, '')
+		expect(await read(page, el => {
+			const def = (customElements.get('web-grid') as any).inputs.find((d: any) => d.configKey === 'isVirtualScrollEnabled').default
+			const rejected: unknown[] = []
+			el.addEventListener('input-rejected', (e: any) => rejected.push(e.detail.value))
+			const out: unknown[] = [def, el.isVirtualScrollEnabled]
+			el.setAttribute('enable-virtual-scroll', 'true'); el.flush(); out.push(el.isVirtualScrollEnabled)
+			el.setAttribute('enable-virtual-scroll', 'auto'); el.flush(); out.push(el.isVirtualScrollEnabled)
+			el.setAttribute('enable-virtual-scroll', 'maybe'); el.flush(); out.push(el.isVirtualScrollEnabled)
+			el.isVirtualScrollEnabled = 'auto'; el.flush(); out.push(el.isVirtualScrollEnabled)
+			el.removeAttribute('enable-virtual-scroll'); el.flush(); out.push(el.isVirtualScrollEnabled)
+			return [out, rejected]
+		})).toEqual([[false, false, true, null, null, null, false], ['maybe', 'auto']])
 	})
 
 	test('every enum input rejects an unknown attribute value (previous value kept)', async ({ page }) => {

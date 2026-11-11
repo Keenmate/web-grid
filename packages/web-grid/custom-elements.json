@@ -59,6 +59,24 @@
         },
         {
           "kind": "function",
+          "name": "toBoolOrNullAuto",
+          "return": {
+            "type": {
+              "text": "Converter<boolean | null>"
+            }
+          },
+          "parameters": [
+            {
+              "name": "fallback",
+              "type": {
+                "text": "boolean"
+              }
+            }
+          ],
+          "description": "Boolean-or-automatic, automatic spelled `null` on the property path (used by\n`enable-virtual-scroll`). Attribute: absent → `fallback`; `auto` → `null`;\n`\"\"` / `true` / `1` / `yes` / `on` → `true`; `false` / `0` / `no` / `off` → `false`;\nanything else is refused (warning + `input-rejected`, previous value kept).\nProperty path: `true` / `false` / `null` (automatic). `null` rather than `'auto'`\nbecause it is the one value the engine and the getter speak — accepting `'auto'`\ntoo would give automatic two spellings with a getter answering only one.\nReflects as `true` / `false` / `auto`."
+        },
+        {
+          "kind": "function",
           "name": "toNumberOrLength",
           "return": {
             "type": {
@@ -125,6 +143,14 @@
           "name": "toBoolOrAuto",
           "declaration": {
             "name": "toBoolOrAuto",
+            "module": "src/converters.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "toBoolOrNullAuto",
+          "declaration": {
+            "name": "toBoolOrNullAuto",
             "module": "src/converters.ts"
           }
         },
@@ -954,7 +980,7 @@
                 "text": "boolean | null"
               },
               "privacy": "protected",
-              "default": "null"
+              "default": "false"
             },
             {
               "kind": "field",
@@ -2291,7 +2317,7 @@
               "type": {
                 "text": "boolean | null"
               },
-              "description": "`true` / `false` force virtual scroll on / off; `null` (default) = auto by `virtualScrollThreshold`."
+              "description": "`true` / `false` (default) force virtual scroll on / off; `null` = automatic by `virtualScrollThreshold` (opt-in)."
             },
             {
               "kind": "field",
@@ -23564,9 +23590,9 @@
               "type": {
                 "text": "boolean | null"
               },
-              "default": "null",
+              "default": "false",
               "attribute": "enable-virtual-scroll",
-              "description": "Render only the visible rows (give the grid a capped height). `true` / `false` force it; unset = automatic from `virtualScrollThreshold` rows. Default: `null` (automatic)."
+              "description": "Render only the visible rows (give the grid a capped height). `true` / `false` force virtual scroll on / off; `\"auto\"` (property: `null`) opts in to automatic: virtual once the displayed rows reach `virtualScrollThreshold`. Default: `false`."
             },
             {
               "kind": "field",
@@ -23577,7 +23603,7 @@
               },
               "default": "100",
               "attribute": "virtual-scroll-threshold",
-              "description": "Displayed row count from which automatic virtual scroll (`isVirtualScrollEnabled` unset) turns on. Default: `100`."
+              "description": "Displayed row count from which automatic virtual scroll (`isVirtualScrollEnabled` `\"auto\"` / `null`) turns on. Default: `100`."
             },
             {
               "kind": "field",
@@ -24550,8 +24576,8 @@
               "type": {
                 "text": "boolean | null"
               },
-              "default": "null",
-              "description": "Render only the visible rows (give the grid a capped height). `true` / `false` force it; unset = automatic from `virtualScrollThreshold` rows. Default: `null` (automatic)."
+              "default": "false",
+              "description": "Render only the visible rows (give the grid a capped height). `true` / `false` force virtual scroll on / off; `\"auto\"` (property: `null`) opts in to automatic: virtual once the displayed rows reach `virtualScrollThreshold`. Default: `false`."
             },
             {
               "name": "virtual-scroll-threshold",
@@ -24560,7 +24586,7 @@
                 "text": "number"
               },
               "default": "100",
-              "description": "Displayed row count from which automatic virtual scroll (`isVirtualScrollEnabled` unset) turns on. Default: `100`."
+              "description": "Displayed row count from which automatic virtual scroll (`isVirtualScrollEnabled` `\"auto\"` / `null`) turns on. Default: `100`."
             },
             {
               "name": "virtual-scroll-item-height",

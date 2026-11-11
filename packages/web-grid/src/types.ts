@@ -436,8 +436,8 @@ export type QuickGridProps<T> = {
 	scrollMaxHeight?: string             // Custom max-height when isScrollable is true (default: '100vh')
 	isTableBorderOnly?: boolean          // Border only around table, not pagination/toolbar (default: false)
 	// Virtual scroll
-	isVirtualScrollEnabled?: boolean | null  // true / false force it; null (default) = auto by virtualScrollThreshold
-	virtualScrollThreshold?: number      // Auto-enable when items >= threshold (default: 100)
+	isVirtualScrollEnabled?: boolean | null  // true / false (default) force it; null = auto by virtualScrollThreshold (opt-in)
+	virtualScrollThreshold?: number      // Automatic mode (isVirtualScrollEnabled null): virtual from this many displayed rows (default: 100)
 	virtualScrollItemHeight?: number      // Fixed row height in px (default: 38)
 	virtualScrollOverscan?: number         // Extra rows above/below viewport (default: 10)
 	// Infinite scroll (load more)

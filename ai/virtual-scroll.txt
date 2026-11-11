@@ -11,15 +11,18 @@ buffer, dramatically reducing DOM nodes for large datasets.
 
 PROPERTIES
 ----------
-isVirtualScrollEnabled (boolean | null, default: null = automatic)
+isVirtualScrollEnabled (boolean | null, default: false)
   Attribute: enable-virtual-scroll. true forces virtual scroll on, false
-  forces it off. Unset (null; removing the attribute, or assigning undefined /
-  null) = automatic by virtualScrollThreshold.
+  (default) forces it off. Automatic is opt-in: enable-virtual-scroll="auto"
+  (property: null) = virtual by virtualScrollThreshold. Removing the attribute,
+  or assigning undefined, returns to false. Other attribute values are refused
+  (warning, previous value kept).
 
 virtualScrollThreshold (number, default: 100)
-  Automatic mode: virtual scroll turns on when the displayed row count (after
-  filtering / paging) is >= this threshold. Re-checked on every render, so
-  replacing items with a list that crosses the threshold switches modes.
+  Automatic mode only (enable-virtual-scroll="auto" / null): virtual scroll
+  turns on when the displayed row count (after filtering / paging) is >= this
+  threshold. Re-checked on every render, so replacing items with a list that
+  crosses the threshold switches modes. Ignored when the mode is true / false.
 
 virtualScrollItemHeight (number, default: 38)
   Fixed row height in pixels. All rows MUST be the same height for virtual
@@ -45,8 +48,9 @@ the table to create the correct scrollbar. Only rows in the visible range
 the visible range is recalculated and rows are added/removed.
 
 The grid uses shouldUseVirtualScroll() internally which returns true when
-isVirtualScrollEnabled is true, false when it is false, and otherwise (null)
-when the displayed row count >= virtualScrollThreshold.
+isVirtualScrollEnabled is true, false when it is false (the default), and
+otherwise (null = "auto", opt-in) when the displayed row count >=
+virtualScrollThreshold.
 
 
 KEYBOARD NAVIGATION WITH VIRTUAL SCROLL

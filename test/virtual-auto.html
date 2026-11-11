@@ -5,17 +5,28 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Test — automatic virtual scroll fixture</title>
 	<link rel="stylesheet" href="test-fixtures.css">
+	<script>
+		// Every input-rejected event (bubbles from the grids), recorded before they upgrade.
+		window.rejected = []
+		document.addEventListener('input-rejected', (e) => {
+			window.rejected.push({ id: e.target.id, configKey: e.detail?.configKey, value: e.detail?.value })
+		})
+	</script>
 </head>
 <body>
 	<h1>virtual-auto fixture</h1>
 	<p>
-		Targeted by <code>e2e/virtual-auto.spec.ts</code>. <code>isVirtualScrollEnabled</code> unset = automatic:
-		virtual once the row count reaches <code>virtual-scroll-threshold</code> (20 here). Rows are set by the
-		spec through <code>window.setRows(n, id)</code>. Reload resets all state.
+		Targeted by <code>e2e/virtual-auto.spec.ts</code>. Virtual scroll is off by default;
+		<code>enable-virtual-scroll="auto"</code> (property <code>null</code>) opts in to automatic: virtual once the
+		row count reaches <code>virtual-scroll-threshold</code>. Rows are set by the spec through
+		<code>window.setRows(n, id)</code>. Reload resets all state.
 	</p>
 
-	<h2>#grid — automatic (no enable-virtual-scroll), threshold 20</h2>
-	<web-grid id="grid" virtual-scroll-threshold="20" style="max-width: 600px; max-height: 300px;"></web-grid>
+	<h2>#grid — no enable-virtual-scroll (default off), default threshold (100)</h2>
+	<web-grid id="grid" style="max-width: 600px; max-height: 300px;"></web-grid>
+
+	<h2>#auto — enable-virtual-scroll="auto", threshold 20</h2>
+	<web-grid id="auto" enable-virtual-scroll="auto" virtual-scroll-threshold="20" style="max-width: 600px; max-height: 300px;"></web-grid>
 
 	<h2>#forcedOn — enable-virtual-scroll, threshold 20</h2>
 	<web-grid id="forcedOn" enable-virtual-scroll virtual-scroll-threshold="20" style="max-width: 600px; max-height: 300px;"></web-grid>
@@ -35,7 +46,7 @@
 		/** Replace the rows of `#<id>` (default `#grid`) with `n` generated ones. */
 		window.setRows = (n, id = 'grid') => { document.getElementById(id).items = generate(n) }
 
-		for (const id of ['grid', 'forcedOn', 'forcedOff']) {
+		for (const id of ['grid', 'auto', 'forcedOn', 'forcedOff']) {
 			const grid = document.getElementById(id)
 			grid.columns = columns
 			grid.items = generate(10)

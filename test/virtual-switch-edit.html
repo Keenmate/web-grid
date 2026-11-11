@@ -10,13 +10,13 @@
 	<h1>virtual-switch-edit fixture</h1>
 	<p>
 		Targeted by <code>e2e/virtual-switch-edit.spec.ts</code>. Automatic virtual scroll
-		(<code>isVirtualScrollEnabled</code> unset, threshold 20): replacing <code>items</code> while a cell edit
+		(<code>enable-virtual-scroll="auto"</code>, threshold 20): replacing <code>items</code> while a cell edit
 		(text / select / date) is open switches the grid between normal and virtual rendering. Rows are set by the
 		spec through <code>window.setRows(n)</code>. Reload resets all state.
 	</p>
 
 	<h2>#grid — automatic virtual scroll, threshold 20</h2>
-	<web-grid id="grid" virtual-scroll-threshold="20" style="max-width: 640px; max-height: 300px;"></web-grid>
+	<web-grid id="grid" enable-virtual-scroll="auto" virtual-scroll-threshold="20" style="max-width: 640px; max-height: 300px;"></web-grid>
 
 	<script type="module">
 		import '@keenmate/web-grid'

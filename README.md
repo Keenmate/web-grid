@@ -487,8 +487,8 @@ This architecture separates mode detection (the adapter decides *what* action a 
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `isVirtualScrollEnabled` | `boolean \| null` | `null` | `true` / `false` force virtual scroll on / off; unset (`null`) = automatic by `virtualScrollThreshold` |
-| `virtualScrollThreshold` | `number` | `100` | Automatic mode: virtual once the displayed rows (after filtering / paging) reach the threshold; re-checked when `items` changes |
+| `isVirtualScrollEnabled` | `boolean \| null` | `false` | `true` / `false` force virtual scroll on / off; `null` (attribute `enable-virtual-scroll="auto"`) opts in to automatic by `virtualScrollThreshold` |
+| `virtualScrollThreshold` | `number` | `100` | Automatic mode only (`isVirtualScrollEnabled` `null` / `"auto"`): virtual once the displayed rows (after filtering / paging) reach the threshold; re-checked when `items` changes |
 | `virtualScrollItemHeight` | `number` | `38` | Fixed row height in pixels |
 | `virtualScrollOverscan` | `number` | `10` | Extra rows rendered above/below viewport |
 

@@ -26,6 +26,33 @@ export const toBoolOrAuto = (fallback: boolean): Converter<boolean | 'auto'> =>
 		toAttribute: (value) => String(value),
 	})
 
+const TRUE_WORDS = new Set(['', 'true', '1', 'yes', 'on'])
+const AUTO_WORD = 'auto'
+
+/**
+ * Boolean-or-automatic, automatic spelled `null` on the property path (used by
+ * `enable-virtual-scroll`). Attribute: absent → `fallback`; `auto` → `null`;
+ * `""` / `true` / `1` / `yes` / `on` → `true`; `false` / `0` / `no` / `off` → `false`;
+ * anything else is refused (warning + `input-rejected`, previous value kept).
+ * Property path: `true` / `false` / `null` (automatic). `null` rather than `'auto'`
+ * because it is the one value the engine and the getter speak — accepting `'auto'`
+ * too would give automatic two spellings with a getter answering only one.
+ * Reflects as `true` / `false` / `auto`.
+ */
+export const toBoolOrNullAuto = (fallback: boolean): Converter<boolean | null> =>
+	toCustom<boolean | null>((raw, reportInvalid) => {
+		if (raw === null) return fallback
+		const v = raw.trim().toLowerCase()
+		if (v === AUTO_WORD) return null
+		if (TRUE_WORDS.has(v)) return true
+		if (FALSE_WORDS.has(v)) return false
+		reportInvalid?.('expected true | false | auto')
+		return fallback
+	}, {
+		validate: (value): value is boolean | null => typeof value === 'boolean' || value === null,
+		toAttribute: (value) => value === null ? AUTO_WORD : String(value),
+	})
+
 const cssLength = toCssLength()
 
 /**

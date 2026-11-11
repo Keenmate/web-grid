@@ -49,8 +49,9 @@
                 <pre>// Enable virtual scroll explicitly
 grid.isVirtualScrollEnabled = true
 
-// Or auto-enable via threshold
-grid.virtualScrollThreshold = 100  // Enable when >= 100 items
+// Or opt in to automatic (default false: every row rendered):
+// &lt;web-grid enable-virtual-scroll="auto"&gt; / grid.isVirtualScrollEnabled = null
+grid.virtualScrollThreshold = 100  // automatic: virtual from 100 displayed rows
 
 // Configure row height (must match CSS)
 grid.virtualScrollItemHeight = 38  // Default: 38px
