@@ -70,7 +70,10 @@
 				"path": "packages/web-grid",
 				"kind": "component"
 			}
-		]
+		],
+		"analytics": {
+			"plausibleSiteId": "pa-6Ur0cbpngt69i2juC3kYS"
+		}
 	},
 	"devDependencies": {
 		"@keenmate/web-components-devkit": "^1.0.0-rc12",
