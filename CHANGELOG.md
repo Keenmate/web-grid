@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Internal — core 1.0.0-rc22 (2026-11-13)
+- **Requires `@keenmate/web-components-core` `^1.0.0-rc22`** (was `^1.0.0-rc21`).
+
 ### Added — phone presentation of the cell dropdown and the date editor (2026-11-11)
 - **On a phone the cell dropdown (select / combobox / autocomplete) and the date editor are an
   edge-to-edge sheet** (rulebook responsive-overlay, C-RO-2): the column title, a close button and, for a
