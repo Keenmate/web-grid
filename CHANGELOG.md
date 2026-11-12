@@ -13,6 +13,11 @@ Target: **2.0.0-rc01** — a major: the callback, event and item API below is br
 ### Internal — core 1.0.0-rc22 (2026-11-13)
 - **Requires `@keenmate/web-components-core` `^1.0.0-rc22`** (was `^1.0.0-rc21`).
 
+### Added — the cell / header menu is named by its column (2026-11-13)
+- The cell menu and the column-header menu pass the column title (`title`, else `field`) to core
+  `openMenu({ title })` (rc22): it is the menu's `aria-label`, and on a phone — where the menu is a
+  bottom sheet — the sheet's header. The filler header's menu has no title.
+
 ### Added — phone presentation of the cell dropdown and the date editor (2026-11-11)
 - **On a phone the cell dropdown (select / combobox / autocomplete) and the date editor are an
   edge-to-edge sheet** (rulebook responsive-overlay, C-RO-2): the column title, a close button and, for a

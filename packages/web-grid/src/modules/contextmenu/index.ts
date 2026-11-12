@@ -44,6 +44,8 @@ export type GridMenuSpec<Ctx> = {
 	returnFocusTo?: HTMLElement | null
 	/** Focus the first item on open — the menu was opened from the keyboard. */
 	shouldFocusFirst?: boolean
+	/** The menu's name: the phone sheet's header and the menu's `aria-label` (the column title). */
+	title?: string
 }
 
 /**
@@ -62,6 +64,7 @@ export function openGridMenu<T, Ctx>(host: GridHost<T>, spec: GridMenuSpec<Ctx>)
 		runAction: (item, { triggerElement, sourceEvent }) => spec.activate(item, triggerElement, sourceEvent),
 		returnFocusTo: spec.returnFocusTo ?? null,
 		shouldFocusFirst: spec.shouldFocusFirst,
+		title: spec.title,
 		onClose: () => {
 			if (host.menu === menu) host.menu = null
 		}

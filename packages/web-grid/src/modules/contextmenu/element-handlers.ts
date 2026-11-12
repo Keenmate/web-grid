@@ -120,7 +120,8 @@ function openCellMenu<T>(ctx: GridHost<T>, cell: HTMLElement, at: { x: number; y
 		// Back to what had focus (the cell, when opened from the keyboard) — never
 		// focus a cell that wasn't focused (that would move the grid's focus).
 		returnFocusTo: (ctx.shadow.activeElement as HTMLElement | null) ?? null,
-		shouldFocusFirst: isFromKeyboard
+		shouldFocusFirst: isFromKeyboard,
+		title: column.title || String(column.field)
 	})
 }
 
@@ -151,7 +152,8 @@ function openHeaderMenu<T>(
 			item, fields, source: 'header-menu', sourceEvent: event, triggerElement
 		}),
 		// Headers aren't focusable — focus goes back to where it was (the focused cell)
-		returnFocusTo: (ctx.shadow.activeElement as HTMLElement | null) ?? null
+		returnFocusTo: (ctx.shadow.activeElement as HTMLElement | null) ?? null,
+		title: fields.column ? fields.column.title || String(fields.column.field) : undefined
 	})
 	if (opened) e.preventDefault()
 }

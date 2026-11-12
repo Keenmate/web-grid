@@ -1,4 +1,4 @@
-import { test, expect, Page, Locator, gridLocator, cell, header, clickMenuItem, dispatchContextMenu as dispatchContextMenuAt } from './fixtures'
+import { test, expect, devices, Page, Locator, gridLocator, cell, header, clickMenuItem, dispatchContextMenu as dispatchContextMenuAt } from './fixtures'
 
 /**
  * E2E coverage for the context menu module (test/contextmenu.html).
@@ -291,5 +291,39 @@ test.describe('header context menu — #gridHeader', () => {
 		await dispatchContextMenu(page, header(page, 'gridHeader', 'name'))
 		// With name unsorted: Sort Asc, Sort Desc (Clear Sort hidden), divider, Export.
 		await expect(menuRoot(page).locator('.km-menu__divider')).toHaveCount(1)
+	})
+})
+
+// =============================================================================
+// Menu title — the column title names the menu (aria-label; the phone sheet's header)
+// =============================================================================
+
+test.describe('menu title', () => {
+	test('the cell menu and the header menu are named by the column title', async ({ page }) => {
+		await dispatchContextMenu(page, cell(page, 'grid', 0, COL.name))
+		await expect(menuRoot(page)).toHaveAttribute('aria-label', 'Product Name')
+		await page.keyboard.press('Escape')
+		await dispatchContextMenu(page, header(page, 'gridHeader', 'category'))
+		await expect(menuRoot(page)).toHaveAttribute('aria-label', 'Category')
+	})
+})
+
+// Chromium only (the e2e rule): a phone = the Pixel 7 descriptor (isMobile + hasTouch → coarse pointer)
+const { defaultBrowserType: _ignored, ...PHONE } = devices['Pixel 7']
+
+test.describe('phone: the cell menu is a bottom sheet', () => {
+	test.use(PHONE)
+
+	test('the sheet header shows the column title; the close button closes it', async ({ page }) => {
+		const target = cell(page, 'grid', 0, COL.name)
+		await target.scrollIntoViewIfNeeded()
+		const box = (await target.boundingBox())!
+		await dispatchContextMenuAt(target, box.x + box.width / 2, box.y + box.height / 2)
+		const sheet = page.locator('.km-menu-sheet')
+		await expect(sheet).toBeVisible()
+		await expect(sheet.locator('.km-menu-sheet__title')).toHaveText('Product Name')
+		await expect(sheet).toHaveAttribute('aria-label', 'Product Name')
+		await sheet.locator('.km-menu-sheet__close').tap()
+		await expect(sheet).toHaveCount(0)
 	})
 })
