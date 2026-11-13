@@ -113,7 +113,7 @@ export function cellMenuDefaults<T>(host: GridHost<T>, action: string | undefine
 }
 
 const HEADER_ICONS: Partial<Record<GridHeaderAction, string>> = {
-	'sort-asc': '↑', 'sort-desc': '↓', 'clear-sort': '×', 'hide-column': '👁',
+	'sort-asc': '↑', 'sort-desc': '↓', 'clear-sort': '✕', 'hide-column': '👁',
 	'freeze-column': '❄', 'unfreeze-column': '☀', 'column-visibility': '👁'
 }
 

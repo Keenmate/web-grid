@@ -28,7 +28,13 @@ Target: **2.0.0-rc01** — a major: the callback, event and item API below is br
   keeps only its layout around the chrome (sticky header on the sheet's background, top safe area, the
   search field on its own row). Visual change: the title is core's size (`--base-font-size-lg`), the close
   button is round. Theme it page-wide with `--km-sheet-*`; the close button has no `title` tooltip anymore.
-- The header menu's "Clear Sort" icon is `×` (was the `✕` close glyph).
+- **19 new `--wg-sheet-*` variables** (one per core `--km-sheet-*`: `header-gap`, `header-padding-block`,
+  `header-padding-inline`, `header-min-height`, `header-bg`, `header-border`, `title-color`, `title-font-size`,
+  `title-font-weight`, `close-size`, `close-icon-size`, `close-icon`, `close-color`, `close-bg`,
+  `close-bg-hover`, `close-border`, `close-border-radius`, `close-edge-nudge`, `close-focus-color`) theme one
+  grid's sheet header. Unset by default, mapped onto core's private `--_km-sheet-*` with no fallback:
+  `--wg-sheet-*` → `--km-sheet-*` (page) → `--base-*` → core default; `header-bg` unset = the sheet's own
+  background.
 
 ### Changed — the phone sheet's Back entry is core's (2026-11-13)
 - The phone Back gesture for the cell dropdown / date editor sheet is core `claimBackEntry()` (needs core

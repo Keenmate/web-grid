@@ -332,3 +332,17 @@ test.describe('desktop: the anchored panels are unchanged', () => {
 		}
 	})
 })
+
+test.describe('phone: the sheet header theming', () => {
+	test.use(PHONE)
+
+	test('--wg-sheet-close-size on the grid resizes the close chip (core --_km-sheet-close-size)', async ({ page }) => {
+		await openEditor(page, 1)
+		const close = sheetOf(page).locator('.wg__sheet-close')
+		expect(Math.round((await close.boundingBox())!.width)).toBe(44)
+		await gridLocator(page).evaluate((el) => (el as HTMLElement).style.setProperty('--wg-sheet-close-size', '60px'))
+		const box = await sheetOf(page).locator('.wg__sheet-close').boundingBox()
+		expect(Math.round(box!.width)).toBe(60)
+		expect(Math.round(box!.height)).toBe(60)
+	})
+})

@@ -1072,6 +1072,32 @@ web-grid.orders { --wg-context-menu-bg: #eef; }  /* just this grid's menus */
 | `--wg-context-menu-disabled-opacity` | `--km-menu-disabled-opacity` | Disabled item opacity |
 | `--wg-context-menu-z-index` | `--km-menu-z-index` (9001 = `--base-z-tooltip` + 1) | Menu stacking order |
 
+#### Phone sheet header
+
+The cell dropdown / date editor sheet header (title + close button) is core's shared sheet chrome. `--wg-sheet-*` on `web-grid` themes it for that grid; unset (the default), the page-wide `--km-sheet-*` on `:root` applies (every Keenmate sheet), then `--base-*`, then the core default. `--wg-sheet-header-bg` unset = the sheet's own background.
+
+| Variable | Falls back to | Description |
+|---|---|---|
+| `--wg-sheet-header-gap` | `--km-sheet-header-gap` | Gap between the header's title / fields and the close button (→ --base-space-sm, default 8px) |
+| `--wg-sheet-header-padding-block` | `--km-sheet-header-padding-block` | Header top / bottom padding; the close button's tap area reaches it (→ --base-space-sm, default 8px) |
+| `--wg-sheet-header-padding-inline` | `--km-sheet-header-padding-inline` | Header start / end padding (lines the title up with the sheet rows); the close button's tap area reaches it (→ --base-space-base, default 16px) |
+| `--wg-sheet-header-min-height` | `--km-sheet-header-min-height` | Header minimum height (default 5.6 × --base-rem = 56px) |
+| `--wg-sheet-header-bg` | `--km-sheet-header-bg` | Header background (default transparent: the sheet's) |
+| `--wg-sheet-header-border` | `--km-sheet-header-border` | Header bottom border (default 1px solid --base-border-color) |
+| `--wg-sheet-title-color` | `--km-sheet-title-color` | Title colour (default inherit) |
+| `--wg-sheet-title-font-size` | `--km-sheet-title-font-size` | Title font size (→ --base-font-size-lg, default 18px) |
+| `--wg-sheet-title-font-weight` | `--km-sheet-title-font-weight` | Title font weight (→ --base-font-weight-semibold, default 600) |
+| `--wg-sheet-close-size` | `--km-sheet-close-size` | Close button chip size (→ --base-touch-target-min, default 44px) |
+| `--wg-sheet-close-icon-size` | `--km-sheet-close-icon-size` | Close icon size (default 2 × --base-rem = 20px) |
+| `--wg-sheet-close-icon` | `--km-sheet-close-icon` | Close icon, a mask image (→ --base-icon-close, default the base ✕) |
+| `--wg-sheet-close-color` | `--km-sheet-close-color` | Close icon colour (default inherit) |
+| `--wg-sheet-close-bg` | `--km-sheet-close-bg` | Close chip background (default transparent) |
+| `--wg-sheet-close-bg-hover` | `--km-sheet-close-bg-hover` | Close chip hover background (→ --base-hover-bg) |
+| `--wg-sheet-close-border` | `--km-sheet-close-border` | Close chip border (default none; with a radius and a bg it reads as a bordered button) |
+| `--wg-sheet-close-border-radius` | `--km-sheet-close-border-radius` | Close chip radius (default 50%) |
+| `--wg-sheet-close-edge-nudge` | `--km-sheet-close-edge-nudge` | How far the close button slides past the header padding toward the edge (→ --base-space-sm, default 8px) |
+| `--wg-sheet-close-focus-color` | `--km-sheet-close-focus-color` | Close button keyboard focus ring (→ --base-primary-color) |
+
 ## Keyboard Shortcuts
 
 ```javascript

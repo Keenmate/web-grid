@@ -25655,7 +25655,83 @@
             },
             {
               "name": "--wg-context-menu-z-index",
-              "description": "Menu stacking order (unset → --km-menu-z-index, 10000)"
+              "description": "Menu stacking order (unset → --km-menu-z-index, 9001 = --base-z-tooltip + 1)"
+            },
+            {
+              "name": "--wg-sheet-header-gap",
+              "description": "Phone sheet: gap between the header's title / fields and the close button (→ --base-space-sm, default 8px) (unset → --km-sheet-header-gap)"
+            },
+            {
+              "name": "--wg-sheet-header-padding-block",
+              "description": "Phone sheet: header top / bottom padding; the close button's tap area reaches it (→ --base-space-sm, default 8px) (unset → --km-sheet-header-padding-block)"
+            },
+            {
+              "name": "--wg-sheet-header-padding-inline",
+              "description": "Phone sheet: header start / end padding (lines the title up with the sheet rows); the close button's tap area reaches it (→ --base-space-base, default 16px) (unset → --km-sheet-header-padding-inline)"
+            },
+            {
+              "name": "--wg-sheet-header-min-height",
+              "description": "Phone sheet: header minimum height (default 5.6 × --base-rem = 56px) (unset → --km-sheet-header-min-height)"
+            },
+            {
+              "name": "--wg-sheet-header-bg",
+              "description": "Phone sheet: header background (default transparent: the sheet's) (unset → --km-sheet-header-bg)"
+            },
+            {
+              "name": "--wg-sheet-header-border",
+              "description": "Phone sheet: header bottom border (default 1px solid --base-border-color) (unset → --km-sheet-header-border)"
+            },
+            {
+              "name": "--wg-sheet-title-color",
+              "description": "Phone sheet: title colour (default inherit) (unset → --km-sheet-title-color)"
+            },
+            {
+              "name": "--wg-sheet-title-font-size",
+              "description": "Phone sheet: title font size (→ --base-font-size-lg, default 18px) (unset → --km-sheet-title-font-size)"
+            },
+            {
+              "name": "--wg-sheet-title-font-weight",
+              "description": "Phone sheet: title font weight (→ --base-font-weight-semibold, default 600) (unset → --km-sheet-title-font-weight)"
+            },
+            {
+              "name": "--wg-sheet-close-size",
+              "description": "Phone sheet: close button chip size (→ --base-touch-target-min, default 44px) (unset → --km-sheet-close-size)"
+            },
+            {
+              "name": "--wg-sheet-close-icon-size",
+              "description": "Phone sheet: close icon size (default 2 × --base-rem = 20px) (unset → --km-sheet-close-icon-size)"
+            },
+            {
+              "name": "--wg-sheet-close-icon",
+              "description": "Phone sheet: close icon, a mask image (→ --base-icon-close, default the base ✕) (unset → --km-sheet-close-icon)"
+            },
+            {
+              "name": "--wg-sheet-close-color",
+              "description": "Phone sheet: close icon colour (default inherit) (unset → --km-sheet-close-color)"
+            },
+            {
+              "name": "--wg-sheet-close-bg",
+              "description": "Phone sheet: close chip background (default transparent) (unset → --km-sheet-close-bg)"
+            },
+            {
+              "name": "--wg-sheet-close-bg-hover",
+              "description": "Phone sheet: close chip hover background (→ --base-hover-bg) (unset → --km-sheet-close-bg-hover)"
+            },
+            {
+              "name": "--wg-sheet-close-border",
+              "description": "Phone sheet: close chip border (default none; with a radius and a bg it reads as a bordered button) (unset → --km-sheet-close-border)"
+            },
+            {
+              "name": "--wg-sheet-close-border-radius",
+              "description": "Phone sheet: close chip radius (default 50%) (unset → --km-sheet-close-border-radius)"
+            },
+            {
+              "name": "--wg-sheet-close-edge-nudge",
+              "description": "Phone sheet: how far the close button slides past the header padding toward the edge (→ --base-space-sm, default 8px) (unset → --km-sheet-close-edge-nudge)"
+            },
+            {
+              "name": "--wg-sheet-close-focus-color",
+              "description": "Phone sheet: close button keyboard focus ring (→ --base-primary-color) (unset → --km-sheet-close-focus-color)"
             },
             {
               "name": "--wg-focus-outline",

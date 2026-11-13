@@ -618,10 +618,12 @@ does not scroll and the sheet sits above the soft keyboard. Texts: `labels.sheet
 The header bar, title and close button are core's shared sheet chrome (`.km-sheet-header` /
 `.km-sheet-title` / `.km-sheet-close` — the same look as every Keenmate sheet, the ✕ is the masked
 `--base-icon-close`); the grid's `.wg__sheet-header` / `.wg__sheet-title` / `.wg__sheet-close` classes stay on
-them. Theme them page-wide with the `--km-sheet-*` variables on `:root` (`header-bg`, `header-padding-block`,
-`header-padding-inline`, `title-font-size`, `close-size`, `close-color`, `close-bg`, `close-bg-hover`, … —
-the list is in core's `component-variables.manifest.json`, category "sheet"). Unset, the sticky header takes
-the sheet's background (`--wg-dropdown-bg` / the date picker's).
+them. Theme them for one grid with `--wg-sheet-*` on `web-grid`, page-wide with `--km-sheet-*` on `:root`
+(`header-gap`, `header-padding-block`, `header-padding-inline`, `header-min-height`, `header-bg`, `header-border`,
+`title-color`, `title-font-size`, `title-font-weight`, `close-size`, `close-icon-size`, `close-icon`,
+`close-color`, `close-bg`, `close-bg-hover`, `close-border`, `close-border-radius`, `close-edge-nudge`,
+`close-focus-color`); all unset by default: `--wg-sheet-*` → `--km-sheet-*` → `--base-*` → core default.
+With `header-bg` unset the sticky header takes the sheet's background (`--wg-dropdown-bg` / the date picker's).
 
 Page setup (the component can't set it): `<meta name="viewport" content="width=device-width,
 initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">` — `viewport-fit=cover` makes

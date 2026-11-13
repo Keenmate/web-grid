@@ -342,6 +342,35 @@
   --_km-menu-disabled-opacity: var(--wg-context-menu-disabled-opacity);
 
   /* ==========================================================================
+     PHONE SHEET CHROME (the cell dropdown / date editor sheet header)
+     Core's SHEET_CHROME_CSS draws the header bar, title and close button. The
+     public --wg-sheet-* variables are inputs, UNSET by default: each maps onto
+     core's PRIVATE --_km-sheet-* with NO fallback, so a value resolves
+     --wg-sheet-* (this grid) -> --km-sheet-* (every sheet on the page, set on
+     :root) -> --base-* -> core's default. header-bg unset -> the sheet's own
+     background (css/sheet.css, the sticky header).
+     ========================================================================== */
+  --_km-sheet-header-gap: var(--wg-sheet-header-gap);
+  --_km-sheet-header-padding-block: var(--wg-sheet-header-padding-block);
+  --_km-sheet-header-padding-inline: var(--wg-sheet-header-padding-inline);
+  --_km-sheet-header-min-height: var(--wg-sheet-header-min-height);
+  --_km-sheet-header-bg: var(--wg-sheet-header-bg);
+  --_km-sheet-header-border: var(--wg-sheet-header-border);
+  --_km-sheet-title-color: var(--wg-sheet-title-color);
+  --_km-sheet-title-font-size: var(--wg-sheet-title-font-size);
+  --_km-sheet-title-font-weight: var(--wg-sheet-title-font-weight);
+  --_km-sheet-close-size: var(--wg-sheet-close-size);
+  --_km-sheet-close-icon-size: var(--wg-sheet-close-icon-size);
+  --_km-sheet-close-icon: var(--wg-sheet-close-icon);
+  --_km-sheet-close-color: var(--wg-sheet-close-color);
+  --_km-sheet-close-bg: var(--wg-sheet-close-bg);
+  --_km-sheet-close-bg-hover: var(--wg-sheet-close-bg-hover);
+  --_km-sheet-close-border: var(--wg-sheet-close-border);
+  --_km-sheet-close-border-radius: var(--wg-sheet-close-border-radius);
+  --_km-sheet-close-edge-nudge: var(--wg-sheet-close-edge-nudge);
+  --_km-sheet-close-focus-color: var(--wg-sheet-close-focus-color);
+
+  /* ==========================================================================
      NAVIGATE MODE
      ========================================================================== */
   --wg-focus-outline: 2px solid var(--wg-accent-color);
