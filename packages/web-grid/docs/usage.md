@@ -232,6 +232,8 @@ grid.rowToolbar = [
 | `headerContextMenu` | `GridHeaderMenuEntry<T>[]` | — | Header context menu: built-in names, menu items, dividers |
 | `beforeContextMenuOpenCallback` | `(ctx: CellContext<T>) => false \| GridMenuEntry<T>[] \| void` | — | Runs (sync) before the cell menu opens: `false` → no grid menu (the browser's shows); an entries array → shown instead of `contextMenu` |
 | `beforeHeaderMenuOpenCallback` | `(ctx: HeaderMenuContext<T>) => false \| GridHeaderMenuEntry<T>[] \| void` | — | Same for the header menu |
+| `menuPresentation` (`menu-presentation`) | `'auto' \| 'floating' \| 'sheet' \| 'drawer'` | `'auto'` | How both menus open: `auto` — a bottom sheet on a phone, the floating menu elsewhere; `sheet` — always the bottom sheet; `drawer` — a full-height side panel; `floating` — always the floating menu. Read at every open; per device / width through the responsive rules (core `menuPresentationInputs()`, the same input on every Keenmate menu host) |
+| `menuSide` (`menu-side`) | `'start' \| 'end'` | `'start'` | The edge a `drawer` menu slides in from (`start` = left in LTR) |
 
 #### Built-in header menu items
 
@@ -286,6 +288,7 @@ Both menus are the shared Keenmate menu (core `openMenu()`, `@keenmate/web-compo
 
 - **Keyboard:** Shift+F10 / the ContextMenu key on the focused cell opens the cell menu below it, first item focused. ↑ / ↓ skip disabled items, Home / End, → / Enter / Space open a submenu, ← / Escape close it, Enter / Space activate, Escape closes and returns focus to the cell, Tab closes; an item's `shortcut` letter activates it.
 - **Dismiss:** outside press, page or grid scroll, window blur, another Keenmate overlay opening.
+- **Sheet / drawer:** (`menu-presentation`, `auto` on a phone) the header shows the column title and core's close button (`labels.sheetClose`, "Close"); a submenu level starts with a back row (`labels.menuBack`, "Back").
 - **Markup:** `.km-menu` (`.km-menu--submenu`), `.km-menu__item` (`--disabled` / `--danger` / `--toggled` / `--has-submenu`), `__icon`, `__label`, `__shortcut`, `__divider`. Cell menu levels also carry `wg-context-menu`, header menu levels `wg-header-menu`. A toggle item (`isToggled` / `getIsToggledCallback`; the column-visibility toggles, class `wg-header-menu__column-toggle`) is `role="menuitemcheckbox"` + `aria-checked`.
 - **Theming:** one public set `--wg-context-menu-*` on `web-grid` themes both menus — `bg`, `bg-hover`, `hover-color`, `text-color`, `border`, `border-radius`, `shadow`, `min-width`, `padding`, `font-size`, `item-padding`, `item-gap`, `toggled-color`, `icon-width`, `icon-font-size`, `arrow-font-size`, `shortcut-color`, `danger-color`, `danger-bg-hover`, `divider-color`, `divider-margin`, `disabled-opacity`, `z-index`. All unset by default: a value resolves `--wg-context-menu-*` (this grid) → `--km-menu-*` (page-wide, on `:root`) → `--base-*` → core default.
 
@@ -603,7 +606,7 @@ Edit semantics are the same as in the cell (the Excel rule):
 | In the sheet | Result |
 |---|---|
 | Pick an option / tap a day | Saves, like a click on the option / day |
-| The close button (✕) | Leaves the cell → **saves** what the editor holds (a select without a pick: no change, `cell-edit-cancel`) |
+| The close button | Leaves the cell → **saves** what the editor holds (a select without a pick: no change, `cell-edit-cancel`) |
 | The phone Back gesture / button | Same as the close button (saves); it never leaves the page |
 | Escape | **Cancels** (a combobox / autocomplete with typed text: the first Escape restores the text, the second cancels — as in the cell) |
 | Arrow keys / Enter / Tab | The editor's own keys (highlight / pick / leave) |
@@ -611,6 +614,14 @@ Edit semantics are the same as in the cell (the Excel rule):
 Focus moves into the sheet and returns to the cell when it closes. While it is open the page behind
 does not scroll and the sheet sits above the soft keyboard. Texts: `labels.sheetClose` ("Close"),
 `labels.sheetSearch` ("Search…"); tap size `--wg-touch-target-min` (→ `--base-touch-target-min`, 44px).
+
+The header bar, title and close button are core's shared sheet chrome (`.km-sheet-header` /
+`.km-sheet-title` / `.km-sheet-close` — the same look as every Keenmate sheet, the ✕ is the masked
+`--base-icon-close`); the grid's `.wg__sheet-header` / `.wg__sheet-title` / `.wg__sheet-close` classes stay on
+them. Theme them page-wide with the `--km-sheet-*` variables on `:root` (`header-bg`, `header-padding-block`,
+`header-padding-inline`, `title-font-size`, `close-size`, `close-color`, `close-bg`, `close-bg-hover`, … —
+the list is in core's `component-variables.manifest.json`, category "sheet"). Unset, the sticky header takes
+the sheet's background (`--wg-dropdown-bg` / the date picker's).
 
 Page setup (the component can't set it): `<meta name="viewport" content="width=device-width,
 initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">` — `viewport-fit=cover` makes

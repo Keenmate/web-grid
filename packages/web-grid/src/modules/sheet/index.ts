@@ -5,8 +5,9 @@
 // literal) the two cell popups are an edge-to-edge sheet instead of a panel anchored
 // under the cell: the same core createPopover(), un-anchored (setAnchored(false)) and
 // placed by css/sheet.css (`.wg__dropdown--sheet`, `.wg-datepicker-container--sheet`).
-// This module holds what both share: the sheet header (title, optional search field,
-// close button) and the session around an open sheet — page scroll locked (core
+// This module holds what both share: the sheet header — core's sheet chrome (createSheetHeader +
+// SHEET_CHROME_CSS: `.km-sheet-header` / `-title` / `-close`, rulebook C-RO-17) with the grid's
+// own `wg__sheet-*` classes kept for the layout around it (sticky, the search row) — and the session around an open sheet — page scroll locked (core
 // lockBodyScroll), the panel kept above the soft keyboard (core observeKeyboardInset)
 // and the phone Back gesture / button closing the sheet instead of leaving the page
 // (core claimBackEntry — one history entry page-wide; rulebook C-RO-15).
@@ -14,10 +15,14 @@
 // Edit semantics are the grid's own (Excel rule): the close button and Back leave the
 // cell → SAVE; Escape cancels.
 
-import { claimBackEntry, lockBodyScroll, observeKeyboardInset } from '@keenmate/web-components-core'
-
-/** The close glyph (✕) of the sheet's close button. */
-const CLOSE_ICON = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path fill="currentColor" d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>'
+import {
+	SHEET_CHROME_CSS,
+	adoptStyles,
+	claimBackEntry,
+	createSheetHeader,
+	lockBodyScroll,
+	observeKeyboardInset,
+} from '@keenmate/web-components-core'
 
 export interface SheetHeaderOptions {
 	/** The sheet's title (the column's title) — also its accessible name. */
@@ -31,29 +36,20 @@ export interface SheetHeaderOptions {
 }
 
 /**
- * Build the sheet header: `.wg__sheet-header` with the title, the optional
- * `.wg__sheet-search` input and the `.wg__sheet-close` button.
+ * Build the sheet header: core's `.km-sheet-header` (+ `.wg__sheet-header`) with the title
+ * (`.km-sheet-title wg__sheet-title`), the close button (`.km-sheet-close wg__sheet-close`: no
+ * text, the ✕ is core's masked `--base-icon-close`) and the optional `.wg__sheet-search` input
+ * on its own row. Core's `SHEET_CHROME_CSS` is adopted when the session starts (`startSheetSession`).
  */
 export function buildSheetHeader(options: SheetHeaderOptions): HTMLElement {
-	const header = document.createElement('div')
-	header.className = 'wg__sheet-header'
-
-	const title = document.createElement('span')
-	title.className = 'wg__sheet-title'
-	title.textContent = options.title
-	header.appendChild(title)
-
-	const close = document.createElement('button')
-	close.type = 'button'
-	close.className = 'wg__sheet-close'
-	close.setAttribute('aria-label', options.closeLabel)
-	close.title = options.closeLabel
-	close.innerHTML = CLOSE_ICON
-	close.addEventListener('click', (e) => {
-		e.preventDefault()
-		options.onClose()
+	const { header, title, close } = createSheetHeader({
+		title: options.title,
+		closeLabel: options.closeLabel,
+		onClose: options.onClose,
 	})
-	header.appendChild(close)
+	header.classList.add('wg__sheet-header')
+	title?.classList.add('wg__sheet-title')
+	close.classList.add('wg__sheet-close')
 
 	if (options.search) {
 		const input = document.createElement('input')
@@ -89,6 +85,9 @@ export function setSheetSemantics(panel: HTMLElement, title: string | null): voi
  * keyboard, the Back gesture calls `back`. Returns the cleanup (idempotent).
  */
 export function startSheetSession(panel: HTMLElement, back: () => void): () => void {
+	// Core's sheet chrome into the root the sheet lives in (the grid's shadow root; once per root)
+	const root = panel.getRootNode()
+	if (root instanceof ShadowRoot || root instanceof Document) adoptStyles(root, SHEET_CHROME_CSS)
 	const unlock = lockBodyScroll()
 	const unobserve = observeKeyboardInset(panel)
 	// A sheet opening right after (the dropdown re-rendered for another cell, a reopened

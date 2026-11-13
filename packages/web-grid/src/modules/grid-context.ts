@@ -7,7 +7,7 @@ import type { Column, EditorOptions } from '../types.js'
 import type { ScrollEventManager } from './scroll-events/index.js'
 import type { FocusEventManager } from './focus-events/index.js'
 import type { DatePicker } from './datepicker/datepicker.js'
-import type { MenuHandle } from '@keenmate/web-components-core/menu'
+import type { MenuDrawerSide, MenuHandle, MenuPresentation } from '@keenmate/web-components-core/menu'
 import type { AutocompleteService } from './dropdown/autocomplete-service.js'
 import type { DropdownService } from './dropdown/dropdown-service.js'
 import type { TooltipService } from './tooltip/tooltip-service.js'
@@ -40,6 +40,8 @@ export interface GridHost<T = unknown> {
 
 	// The open cell / header menu (core openMenu(), in the shadow root) — one at a time
 	menu: MenuHandle | null
+	/** Core openMenu() presentation + drawer side (inputs menu-presentation / menu-side; core menuPresentationOptions()). */
+	getMenuPresentationOptions(): { presentation: MenuPresentation; side: MenuDrawerSide }
 
 	// Datepicker state
 	datepicker: DatePicker | null

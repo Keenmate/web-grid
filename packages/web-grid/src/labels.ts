@@ -45,6 +45,9 @@ export const DEFAULT_LABELS: GridLabels = {
 	sheetClose: 'Close',
 	sheetSearch: 'Search…',
 
+	// Cell / header menu (core openMenu(); its phone sheet / drawer closes with sheetClose)
+	menuBack: 'Back',
+
 	// Row locking
 	rowLocked: 'This row is locked',
 	rowLockedBy: 'Locked by {lockedBy}',

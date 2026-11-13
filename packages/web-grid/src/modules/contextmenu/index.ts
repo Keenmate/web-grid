@@ -57,6 +57,9 @@ export function openGridMenu<T, Ctx>(host: GridHost<T>, spec: GridMenuSpec<Ctx>)
 	const menu = openMenu(spec.entries, spec.ctx, {
 		at: spec.at,
 		host: host.shadow,
+		// menu-presentation / menu-side (core menuPresentationInputs(), rulebook C-RO-16)
+		...host.getMenuPresentationOptions(),
+		labels: { back: host.engine.labels.menuBack, close: host.engine.labels.sheetClose },
 		cssClass: MENU_CLASS[spec.kind],
 		offset: spec.offset ? { mainAxis: spec.offset.y, alignmentAxis: spec.offset.x } : undefined,
 		defaults: spec.defaults,

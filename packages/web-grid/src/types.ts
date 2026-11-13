@@ -623,8 +623,11 @@ export type GridLabels = {
 	dropdownEmptyOption: string     // "—" — the empty first item of an `isEmptyAllowed` dropdown
 
 	// Phone sheet (the cell dropdown / date editor on a phone)
-	sheetClose: string              // "Close" — the sheet's close button (leaves the cell: saves)
+	sheetClose: string              // "Close" — the sheet's close button (leaves the cell: saves); also the menu sheet's close button
 	sheetSearch: string             // "Search…" — the search field of a combobox / autocomplete sheet
+
+	// Cell / header menu (core openMenu())
+	menuBack: string                // "Back" — the menu sheet's back row (a submenu level on a phone)
 
 	// Row locking (row-number / row tooltip)
 	rowLocked: string               // "This row is locked" - no lockedBy known

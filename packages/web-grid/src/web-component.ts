@@ -283,7 +283,8 @@ import {
 	type EnvironmentSnapshot,
 	resolvePresentation,
 } from '@keenmate/web-components-core'
-import type { MenuHandle } from '@keenmate/web-components-core/menu'
+import { menuPresentationInputs, menuPresentationOptions } from '@keenmate/web-components-core/menu'
+import type { MenuDrawerSide, MenuHandle, MenuPresentation } from '@keenmate/web-components-core/menu'
 
 // Enum member lists for the input table (hoisted `as const` so the CEM
 // extractor and toEnum both read the same literal source of truth).
@@ -655,6 +656,20 @@ export interface GridElementConfig<T = unknown> {
 	 * (internal: overlayGroup)
 	 */
 	overlayGroup: string | null
+	// Menus (core menuPresentationInputs(), SPEC §12.13 — the same inputs on every menu host)
+	/**
+	 * How the cell and column-header menus open: `auto` (default — a bottom sheet on a phone,
+	 * the floating menu elsewhere), `floating`, `sheet` (bottom sheet) or `drawer` (full-height
+	 * side panel on `menuSide`). Read when a menu opens; per device / width through the
+	 * responsive rules.
+	 * (internal: menuPresentation)
+	 */
+	menuPresentation: MenuPresentation
+	/**
+	 * The edge a `drawer` menu slides in from: `start` (default — left in LTR, right in RTL) or `end`.
+	 * (internal: menuSide)
+	 */
+	menuSide: MenuDrawerSide
 }
 
 /**
@@ -892,6 +907,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		{ configKey: 'tooltipHideDelay', attribute: 'tooltip-hide-delay', converter: toInt({ min: 0, default: 100 }), default: 100, on: 'update', description: 'Delay (ms) before a cell tooltip hides. Default: `100`.' },
 		// Overlay tree group of the cell dropdown + date editor (element-local, read at each open — so `update`, no rebuild)
 		{ configKey: 'overlayGroup', attribute: 'overlay-group', converter: toText({ isNullable: true }), on: 'update', type: 'string | null', description: 'Scope the "one overlay open at a time" coordination to a named group. Overlays (the cell dropdown, the row toolbar with a click / button trigger, multiselects, datepickers, external popovers) sharing a group dismiss each other when one opens; different groups are independent. Unset = the default (ungrouped) group.' },
+		// Menus: menu-presentation / menu-side — core's standard menu-host rows (read at every open: on 'none')
+		...menuPresentationInputs(),
 	] as const satisfies readonly InputDef[]
 
 	/** @internal */
@@ -1012,6 +1029,11 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	// The open cell / header menu (core openMenu(), in the shadow root) - exposed via GridHost for pipeline access
 	/** @internal */
 	menu: MenuHandle | null = null
+
+	/** @internal The cell / header menu's presentation + drawer side (inputs `menu-presentation` / `menu-side`), read at every open. */
+	getMenuPresentationOptions(): { presentation: MenuPresentation; side: MenuDrawerSide } {
+		return menuPresentationOptions(this.config)
+	}
 
 	// Virtual scroll state — owned by VirtualScrollService (visible-range, load-more flag, programmatic-scroll guard).
 	/** @internal */

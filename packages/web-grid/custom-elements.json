@@ -6363,7 +6363,7 @@
           "type": {
             "text": "GridLabels"
           },
-          "default": "{ // Toolbar rowActions: 'Row actions', inlineActionsHeader: 'Actions', // Shortcuts help keyboardShortcuts: 'Keyboard shortcuts', rangeShortcuts: 'Selection shortcuts', // Pagination paginationFirst: '⏮', paginationPrevious: '◀', paginationNext: '▶', paginationLast: '⏭', paginationPageInfo: 'Page {current} of {total}', paginationItemCount: '{count} items', paginationPerPage: 'per page', // Empty table / loading noData: 'No items to display', noResults: 'No matching items', loading: 'Loading…', // Dropdown dropdownNoData: 'No options', dropdownNoResults: 'No matching options', dropdownSearching: 'Searching…', dropdownEmptyOption: '—', // Phone sheet (the cell dropdown / date editor on a phone) sheetClose: 'Close', sheetSearch: 'Search…', // Row locking rowLocked: 'This row is locked', rowLockedBy: 'Locked by {lockedBy}', // Go-to-row dialog goToRow: 'Go to row (1-{max}):', goToRowGo: 'Go', goToRowCancel: 'Cancel', // Tree chevron treeExpand: 'Expand', treeCollapse: 'Collapse', // Filter row filterColumn: 'Filter {column}', // Edit button (editTrigger: 'button') editCell: 'Edit', // Built-in value checks invalidNumber: 'Not a number', numberMin: 'Must be at least {min}', numberMax: 'Must be at most {max}', numberNegative: 'Must not be negative', invalidBoolean: 'Not a yes / no value', invalidDate: 'Not a valid date', // Built-in row / tree actions actions: { add: 'Add row', delete: 'Delete row', duplicate: 'Duplicate row', moveUp: 'Move up', moveDown: 'Move down', expand: 'Expand', collapse: 'Collapse', expandSubtree: 'Expand subtree', collapseSubtree: 'Collapse subtree', expandAll: 'Expand all', collapseAll: 'Collapse all' }, // Header context menu contextMenu: { sortAsc: 'Sort Ascending', sortDesc: 'Sort Descending', clearSort: 'Clear Sort', hideColumn: 'Hide Column', freezeColumn: 'Freeze Column', unfreezeColumn: 'Unfreeze Column', columnVisibility: 'Column Visibility', showAll: 'Show all' } }",
+          "default": "{ // Toolbar rowActions: 'Row actions', inlineActionsHeader: 'Actions', // Shortcuts help keyboardShortcuts: 'Keyboard shortcuts', rangeShortcuts: 'Selection shortcuts', // Pagination paginationFirst: '⏮', paginationPrevious: '◀', paginationNext: '▶', paginationLast: '⏭', paginationPageInfo: 'Page {current} of {total}', paginationItemCount: '{count} items', paginationPerPage: 'per page', // Empty table / loading noData: 'No items to display', noResults: 'No matching items', loading: 'Loading…', // Dropdown dropdownNoData: 'No options', dropdownNoResults: 'No matching options', dropdownSearching: 'Searching…', dropdownEmptyOption: '—', // Phone sheet (the cell dropdown / date editor on a phone) sheetClose: 'Close', sheetSearch: 'Search…', // Cell / header menu (core openMenu(); its phone sheet / drawer closes with sheetClose) menuBack: 'Back', // Row locking rowLocked: 'This row is locked', rowLockedBy: 'Locked by {lockedBy}', // Go-to-row dialog goToRow: 'Go to row (1-{max}):', goToRowGo: 'Go', goToRowCancel: 'Cancel', // Tree chevron treeExpand: 'Expand', treeCollapse: 'Collapse', // Filter row filterColumn: 'Filter {column}', // Edit button (editTrigger: 'button') editCell: 'Edit', // Built-in value checks invalidNumber: 'Not a number', numberMin: 'Must be at least {min}', numberMax: 'Must be at most {max}', numberNegative: 'Must not be negative', invalidBoolean: 'Not a yes / no value', invalidDate: 'Not a valid date', // Built-in row / tree actions actions: { add: 'Add row', delete: 'Delete row', duplicate: 'Duplicate row', moveUp: 'Move up', moveDown: 'Move down', expand: 'Expand', collapse: 'Collapse', expandSubtree: 'Expand subtree', collapseSubtree: 'Collapse subtree', expandAll: 'Expand all', collapseAll: 'Collapse all' }, // Header context menu contextMenu: { sortAsc: 'Sort Ascending', sortDesc: 'Sort Descending', clearSort: 'Clear Sort', hideColumn: 'Hide Column', freezeColumn: 'Freeze Column', unfreezeColumn: 'Unfreeze Column', columnVisibility: 'Column Visibility', showAll: 'Show all' } }",
           "description": "The built-in UI strings (English only)."
         },
         {
@@ -19219,7 +19219,7 @@
               }
             }
           ],
-          "description": "Build the sheet header: `.wg__sheet-header` with the title, the optional\n`.wg__sheet-search` input and the `.wg__sheet-close` button."
+          "description": "Build the sheet header: core's `.km-sheet-header` (+ `.wg__sheet-header`) with the title\n(`.km-sheet-title wg__sheet-title`), the close button (`.km-sheet-close wg__sheet-close`: no\ntext, the ✕ is core's masked `--base-icon-close`) and the optional `.wg__sheet-search` input\non its own row. Core's `SHEET_CHROME_CSS` is adopted when the session starts (`startSheetSession`)."
         },
         {
           "kind": "function",
@@ -23852,6 +23852,28 @@
             },
             {
               "kind": "field",
+              "name": "menuPresentation",
+              "privacy": "public",
+              "type": {
+                "text": "'auto' | 'floating' | 'sheet' | 'drawer'"
+              },
+              "default": "'auto'",
+              "attribute": "menu-presentation",
+              "description": "How the component's context / dropdown menus open: 'auto' (default — a bottom sheet on a phone, the floating menu elsewhere), 'floating', 'sheet' (bottom sheet) or 'drawer' (full-height side panel on `menu-side`). Per device / width through the responsive rules."
+            },
+            {
+              "kind": "field",
+              "name": "menuSide",
+              "privacy": "public",
+              "type": {
+                "text": "'start' | 'end'"
+              },
+              "default": "'start'",
+              "attribute": "menu-side",
+              "description": "The edge a 'drawer' menu slides in from: 'start' (default — left in LTR, right in RTL) or 'end'."
+            },
+            {
+              "kind": "field",
               "name": "shouldDefer",
               "privacy": "public",
               "type": {
@@ -24764,6 +24786,24 @@
                 "text": "string | null"
               },
               "description": "Scope the \"one overlay open at a time\" coordination to a named group. Overlays (the cell dropdown, the row toolbar with a click / button trigger, multiselects, datepickers, external popovers) sharing a group dismiss each other when one opens; different groups are independent. Unset = the default (ungrouped) group."
+            },
+            {
+              "name": "menu-presentation",
+              "fieldName": "menuPresentation",
+              "type": {
+                "text": "'auto' | 'floating' | 'sheet' | 'drawer'"
+              },
+              "default": "'auto'",
+              "description": "How the component's context / dropdown menus open: 'auto' (default — a bottom sheet on a phone, the floating menu elsewhere), 'floating', 'sheet' (bottom sheet) or 'drawer' (full-height side panel on `menu-side`). Per device / width through the responsive rules."
+            },
+            {
+              "name": "menu-side",
+              "fieldName": "menuSide",
+              "type": {
+                "text": "'start' | 'end'"
+              },
+              "default": "'start'",
+              "description": "The edge a 'drawer' menu slides in from: 'start' (default — left in LTR, right in RTL) or 'end'."
             },
             {
               "name": "defer",

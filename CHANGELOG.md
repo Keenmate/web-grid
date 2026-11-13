@@ -10,6 +10,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Added — `menu-presentation` / `menu-side` for the cell / header menus (2026-11-13)
+- New inputs **`menuPresentation` (`menu-presentation`: `auto` | `floating` | `sheet` | `drawer`, default
+  `auto`)** and **`menuSide` (`menu-side`: `start` | `end`)** — core's standard menu-host rows
+  (`menuPresentationInputs()`, rulebook C-RO-16), read at every open and passed to core `openMenu()` through
+  `menuPresentationOptions()`; per device / width through the responsive rules. `auto` is unchanged (a
+  bottom sheet on a phone, the floating menu elsewhere).
+- The menu sheet's texts come from the grid's `labels`: close = `labels.sheetClose` ("Close"), the submenu
+  back row = the new **`labels.menuBack`** ("Back").
+- The menus' default z-index is core's `calc(--base-z-tooltip + 1)` = 9001 (was 10000; core rc24).
+
+### Changed — the phone sheets use core's sheet chrome (2026-11-13)
+- The cell dropdown / date editor sheet header is core's shared sheet chrome (`createSheetHeader()` +
+  `SHEET_CHROME_CSS`, rulebook C-RO-17): `.km-sheet-header` / `.km-sheet-title` / `.km-sheet-close` — the
+  same bar, title and round 44px close chip (a masked `--base-icon-close`, no text / inline SVG) as every
+  Keenmate sheet. The `.wg__sheet-header` / `.wg__sheet-title` / `.wg__sheet-close` classes stay; the grid
+  keeps only its layout around the chrome (sticky header on the sheet's background, top safe area, the
+  search field on its own row). Visual change: the title is core's size (`--base-font-size-lg`), the close
+  button is round. Theme it page-wide with `--km-sheet-*`; the close button has no `title` tooltip anymore.
+- The header menu's "Clear Sort" icon is `×` (was the `✕` close glyph).
+
 ### Changed — the phone sheet's Back entry is core's (2026-11-13)
 - The phone Back gesture for the cell dropdown / date editor sheet is core `claimBackEntry()` (needs core
   `^1.0.0-rc23`; rulebook C-RO-15) instead of the grid's own `pushState` / `popstate` copy — the same one

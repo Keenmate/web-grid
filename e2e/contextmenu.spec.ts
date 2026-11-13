@@ -327,3 +327,38 @@ test.describe('phone: the cell menu is a bottom sheet', () => {
 		await expect(sheet).toHaveCount(0)
 	})
 })
+
+// =============================================================================
+// Menu host inputs — menu-presentation / menu-side (core menuPresentationInputs()) + labels
+// =============================================================================
+
+test.describe('menu-presentation / menu-side', () => {
+	test('menu-presentation="drawer" opens the cell menu as the side drawer; labels.sheetClose names its close button', async ({ page }) => {
+		await page.evaluate(() => {
+			const grid = document.getElementById('grid') as any
+			grid.setAttribute('menu-presentation', 'drawer')
+			grid.setAttribute('menu-side', 'end')
+			grid.labels = { sheetClose: 'Zavřít' }
+		})
+		await dispatchContextMenu(page, cell(page, 'grid', 0, COL.name))
+		const sheet = page.locator('.km-menu-sheet')
+		await expect(sheet).toHaveClass(/km-menu-sheet--drawer/)
+		await expect(sheet.locator('.km-sheet-close')).toHaveAttribute('aria-label', 'Zavřít')
+		await expect(sheet.locator('.km-sheet-close')).toHaveText('')
+		await sheet.locator('.km-sheet-close').click()
+		await expect(sheet).toHaveCount(0)
+	})
+
+	test('menu-presentation="floating" (property) keeps the floating menu; the default is auto', async ({ page }) => {
+		const initial = await page.evaluate(() => {
+			const grid = document.getElementById('grid') as any
+			return { presentation: grid.menuPresentation, side: grid.menuSide }
+		})
+		expect(initial).toEqual({ presentation: 'auto', side: 'start' })
+		await page.evaluate(() => { (document.getElementById('grid') as any).menuPresentation = 'floating' })
+		await dispatchContextMenu(page, cell(page, 'grid', 0, COL.name))
+		await expect(menuRoot(page)).toBeVisible()
+		await expect(page.locator('.km-menu-sheet')).toHaveCount(0)
+	})
+})
+

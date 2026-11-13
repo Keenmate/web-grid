@@ -86,6 +86,16 @@ test.describe('phone: the cell popups are a full-screen sheet', () => {
 					title: el.querySelector('.wg__sheet-title')?.textContent,
 					role: el.getAttribute('role'),
 					close: { w: close.width, h: close.height },
+					// core's sheet chrome (createSheetHeader): the ✕ is a CSS mask, no text
+					closeChrome: {
+						isCore: el.querySelector('.wg__sheet-close')!.classList.contains('km-sheet-close'),
+						text: el.querySelector('.wg__sheet-close')!.textContent,
+						label: el.querySelector('.wg__sheet-close')!.getAttribute('aria-label'),
+						isCoreHeader: !!el.querySelector('.km-sheet-header.wg__sheet-header > .km-sheet-title.wg__sheet-title'),
+					},
+					// the sticky header takes the sheet's own background (the rows scroll under it)
+					headerBg: getComputedStyle(el.querySelector('.wg__sheet-header')!).backgroundColor,
+					sheetBg: getComputedStyle(el).backgroundColor,
 					bodyLocked: getComputedStyle(document.body).position === 'fixed',
 				}
 			})
@@ -99,6 +109,9 @@ test.describe('phone: the cell popups are a full-screen sheet', () => {
 			expect(geo.role).toBe('dialog')
 			expect(geo.close.w).toBeGreaterThanOrEqual(44)
 			expect(geo.close.h).toBeGreaterThanOrEqual(44)
+			expect(geo.headerBg).toBe(geo.sheetBg)
+			expect(geo.headerBg).not.toBe('rgba(0, 0, 0, 0)')
+			expect(geo.closeChrome).toEqual({ isCore: true, text: '', label: 'Close', isCoreHeader: true })
 			expect(geo.bodyLocked).toBe(true)
 			expect((await snap(page, col)).focus).toBe('sheet')
 			// a search field only for the typing editors

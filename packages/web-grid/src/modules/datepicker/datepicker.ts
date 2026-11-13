@@ -279,7 +279,7 @@ const DATEPICKER_STYLES = `
 `
 
 // The phone sheet (DatePicker.setSheet(); responsive-overlay D-RO-*, css/sheet.css holds the shared
-// header): edge-to-edge 100dvw x 100dvh, four-edge safe area (the top one on the sticky header),
+// header's layout around core's sheet chrome): edge-to-edge 100dvw x 100dvh, four-edge safe area (the top one on the sticky header),
 // overscroll contained, tap targets >= --wg-touch-target-min (44px). Geometry only.
 const DATEPICKER_SHEET_STYLES = `
 .wg-datepicker-container.wg-datepicker-container--sheet {
@@ -294,6 +294,7 @@ const DATEPICKER_SHEET_STYLES = `
 	overscroll-behavior: contain;
 	background: var(--wg-dp-background);
 	z-index: var(--wg-z-dropdown, var(--wg-dp-z-index, 9999));
+	--_wg-sheet-bg: var(--wg-dp-background);
 }
 
 .wg-datepicker-container--sheet:focus {

@@ -357,6 +357,8 @@ This architecture separates mode detection (the adapter decides *what* action a 
 | `shouldOpenDropdownOnFocus` | `boolean` | `false` | Auto-open dropdown when cell is focused |
 | `shouldOpenDropdownOnEnter` | `boolean` | `false` | Enter key opens dropdown (`true`) or moves to next row (`false`) |
 | `overlayGroup` (`overlay-group`) | `string \| null` | `null` | Scope the "one overlay open at a time" coordination of the cell dropdown, the date editor and the row toolbar (`toolbar-trigger` click / button) to a named group: overlays (multiselects, datepickers, external popovers) sharing a group dismiss each other when one opens; different groups are independent. Unset = the default (ungrouped) group |
+| `menuPresentation` (`menu-presentation`) | `'auto' \| 'floating' \| 'sheet' \| 'drawer'` | `'auto'` | How the cell / header menus open: `auto` — a bottom sheet on a phone, the floating menu elsewhere; `sheet`, `drawer` (full-height side panel) or `floating` always. Per device / width through the responsive rules |
+| `menuSide` (`menu-side`) | `'start' \| 'end'` | `'start'` | The edge a `drawer` menu slides in from |
 | `isCheckboxAlwaysEditable` | `boolean` | `false` | Checkboxes are always clickable, even in navigate mode |
 
 ### Sorting
@@ -1068,7 +1070,7 @@ web-grid.orders { --wg-context-menu-bg: #eef; }  /* just this grid's menus */
 | `--wg-context-menu-divider-color` | `--km-menu-divider-color` | Divider line color |
 | `--wg-context-menu-divider-margin` | `--km-menu-divider-margin` | Divider margin |
 | `--wg-context-menu-disabled-opacity` | `--km-menu-disabled-opacity` | Disabled item opacity |
-| `--wg-context-menu-z-index` | `--km-menu-z-index` (10000) | Menu stacking order |
+| `--wg-context-menu-z-index` | `--km-menu-z-index` (9001 = `--base-z-tooltip` + 1) | Menu stacking order |
 
 ## Keyboard Shortcuts
 

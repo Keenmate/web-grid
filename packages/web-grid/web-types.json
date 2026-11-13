@@ -406,6 +406,19 @@
               "value": { "type": "string | null" }
             },
             {
+              "name": "menu-presentation",
+              "description": "How the component's context / dropdown menus open: 'auto' (default — a bottom sheet on a phone, the floating menu elsewhere), 'floating', 'sheet' (bottom sheet) or 'drawer' (full-height side panel on `menu-side`). Per device / width through the responsive rules.",
+              "value": {
+                "type": "'auto' | 'floating' | 'sheet' | 'drawer'",
+                "default": "'auto'"
+              }
+            },
+            {
+              "name": "menu-side",
+              "description": "The edge a 'drawer' menu slides in from: 'start' (default — left in LTR, right in RTL) or 'end'.",
+              "value": { "type": "'start' | 'end'", "default": "'start'" }
+            },
+            {
               "name": "defer",
               "description": "Hold the first build (core, SPEC §6.3): while set when the element first connects, nothing is built and every input, callback and listener assigned meanwhile accumulates; `release()` (or removing the attribute) then builds once. Latched after the first build.",
               "value": { "type": "boolean", "default": "false" }
@@ -1244,6 +1257,16 @@
                 "name": "overlayGroup",
                 "description": "Scope the \"one overlay open at a time\" coordination to a named group. Overlays (the cell dropdown, the row toolbar with a click / button trigger, multiselects, datepickers, external popovers) sharing a group dismiss each other when one opens; different groups are independent. Unset = the default (ungrouped) group.",
                 "type": "string | null"
+              },
+              {
+                "name": "menuPresentation",
+                "description": "How the component's context / dropdown menus open: 'auto' (default — a bottom sheet on a phone, the floating menu elsewhere), 'floating', 'sheet' (bottom sheet) or 'drawer' (full-height side panel on `menu-side`). Per device / width through the responsive rules.",
+                "type": "'auto' | 'floating' | 'sheet' | 'drawer'"
+              },
+              {
+                "name": "menuSide",
+                "description": "The edge a 'drawer' menu slides in from: 'start' (default — left in LTR, right in RTL) or 'end'.",
+                "type": "'start' | 'end'"
               },
               {
                 "name": "shouldDefer",

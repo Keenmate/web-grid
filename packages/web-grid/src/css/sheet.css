@@ -41,6 +41,7 @@
   box-shadow: none;
   background: var(--wg-dropdown-bg);
   z-index: var(--wg-z-dropdown);
+  --_wg-sheet-bg: var(--wg-dropdown-bg);
 }
 
 .wg__dropdown--sheet:focus {
@@ -48,55 +49,23 @@
 }
 
 /* ==========================================================================
-   HEADER — title, close button, the search field (combobox / autocomplete)
-   ========================================================================== */
-.wg__sheet-header {
+   HEADER — core's sheet chrome + the grid's layout around it
+   ==========================================================================
+   The bar, title and close button are core's SHEET_CHROME_CSS (`.km-sheet-header` /
+   `.km-sheet-title` / `.km-sheet-close`, adopted by modules/sheet; rulebook C-RO-17) —
+   themed by the page-wide `--km-sheet-*` variables. Here only what the grid's sheets add:
+   the header sticks while the options scroll (so it takes the sheet's own background,
+   `--_wg-sheet-bg`, set by each sheet panel), it
+   bleeds under the status bar (top safe area) and wraps the search field onto its own row.
+   `.wg__sheet-header.km-sheet-header` outranks core's single-class rules. */
+.wg__sheet-header.km-sheet-header {
   position: sticky;
   top: 0;
   z-index: 1;
-  display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: var(--wg-spacing-sm);
-  padding: max(var(--wg-spacing-sm), env(safe-area-inset-top)) var(--wg-spacing-sm) var(--wg-spacing-sm) var(--wg-spacing-md);
-  background: var(--wg-dropdown-bg);
-  border-bottom: 1px solid var(--wg-border-color);
+  padding-top: max(var(--_km-sheet-header-padding-block, var(--km-sheet-header-padding-block, var(--wg-spacing-sm))), env(safe-area-inset-top));
+  background: var(--_km-sheet-header-bg, var(--km-sheet-header-bg, var(--_wg-sheet-bg)));
   font-family: inherit;
-}
-
-.wg__sheet-title {
-  flex: 1 1 0;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: var(--wg-font-size-base);
-  font-weight: var(--wg-font-weight-semibold);
-  color: var(--wg-text-color-1);
-}
-
-.wg__sheet-close {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: var(--wg-touch-target-min);
-  min-height: var(--wg-touch-target-min);
-  padding: 0;
-  border: none;
-  border-radius: var(--wg-border-radius-sm);
-  background: transparent;
-  color: var(--wg-text-color-1);
-  cursor: pointer;
-}
-
-.wg__sheet-close:hover {
-  background: var(--wg-hover-bg);
-}
-
-.wg__sheet-close:focus-visible {
-  outline: 2px solid var(--wg-accent-color);
-  outline-offset: -2px;
 }
 
 /* Its own row under the title (the soft keyboard types here; the cell is covered) */
