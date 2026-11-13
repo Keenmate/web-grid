@@ -205,8 +205,44 @@ test.describe('phone: the cell popups are a full-screen sheet', () => {
 		await sheetOf(page).locator('.wg__dropdown-option', { hasText: 'Done' }).tap()
 		await settle(page)
 		// pushState + back(): the entry is popped (history.length keeps it as a forward entry)
-		expect(await page.evaluate(() => (history.state as { wgSheet?: boolean } | null)?.wgSheet ?? false)).toBe(false)
+		expect(await page.evaluate(() => (history.state as { kmBackEntry?: boolean } | null)?.kmBackEntry ?? false)).toBe(false)
 		expect(await page.evaluate(() => history.length)).toBeGreaterThanOrEqual(before)
+	})
+
+	test('closing keeps the page scrolled where it was, without a jump to the top (close button, Back) — core claimBackEntry', async ({ page }) => {
+		await page.goto(PAGE)
+		await expect(gridLocator(page).locator('tbody tr.wg__row').first()).toBeVisible()
+		// A tall page with the grid well below the top
+		await page.evaluate(() => {
+			const spacer = document.createElement('div')
+			spacer.style.height = '1500px'
+			document.body.prepend(spacer)
+			document.body.style.minHeight = '4000px'
+		})
+		await cell(page, ROW, 1).evaluate((el) => el.scrollIntoView({ block: 'center', behavior: 'instant' }))
+		const scrollY = () => page.evaluate(() => Math.round(window.scrollY))
+		const before = await scrollY()
+		expect(before).toBeGreaterThan(1000)
+		// Every scroll position from the close on (the browser's own restore would flash to 0)
+		const track = () => page.evaluate(() => {
+			const w = window as unknown as { __ys: number[] }
+			w.__ys = []
+			addEventListener('scroll', () => w.__ys.push(Math.round(scrollY)))
+		})
+		const seen = () => page.evaluate(() => (window as unknown as { __ys: number[] }).__ys)
+
+		for (const close of ['close button', 'Back'] as const) {
+			await cell(page, ROW, 1).tap()
+			await expect(sheetOf(page)).toHaveCount(1)
+			await track()
+			if (close === 'Back') await page.evaluate(() => history.back())
+			else await sheetOf(page).locator('.wg__sheet-close').tap()
+			await expect(sheetOf(page)).toHaveCount(0)
+			await page.waitForTimeout(300) // the deferred history.back() and its traversal
+			expect(await scrollY(), close).toBe(before)
+			expect((await seen()).filter((y) => y !== before), close).toEqual([])
+		}
+		expect(await page.evaluate(() => history.scrollRestoration)).toBe('auto') // the page's own mode is back
 	})
 
 	test('date: a tapped day saves, focus back on the cell', async ({ page }) => {

@@ -10,6 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Changed — the phone sheet's Back entry is core's (2026-11-13)
+- The phone Back gesture for the cell dropdown / date editor sheet is core `claimBackEntry()` (needs core
+  `^1.0.0-rc23`; rulebook C-RO-15) instead of the grid's own `pushState` / `popstate` copy — the same one
+  page-wide entry as core's menu sheet (a menu or sheet opening right after adopts it). While it is held the
+  page's `history.scrollRestoration` is `'manual'`, so closing a sheet never moves the page (the scroll lock
+  restores the position). `history.state` is `{ kmBackEntry: true }` (was `{ wgSheet: true }`).
+
 ### Internal — core 1.0.0-rc22 (2026-11-13)
 - **Requires `@keenmate/web-components-core` `^1.0.0-rc22`** (was `^1.0.0-rc21`).
 
