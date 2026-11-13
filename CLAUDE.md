@@ -27,7 +27,8 @@ locally — every local fork is how they drifted apart.
   Re-theme with `kmwc.theme.accentColor`, never by copying CSS. Native form
   controls (inputs, selects, checkboxes, radios, `role="switch"`, buttons) and
   tables are already styled by the kit (`.reference-table`, `.table-striped`,
-  `.table-compact`, …) — don't restyle them per page; `kmwc-native` opts an
+  `.table-compact`, …; on a phone a `.reference-table` stacks into cards,
+  `.table-scroll` keeps it a grid) — don't restyle them per page; `kmwc-native` opts an
   element out. Log lines take the kit tones (`.log-line--ok|info|warn|err|muted`,
   `--action`, timeline cells `.log-line__time` …) — don't colour them per page;
   write event-log lines with `appendLogLine(panel, { name, detail, variant })`
@@ -42,7 +43,9 @@ locally — every local fork is how they drifted apart.
 - **Example pages are fragments:** no `<html>`/`<head>`/`<header>` — start with
   `<meta name="kmwc:title" content="…">`, the devkit layout adds the rest. Shared text
   goes in `partials/` via `<kmwc-include>`; show code with `<kmwc-demo>` (the live
-  markup IS the snippet) — never hand-copy a demo into a `.code-block`.
+  markup IS the snippet) — never hand-copy a demo into a `.code-block`. Its code
+  is highlighted at build time; a hand-written `.code-block` gets the same with
+  `data-language="svelte"` (html, js, ts, css, json, sh) — no highlighter on the page.
 - **Every example has a permanent code:** each `<h2>` starts `TH07 · Title`
   (page prefix + number; a plain `Summary` is exempt). New examples take the
   next free number; never renumber or reuse one — the rules are the rulebook's
