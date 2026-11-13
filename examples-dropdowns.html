@@ -40,8 +40,8 @@
         <h2>DD04 · Custom Option Rendering</h2>
         <p>The Priority column uses <code>renderOptionCallback</code> to create custom HTML for each option with colored dots.</p>
 
-        <div class="code-block" data-kmwc-snippet>
-            <pre>editorOptions: {
+        <div class="code-block" data-kmwc-snippet data-language="js">
+            <pre><code>editorOptions: {
     renderOptionCallback: ({ option: opt, ...ctx }) => {
         const classes = ['wg__dropdown-option']
         if (ctx.isFocused) classes.push('wg__dropdown-option--highlighted')
@@ -52,7 +52,7 @@
             ${opt.label}
         &lt;/div&gt;`
     }
-}</pre>
+}</code></pre>
         </div>
 
         <div class="note">
@@ -72,8 +72,8 @@
         <h2>DD05 · Dynamic Cell Styling</h2>
         <p>The Priority column also uses <code>getCellClassCallback</code> to apply CSS classes based on the cell value, <code>renderCellCallback</code> for the cell HTML, and <code>getCustomStylesCallback</code> to inject the matching styles into the shadow DOM.</p>
 
-        <div class="code-block" data-kmwc-snippet>
-            <pre>// Column definition
+        <div class="code-block" data-kmwc-snippet data-language="js">
+            <pre><code>// Column definition
 {
     field: 'priority',
     getCellClassCallback: ({ value }) =&gt; value ? `priority-${value}` : null,
@@ -89,7 +89,7 @@ grid.getCustomStylesCallback = () =&gt; `
     .priority-high { background: color-mix(in srgb, #fd7e14 12%, transparent); }
     .priority-medium { background: color-mix(in srgb, #ffc107 12%, transparent); }
     .priority-low { background: color-mix(in srgb, #28a745 12%, transparent); }
-`</pre>
+`</code></pre>
         </div>
 
         <div class="note">

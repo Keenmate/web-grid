@@ -15,19 +15,22 @@
         <div class="card">
             <h2>SH02 · Available Shortcuts</h2>
             <table class="reference-table table-compact">
+                <thead><tr><th>Key</th><th>Action</th></tr></thead>
+                <tbody>
                 <tr><td><kbd>Ctrl+Delete</kbd></td><td>Delete row</td></tr>
                 <tr><td><kbd>Ctrl+D</kbd></td><td>Duplicate row</td></tr>
                 <tr><td><kbd>Ctrl+U</kbd></td><td>Move row up</td></tr>
                 <tr><td><kbd>Ctrl+M</kbd></td><td>Move row down</td></tr>
                 <tr><td><kbd>F2</kbd></td><td>Edit cell (built-in navigation key)</td></tr>
                 <tr><td><kbd>Ctrl+E</kbd></td><td>Export row</td></tr>
+                </tbody>
             </table>
         </div>
 
         <div class="card">
             <h2>SH03 · Configuration</h2>
-            <div class="code-block" data-kmwc-snippet>
-                <pre>// Enable navigate mode for cell focus
+            <div class="code-block" data-kmwc-snippet data-language="js">
+                <pre><code>// Enable navigate mode for cell focus
 grid.isEditingEnabled = true
 grid.editTrigger = 'navigate'
 
@@ -57,7 +60,7 @@ grid.onAction = ({ action, id, rowIndex }) => {
 }
 
 // Show help icon
-grid.isShortcutsHelpShown = true</pre>
+grid.isShortcutsHelpShown = true</code></pre>
             </div>
         </div>
     </div>
@@ -67,20 +70,26 @@ grid.isShortcutsHelpShown = true</pre>
             <h2>SH04 · API Reference</h2>
             <h3>Grid Properties</h3>
             <table class="reference-table table-compact">
+                <thead><tr><th>Property</th><th>Description</th></tr></thead>
+                <tbody>
                 <tr><td><code>rowShortcuts</code></td><td>Array of shortcut definitions</td></tr>
                 <tr><td><code>isShortcutsHelpShown</code></td><td>Show info icon (default: false)</td></tr>
-                <tr><td><code>shortcutsHelpPosition</code></td><td>'top-right' | 'top-left'</td></tr>
+                <tr><td><code>shortcutsHelpPosition</code></td><td>'top-right' (default) | 'top-left'</td></tr>
                 <tr><td><code>renderShortcutsHelpCallback</code></td><td>Custom HTML for overlay</td></tr>
+                </tbody>
             </table>
 
             <h3 class="mt-1">Shortcut Item Properties (<code>GridShortcut</code>)</h3>
             <table class="reference-table table-compact">
+                <thead><tr><th>Property</th><th>Description</th></tr></thead>
+                <tbody>
                 <tr><td><code>shortcut</code></td><td>Key combo (e.g., "Ctrl+Delete", "Ctrl+D", "Shift+F3")</td></tr>
                 <tr><td><code>action</code></td><td>A row built-in to run: 'add' | 'delete' | 'duplicate' | 'move-up' | 'move-down' (optional)</td></tr>
                 <tr><td><code>id</code></td><td>Identifies a custom item (in the <code>action</code> event)</td></tr>
                 <tr><td><code>text</code></td><td>Label for the help overlay</td></tr>
                 <tr><td><code>onClick</code></td><td>Called with the action detail (custom items)</td></tr>
                 <tr><td><code>isDisabled</code> / <code>getIsDisabledCallback</code></td><td>Static flag or per-row callback (optional)</td></tr>
+                </tbody>
             </table>
         </div>
 
@@ -88,11 +97,15 @@ grid.isShortcutsHelpShown = true</pre>
             <h2>SH05 · Action Detail</h2>
             <p>The detail passed to <code>onClick</code>, <code>getIsDisabledCallback</code> and the <code>action</code> event (plus <code>controller</code> and <code>element</code>):</p>
             <table class="reference-table table-compact">
+                <thead><tr><th>Field</th><th>Description</th></tr></thead>
+                <tbody>
                 <tr><td><code>row</code></td><td>The row data object</td></tr>
                 <tr><td><code>rowIndex</code></td><td>Index of the focused row</td></tr>
                 <tr><td><code>colIndex</code></td><td>Index of the focused column</td></tr>
                 <tr><td><code>column</code></td><td>The column definition</td></tr>
+                <tr><td><code>field</code></td><td>The column's field</td></tr>
                 <tr><td><code>value</code></td><td>Value of the focused cell</td></tr>
+                </tbody>
             </table>
 
             <h3 class="mt-1">Key Format</h3>

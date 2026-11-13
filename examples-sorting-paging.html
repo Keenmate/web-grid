@@ -94,18 +94,21 @@
         <div class="card">
             <h2>SP04 · Sorting Behavior</h2>
             <table class="reference-table table-compact">
+                <thead><tr><th>Gesture</th><th>Result</th></tr></thead>
+                <tbody>
                 <tr><td><strong>Click</strong></td><td>Single-column sort (replaces all)</td></tr>
                 <tr><td><strong>Ctrl+Click</strong></td><td>Add to multi-column sort</td></tr>
                 <tr><td><strong>Click sorted</strong></td><td>Toggle direction (asc → desc)</td></tr>
                 <tr><td><strong>Click desc</strong></td><td>Clear sorting</td></tr>
                 <tr><td><strong>Ctrl+Click sorted desc</strong></td><td>Remove from sort</td></tr>
+                </tbody>
             </table>
         </div>
 
         <div class="card">
             <h2>SP05 · API</h2>
-            <div class="code-block" data-kmwc-snippet>
-                <pre>// Set initial sort
+            <div class="code-block" data-kmwc-snippet data-language="js">
+                <pre><code>// Set initial sort
 grid.sort = [
     { column: 'dept', direction: 'asc' },
     { column: 'name', direction: 'desc' }
@@ -123,14 +126,16 @@ grid.paginationPosition = 'bottom-right'
 grid.paginationPosition = 'top-right|bottom-right'
 
 // Server-side pagination
+grid.isPagingEnabled = true
+grid.paginationMode = 'server'  // items are the current page; the grid doesn't slice
 grid.totalItems = 500
 grid.currentPage = 1
 grid.isPaginationShown = true
 
 // Handle data requests
 grid.onDataRequest = (detail) => {
-    // detail: { sort, page, pageSize, trigger }
-    // trigger: 'sort' | 'page' | 'page-size' | 'init'
+    // detail: { sort, page, pageSize, trigger, mode, skip }
+    // trigger: 'sort' | 'page' | 'page-size' | 'filter' | 'init' | 'load-more'
     fetchData(detail).then(res => {
         grid.items = res.data
         grid.totalItems = res.total
@@ -150,23 +155,23 @@ grid.getPaginationLabelsCallback = (ctx) => ({
 grid.summaryPosition = 'bottom-left'
 grid.renderSummaryCallback = ({ allItems }) => {
   const total = allItems.reduce((s, r) => s + r.salary, 0)
-  return `<strong>Total:</strong> $${total.toLocaleString()}`
+  return `&lt;strong&gt;Total:&lt;/strong&gt; $${total.toLocaleString()}`
 }
 
 // Server-side: use metadata for aggregates
 grid.renderSummaryCallback = ({ metadata }) => {
-  return `<strong>Total:</strong> $${metadata?.total || 0}`
+  return `&lt;strong&gt;Total:&lt;/strong&gt; $${metadata?.total || 0}`
 }
 grid.summaryMetadata = serverResponse.aggregates
 
 // Same area = share row (default: true)
 grid.summaryPosition = 'bottom-left'
 grid.paginationPosition = 'bottom-right'
-grid.summaryInline = true  // Share row when in same area
+grid.isSummaryInline = true  // Share row when in same area
 // Result: [Summary] -------- [Pagination]
 
 // Separate rows
-grid.summaryInline = false  // Each on its own row</pre>
+grid.isSummaryInline = false  // Each on its own row</code></pre>
             </div>
         </div>
     </div>
@@ -347,7 +352,7 @@ grid.summaryInline = false  // Each on its own row</pre>
     // Summary inline checkbox
     const summaryInlineCheckbox = document.getElementById('summary-inline')
     summaryInlineCheckbox.addEventListener('change', () => {
-        grid1.summaryInline = summaryInlineCheckbox.checked
+        grid1.isSummaryInline = summaryInlineCheckbox.checked
     })
 
     // =============================================================

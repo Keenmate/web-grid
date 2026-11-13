@@ -104,8 +104,8 @@
 
         <div class="card">
             <h2>TB04 · Usage</h2>
-            <div class="code-block" data-kmwc-snippet>
-                <pre>// Enable toolbar with built-in actions
+            <div class="code-block" data-kmwc-snippet data-language="js">
+                <pre><code>// Enable toolbar with built-in actions
 grid.isRowToolbarShown = true
 grid.rowToolbar = ['add', 'delete', 'duplicate', 'move-up', 'move-down']
 grid.toolbarTrigger = 'hover' // or 'click', 'button'
@@ -123,7 +123,7 @@ grid.onAction = ({ action, id, row, rowIndex, source }) => {
 // Veto any item (async OK, e.g. a confirm dialog)
 grid.beforeActionCallback = ({ action, row }) => {
     if (action === 'delete') return confirm(`Delete ${row.title}?`)
-}</pre>
+}</code></pre>
             </div>
         </div>
     </div>
@@ -131,8 +131,8 @@ grid.beforeActionCallback = ({ action, row }) => {
     <div class="card">
         <h2>TB05 · Custom Toolbar Items</h2>
         <p>Define custom items (an <code>id</code>, no built-in <code>action</code>) with icons, texts, and handlers:</p>
-        <div class="code-block" data-kmwc-snippet>
-            <pre>grid.rowToolbar = [
+        <div class="code-block" data-kmwc-snippet data-language="js">
+            <pre><code>grid.rowToolbar = [
     'add',  // Built-in shorthand
     'delete',
     { divider: true },
@@ -154,15 +154,15 @@ grid.beforeActionCallback = ({ action, row }) => {
             row.locked = true
         }
     }
-]</pre>
+]</code></pre>
         </div>
     </div>
 
     <div class="card">
         <h2>TB06 · Rich Tooltips</h2>
         <p>Toolbar buttons show a rich tooltip: <code>text</code> is the heading, <code>tooltip</code> the description, <code>shortcut</code> the key line. Hover over a button to see it in action!</p>
-        <div class="code-block" data-kmwc-snippet>
-            <pre>// Static tooltip with description
+        <div class="code-block" data-kmwc-snippet data-language="js">
+            <pre><code>// Static tooltip with description
 grid.rowToolbar = [
     {
         action: 'duplicate',
@@ -180,9 +180,9 @@ grid.rowToolbar = [
         icon: 'ℹ',
         text: 'Info',
         // the description renders as HTML: escape row data
-        getTooltipCallback: ({ row }) => `Task #${row.id} · <em>${esc(row.title)}</em>`
+        getTooltipCallback: ({ row }) => `Task #${row.id} · &lt;em&gt;${esc(row.title)}&lt;/em&gt;`
     }
-]</pre>
+]</code></pre>
         </div>
         <p class="note mt-1">
             <strong>Note:</strong> When toolbar items have a matching <code>rowShortcuts</code> entry (same <code>id</code> or built-in <code>action</code>),
@@ -193,8 +193,8 @@ grid.rowToolbar = [
     <div class="card">
         <h2>TB07 · Keyboard Shortcuts on Hover</h2>
         <p>When the toolbar is visible (hovering over a row), keyboard shortcuts work on that row - no cell focus required!</p>
-        <div class="code-block" data-kmwc-snippet>
-            <pre>// Shortcuts are action items bound to a key; `action` may name a row built-in
+        <div class="code-block" data-kmwc-snippet data-language="js">
+            <pre><code>// Shortcuts are action items bound to a key; `action` may name a row built-in
 grid.rowShortcuts = [
     { shortcut: 'd', action: 'duplicate', text: 'Duplicate row' },
     { shortcut: 'Delete', action: 'delete', text: 'Delete row' },
@@ -205,7 +205,7 @@ grid.rowShortcuts = [
         text: 'Export row',
         onClick: ({ row, rowIndex }) => exportRow(row)  // custom item
     }
-]</pre>
+]</code></pre>
         </div>
     </div>
 
@@ -215,8 +215,8 @@ grid.rowShortcuts = [
         <web-grid id="grid2" isStriped isHoverable style="max-height: 400px;"></web-grid>
         <div class="output-label mt-1">Action log</div>
         <div class="log-panel" id="grid2Log"></div>
-        <div class="code-block mt-1" data-kmwc-snippet>
-            <pre>// Row 1: Move actions | CRUD actions
+        <div class="code-block mt-1" data-kmwc-snippet data-language="js">
+            <pre><code>// Row 1: Move actions | CRUD actions
 // Row 2: Custom actions (one with a visible text label)
 grid.rowToolbar = [
     { action: 'move-up', icon: '↑', text: 'Move up', row: 1 },
@@ -230,7 +230,7 @@ grid.rowToolbar = [
     { id: 'preview', icon: '👁', text: 'View', isTextVisible: true, row: 2 },
     { divider: true },
     { id: 'archive', icon: '📦', text: 'Archive', row: 2 }
-]</pre>
+]</code></pre>
         </div>
     </div>
 
@@ -242,8 +242,8 @@ grid.rowToolbar = [
         <web-grid id="grid4" isStriped isHoverable style="max-height: 400px;"></web-grid>
         <div class="output-label mt-1">Action log</div>
         <div class="log-panel" id="grid4Log"></div>
-        <div class="code-block mt-1" data-kmwc-snippet>
-            <pre>grid.toolbarPosition = 'top'
+        <div class="code-block mt-1" data-kmwc-snippet data-language="js">
+            <pre><code>grid.toolbarPosition = 'top'
 grid.shouldToolbarFollowCursor = true  // Toolbar follows mouse
 grid.cellToolbarOffset = 0.2     // Position at 20% from cell left edge (0-1)
 
@@ -267,7 +267,7 @@ grid.getCellToolbarItemsCallback = ({ field }) => {
     }
 }
 
-grid.onAction = ({ id, row }) => { /* id === 'setHigh', ... */ }</pre>
+grid.onAction = ({ id, row }) => { /* id === 'setHigh', ... */ }</code></pre>
         </div>
     </div>
 
@@ -280,8 +280,8 @@ grid.onAction = ({ id, row }) => { /* id === 'setHigh', ... */ }</pre>
         <web-grid id="grid3" isStriped isHoverable style="max-height: 400px;"></web-grid>
         <div class="output-label mt-1">Action log</div>
         <div class="log-panel" id="grid3Log"></div>
-        <div class="code-block mt-1" data-kmwc-snippet>
-            <pre>grid.isRowToolbarShown = true
+        <div class="code-block mt-1" data-kmwc-snippet data-language="js">
+            <pre><code>grid.isRowToolbarShown = true
 grid.toolbarPosition = 'inline'  // Renders as column
 grid.labels = { inlineActionsHeader: 'Actions' }  // Optional header ('' = blank)
 
@@ -308,7 +308,7 @@ grid.rowToolbar = [
 // The Delete shortcut doesn't see the button's visibility — veto it here
 grid.beforeActionCallback = ({ action, row }) => {
     if (action === 'delete' && row.priority === 'High') return false
-}</pre>
+}</code></pre>
         </div>
     </div>
 

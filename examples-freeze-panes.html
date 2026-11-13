@@ -30,20 +30,20 @@
             <ul>
                 <li><code>isStickyRowNumbers: true</code> - Row number column stays fixed on the left</li>
                 <li><code>frozenColumnCount: N</code> - First N columns are frozen (after visual reorder)</li>
-                <li><code>frozen: true</code> on Column - Mark individual columns as frozen (they move to the left)</li>
+                <li><code>isFrozen: true</code> on Column - Mark individual columns as frozen (they move to the left)</li>
             </ul>
         </div>
     </div>
 
     <div class="card">
         <h2>FP02 · Column-Level Frozen Property</h2>
-        <p>Columns can be individually marked as frozen using the <code>frozen: true</code> property. Frozen columns automatically move to the left side.</p>
+        <p>Columns can be individually marked as frozen using the <code>isFrozen: true</code> property. Frozen columns automatically move to the left side.</p>
 
         <web-grid id="grid2" style="max-height: 300px;"></web-grid>
 
         <div class="note mt-1">
             <div class="note-title">Visual Reorder</div>
-            <p>In this example, the "Status" column is defined last but has <code>frozen: true</code>, so it appears first (after row numbers). The visual order is: Row Numbers → Status → ID → Name → Email → ...</p>
+            <p>In this example, the "Status" column is defined last but has <code>isFrozen: true</code>, so it appears first (after row numbers). The visual order is: Row Numbers → Status → ID → Name → Email → ...</p>
         </div>
     </div>
 
@@ -54,6 +54,8 @@
             <div>
                 <h3>Grid-Level Properties</h3>
                 <table class="reference-table table-compact table-full">
+                    <thead><tr><th>Property</th><th>Description</th></tr></thead>
+                    <tbody>
                     <tr>
                         <td><code>isRowNumbersShown</code></td>
                         <td>Show row number column</td>
@@ -66,19 +68,23 @@
                         <td><code>frozenColumnCount</code></td>
                         <td>Number of columns to freeze from left</td>
                     </tr>
+                    </tbody>
                 </table>
             </div>
             <div>
                 <h3>Column-Level Properties</h3>
                 <table class="reference-table table-compact table-full">
+                    <thead><tr><th>Property</th><th>Description</th></tr></thead>
+                    <tbody>
                     <tr>
-                        <td><code>frozen</code></td>
+                        <td><code>isFrozen</code></td>
                         <td>Mark column as frozen (moves to left)</td>
                     </tr>
                     <tr>
                         <td><code>width</code></td>
                         <td>Explicit width recommended for frozen columns</td>
                     </tr>
+                    </tbody>
                 </table>
             </div>
         </div>
@@ -147,7 +153,7 @@
     // Second grid - demonstrating column-level frozen property
     const grid2 = document.getElementById('grid2')
 
-    // Status column is defined last but will appear first due to frozen: true
+    // Status column is defined last but will appear first due to isFrozen: true
     const columnsWithFrozen = [
         { field: 'id', title: 'ID', width: '80px' },
         { field: 'name', title: 'Name', width: '150px' },
@@ -157,7 +163,7 @@
         { field: 'location', title: 'Location', width: '120px' },
         { field: 'salary', title: 'Salary', width: '100px', getDisplayValueCallback: ({ value: v }) => '$' + v?.toLocaleString() },
         { field: 'phone', title: 'Phone', width: '120px' },
-        { field: 'status', title: 'Status', width: '100px', frozen: true }  // This will move to the left
+        { field: 'status', title: 'Status', width: '100px', isFrozen: true }  // This will move to the left
     ]
 
     grid2.items = wideData.slice(0, 20)

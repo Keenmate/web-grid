@@ -55,12 +55,12 @@
     <div class="card">
         <h2>HM02 · How sizing works internally</h2>
         <p>The shadow DOM scroll container uses <code>max-height: inherit</code>, so a <code>max-height</code> set on the host element propagates inside. That's the whole mechanism for Container mode — set a pixel cap and the grid scrolls internally.</p>
-        <div class="code-block" data-kmwc-snippet>
-            <pre>/* Inside the grid's shadow DOM */
+        <div class="code-block" data-kmwc-snippet data-language="css">
+            <pre><code>/* Inside the grid's shadow DOM */
 .wg {
   max-height: inherit;  /* picks up host max-height */
   overflow: auto;       /* single scroll container */
-}</pre>
+}</code></pre>
         </div>
         <p class="mt-1">In Full Height mode there is no cap — <code>height: 100%</code> resolves to <code>auto</code> against the unbounded parent, the grid sizes to its content, and the outer layout grows with it. Sticky headers still work in Container mode thanks to the single scroll container.</p>
     </div>

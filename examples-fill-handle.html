@@ -31,13 +31,13 @@
 
         <div class="note mt-1">
             <div class="note-title">Cancellation Example</div>
-            <pre data-kmwc-snippet><code>grid.beforeFillCallback = (detail) => {
+            <div class="code-block" data-language="js"><pre data-kmwc-snippet><code>grid.beforeFillCallback = (detail) => {
     // Block filling the "status" column
     if (detail.sourceCell.field === 'status') {
         alert('Cannot fill the Status column!')
         return false  // Cancel the fill
     }
-}</code></pre>
+}</code></pre></div>
         </div>
     </div>
 
@@ -53,7 +53,7 @@
             </div>
             <div>
                 <h3>Horizontal Fill</h3>
-                <p>Drag left or right to fill cells in the same row.</p>
+                <p>Drag left or right to fill cells in the same row (<code>fillDirection = 'all'</code>).</p>
                 <web-grid id="gridHorizontal" style="max-width: fit-content; max-height: 250px;"></web-grid>
             </div>
         </div>
@@ -63,7 +63,7 @@
         <h2>FH04 · Callback Data Structure</h2>
         <p>The <code>beforeFillCallback</code> callback receives detailed information about the fill operation:</p>
 
-        <pre data-kmwc-snippet><code>{
+        <div class="code-block" data-language="js"><pre data-kmwc-snippet><code>{
     sourceCell: {
         rowIndex: 0,          // Source row index
         colIndex: 1,          // Source column index
@@ -76,7 +76,7 @@
         { rowIndex: 3, colIndex: 1, field: "name" }
     ],
     direction: "down"         // "up" | "down" | "left" | "right"
-}</code></pre>
+}</code></pre></div>
 
         <p class="mt-1">After <code>beforeFillCallback</code> completes (unless cancelled), the <code>row-change</code> event (<code>onRowChange</code>) fires for each modified cell.</p>
     </div>
@@ -84,13 +84,19 @@
     <div class="card">
         <h2>FH05 · Configuration</h2>
         <table class="reference-table table-compact">
+            <thead><tr><th>Property</th><th>Description</th></tr></thead>
+            <tbody>
             <tr>
                 <td><code>editTrigger</code></td>
                 <td>Must be <code>"navigate"</code> for cell focus (and fill handle) to work.</td>
             </tr>
             <tr>
-                <td><code>isEditable</code></td>
+                <td><code>isEditingEnabled</code></td>
                 <td>Grid must be editable for fill to work. Non-editable columns are skipped.</td>
+            </tr>
+            <tr>
+                <td><code>fillDirection</code> (<code>fill-direction</code>)</td>
+                <td><code>'vertical'</code> (default) fills within the source column only; <code>'all'</code> also fills across columns. A column's own <code>fillDirection</code> overrides it.</td>
             </tr>
             <tr>
                 <td><code>beforeFillCallback</code></td>
@@ -100,6 +106,7 @@
                 <td><code>row-change</code> / <code>onRowChange</code></td>
                 <td>Fired for each cell after fill is applied.</td>
             </tr>
+            </tbody>
         </table>
     </div>
 
@@ -320,5 +327,6 @@
     ]
     gridHorizontal.isEditingEnabled = true
     gridHorizontal.editTrigger = 'navigate'
+    gridHorizontal.fillDirection = 'all'  // default 'vertical' keeps a fill inside its column
     gridHorizontal.isHoverable = true
 </script>

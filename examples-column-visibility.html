@@ -24,15 +24,15 @@
     <div class="card">
         <h2>CV02 · Header Context Menu</h2>
         <p>Enable the predefined menu items <code>'column-visibility'</code> and <code>'hide-column'</code>:</p>
-        <div class="code-block" data-kmwc-snippet>
-            <pre>grid.headerContextMenu = [
+        <div class="code-block" data-kmwc-snippet data-language="js">
+            <pre><code>grid.headerContextMenu = [
     'sort-asc',
     'sort-desc',
     'clear-sort',
     { divider: true },
     'hide-column',        // hide this column (right-click target)
     'column-visibility'   // submenu with a toggle for each column
-]</pre>
+]</code></pre>
         </div>
         <p class="mt-1">The <code>'column-visibility'</code> submenu is generated dynamically from the current columns and shows a <em>Show all</em> entry plus one toggle per column.</p>
     </div>
@@ -40,14 +40,14 @@
     <div class="card">
         <h2>CV03 · Programmatic API</h2>
         <p>Column visibility is controlled by the <code>isHidden</code> flag on each column. To trigger a re-render, reassign the <code>columns</code> array:</p>
-        <div class="code-block" data-kmwc-snippet>
-            <pre>// Hide a specific column
+        <div class="code-block" data-kmwc-snippet data-language="js">
+            <pre><code>// Hide a specific column
 grid.columns.find(c => c.field === 'email').isHidden = true
 grid.columns = [...grid.columns]  // reassign to trigger re-render
 
 // Show everything
 grid.columns.forEach(c => c.isHidden = false)
-grid.columns = [...grid.columns]</pre>
+grid.columns = [...grid.columns]</code></pre>
         </div>
         <div class="note">
             <div class="note-title">Why reassign?</div>

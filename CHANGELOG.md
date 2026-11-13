@@ -10,6 +10,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Examples and docs — stacked API tables, highlighted code, reference brought up to date (2026-11-13)
+- Devkit `^1.0.0-rc14`: every API table has a header row (a card per row on a phone), the 46 hand-written
+  snippets are highlighted `.code-block[data-language]`s. Pages fixed against the source: grid modes used
+  `mode` / grid `isEditable` / `shouldShowDropdownOnFocus` / camelCase `editStartSelection` values /
+  `formatCallback` (now `preset` / `isEditingEnabled` / `shouldOpenDropdownOnFocus` / `'select-all'`… /
+  `getDisplayValueCallback`; defaults `'mouse-position'`, `false`), `cellSelectionMode` `'disabled'` → `'none'`,
+  freeze panes `frozen` → `isFrozen`, fill handle `isEditable` → `isEditingEnabled` (+ `fillDirection`; the
+  horizontal demo sets `'all'`), sorting `summaryInline` → `isSummaryInline` (+ server paging needs
+  `paginationMode`), virtual scroll drops `shouldUseVirtualScroll()` (not public), selection's preset select
+  set `mode`; two snippets rendered their `<strong>` / `<em>` instead of showing them. Rows added: menu item
+  `tooltip` / `cssClass` / `isToggled` / `shouldCloseOnClick`, `menuPresentation` / `menuSide`,
+  `HeaderMenuContext` `isTreeMode` / `allColumns` / `labels`, `columnMinWidth`, state callbacks,
+  `isReorderable`, `getRowIndex`, the row / cell selection and copy methods, `shouldCopyWithHeaders`.
+
 ### Added — `menu-presentation` / `menu-side` for the cell / header menus (2026-11-13)
 - New inputs **`menuPresentation` (`menu-presentation`: `auto` | `floating` | `sheet` | `drawer`, default
   `auto`)** and **`menuSide` (`menu-side`: `start` | `end`)** — core's standard menu-host rows

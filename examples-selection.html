@@ -39,7 +39,7 @@
                 <li><strong>Delete</strong> - Delete selected rows</li>
                 <li><strong>Ctrl+C</strong> - Copy selection to clipboard</li>
             </ul>
-            <div class="code-block" data-kmwc-snippet><pre><code>cellSelectionMode: 'none'  // No cell range selection</code></pre></div>
+            <div class="code-block" data-kmwc-snippet data-language="js"><pre><code>cellSelectionMode: 'none'  // No cell range selection</code></pre></div>
         </div>
     </div>
 
@@ -111,7 +111,7 @@
                 <li><strong>excel</strong> &mdash; isEditingEnabled=true, editTrigger=navigate, cellSelectionMode=click</li>
                 <li><strong>input-matrix</strong> &mdash; isEditingEnabled=true, editTrigger=always, cellSelectionMode=shift (cells are always editing, so shift+drag is needed to select)</li>
             </ul>
-            <div class="code-block" data-kmwc-snippet><pre><code>cellSelectionMode: 'click'  // Default
+            <div class="code-block" data-kmwc-snippet data-language="js"><pre><code>cellSelectionMode: 'click'  // Default
 shouldCopyWithHeaders: false  // Include headers when copying</code></pre></div>
         </div>
     </div>
@@ -137,7 +137,7 @@ shouldCopyWithHeaders: false  // Include headers when copying</code></pre></div>
                 <li><strong>Delete</strong> - Clear all values in range</li>
                 <li><strong>Ctrl+C</strong> - Copy to clipboard (Excel-compatible TSV)</li>
             </ul>
-            <div class="code-block" data-kmwc-snippet><pre><code>editTrigger: 'click'
+            <div class="code-block" data-kmwc-snippet data-language="js"><pre><code>editTrigger: 'click'
 cellSelectionMode: 'shift'  // Avoids conflict</code></pre></div>
         </div>
     </div>
@@ -161,7 +161,7 @@ cellSelectionMode: 'shift'  // Avoids conflict</code></pre></div>
                 <li><strong>Ctrl+Alt+E</strong> - Export selected rows OR cells</li>
                 <li><strong>Ctrl+Alt+S</strong> - Sum values in selected cells (cell range only)</li>
             </ul>
-            <div class="code-block" data-kmwc-snippet><pre><code>grid.rangeShortcuts = [{
+            <div class="code-block" data-kmwc-snippet data-language="js"><pre><code>grid.rangeShortcuts = [{
 shortcut: 'Delete',
 id: 'delete-or-clear',
 text: 'Delete rows or clear cells',
@@ -214,7 +214,7 @@ onClick: ({ rowIndices, cells, cellRange }) => {
                 <li><strong>Click outside</strong> — Clears row focus</li>
                 <li><strong>grid.focusedRowIndex</strong> — Get/set focused row programmatically (assignment is silent — no <code>focus-change</code>)</li>
             </ul>
-            <div class="code-block" data-kmwc-snippet><pre><code>grid.onFocusChange = ({ rowIndex, row, oldRowIndex }) => {
+            <div class="code-block" data-kmwc-snippet data-language="js"><pre><code>grid.onFocusChange = ({ rowIndex, row, oldRowIndex }) => {
 detailPanel.innerHTML = renderDetail(row)
 console.log(`Row ${rowIndex} focused (was: ${oldRowIndex})`)
 }
@@ -231,29 +231,50 @@ grid.focusedRowIndex = null // Clear focus</code></pre></div>
         
         <h3>Row Selection API</h3>
         <table class="reference-table table-compact table-full">
+            <thead><tr><th>Member</th><th>Description</th></tr></thead>
+            <tbody>
             <tr>
                 <td><code>selectedRowIndices</code></td>
                 <td>Array of selected row indices (read-only, sorted ascending)</td>
             </tr>
             <tr>
                 <td><code>selectRow(idx, mode)</code></td>
-                <td>Select a row. Mode: 'replace', 'toggle', or 'range'</td>
+                <td>Select a row. Mode: 'replace' (default), 'toggle', or 'range'</td>
+            </tr>
+            <tr>
+                <td><code>selectRowRange(fromIndex, toIndex)</code></td>
+                <td>Select the rows between two display indices (inclusive)</td>
+            </tr>
+            <tr>
+                <td><code>isRowSelected(idx)</code></td>
+                <td>Whether the row at this display index is selected</td>
+            </tr>
+            <tr>
+                <td><code>clearRowSelection()</code></td>
+                <td>Clear only the row selection</td>
             </tr>
             <tr>
                 <td><code>clearSelection()</code></td>
-                <td>Clear all selected rows</td>
+                <td>Clear every selection kind: rows, the cell range and columns</td>
+            </tr>
+            <tr>
+                <td><code>copySelectedRowsToClipboard()</code></td>
+                <td>Copy the selected rows (tab-separated); resolves <code>false</code> when nothing was copied</td>
             </tr>
             <tr>
                 <td><code>selectedRows</code></td>
                 <td>Get the data objects for selected rows</td>
             </tr>
+            </tbody>
         </table>
 
         <h3>Cell Range Selection API</h3>
         <table class="reference-table table-compact table-full">
+            <thead><tr><th>Member</th><th>Description</th></tr></thead>
+            <tbody>
             <tr>
                 <td><code>cellSelectionMode</code></td>
-                <td>Selection mode: 'disabled', 'click' (default), or 'shift'</td>
+                <td>Selection mode: 'none', 'click' (default), or 'shift'</td>
             </tr>
             <tr>
                 <td><code>selectedCellRange</code></td>
@@ -261,7 +282,7 @@ grid.focusedRowIndex = null // Clear focus</code></pre></div>
             </tr>
             <tr>
                 <td><code>selectCellRange(range)</code></td>
-                <td>Select a cell range programmatically</td>
+                <td>Select a cell range programmatically (<code>{ startRowIndex, endRowIndex, startColIndex, endColIndex }</code>)</td>
             </tr>
             <tr>
                 <td><code>clearCellSelection()</code></td>
@@ -270,6 +291,14 @@ grid.focusedRowIndex = null // Clear focus</code></pre></div>
             <tr>
                 <td><code>getSelectedCells()</code></td>
                 <td>Get array of cell contexts {row, rowIndex, column, colIndex, field, value}</td>
+            </tr>
+            <tr>
+                <td><code>copyCellSelectionToClipboard()</code></td>
+                <td>Copy the selected range (tab-separated, headers with <code>shouldCopyWithHeaders</code>); resolves <code>false</code> when nothing was copied</td>
+            </tr>
+            <tr>
+                <td><code>shouldCopyWithHeaders</code> (<code>copy-with-headers</code>)</td>
+                <td>Include the column headers when copying (default: <code>false</code>)</td>
             </tr>
             <tr>
                 <td><code>cell-selection-change</code> / <code>onCellSelectionChange</code></td>
@@ -283,10 +312,13 @@ grid.focusedRowIndex = null // Clear focus</code></pre></div>
                 <td><code>column-selection-change</code> / <code>onColumnSelectionChange</code></td>
                 <td>Event (and twin) fired when column selection changes: <code>{ fields }</code></td>
             </tr>
+            </tbody>
         </table>
 
         <h3>Row Focus API</h3>
         <table class="reference-table table-compact table-full">
+            <thead><tr><th>Member</th><th>Description</th></tr></thead>
+            <tbody>
             <tr>
                 <td><code>focusedRowIndex</code></td>
                 <td>Get/set the focused row index (null if none)</td>
@@ -295,10 +327,13 @@ grid.focusedRowIndex = null // Clear focus</code></pre></div>
                 <td><code>focus-change</code> / <code>onFocusChange</code></td>
                 <td>Event (and twin) fired when focused row changes: <code>{ rowIndex, row, oldRowIndex }</code></td>
             </tr>
+            </tbody>
         </table>
 
         <h3>Range Shortcuts (Works with Both)</h3>
         <table class="reference-table table-compact table-full">
+            <thead><tr><th>Member</th><th>Description</th></tr></thead>
+            <tbody>
             <tr>
                 <td><code>rangeShortcuts</code></td>
                 <td>Action items bound to a key (<code>{ shortcut, id?, text, onClick(detail), isDisabled }</code>) that operate on selected rows or cells; they also fire the <code>action</code> event with <code>source: 'keyboard'</code></td>
@@ -307,6 +342,7 @@ grid.focusedRowIndex = null // Clear focus</code></pre></div>
                 <td><code>RangeContext</code></td>
                 <td>Fields on the <code>onClick</code> detail: { rows, rowIndices, cells?, cellRange? } (+ <code>controller</code>, <code>element</code>)</td>
             </tr>
+            </tbody>
         </table>
     </div>
 
@@ -445,11 +481,11 @@ grid.focusedRowIndex = null // Clear focus</code></pre></div>
     // Apply settings to grid and controls
     const applySettings = (settings) => {
         // Apply to grid
+        gridCellRangeClick.preset = settings.mode  // first: the explicit settings below win
         gridCellRangeClick.isHoverable = settings.isHoverable
         gridCellRangeClick.isEditingEnabled = settings.isEditingEnabled
         gridCellRangeClick.editTrigger = settings.editTrigger
         gridCellRangeClick.cellSelectionMode = settings.cellSelectionMode
-        gridCellRangeClick.mode = settings.mode
 
         // Update control values
         document.getElementById('clickMode').value = settings.mode
@@ -786,7 +822,7 @@ grid.focusedRowIndex = null // Clear focus</code></pre></div>
     function renderDetail(row) {
         return `
             <h3>${row.name}</h3>
-            <table class="reference-table table-compact table-full">
+            <table class="reference-table table-compact table-full table-scroll">
                 <tr><td class="muted">ID:</td><td>${row.id}</td></tr>
                 <tr><td class="muted">Department:</td><td>${row.department}</td></tr>
                 <tr><td class="muted">Salary:</td><td>$${row.salary?.toLocaleString()}</td></tr>

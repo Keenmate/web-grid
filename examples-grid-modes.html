@@ -4,7 +4,7 @@
     <!-- GM01: Grid Modes -->
     <div class="card">
         <h2>GM01 · Grid Modes</h2>
-        <p>The <code>mode</code> property sets sensible defaults for common use cases. Switch between modes to see how editing behavior changes.</p>
+        <p>The <code>preset</code> property sets sensible defaults for common use cases. Switch between modes to see how editing behavior changes.</p>
 
         <div class="controls">
             <button class="mode-btn" data-mode="excel" onclick="setMode('excel', this)">excel</button>
@@ -17,10 +17,10 @@
         <div id="modeInfo" class="note mt-1">
             <strong>excel</strong> &mdash; Spreadsheet-like editing. Navigate with arrows, type or double-click to edit.
             <dl class="mono">
-                <dt>isEditable</dt><dd>true</dd>
+                <dt>isEditingEnabled</dt><dd>true</dd>
                 <dt>editTrigger</dt><dd>'navigate'</dd>
                 <dt>dropdownToggleVisibility</dt><dd>'always'</dd>
-                <dt>shouldShowDropdownOnFocus</dt><dd>false</dd>
+                <dt>shouldOpenDropdownOnFocus</dt><dd>false</dd>
                 <dt>cellSelectionMode</dt><dd>'click'</dd>
             </dl>
         </div>
@@ -52,16 +52,16 @@
         <p>Control cursor position when entering edit mode with <code>editStartSelection</code>.</p>
 
         <div class="controls">
-            <button class="mode-btn" data-selection="selectAll" onclick="setSelection('selectAll', this)">selectAll</button>
-            <button class="mode-btn btn-outline" data-selection="mousePosition" onclick="setSelection('mousePosition', this)">mousePosition</button>
-            <button class="mode-btn btn-outline" data-selection="cursorAtStart" onclick="setSelection('cursorAtStart', this)">cursorAtStart</button>
-            <button class="mode-btn btn-outline" data-selection="cursorAtEnd" onclick="setSelection('cursorAtEnd', this)">cursorAtEnd</button>
+            <button class="mode-btn" data-selection="select-all" onclick="setSelection('select-all', this)">select-all</button>
+            <button class="mode-btn btn-outline" data-selection="mouse-position" onclick="setSelection('mouse-position', this)">mouse-position</button>
+            <button class="mode-btn btn-outline" data-selection="cursor-at-start" onclick="setSelection('cursor-at-start', this)">cursor-at-start</button>
+            <button class="mode-btn btn-outline" data-selection="cursor-at-end" onclick="setSelection('cursor-at-end', this)">cursor-at-end</button>
         </div>
 
         <web-grid id="selectionGrid" style="max-height: 300px;"></web-grid>
 
         <div id="selectionInfo" class="note mt-1">
-            <strong>selectAll</strong> &mdash; All text is selected when entering edit mode. Typing replaces the entire value. This is the default.
+            <strong>select-all</strong> &mdash; All text is selected when entering edit mode. Typing replaces the entire value.
         </div>
     </div>
 
@@ -78,7 +78,7 @@
             </div>
 
             <div class="check-list">
-                <label><input type="checkbox" id="showOnFocus" checked onchange="setShowOnFocus(this.checked)"> <span><strong>shouldShowDropdownOnFocus</strong> <small class="muted">(auto-open dropdown on focus)</small></span></label>
+                <label><input type="checkbox" id="showOnFocus" checked onchange="setShowOnFocus(this.checked)"> <span><strong>shouldOpenDropdownOnFocus</strong> <small class="muted">(auto-open dropdown on focus)</small></span></label>
                 <label><input type="checkbox" id="openOnEnter" onchange="setOpenOnEnter(this.checked)"> <span><strong>shouldOpenDropdownOnEnter</strong> <small class="muted">(Enter opens dropdown vs moves down)</small></span></label>
             </div>
         </div>
@@ -97,10 +97,10 @@
 
         <div class="grid">
             <div>
-                <div class="output-label">isEditable</div>
+                <div class="output-label">isEditingEnabled</div>
                 <div class="controls" id="pg-editable-btns">
-                    <button class="mode-btn" onclick="pgSet('isEditable', true, this)">true</button>
-                    <button class="mode-btn btn-outline" onclick="pgSet('isEditable', false, this)">false</button>
+                    <button class="mode-btn" onclick="pgSet('isEditingEnabled', true, this)">true</button>
+                    <button class="mode-btn btn-outline" onclick="pgSet('isEditingEnabled', false, this)">false</button>
                 </div>
             </div>
 
@@ -118,17 +118,17 @@
             <div>
                 <div class="output-label">editStartSelection</div>
                 <div class="controls" id="pg-selection-btns">
-                    <button class="mode-btn" onclick="pgSet('editStartSelection', 'selectAll', this)">selectAll</button>
-                    <button class="mode-btn btn-outline" onclick="pgSet('editStartSelection', 'mousePosition', this)">mousePosition</button>
-                    <button class="mode-btn btn-outline" onclick="pgSet('editStartSelection', 'cursorAtStart', this)">cursorAtStart</button>
-                    <button class="mode-btn btn-outline" onclick="pgSet('editStartSelection', 'cursorAtEnd', this)">cursorAtEnd</button>
+                    <button class="mode-btn" onclick="pgSet('editStartSelection', 'select-all', this)">select-all</button>
+                    <button class="mode-btn btn-outline" onclick="pgSet('editStartSelection', 'mouse-position', this)">mouse-position</button>
+                    <button class="mode-btn btn-outline" onclick="pgSet('editStartSelection', 'cursor-at-start', this)">cursor-at-start</button>
+                    <button class="mode-btn btn-outline" onclick="pgSet('editStartSelection', 'cursor-at-end', this)">cursor-at-end</button>
                 </div>
             </div>
 
             <div>
                 <div class="output-label">cellSelectionMode</div>
                 <div class="controls" id="pg-cellsel-btns">
-                    <button class="mode-btn btn-outline" onclick="pgSet('cellSelectionMode', 'disabled', this)">disabled</button>
+                    <button class="mode-btn btn-outline" onclick="pgSet('cellSelectionMode', 'none', this)">none</button>
                     <button class="mode-btn" onclick="pgSet('cellSelectionMode', 'click', this)">click</button>
                     <button class="mode-btn btn-outline" onclick="pgSet('cellSelectionMode', 'shift', this)">shift</button>
                 </div>
@@ -145,7 +145,7 @@
             <div>
                 <div class="output-label">Checkbox &amp; Dropdown</div>
                 <div class="check-list">
-                    <label><input type="checkbox" id="pgShowOnFocus" checked onchange="pgSet('shouldShowDropdownOnFocus', this.checked)"> <span>shouldShowDropdownOnFocus</span></label>
+                    <label><input type="checkbox" id="pgShowOnFocus" checked onchange="pgSet('shouldOpenDropdownOnFocus', this.checked)"> <span>shouldOpenDropdownOnFocus</span></label>
                     <label><input type="checkbox" id="pgOpenOnEnter" onchange="pgSet('shouldOpenDropdownOnEnter', this.checked)"> <span>shouldOpenDropdownOnEnter</span></label>
                     <label><input type="checkbox" id="pgCheckboxAlways" onchange="pgSet('isCheckboxAlwaysEditable', this.checked)"> <span>isCheckboxAlwaysEditable</span></label>
                 </div>
@@ -203,10 +203,10 @@
             </thead>
             <tbody>
                 <tr>
-                    <td><code>mode</code></td>
+                    <td><code>preset</code></td>
                     <td><code>'read-only' | 'excel' | 'input-matrix'</code></td>
                     <td><code>'excel'</code></td>
-                    <td>Sets sensible defaults for common use cases</td>
+                    <td>Sets sensible defaults for common use cases; properties set explicitly in the same batch win</td>
                 </tr>
                 <tr>
                     <td><code>editTrigger</code></td>
@@ -216,8 +216,8 @@
                 </tr>
                 <tr>
                     <td><code>editStartSelection</code></td>
-                    <td><code>'selectAll' | 'mousePosition' | 'cursorAtStart' | 'cursorAtEnd'</code></td>
-                    <td><code>'selectAll'</code></td>
+                    <td><code>'select-all' | 'mouse-position' | 'cursor-at-start' | 'cursor-at-end'</code></td>
+                    <td><code>'mouse-position'</code></td>
                     <td>Cursor/selection when entering edit. Per-column via <code>editorOptions</code>.</td>
                 </tr>
                 <tr>
@@ -227,7 +227,7 @@
                     <td>When to show dropdown toggle arrow. Grid-level and per-column.</td>
                 </tr>
                 <tr>
-                    <td><code>shouldShowDropdownOnFocus</code></td>
+                    <td><code>shouldOpenDropdownOnFocus</code></td>
                     <td><code>boolean</code></td>
                     <td><code>true</code></td>
                     <td>Auto-open dropdown when cell receives focus.</td>
@@ -240,14 +240,14 @@
                 </tr>
                 <tr>
                     <td><code>cellSelectionMode</code></td>
-                    <td><code>'disabled' | 'click' | 'shift'</code></td>
+                    <td><code>'none' | 'click' | 'shift'</code></td>
                     <td><code>'click'</code></td>
                     <td>How to select cell ranges.</td>
                 </tr>
                 <tr>
-                    <td><code>isEditable</code></td>
+                    <td><code>isEditingEnabled</code></td>
                     <td><code>boolean</code></td>
-                    <td><code>true</code></td>
+                    <td><code>false</code></td>
                     <td>Enable/disable editing globally. Column <code>isEditable</code> overrides.</td>
                 </tr>
             </tbody>
@@ -282,7 +282,7 @@
         { field: 'id', title: 'ID', width: '60px', isEditable: false, horizontalAlign: 'center' },
         { field: 'name', title: 'Name', width: '140px', editor: 'text' },
         { field: 'department', title: 'Department', width: '140px', editor: 'combobox', editorOptions: { options: departmentOptions, valueMember: 'value', displayMember: 'label' } },
-        { field: 'salary', title: 'Salary', width: '110px', editor: 'number', horizontalAlign: 'right', formatCallback: (v) => '$' + v.toLocaleString(), editorOptions: { min: 0, step: 1000 } },
+        { field: 'salary', title: 'Salary', width: '110px', editor: 'number', horizontalAlign: 'right', getDisplayValueCallback: ({ value: v }) => '$' + v.toLocaleString(), editorOptions: { min: 0, step: 1000 } },
         { field: 'status', title: 'Status', width: '110px', editor: 'select', editorOptions: { options: statusOptions, valueMember: 'value', displayMember: 'label' } },
         { field: 'isRemote', title: 'Remote', width: '80px', editor: 'checkbox', horizontalAlign: 'center' }
     ]
@@ -291,42 +291,42 @@
         { field: 'id', title: 'ID', width: '60px', isEditable: false, horizontalAlign: 'center' },
         { field: 'name', title: 'Name', width: '150px', editor: 'text' },
         { field: 'department', title: 'Department', width: '140px', editor: 'text' },
-        { field: 'salary', title: 'Salary', width: '120px', editor: 'number', horizontalAlign: 'right', formatCallback: (v) => '$' + v.toLocaleString(), editorOptions: { min: 0, step: 1000 } }
+        { field: 'salary', title: 'Salary', width: '120px', editor: 'number', horizontalAlign: 'right', getDisplayValueCallback: ({ value: v }) => '$' + v.toLocaleString(), editorOptions: { min: 0, step: 1000 } }
     ]
 
     const dropdownColumns = [
         { field: 'name', title: 'Name', width: '140px', editor: 'text' },
         { field: 'department', title: 'Department', width: '150px', editor: 'combobox', editorOptions: { options: departmentOptions, valueMember: 'value', displayMember: 'label', placeholder: 'Search...' } },
         { field: 'status', title: 'Status', width: '120px', editor: 'select', editorOptions: { options: statusOptions, valueMember: 'value', displayMember: 'label' } },
-        { field: 'salary', title: 'Salary', width: '110px', editor: 'number', horizontalAlign: 'right', formatCallback: (v) => v ? '$' + v.toLocaleString() : '' }
+        { field: 'salary', title: 'Salary', width: '110px', editor: 'number', horizontalAlign: 'right', getDisplayValueCallback: ({ value: v }) => v ? '$' + v.toLocaleString() : '' }
     ]
 
     // --- GM01: Grid Modes ---
     const modesGrid = document.getElementById('modesGrid')
     modesGrid.columns = mixedColumns
     modesGrid.items = employees.map(e => ({...e}))
-    modesGrid.mode = 'excel'
+    modesGrid.preset = 'excel'
     modesGrid.isStriped = true
 
     const modeDescriptions = {
         'read-only': {
             text: '<strong>read-only</strong> &mdash; Data display only. No editing, no edit triggers.',
-            props: { isEditable: 'false', dropdownToggleVisibility: "'on-focus'", cellSelectionMode: "'click'" }
+            props: { isEditingEnabled: 'false', dropdownToggleVisibility: "'on-focus'", cellSelectionMode: "'click'" }
         },
         'excel': {
             text: '<strong>excel</strong> &mdash; Spreadsheet-like editing. Navigate with arrows, type or double-click to edit.',
-            props: { isEditable: 'true', editTrigger: "'navigate'", dropdownToggleVisibility: "'always'", shouldShowDropdownOnFocus: 'false', cellSelectionMode: "'click'" }
+            props: { isEditingEnabled: 'true', editTrigger: "'navigate'", dropdownToggleVisibility: "'always'", shouldOpenDropdownOnFocus: 'false', cellSelectionMode: "'click'" }
         },
         'input-matrix': {
             text: '<strong>input-matrix</strong> &mdash; All cells always in edit mode. Tab/Enter to move between cells.',
-            props: { isEditable: 'true', editTrigger: "'always'", dropdownToggleVisibility: "'always'", shouldShowDropdownOnFocus: 'true', cellSelectionMode: "'shift'" }
+            props: { isEditingEnabled: 'true', editTrigger: "'always'", dropdownToggleVisibility: "'always'", shouldOpenDropdownOnFocus: 'true', cellSelectionMode: "'shift'" }
         }
     }
 
     window.setMode = function(mode, btn) {
         document.querySelectorAll('[data-mode]').forEach(b => b.classList.add('btn-outline'))
         btn.classList.remove('btn-outline')
-        modesGrid.mode = mode
+        modesGrid.preset = mode
 
         const desc = modeDescriptions[mode]
         const propsHtml = Object.entries(desc.props)
@@ -339,7 +339,7 @@
     const triggerGrid = document.getElementById('triggerGrid')
     triggerGrid.columns = textColumns
     triggerGrid.items = employees.map(e => ({...e}))
-    triggerGrid.isEditable = true
+    triggerGrid.isEditingEnabled = true
     triggerGrid.editTrigger = 'dblclick'
     triggerGrid.isStriped = true
 
@@ -363,19 +363,19 @@
     selectionGrid.columns = [
         { field: 'name', title: 'Name', width: '180px', editor: 'text' },
         { field: 'department', title: 'Department', width: '160px', editor: 'text' },
-        { field: 'salary', title: 'Salary', width: '120px', editor: 'number', horizontalAlign: 'right', formatCallback: (v) => '$' + v.toLocaleString() }
+        { field: 'salary', title: 'Salary', width: '120px', editor: 'number', horizontalAlign: 'right', getDisplayValueCallback: ({ value: v }) => '$' + v.toLocaleString() }
     ]
     selectionGrid.items = employees.map(e => ({...e}))
-    selectionGrid.isEditable = true
+    selectionGrid.isEditingEnabled = true
     selectionGrid.editTrigger = 'click'
-    selectionGrid.editStartSelection = 'selectAll'
+    selectionGrid.editStartSelection = 'select-all'
     selectionGrid.isStriped = true
 
     const selectionDescriptions = {
-        'selectAll': '<strong>selectAll</strong> &mdash; All text is selected when entering edit mode. Typing replaces the entire value. This is the default.',
-        'mousePosition': '<strong>mousePosition</strong> &mdash; Cursor is placed at the click position. Best for precise in-place editing.',
-        'cursorAtStart': '<strong>cursorAtStart</strong> &mdash; Cursor is placed at the beginning of the text. Good for prepending content.',
-        'cursorAtEnd': '<strong>cursorAtEnd</strong> &mdash; Cursor is placed at the end of the text. Good for appending content.'
+        'select-all': '<strong>select-all</strong> &mdash; All text is selected when entering edit mode. Typing replaces the entire value.',
+        'mouse-position': '<strong>mouse-position</strong> &mdash; Cursor is placed at the click position. Best for precise in-place editing. This is the default.',
+        'cursor-at-start': '<strong>cursor-at-start</strong> &mdash; Cursor is placed at the beginning of the text. Good for prepending content.',
+        'cursor-at-end': '<strong>cursor-at-end</strong> &mdash; Cursor is placed at the end of the text. Good for appending content.'
     }
 
     window.setSelection = function(selection, btn) {
@@ -389,10 +389,10 @@
     const dropdownGrid = document.getElementById('dropdownGrid')
     dropdownGrid.columns = dropdownColumns
     dropdownGrid.items = employees.map(e => ({...e}))
-    dropdownGrid.isEditable = true
+    dropdownGrid.isEditingEnabled = true
     dropdownGrid.editTrigger = 'navigate'
     dropdownGrid.dropdownToggleVisibility = 'always'
-    dropdownGrid.shouldShowDropdownOnFocus = true
+    dropdownGrid.shouldOpenDropdownOnFocus = true
     dropdownGrid.shouldOpenDropdownOnEnter = false
     dropdownGrid.isStriped = true
 
@@ -403,7 +403,7 @@
     }
 
     window.setShowOnFocus = function(checked) {
-        dropdownGrid.shouldShowDropdownOnFocus = checked
+        dropdownGrid.shouldOpenDropdownOnFocus = checked
     }
 
     window.setOpenOnEnter = function(checked) {
@@ -414,24 +414,24 @@
     const playgroundGrid = document.getElementById('playgroundGrid')
     playgroundGrid.columns = mixedColumns
     playgroundGrid.items = employees.map(e => ({...e}))
-    playgroundGrid.isEditable = true
+    playgroundGrid.isEditingEnabled = true
     playgroundGrid.editTrigger = 'dblclick'
-    playgroundGrid.editStartSelection = 'selectAll'
+    playgroundGrid.editStartSelection = 'select-all'
     playgroundGrid.cellSelectionMode = 'click'
     playgroundGrid.dropdownToggleVisibility = 'always'
-    playgroundGrid.shouldShowDropdownOnFocus = true
+    playgroundGrid.shouldOpenDropdownOnFocus = true
     playgroundGrid.shouldOpenDropdownOnEnter = false
     playgroundGrid.isCheckboxAlwaysEditable = false
     playgroundGrid.isStriped = true
 
     function pgUpdateStateDisplay() {
         const props = {
-            isEditable: playgroundGrid.isEditable,
+            isEditingEnabled: playgroundGrid.isEditingEnabled,
             editTrigger: `'${playgroundGrid.editTrigger}'`,
             editStartSelection: `'${playgroundGrid.editStartSelection}'`,
             cellSelectionMode: `'${playgroundGrid.cellSelectionMode}'`,
             dropdownToggleVisibility: `'${playgroundGrid.dropdownToggleVisibility}'`,
-            shouldShowDropdownOnFocus: playgroundGrid.shouldShowDropdownOnFocus,
+            shouldOpenDropdownOnFocus: playgroundGrid.shouldOpenDropdownOnFocus,
             shouldOpenDropdownOnEnter: playgroundGrid.shouldOpenDropdownOnEnter,
             isCheckboxAlwaysEditable: playgroundGrid.isCheckboxAlwaysEditable
         }
@@ -451,19 +451,19 @@
     }
 
     window.pgPreset = function(mode) {
-        playgroundGrid.mode = mode
+        playgroundGrid.preset = mode
         // Sync UI controls to match what the mode set
         pgSyncUI()
         pgUpdateStateDisplay()
     }
 
     window.pgReset = function() {
-        playgroundGrid.isEditable = true
+        playgroundGrid.isEditingEnabled = true
         playgroundGrid.editTrigger = 'dblclick'
-        playgroundGrid.editStartSelection = 'selectAll'
+        playgroundGrid.editStartSelection = 'select-all'
         playgroundGrid.cellSelectionMode = 'click'
         playgroundGrid.dropdownToggleVisibility = 'always'
-        playgroundGrid.shouldShowDropdownOnFocus = true
+        playgroundGrid.shouldOpenDropdownOnFocus = true
         playgroundGrid.shouldOpenDropdownOnEnter = false
         playgroundGrid.isCheckboxAlwaysEditable = false
         pgSyncUI()
@@ -479,14 +479,14 @@
                 b.classList.toggle('btn-outline', b.textContent.trim() !== String(value))
             })
         }
-        syncBtns('pg-editable-btns', playgroundGrid.isEditable)
+        syncBtns('pg-editable-btns', playgroundGrid.isEditingEnabled)
         syncBtns('pg-trigger-btns', playgroundGrid.editTrigger)
         syncBtns('pg-selection-btns', playgroundGrid.editStartSelection)
         syncBtns('pg-cellsel-btns', playgroundGrid.cellSelectionMode)
         syncBtns('pg-toggle-btns', playgroundGrid.dropdownToggleVisibility)
 
         // Sync checkboxes
-        document.getElementById('pgShowOnFocus').checked = playgroundGrid.shouldShowDropdownOnFocus
+        document.getElementById('pgShowOnFocus').checked = playgroundGrid.shouldOpenDropdownOnFocus
         document.getElementById('pgOpenOnEnter').checked = playgroundGrid.shouldOpenDropdownOnEnter
         document.getElementById('pgCheckboxAlways').checked = playgroundGrid.isCheckboxAlwaysEditable
     }
@@ -498,7 +498,7 @@
     const CONTROLLED_FIELDS = ['status', 'isRemote']
 
     const colTriggerGrid = document.getElementById('colTriggerGrid')
-    colTriggerGrid.isEditable = true
+    colTriggerGrid.isEditingEnabled = true
     colTriggerGrid.editTrigger = 'dblclick'  // grid default for the non-controlled columns
     colTriggerGrid.isStriped = true
     colTriggerGrid.items = employees.map(e => ({...e}))
@@ -508,7 +508,7 @@
             { field: 'id', title: 'ID', width: '60px', isEditable: false, horizontalAlign: 'center' },
             { field: 'name', title: 'Name', width: '150px', editor: 'text' },
             { field: 'status', title: 'Status', width: '120px', editor: 'select', editTrigger: trigger, editorOptions: { options: statusOptions, valueMember: 'value', displayMember: 'label' } },
-            { field: 'salary', title: 'Salary', width: '120px', editor: 'number', horizontalAlign: 'right', formatCallback: (v) => '$' + v.toLocaleString(), editorOptions: { min: 0, step: 1000 } },
+            { field: 'salary', title: 'Salary', width: '120px', editor: 'number', horizontalAlign: 'right', getDisplayValueCallback: ({ value: v }) => '$' + v.toLocaleString(), editorOptions: { min: 0, step: 1000 } },
             { field: 'isRemote', title: 'Remote', width: '90px', editor: 'checkbox', editTrigger: trigger, horizontalAlign: 'center' }
         ]
     }

@@ -45,8 +45,8 @@
     <div class="grid-2">
         <div class="card">
             <h2>VS03 · Virtual Scroll API</h2>
-            <div class="code-block" data-kmwc-snippet>
-                <pre>// Enable virtual scroll explicitly
+            <div class="code-block" data-kmwc-snippet data-language="js">
+                <pre><code>// Enable virtual scroll explicitly
 grid.isVirtualScrollEnabled = true
 
 // Or opt in to automatic (default false: every row rendered):
@@ -57,19 +57,14 @@ grid.virtualScrollThreshold = 100  // automatic: virtual from 100 displayed rows
 grid.virtualScrollItemHeight = 38  // Default: 38px
 
 // Buffer rows above/below viewport
-grid.virtualScrollOverscan = 10  // Default: 10
-
-// Check if virtual scroll is active
-if (grid.shouldUseVirtualScroll()) {
-  console.log('Virtual scroll is active')
-}</pre>
+grid.virtualScrollOverscan = 10  // Default: 10</code></pre>
             </div>
         </div>
 
         <div class="card">
             <h2>VS04 · Infinite Scroll API</h2>
-            <div class="code-block" data-kmwc-snippet>
-                <pre>// Enable infinite scroll
+            <div class="code-block" data-kmwc-snippet data-language="js">
+                <pre><code>// Enable infinite scroll
 grid.isInfiniteScrollEnabled = true
 
 // Distance from bottom to trigger (px)
@@ -87,15 +82,15 @@ grid.onDataRequest = async (detail) => {
     grid.items = [...grid.items, ...more]
     grid.hasMoreItems = more.length === pageSize
   }
-}</pre>
+}</code></pre>
             </div>
         </div>
     </div>
 
     <div class="card">
         <h2>VS05 · DataRequestDetail (Extended)</h2>
-        <div class="code-block" data-kmwc-snippet>
-            <pre>type DataRequestDetail = {
+        <div class="code-block" data-kmwc-snippet data-language="ts">
+            <pre><code>type DataRequestDetail = {
   sort: SortState[]      // Current sort state
   page: number           // Current page (for pagination)
   pageSize: number       // Items per page
@@ -117,7 +112,7 @@ grid.onDataRequest = (detail) => {
       grid.items = data
     })
   }
-}</pre>
+}</code></pre>
         </div>
     </div>
 

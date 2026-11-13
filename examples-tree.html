@@ -59,7 +59,7 @@
 
         <web-grid id="navGrid" style="max-height: 500px;"></web-grid>
 
-        <div class="code-block mt-1" data-kmwc-snippet><pre><code>// Heterogeneous tree: only leaf rows are editable
+        <div class="code-block mt-1" data-kmwc-snippet data-language="js"><pre><code>// Heterogeneous tree: only leaf rows are editable
 const isLeafRow = ({ row }) =&gt; !parentPaths.has(row.path)
 
 navGrid.editTrigger = 'navigate'
@@ -91,7 +91,7 @@ navGrid.contextMenu = [
 
         <web-grid id="rowGateGrid" style="max-height: 500px;"></web-grid>
 
-        <div class="code-block mt-1" data-kmwc-snippet><pre><code>// Grid-level row gate — applies to every column on every row
+        <div class="code-block mt-1" data-kmwc-snippet data-language="js"><pre><code>// Grid-level row gate — applies to every column on every row
 rowGateGrid.editTrigger = 'navigate'
 rowGateGrid.isEditingEnabled = true
 rowGateGrid.getIsRowEditableCallback = ({ row }) =&gt; row.status === 'Active'
@@ -148,7 +148,7 @@ rowGateGrid.columns = [
         </p>
 
         <h3 class="mt-1">How it works</h3>
-        <div class="code-block mt-1" data-kmwc-snippet><pre><code>aggGrid.isTreeDataSorted = true              // grid won't re-sort
+        <div class="code-block mt-1" data-kmwc-snippet data-language="js"><pre><code>aggGrid.isTreeDataSorted = true              // grid won't re-sort
 aggGrid.expandedPaths = allPaths  // own expansion too, so re-setting items keeps it stable
 
 aggGrid.onDataRequest = ({ sort }) =&gt; {
@@ -209,7 +209,7 @@ aggGrid.items = result
             <li>Class definitions (<code>.fa-folder::before { content: '\f07b' }</code> etc.) live in the document and don't pierce the shadow DOM — re-declare just the ones you use via <code>getCustomStylesCallback</code>.</li>
             <li>Return the icon HTML from <code>renderChevronCallback({ isExpanded, hasChildren, row, level, path })</code>. Result is cached per <code>(row, isExpanded, hasChildren)</code>, so the callback fires at most a handful of times per row.</li>
         </ol>
-        <div class="code-block mt-1" data-kmwc-snippet><pre><code>&lt;link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6/css/all.min.css"&gt;
+        <div class="code-block mt-1" data-kmwc-snippet data-language="js"><pre><code>&lt;link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6/css/all.min.css"&gt;
 
 files.getCustomStylesCallback = () =&gt; `
 .fa-solid { font-family: 'Font Awesome 6 Free'; font-weight: 900; }

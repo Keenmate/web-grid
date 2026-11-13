@@ -159,6 +159,8 @@
             <div>
                 <h3>Grid-Level Properties</h3>
                 <table class="reference-table table-compact">
+                    <thead><tr><th>Property</th><th>Description</th></tr></thead>
+                    <tbody>
                     <tr>
                         <td><code>storageKey</code> (<code>storage-key</code>)</td>
                         <td>Key of the persisted column state (localStorage <code>km-state:web-grid:&lt;key&gt;</code>, or the state callbacks)</td>
@@ -168,12 +170,20 @@
                         <td>Enable automatic width persistence</td>
                     </tr>
                     <tr>
-                        <td><code>isColumnReorderAllowed</code></td>
+                        <td><code>isColumnReorderAllowed</code> (<code>allow-column-reorder</code>)</td>
                         <td>Enable drag-to-reorder columns</td>
                     </tr>
                     <tr>
                         <td><code>shouldPersistColumnOrder</code> (<code>persist-column-order</code>)</td>
                         <td>Enable automatic order persistence</td>
+                    </tr>
+                    <tr>
+                        <td><code>columnMinWidth</code> (<code>column-min-width</code>)</td>
+                        <td>Default <code>min-width</code> of every column that doesn't set its own <code>minWidth</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>loadStateCallback</code> / <code>saveStateCallback</code></td>
+                        <td>Load / save the persisted column state yourself (e.g. per user on a server) instead of localStorage</td>
                     </tr>
                     <tr>
                         <td><code>onColumnResize</code></td>
@@ -183,14 +193,21 @@
                         <td><code>onColumnReorder</code></td>
                         <td>Twin of the <code>column-reorder</code> event, fired after column reorder</td>
                     </tr>
+                    </tbody>
                 </table>
             </div>
             <div>
                 <h3>Column-Level Properties</h3>
                 <table class="reference-table table-compact">
+                    <thead><tr><th>Property</th><th>Description</th></tr></thead>
+                    <tbody>
                     <tr>
                         <td><code>isResizable</code></td>
                         <td>Set to <code>false</code> to disable resize</td>
+                    </tr>
+                    <tr>
+                        <td><code>isReorderable</code></td>
+                        <td>Set to <code>false</code> to keep the column out of drag-to-reorder</td>
                     </tr>
                     <tr>
                         <td><code>minWidth</code></td>
@@ -200,6 +217,7 @@
                         <td><code>maxWidth</code></td>
                         <td>Maximum column width (e.g., "300px")</td>
                     </tr>
+                    </tbody>
                 </table>
             </div>
         </div>
@@ -211,7 +229,7 @@
         <h3>onColumnResize</h3>
         <p>The <code>column-resize</code> event (and its <code>onColumnResize</code> twin) carries a detail object with:</p>
 
-        <pre data-kmwc-snippet><code>{
+        <div class="code-block" data-language="js"><pre data-kmwc-snippet><code>{
     field: "name",           // Which column was resized
     oldWidth: "150px",       // Previous width
     newWidth: "200px",       // New width
@@ -220,12 +238,12 @@
         { field: "name", width: "200px" },
         ...
     ]
-}</code></pre>
+}</code></pre></div>
 
         <h3 class="mt-1">onColumnReorder</h3>
         <p>The <code>column-reorder</code> event (and its <code>onColumnReorder</code> twin) carries a detail object with:</p>
 
-        <pre data-kmwc-snippet><code>{
+        <div class="code-block" data-language="js"><pre data-kmwc-snippet><code>{
     field: "email",          // Which column was moved
     fromIndex: 2,            // Original position (among non-frozen columns)
     toIndex: 0,              // New position (among non-frozen columns)
@@ -235,7 +253,7 @@
         { field: "name", order: 2 },
         ...
     ]
-}</code></pre>
+}</code></pre></div>
 
         <p class="mt-1">Use <code>allWidths</code> and <code>allOrder</code> to save column state to a database for per-user persistence.</p>
     </div>

@@ -26,26 +26,38 @@
             <h2>CM03 · Context Menu API</h2>
             <h3>Grid Properties</h3>
             <table class="reference-table table-compact">
+                <thead><tr><th>Property</th><th>Description</th></tr></thead>
+                <tbody>
                 <tr><td><code>contextMenu</code></td><td>Array of entries: built-in names (<code>'add'</code>, <code>'duplicate'</code>, <code>'delete'</code>, <code>'move-up'</code>, <code>'move-down'</code>, tree <code>'expand'</code>…), menu items, dividers</td></tr>
                 <tr><td><code>contextMenuXOffset</code></td><td>Horizontal offset from click (default: 8)</td></tr>
                 <tr><td><code>contextMenuYOffset</code></td><td>Vertical offset from click (default: 0)</td></tr>
                 <tr><td><code>beforeContextMenuOpenCallback</code></td><td>Runs before the menu opens (sync): <code>false</code> → no grid menu, an entries array → shown instead</td></tr>
                 <tr><td><code>onAction</code> / <code>action</code> event</td><td>Fired for every item click (<code>source: 'context-menu'</code>)</td></tr>
+                <tr><td><code>menuPresentation</code> (<code>menu-presentation</code>)</td><td>How the cell and header menus open: <code>'auto'</code> (default — a bottom sheet on a phone, floating elsewhere), <code>'floating'</code>, <code>'sheet'</code>, <code>'drawer'</code></td></tr>
+                <tr><td><code>menuSide</code> (<code>menu-side</code>)</td><td>The edge a <code>'drawer'</code> menu slides in from: <code>'start'</code> (default) or <code>'end'</code></td></tr>
+                </tbody>
             </table>
 
             <h3 class="mt-1">Menu Item Properties</h3>
             <table class="reference-table table-compact">
+                <thead><tr><th>Property</th><th>Description</th></tr></thead>
+                <tbody>
                 <tr><td><code>action</code></td><td>Built-in name (omit for a custom item)</td></tr>
                 <tr><td><code>id</code></td><td>Identifies a custom item</td></tr>
                 <tr><td><code>text</code> / <code>getTextCallback</code></td><td>Display text (static or per ctx)</td></tr>
                 <tr><td><code>icon</code> / <code>getIconCallback</code></td><td>Emoji or HTML icon</td></tr>
+                <tr><td><code>tooltip</code> / <code>getTooltipCallback</code></td><td>Tooltip text</td></tr>
                 <tr><td><code>shortcut</code></td><td>Key hint; pressing it while the menu is open activates the item</td></tr>
+                <tr><td><code>cssClass</code> / <code>getClassCallback</code></td><td>Extra CSS classes on the item</td></tr>
                 <tr><td><code>isDisabled</code> / <code>getIsDisabledCallback</code></td><td>Disabled state</td></tr>
                 <tr><td><code>isVisible</code> / <code>getIsVisibleCallback</code></td><td>Visibility</td></tr>
                 <tr><td><code>isDanger</code></td><td>Red styling for destructive actions</td></tr>
+                <tr><td><code>isToggled</code> / <code>getIsToggledCallback</code></td><td>Toggle state — the item renders as a checkbox item (<code>menuitemcheckbox</code>)</td></tr>
+                <tr><td><code>shouldCloseOnClick</code></td><td>Close the menu after the item runs (default: <code>true</code>)</td></tr>
                 <tr><td><code>children</code> / <code>getChildrenCallback</code></td><td>Submenu (static, or lazy / async)</td></tr>
                 <tr><td><code>{ divider: true, text? }</code></td><td>A divider entry (optionally labelled)</td></tr>
                 <tr><td><code>onClick</code></td><td>Click handler receiving the action detail</td></tr>
+                </tbody>
             </table>
         </div>
 
@@ -53,16 +65,19 @@
             <h2>CM04 · Context Object</h2>
             <p>The cell context passed to item callbacks (and, plus <code>action</code> / <code>id</code> / <code>source</code>, to <code>onClick</code>):</p>
             <table class="reference-table table-compact">
+                <thead><tr><th>Field</th><th>Description</th></tr></thead>
+                <tbody>
                 <tr><td><code>row</code></td><td>The row data object</td></tr>
                 <tr><td><code>rowIndex</code></td><td>Index of the row</td></tr>
                 <tr><td><code>colIndex</code></td><td>Index of the column</td></tr>
                 <tr><td><code>column</code> / <code>field</code></td><td>The column definition / its field</td></tr>
                 <tr><td><code>value</code></td><td>The value of the clicked cell</td></tr>
                 <tr><td><code>controller</code> / <code>element</code></td><td>The grid controller (<code>el.controller</code>) and the host element</td></tr>
+                </tbody>
             </table>
 
-            <div class="code-block mt-1" data-kmwc-snippet>
-                <pre>grid.contextMenu = [
+            <div class="code-block mt-1" data-kmwc-snippet data-language="js">
+                <pre><code>grid.contextMenu = [
     {
         id: 'copy',
         getTextCallback: (ctx) => `Copy "${ctx.column.title}"`,
@@ -80,7 +95,7 @@
         isDanger: true,
         getIsDisabledCallback: (ctx) => ctx.row.isProtected
     }
-]</pre>
+]</code></pre>
             </div>
         </div>
     </div>
@@ -120,12 +135,17 @@
             <h2>CM07 · Header Context Menu API</h2>
             <h3>Grid Properties</h3>
             <table class="reference-table table-compact">
+                <thead><tr><th>Property</th><th>Description</th></tr></thead>
+                <tbody>
                 <tr><td><code>headerContextMenu</code></td><td>Array of built-in names, menu items and dividers</td></tr>
                 <tr><td><code>beforeHeaderMenuOpenCallback</code></td><td>Runs before the header menu opens (sync): <code>false</code> → no grid menu, an entries array → shown instead</td></tr>
+                </tbody>
             </table>
 
             <h3 class="mt-1">Predefined Actions</h3>
             <table class="reference-table table-compact">
+                <thead><tr><th>Action</th><th>Description</th></tr></thead>
+                <tbody>
                 <tr><td><code>'sort-asc'</code></td><td>Sort ascending</td></tr>
                 <tr><td><code>'sort-desc'</code></td><td>Sort descending</td></tr>
                 <tr><td><code>'clear-sort'</code></td><td>Clear sort (auto-hides if not sorted)</td></tr>
@@ -133,6 +153,7 @@
                 <tr><td><code>'freeze-column'</code></td><td>Freeze up to this column</td></tr>
                 <tr><td><code>'unfreeze-column'</code></td><td>Unfreeze this column</td></tr>
                 <tr><td><code>'column-visibility'</code></td><td>Submenu toggling each column's visibility</td></tr>
+                </tbody>
             </table>
         </div>
 
@@ -140,15 +161,21 @@
             <h2>CM08 · HeaderMenuContext</h2>
             <p>The context passed to header menu callbacks:</p>
             <table class="reference-table table-compact">
+                <thead><tr><th>Field</th><th>Description</th></tr></thead>
+                <tbody>
                 <tr><td><code>column</code></td><td>The column definition (<code>null</code> on the filler area right of the last column)</td></tr>
                 <tr><td><code>field</code></td><td>Column field name (<code>''</code> on the filler)</td></tr>
                 <tr><td><code>colIndex</code></td><td>Index of the column (<code>-1</code> on the filler)</td></tr>
                 <tr><td><code>sortDirection</code></td><td>'asc' | 'desc' | null</td></tr>
                 <tr><td><code>isFrozen</code></td><td>Whether column is frozen</td></tr>
+                <tr><td><code>isTreeMode</code></td><td>Whether the grid shows a tree (<code>pathMember</code> set) — the tree column can't be hidden</td></tr>
+                <tr><td><code>allColumns</code></td><td>All columns, hidden ones included</td></tr>
+                <tr><td><code>labels</code></td><td>The grid's current labels</td></tr>
+                </tbody>
             </table>
 
-            <div class="code-block mt-1" data-kmwc-snippet>
-                <pre>grid.headerContextMenu = [
+            <div class="code-block mt-1" data-kmwc-snippet data-language="js">
+                <pre><code>grid.headerContextMenu = [
     'sort-asc',
     'sort-desc',
     'clear-sort',
@@ -163,7 +190,7 @@
         icon: '📊',
         onClick: (detail) => exportColumn(detail.field)
     }
-]</pre>
+]</code></pre>
             </div>
         </div>
     </div>

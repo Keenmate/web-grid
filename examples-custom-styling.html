@@ -80,7 +80,7 @@
             </div>
         </div>
 
-        <div class="code-block" data-kmwc-snippet><pre><code>// Default - border wraps everything including pagination
+        <div class="code-block" data-kmwc-snippet data-language="html"><pre><code>// Default - border wraps everything including pagination
 &lt;web-grid ...&gt;&lt;/web-grid&gt;
 
 // Table border only - pagination floats outside the border
@@ -92,7 +92,7 @@
 
         <h3>1. getCellClassCallback (Column-level)</h3>
         <p>Returns a CSS class based on the cell context (<code>value</code>, <code>row</code>, <code>column</code>, …):</p>
-        <div class="code-block" data-kmwc-snippet><pre><code>{
+        <div class="code-block" data-kmwc-snippet data-language="js"><pre><code>{
 field: 'salary',
 getCellClassCallback: ({ value, row }) =&gt; {
     if (value &lt; 65000) return 'salary-1'
@@ -104,14 +104,14 @@ getCellClassCallback: ({ value, row }) =&gt; {
 
         <h3>2. getRowClassCallback (Grid-level)</h3>
         <p>Returns a CSS class for the entire row:</p>
-        <div class="code-block" data-kmwc-snippet><pre><code>grid.getRowClassCallback = ({ row, rowIndex }) =&gt; {
+        <div class="code-block" data-kmwc-snippet data-language="js"><pre><code>grid.getRowClassCallback = ({ row, rowIndex }) =&gt; {
 if (row.status === 'Inactive') return 'row-inactive'
 return null
 }</code></pre></div>
 
         <h3>3. getCustomStylesCallback (Required for Shadow DOM)</h3>
         <p>Injects CSS into the shadow root:</p>
-        <div class="code-block" data-kmwc-snippet><pre><code>grid.getCustomStylesCallback = () =&gt; `
+        <div class="code-block" data-kmwc-snippet data-language="js"><pre><code>grid.getCustomStylesCallback = () =&gt; `
 .salary-1 { background: #fee2e2 !important; }
 .salary-2 { background: #ffedd5 !important; }
 .row-inactive { opacity: 0.5; }
@@ -139,7 +139,7 @@ return null
                     custom-styles=".wg__header { background: #fef3c7; } .wg__cell { color: #92400e; }"></web-grid>
             </div>
         </div>
-        <div class="code-block" data-kmwc-snippet><pre><code>// every grid on the page
+        <div class="code-block" data-kmwc-snippet data-language="js"><pre><code>// every grid on the page
 window.components['web-grid'].customStyles = `
 .wg__header { background: #dbeafe; }
 .wg__cell { color: #1e3a8a; }

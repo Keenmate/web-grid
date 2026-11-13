@@ -20,8 +20,8 @@
             <h2>ED02 · Custom Editor</h2>
             <p>Use <code>editor: "custom"</code> with <code>renderEditorCallback</code> for dialog-based editing.</p>
 
-            <div class="code-block" data-kmwc-snippet>
-                <pre>{
+            <div class="code-block" data-kmwc-snippet data-language="js">
+                <pre><code>{
     field: 'notes',
     editor: 'custom',
     renderEditorCallback: (context) => {
@@ -40,7 +40,7 @@
             context.cancel()
         }
     }
-}</pre>
+}</code></pre>
             </div>
 
             <div class="note">
@@ -53,8 +53,8 @@
             <h2>ED03 · Context Menu</h2>
             <p>Set <code>contextMenu</code> array on the grid element.</p>
 
-            <div class="code-block" data-kmwc-snippet>
-                <pre>grid.contextMenu = [
+            <div class="code-block" data-kmwc-snippet data-language="js">
+                <pre><code>grid.contextMenu = [
     {
         id: 'copy',
         text: 'Copy value',
@@ -72,7 +72,7 @@
         getIsDisabledCallback: (ctx) => ctx.row.protected,
         onClick: (ctx) => { ... }
     }
-]</pre>
+]</code></pre>
             </div>
         </div>
     </div>

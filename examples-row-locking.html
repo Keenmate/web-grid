@@ -42,48 +42,48 @@
 
             <h3>1. Property-based</h3>
             <p>Lock status comes directly from row data:</p>
-            <div class="code-block" data-kmwc-snippet>
-                <pre>grid.rowLocking = {
+            <div class="code-block" data-kmwc-snippet data-language="js">
+                <pre><code>grid.rowLocking = {
     isLockedMember: 'isLocked'  // Boolean field
 }
 
 // Or with full lock info:
 grid.rowLocking = {
     lockInfoMember: 'lockInfo'  // RowLock object
-}</pre>
+}</code></pre>
             </div>
 
             <h3>2. Callback-based</h3>
             <p>Compute lock status from row data:</p>
-            <div class="code-block" data-kmwc-snippet>
-                <pre>grid.rowLocking = {
+            <div class="code-block" data-kmwc-snippet data-language="js">
+                <pre><code>grid.rowLocking = {
     getIsLockedCallback: ({ row }) => row.status === 'approved',
     getLockInfoCallback: ({ row }) => ({
         isLocked: row.status === 'approved',
         lockedBy: row.approvedBy,
         reason: 'Approved records cannot be edited'
     })
-}</pre>
+}</code></pre>
             </div>
 
             <h3>3. External API</h3>
             <p>Lock/unlock via JavaScript (WebSocket scenarios):</p>
-            <div class="code-block" data-kmwc-snippet>
-                <pre>// Lock a row
+            <div class="code-block" data-kmwc-snippet data-language="js">
+                <pre><code>// Lock a row
 grid.lockRowById(123, { lockedBy: 'John' })
 
 // Unlock a row
 grid.unlockRowById(123)
 
 // Update row data (e.g., from server)
-grid.updateRowById(123, { name: 'Updated Name' })</pre>
+grid.updateRowById(123, { name: 'Updated Name' })</code></pre>
             </div>
         </div>
 
         <div class="card">
             <h2>RL04 · Configuration</h2>
-            <div class="code-block" data-kmwc-snippet>
-                <pre>// Row identification: idMember (default 'id')
+            <div class="code-block" data-kmwc-snippet data-language="js">
+                <pre><code>// Row identification: idMember (default 'id')
 grid.idMember = 'id'
 // Or use callback:
 // grid.getIdCallback = ({ row }) => row.employeeId
@@ -108,7 +108,7 @@ grid.rowLocking = {
 // Listen for lock changes (the row-lock-change event, or its onRowLockChange twin)
 grid.addEventListener('row-lock-change', (e) => {
     console.log('Lock changed:', e.detail)
-})</pre>
+})</code></pre>
             </div>
         </div>
     </div>
@@ -128,8 +128,8 @@ grid.addEventListener('row-lock-change', (e) => {
             </label>
         </div>
 
-        <div class="code-block" data-kmwc-snippet>
-            <pre>// Block all editing (default)
+        <div class="code-block" data-kmwc-snippet data-language="js">
+            <pre><code>// Block all editing (default)
 grid.rowLocking = { lockedEditBehavior: 'block' }
 
 // Allow editing but show locked indicator
@@ -142,7 +142,7 @@ grid.rowLocking = {
         // Allow if current user is the locker
         return lockInfo.lockedBy === currentUser
     }
-}</pre>
+}</code></pre>
         </div>
     </div>
 
@@ -150,8 +150,8 @@ grid.rowLocking = {
         <h2>RL06 · Row Update Methods</h2>
         <p>Update row data programmatically (useful for real-time updates from server):</p>
 
-        <div class="code-block" data-kmwc-snippet>
-            <pre>// Partial update - merges with existing data
+        <div class="code-block" data-kmwc-snippet data-language="js">
+            <pre><code>// Partial update - merges with existing data
 grid.updateRowById(123, {
     name: 'New Name',
     salary: 75000
@@ -170,7 +170,7 @@ grid.replaceRowById(123, {
 const row = grid.getRowById(123)
 if (row) {
     console.log('Found row:', row, 'at display index:', grid.getRowIndex(row))
-}</pre>
+}</code></pre>
         </div>
     </div>
 
@@ -186,6 +186,7 @@ if (row) {
             <tbody>
                 <tr><td><code>getRowId(row)</code></td><td>Get the unique ID for a row</td></tr>
                 <tr><td><code>getRowById(id)</code></td><td>Find row by ID, returns the row or null</td></tr>
+                <tr><td><code>getRowIndex(row)</code></td><td>Displayed index of a row, or -1</td></tr>
                 <tr><td><code>isRowLocked(rowOrId)</code></td><td>Check if a row is locked</td></tr>
                 <tr><td><code>getRowLockInfo(rowOrId)</code></td><td>Get full lock info for a row</td></tr>
                 <tr><td><code>lockRowById(id, info)</code></td><td>Lock a row externally</td></tr>
