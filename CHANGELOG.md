@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Internal — core 1.0.0-rc24 (2026-11-15)
+- core `^1.0.0-rc24`.
+
 ### Examples and docs — stacked API tables, highlighted code, reference brought up to date (2026-11-13)
 - Devkit `^1.0.0-rc14`: every API table has a header row (a card per row on a phone), the 46 hand-written
   snippets are highlighted `.code-block[data-language]`s. Pages fixed against the source: grid modes used
