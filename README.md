@@ -1074,6 +1074,8 @@ web-grid.orders { --wg-context-menu-bg: #eef; }  /* just this grid's menus */
 
 #### Phone sheet header
 
+A **sheet** is a panel that covers the page on a phone — a bottom sheet, a side drawer, a full-screen picker. These variables style its top bar: the strip (`header-*`), its title (`title-*`) and the round close button (`close-*`).
+
 The cell dropdown / date editor sheet header (title + close button) is core's shared sheet chrome. `--wg-sheet-*` on `web-grid` themes it for that grid; unset (the default), the page-wide `--km-sheet-*` on `:root` applies (every Keenmate sheet), then `--base-*`, then the core default. `--wg-sheet-header-bg` unset = the sheet's own background.
 
 | Variable | Falls back to | Description |

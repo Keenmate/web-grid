@@ -615,6 +615,10 @@ Focus moves into the sheet and returns to the cell when it closes. While it is o
 does not scroll and the sheet sits above the soft keyboard. Texts: `labels.sheetClose` ("Close"),
 `labels.sheetSearch` ("Search…"); tap size `--wg-touch-target-min` (→ `--base-touch-target-min`, 44px).
 
+A **sheet** is a panel that covers the page on a phone — a bottom sheet, a side drawer, a full-screen
+picker. These variables style its top bar: the strip (`header-*`), its title (`title-*`) and the round
+close button (`close-*`).
+
 The header bar, title and close button are core's shared sheet chrome (`.km-sheet-header` /
 `.km-sheet-title` / `.km-sheet-close` — the same look as every Keenmate sheet, the ✕ is the masked
 `--base-icon-close`); the grid's `.wg__sheet-header` / `.wg__sheet-title` / `.wg__sheet-close` classes stay on
