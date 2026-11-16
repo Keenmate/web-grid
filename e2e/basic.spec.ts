@@ -363,3 +363,37 @@ test.describe('row focus event', () => {
 		await expect(page.locator('[data-testid="focused-row"]')).toContainText('2 — Carol Williams')
 	})
 })
+
+test.describe('document listeners', () => {
+	test('a full rebuild does not add another document mouseup listener', async ({ page }) => {
+		// Count capture-phase document mouseup listeners (adds minus removes) from before the grid loads.
+		await page.addInitScript(() => {
+			const w = window as unknown as { __mouseups: number }
+			w.__mouseups = 0
+			const add = document.addEventListener.bind(document)
+			const remove = document.removeEventListener.bind(document)
+			const isCapture = (o: unknown) => o === true || (typeof o === 'object' && !!o && (o as { capture?: boolean }).capture === true)
+			document.addEventListener = ((type: string, fn: EventListener, o?: unknown) => {
+				if (type === 'mouseup' && isCapture(o)) w.__mouseups++
+				return add(type, fn, o as AddEventListenerOptions)
+			}) as typeof document.addEventListener
+			document.removeEventListener = ((type: string, fn: EventListener, o?: unknown) => {
+				if (type === 'mouseup' && isCapture(o)) w.__mouseups--
+				return remove(type, fn, o as EventListenerOptions)
+			}) as typeof document.removeEventListener
+		})
+		await gotoBasic(page)
+		const count = () => page.evaluate(() => (window as unknown as { __mouseups: number }).__mouseups)
+		const before = await count()
+		// A table-border-only flip rebuilds the whole table (attachEventListeners runs again)
+		for (let i = 0; i < 4; i++) {
+			await page.evaluate(async (on) => {
+				const grid = document.querySelector('web-grid#grid') as HTMLElement & { isTableBorderOnly: boolean; whenSettled(): Promise<void> }
+				grid.isTableBorderOnly = on
+				await grid.whenSettled()
+			}, i % 2 === 0)
+		}
+		await expect(cell(page, 0, COL.name)).toBeVisible()
+		expect(await count()).toBe(before)
+	})
+})

@@ -1237,6 +1237,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		this.render()
 		// Register paste handler for navigate mode
 		this.addEventListener('paste', this.handlePaste as EventListener)
+		// A mouse button released anywhere ends the table press (see attachEventListeners)
+		document.addEventListener('mouseup', this.#onDocumentMouseUp, true)
 	}
 
 	protected override destroyCallback(): void {
@@ -1259,6 +1261,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 
 		// Cleanup event listeners, observers, etc.
 		this.removeEventListener('paste', this.handlePaste as EventListener)
+		document.removeEventListener('mouseup', this.#onDocumentMouseUp, true)
 		if (this.datepicker) {
 			this.datepicker.destroy()
 			this.datepicker = null
@@ -1794,14 +1797,16 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	/** Tracks whether a mouse button is currently pressed on the table (mousedown→mouseup) */
 	/** @internal */
 	isMouseDown = false
+	/** One listener per element, added in connect() / removed in disconnect() — not one per rebuild. */
+	#onDocumentMouseUp = (): void => { this.isMouseDown = false }
 
 	private attachEventListeners(): void {
 		const table = this.shadow.querySelector('.wg__table')
 		if (!table) return
 
 		// Track mouse button state so focus handler can distinguish mouse vs keyboard focus
+		// (the document mouseup that clears it is added once in connect())
 		table.addEventListener('mousedown', () => { this.isMouseDown = true }, true)
-		document.addEventListener('mouseup', () => { this.isMouseDown = false }, true)
 
 		// Focus — capture-phase, drives handleCellFocus + always-edit-mode swap + focus-change (keyboard only)
 		// Extracted to modules/events/table-focus.ts

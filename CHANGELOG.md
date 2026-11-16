@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Fixed — one document `mouseup` listener per grid (2026-11-16)
+- Every full table rebuild (a `table-border-only` flip, the first render after a structure change) added
+  another anonymous capture `mouseup` listener on `document` and never removed it — a detached grid stayed
+  reachable from `document`. Now one bound listener, added in `connect()`, removed in `disconnect()`
+  (`e2e/basic.spec.ts` → "document listeners").
+
 ### Internal — core 1.0.0-rc24 (2026-11-15)
 - core `^1.0.0-rc24`.
 
