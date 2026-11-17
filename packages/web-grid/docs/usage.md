@@ -106,7 +106,7 @@ The `QuickGridProps<T>` type defined in `src/types.ts` is the canonical source o
 | `isRowEditable` | `boolean` | — | Row-level editability gate; combined with grid-level `isEditingEnabled` and column-level `isEditable` (all three must pass) |
 | `getIsRowEditableCallback` | `(ctx: { row }) => boolean` | — | Decides row editability per row (wins over `isRowEditable`) |
 | `editTrigger` | `EditTrigger` | `'dblclick'` | How editing starts: `'click'`, `'dblclick'`, `'button'` (an edit button in editable cells — on hover and in the focused cell; F2 / Enter too), `'always'`, `'navigate'` |
-| `editButtonIcon` | `string` (HTML) | `'✎'` | Content of the edit button (`editTrigger: 'button'` / `column.isEditButtonShown`) — HTML, e.g. `'<span class="lucide-pencil"></span>'`. Attribute `edit-button-icon`. Accessible name: `labels.editCell` |
+| `editButtonIcon` | `string` (icon) | `'✎'` | Icon of the edit button (`editTrigger: 'button'` / `column.isEditButtonShown`), read like every icon: markup (`'<span class="lucide-pencil"></span>'`) is inserted as is, a token name (`'pencil'`) draws the `--base-icon-pencil` glyph in `currentColor`, anything else is text. Attribute `edit-button-icon`. Accessible name: `labels.editCell` |
 | `editStartSelection` | `EditStartSelection` | `'select-all'` | Cursor position when entering edit via navigate: `'mouse-position'`, `'select-all'`, `'cursor-at-start'`, `'cursor-at-end'` |
 | `shouldCommitOnClickAway` | `boolean` | `true` | Excel-like commit on click-away (another cell, or outside the grid). `false` discards the in-progress value |
 | `dropdownToggleVisibility` | `ToggleVisibility` | `'on-focus'` | When to show dropdown toggle: `'always'`, `'on-focus'` |
@@ -169,7 +169,7 @@ Toolbar buttons, context-menu items and shortcuts share one shape (web-component
 | `action` | A built-in name — the item runs the built-in. Omit for a custom item |
 | `id` | Identifies a custom item; reported in the `action` event |
 | `text` / `getTextCallback(ctx)` | Label. On icon toolbar buttons: the accessible name + tooltip heading (shown only without an `icon` or with `isTextVisible`) |
-| `icon` / `getIconCallback(ctx)` | Icon (glyph / markup) |
+| `icon` / `getIconCallback(ctx)` | Icon: markup (`'<svg …>'`) as is, a token name (`'star'` → the `--base-icon-star` glyph in `currentColor`), anything else (an emoji) as text — core `renderIcon` |
 | `tooltip` / `getTooltipCallback(ctx)` | Tooltip description |
 | `shortcut` | Key hint (`'Ctrl+D'`); the binding on `rowShortcuts` / `rangeShortcuts` |
 | `isDanger` | Destructive styling |

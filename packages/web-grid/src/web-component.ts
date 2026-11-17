@@ -267,6 +267,7 @@ import {
 	createCustomStyles,
 	createStateStore,
 	adoptStyles,
+	ICON_CSS,
 	type CustomStylesHandle,
 	type LoadStateCallback,
 	type SaveStateCallback,
@@ -410,7 +411,7 @@ export interface GridElementConfig<T = unknown> {
 	 * - `navigate` — Excel-like: arrows move the focus, typing starts editing the focused cell
 	 */
 	editTrigger: EditTrigger
-	/** Content of the edit button — an HTML string, e.g. `<span class="lucide-pencil"></span>`. Shown in editable cells with `editTrigger: 'button'` (or `column.isEditButtonShown`); its accessible name is `labels.editCell`. Default: `✎`. */
+	/** Icon of the edit button — markup (`<span class="lucide-pencil"></span>`) as is, a token name (`pencil` → `--base-icon-pencil`), else text. Shown in editable cells with `editTrigger: 'button'` (or `column.isEditButtonShown`); its accessible name is `labels.editCell`. Default: `✎`. */
 	editButtonIcon: string
 	/**
 	 * Where the caret goes when an editor opens. Default: `mouse-position`.
@@ -747,7 +748,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 - \`always\` — every editable cell is always an editor
 - \`navigate\` — Excel-like: arrows move the focus, typing starts editing the focused cell` },
 		// HTML of the edit button (editTrigger 'button'), e.g. '<span class="lucide-pencil"></span>'
-		{ configKey: 'editButtonIcon', attribute: 'edit-button-icon', converter: toText({ default: '✎' }), default: '✎', on: 'update', description: 'Content of the edit button — an HTML string, e.g. `<span class="lucide-pencil"></span>`. Shown in editable cells with `editTrigger: \'button\'` (or `column.isEditButtonShown`); its accessible name is `labels.editCell`. Default: `✎`.' },
+		{ configKey: 'editButtonIcon', attribute: 'edit-button-icon', converter: toText({ default: '✎' }), default: '✎', on: 'update', description: 'Icon of the edit button — markup (`<span class="lucide-pencil"></span>`) as is, a token name (`pencil` → `--base-icon-pencil`), else text. Shown in editable cells with `editTrigger: \'button\'` (or `column.isEditButtonShown`); its accessible name is `labels.editCell`. Default: `✎`.' },
 		{ configKey: 'editStartSelection', attribute: 'edit-start-selection', converter: toEnum(EDIT_START_SELECTIONS, { default: 'mouse-position' }), default: 'mouse-position', on: 'update', description: `Where the caret goes when an editor opens. Default: \`mouse-position\`.
 
 - \`mouse-position\` — at the clicked character
@@ -1083,7 +1084,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		// The grid's own CSS (all in @layer variables / component / overrides): one shared constructable
 		// sheet per document (core adoptStyles), adopted before the first render — no FOUC; custom CSS
 		// (unlayered <style> slots) still wins.
-		adoptStyles(this.shadow, styles)
+		adoptStyles(this.shadow, styles, ICON_CSS)
 
 		// Override requestUpdate to invalidate the data-pipeline cache and trigger DOM render.
 		// Every state-changing setter on GridEngine funnels through requestUpdate(), so this is

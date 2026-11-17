@@ -52,6 +52,11 @@ Target: **2.0.0-rc01** — a major: the callback, event and item API below is br
   and the shortcuts help show core `formatShortcut` text — **visible change:** `Ctrl+D` stays `Ctrl+D`, but key
   names are the platform's (`Delete` → `Del`, `ArrowUp` → `↑`; Apple `⇧⌘D`), and the text is escaped. The
   own `key-combo` module and the internal `ParsedKeyCombo` type are gone.
+- **BREAKING (visible): icon strings through core `renderIcon`** — a toolbar / inline-action item's `icon` and
+  `editButtonIcon` are read like every Keenmate component's icons: markup (starts with `<`) as is, an ASCII token
+  name (`'pencil'`, `'star'`) is a glyph masked from `--base-icon-<name>` in `currentColor` (nothing drawn when
+  the token is unset), anything else (an emoji, `✎`) is escaped text. A plain-word icon used to show as the word;
+  a non-markup string with `<`/`&` used to be inserted as HTML. `ICON_CSS` is adopted. Rulebook C-CA-33.
 - e2e: `copy.spec.ts` and the editors fixture no longer touch the real system clipboard (an in-page stub in
   every browser); new `core-adoption.spec.ts`.
 
