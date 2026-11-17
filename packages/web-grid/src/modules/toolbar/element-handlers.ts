@@ -13,6 +13,7 @@ import { showTooltip, hideTooltip } from '../tooltip/index.js'
 import { activateGridItem, handleRowShortcut, rowCellFields } from '../items/index.js'
 import { returnFocusToCell } from '../navigation/focus.js'
 import { deepActiveElement, registerOverlay, type OverlayDismissReason } from '@keenmate/web-components-core'
+import { isTypingTarget } from '@keenmate/web-components-core/actions'
 import {
 	getActiveToolbar,
 	getActiveToolbarButtons,
@@ -51,12 +52,10 @@ export function setupToolbarShortcuts<T>(ctx: GridHost<T>): void {
 	}
 
 	const handler: (e: KeyboardEvent) => void = (e: KeyboardEvent) => {
-		// Skip when the focused cell's own keydown already ran a shortcut, or focus is in an input/editor
-		if (e.defaultPrevented) return
-		const target = e.target as HTMLElement
-		if (target.matches('input, textarea, select, [contenteditable="true"]')) {
-			return
-		}
+		// Skip when the focused cell's own keydown already ran a shortcut, or focus is in a text field /
+		// editor (core isTypingTarget: the real target, inside shadow roots too). Matching is core
+		// matchesShortcut (handleRowShortcut).
+		if (e.defaultPrevented || isTypingTarget(e)) return
 
 		if (getActiveToolbarRowIndex(ctx) === null) return
 
@@ -102,12 +101,10 @@ export function setupInlineShortcuts<T>(ctx: GridHost<T>): void {
 	if (!shortcuts?.length || ctx.engine.hoveredRowIndex === null) return
 
 	const handler: (e: KeyboardEvent) => void = (e: KeyboardEvent) => {
-		// Skip when the focused cell's own keydown already ran a shortcut, or focus is in an input/editor
-		if (e.defaultPrevented) return
-		const target = e.target as HTMLElement
-		if (target.matches('input, textarea, select, [contenteditable="true"]')) {
-			return
-		}
+		// Skip when the focused cell's own keydown already ran a shortcut, or focus is in a text field /
+		// editor (core isTypingTarget: the real target, inside shadow roots too). Matching is core
+		// matchesShortcut (handleRowShortcut).
+		if (e.defaultPrevented || isTypingTarget(e)) return
 
 		const rowIndex = ctx.engine.hoveredRowIndex
 		if (rowIndex === null) return

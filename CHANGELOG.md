@@ -17,6 +17,13 @@ Target: **2.0.0-rc01** — a major: the callback, event and item API below is br
   becomes the span `render() body took …ms | <rows> items | …/item | … items/sec` plus a `render() — summary`
   block (one line per span / counter: `displayItems: ×3 (0.12ms)`; counters that never ran are not listed).
   `microtask delay:` is unchanged.
+- Internal: the floating / inline toolbar's document-level row-shortcut listeners skip typing through core
+  `isTypingTarget` (matching was already core `matchesShortcut`). Same keys; the check now sees the real target
+  inside shadow roots (a text field in the grid itself — filter row, cell editor — no longer leaks plain-key row
+  shortcuts to the open toolbar's row), and a focused checkbox / radio / button-type `<input>` no longer counts as
+  typing. Core `bindShortcuts` is not used here: it fires Ctrl / Alt chords while typing (the toolbar never
+  did) and evaluates every binding's `isEnabled` on each keydown before matching (the row-action resolution
+  per key).
 
 ### Added / Changed — row identity, tree members and callbacks are core inputs (2026-11-17)
 - **Added: attributes** `id-member`, `path-member`, `level-member`, `parent-path-member`,
