@@ -47,7 +47,7 @@ function renderCellDisplayContent<T>(
 			return `<span class="wg__cell-text">${escapeHtml(value)}</span>`
 		}
 		// Default: render checkbox
-		gridPerf.counters.cellDisplayItemsLookup++
+		gridPerf.count('cellDisplayItemsLookup')
 		const item = ctx.engine.displayItems[rowIndex]
 		const rawValue = item ? ctx.engine.getCellRawValue(item, rowIndex, field) : false
 		const opts = column.editorOptions || {}
@@ -72,7 +72,7 @@ function renderCellDisplayContent<T>(
 
 	if (isDropdown) {
 		// Get display value using proper fallback chain (getDisplayCallback -> displayMember -> label -> raw value)
-		gridPerf.counters.cellDisplayItemsLookup++
+		gridPerf.count('cellDisplayItemsLookup')
 		const item = ctx.engine.displayItems[rowIndex]
 		const rawValue = item ? ctx.engine.getCellRawValue(item, rowIndex, field) : undefined
 		const opts = column.editorOptions || {}

@@ -10,6 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Internal — leftover core adoptions (2026-11-18)
+- Internal: the `GRID:PERF` timings go through core `createPerfLogger('GRID')` (`src/perf.ts`; the grid's
+  always-on counter object is gone — nothing is counted or timed while PERF is silent). Line format changed:
+  `render() total: 3.21 ms` → `render() total took 3.21ms`; the one-line `render() body: … ms | displayItems=…`
+  becomes the span `render() body took …ms | <rows> items | …/item | … items/sec` plus a `render() — summary`
+  block (one line per span / counter: `displayItems: ×3 (0.12ms)`; counters that never ran are not listed).
+  `microtask delay:` is unchanged.
+
 ### Added / Changed — row identity, tree members and callbacks are core inputs (2026-11-17)
 - **Added: attributes** `id-member`, `path-member`, `level-member`, `parent-path-member`,
   `tree-path-separator`, `expand-level`, `row-editable` and `toolbar-btn-min-width` — the same values as the

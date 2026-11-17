@@ -104,7 +104,7 @@ import { GridLabelsResolver, type GridLabelKey, type LabelFormat } from './label
 import type { LabelParams } from '@keenmate/web-components-core/locale'
 
 // Perf instrumentation (temporary — investigating tree-toggle slowness)
-import { gridPerf } from './perf.js'
+import { perfNow, perfCount } from './perf.js'
 import { FilterTextCache, matchesFilterTerm, prepareFilterTerm } from './modules/search/text-match.js'
 
 
@@ -1983,10 +1983,9 @@ export class GridEngine<T = unknown> {
 
 	/** Items in tree-aware sort order (depth-first, sibling-sorted), with filter applied */
 	protected getTreeSortedItems(): T[] {
-		const __t0 = performance.now()
-		gridPerf.counters.treeSorted++
+		const __t0 = perfNow()
 		if (!this._treeIndex) {
-			gridPerf.counters.treeSortedMs += performance.now() - __t0
+			perfCount('treeSorted', __t0)
 			return this._items
 		}
 		const allowed = this.getTreeFilterAllowedPaths()
@@ -2005,7 +2004,7 @@ export class GridEngine<T = unknown> {
 				if (allowed && !allowed.has(path)) continue
 				result.push(item)
 			}
-			gridPerf.counters.treeSortedMs += performance.now() - __t0
+			perfCount('treeSorted', __t0)
 			return result
 		}
 
@@ -2023,16 +2022,15 @@ export class GridEngine<T = unknown> {
 			}
 		}
 		walk(idx.rootPaths)
-		gridPerf.counters.treeSortedMs += performance.now() - __t0
+		perfCount('treeSorted', __t0)
 		return result
 	}
 
 	/** Items currently visible (post-collapse). When filter is active, ancestors of matches are auto-expanded. */
 	protected getTreeVisibleItems(): T[] {
-		const __t0 = performance.now()
-		gridPerf.counters.treeVisible++
+		const __t0 = perfNow()
 		if (!this._treeIndex) {
-			gridPerf.counters.treeVisibleMs += performance.now() - __t0
+			perfCount('treeVisible', __t0)
 			return this._items
 		}
 		const sorted = this.getTreeSortedItems()
@@ -2055,7 +2053,7 @@ export class GridEngine<T = unknown> {
 			}
 			if (visible) result.push(item)
 		}
-		gridPerf.counters.treeVisibleMs += performance.now() - __t0
+		perfCount('treeVisible', __t0)
 		return result
 	}
 
@@ -2483,8 +2481,7 @@ export class GridEngine<T = unknown> {
 
 	get paginatedItems(): T[] {
 		if (this._paginatedItemsCache !== null) return this._paginatedItemsCache
-		const __t0 = performance.now()
-		gridPerf.counters.paginatedItems++
+		const __t0 = perfNow()
 		// In tree mode, slice over visible (post-collapse) items, not the full sorted list
 		const baseItems = this.isTreeMode ? this.getTreeVisibleItems() : this.sortedItems
 
@@ -2505,7 +2502,7 @@ export class GridEngine<T = unknown> {
 		}
 
 		this._paginatedItemsCache = result
-		gridPerf.counters.paginatedItemsMs += performance.now() - __t0
+		perfCount('paginatedItems', __t0)
 		return result
 	}
 
@@ -2525,8 +2522,7 @@ export class GridEngine<T = unknown> {
 
 	get displayItems(): T[] {
 		if (this._displayItemsCache !== null) return this._displayItemsCache
-		const __t0 = performance.now()
-		gridPerf.counters.displayItems++
+		const __t0 = perfNow()
 		const items = this.paginatedItems
 		let result: T[]
 		if (!this._isNewRowEnabled) {
@@ -2538,7 +2534,7 @@ export class GridEngine<T = unknown> {
 				: [...items, emptyRow]
 		}
 		this._displayItemsCache = result
-		gridPerf.counters.displayItemsMs += performance.now() - __t0
+		perfCount('displayItems', __t0)
 		return result
 	}
 

@@ -1776,10 +1776,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		// Batch updates using microtask
 		queueMicrotask(() => {
 			this.updatePending = false
-			const __renderT0 = performance.now()
-			perfLogger.debug('microtask delay:', (__renderT0 - __reqT0).toFixed(2), 'ms')
-			this.render()
-			perfLogger.debug('render() total:', (performance.now() - __renderT0).toFixed(2), 'ms')
+			perfLogger.debug('microtask delay:', (performance.now() - __reqT0).toFixed(2), 'ms')
+			gridPerf.measure('render() total', () => this.render())
 		})
 	}
 
@@ -1981,8 +1979,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		// Drop any stale data-pipeline cache. Normally requestUpdate() has already
 		// done this, but render() is also called directly in a few places.
 		this.engine.invalidateDisplayCache()
-		gridPerf.reset()
-		const __renderStartT = performance.now()
+		gridPerf.clear()
+		gridPerf.start('render() body')
 		uiLogger.debug('render:', this.engine.displayItems.length, 'rows,', this.engine.visualColumns.length, 'columns')
 		// Preserve scroll position before re-render
 		// When isTableBorderOnly is enabled, scroll container is .wg__table-container
@@ -2239,7 +2237,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		// The infinite-scroll row's loader (core renderLoader) — redrawn into the new row
 		syncLoadingMoreLoader(this)
 
-		perfLogger.debug('render() body:', (performance.now() - __renderStartT).toFixed(2), 'ms |', gridPerf.summary())
+		gridPerf.end('render() body', this.engine.displayItems.length)
+		gridPerf.summary('render()')
 	}
 
 	/** SVG connector arrow for toolbar row tracking — see modules/toolbar/connector-renderer.ts */

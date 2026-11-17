@@ -1,39 +1,28 @@
-// Lightweight perf instrumentation, intentionally always-on while we
-// chase the tree-toggle slowness. Remove (or gate behind a flag) once
-// the hot path is identified.
+/**
+ * The grid's perf logger — core `createPerfLogger` (SPEC §12.1) over the same
+ * `GRID:PERF` logger as `perfLogger` in `logger.ts` (loggers are registered by
+ * name), so one category level switches both:
+ *
+ * ```js
+ * window.components['web-grid'].logging.setCategoryLevel('PERF', 'debug')
+ * ```
+ *
+ * Silent (the default `warn`) records nothing: `count()` and the spans are no-ops
+ * until PERF is at `debug`. `render()` clears it, times its body as a span and
+ * logs `summary('render()')` — the span plus the data-pipeline counters
+ * (`displayItems`, `paginatedItems`, `treeSorted`, `treeVisible`, with their
+ * time, and `cellDisplayItemsLookup`).
+ */
+import { createPerfLogger } from '@keenmate/web-components-core'
 
-export const gridPerf = {
-	counters: {
-		displayItems: 0,
-		displayItemsMs: 0,
-		paginatedItems: 0,
-		paginatedItemsMs: 0,
-		treeSorted: 0,
-		treeSortedMs: 0,
-		treeVisible: 0,
-		treeVisibleMs: 0,
-		cellDisplayItemsLookup: 0
-	},
-	reset(): void {
-		const c = this.counters
-		c.displayItems = 0
-		c.displayItemsMs = 0
-		c.paginatedItems = 0
-		c.paginatedItemsMs = 0
-		c.treeSorted = 0
-		c.treeSortedMs = 0
-		c.treeVisible = 0
-		c.treeVisibleMs = 0
-		c.cellDisplayItemsLookup = 0
-	},
-	summary(): string {
-		const c = this.counters
-		return [
-			`displayItems=${c.displayItems} (${c.displayItemsMs.toFixed(1)}ms)`,
-			`paginatedItems=${c.paginatedItems} (${c.paginatedItemsMs.toFixed(1)}ms)`,
-			`treeSorted=${c.treeSorted} (${c.treeSortedMs.toFixed(1)}ms)`,
-			`treeVisible=${c.treeVisible} (${c.treeVisibleMs.toFixed(1)}ms)`,
-			`cellDisplayItemsLookup=${c.cellDisplayItemsLookup}`
-		].join(' | ')
-	}
+export const gridPerf = createPerfLogger('GRID')
+
+/** `performance.now()` only while the perf logger records — the hot getters skip the clock otherwise. */
+export function perfNow(): number {
+	return gridPerf.isEnabled ? performance.now() : 0
+}
+
+/** Count one call of `label` with the time since `t0` (from {@link perfNow}). */
+export function perfCount(label: string, t0: number): void {
+	if (gridPerf.isEnabled) gridPerf.count(label, performance.now() - t0)
 }
