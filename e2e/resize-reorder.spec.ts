@@ -363,3 +363,44 @@ test.describe('header context menu — #gridHeaderMenu', () => {
 		await expect(header(page, 'gridHeaderMenu', 'email')).toHaveCount(1)
 	})
 })
+
+test.describe('column resize — core createPointerDrag (#grid)', () => {
+	const width = (page: Page, field: string) =>
+		gridLocator(page, 'grid').locator(`th[data-field="${field}"]`).evaluate((el) => Math.round(el.getBoundingClientRect().width))
+
+	test('Escape during the drag puts the old width back, no column-resize', async ({ page }) => {
+		const before = await width(page, 'name')
+		const handle = resizeHandle(page, 'grid', 'name')
+		const box = (await handle.boundingBox())!
+		await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+		await page.mouse.down()
+		await page.mouse.move(box.x + 60, box.y + box.height / 2, { steps: 6 })
+		expect(await width(page, 'name')).toBeGreaterThan(before + 20)
+		await page.keyboard.press('Escape')
+		await page.mouse.up()
+		expect(await width(page, 'name')).toBe(before)
+	})
+
+})
+
+test.describe('column resize — touch (#grid)', () => {
+	test.use({ hasTouch: true })
+	const width = (page: Page, field: string) =>
+		gridLocator(page, 'grid').locator(`th[data-field="${field}"]`).evaluate((el) => Math.round(el.getBoundingClientRect().width))
+
+	test('a finger drags the handle (core createPointerDrag; was mouse-only)', async ({ page, browserName }) => {
+		test.skip(browserName !== 'chromium', 'CDP touch input')
+		const before = await width(page, 'name')
+		const box = (await resizeHandle(page, 'grid', 'name').boundingBox())!
+		const x = box.x + box.width / 2
+		const y = box.y + box.height / 2
+		const cdp = await page.context().newCDPSession(page)
+		await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] })
+		await page.waitForTimeout(300) // a moment on the handle (CDP delivers the pointerdown late; a quicker move reads as a scroll)
+		for (let dx = 10; dx <= 70; dx += 10) {
+			await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x + dx, y }] })
+		}
+		await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+		await expect.poll(() => width(page, 'name')).toBeGreaterThan(before + 40)
+	})
+})

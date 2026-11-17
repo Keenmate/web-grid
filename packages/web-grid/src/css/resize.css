@@ -21,6 +21,15 @@
   z-index: var(--wg-z-resize-handle);
   opacity: 0;
   transition: opacity var(--wg-transition-fast) var(--wg-easing);
+  /* A finger on the handle resizes (core pointer drag) instead of scrolling the grid */
+  touch-action: none;
+}
+
+/* No hover on a touch screen: keep the handles visible to grab */
+@media (hover: none) {
+  .wg__resize-handle {
+    opacity: 1;
+  }
 }
 
 /* Show resize handle on header hover */

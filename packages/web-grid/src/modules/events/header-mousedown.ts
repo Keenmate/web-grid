@@ -4,8 +4,8 @@
 // The second mousedown listener — distinct from `handleTableMouseDown` because
 // it runs AFTER it and handles the "non-cell-content" interactions:
 //
-//  1. Resize handle drag — highest priority, claims the event before reorder
-//     can also see it.
+//  1. Resize handle — highest priority, claims the event before reorder
+//     can also see it (the drag is core createPointerDrag, resize module).
 //  2. Column reorder drag — when isColumnReorderAllowed is on and no modifier
 //     keys are held. Modifier-held clicks fall through to column-selection.
 //  3. Column selection drag — when reorder is off, OR when Shift is held even
@@ -21,7 +21,6 @@
 //     element) drops every selection.
 
 import type { GridHost } from '../grid-context.js'
-import { handleResizeStart } from '../resize/index.js'
 import { handleReorderStart } from '../reorder/index.js'
 import { handleHeaderMouseDown } from '../column-selection/index.js'
 import { handleRowNumberMouseDown } from '../selection/index.js'
@@ -40,17 +39,14 @@ import {
 export function handleHeaderRowMouseDown<T>(ctx: GridHost<T>, e: Event): void {
 	const target = e.target as HTMLElement
 
-	// Resize handle takes priority
+	// Resize handle takes priority: the drag itself is the grid's core createPointerDrag (resize
+	// module, mouse + touch); here it only claims the press (no text selection, no reorder / select)
 	const resizeHandle = target.closest('.wg__resize-handle') as HTMLElement
 	if (resizeHandle) {
 		e.preventDefault()
 		e.stopPropagation()
 		// Clear selections when starting resize
 		ctx.clearAllSelections()
-		const field = resizeHandle.dataset.field
-		if (field) {
-			handleResizeStart(ctx, e as MouseEvent, field)
-		}
 		return
 	}
 

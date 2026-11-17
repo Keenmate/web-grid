@@ -200,7 +200,7 @@ import {
 	handleHeaderColumnSelectClick,
 	handleInternalBlur
 } from './modules/events/index.js'
-import { handleResizeStart } from './modules/resize/index.js'
+import { createColumnResize } from './modules/resize/index.js'
 import { handleReorderStart, isReordering } from './modules/reorder/index.js'
 import { updateFillHandle, removeFillHandle } from './modules/fill-handle/index.js'
 import { createScrollEventManager, type ScrollEventManager } from './modules/scroll-events/index.js'
@@ -270,6 +270,7 @@ import {
 	adoptStyles,
 	ICON_CSS,
 	keepScrollAcrossMove,
+	type PointerDrag,
 	type CustomStylesHandle,
 	type LoadStateCallback,
 	type SaveStateCallback,
@@ -1232,6 +1233,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		if ('customStyles' in partial || 'getCustomStylesCallback' in partial) this.#customStyles?.refresh()
 	}
 
+	#columnResize: PointerDrag | null = null
+
 	protected connect(): void {
 		initLogger.debug('connect — grid activated')
 		// Initialize action pipeline adapter for 'always' editTrigger mode
@@ -1241,6 +1244,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		this.addEventListener('paste', this.handlePaste as EventListener)
 		// A mouse button released anywhere ends the table press (see attachEventListeners)
 		document.addEventListener('mouseup', this.#onDocumentMouseUp, true)
+		// Column resize: core pointer drag on the host (mouse + touch; survives the table re-render)
+		this.#columnResize = createColumnResize(this, this)
 	}
 
 	protected override destroyCallback(): void {
@@ -1264,6 +1269,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		// Cleanup event listeners, observers, etc.
 		this.removeEventListener('paste', this.handlePaste as EventListener)
 		document.removeEventListener('mouseup', this.#onDocumentMouseUp, true)
+		this.#columnResize?.destroy()
+		this.#columnResize = null
 		if (this.datepicker) {
 			this.datepicker.destroy()
 			this.datepicker = null
