@@ -152,6 +152,23 @@ test.describe('Ctrl+G go to row', () => {
 		expect(await focused(page)).toEqual([4, 2])
 	})
 
+	test('the dialog is modal (core startModalSession): Tab stays inside, the grid behind is inert, a backdrop click cancels', async ({ page }) => {
+		await cell(page, 2, 2).click()
+		await page.keyboard.press('Control+g')
+		await expect(gotoDialog(page)).toBeVisible()
+		await expect(gotoDialog(page)).toHaveAttribute('aria-modal', 'true')
+		const inDialog = () => onGrid(page, el => !!el.shadowRoot!.activeElement?.closest('.wg__goto-dialog'))
+		for (let i = 0; i < 5; i++) {
+			await page.keyboard.press('Tab')
+			expect(await inDialog()).toBe(true)
+		}
+		expect(await onGrid(page, el => el.shadowRoot!.querySelector('.wg')!.hasAttribute('inert'))).toBe(true)
+		await gridLocator(page).locator('.wg__goto-overlay').click({ position: { x: 5, y: 5 } })
+		await expect(gotoDialog(page)).toHaveCount(0)
+		expect(await onGrid(page, el => el.shadowRoot!.querySelector('.wg')!.hasAttribute('inert'))).toBe(false)
+		await expect(cell(page, 2, 2)).toBeFocused({ timeout: 1500 })
+	})
+
 	test('Meta+G opens the go-to-row dialog (macOS)', async ({ page }) => {
 		await cell(page, 0, 1).click()
 		await page.keyboard.press('Meta+g')

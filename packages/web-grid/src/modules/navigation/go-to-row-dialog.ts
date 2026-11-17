@@ -10,10 +10,13 @@
 //  - Non-virtual: core scrollIntoContainer (center, gated by beforeScrollCallback) + immediate focus +
 //    surgical updateFocusVisual call.
 //
-// Cancel paths: Cancel button, Escape, click on the overlay backdrop.
+// Modal through core startModalSession (SPEC §12.19): the page behind is inert, Tab stays in the dialog,
+// the page doesn't scroll; Escape (overlay tree), the phone Back gesture and a click on the overlay
+// backdrop cancel. Cancel paths also: the Cancel button. Focus is put back by this module (the origin
+// cell, or the target cell), not by the session.
 // Validation: numeric, in-range, otherwise the input is refocused + selected.
 
-import { escapeHtml } from '@keenmate/web-components-core'
+import { escapeHtml, startModalSession, type ModalSession } from '@keenmate/web-components-core'
 import type { GridHost } from '../grid-context.js'
 import { updateFocusVisual, moveFocus } from './focus.js'
 import { formatLabel } from '../../labels.js'
@@ -50,7 +53,9 @@ export function openGoToRowDialog<T>(ctx: GridHost<T>, colIndex: number): void {
 	// The cell focused when the dialog opened — Cancel / Escape / a backdrop click return to it
 	const origin = ctx.engine.focusedCell
 
+	let session: ModalSession | null = null
 	const closeDialog = () => {
+		session?.end({ shouldReturnFocus: false })
 		overlay.remove()
 	}
 
@@ -102,20 +107,21 @@ export function openGoToRowDialog<T>(ctx: GridHost<T>, colIndex: number): void {
 	// Event handlers
 	goBtn.addEventListener('click', goToRow)
 	cancelBtn.addEventListener('click', cancelDialog)
-	overlay.addEventListener('click', (e) => {
-		if (e.target === overlay) cancelDialog()
-	})
 	input.addEventListener('keydown', (e) => {
 		if (e.key === 'Enter') {
 			e.preventDefault()
 			goToRow()
-		} else if (e.key === 'Escape') {
-			e.preventDefault()
-			cancelDialog()
 		}
 	})
 
 	ctx.shadow.appendChild(overlay)
-	input.focus()
+	const dialog = overlay.querySelector('.wg__goto-dialog') as HTMLElement
+	session = startModalSession(dialog, {
+		backdrop: overlay, // the grid's own full-viewport overlay (it centres the dialog)
+		initialFocus: input,
+		returnFocusTo: null,
+		onDismiss: cancelDialog,
+		logSource: ctx.shadow.host
+	})
 	input.select()
 }
