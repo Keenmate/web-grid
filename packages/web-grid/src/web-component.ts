@@ -269,6 +269,7 @@ import {
 	createStateStore,
 	adoptStyles,
 	ICON_CSS,
+	keepScrollAcrossMove,
 	type CustomStylesHandle,
 	type LoadStateCallback,
 	type SaveStateCallback,
@@ -1086,6 +1087,9 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		// sheet per document (core adoptStyles), adopted before the first render — no FOUC; custom CSS
 		// (unlayered <style> slots) still wins.
 		adoptStyles(this.shadow, styles, ICON_CSS)
+		// A DOM move (dashboard reorder, re-parent) keeps the grid's state; this keeps its scroll position too
+		// (core keepScrollAcrossMove — the browser resets a detached scroller to 0).
+		keepScrollAcrossMove(this, () => [this.shadow.querySelector('.wg')])
 
 		// Override requestUpdate to invalidate the data-pipeline cache and trigger DOM render.
 		// Every state-changing setter on GridEngine funnels through requestUpdate(), so this is

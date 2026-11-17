@@ -63,6 +63,10 @@ Target: **2.0.0-rc01** — a major: the callback, event and item API below is br
   **`null` / `undefined` now draw the built-in look** (the escaped cell text / the default option / the tree glyph;
   a cell used to show `null` / `undefined`, a chevron nothing), `false` draws nothing. New exported type
   `RenderResult`. Rulebook C-CA-35.
+- **A moved grid keeps its scroll position** (core `keepScrollAcrossMove`): re-parenting / reordering the element
+  (a dashboard) used to bring it back scrolled to the top. Rulebook C-CA-31.
+- The date editor's rolling year / month lists center the selection with core `scrollIntoContainer` (was a
+  hand-written `scrollTop`).
 - e2e: `copy.spec.ts` and the editors fixture no longer touch the real system clipboard (an in-page stub in
   every browser); new `core-adoption.spec.ts`.
 

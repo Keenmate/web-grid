@@ -149,3 +149,28 @@ test.describe('render callbacks through core renderSlotHtml (test/basic.html)', 
 		await expect(cell(page, 3, 1).locator('em.from-node')).toHaveCount(1)
 	})
 })
+
+test.describe('scroll kept across a DOM move (test/basic.html)', () => {
+	test('a scrolled grid moved to another parent comes back at the same scroll position', async ({ page }) => {
+		await page.goto('/test/basic.html')
+		await expect(gridLocator(page).locator('tbody tr').first()).toBeVisible()
+		const result = await page.evaluate(async () => {
+			const grid = document.querySelector('web-grid') as HTMLElement & { items: unknown[] }
+			grid.style.maxHeight = '150px'
+			grid.setAttribute('is-scrollable', '')
+			grid.items = Array.from({ length: 80 }, (_, i) => ({ id: i, name: `Row ${i}`, email: '', salary: i, status: 'active' }))
+			await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
+			const scroller = grid.shadowRoot!.querySelector('.wg') as HTMLElement
+			scroller.scrollTop = 400
+			await new Promise((r) => setTimeout(r, 100))
+			const before = scroller.scrollTop
+			const box = document.createElement('div')
+			document.body.append(box)
+			box.append(grid)
+			await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
+			return { before, after: (grid.shadowRoot!.querySelector('.wg') as HTMLElement).scrollTop }
+		})
+		expect(result.before).toBeGreaterThan(0)
+		expect(result.after).toBe(result.before)
+	})
+})
