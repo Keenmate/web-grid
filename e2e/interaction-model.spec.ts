@@ -326,6 +326,16 @@ test.describe('contexts, twins, controller', () => {
 		expect(r.noGrid).toBe('undefined')
 		expect(r.sameController).toBe(true)
 	})
+
+	test('el.controller is frozen (core createControllerFacade): only the listed API, nothing of the engine', async ({ page }) => {
+		const r = await grid(page).evaluate((el: any) => ({
+			isFrozen: Object.isFrozen(el.controller),
+			hasEngineInternals: 'requestUpdate' in el.controller || '_items' in el.controller,
+			keys: Object.keys(el.controller).length,
+			itemsLive: el.controller.items === el.items
+		}))
+		expect(r).toEqual({ isFrozen: true, hasEngineInternals: false, keys: 73, itemsLive: true })
+	})
 })
 
 // Open gaps listed in core docs/interaction-model-plan.md ("grid (from phase 5)").
