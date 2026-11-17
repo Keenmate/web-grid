@@ -75,9 +75,11 @@ Target: **2.0.0-rc01** — a major: the callback, event and item API below is br
   `createSelection`; the click / Ctrl / Shift / Ctrl+Shift rules, `selectRow()` / `selectRowRange()` /
   `selectColumn()` / `selectColumnRange()` and the `*-selection-change` events are unchanged (a first Shift+click
   on a column header now also sets the range anchor, like rows). Rulebook C-CA-27.
-- **Column resize works with a finger** (core `createPointerDrag`; was mouse-only): the resize handle is
-  `touch-action: none` and always visible on a touch screen (`@media (hover: none)`); Escape during a drag puts
-  the old width back (no `column-resize`). Mouse resize, `column-resize` and persistence are unchanged.
+- **Column resize and reorder work with a finger** (core `createPointerDrag`; were mouse-only): the resize
+  handle is `touch-action: none` and always visible on a touch screen (`@media (hover: none)`); a header drags
+  after a long press (a quick swipe still scrolls) and the grid scrolls sideways near its edge. Escape during
+  either drag cancels it (old width / order, no event). Mouse behaviour, `column-resize` / `column-reorder` and
+  persistence are unchanged. Rulebook C-CA-28.
 - e2e: `copy.spec.ts` and the editors fixture no longer touch the real system clipboard (an in-page stub in
   every browser); new `core-adoption.spec.ts`.
 

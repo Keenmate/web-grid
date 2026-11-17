@@ -21,7 +21,6 @@
 //     element) drops every selection.
 
 import type { GridHost } from '../grid-context.js'
-import { handleReorderStart } from '../reorder/index.js'
 import { handleHeaderMouseDown } from '../column-selection/index.js'
 import { handleRowNumberMouseDown } from '../selection/index.js'
 import {
@@ -57,12 +56,10 @@ export function handleHeaderRowMouseDown<T>(ctx: GridHost<T>, e: Event): void {
 		if (!mouseEvent.ctrlKey && !mouseEvent.metaKey && !mouseEvent.shiftKey) {
 			const header = target.closest('.wg__header') as HTMLElement
 			if (header && !header.classList.contains('wg__header--frozen') && !header.classList.contains('wg__row-number-header')) {
-				// Clear selections when starting reorder
+				// Clear selections when a reorder may start; the drag itself is the grid's core
+				// createPointerDrag (reorder module). No text selection while dragging.
 				ctx.clearAllSelections()
-				const field = header.dataset.field
-				if (field) {
-					handleReorderStart(ctx, e as MouseEvent, field)
-				}
+				e.preventDefault()
 			}
 		}
 	}

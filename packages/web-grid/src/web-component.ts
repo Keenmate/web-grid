@@ -201,7 +201,7 @@ import {
 	handleInternalBlur
 } from './modules/events/index.js'
 import { createColumnResize } from './modules/resize/index.js'
-import { handleReorderStart, isReordering } from './modules/reorder/index.js'
+import { createColumnReorder, isReordering } from './modules/reorder/index.js'
 import { updateFillHandle, removeFillHandle } from './modules/fill-handle/index.js'
 import { createScrollEventManager, type ScrollEventManager } from './modules/scroll-events/index.js'
 import { createFocusEventManager, type FocusEventManager } from './modules/focus-events/index.js'
@@ -1234,6 +1234,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	}
 
 	#columnResize: PointerDrag | null = null
+	#columnReorder: PointerDrag | null = null
 
 	protected connect(): void {
 		initLogger.debug('connect — grid activated')
@@ -1246,6 +1247,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		document.addEventListener('mouseup', this.#onDocumentMouseUp, true)
 		// Column resize: core pointer drag on the host (mouse + touch; survives the table re-render)
 		this.#columnResize = createColumnResize(this, this)
+		this.#columnReorder = createColumnReorder(this, this)
 	}
 
 	protected override destroyCallback(): void {
@@ -1271,6 +1273,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		document.removeEventListener('mouseup', this.#onDocumentMouseUp, true)
 		this.#columnResize?.destroy()
 		this.#columnResize = null
+		this.#columnReorder?.destroy()
+		this.#columnReorder = null
 		if (this.datepicker) {
 			this.datepicker.destroy()
 			this.datepicker = null

@@ -404,3 +404,45 @@ test.describe('column resize — touch (#grid)', () => {
 		await expect.poll(() => width(page, 'name')).toBeGreaterThan(before + 40)
 	})
 })
+
+test.describe('column reorder — core createPointerDrag (#gridReorder)', () => {
+	test('Escape during the drag cancels: ghost gone, order unchanged', async ({ page }) => {
+		const before = await getHeaderFieldOrder(page, 'gridReorder')
+		await header(page, 'gridReorder', 'email').scrollIntoViewIfNeeded()
+		const sbox = (await header(page, 'gridReorder', 'email').boundingBox())!
+		const dbox = (await header(page, 'gridReorder', 'status').boundingBox())!
+		await page.mouse.move(sbox.x + 20, sbox.y + sbox.height / 2)
+		await page.mouse.down()
+		await page.mouse.move(dbox.x + dbox.width / 2, dbox.y + dbox.height / 2, { steps: 10 })
+		await expect(gridLocator(page, 'gridReorder').locator('.wg__reorder-ghost')).toHaveCount(1)
+		await page.keyboard.press('Escape')
+		await page.mouse.up()
+		await expect(gridLocator(page, 'gridReorder').locator('.wg__reorder-ghost')).toHaveCount(0)
+		expect(await getHeaderFieldOrder(page, 'gridReorder')).toEqual(before)
+	})
+})
+
+test.describe('column reorder — touch (#gridReorder)', () => {
+	test.use({ hasTouch: true })
+
+	test('a long press on a header, then a drag, moves the column (was mouse-only)', async ({ page, browserName }) => {
+		test.skip(browserName !== 'chromium', 'CDP touch input')
+		const before = await getHeaderFieldOrder(page, 'gridReorder')
+		await header(page, 'gridReorder', 'email').scrollIntoViewIfNeeded()
+		const sbox = (await header(page, 'gridReorder', 'email').boundingBox())!
+		const dbox = (await header(page, 'gridReorder', 'status').boundingBox())!
+		const sx = sbox.x + 20
+		const y = sbox.y + sbox.height / 2
+		const tx = dbox.x + dbox.width / 2
+		const cdp = await page.context().newCDPSession(page)
+		await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: sx, y }] })
+		await page.waitForTimeout(600) // the long press
+		for (let i = 1; i <= 10; i++) {
+			await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: sx + ((tx - sx) * i) / 10, y }] })
+		}
+		await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+		await expect.poll(() => getHeaderFieldOrder(page, 'gridReorder')).not.toEqual(before)
+		const after = await getHeaderFieldOrder(page, 'gridReorder')
+		expect(after.indexOf('email')).toBeGreaterThan(after.indexOf('salary'))
+	})
+})
