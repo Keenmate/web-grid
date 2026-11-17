@@ -14,6 +14,7 @@ import { clearEditingVisual, returnFocusToCell } from '../navigation/focus.js'
 import { commitEditorValue } from '../editing/commit-on-transition.js'
 import { renderCell } from '../rendering/cell.js'
 import { buildSheetHeader, setSheetSemantics, startSheetSession } from '../sheet/index.js'
+import { wireDropdownAria, unwireDropdownAria } from './aria.js'
 
 /** The core popover of each open dropdown panel (closed in removeDropdown()). */
 const popovers = new WeakMap<Element, PopoverHandle>()
@@ -249,6 +250,7 @@ function fillDropdown<T>(
 			return defaultOptionHtml()
 		}).join(''))
 	}
+	wireDropdownAria(dropdown, anchor, ctx.dropdown.highlightedIndex)
 }
 
 /**
@@ -257,6 +259,7 @@ function fillDropdown<T>(
 export function removeDropdown<T>(ctx: GridHost<T>): void {
 	const existing = ctx.shadow.querySelector('.wg__dropdown')
 	if (existing) {
+		unwireDropdownAria(existing as HTMLElement)
 		endSheet(existing)
 		const popover = popovers.get(existing)
 		popovers.delete(existing)

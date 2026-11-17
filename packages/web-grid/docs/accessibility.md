@@ -77,6 +77,8 @@ The grid relies on **standard HTML semantics** (`<table>`, `<thead>`, `<tbody>`,
 | Tree expand / collapse button | `aria-label="Expand"` / `aria-label="Collapse"`, `tabindex="-1"` | The chevron `<button>` is visible to screen readers with state-appropriate label |
 | Tree leaf spacer | `aria-hidden="true"` | Invisible decorative spacer skipped by AT |
 | Select / combobox editor wrapper | `role="combobox"`, `aria-haspopup="listbox"` | Announces the combobox pattern |
+| Open cell dropdown | field: `role="combobox"`, `aria-expanded`, `aria-controls`, `aria-activedescendant` (+ `aria-autocomplete="list"` on an input); panel `role="listbox"`, options `role="option"` + `aria-selected` / `aria-disabled` | Focus stays in the field; the screen reader follows the highlighted option (core `createActiveDescendant`, ARIA-only mode). The phone sheet stays a `role="dialog"` |
+| Go-to-row dialog (Ctrl+G) | `role="dialog"`, `aria-modal="true"`; the page behind is `inert` | A real modal (core `startModalSession`): Tab stays inside, Escape / Back / backdrop cancel |
 | Cells in navigate mode | `tabindex="0"` on the active cell, `tabindex="-1"` on others | Single tab stop in the grid; arrow keys move within |
 
 Standard `<table>` semantics are sufficient for read-only display grids — VoiceOver, NVDA, and JAWS all announce table structure (column header / row / cell), so theirs is the announcement of record.

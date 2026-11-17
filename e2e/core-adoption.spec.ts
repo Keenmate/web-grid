@@ -174,3 +174,27 @@ test.describe('scroll kept across a DOM move (test/basic.html)', () => {
 		expect(result.after).toBe(result.before)
 	})
 })
+
+test.describe('dropdown ARIA through core createActiveDescendant (test/dropdowns.html)', () => {
+	test('combobox + listbox: options are role=option, aria-activedescendant follows the highlight, closing collapses', async ({ page }) => {
+		await page.goto('/test/dropdowns.html')
+		await expect(gridLocator(page).locator('tbody tr').first()).toBeVisible()
+		await cell(page, 0, 3).click() // product — combobox
+		await page.keyboard.press('F2')
+		const input = cell(page, 0, 3).locator('input')
+		const listbox = gridLocator(page).locator('.wg__dropdown[role="listbox"]')
+		await expect(listbox).toBeVisible()
+		await expect(input).toHaveAttribute('role', 'combobox')
+		await expect(input).toHaveAttribute('aria-expanded', 'true')
+		const activeId = () => input.getAttribute('aria-activedescendant')
+		const first = await activeId()
+		expect(first).toBeTruthy()
+		await expect(listbox.locator(`#${first}`)).toHaveClass(/wg__dropdown-option--highlighted/)
+		await expect(listbox.locator('.wg__dropdown-option').first()).toHaveAttribute('role', 'option')
+		await page.keyboard.press('ArrowDown')
+		await expect.poll(activeId).not.toBe(first)
+		await expect(listbox.locator(`#${await activeId()}`)).toHaveClass(/wg__dropdown-option--highlighted/)
+		await page.keyboard.press('Escape')
+		await expect(listbox).toHaveCount(0)
+	})
+})

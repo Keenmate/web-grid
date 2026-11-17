@@ -4,6 +4,7 @@
 // =============================================================================
 
 import { createTextMatcher } from '../search/text-match.js'
+import { syncDropdownActive } from './aria.js'
 import { syncLoader } from '../rendering/loader.js'
 import type { EditorOptions } from '../../types.js'
 import type { GridHost } from '../grid-context.js'
@@ -88,6 +89,7 @@ export function updateDropdownHighlight<T>(ctx: GridHost<T>): void {
 	options.forEach((el, i) => {
 		el.classList.toggle('wg__dropdown-option--highlighted', i === ctx.dropdown.highlightedIndex)
 	})
+	syncDropdownActive(dropdown as HTMLElement, ctx.dropdown.highlightedIndex)
 }
 
 /**

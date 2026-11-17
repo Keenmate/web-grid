@@ -67,6 +67,10 @@ Target: **2.0.0-rc01** — a major: the callback, event and item API below is br
   (a dashboard) used to bring it back scrolled to the top. Rulebook C-CA-31.
 - The date editor's rolling year / month lists center the selection with core `scrollIntoContainer` (was a
   hand-written `scrollTop`).
+- **Accessibility: the cell dropdown is an ARIA combobox + listbox** — the focused field gets `role="combobox"`,
+  `aria-expanded`, `aria-controls` and `aria-activedescendant` (core `createActiveDescendant`,
+  `shouldHandleKeys: false`: the grid keeps its keys), the panel `role="listbox"`, options `role="option"` +
+  `aria-selected`. Screen readers now announce the highlighted option. Rulebook C-CA-25.
 - e2e: `copy.spec.ts` and the editors fixture no longer touch the real system clipboard (an in-page stub in
   every browser); new `core-adoption.spec.ts`.
 
