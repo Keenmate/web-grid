@@ -99,7 +99,8 @@ import { bindOptionContext } from './modules/dropdown/options.js'
 // Logging
 import { initLogger, dataLogger, interactionLogger, perfLogger } from './logger.js'
 import { typeNumberValue } from './modules/editing/value-parse.js'
-import { resolveLabels, formatLabel } from './labels.js'
+import { GridLabelsResolver, type GridLabelKey, type LabelFormat } from './labels.js'
+import type { LabelParams } from '@keenmate/web-components-core/locale'
 
 // Perf instrumentation (temporary — investigating tree-toggle slowness)
 import { gridPerf } from './perf.js'
@@ -248,8 +249,9 @@ export class GridEngine<T = unknown> {
 
 	protected _getRowClassCallback?: (ctx: RowContext<T>) => string | null
 
-	// Labels/i18n
-	protected _labels: GridLabels = resolveLabels(null)
+	// Labels/i18n (core /locale: instance → page-wide → English, see labels.ts)
+	protected _labelsResolver = new GridLabelsResolver()
+	protected _labels: GridLabels = this._labelsResolver.resolve()
 
 	// Scroll behavior
 	protected _isScrollable: boolean = false
@@ -930,13 +932,36 @@ export class GridEngine<T = unknown> {
 	/** Tooltip text for a locked row (`labels.rowLockedBy` / `labels.rowLocked`). */
 	getLockTooltip(lockInfo: RowLock | null | undefined): string {
 		return lockInfo?.lockedBy
-			? formatLabel(this._labels.rowLockedBy, { lockedBy: String(lockInfo.lockedBy) })
+			? this.labelText('rowLockedBy', { lockedBy: String(lockInfo.lockedBy) })
 			: this._labels.rowLocked
 	}
 
 	set labels(value: GridLabelsInput | null | undefined) {
-		// Per key over the English defaults (nested groups too) — see labels.ts
-		this._labels = resolveLabels(value)
+		// Per key: instance → page-wide window.components.locale → English (nested groups too) — see labels.ts
+		this._labelsResolver.setInput(value)
+		this._labels = this._labelsResolver.resolve()
+		this.requestUpdate()
+	}
+
+	/** One label with its `{name}` params, formatted (the page's `formatLabelCallback` when the grid has a host). */
+	labelText(key: GridLabelKey, params?: LabelParams): string {
+		return this._labelsResolver.text(key, params)
+	}
+
+	/** The formatter value checks use for their messages (`numberMin` / `numberMax`). */
+	get labelFormat(): LabelFormat {
+		return this._labelsResolver.format
+	}
+
+	/** The element the labels belong to (page-wide labels, `formatLabelCallback`, logging); `null` = none. */
+	setLabelHost(host: Element | null): void {
+		this._labelsResolver.setHost(host)
+		this._labels = this._labelsResolver.resolve()
+	}
+
+	/** Re-resolve after a page-wide `window.components.locale` change (the element's `localeChanged()`). */
+	refreshLabels(): void {
+		this._labels = this._labelsResolver.resolve()
 		this.requestUpdate()
 	}
 
@@ -3208,7 +3233,7 @@ export class GridEngine<T = unknown> {
 		// keeps what was typed, validateCallback is skipped.
 		let builtInError = parseError
 		if (!builtInError && column.editor === 'number') {
-			const typed = typeNumberValue(newValue, column.editorOptions || {}, this._labels)
+			const typed = typeNumberValue(newValue, column.editorOptions || {}, this._labels, this.labelFormat)
 			newValue = typed.value
 			builtInError = typed.error
 		}

@@ -969,6 +969,19 @@ grid.labels = {
 }
 ```
 
+Every grid on the page can be translated at once through core's page-wide locale (`@keenmate/web-components-core`
+`/locale`): per key the instance `labels` wins, then `window.components.locale.labels['web-grid']`, then English.
+Assigning it re-renders every live grid. `formatLabelCallback` (ICU / i18next) formats the flat labels — the
+nested `actions` / `contextMenu` groups resolve page-wide too, but aren't passed to it.
+
+```javascript
+window.components.locale = {
+  locale: 'cs-CZ',                       // also the date editor's month / weekday names
+  labels: { 'web-grid': { noData: 'Žádné položky', actions: { delete: 'Smazat řádek' } } },
+  formatLabelCallback: ({ component, key, params }) => i18next.t(`${component}.${key}`, params),
+}
+```
+
 ## Runtime API
 
 The component registers itself at `window.components['web-grid']` for runtime introspection:

@@ -1061,6 +1061,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		/** @internal */
 		this.engine = new GridEngine<T>()
 		this.engine.setStateStore(this.#stateStore)
+		// Labels through core /locale: page-wide labels['web-grid'] + formatLabelCallback, this element's logger
+		this.engine.setLabelHost(this)
 		// Every ctx / detail carries `controller` + `element`; the engine's
 		// notifications become events (emit → `on*` twin + DOM event).
 		this.engine.attachHost(this, () => this.controller, (name, detail) => {
@@ -1205,6 +1207,11 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		this.isPhoneSheet = isPhoneSheet
 		applyDropdownPresentation(this)
 		this.datepicker?.setSheet(isPhoneSheet)
+	}
+
+	/** The page-wide `window.components.locale` changed: re-resolve the labels and re-render. */
+	protected override localeChanged(): void {
+		this.engine.refreshLabels()
 	}
 
 	protected override disabledChanged(isDisabled: boolean): void {

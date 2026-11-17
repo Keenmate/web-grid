@@ -15,7 +15,7 @@
 
 import type { Column, EditorOptions, GridLabels } from '../../types.js'
 import { parseFormat, parseDateInput, toISODateString } from '../datepicker/formatting.js'
-import { formatLabel } from '../../labels.js'
+import { defaultLabelFormat, type LabelFormat } from '../../labels.js'
 
 export interface TypedValue {
 	/** The typed value — or, when `error` is set, what to keep in the draft (the typed text / number). */
@@ -43,11 +43,11 @@ function roundTo(n: number, decimalPlaces: number): number {
 }
 
 /** Apply `decimalPlaces` (round) and check `allowNegative` / `min` / `max` (no clamping). */
-export function checkNumber(n: number, opts: EditorOptions<any>, labels: ValueLabels): TypedValue {
+export function checkNumber(n: number, opts: EditorOptions<any>, labels: ValueLabels, format: LabelFormat = defaultLabelFormat): TypedValue {
 	const value = opts.decimalPlaces != null && opts.decimalPlaces >= 0 ? roundTo(n, opts.decimalPlaces) : n
 	if (opts.allowNegative === false && value < 0) return { value, error: labels.numberNegative }
-	if (opts.min != null && value < opts.min) return { value, error: formatLabel(labels.numberMin, { min: opts.min }) }
-	if (opts.max != null && value > opts.max) return { value, error: formatLabel(labels.numberMax, { max: opts.max }) }
+	if (opts.min != null && value < opts.min) return { value, error: format('numberMin', labels.numberMin, { min: opts.min }) }
+	if (opts.max != null && value > opts.max) return { value, error: format('numberMax', labels.numberMax, { max: opts.max }) }
 	return { value, error: null }
 }
 
@@ -56,16 +56,16 @@ export function checkNumber(n: number, opts: EditorOptions<any>, labels: ValueLa
  * parsed strictly, numbers are checked against the options; `null` / `undefined`
  * stay empty. Anything else is passed through untouched.
  */
-export function typeNumberValue(raw: unknown, opts: EditorOptions<any>, labels: ValueLabels): TypedValue {
+export function typeNumberValue(raw: unknown, opts: EditorOptions<any>, labels: ValueLabels, format: LabelFormat = defaultLabelFormat): TypedValue {
 	if (raw === null || raw === undefined) return { value: null, error: null }
 	if (typeof raw === 'number') {
-		return Number.isFinite(raw) ? checkNumber(raw, opts, labels) : { value: raw, error: labels.invalidNumber }
+		return Number.isFinite(raw) ? checkNumber(raw, opts, labels, format) : { value: raw, error: labels.invalidNumber }
 	}
 	if (typeof raw === 'string') {
 		const n = parseNumberText(raw)
 		if (n === null) return { value: null, error: null }
 		if (n === undefined) return { value: raw, error: labels.invalidNumber }
-		return checkNumber(n, opts, labels)
+		return checkNumber(n, opts, labels, format)
 	}
 	return { value: raw, error: null }
 }
@@ -115,10 +115,10 @@ export function typeDateText(text: string, opts: EditorOptions<any>, labels: Val
  * Pasted text typed for its column (when no `getPasteValueCallback` takes over):
  * number / checkbox / date columns get typed values; other editors keep the text.
  */
-export function typePastedText<T>(column: Column<T>, text: string, labels: ValueLabels): TypedValue {
+export function typePastedText<T>(column: Column<T>, text: string, labels: ValueLabels, format: LabelFormat = defaultLabelFormat): TypedValue {
 	const opts = column.editorOptions || {}
 	switch (column.editor) {
-		case 'number': return typeNumberValue(text, opts, labels)
+		case 'number': return typeNumberValue(text, opts, labels, format)
 		case 'checkbox': return typeCheckboxText(text, opts, labels)
 		case 'date': return typeDateText(text, opts, labels)
 		default: return { value: text, error: null }

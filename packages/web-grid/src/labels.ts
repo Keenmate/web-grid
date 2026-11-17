@@ -1,14 +1,18 @@
 // =============================================================================
-// Labels (i18n) — every UI string of the grid
+// Labels (i18n) — every UI string of the grid, through core /locale
 // =============================================================================
-// `labels` (property + JSON attribute) is a partial object merged per key over
-// the English defaults; nested groups (`actions`, `contextMenu`) merge per key
-// too. `resolveLabels()` is the one resolving seam: a page-wide core `/locale`
-// layer (window.components.locale.labels['web-grid']) slots in here, between the
-// instance labels and the defaults. `{name}` placeholders → `formatLabel()`.
-// A key set to `''` renders nothing (deliberately empty); `undefined` / missing
-// falls back to the English default.
+// Per key (core `resolveLabel` / `createLabels`, SPEC §12.24): the instance `labels`
+// (property + JSON attribute, a partial object) → the page-wide
+// `window.components.locale.labels['web-grid']` → the English defaults below. A
+// key set to `''` renders nothing (deliberately empty); a non-string falls through.
+// `{name}` placeholders and the page's `formatLabelCallback` (ICU / i18next) are
+// applied by core when a label is read through `GridLabelsResolver.text()`.
+// The nested groups (`actions`, `contextMenu`) resolve per key the same way —
+// instance group → page group (`labels['web-grid'].actions`) → default — but core
+// labels are flat, so their texts don't go through `formatLabelCallback`.
+// Labels are TEXT here: renderers escape them for innerHTML (`escapeHtml`).
 
+import { createLabels, formatLabel as formatTemplate, getPageLocale, resolveLabel, type LabelParams, type Labels } from '@keenmate/web-components-core/locale'
 import type { GridLabels, GridLabelsInput } from './types.js'
 
 /** The built-in UI strings (English only). */
@@ -103,23 +107,76 @@ export const DEFAULT_LABELS: GridLabels = {
 	}
 }
 
-/** Merge a partial `labels` input over the defaults (per key; nested groups per key too). */
+type GroupName = 'actions' | 'contextMenu'
+/** The flat (non-group) label keys. */
+export type GridLabelKey = Exclude<keyof GridLabels, GroupName>
+type FlatLabels = Omit<GridLabels, GroupName>
+
+const TAG = 'web-grid'
+const GROUPS: readonly GroupName[] = ['actions', 'contextMenu']
+const { actions: _actions, contextMenu: _contextMenu, ...FLAT_DEFAULTS } = DEFAULT_LABELS
+const FLAT_KEYS = Object.keys(FLAT_DEFAULTS) as GridLabelKey[]
+/** Keys whose default carries `{name}` placeholders — read with params at the render site. */
+const PARAM_KEYS = new Set(FLAT_KEYS.filter(key => /\{\w+\}/.test(FLAT_DEFAULTS[key])))
+
+/** A label formatter: `key` + its resolved template + params → the text. */
+export type LabelFormat = (key: GridLabelKey, template: string, params: LabelParams) => string
+/** Default `{name}` replacement (no page `formatLabelCallback`). */
+export const defaultLabelFormat: LabelFormat = (_key, template, params) => formatTemplate(template, params)
+
+/**
+ * The grid's labels for one instance: `resolve()` → the resolved `GridLabels` object the renderers read
+ * (a key with placeholders holds its template), `text(key, params)` → one formatted text. With a `host`
+ * (the element) core `createLabels` formats — page `formatLabelCallback` included; without one (the
+ * engine on its own, unit tests) the default `{name}` replacement.
+ */
+export class GridLabelsResolver {
+	#input: GridLabelsInput | null | undefined = null
+	#handle: Labels<FlatLabels> | null = null
+
+	setInput(input: GridLabelsInput | null | undefined): void {
+		this.#input = input
+	}
+
+	setHost(host: Element | null): void {
+		this.#handle = host ? createLabels<FlatLabels>(host, FLAT_DEFAULTS, () => this.#input as Partial<FlatLabels> | null | undefined, { tag: TAG }) : null
+	}
+
+	text(key: GridLabelKey, params?: LabelParams): string {
+		if (this.#handle) return this.#handle.text(key, params)
+		return formatTemplate(resolveLabel(TAG, FLAT_DEFAULTS, this.#input as Partial<FlatLabels>, key), params)
+	}
+
+	readonly format: LabelFormat = (key, _template, params) => this.text(key, params)
+
+	resolve(): GridLabels {
+		const out = {} as Record<string, unknown>
+		for (const key of FLAT_KEYS) {
+			out[key] = PARAM_KEYS.has(key)
+				? resolveLabel(TAG, FLAT_DEFAULTS, this.#input as Partial<FlatLabels>, key)
+				: this.text(key)
+		}
+		for (const group of GROUPS) out[group] = resolveGroup(group, this.#input?.[group])
+		return out as GridLabels
+	}
+}
+
+/** A nested group per key: instance group → page-wide group → default (a string wins, `''` included). */
+function resolveGroup<G extends GroupName>(group: G, own: Partial<GridLabels[G]> | undefined): GridLabels[G] {
+	const page = (getPageLocale()?.labels?.[TAG] as Record<string, unknown> | undefined)?.[group] as Record<string, unknown> | undefined
+	const defaults = DEFAULT_LABELS[group] as Record<string, string>
+	const out: Record<string, string> = {}
+	for (const key of Object.keys(defaults)) {
+		const mine = (own as Record<string, unknown> | undefined)?.[key]
+		const fromPage = page?.[key]
+		out[key] = typeof mine === 'string' ? mine : typeof fromPage === 'string' ? fromPage : defaults[key]!
+	}
+	return out as GridLabels[G]
+}
+
+/** The labels resolved without an element (defaults + instance + page-wide). */
 export function resolveLabels(input: GridLabelsInput | null | undefined): GridLabels {
-	return {
-		...DEFAULT_LABELS,
-		...definedOnly(input),
-		actions: { ...DEFAULT_LABELS.actions, ...definedOnly(input?.actions) },
-		contextMenu: { ...DEFAULT_LABELS.contextMenu, ...definedOnly(input?.contextMenu) }
-	} as GridLabels
-}
-
-/** Drop `undefined` keys so they fall back to the default (`''` is kept — deliberately empty). */
-function definedOnly<O extends object>(input: O | null | undefined): Partial<O> {
-	if (!input) return {}
-	return Object.fromEntries(Object.entries(input).filter(([, v]) => v !== undefined)) as Partial<O>
-}
-
-/** Fill `{name}` placeholders (unknown names stay as written). */
-export function formatLabel(text: string, vars: Record<string, string | number>): string {
-	return text.replace(/\{(\w+)\}/g, (m, name: string) => (name in vars ? String(vars[name]) : m))
+	const resolver = new GridLabelsResolver()
+	resolver.setInput(input)
+	return resolver.resolve()
 }

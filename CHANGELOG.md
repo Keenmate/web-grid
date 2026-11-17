@@ -40,6 +40,11 @@ Target: **2.0.0-rc01** — a major: the callback, event and item API below is br
 - **The Ctrl+G go-to-row dialog is a real modal** (core `startModalSession`): the page behind is `inert`, Tab
   stays in the dialog, the page doesn't scroll, the dialog is `role="dialog"` + `aria-modal`; Escape goes
   through the overlay tree and the phone Back gesture cancels too. Same markup and classes (`.wg__goto-*`).
+- **Labels through core `/locale`:** per key the instance `labels` → the page-wide
+  `window.components.locale.labels['web-grid']` (nested `actions` / `contextMenu` too) → English; the page's
+  `formatLabelCallback` formats the flat labels (pagination, filter, go-to-row, lock tooltip, value-check
+  messages included); assigning `window.components.locale` re-renders a live grid (`localeChanged()`). The
+  `labels` input is unchanged. Rulebook C-CA-24.
 - e2e: `copy.spec.ts` and the editors fixture no longer touch the real system clipboard (an in-page stub in
   every browser); new `core-adoption.spec.ts`.
 

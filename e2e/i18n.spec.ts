@@ -151,3 +151,33 @@ test('a column editorOptions.labels overrides the grid dropdown texts for that c
 	await page.keyboard.type('zzz')
 	await expect(gridLocator(page).locator('.wg__dropdown')).toContainText('Column-level')
 })
+
+test.describe('page-wide labels (core /locale: window.components.locale)', () => {
+	test.afterEach(async ({ page }) => {
+		await page.evaluate(() => { (window as any).components.locale = null })
+	})
+
+	test("labels['web-grid'] re-renders a live grid; an instance label still wins", async ({ page }) => {
+		await onGrid(page, el => { el.labels = { paginationPerPage: 'per page (mine)' } })
+		await page.evaluate(() => {
+			(window as any).components.locale = { labels: { 'web-grid': { paginationPageInfo: 'Strana {current} z {total}', paginationPerPage: 'na stránku', actions: { delete: 'Smazat' } } } }
+		})
+		await expect(pag(page).locator('.wg__pagination-info')).toContainText('Strana 1 z 2')
+		await expect(pag(page).locator('.wg__pagination-label')).toHaveText('per page (mine)')
+		await openToolbarOn(page, gridLocator(page).locator('tr[data-row-index="1"]'))
+		await expect(toolbar(page).locator('[data-action="delete"]')).toHaveAttribute('aria-label', 'Smazat')
+		await expect(toolbar(page).locator('[data-action="add"]')).toHaveAttribute('aria-label', 'Add row')
+	})
+
+	test('formatLabelCallback formats every flat label (an i18n library plugs in here)', async ({ page }) => {
+		await page.evaluate(() => {
+			(window as any).components.locale = {
+				formatLabelCallback: ({ component, key, params }: { component: string; key: string; params: Record<string, unknown> }) =>
+					key === 'paginationPageInfo' ? `${component}:${params.current}/${params.total}` : key === 'paginationPerPage' ? `[${key}]` : undefined
+			}
+		})
+		await expect(pag(page).locator('.wg__pagination-info')).toContainText('web-grid:1/2')
+		await expect(pag(page).locator('.wg__pagination-label')).toHaveText('[paginationPerPage]')
+		await expect(pag(page).locator('.wg__pagination-info')).toContainText('3 items') // undefined → the default formatting
+	})
+})

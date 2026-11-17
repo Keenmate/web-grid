@@ -6,7 +6,6 @@
 import { escapeHtml } from '@keenmate/web-components-core'
 import type { GridHost } from '../grid-context.js'
 import type { Column } from '../../types.js'
-import { formatLabel } from '../../labels.js'
 import { renderCellEditor } from '../editing/index.js'
 import { renderCellDisplay } from './display.js'
 import { wrapTreeCell } from './tree-render.js'
@@ -163,7 +162,7 @@ export function renderHeaderRow<T>(ctx: GridHost<T>): string {
 			if (column.isFilterable) {
 				const isInvalid = invalidFilterFields.has(field)
 				const value = ctx.filterInputText(field) ?? filters[field] ?? ''
-				const label = formatLabel(ctx.engine.labels.filterColumn, { column: column.title ?? field })
+				const label = ctx.engine.labelText('filterColumn', { column: column.title ?? field })
 				filterCells.push(`<th class="wg__filter-cell${frozenClass}" style="${filterStyle}" data-field="${escapeHtml(field)}"><input type="text" class="wg__filter-input${isInvalid ? ' wg__filter-input--invalid' : ''}" data-field="${escapeHtml(field)}" value="${escapeHtml(value)}" aria-label="${escapeHtml(label)}"${isInvalid ? ' aria-invalid="true"' : ''} autocomplete="off" spellcheck="false"></th>`)
 			} else {
 				filterCells.push(`<th class="wg__filter-cell${frozenClass}" style="${filterStyle}"></th>`)
@@ -709,8 +708,8 @@ export function renderPagination<T>(ctx: GridHost<T>, position: string = 'bottom
 		previous: gridLabels.paginationPrevious,
 		next: gridLabels.paginationNext,
 		last: gridLabels.paginationLast,
-		pageInfo: formatLabel(gridLabels.paginationPageInfo, { current: currentPage, total: totalPages }),
-		itemCount: formatLabel(gridLabels.paginationItemCount, { count: totalItems }),
+		pageInfo: ctx.engine.labelText('paginationPageInfo', { current: currentPage, total: totalPages }),
+		itemCount: ctx.engine.labelText('paginationItemCount', { count: totalItems }),
 		perPage: gridLabels.paginationPerPage
 	}
 
