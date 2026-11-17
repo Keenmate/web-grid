@@ -1,15 +1,13 @@
 // =============================================================================
-// Virtual Scroll Calculations - Pure functions for scroll range computation
+// Virtual Scroll Calculations
 // =============================================================================
+// The range math is core's `computeVirtualRange()` (SPEC §12.26). The grid drives
+// it on its own schedule (not `createVirtualWindow`): the tbody is part of the
+// full render() template, the scroller can be rebuilt (`.wg` ↔ `.wg__table-container`),
+// and a keyboard / index jump renders the target window BEFORE it scrolls.
 
-export interface VisibleRangeParams {
-	scrollTop: number
-	viewportHeight: number
-	rowHeight: number
-	buffer: number
-	totalItems: number
-	editingRowIndex?: number
-}
+import { computeVirtualRange } from '@keenmate/web-components-core'
+import type { GridHost } from '../grid-context.js'
 
 export interface VisibleRange {
 	startIndex: number
@@ -17,26 +15,31 @@ export interface VisibleRange {
 }
 
 /**
- * Calculate the visible row range for virtual scrolling.
- * Pure function - no side effects.
+ * The displayed-row window for `scrollTop` / `viewport` (core `computeVirtualRange()` with the
+ * grid's row height and overscan), stretched to hold each `keep` index (the edited row, a
+ * keyboard target) so its row stays rendered.
  */
-export function calculateVisibleRange(params: VisibleRangeParams): VisibleRange {
-	const { scrollTop, viewportHeight, rowHeight, buffer, totalItems, editingRowIndex } = params
-
-	let startIndex = Math.max(0, Math.floor(scrollTop / rowHeight) - buffer)
-	const visibleCount = Math.ceil(viewportHeight / rowHeight) + buffer * 2
-	let endIndex = Math.min(totalItems, startIndex + visibleCount)
-
-	// If editing, expand range to include the editing row
-	if (editingRowIndex !== undefined) {
-		if (editingRowIndex < startIndex) {
-			startIndex = editingRowIndex
-		}
-		if (editingRowIndex >= endIndex) {
-			endIndex = editingRowIndex + 1
-		}
+export function visibleRowRange<T>(
+	ctx: GridHost<T>,
+	scrollTop: number,
+	viewport: number,
+	keep: readonly (number | undefined)[] = []
+): VisibleRange {
+	const count = ctx.engine.displayItems.length
+	const { start, end } = computeVirtualRange({
+		scrollTop,
+		viewport,
+		count,
+		rowHeight: ctx.engine.virtualScrollItemHeight,
+		overscan: ctx.engine.virtualScrollOverscan
+	})
+	let startIndex = start
+	let endIndex = end
+	for (const index of keep) {
+		if (index === undefined || index < 0 || index >= count) continue
+		startIndex = Math.min(startIndex, index)
+		endIndex = Math.max(endIndex, index + 1)
 	}
-
 	return { startIndex, endIndex }
 }
 

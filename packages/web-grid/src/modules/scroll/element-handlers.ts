@@ -11,7 +11,7 @@ import type { GridHost } from '../grid-context.js'
 import { updateFocusVisual, focusCellTd } from '../navigation/focus.js'
 import { renderDataRowsVirtual, renderLoadingMoreRow, type VirtualScrollParams } from '../rendering/table.js'
 import { syncLoadingMoreLoader } from '../rendering/loader.js'
-import { calculateVisibleRange, shouldTriggerInfiniteScroll } from './calculations.js'
+import { visibleRowRange, shouldTriggerInfiniteScroll } from './calculations.js'
 
 /**
  * On every scroll tick, recompute the visible row window and re-render the
@@ -22,14 +22,7 @@ export function handleVirtualScroll<T>(ctx: GridHost<T>, container: HTMLElement)
 	// Skip during programmatic scroll (keyboard nav already handles row visibility)
 	if (ctx.virtualScroll.isProgrammatic) return
 
-	const { startIndex, endIndex } = calculateVisibleRange({
-		scrollTop: container.scrollTop,
-		viewportHeight: container.clientHeight,
-		rowHeight: ctx.engine.virtualScrollItemHeight,
-		buffer: ctx.engine.virtualScrollOverscan,
-		totalItems: ctx.engine.displayItems.length,
-		editingRowIndex: ctx.engine.editingCell?.rowIndex
-	})
+	const { startIndex, endIndex } = visibleRowRange(ctx, container.scrollTop, container.clientHeight, [ctx.engine.editingCell?.rowIndex])
 
 	// Only re-render if range changed
 	if (ctx.virtualScroll.setRange(startIndex, endIndex)) {

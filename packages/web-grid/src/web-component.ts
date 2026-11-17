@@ -169,6 +169,7 @@ import {
 import { scrollRowIntoView } from './modules/scroll/reveal.js'
 import {
 	VirtualScrollService,
+	visibleRowRange,
 	handleVirtualScroll,
 	renderVirtualRows,
 	handleInfiniteScroll
@@ -2078,18 +2079,11 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		// Get data rows HTML (virtual or normal)
 		let dataRowsHtml: string
 		if (useVirtualScroll) {
-			// Calculate virtual scroll params
+			// The window for the stored scroll position (scrollTop from the old container)
 			const items = this.engine.displayItems
 			const rowHeight = this.engine.virtualScrollItemHeight
-			const buffer = this.engine.virtualScrollOverscan
-
-			// Use stored scroll position for calculation (scrollTop from old container)
 			const viewportHeight = oldContainer?.clientHeight || 400  // Default height if not available
-
-			// Calculate visible range
-			const startIndex = Math.max(0, Math.floor(scrollTop / rowHeight) - buffer)
-			const visibleCount = Math.ceil(viewportHeight / rowHeight) + buffer * 2
-			const endIndex = Math.min(items.length, startIndex + visibleCount)
+			const { startIndex, endIndex } = visibleRowRange(this, scrollTop, viewportHeight)
 
 			// Store for later comparison
 			this.virtualScroll.setRange(startIndex, endIndex)

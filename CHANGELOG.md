@@ -80,6 +80,8 @@ Target: **2.0.0-rc01** — a major: the callback, event and item API below is br
   after a long press (a quick swipe still scrolls) and the grid scrolls sideways near its edge. Escape during
   either drag cancels it (old width / order, no event). Mouse behaviour, `column-resize` / `column-reorder` and
   persistence are unchanged. Rulebook C-CA-28.
+- Internal: the virtual-scroll row window is core `computeVirtualRange` (the grid's own range math is gone; it
+  still renders on its own schedule and stretches the window to keep the edited / target row). Rulebook C-CA-26.
 - e2e: `copy.spec.ts` and the editors fixture no longer touch the real system clipboard (an in-page stub in
   every browser); new `core-adoption.spec.ts`.
 

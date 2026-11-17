@@ -3,9 +3,8 @@
 // =============================================================================
 
 export {
-	calculateVisibleRange,
+	visibleRowRange,
 	shouldTriggerInfiniteScroll,
-	type VisibleRangeParams,
 	type VisibleRange
 } from './calculations.js'
 

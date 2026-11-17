@@ -12,7 +12,7 @@
 
 import { scrollIntoContainer, findScrollContainer, getScrollTopForBox, runBeforeCallbackSync } from '@keenmate/web-components-core'
 import type { GridHost } from '../grid-context.js'
-import { calculateVisibleRange } from './calculations.js'
+import { visibleRowRange } from './calculations.js'
 import { renderVirtualRows } from './element-handlers.js'
 import type { GridBeforeScrollContext, GridScrollOptions, GridScrollSource } from '../../interaction.js'
 
@@ -138,19 +138,7 @@ export function prepareRowReveal<T>(ctx: GridHost<T>, target: RevealTarget, sour
 		? virtualRowScrollTop(ctx, container, rowIndex, options.block) ?? container.scrollTop
 		: container.scrollTop
 	// The window for that scrollTop, stretched to hold the target row (and the edited row)
-	const range = calculateVisibleRange({
-		scrollTop,
-		viewportHeight: container.clientHeight,
-		rowHeight: ctx.engine.virtualScrollItemHeight,
-		buffer: ctx.engine.virtualScrollOverscan,
-		totalItems: ctx.engine.displayItems.length,
-		editingRowIndex: rowIndex
-	})
-	const editingRow = ctx.engine.editingCell?.rowIndex
-	if (editingRow !== undefined && editingRow !== rowIndex) {
-		range.startIndex = Math.min(range.startIndex, editingRow)
-		range.endIndex = Math.max(range.endIndex, editingRow + 1)
-	}
+	const range = visibleRowRange(ctx, scrollTop, container.clientHeight, [rowIndex, ctx.engine.editingCell?.rowIndex])
 	if (ctx.virtualScroll.setRange(range.startIndex, range.endIndex)) renderVirtualRows(ctx, container)
 	if (!options) return null
 	if (scrollTop !== container.scrollTop) {
@@ -195,14 +183,7 @@ export function syncVirtualWindow<T>(ctx: GridHost<T>): void {
 	if (!ctx.engine.shouldUseVirtualScroll()) return
 	const container = bodyScroller(ctx)
 	if (!container) return
-	const { startIndex, endIndex } = calculateVisibleRange({
-		scrollTop: container.scrollTop,
-		viewportHeight: container.clientHeight,
-		rowHeight: ctx.engine.virtualScrollItemHeight,
-		buffer: ctx.engine.virtualScrollOverscan,
-		totalItems: ctx.engine.displayItems.length,
-		editingRowIndex: ctx.engine.editingCell?.rowIndex
-	})
+	const { startIndex, endIndex } = visibleRowRange(ctx, container.scrollTop, container.clientHeight, [ctx.engine.editingCell?.rowIndex])
 	if (ctx.virtualScroll.setRange(startIndex, endIndex)) renderVirtualRows(ctx, container)
 }
 
@@ -237,14 +218,7 @@ export function scrollRowIntoView<T>(ctx: GridHost<T>, rowIndex: number, source:
 	if (!options) return Promise.resolve(false)
 	const scrollTop = virtualRowScrollTop(ctx, container, rowIndex, options.block) ?? container.scrollTop
 	// The window for that scrollTop, stretched to hold the target row
-	const { startIndex, endIndex } = calculateVisibleRange({
-		scrollTop,
-		viewportHeight: container.clientHeight,
-		rowHeight: ctx.engine.virtualScrollItemHeight,
-		buffer: ctx.engine.virtualScrollOverscan,
-		totalItems: ctx.engine.displayItems.length,
-		editingRowIndex: rowIndex
-	})
+	const { startIndex, endIndex } = visibleRowRange(ctx, scrollTop, container.clientHeight, [rowIndex])
 	// Update range and render ONCE (before scroll)
 	if (ctx.virtualScroll.setRange(startIndex, endIndex)) renderVirtualRows(ctx, container)
 	// Now scroll — the flag prevents handleVirtualScroll from re-rendering
