@@ -144,7 +144,15 @@ test.describe('every input (table-driven)', () => {
 				storageKey: ['inputs-spec', 'inputs-spec'],
 				overlayGroup: ['grp', 'grp'],
 				// true / false / "auto" (property null); default false — the opt-in value
-				isVirtualScrollEnabled: ['auto', null]
+				isVirtualScrollEnabled: ['auto', null],
+				idMember: ['key', 'key'],
+				pathMember: ['path', 'path'],
+				levelMember: ['level', 'level'],
+				parentPathMember: ['parent', 'parent'],
+				treePathSeparator: ['/', '/'],
+				expandLevel: ['2', 2],
+				isRowEditable: ['false', false],
+				toolbarBtnMinWidth: ['40px', '40px']
 			}
 			const sample = (d: any): [string, unknown] | null => {
 				if (SPECIAL[d.configKey]) return SPECIAL[d.configKey]
@@ -364,5 +372,51 @@ test.describe('defer / release / ready (core)', () => {
 			return [...before, readyCount, el.isReady, el.shadowRoot.querySelectorAll('tbody tr').length, el.hasAttribute('ready')]
 		})
 		expect(result).toEqual([0, false, 1, true, 5, true])
+	})
+})
+
+test.describe('row identity / tree members + callbacks as input rows (rc25)', () => {
+	test('attributes set the moved scalars; the property path reads back the same values', async ({ page }) => {
+		await mount(page, 'id-member="key" path-member="path" tree-path-separator="/" expand-level="1" toolbar-btn-min-width="40" row-editable="false"')
+		expect(await read(page, el => [el.idMember, el.pathMember, el.treePathSeparator, el.expandLevel, el.toolbarBtnMinWidth, el.isRowEditable]))
+			.toEqual(['key', 'path', '/', 1, '40px', false])
+		expect(await read(page, el => [el.engine.idMember, el.engine.pathMember, el.engine.treePathSeparator, el.engine.expandLevel, el.engine.toolbarBtnMinWidth, el.engine.isRowEditable]))
+			.toEqual(['key', 'path', '/', 1, '40px', false])
+		// property path unchanged: '' = none (read back null), null clears, defaults as before
+		expect(await read(page, el => { el.idMember = ''; el.pathMember = ''; el.flush(); return [el.idMember, el.pathMember, el.engine.idMember] }))
+			.toEqual([null, null, null])
+		await mount(page, '')
+		expect(await read(page, el => [el.idMember, el.pathMember, el.expandLevel, el.isRowEditable, el.getIdCallback]))
+			.toEqual(['id', null, null, undefined, undefined])
+	})
+
+	test('an invalid value warns, fires input-rejected and keeps the previous value', async ({ page }) => {
+		const warnings: string[] = []
+		page.on('console', m => { if (m.type() === 'warning') warnings.push(m.text()) })
+		await mount(page, 'expand-level="2"')
+		const r = await read(page, el => {
+			const keys: string[] = []
+			el.addEventListener('input-rejected', (e: any) => keys.push(e.detail.configKey))
+			el.setAttribute('expand-level', 'deep')
+			el.expandLevel = -1
+			el.toolbarBtnMinWidth = 'wide'
+			el.beforeActionCallback = 'not a function'
+			el.flush()
+			return [keys, el.expandLevel, el.engine.expandLevel, el.toolbarBtnMinWidth, el.beforeActionCallback]
+		})
+		expect(r).toEqual([['expandLevel', 'expandLevel', 'toolbarBtnMinWidth', 'beforeActionCallback'], 2, 2, undefined, undefined])
+		expect(warnings.some(w => w.includes('expandLevel') || w.includes('expand-level'))).toBe(true)
+	})
+
+	test('a callback set as a property still works and reads back', async ({ page }) => {
+		await mount(page, '')
+		expect(await read(page, el => {
+			const fn = (ctx: any) => ctx.row.id === 1 ? 'is-first' : null
+			el.getRowClassCallback = fn
+			return el.getRowClassCallback === fn
+		})).toBe(true)
+		await expect.poll(() => read(page, el => el.shadowRoot.querySelector('tbody tr')?.classList.contains('is-first'))).toBe(true)
+		expect(await read(page, el => { el.getRowClassCallback = null; return el.getRowClassCallback })).toBe(null)
+		await expect.poll(() => read(page, el => el.shadowRoot.querySelector('tbody tr')?.classList.contains('is-first'))).toBe(false)
 	})
 })

@@ -53,6 +53,46 @@ export const toBoolOrNullAuto = (fallback: boolean): Converter<boolean | null> =
 		toAttribute: (value) => value === null ? AUTO_WORD : String(value),
 	})
 
+/**
+ * An optional boolean, unset spelled `undefined` (used by `row-editable` — the engine's
+ * "no row gate"). Attribute: absent → `undefined`; `""` / `true` / `1` / `yes` / `on` → `true`;
+ * `false` / `0` / `no` / `off` → `false`; anything else is refused (warning + `input-rejected`,
+ * previous value kept). Property path: a boolean, `null` or `undefined` (both = unset).
+ */
+export const toOptionalBool = (): Converter<boolean | null | undefined> =>
+	toCustom<boolean | null | undefined>((raw, reportInvalid) => {
+		if (raw === null) return undefined
+		const v = raw.trim().toLowerCase()
+		if (TRUE_WORDS.has(v)) return true
+		if (FALSE_WORDS.has(v)) return false
+		reportInvalid?.('expected true | false')
+		return undefined
+	}, {
+		validate: (value): value is boolean | null | undefined => typeof value === 'boolean' || value == null,
+		toAttribute: (value) => value == null ? null : String(value),
+	})
+
+/**
+ * A whole number or `null` (used by `expand-level`). Attribute: absent / empty → `null`;
+ * a base-10 integer within `min`..`max` → the number; anything else is refused (warning +
+ * `input-rejected`, previous value kept). Property path: such an integer or `null`.
+ */
+export function toNullableInt(opts: { min?: number; max?: number } = {}): Converter<number | null> {
+	const isValid = (n: number): boolean =>
+		Number.isInteger(n) && (opts.min == null || n >= opts.min) && (opts.max == null || n <= opts.max)
+	return toCustom<number | null>((raw, reportInvalid) => {
+		if (raw === null || raw.trim() === '') return null
+		const v = raw.trim()
+		const n = /^[+-]?\d+$/.test(v) ? Number(v) : Number.NaN
+		if (isValid(n)) return n
+		reportInvalid?.(`expected a whole number ${opts.min ?? '-∞'}..${opts.max ?? '∞'} or empty`)
+		return null
+	}, {
+		validate: (value): value is number | null => value === null || (typeof value === 'number' && isValid(value)),
+		toAttribute: (value) => value === null ? null : String(value),
+	})
+}
+
 const cssLength = toCssLength()
 
 /**

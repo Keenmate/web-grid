@@ -56,7 +56,7 @@ import type {
 	GridScrollOptions
 } from './interaction.js'
 import { createGridController } from './controller.js'
-import { toBoolOrAuto, toBoolOrNullAuto, toNumberOrLength, toPipeList, AREA_POSITIONS, PAGINATION_PARTS } from './converters.js'
+import { toBoolOrAuto, toBoolOrNullAuto, toNumberOrLength, toPipeList, toNullableInt, toOptionalBool, AREA_POSITIONS, PAGINATION_PARTS } from './converters.js'
 
 // Import CSS (Vite inlines this as a string)
 import styles from './css/main.css?inline'
@@ -253,10 +253,10 @@ import { syncLoadingMoreLoader, removeAllLoaders } from './modules/rendering/loa
 import { applyGridAria } from './modules/rendering/aria.js'
 
 // Core: reactive base class + the input-table converters. web-grid keeps its
-// rich config-object/property API (columns, items, callbacks stay properties);
+// rich data/state property API (columns, items, UI state stay properties);
 // core owns the SSR-safe base, the §12.3 instance registry, and — via the
 // `static inputs` table below — the declarative *attribute* layer for the
-// scalar/enum config flags. See ../../CLAUDE.md and core SPEC §6.
+// scalar/enum config flags (callbacks: property-only rows). See ../../CLAUDE.md and core SPEC §6.
 import {
 	BlissElement,
 	toBool,
@@ -338,8 +338,8 @@ const EVENTS: readonly EventDef[] = [
 /**
  * Every input of the grid's `static inputs` table as a typed property (rulebook C-CA-16):
  * merged into {@link GridElement}, and the config a responsive rule may set. Lists exactly the
- * input rows — `columns`, `items`, callbacks other than the two below and UI state are plain
- * element properties, not inputs.
+ * input rows — `columns`, `items`, structured config (menus, toolbars, shortcuts) and UI state are
+ * plain element properties, not inputs.
  */
 export interface GridElementConfig<T = unknown> {
 	// Filtering & pagination
@@ -658,6 +658,64 @@ export interface GridElementConfig<T = unknown> {
 	 * (internal: overlayGroup)
 	 */
 	overlayGroup: string | null
+	// Row identity & tree data
+	/** Field that uniquely identifies a row (default `'id'`; `null` / `''` = none). `getIdCallback` wins when set. Attribute `id-member`. */
+	idMember: string | null
+	/** Tree data: the field holding a row’s path (`"1.2.3"`); setting it turns the grid into a tree. Attribute `path-member`. */
+	pathMember: string | null
+	/** Tree data: the field holding a row’s depth, when the data has levels instead of paths. Attribute `level-member`. */
+	levelMember: string | null
+	/** Tree data: the field holding the parent row’s path. Attribute `parent-path-member`. */
+	parentPathMember: string | null
+	/** Tree data: the path separator. `null` = auto-detect. Attribute `tree-path-separator`. */
+	treePathSeparator: string | null
+	/** Tree data: show the tree to this depth (`0` = only the roots, …), a whole number ≥ 0. `null` = everything expanded. Attribute `expand-level`. */
+	expandLevel: number | null
+	/** Static row editability for the whole grid (`getIsRowEditableCallback` decides per row). Attribute `row-editable`. */
+	isRowEditable: boolean | null | undefined
+	/** Min width (CSS length; a number = px) of the row toolbar buttons; overrides `--wg-toolbar-btn-min-width`. Attribute `toolbar-btn-min-width`. */
+	toolbarBtnMinWidth: string | undefined
+	// Callbacks (property-only)
+	/** Decides editability per row: `(ctx: { row }) => boolean`. */
+	getIsRowEditableCallback: ((ctx: RowDataContext<T>) => boolean) | null | undefined
+	/** The row's id when `idMember` can't express it (`{ row }` → id). Wins over `idMember`. */
+	getIdCallback: ((ctx: RowDataContext<T>) => unknown) | null | undefined
+	/** Dynamic CSS class of a row: `(ctx: { row, rowIndex }) => string | null`. */
+	getRowClassCallback: ((ctx: RowContext<T>) => string | null) | null | undefined
+	/** Custom HTML of the validation-error tooltip (grid-level default; a column’s own wins): `(ctx: CellContext & { error }) => string | null`. */
+	getValidationTooltipCallback: ((ctx: ValidationTooltipContext<T>) => string | null) | null | undefined
+	/** Customize / translate the pager texts: `(ctx: { currentPage, totalPages, totalItems, pageSize }) => Partial<PaginationLabels>`. */
+	getPaginationLabelsCallback: PaginationLabelsCallback<T> | null | undefined
+	/** The summary bar HTML (`summaryPosition`): `(ctx: { items, allItems, totalItems, currentPage, pageSize, metadata, drafts }) => string`. */
+	renderSummaryCallback: SummaryCallback<T> | null | undefined
+	/** Custom HTML of a tree row’s chevron: `(ctx) => string`. */
+	renderChevronCallback: ChevronCallback<T> | null | undefined
+	/** Custom HTML shown alongside the keyboard-shortcuts list: `(ctx) => string`. */
+	renderShortcutsHelpCallback: ((ctx: GridCallbackContext<T>) => RenderResult) | null | undefined
+	/** Before the cell menu opens (sync): `false` → no grid menu; an entries array → shown instead. */
+	beforeContextMenuOpenCallback: ((ctx: CellContext<T>) => false | GridMenuEntry<T>[] | void) | null | undefined
+	/** Before the header menu opens (sync): `false` → no grid menu; an entries array → shown instead. */
+	beforeHeaderMenuOpenCallback: ((ctx: HeaderMenuContext<T>) => false | GridHeaderMenuEntry<T>[] | void) | null | undefined
+	/** Before any toolbar / menu / shortcut item activates: `false` cancels (async OK). */
+	beforeActionCallback: ((detail: GridActionEventDetail<T>) => unknown) | null | undefined
+	/**
+	 * Runs before a user action swaps the displayed rows — pager buttons, page-size change,
+	 * header sort and filter-row changes in server mode (`ctx.trigger`: `'page'` / `'page-size'` /
+	 * `'sort'` / `'filter'`; `fromPage`, `toPage`, `drafts`). `false` → stay; a number → go to
+	 * that page instead; may be async (the pager is disabled meanwhile). Programmatic
+	 * `currentPage` writes and infinite-scroll `load-more` skip it.
+	 */
+	beforePageChangeCallback: ((ctx: BeforePageChangeContext<T>) => boolean | number | void | Promise<boolean | number | void>) | null | undefined
+	/** Runs before a fill-handle drag applies: `(ctx: { sourceCell, targetCells, direction }) => boolean | void | Promise<…>`; `false` cancels (async OK). */
+	beforeFillCallback: ((ctx: FillContext<T>) => boolean | void | Promise<boolean | void>) | null | undefined
+	/** Before a multi-cell paste: `false` cancels; add "row-col" keys to `ctx.skipCells` to skip cells (async OK). */
+	beforePasteCallback: ((ctx: BeforePasteContext<T>) => boolean | void | Promise<boolean | void>) | null | undefined
+	/** New row for pasted data past the last row. */
+	createRowCallback: CreateRowCallback<T> | null | undefined
+	/** The row the `add` built-in (and the experimental new row) inserts: `(ctx) => T | Promise<T>`. Default: a blank row. */
+	createEmptyRowCallback: ((ctx: GridCallbackContext<T>) => T | Promise<T>) | null | undefined
+	/** The copy the `duplicate` built-in inserts (default: shallow copy, `idMember` cleared). */
+	createDuplicateRowCallback: ((ctx: RowContext<T>) => T) | null | undefined
 	// Menus (core menuPresentationInputs(), SPEC §12.13 — the same inputs on every menu host)
 	/**
 	 * How the cell and column-header menus open: `auto` (default — a bottom sheet on a phone,
@@ -694,12 +752,11 @@ export interface GridElementConfig<T = unknown> {
 export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, GridController<T>> implements GridHost<T> {
 	// ── Declarative attribute layer (core input table) ────────────────────────
 	// Every row here is a scalar/enum config flag exposed as a kebab HTML
-	// attribute AND a reactive property (core installs the property accessor,
-	// shadowing the typed get/set facade further down which stays for
-	// IntelliSense). `default` mirrors the GridEngine field initializer so a fresh
+	// attribute AND a reactive property, or a property-only callback (core
+	// installs the accessor; GridElementConfig types it). `default` mirrors the GridEngine field initializer so a fresh
 	// element behaves identically. `on: 'update'` → each change is bridged into
 	// `this.engine` (see `update()`), whose setter re-renders. Structured config
-	// (columns/items/callbacks), self-mutated UI state (currentPage, sort,
+	// (columns/items/menus/toolbars/shortcuts), self-mutated UI state (currentPage, sort,
 	// filters, focusedRowIndex, totalItems, expandedPaths, hasMoreItems)
 	// deliberately stay property-only.
 	// `as const` keeps the configKey literals: they type GridResponsiveConfig.
@@ -909,6 +966,36 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		{ configKey: 'tooltipHideDelay', attribute: 'tooltip-hide-delay', converter: toInt({ min: 0, default: 100 }), default: 100, on: 'update', description: 'Delay (ms) before a cell tooltip hides. Default: `100`.' },
 		// Overlay tree group of the cell dropdown + date editor (element-local, read at each open — so `update`, no rebuild)
 		{ configKey: 'overlayGroup', attribute: 'overlay-group', converter: toText({ isNullable: true }), on: 'update', type: 'string | null', description: 'Scope the "one overlay open at a time" coordination to a named group. Overlays (the cell dropdown, the row toolbar with a click / button trigger, multiselects, datepickers, external popovers) sharing a group dismiss each other when one opens; different groups are independent. Unset = the default (ungrouped) group.' },
+		// Row identity & tree data (bridged into the engine like every row; its setters
+		// rebuild the tree state / expanded set and re-render). `''` = none on both paths.
+		{ configKey: 'idMember', attribute: 'id-member', converter: toText({ isNullable: true, isEmptyAllowed: true, default: 'id' }), default: 'id', on: 'update', type: 'string | null', getLiveValue: (el) => (el as GridElement).engine.idMember, description: "Field that uniquely identifies a row; `null` / `''` = none. The only row-id member: drafts, invalid-cell markers, `getRowId` / `getRowById` / `updateRowById` / `replaceRowById` / `lockRowById` use it (`getIdCallback` wins when set). Default: `id`." },
+		{ configKey: 'pathMember', attribute: 'path-member', converter: toText({ isNullable: true }), default: null, on: 'update', type: 'string | null', description: 'Tree data: the field holding a row’s path (`"1.2.3"`); setting it turns the grid into a tree. Unset = flat data.' },
+		{ configKey: 'levelMember', attribute: 'level-member', converter: toText({ isNullable: true }), default: null, on: 'update', type: 'string | null', description: 'Tree data: the field holding a row’s depth, when the data has levels instead of paths.' },
+		{ configKey: 'parentPathMember', attribute: 'parent-path-member', converter: toText({ isNullable: true }), default: null, on: 'update', type: 'string | null', description: 'Tree data: the field holding the parent row’s path.' },
+		{ configKey: 'treePathSeparator', attribute: 'tree-path-separator', converter: toText({ isNullable: true }), default: null, on: 'update', type: 'string | null', description: 'Tree data: the path separator. Unset = auto-detect.' },
+		{ configKey: 'expandLevel', attribute: 'expand-level', converter: toNullableInt({ min: 0 }), default: null, on: 'update', type: 'number | null', description: 'Tree data: show the tree to this depth (`0` = only the roots, `1` = the roots expanded, …), a whole number ≥ 0. Unset (`null`) = everything expanded. Ignored once `expandedPaths` is assigned.' },
+		// Row editability (the static gate; `getIsRowEditableCallback` decides per row and wins)
+		{ configKey: 'isRowEditable', attribute: 'row-editable', converter: toOptionalBool(), on: 'update', type: 'boolean | null | undefined', description: 'Static row editability for the whole grid: `false` makes every row read-only (a column with `isEditable: true` still opts in); unset = no row gate. `getIsRowEditableCallback` decides per row and wins.' },
+		// Row toolbar button width (CSS length; a number means pixels)
+		{ configKey: 'toolbarBtnMinWidth', attribute: 'toolbar-btn-min-width', converter: toCssLength(), on: 'update', type: 'string | undefined', description: 'Min width of the row toolbar buttons — a CSS length; a number means pixels; overrides `--wg-toolbar-btn-min-width`. Unset = the CSS variable.' },
+		// Callbacks (property-only, no attribute): bridged into the engine, read when they run.
+		{ configKey: 'getIsRowEditableCallback', converter: toFunction<(ctx: RowDataContext) => boolean>(), on: 'update', type: '((ctx: RowDataContext<T>) => boolean) | null', description: 'Decides editability per row: `(ctx: { row }) => boolean`; wins over `isRowEditable`.' },
+		{ configKey: 'getIdCallback', converter: toFunction<(ctx: RowDataContext) => unknown>(), on: 'update', type: '((ctx: RowDataContext<T>) => unknown) | null', description: 'The row’s id when `idMember` can’t express it (`{ row }` → id). Wins over `idMember`.' },
+		{ configKey: 'getRowClassCallback', converter: toFunction<(ctx: RowContext) => string | null>(), on: 'update', type: '((ctx: RowContext<T>) => string | null) | null', description: 'Dynamic CSS class of a row: `(ctx: { row, rowIndex }) => string | null`.' },
+		{ configKey: 'getValidationTooltipCallback', converter: toFunction<(ctx: ValidationTooltipContext) => string | null>(), on: 'update', type: '((ctx: ValidationTooltipContext<T>) => string | null) | null', description: 'Custom HTML of the validation-error tooltip (grid-level default; a column’s own wins): `(ctx: CellContext & { error }) => string | null`.' },
+		{ configKey: 'getPaginationLabelsCallback', converter: toFunction<PaginationLabelsCallback>(), on: 'update', type: 'PaginationLabelsCallback<T> | null', description: 'Customize / translate the pager texts: `(ctx: { currentPage, totalPages, totalItems, pageSize }) => Partial<PaginationLabels>`.' },
+		{ configKey: 'renderSummaryCallback', converter: toFunction<SummaryCallback>(), on: 'update', type: 'SummaryCallback<T> | null', description: 'The summary bar HTML (`summaryPosition`): `(ctx: { items, allItems, totalItems, currentPage, pageSize, metadata, drafts }) => string`.' },
+		{ configKey: 'renderChevronCallback', converter: toFunction<ChevronCallback>(), on: 'update', type: 'ChevronCallback<T> | null', description: 'Custom HTML of a tree row’s chevron: `(ctx) => string`.' },
+		{ configKey: 'renderShortcutsHelpCallback', converter: toFunction<(ctx: GridCallbackContext) => RenderResult>(), on: 'update', type: '((ctx: GridContext<T>) => RenderResult) | null', description: 'Custom HTML shown alongside the keyboard-shortcuts list: `(ctx) => string`.' },
+		{ configKey: 'beforeContextMenuOpenCallback', converter: toFunction<(ctx: CellContext) => false | GridMenuEntry[] | void>(), on: 'update', type: '((ctx: CellContext<T>) => false | GridMenuEntry<T>[] | void) | null', description: 'Before the cell menu opens (sync): `false` → no grid menu; an entries array → shown instead.' },
+		{ configKey: 'beforeHeaderMenuOpenCallback', converter: toFunction<(ctx: HeaderMenuContext) => false | GridHeaderMenuEntry[] | void>(), on: 'update', type: '((ctx: HeaderMenuContext<T>) => false | GridHeaderMenuEntry<T>[] | void) | null', description: 'Before the header menu opens (sync): `false` → no grid menu; an entries array → shown instead.' },
+		{ configKey: 'beforeActionCallback', converter: toFunction<(detail: GridActionEventDetail) => unknown>(), on: 'update', type: '((detail: GridActionEventDetail<T>) => unknown) | null', description: 'Before any toolbar / menu / shortcut item activates: `false` cancels (async OK).' },
+		{ configKey: 'beforePageChangeCallback', converter: toFunction<(ctx: BeforePageChangeContext) => boolean | number | void | Promise<boolean | number | void>>(), on: 'update', type: '((ctx: BeforePageChangeContext<T>) => boolean | number | void | Promise<boolean | number | void>) | null', description: 'Runs before a user action swaps the displayed rows — pager buttons, page-size change, header sort and filter-row changes in server mode (`ctx.trigger`: `page` / `page-size` / `sort` / `filter`; `fromPage`, `toPage`, `drafts`). `false` → stay; a number → go to that page instead; may be async (the pager is disabled meanwhile). Programmatic `currentPage` writes and infinite-scroll `load-more` skip it.' },
+		{ configKey: 'beforeFillCallback', converter: toFunction<(ctx: FillContext) => boolean | void | Promise<boolean | void>>(), on: 'update', type: '((ctx: FillContext<T>) => boolean | void | Promise<boolean | void>) | null', description: 'Runs before a fill-handle drag applies: `(ctx: { sourceCell, targetCells, direction }) => boolean | void | Promise<…>`; `false` cancels (async OK).' },
+		{ configKey: 'beforePasteCallback', converter: toFunction<(ctx: BeforePasteContext) => boolean | void | Promise<boolean | void>>(), on: 'update', type: '((ctx: BeforePasteContext<T>) => boolean | void | Promise<boolean | void>) | null', description: 'Before a multi-cell paste: `false` cancels; add "row-col" keys to `ctx.skipCells` to skip cells (async OK).' },
+		{ configKey: 'createRowCallback', converter: toFunction<CreateRowCallback>(), on: 'update', type: 'CreateRowCallback<T> | null', description: 'New row for pasted data past the last row.' },
+		{ configKey: 'createEmptyRowCallback', converter: toFunction<(ctx: GridCallbackContext) => unknown>(), on: 'update', type: '((ctx: GridContext<T>) => T | Promise<T>) | null', description: 'The row the `add` built-in (and the experimental new row) inserts: `(ctx) => T | Promise<T>`. Default: a blank row.' },
+		{ configKey: 'createDuplicateRowCallback', converter: toFunction<(ctx: RowContext) => unknown>(), on: 'update', type: '((ctx: RowContext<T>) => T) | null', description: 'The copy the `duplicate` built-in inserts (default: shallow copy, `idMember` cleared).' },
 		// Menus: menu-presentation / menu-side — core's standard menu-host rows (read at every open: on 'none')
 		...menuPresentationInputs(),
 	] as const satisfies readonly InputDef[]
@@ -1331,14 +1418,6 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	get pageSizes(): number[] { return this.engine.pageSizes }
 	set pageSizes(value: number[]) { this.engine.pageSizes = value }
 
-	/** Static row editability for the whole grid (`getIsRowEditableCallback` decides per row). */
-	get isRowEditable(): boolean | undefined { return this.engine.isRowEditable }
-	set isRowEditable(value: boolean | undefined) { this.engine.isRowEditable = value }
-
-	/** Decides editability per row: `(ctx: { row }) => boolean`. */
-	get getIsRowEditableCallback(): ((ctx: RowDataContext<T>) => boolean) | undefined { return this.engine.getIsRowEditableCallback }
-	set getIsRowEditableCallback(value: ((ctx: RowDataContext<T>) => boolean) | undefined) { this.engine.getIsRowEditableCallback = value }
-
 	/** Whether the cell has an unsaved change (a draft value). */
 	isCellDirty(rowIndex: number, field: string): boolean { this.flush(); return this.engine.isCellDirty(rowIndex, field) }
 	/** Whether the row has any unsaved change (a draft). */
@@ -1364,10 +1443,6 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		this.engine.getCellToolbarItemsCallback = value
 	}
 
-	/** Min width (CSS length) of the row toolbar buttons; overrides `--wg-toolbar-btn-min-width`. */
-	get toolbarBtnMinWidth(): string | undefined { return this.engine.toolbarBtnMinWidth }
-	set toolbarBtnMinWidth(value: string | undefined) { this.engine.toolbarBtnMinWidth = value }
-
 
 	/** Cell / row context menu entries: built-in names, menu items, dividers. Unset = no grid menu. */
 	get contextMenu(): GridMenuEntry<T>[] | undefined { return this.engine.contextMenu }
@@ -1377,18 +1452,6 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	/** Header context menu entries: built-in names (column visibility, sort, …), menu items, dividers. */
 	get headerContextMenu(): GridHeaderMenuEntry<T>[] | undefined { return this.engine.headerContextMenu }
 	set headerContextMenu(value: GridHeaderMenuEntry<T>[] | undefined) { this.engine.headerContextMenu = value }
-
-	/** Before the cell menu opens (sync): `false` → no grid menu; an entries array → shown instead. */
-	get beforeContextMenuOpenCallback(): ((ctx: CellContext<T>) => false | GridMenuEntry<T>[] | void) | undefined { return this.engine.beforeContextMenuOpenCallback }
-	set beforeContextMenuOpenCallback(value: ((ctx: CellContext<T>) => false | GridMenuEntry<T>[] | void) | undefined) { this.engine.beforeContextMenuOpenCallback = value }
-
-	/** Before the header menu opens (sync): `false` → no grid menu; an entries array → shown instead. */
-	get beforeHeaderMenuOpenCallback(): ((ctx: HeaderMenuContext<T>) => false | GridHeaderMenuEntry<T>[] | void) | undefined { return this.engine.beforeHeaderMenuOpenCallback }
-	set beforeHeaderMenuOpenCallback(value: ((ctx: HeaderMenuContext<T>) => false | GridHeaderMenuEntry<T>[] | void) | undefined) { this.engine.beforeHeaderMenuOpenCallback = value }
-
-	/** Before any toolbar / menu / shortcut item activates: `false` cancels (async OK). */
-	get beforeActionCallback(): ((detail: GridActionEventDetail<T>) => unknown) | undefined { return this.engine.beforeActionCallback }
-	set beforeActionCallback(value: ((detail: GridActionEventDetail<T>) => unknown) | undefined) { this.engine.beforeActionCallback = value }
 
 	// Row keyboard shortcuts
 	/** Action items bound to a key on the focused / hovered row. */
@@ -1433,46 +1496,11 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 
 	// New empty row (inline data entry) — EXPERIMENTAL: API may change
 
-	/** The row the `add` built-in (and the experimental new row) inserts: `(ctx) => T | Promise<T>`. Default: a blank row. */
-	get createEmptyRowCallback() { return this.engine.createEmptyRowCallback }
-	set createEmptyRowCallback(value) { this.engine.createEmptyRowCallback = value }
-
-	/** The copy the `duplicate` built-in inserts (default: shallow copy, `idMember` cleared). */
-	get createDuplicateRowCallback(): ((ctx: RowContext<T>) => T) | undefined { return this.engine.createDuplicateRowCallback }
-	set createDuplicateRowCallback(value: ((ctx: RowContext<T>) => T) | undefined) { this.engine.createDuplicateRowCallback = value }
-
-	/**
-	 * Field that uniquely identifies a row (default `'id'`; `null` = none). The only row-id
-	 * member: drafts, invalid-cell markers, `getRowId` / `getRowById` / `updateRowById` /
-	 * `replaceRowById` / `lockRowById` use it (`getIdCallback` wins when set).
-	 */
-	get idMember(): string | null { return this.engine.idMember }
-	set idMember(value: string | null) { this.engine.idMember = value }
-
 	// Tree / hierarchy
-	/** Tree data: the field holding a row’s path (`"1.2.3"`); setting it turns the grid into a tree. */
-	get pathMember(): string | null { return this.engine.pathMember }
-	set pathMember(value: string | null) { this.engine.pathMember = value }
-
-	/** Tree data: the field holding a row’s depth, when the data has levels instead of paths. */
-	get levelMember(): string | null { return this.engine.levelMember }
-	set levelMember(value: string | null) { this.engine.levelMember = value }
-
-	/** Tree data: the field holding the parent row’s path. */
-	get parentPathMember(): string | null { return this.engine.parentPathMember }
-	set parentPathMember(value: string | null) { this.engine.parentPathMember = value }
-
-	/** Tree data: the path separator. `null` = auto-detect. */
-	get treePathSeparator(): string | null { return this.engine.treePathSeparator }
-	set treePathSeparator(value: string | null) { this.engine.treePathSeparator = value }
 
 	/** The expanded tree paths (a copy). Assigning replaces the expanded state (no events); `null` → the `expandLevel` default. */
 	get expandedPaths(): string[] { return this.engine.expandedPaths }
 	set expandedPaths(value: string[] | null | undefined) { this.engine.expandedPaths = value }
-
-	/** Tree data: show the tree to this depth (`0` = only the roots, `1` = the roots expanded, …). `null` = everything expanded. */
-	get expandLevel(): number | null { return this.engine.expandLevel }
-	set expandLevel(value: number | null) { this.engine.expandLevel = value }
 
 	/** Whether the tree row with this path is expanded. */
 	isPathExpanded(path: string): boolean { this.flush(); return this.engine.isPathExpanded(path) }
@@ -1486,22 +1514,6 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	expandAll(paths?: string | string[] | null, options?: ExpandOptions): void { this.flush(); this.engine.expandAll(paths, options) }
 	/** Collapse the whole tree (`null`) — or the given rows and everything under them (`expanded-change` only). */
 	collapseAll(paths?: string | string[] | null, options?: ExpandOptions): void { this.flush(); this.engine.collapseAll(paths, options) }
-
-	/** Custom HTML of a tree row’s chevron: `(ctx) => string`. */
-	get renderChevronCallback(): ChevronCallback<T> | undefined { return this.engine.renderChevronCallback }
-	set renderChevronCallback(value: ChevronCallback<T> | undefined) { this.engine.renderChevronCallback = value }
-
-	/** Custom HTML shown alongside the keyboard-shortcuts list: `(ctx) => string`. */
-	get renderShortcutsHelpCallback(): ((ctx: GridCallbackContext<T>) => RenderResult) | undefined { return this.engine.renderShortcutsHelpCallback }
-	set renderShortcutsHelpCallback(value: ((ctx: GridCallbackContext<T>) => RenderResult) | undefined) { this.engine.renderShortcutsHelpCallback = value }
-
-	/** Custom HTML of the validation-error tooltip (grid-level default; a column’s own wins): `(ctx: CellContext & { error }) => string | null`. */
-	get getValidationTooltipCallback(): ((ctx: ValidationTooltipContext<T>) => string | null) | undefined {
-		return this.engine.getValidationTooltipCallback
-	}
-	set getValidationTooltipCallback(value: ((ctx: ValidationTooltipContext<T>) => string | null) | undefined) {
-		this.engine.getValidationTooltipCallback = value
-	}
 
 	/** The focused row (display index) or `null`. Assigning is silent (no `focus-change`), like a native `input.value`. */
 	get focusedRowIndex(): number | null { return this.engine.focusedRowIndex }
@@ -1521,26 +1533,11 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	get totalItems(): number | null { return this.engine.totalItems }
 	set totalItems(value: number | null) { this.engine.totalItems = value }
 
-	/** Customize / translate the pager texts: `(ctx: { currentPage, totalPages, totalItems, pageSize }) => Partial<PaginationLabels>`. */
-	get getPaginationLabelsCallback(): PaginationLabelsCallback<T> | undefined { return this.engine.getPaginationLabelsCallback }
-	set getPaginationLabelsCallback(value: PaginationLabelsCallback<T> | undefined) { this.engine.getPaginationLabelsCallback = value }
-
-	/** The summary bar HTML (`summaryPosition`): `(ctx: { items, allItems, totalItems, currentPage, pageSize, metadata, drafts }) => string`. */
-	get renderSummaryCallback(): SummaryCallback<T> | undefined { return this.engine.renderSummaryCallback }
-	set renderSummaryCallback(value: SummaryCallback<T> | undefined) { this.engine.renderSummaryCallback = value }
-
-	/** Dynamic CSS class of a row: `(ctx: { row, rowIndex }) => string | null`. */
-	get getRowClassCallback(): ((ctx: RowContext<T>) => string | null) | undefined { return this.engine.getRowClassCallback }
-	set getRowClassCallback(value: ((ctx: RowContext<T>) => string | null) | undefined) { this.engine.getRowClassCallback = value }
-
 	/** Server-provided data passed to `renderSummaryCallback` as `ctx.metadata`. */
 	get summaryMetadata(): unknown { return this.engine.summaryMetadata }
 	set summaryMetadata(value: unknown) { this.engine.summaryMetadata = value }
 
 	// Row identification (`idMember` above; this is its computed twin)
-	/** The row's id when `idMember` can't express it (`{ row }` → id). Wins over `idMember`. */
-	get getIdCallback(): ((ctx: RowDataContext<T>) => unknown) | undefined { return this.engine.getIdCallback }
-	set getIdCallback(value: ((ctx: RowDataContext<T>) => unknown) | undefined) { this.engine.getIdCallback = value }
 
 	// Row locking
 	/** Row locking options (`isLockedMember`, `lockInfoMember`, `getIsLockedCallback`, `lockedEditBehavior`, …). */
@@ -1549,19 +1546,6 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 
 
 	// Fill handle: `false` cancels the fill (async OK)
-	/**
-	 * Runs before a user action swaps the displayed rows — pager buttons, page-size change,
-	 * header sort and filter-row changes in server mode (`ctx.trigger`: `'page'` / `'page-size'` /
-	 * `'sort'` / `'filter'`; `fromPage`, `toPage`, `drafts`). `false` → stay; a number → go to
-	 * that page instead; may be async (the pager is disabled meanwhile). Programmatic
-	 * `currentPage` writes and infinite-scroll `load-more` skip it.
-	 */
-	get beforePageChangeCallback(): ((ctx: BeforePageChangeContext<T>) => boolean | number | void | Promise<boolean | number | void>) | undefined { return this.engine.beforePageChangeCallback }
-	set beforePageChangeCallback(value: ((ctx: BeforePageChangeContext<T>) => boolean | number | void | Promise<boolean | number | void>) | undefined) { this.engine.beforePageChangeCallback = value }
-
-	/** Runs before a fill-handle drag applies: `(ctx: { sourceCell, targetCells, direction }) => boolean | void | Promise<…>`; `false` cancels (async OK). */
-	get beforeFillCallback(): ((ctx: FillContext<T>) => boolean | void | Promise<boolean | void>) | undefined { return this.engine.beforeFillCallback }
-	set beforeFillCallback(value: ((ctx: FillContext<T>) => boolean | void | Promise<boolean | void>) | undefined) { this.engine.beforeFillCallback = value }
 
 	// Scroll behavior
 
@@ -1581,13 +1565,6 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	}
 
 	// Paste
-	/** Before a multi-cell paste: `false` cancels; add "row-col" keys to `ctx.skipCells` to skip cells (async OK). */
-	get beforePasteCallback(): ((ctx: BeforePasteContext<T>) => boolean | void | Promise<boolean | void>) | undefined { return this.engine.beforePasteCallback }
-	set beforePasteCallback(value: ((ctx: BeforePasteContext<T>) => boolean | void | Promise<boolean | void>) | undefined) { this.engine.beforePasteCallback = value }
-
-	/** New row for pasted data past the last row. */
-	get createRowCallback(): CreateRowCallback<T> | undefined { return this.engine.createRowCallback }
-	set createRowCallback(value: CreateRowCallback<T> | undefined) { this.engine.createRowCallback = value }
 
 	// Computed properties
 	/** The rows currently displayed (filtered, sorted, paged), read-only. */
@@ -2335,7 +2312,7 @@ export type GridInputKey = (typeof GridElement.inputs)[number]['configKey']
 
 /**
  * The grid's input config as a responsive rule sees it ({@link GridElementConfig}).
- * Complex properties — `columns`, `items`, callbacks, UI state — are not inputs,
+ * Complex properties — `columns`, `items`, menus / toolbars / shortcuts, UI state — are not inputs,
  * so a rule cannot set them (core warns and skips the key).
  */
 export type GridResponsiveConfig = GridElementConfig

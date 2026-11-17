@@ -78,7 +78,7 @@ The `QuickGridProps<T>` type defined in `src/types.ts` is the canonical source o
 |---|---|---|---|
 | `items` | `T[]` | `[]` | Row data — the only required "content" property. Reading it returns the live rows: after `insertRow` / `removeRows` / `moveRow`, the row built-ins and a committed new row (cell edits stay in drafts — `getDrafts()`). |
 | `columns` | `Column<T>[]` | `[]` | Column definitions (see [Column definition](#column-definition)) |
-| `idMember` | `keyof T \| string \| null` | `'id'` | Field that uniquely identifies a row — the only row-id member (`getRowId`, `getRowById`, `getRowIndex`, `updateRowById`, `replaceRowById`, row locking; `getIdCallback` wins). Internal state (drafts, invalid-cell markers) is keyed by this value; falls back to `pathMember` or displayed-row index |
+| `idMember` | `keyof T \| string \| null` | `'id'` | Attribute `id-member` (`""` = none). Field that uniquely identifies a row — the only row-id member (`getRowId`, `getRowById`, `getRowIndex`, `updateRowById`, `replaceRowById`, row locking; `getIdCallback` wins). Internal state (drafts, invalid-cell markers) is keyed by this value; falls back to `pathMember` or displayed-row index |
 
 ### Display
 
@@ -103,7 +103,7 @@ The `QuickGridProps<T>` type defined in `src/types.ts` is the canonical source o
 | Property | Type | Default | Description |
 |---|---|---|---|
 | `isEditingEnabled` | `boolean` | `false` | Enable cell editing |
-| `isRowEditable` | `boolean` | — | Row-level editability gate; combined with grid-level `isEditingEnabled` and column-level `isEditable` (all three must pass) |
+| `isRowEditable` | `boolean` | — | Attribute `row-editable` (`true` / `false`). Row-level editability gate; combined with grid-level `isEditingEnabled` and column-level `isEditable` (all three must pass) |
 | `getIsRowEditableCallback` | `(ctx: { row }) => boolean` | — | Decides row editability per row (wins over `isRowEditable`) |
 | `editTrigger` | `EditTrigger` | `'dblclick'` | How editing starts: `'click'`, `'dblclick'`, `'button'` (an edit button in editable cells — on hover and in the focused cell; F2 / Enter too), `'always'`, `'navigate'` |
 | `editButtonIcon` | `string` (icon) | `'✎'` | Icon of the edit button (`editTrigger: 'button'` / `column.isEditButtonShown`), read like every icon: markup (`'<span class="lucide-pencil"></span>'`) is inserted as is, a token name (`'pencil'`) draws the `--base-icon-pencil` glyph in `currentColor`, anything else is text. Attribute `edit-button-icon`. Accessible name: `labels.editCell` |
@@ -153,7 +153,7 @@ The `QuickGridProps<T>` type defined in `src/types.ts` is the canonical source o
 | `shouldToolbarFollowCursor` | `boolean` | `false` | Toolbar follows mouse cursor horizontally |
 | `getCellToolbarItemsCallback` | `(ctx: CellContext<T>) => GridToolbarEntry<T>[] \| null \| undefined` | — | Cell-specific toolbar items, merged over `rowToolbar` by `id` / `action` |
 | `cellToolbarOffset` | `number \| string` | `0.2` | Horizontal offset: `0`–`1` as fraction of cell width, or CSS length (e.g. `'2rem'`) |
-| `toolbarBtnMinWidth` | `string` | — | Min-width for toolbar buttons; overrides `--wg-toolbar-btn-min-width` |
+| `toolbarBtnMinWidth` | `string` | — | Attribute `toolbar-btn-min-width`. Min-width for toolbar buttons (CSS length; a number = px; an invalid length is refused); overrides `--wg-toolbar-btn-min-width` |
 | `createEmptyRowCallback` | `(ctx) => T \| Promise<T>` | — | The row the `add` built-in inserts (default: a blank row); also the new-empty-row factory |
 | `createDuplicateRowCallback` | `(ctx: { row, rowIndex }) => T` | — | The copy the `duplicate` built-in inserts (default: shallow copy with `idMember` cleared) |
 | `beforeActionCallback` | `(detail: GridActionEventDetail<T>) => unknown` | — | Runs before any toolbar / menu / shortcut item activates — return `false` to cancel (async OK) |
@@ -357,13 +357,13 @@ Path-string driven (ltree-style: `"1.2.3"`, `"/dept/eng/team"`, `"C:\\a\\b"`).
 
 | Property | Type | Default | Description |
 |---|---|---|---|
-| `pathMember` | `keyof T \| string` | — | **Required** to enable tree mode; field holding the path |
-| `levelMember` | `keyof T \| string` | — | Pre-computed depth (0-based) |
-| `parentPathMember` | `keyof T \| string` | — | Pre-computed parent path |
-| `treePathSeparator` | `string` | auto | Auto-detected from first row when omitted |
+| `pathMember` | `keyof T \| string` | — | Attribute `path-member`. **Required** to enable tree mode; field holding the path |
+| `levelMember` | `keyof T \| string` | — | Attribute `level-member`. Pre-computed depth (0-based) |
+| `parentPathMember` | `keyof T \| string` | — | Attribute `parent-path-member`. Pre-computed parent path |
+| `treePathSeparator` | `string` | auto | Attribute `tree-path-separator`. Auto-detected from first row when omitted |
 | `isTreeDataSorted` | `boolean` | `false` | `true` = grid never re-sorts (pair with the `data-request` event); `false` = grid sorts siblings depth-first |
 | `expandedPaths` | `string[]` | — | The expanded paths: reading returns a copy, assigning replaces the state (no events); `null` → the `expandLevel` default |
-| `expandLevel` | `number` | all | `0` = roots only; `1` = roots + children; etc. |
+| `expandLevel` | `number \| null` | all | Attribute `expand-level`. `0` = roots only; `1` = roots + children; etc. A whole number ≥ 0 — anything else is refused (warning + `input-rejected`, previous value kept) |
 | `treeDoubleClickBehavior` | `TreeDoubleClickBehavior` | `'none'` | Action when double-clicking a tree-column cell |
 | `treeExpandedGlyph` / `treeCollapsedGlyph` | `string` | `'▶'` | Static glyphs. When equal, CSS rotates 90°; when different, glyph swaps |
 | `renderChevronCallback` | `(ctx: { row, isExpanded, hasChildren, level, path }) => RenderResult` | — | Per-row chevron HTML; cached per `(row, expanded)` |
@@ -713,6 +713,8 @@ your data), a node is serialized into the markup (no listeners — wire events b
 draws the grid's built-in look (the escaped cell text, the default option, the tree glyph), `false` draws nothing.
 
 ### Grid-level callbacks
+
+Every grid-level callback is a property-only input (no attribute): assigning anything but a function, `null` or `undefined` is refused (warning + `input-rejected`, previous callback kept).
 
 | Callback | ctx | Returns |
 |---|---|---|

@@ -10,6 +10,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Added / Changed — row identity, tree members and callbacks are core inputs (2026-11-17)
+- **Added: attributes** `id-member`, `path-member`, `level-member`, `parent-path-member`,
+  `tree-path-separator`, `expand-level`, `row-editable` and `toolbar-btn-min-width` — the same values as the
+  `idMember` / `pathMember` / `levelMember` / `parentPathMember` / `treePathSeparator` / `expandLevel` /
+  `isRowEditable` / `toolbarBtnMinWidth` properties (now rows of the core input table: reactive, removable →
+  default, settable from a responsive rule). The property path is unchanged (`el.idMember = ''` still reads back
+  `null`).
+- **Changed: these properties are validated now** — an invalid value warns, fires `input-rejected` and keeps the
+  previous one: `expandLevel` takes a whole number ≥ 0 or `null` (a negative number used to mean "all");
+  `toolbarBtnMinWidth` takes a CSS length (a number = px, `40` → `'40px'`); `isRowEditable` a boolean or
+  `null` / `undefined`.
+- **Changed: the grid-level callbacks are property-only core inputs** (no attribute) — `getIsRowEditableCallback`,
+  `getIdCallback`, `getRowClassCallback`, `getValidationTooltipCallback`, `getPaginationLabelsCallback`,
+  `renderSummaryCallback`, `renderChevronCallback`, `renderShortcutsHelpCallback`,
+  `beforeContextMenuOpenCallback`, `beforeHeaderMenuOpenCallback`, `beforeActionCallback`,
+  `beforePageChangeCallback`, `beforeFillCallback`, `beforePasteCallback`, `createRowCallback`,
+  `createEmptyRowCallback`, `createDuplicateRowCallback`: anything but a function / `null` / `undefined` is
+  refused (`input-rejected`). Assigning and reading back work as before; like every input, the write reaches
+  the grid on the coalesced flush (methods and `el.controller` flush first).
+
 ### Accessibility / Added — the ARIA grid pattern (2026-11-17)
 - **The table is a `role="grid"` (`treegrid` in tree mode)** with `row` / `columnheader` / `rowheader` (the row
   number) / `gridcell` roles, `aria-rowcount` / `aria-colcount` and `aria-rowindex` / `aria-colindex` on every
