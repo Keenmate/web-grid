@@ -26,12 +26,19 @@ These are floating elements positioned outside the normal table flow.
 
 | Layer | Variable | Default | Elements |
 |-------|----------|---------|----------|
-| Reorder indicator | `--wg-z-reorder-indicator` | 100 | `.wg__drop-indicator` |
-| Toolbar | `--wg-z-toolbar` | 1000 | `.wg__toolbar-container` |
+Page-level layers use the shared core tiers (`--base-z-*`, core `Z_INDEX`), so the grid stacks with the
+other Keenmate components and the page's own dialogs.
+
+| Layer | Variable | Default | Elements |
+|-------|----------|---------|----------|
+| Reorder indicator | `--wg-z-reorder-indicator` | 100 (inside the grid) | `.wg__drop-indicator` |
+| Phone sheet | `--wg-z-sheet` | `--base-z-modal` (7000) | `.wg__dropdown--sheet`, the date editor's sheet |
+| Go-to-row dialog | `--wg-z-dialog` | `--base-z-modal` (7000) | `.wg__goto-overlay` |
+| Dropdown | `--wg-z-dropdown` | `--base-z-dropdown` (7500) | Dropdown popover, date editor panel |
+| Toolbar | `--wg-z-toolbar` | `--base-z-popover` (7600) | `.wg__toolbar-container` (its connector one below) |
+| Tooltip | `--wg-z-tooltip` | `--base-z-tooltip` (9000) | `.wg__tooltip` |
+| Reorder ghost | `--wg-z-reorder-ghost` | `--base-z-tooltip` (9000) | `.wg__reorder-ghost` |
 | Context menu | `--wg-context-menu-z-index` (unset → `--km-menu-z-index`) | 9001 (`--base-z-tooltip` + 1) | `.km-menu` (core `openMenu()`) |
-| Dropdown | `--wg-z-dropdown` | 9999 | Dropdown popover |
-| Reorder ghost | `--wg-z-reorder-ghost` | 10000 | `.wg__reorder-ghost` |
-| Tooltip | `--wg-z-tooltip` | 10000 | `.wg__tooltip` |
 
 ## Key Constraints
 
