@@ -286,6 +286,22 @@ test.describe('month navigation', () => {
 		await expect(picker(page).locator('[data-month="5"]')).toHaveCount(1)
 		await expect(picker(page).locator('[data-year="2026"]')).toHaveCount(1)
 	})
+
+	test('the rolling lists center the selected year / month inside the list, the page does not scroll', async ({ page }) => {
+		await gotoDp(page)
+		await openPicker(page, 0, COL.iso)
+		const pageY = await page.evaluate(() => window.scrollY)
+		await picker(page).locator('.wg-datepicker__month-year').click()
+		const year = picker(page).locator('[data-year="2026"]')
+		await expect(year).toBeVisible()
+		const offset = await year.evaluate((el) => {
+			const list = el.parentElement!.getBoundingClientRect()
+			const item = el.getBoundingClientRect()
+			return Math.abs((item.top + item.height / 2) - (list.top + list.height / 2))
+		})
+		expect(offset).toBeLessThan(20)
+		expect(await page.evaluate(() => window.scrollY)).toBe(pageY)
+	})
 })
 
 // ---------------------------------------------------------------------------

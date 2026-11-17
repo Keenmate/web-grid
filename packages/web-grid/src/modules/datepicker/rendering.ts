@@ -3,6 +3,7 @@
 // Calendar grid, header, rolling selector rendering
 // =============================================================================
 
+import { scrollIntoContainer } from '@keenmate/web-components-core'
 import type { DatePickerOptions, DatePickerState, LocaleStrings, FormatSpec } from './types.js'
 import { DEFAULT_LOCALE_STRINGS } from './types.js'
 import { toISODateString, isSameDay, isToday, getDaysInMonth, getFirstDayOfMonth, normalizeDate } from './formatting.js'
@@ -333,25 +334,12 @@ export function updateRollingSelectorSelection(
 }
 
 /**
- * Scroll rolling selector to show selected items
+ * Scroll the rolling year / month lists so the selected items sit in the middle — inside each list only
+ * (core scrollIntoContainer, instant: the lists just opened), never the page.
  */
 export function scrollRollingSelectorToSelection(container: HTMLElement): void {
-	const selectedYear = container.querySelector('[data-year].wg-datepicker__rolling-item--selected') as HTMLElement
-	const selectedMonth = container.querySelector('[data-month].wg-datepicker__rolling-item--selected') as HTMLElement
-
-	if (selectedYear) {
-		const list = selectedYear.parentElement
-		if (list) {
-			const scrollTop = selectedYear.offsetTop - list.clientHeight / 2 + selectedYear.clientHeight / 2
-			list.scrollTop = scrollTop
-		}
-	}
-
-	if (selectedMonth) {
-		const list = selectedMonth.parentElement
-		if (list) {
-			const scrollTop = selectedMonth.offsetTop - list.clientHeight / 2 + selectedMonth.clientHeight / 2
-			list.scrollTop = scrollTop
-		}
+	for (const selected of container.querySelectorAll<HTMLElement>('[data-year].wg-datepicker__rolling-item--selected, [data-month].wg-datepicker__rolling-item--selected')) {
+		const list = selected.parentElement
+		if (list) scrollIntoContainer(selected, { block: 'center', container: list, behavior: 'auto' })
 	}
 }
