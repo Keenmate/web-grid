@@ -94,6 +94,7 @@ export type {
 	ExpandOptions,
 	TreeRowExpandDetail,
 	ChevronCallback,
+	RenderResult,
 	TreeDoubleClickBehavior,
 
 	// Internal types (exposed for advanced usage)

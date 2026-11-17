@@ -3,7 +3,7 @@
 // Render header row, data rows, pagination
 // =============================================================================
 
-import { escapeHtml } from '@keenmate/web-components-core'
+import { escapeHtml, renderSlotHtml } from '@keenmate/web-components-core'
 import type { GridHost } from '../grid-context.js'
 import type { Column } from '../../types.js'
 import { renderCellEditor } from '../editing/index.js'
@@ -820,7 +820,7 @@ export function renderSummaryContent<T>(ctx: GridHost<T>): string {
 		metadata: ctx.engine.summaryMetadata,
 		drafts: ctx.engine.getDrafts()
 	}))
-	return content ?? ''
+	return renderSlotHtml(content).html
 }
 
 /**

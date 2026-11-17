@@ -3,7 +3,7 @@
 // =============================================================================
 // An editable cell (not read-only, not locked) in display mode gets a small
 // button — shown on hover and in the focused cell (CSS). A click starts editing;
-// F2 / Enter work as usual. The icon is HTML (`editButtonIcon`, e.g.
+// F2 / Enter work as usual. The icon is core renderIcon (markup / token name / text; (`editButtonIcon`, e.g.
 // `<span class="lucide-pencil"></span>`), the accessible name `labels.editCell`.
 
 import { escapeHtml, renderIcon } from '@keenmate/web-components-core'

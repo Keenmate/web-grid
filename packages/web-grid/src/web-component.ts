@@ -19,6 +19,7 @@ import type {
 	TreeDoubleClickBehavior,
 	PaginationLabelsCallback,
 	SummaryCallback,
+	RenderResult,
 	ToolbarPosition,
 	GridLabels,
 	GridLabelsInput,
@@ -1468,8 +1469,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	set renderChevronCallback(value: ChevronCallback<T> | undefined) { this.engine.renderChevronCallback = value }
 
 	/** Custom HTML shown alongside the keyboard-shortcuts list: `(ctx) => string`. */
-	get renderShortcutsHelpCallback(): ((ctx: GridCallbackContext<T>) => string) | undefined { return this.engine.renderShortcutsHelpCallback }
-	set renderShortcutsHelpCallback(value: ((ctx: GridCallbackContext<T>) => string) | undefined) { this.engine.renderShortcutsHelpCallback = value }
+	get renderShortcutsHelpCallback(): ((ctx: GridCallbackContext<T>) => RenderResult) | undefined { return this.engine.renderShortcutsHelpCallback }
+	set renderShortcutsHelpCallback(value: ((ctx: GridCallbackContext<T>) => RenderResult) | undefined) { this.engine.renderShortcutsHelpCallback = value }
 
 	/** Custom HTML of the validation-error tooltip (grid-level default; a column’s own wins): `(ctx: CellContext & { error }) => string | null`. */
 	get getValidationTooltipCallback(): ((ctx: ValidationTooltipContext<T>) => string | null) | undefined {

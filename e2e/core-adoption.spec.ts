@@ -122,3 +122,30 @@ test.describe('icons through core renderIcon (test/edit-modes.html)', () => {
 		await expect(btn).toHaveText('✎ <b>')
 	})
 })
+
+test.describe('render callbacks through core renderSlotHtml (test/basic.html)', () => {
+	test('renderCellCallback: a string is HTML, null = the built-in (escaped) text, false = empty, a node is serialized', async ({ page }) => {
+		await page.goto('/test/basic.html')
+		await expect(gridLocator(page).locator('tbody tr').first()).toBeVisible()
+		await page.evaluate(() => {
+			const grid = document.querySelector('web-grid') as unknown as { columns: Array<Record<string, any>>; items: Array<Record<string, any>> }
+			grid.items = grid.items.map((r, i) => i === 1 ? { ...r, name: '<i>raw</i>' } : r)
+			grid.columns = grid.columns.map((c) => c.field !== 'name' ? c : {
+				...c,
+				renderCellCallback: ({ rowIndex, value }: { rowIndex: number; value: unknown }) => {
+					if (rowIndex === 0) return `<b class="custom">${String(value).toUpperCase()}</b>`
+					if (rowIndex === 1) return null
+					if (rowIndex === 2) return false
+					const el = document.createElement('em')
+					el.className = 'from-node'
+					el.textContent = String(value)
+					return el
+				}
+			})
+		})
+		await expect(cell(page, 0, 1).locator('b.custom')).toHaveCount(1)
+		await expect(cell(page, 1, 1)).toHaveText('<i>raw</i>') // the built-in display, escaped
+		await expect(cell(page, 2, 1)).toHaveText('')
+		await expect(cell(page, 3, 1).locator('em.from-node')).toHaveCount(1)
+	})
+})

@@ -94,7 +94,7 @@ export type EditorOptions<T = unknown> = {
 	getGroupCallback?: (ctx: OptionContext<T>) => string
 
 	// Render callback (returns HTML string)
-	renderOptionCallback?: (ctx: OptionRenderContext<T>) => string
+	renderOptionCallback?: (ctx: OptionRenderContext<T>) => RenderResult  // the option's HTML (string) / node; null = the built-in option, false = none
 
 	// An option was picked (select / combobox / autocomplete)
 	onSelect?: (ctx: OptionSelectContext<T>) => void
@@ -189,7 +189,7 @@ export type Column<T> = {
 	cellClass?: string  // Custom CSS class(es) applied to all cells in this column
 	getCellClassCallback?: (ctx: CellContext<T>) => string | null  // Dynamic CSS class based on value/row
 	getDisplayValueCallback?: (ctx: CellContext<T>) => string  // Display text for the cell (escaped)
-	renderCellCallback?: (ctx: CellContext<T>) => string  // Cell HTML (wins over getDisplayValueCallback)
+	renderCellCallback?: (ctx: CellContext<T>) => RenderResult  // Cell HTML (wins over getDisplayValueCallback); null / undefined = the built-in display, false = empty
 	// Editing props
 	// Static editability for the column. `getIsEditableCallback` decides per row instead
 	// (e.g. column is editable only on employee rows in a teams + employees tree) and, when it
@@ -423,7 +423,7 @@ export type QuickGridProps<T> = {
 	rangeShortcuts?: GridRangeShortcut<T>[]
 	isShortcutsHelpShown?: boolean              // Show info icon (default: false)
 	shortcutsHelpPosition?: 'top-right' | 'top-left'  // Icon position (default: 'top-right')
-	renderShortcutsHelpCallback?: (ctx: GridContext<T>) => string   // Custom HTML shown with the shortcuts list
+	renderShortcutsHelpCallback?: (ctx: GridContext<T>) => RenderResult   // Custom HTML shown with the shortcuts list
 	// Scroll behavior
 	isScrollable?: boolean               // Enable scroll container with max-height: 100vh (default: false)
 	scrollMaxHeight?: string             // Custom max-height when isScrollable is true (default: '100vh')
@@ -685,7 +685,14 @@ export type GridLabelsInput = Partial<Omit<GridLabels, 'actions' | 'contextMenu'
 }
 
 // Summary content callback (returns HTML)
-export type SummaryCallback<T = any> = (ctx: SummaryContext<T>) => string
+/**
+ * What a `render*Callback` returns (core `renderSlotHtml`, SPEC §12.35): a string is HTML, a node is serialized
+ * into the row's markup (no listeners — use markup), `null` / `undefined` = the grid's built-in rendering,
+ * `false` = nothing.
+ */
+export type RenderResult = string | Node | null | undefined | false
+
+export type SummaryCallback<T = any> = (ctx: SummaryContext<T>) => RenderResult
 
 // =============================================================================
 // Row Locking Types
@@ -838,4 +845,4 @@ export type TreeRowExpandDetail<T = any> = {
  * Returns HTML for the chevron's inner content. Result is cached per (row, expanded) —
  * called at most twice per row. Invalidated when items or the callback change.
  */
-export type ChevronCallback<T = any> = (ctx: ChevronContext<T>) => string
+export type ChevronCallback<T = any> = (ctx: ChevronContext<T>) => RenderResult

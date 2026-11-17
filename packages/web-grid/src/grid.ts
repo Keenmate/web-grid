@@ -19,6 +19,7 @@ import type {
 	ToggleVisibility,
 	PaginationLabelsCallback,
 	SummaryCallback,
+	RenderResult,
 	ToolbarPosition,
 	GridLabels,
 	GridLabelsInput,
@@ -91,7 +92,7 @@ const isThenable = (v: unknown): v is PromiseLike<unknown> =>
 	!!v && (typeof v === 'object' || typeof v === 'function') && typeof (v as { then?: unknown }).then === 'function'
 
 import type { StateStore } from '@keenmate/web-components-core'
-import { copyText } from '@keenmate/web-components-core'
+import { copyText, escapeHtml, renderSlotHtml } from '@keenmate/web-components-core'
 // Date formatting utilities for auto-formatting date columns
 import { parseFormat, formatDate } from './modules/datepicker/index.js'
 import { bindOptionContext } from './modules/dropdown/options.js'
@@ -182,7 +183,7 @@ export class GridEngine<T = unknown> {
 	protected _rowShortcuts: GridShortcut<T>[] | undefined = undefined
 	protected _isShortcutsHelpShown: boolean = false
 	protected _shortcutsHelpPosition: 'top-right' | 'top-left' = 'top-right'
-	protected _renderShortcutsHelpCallback: ((ctx: GridContext<T>) => string) | undefined = undefined
+	protected _renderShortcutsHelpCallback: ((ctx: GridContext<T>) => RenderResult) | undefined = undefined
 
 	// Row identification (the member is `_idMember`, below)
 	protected _getIdCallback: ((ctx: RowDataContext<T>) => unknown) | undefined = undefined
@@ -840,8 +841,8 @@ export class GridEngine<T = unknown> {
 		this.requestUpdate()
 	}
 
-	get renderShortcutsHelpCallback(): ((ctx: GridContext<T>) => string) | undefined { return this._renderShortcutsHelpCallback }
-	set renderShortcutsHelpCallback(value: ((ctx: GridContext<T>) => string) | undefined) {
+	get renderShortcutsHelpCallback(): ((ctx: GridContext<T>) => RenderResult) | undefined { return this._renderShortcutsHelpCallback }
+	set renderShortcutsHelpCallback(value: ((ctx: GridContext<T>) => RenderResult) | undefined) {
 		this._renderShortcutsHelpCallback = value
 		this.requestUpdate()
 	}
@@ -1828,7 +1829,11 @@ export class GridEngine<T = unknown> {
 		const cacheKey = `${expanded ? 'e' : 'c'}|${hasChildren ? '1' : '0'}`
 		let html = perRow.get(cacheKey)
 		if (html === undefined) {
-			html = cb(this.ctx({ row: item, isExpanded: expanded, hasChildren, level, path }))
+			// core renderSlotHtml: null / undefined = the built-in glyph, false = none
+			html = renderSlotHtml(
+				() => cb(this.ctx({ row: item, isExpanded: expanded, hasChildren, level, path })),
+				() => (hasChildren ? (expanded ? this._treeExpandedGlyph : this._treeCollapsedGlyph) : '')
+			).html
 			perRow.set(cacheKey, html)
 		}
 		return html
@@ -3019,10 +3024,20 @@ export class GridEngine<T = unknown> {
 		return (item as Record<string, unknown>)[field]
 	}
 
+	/**
+	 * The cell's display: with `renderCellCallback` its HTML (core renderSlotHtml: a string is HTML,
+	 * `null` / `undefined` = the built-in text, escaped, `false` = empty), else the display TEXT.
+	 */
 	getCellValue(item: T, column: Column<T>, rowIndex: number): string {
-		if (column.renderCellCallback) {
-			return column.renderCellCallback(this.cellCtx(item, rowIndex, column))
+		const render = column.renderCellCallback
+		if (render) {
+			return renderSlotHtml(() => render(this.cellCtx(item, rowIndex, column)), () => escapeHtml(this.getCellDisplayText(item, column, rowIndex))).html
 		}
+		return this.getCellDisplayText(item, column, rowIndex)
+	}
+
+	/** The built-in display text of a cell (`getDisplayValueCallback`, date format, the raw value). */
+	protected getCellDisplayText(item: T, column: Column<T>, rowIndex: number): string {
 		const value = this.getCellRawValue(item, rowIndex, String(column.field))
 		if (column.getDisplayValueCallback) {
 			return column.getDisplayValueCallback(this.cellCtx(item, rowIndex, column))

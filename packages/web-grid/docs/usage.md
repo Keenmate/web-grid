@@ -307,7 +307,7 @@ Both menus are the shared Keenmate menu (core `openMenu()`, `@keenmate/web-compo
 | `rangeShortcuts` | `GridRangeShortcut<T>[]` | — | Action items bound to a key on the selected rows / cell range |
 | `isShortcutsHelpShown` | `boolean` | `false` | Show keyboard-shortcuts help icon |
 | `shortcutsHelpPosition` | `'top-right' \| 'top-left'` | `'top-right'` | Help icon position |
-| `renderShortcutsHelpCallback` | `(ctx) => string` | — | Custom HTML alongside the shortcuts list |
+| `renderShortcutsHelpCallback` | `(ctx) => RenderResult` | — | Custom HTML alongside the shortcuts list |
 
 ### Column management & persistence
 
@@ -366,7 +366,7 @@ Path-string driven (ltree-style: `"1.2.3"`, `"/dept/eng/team"`, `"C:\\a\\b"`).
 | `expandLevel` | `number` | all | `0` = roots only; `1` = roots + children; etc. |
 | `treeDoubleClickBehavior` | `TreeDoubleClickBehavior` | `'none'` | Action when double-clicking a tree-column cell |
 | `treeExpandedGlyph` / `treeCollapsedGlyph` | `string` | `'▶'` | Static glyphs. When equal, CSS rotates 90°; when different, glyph swaps |
-| `renderChevronCallback` | `(ctx: { row, isExpanded, hasChildren, level, path }) => string` | — | Per-row chevron HTML; cached per `(row, expanded)` |
+| `renderChevronCallback` | `(ctx: { row, isExpanded, hasChildren, level, path }) => RenderResult` | — | Per-row chevron HTML; cached per `(row, expanded)` |
 
 Methods: `toggleRowExpanded(path, options?)`, `expandRows(paths, options?)` / `collapseRows(paths, options?)` (one level; collapsed ancestors open too), `expandAll(paths?, options?)` / `collapseAll(paths?, options?)` (`null` = whole tree, else those rows and everything under them), `isPathExpanded(path)`. `paths` is a `string | string[]`; `options` is `ExpandOptions { isExclusive?, isSilent? }` (`isExclusive`: expanding collapses every other branch; `isSilent`: no events). A single-row expand / collapse fires `row-expand` / `row-collapse` `{ row, path }`; every change fires `expanded-change` `{ paths }` (the whole set). Cell-menu built-ins: `expand` / `collapse` (one level), `expand-subtree` / `collapse-subtree` (the row + everything under it), `expand-all` / `collapse-all` (whole tree); the per-row ones act on the selection when the clicked row is in it.
 
@@ -419,7 +419,7 @@ For full-height mode, also set `isTableBorderOnly = true`.
 | Property | Type | Default | Description |
 |---|---|---|---|
 | `summaryPosition` | `string` | — | E.g. `'bottom-left'`, `'top-right\|bottom-right'` |
-| `renderSummaryCallback` | `(ctx: { items, allItems, totalItems, currentPage, pageSize, metadata, drafts }) => string` | — | Returns HTML content for the summary bar |
+| `renderSummaryCallback` | `(ctx: { items, allItems, totalItems, currentPage, pageSize, metadata, drafts }) => RenderResult` | — | Returns HTML content for the summary bar |
 | `isSummaryInline` | `boolean` | `true` | Share row with pagination in same area |
 | `summaryMetadata` | `unknown` | — | Server-provided metadata passed to `renderSummaryCallback` as `ctx.metadata` |
 
@@ -487,7 +487,7 @@ Every column callback takes one `ctx`; the cell ctx (`CellContext<T>`) is `{ row
 | Field | Type | Description |
 |---|---|---|
 | `getDisplayValueCallback` | `(ctx: CellContext<T>) => string` | Display text for the cell (escaped) |
-| `renderCellCallback` | `(ctx: CellContext<T>) => string` | Custom cell HTML (wins over `getDisplayValueCallback`) |
+| `renderCellCallback` | `(ctx: CellContext<T>) => RenderResult` | Custom cell HTML (wins over `getDisplayValueCallback`); `null` = the built-in display, `false` = empty |
 | `filterCallback` | `(ctx: { filterValue, row, column, field }) => boolean \| null` | Custom filter predicate; `null` = incomplete input (ignored, input marked invalid) |
 
 ### Editing
@@ -660,7 +660,7 @@ Used by `select`, `combobox`, and `autocomplete`.
 
 | Option | Type | Description |
 |---|---|---|
-| `renderOptionCallback` | `(ctx: { option, optionIndex, isFocused, isSelected, isDisabled }) => string` | Custom HTML per option |
+| `renderOptionCallback` | `(ctx: { option, optionIndex, isFocused, isSelected, isDisabled }) => RenderResult` | Custom HTML per option; `null` = the built-in option |
 | `onSelect` | `(ctx: { option, row, rowIndex, column, field, … }) => void` | Notification when an option is selected |
 | `isEmptyAllowed` | `boolean` | An empty first item (`labels.dropdownEmptyOption`, "—") that sets the value to `null` (default `false`) |
 | `labels` | `{ dropdownNoData?, dropdownNoResults?, dropdownSearching?, dropdownEmptyOption? }` | This column's dropdown texts, per key over the grid `labels` |
@@ -707,6 +707,10 @@ grid.onFocusChange = ({ row }) => showDetails(row)          // property twin
 grid.getRowClassCallback = ({ row, controller }) =>
   controller.isRowDirty(row) ? 'is-dirty' : null
 ```
+
+Every `render*Callback` returns a **render result** (`RenderResult`, core `renderSlotHtml`): a string is HTML (escape
+your data), a node is serialized into the markup (no listeners — wire events by delegation), `null` / `undefined`
+draws the grid's built-in look (the escaped cell text, the default option, the tree glyph), `false` draws nothing.
 
 ### Grid-level callbacks
 

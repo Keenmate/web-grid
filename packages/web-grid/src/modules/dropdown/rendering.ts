@@ -3,7 +3,7 @@
 // Render dropdown overlay — a core createPopover() (/positioning) in the grid's shadow root
 // =============================================================================
 
-import { escapeHtml } from '@keenmate/web-components-core'
+import { escapeHtml, renderSlotHtml } from '@keenmate/web-components-core'
 import { createPopover, type PopoverCloseReason, type PopoverHandle } from '@keenmate/web-components-core/positioning'
 import type { EditorOption, EditorOptions } from '../../types.js'
 import type { GridHost } from '../grid-context.js'
@@ -216,33 +216,37 @@ function fillDropdown<T>(
 			const isSelected = getOptionValue(opt, opts) === currentValue
 			const disabled = isOptionDisabled(opt, opts)
 
-			// Custom render callback
 			const isEmpty = isEmptyOption(opt)
-			if (opts.renderOptionCallback && !isEmpty) {
-				return opts.renderOptionCallback(optionCtx(opts, { option: opt, optionIndex: i, isFocused: isHighlighted, isSelected, isDisabled: disabled }))
-			}
-
 			// Default rendering with icon/subtitle support
-			const label = getOptionLabel(opt, opts)
-			const icon = getOptionIcon(opt, opts)
-			const subtitle = getOptionSubtitle(opt, opts)
+			const defaultOptionHtml = (): string => {
+				const label = getOptionLabel(opt, opts)
+				const icon = getOptionIcon(opt, opts)
+				const subtitle = getOptionSubtitle(opt, opts)
 
-			const classes = ['wg__dropdown-option', `wg__dropdown-option--align-${dropdownAlign}`]
-			if (isHighlighted) classes.push('wg__dropdown-option--highlighted')
-			if (isSelected) classes.push('wg__dropdown-option--selected')
-			if (disabled) classes.push('wg__dropdown-option--disabled')
-			if (isEmpty) classes.push('wg__dropdown-option--empty')
+				const classes = ['wg__dropdown-option', `wg__dropdown-option--align-${dropdownAlign}`]
+				if (isHighlighted) classes.push('wg__dropdown-option--highlighted')
+				if (isSelected) classes.push('wg__dropdown-option--selected')
+				if (disabled) classes.push('wg__dropdown-option--disabled')
+				if (isEmpty) classes.push('wg__dropdown-option--empty')
 
-			const iconHtml = icon ? `<span class="wg__dropdown-option-icon">${escapeHtml(icon)}</span>` : ''
-			const subtitleHtml = subtitle ? `<span class="wg__dropdown-option-subtitle">${escapeHtml(subtitle)}</span>` : ''
+				const iconHtml = icon ? `<span class="wg__dropdown-option-icon">${escapeHtml(icon)}</span>` : ''
+				const subtitleHtml = subtitle ? `<span class="wg__dropdown-option-subtitle">${escapeHtml(subtitle)}</span>` : ''
 
-			return `<div class="${classes.join(' ')}" data-index="${i}" ${disabled ? 'data-disabled="true"' : ''}>
+				return `<div class="${classes.join(' ')}" data-index="${i}" ${disabled ? 'data-disabled="true"' : ''}>
 				${iconHtml}
 				<div class="wg__dropdown-option-content">
 					<span class="wg__dropdown-option-label">${escapeHtml(label)}</span>
 					${subtitleHtml}
 				</div>
 			</div>`
+			}
+
+			// Custom render callback (core renderSlotHtml: null / undefined = the built-in option, false = none)
+			const render = opts.renderOptionCallback
+			if (render && !isEmpty) {
+				return renderSlotHtml(() => render(optionCtx(opts, { option: opt, optionIndex: i, isFocused: isHighlighted, isSelected, isDisabled: disabled })), defaultOptionHtml).html
+			}
+			return defaultOptionHtml()
 		}).join(''))
 	}
 }

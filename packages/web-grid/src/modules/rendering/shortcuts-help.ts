@@ -10,7 +10,7 @@
 // list when provided, so consumers can add prose / images above the
 // generated keymap.
 
-import { escapeHtml } from '@keenmate/web-components-core'
+import { escapeHtml, renderSlotHtml } from '@keenmate/web-components-core'
 import type { GridHost } from '../grid-context.js'
 import type { GridLabels } from '../../types.js'
 import { formatShortcut } from '@keenmate/web-components-core/actions'
@@ -53,7 +53,8 @@ export function renderShortcutsHelpIcon<T>(ctx: GridHost<T>): string {
 		: `<div class="wg__shortcuts-help-list">${rowItemsHtml || rangeItemsHtml}</div>`
 
 	// Get custom content if callback is provided
-	const customContent = ctx.engine.renderShortcutsHelpCallback?.(ctx.engine.ctx({})) || ''
+	const callback = ctx.engine.renderShortcutsHelpCallback
+	const customContent = callback ? renderSlotHtml(() => callback(ctx.engine.ctx({}))).html : ''
 
 	return `
 		<div class="wg__shortcuts-help ${positionClass}">
