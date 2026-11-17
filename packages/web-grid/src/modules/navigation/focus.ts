@@ -10,6 +10,7 @@ import { removeDropdown } from '../dropdown/rendering.js'
 import { removeFillHandle } from '../fill-handle/index.js'
 import { isInGridMenu } from '../contextmenu/index.js'
 import { revealElement, fieldAt, prepareRowReveal, finishCellReveal } from '../scroll/reveal.js'
+import { deepActiveElement } from '@keenmate/web-components-core'
 
 /**
  * Focus a body cell (<td>) without scrolling. A cell is focusable by its markup only in
@@ -525,8 +526,10 @@ export function handleTableFocusOut<T>(ctx: GridHost<T>, e: FocusEvent): void {
 
 		// Same check as the synchronous one above, but using the post-rAF
 		// activeElement — covers cases where the focus shift happens between
-		// the focusout event and the next frame.
-		if (isInsideOwnedPopover(ctx, document.activeElement as HTMLElement | null)) {
+		// the focusout event and the next frame. Core deepActiveElement: a popover
+		// portaled into another shadow root (findOverlayContainer) is seen from
+		// the document as that root's host, not the focused element in the popover.
+		if (isInsideOwnedPopover(ctx, deepActiveElement())) {
 			return
 		}
 

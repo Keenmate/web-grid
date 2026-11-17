@@ -24,6 +24,11 @@ Target: **2.0.0-rc01** — a major: the callback, event and item API below is br
   typing. Core `bindShortcuts` is not used here: it fires Ctrl / Alt chords while typing (the toolbar never
   did) and evaluates every binding's `isEnabled` on each keydown before matching (the row-action resolution
   per key).
+- Internal: focus checks reviewed for core `deepActiveElement()`. The post-frame "did focus move into one of the
+  grid's popovers?" check uses it (a date picker portaled into another shadow root was seen as that root's host).
+  Every `shadowRoot.activeElement` read stays: each asks "is focus in this grid" (deepActiveElement is set for
+  focus anywhere on the page) or compares / `contains()` against a node in the grid's own tree (deepActiveElement
+  descends into a custom editor's shadow root, so the cell would no longer contain it).
 
 ### Added / Changed — row identity, tree members and callbacks are core inputs (2026-11-17)
 - **Added: attributes** `id-member`, `path-member`, `level-member`, `parent-path-member`,
