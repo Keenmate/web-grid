@@ -10,6 +10,7 @@ import { removeRangeBorder } from '../../cell-selection/index.js'
 import { removeRowSelectionBorders, removeColumnSelectionBorders } from '../../selection-border/index.js'
 import { removeFillHandle } from '../../fill-handle/index.js'
 import { interactionLogger } from '../../../logger.js'
+import { syncSelectedAria } from '../../rendering/aria.js'
 
 /**
  * Selection executor - handles selection actions
@@ -147,11 +148,12 @@ function updateRowSelectionVisual(ctx: ExecutorContext): void {
 
 	// Add class to selected rows
 	for (const rowIndex of ctx.engine.selectedRowIndices) {
-		const row = ctx.shadow.querySelector(`tr[data-row="${rowIndex}"]`)
+		const row = ctx.shadow.querySelector(`tr[data-row-index="${rowIndex}"]`)
 		if (row) {
 			row.classList.add('wg__row--selected')
 		}
 	}
+	syncSelectedAria(ctx)
 }
 
 /**
@@ -179,6 +181,7 @@ function updateColumnSelectionVisual(ctx: ExecutorContext): void {
 			header.classList.add('wg__header--selected')
 		}
 	}
+	syncSelectedAria(ctx)
 }
 
 /**
@@ -191,7 +194,10 @@ function updateCellRangeVisual(ctx: ExecutorContext): void {
 
 	// Add class to cells in range
 	const range = ctx.engine.selectedCellRange
-	if (!range) return
+	if (!range) {
+		syncSelectedAria(ctx)
+		return
+	}
 
 	const { startRowIndex, endRowIndex, startColIndex, endColIndex } = range
 	const minRow = Math.min(startRowIndex, endRowIndex)
@@ -211,4 +217,5 @@ function updateCellRangeVisual(ctx: ExecutorContext): void {
 			}
 		}
 	}
+	syncSelectedAria(ctx)
 }

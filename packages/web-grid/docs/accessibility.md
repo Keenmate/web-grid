@@ -70,7 +70,27 @@ The help overlay surfaces the registered shortcuts to the user — set `isShortc
 
 ## ARIA roles & labels
 
-The grid relies on **standard HTML semantics** (`<table>`, `<thead>`, `<tbody>`, `<tr>`, `<th>`, `<td>`) plus a small set of explicit ARIA additions on interactive controls:
+### The grid pattern
+
+The `<table>` declares the [ARIA grid pattern](https://www.w3.org/WAI/ARIA/apg/patterns/grid/) on top of its native semantics, so a screen reader announces the cell's real position even with virtual scrolling (only the visible window of rows exists in the DOM):
+
+| Element | Attributes |
+|---|---|
+| `<table>` | `role="grid"` (`role="treegrid"` in tree mode), `aria-rowcount` (header rows + data rows on the current page), `aria-colcount`, `aria-multiselectable="true"`; `aria-readonly="true"` when the grid isn't editable (`readonly`, editing off, `disabled`); `aria-disabled="true"` when disabled |
+| Header row / filter row | `role="row"`, `aria-rowindex="1"` / `"2"` |
+| Column header | `role="columnheader"`, `aria-colindex`; `aria-sort="ascending"` / `"descending"` on the **primary** sort column (ARIA allows one sorted header at a time; the other columns of a multi-sort show their priority visually) |
+| Data row | `role="row"`, `aria-rowindex` (1-based, the header row(s) count: with one header row, data row 0 is `2`), `aria-selected` (row selection); tree mode: `aria-level` (root = 1), `aria-expanded` on rows with children |
+| Row number cell | `role="rowheader"`, `aria-colindex="1"` |
+| Data cell | `role="gridcell"`, `aria-colindex`; `aria-readonly="true"` on a non-editable cell of an editable grid (read-only column, locked row, `getIsEditableCallback`); `aria-selected` while cell selection is on (`cellSelectionMode` not `'none'`): `true` inside the selected range or a selected column |
+| Virtual-scroll spacer rows, filler cells | `aria-hidden="true"` |
+
+Indexes are 1-based and count the rendered lead columns (row numbers, row-actions column) before the data columns. With pagination the counts and indexes are those of the current page (the row number column shows the same numbers).
+
+The focused cell holds real DOM focus (see [Focus management](#focus-management)); there is no `aria-activedescendant` on the grid. Cell navigation is the grid's own Excel model (virtual rows, frozen columns, Tab to the next editable cell), not core `/a11y` roving focus — the rest of the pattern is unchanged.
+
+### Controls
+
+Interactive controls inside the grid carry their own ARIA:
 
 | Control | Attributes | Purpose |
 |---|---|---|
@@ -79,9 +99,7 @@ The grid relies on **standard HTML semantics** (`<table>`, `<thead>`, `<tbody>`,
 | Select / combobox editor wrapper | `role="combobox"`, `aria-haspopup="listbox"` | Announces the combobox pattern |
 | Open cell dropdown | field: `role="combobox"`, `aria-expanded`, `aria-controls`, `aria-activedescendant` (+ `aria-autocomplete="list"` on an input); panel `role="listbox"`, options `role="option"` + `aria-selected` / `aria-disabled` | Focus stays in the field; the screen reader follows the highlighted option (core `createActiveDescendant`, ARIA-only mode). The phone sheet stays a `role="dialog"` |
 | Go-to-row dialog (Ctrl+G) | `role="dialog"`, `aria-modal="true"`; the page behind is `inert` | A real modal (core `startModalSession`): Tab stays inside, Escape / Back / backdrop cancel |
-| Cells in navigate mode | `tabindex="0"` on the active cell, `tabindex="-1"` on others | Single tab stop in the grid; arrow keys move within |
-
-Standard `<table>` semantics are sufficient for read-only display grids — VoiceOver, NVDA, and JAWS all announce table structure (column header / row / cell), so theirs is the announcement of record.
+| Cells in navigate mode | `tabindex="0"` on every body cell | Every cell is focusable; Arrow keys move within the grid and Tab moves to the next editable cell (the grid handles the key) |
 
 ## Focus management
 
@@ -108,9 +126,7 @@ If you need form participation, wrap the grid in a controller that flattens `gri
 
 ## Known gaps
 
-The grid does **not** currently declare the full ARIA grid pattern (`role="grid"`, `role="row"`, `role="gridcell"`, `aria-rowindex`, `aria-colindex`, `aria-rowcount`, `aria-colcount`, `aria-selected`, `aria-readonly`). Native `<table>` semantics carry most of the information AT needs; the formal ARIA grid pattern would add row / column index announcements and selection-state announcements that the native pattern lacks.
-
-If you need WCAG 2.2 AA compliance for a grid with explicit cell-selection or virtual-scroll announcements, please open an issue on the GitHub repo with your use case so we can prioritize the pattern correctly.
+- `aria-rowcount` / `aria-rowindex` describe the current page, not the position in the whole (server-side) data set; with infinite scroll the count is the rows loaded so far.
 
 ## See also
 

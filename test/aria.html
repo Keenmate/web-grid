@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — ARIA grid semantics fixture</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>ARIA grid semantics fixture</h1>
+	<p>
+		Targeted by <code>e2e/aria.spec.ts</code>. The grid's own cell navigation stays (Excel model);
+		this page checks the ARIA grid pattern on top of it: roles, <code>aria-rowcount</code> /
+		<code>aria-rowindex</code> over virtual rows, <code>aria-sort</code>, <code>aria-selected</code>,
+		<code>aria-readonly</code>, and <code>treegrid</code> levels. Reload resets all state.
+	</p>
+
+	<h2>#grid — 1,000 rows, virtual scroll, row numbers, editable Name, sortable</h2>
+	<web-grid id="grid" style="max-width: 700px; max-height: 380px;"></web-grid>
+
+	<h2>#readonlyGrid — read-only, 5 rows</h2>
+	<web-grid id="readonlyGrid" readonly></web-grid>
+
+	<h2>#treeGrid — tree mode (expandLevel 1)</h2>
+	<web-grid id="treeGrid"></web-grid>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+
+		/*
+		 *  #grid: col idx 0 id (read-only) | 1 name (text editor) | 2 email | 3 role
+		 *    row N → id N+1, "Employee N+1". Row numbers on → aria-colindex 1 is the
+		 *    row header; data column C → aria-colindex C+2. One header row →
+		 *    data row N → aria-rowindex N+2; aria-rowcount = 1001.
+		 *  #treeGrid: 0 Acme (level 1, expanded) → 1 Engineering (level 2, collapsed),
+		 *    2 Sales (level 2, leaf).
+		 */
+		const ROLES = ['Engineer', 'Designer', 'Manager']
+		const items = Array.from({ length: 1000 }, (_, i) => ({
+			id: i + 1,
+			name: `Employee ${i + 1}`,
+			email: `emp${i + 1}@k.io`,
+			role: ROLES[(i + 1) % 3]
+		}))
+		const columns = [
+			{ field: 'id', title: 'ID', width: '70px', isEditable: false, isSortable: true },
+			{ field: 'name', title: 'Name', width: '180px', editor: 'text', isEditable: true, isSortable: true },
+			{ field: 'email', title: 'Email', width: '220px', isSortable: true },
+			{ field: 'role', title: 'Role', width: '120px', isSortable: true }
+		]
+
+		const grid = document.getElementById('grid')
+		grid.columns = columns
+		grid.items = items
+		grid.isEditingEnabled = true
+		grid.editTrigger = 'dblclick'
+		grid.sortMode = 'single'
+		grid.isVirtualScrollEnabled = true
+		grid.virtualScrollItemHeight = 38
+		grid.virtualScrollOverscan = 5
+		grid.isRowNumbersShown = true
+
+		const readonlyGrid = document.getElementById('readonlyGrid')
+		readonlyGrid.columns = columns
+		readonlyGrid.items = items.slice(0, 5)
+
+		const treeGrid = document.getElementById('treeGrid')
+		treeGrid.columns = [
+			{ field: 'name', title: 'Organization', width: '240px', isTree: true },
+			{ field: 'headcount', title: 'Headcount', width: '110px' }
+		]
+		treeGrid.items = [
+			{ path: '1', name: 'Acme Corp', headcount: 412 },
+			{ path: '1.1', name: 'Engineering', headcount: 184 },
+			{ path: '1.1.1', name: 'Platform Team', headcount: 24 },
+			{ path: '1.2', name: 'Sales', headcount: 96 }
+		]
+		treeGrid.pathMember = 'path'
+		treeGrid.expandLevel = 1
+		treeGrid.isTreeDataSorted = true
+	</script>
+</body>
+</html>

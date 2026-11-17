@@ -11,6 +11,7 @@
 // resize / reorder handler to operate on a detached node.
 
 import type { GridHost } from '../grid-context.js'
+import { syncSelectedAria } from '../rendering/aria.js'
 import { removeRangeBorder } from '../cell-selection/index.js'
 import { removeRowSelectionBorders, removeColumnSelectionBorders } from './index.js'
 
@@ -45,4 +46,5 @@ export function clearAllSelections<T>(ctx: GridHost<T>): void {
 		const selectedHeaders = ctx.shadow.querySelectorAll('.wg__header--selected')
 		selectedHeaders.forEach(h => h.classList.remove('wg__header--selected'))
 	}
+	syncSelectedAria(ctx)
 }

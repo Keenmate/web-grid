@@ -10,6 +10,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Accessibility / Added — the ARIA grid pattern (2026-11-17)
+- **The table is a `role="grid"` (`treegrid` in tree mode)** with `row` / `columnheader` / `rowheader` (the row
+  number) / `gridcell` roles, `aria-rowcount` / `aria-colcount` and `aria-rowindex` / `aria-colindex` on every
+  rendered row and cell (1-based, the header row and the filter row count) — a screen reader announces the real
+  position in a virtual grid, where only the visible window is in the DOM. Plus `aria-selected` (rows; cells while
+  cell selection is on — a range or a selected column), `aria-readonly` (on the table of a read-only grid, else on
+  each non-editable cell of an editable one), `aria-sort` on the primary sort column, `aria-level` /
+  `aria-expanded` on tree rows; spacer rows and filler cells are `aria-hidden`. Keyboard behaviour is unchanged:
+  cell navigation stays the grid's own Excel model (VALIDATION-NOTES C-CA-25). Internal: the surgical row-selection
+  update now finds rows by `data-row-index` (it looked for a `data-row` attribute rows don't have).
+
 ### Changed — clipboard, locale, direction and stacking through core (2026-11-17, needs core 1.0.0-rc25)
 - **Copy falls back when the Clipboard API refuses** (an `http://` intranet page, an embedded webview): Ctrl+C,
   `copySelectedRowsToClipboard()` / `copyCellSelectionToClipboard()` go through core `copyText` (Clipboard API,

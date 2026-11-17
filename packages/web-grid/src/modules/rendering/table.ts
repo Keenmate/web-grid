@@ -9,6 +9,7 @@ import type { Column } from '../../types.js'
 import { renderCellEditor } from '../editing/index.js'
 import { renderCellDisplay } from './display.js'
 import { wrapTreeCell } from './tree-render.js'
+import { dataRowAttrs, headerRowCount, headerSortAttr, isCellSelectable, isFilterRowVisible, leadColumnCount } from './aria.js'
 import { renderTriggerButton, getActiveToolbarRowIndex, maxToolbarRowLength, resolveToolbar, renderToolbarButton } from '../toolbar/index.js'
 
 // Default row number column width (must match CSS: 40px with box-sizing: border-box)
@@ -66,11 +67,14 @@ export function renderHeaderRow<T>(ctx: GridHost<T>): string {
 	// Filter row (grid isFilteringEnabled): one cell per header cell, an input under each
 	// column with `column.isFilterable` (v1: text). Built in the same pass so the
 	// frozen offsets and widths match the header.
-	const isFilterRowVisible = ctx.engine.isFilteringEnabled && visualColumns.some(({ column }) => column.isFilterable)
-	const filters = isFilterRowVisible ? ctx.engine.filters : {}
-	const invalidFilterFields = isFilterRowVisible ? ctx.engine.getInvalidFilterFields() : new Set<string>()
+	const isFilterRowShown = isFilterRowVisible(ctx)
+	const filters = isFilterRowShown ? ctx.engine.filters : {}
+	const invalidFilterFields = isFilterRowShown ? ctx.engine.getInvalidFilterFields() : new Set<string>()
 	let filterLeadHtml = ''
 	const filterCells: string[] = []
+	// ARIA column position (1-based) of the lead columns; data columns follow them
+	let leadColIndex = 0
+	const leadCount = leadColumnCount(ctx)
 
 	// Row number column (may be sticky)
 	let rowNumberColumnHtml = ''
@@ -80,8 +84,9 @@ export function renderHeaderRow<T>(ctx: GridHost<T>): string {
 			? `position: sticky; left: 0; z-index: 4;`
 			: ''
 		const frozenClass = isSticky ? ' wg__header--frozen' : ''
-		rowNumberColumnHtml = `<th class="wg__header wg__row-number-header${frozenClass}" style="${stickyStyle}">#</th>`
-		filterLeadHtml += `<th class="wg__filter-cell wg__filter-cell--row-number${isSticky ? ' wg__filter-cell--frozen' : ''}" style="${isSticky ? 'left: 0;' : ''}"></th>`
+		leadColIndex++
+		rowNumberColumnHtml = `<th class="wg__header wg__row-number-header${frozenClass}" style="${stickyStyle}" role="columnheader" aria-colindex="${leadColIndex}">#</th>`
+		filterLeadHtml += `<th class="wg__filter-cell wg__filter-cell--row-number${isSticky ? ' wg__filter-cell--frozen' : ''}" style="${isSticky ? 'left: 0;' : ''}" role="gridcell" aria-colindex="${leadColIndex}"></th>`
 		// Always include row number offset when visible (prevents frozen columns from overlapping)
 		cumulativeOffset += ROW_NUMBER_COLUMN_WIDTH
 	}
@@ -96,16 +101,18 @@ export function renderHeaderRow<T>(ctx: GridHost<T>): string {
 		// Width = buttons * btnWidth + (buttons-1) * gap + 2 * paddingSm
 		// Using calc with CSS vars so it respects theming
 		const colWidth = `calc(${maxBtns} * var(--wg-toolbar-btn-min-width) + ${Math.max(0, maxBtns - 1)} * var(--wg-inline-actions-gap) + 2 * var(--wg-spacing-sm))`
-		inlineActionsHeaderHtml = `<th class="wg__header wg__inline-actions-header" style="width: ${colWidth}">${escapeHtml(ctx.engine.labels.inlineActionsHeader)}</th>`
-		filterLeadHtml += '<th class="wg__filter-cell"></th>'
+		leadColIndex++
+		inlineActionsHeaderHtml = `<th class="wg__header wg__inline-actions-header" style="width: ${colWidth}" role="columnheader" aria-colindex="${leadColIndex}">${escapeHtml(ctx.engine.labels.inlineActionsHeader)}</th>`
+		filterLeadHtml += `<th class="wg__filter-cell" role="gridcell" aria-colindex="${leadColIndex}"></th>`
 	}
 
 	// Actions column for button trigger mode (floating toolbar trigger)
 	const showActionsColumn = ctx.engine.isRowToolbarShown && ctx.engine.toolbarTrigger === 'button' && ctx.engine.toolbarPosition !== 'inline'
+	if (showActionsColumn) leadColIndex++
 	const actionsColumnHtml = showActionsColumn
-		? '<th class="wg__header wg__actions-column"></th>'
+		? `<th class="wg__header wg__actions-column" role="columnheader" aria-colindex="${leadColIndex}"></th>`
 		: ''
-	if (showActionsColumn) filterLeadHtml += '<th class="wg__filter-cell wg__actions-column"></th>'
+	if (showActionsColumn) filterLeadHtml += `<th class="wg__filter-cell wg__actions-column" role="gridcell" aria-colindex="${leadColIndex}"></th>`
 
 	const headerCells = visualColumns.map(({ column, originalIndex }, visualIndex) => {
 		const field = String(column.field)
@@ -152,7 +159,7 @@ export function renderHeaderRow<T>(ctx: GridHost<T>): string {
 		].filter(Boolean).join('; ')
 		const styleAttr = `style="${styleProps}"`
 
-		if (isFilterRowVisible) {
+		if (isFilterRowShown) {
 			const filterStyle = [
 				isFrozen ? `left: ${cumulativeOffset}px` : '',
 				colWidth ? `width: ${colWidth}` : '',
@@ -163,9 +170,9 @@ export function renderHeaderRow<T>(ctx: GridHost<T>): string {
 				const isInvalid = invalidFilterFields.has(field)
 				const value = ctx.filterInputText(field) ?? filters[field] ?? ''
 				const label = ctx.engine.labelText('filterColumn', { column: column.title ?? field })
-				filterCells.push(`<th class="wg__filter-cell${frozenClass}" style="${filterStyle}" data-field="${escapeHtml(field)}"><input type="text" class="wg__filter-input${isInvalid ? ' wg__filter-input--invalid' : ''}" data-field="${escapeHtml(field)}" value="${escapeHtml(value)}" aria-label="${escapeHtml(label)}"${isInvalid ? ' aria-invalid="true"' : ''} autocomplete="off" spellcheck="false"></th>`)
+				filterCells.push(`<th class="wg__filter-cell${frozenClass}" style="${filterStyle}" data-field="${escapeHtml(field)}" role="gridcell" aria-colindex="${leadCount + visualIndex + 1}"><input type="text" class="wg__filter-input${isInvalid ? ' wg__filter-input--invalid' : ''}" data-field="${escapeHtml(field)}" value="${escapeHtml(value)}" aria-label="${escapeHtml(label)}"${isInvalid ? ' aria-invalid="true"' : ''} autocomplete="off" spellcheck="false"></th>`)
 			} else {
-				filterCells.push(`<th class="wg__filter-cell${frozenClass}" style="${filterStyle}"></th>`)
+				filterCells.push(`<th class="wg__filter-cell${frozenClass}" style="${filterStyle}" role="gridcell" aria-colindex="${leadCount + visualIndex + 1}"></th>`)
 			}
 		}
 
@@ -196,7 +203,7 @@ export function renderHeaderRow<T>(ctx: GridHost<T>): string {
 		const resizeHandle = `<div class="wg__resize-handle${isResizable ? '' : ' wg__resize-handle--disabled'}" data-field="${field}"></div>`
 
 		return `
-			<th class="${classes.join(' ')}" ${styleAttr} data-field="${field}">
+			<th class="${classes.join(' ')}" ${styleAttr} data-field="${field}" role="columnheader" aria-colindex="${leadCount + visualIndex + 1}"${headerSortAttr(ctx, field)}>
 				<div class="wg__header-container">
 					<div class="wg__header-content wg__header-content--align-${hAlign} wg__header-content--valign-${vAlign}">
 						<span class="wg__header-title">${escapeHtml(column.title)}</span>
@@ -211,9 +218,9 @@ export function renderHeaderRow<T>(ctx: GridHost<T>): string {
 		`
 	}).join('')
 
-	const headerRow = `<tr>${rowNumberColumnHtml}${inlineActionsHeaderHtml}${actionsColumnHtml}${headerCells}<th class="wg__filler">&nbsp;</th></tr>`
-	if (!isFilterRowVisible) return headerRow
-	return `${headerRow}<tr class="wg__filter-row">${filterLeadHtml}${filterCells.join('')}<th class="wg__filter-cell wg__filter-cell--filler"></th></tr>`
+	const headerRow = `<tr role="row" aria-rowindex="1">${rowNumberColumnHtml}${inlineActionsHeaderHtml}${actionsColumnHtml}${headerCells}<th class="wg__filler" aria-hidden="true">&nbsp;</th></tr>`
+	if (!isFilterRowShown) return headerRow
+	return `${headerRow}<tr class="wg__filter-row" role="row" aria-rowindex="2">${filterLeadHtml}${filterCells.join('')}<th class="wg__filter-cell wg__filter-cell--filler" aria-hidden="true"></th></tr>`
 }
 
 /**
@@ -225,8 +232,8 @@ function renderEmptyRow<T>(ctx: GridHost<T>, colspan: number): string {
 	const text = ctx.engine.items.length > 0 || hasActiveFilter ? ctx.engine.labels.noResults : ctx.engine.labels.noData
 	const kind = ctx.engine.items.length > 0 || hasActiveFilter ? 'no-results' : 'no-data'
 	return `
-			<tr>
-				<td class="wg__empty" colspan="${colspan}" data-empty="${kind}">${escapeHtml(text)}</td>
+			<tr role="row" aria-rowindex="${headerRowCount(ctx) + 1}">
+				<td class="wg__empty" colspan="${colspan}" data-empty="${kind}" role="gridcell" aria-colindex="1">${escapeHtml(text)}</td>
 			</tr>
 		`
 }
@@ -240,7 +247,21 @@ function renderEmptyRow<T>(ctx: GridHost<T>, colspan: number): string {
  */
 export function renderLoadingMoreRow<T>(ctx: GridHost<T>): string {
 	if (!ctx.virtualScroll.isLoadingMore || !ctx.engine.labels.loading) return ''
-	return `<tr class="wg__loading-more-row"><td class="wg__loading-more" colspan="999"><span class="wg__loading-more-indicator"></span><span class="wg__loading-more-text" aria-hidden="true">${escapeHtml(ctx.engine.labels.loading)}</span></td></tr>`
+	return `<tr class="wg__loading-more-row" role="row"><td class="wg__loading-more" colspan="999" role="gridcell"><span class="wg__loading-more-indicator"></span><span class="wg__loading-more-text" aria-hidden="true">${escapeHtml(ctx.engine.labels.loading)}</span></td></tr>`
+}
+
+/**
+ * `aria-readonly` (an editable grid's locked / read-only cell; a read-only grid
+ * says it once on the table) + `aria-selected` (while cell selection is on).
+ */
+export function cellAriaAttrs<T>(ctx: GridHost<T>, rowIndex: number, visualIndex: number, isEditable: boolean): string {
+	let attrs = ''
+	if (ctx.engine.isEffectivelyEditable && !isEditable) attrs += 'aria-readonly="true" '
+	if (isCellSelectable(ctx)) {
+		const isSelected = ctx.engine.isCellInSelectedRange(rowIndex, visualIndex) || ctx.engine.isColumnPositionSelected(visualIndex)
+		attrs += `aria-selected="${isSelected}"`
+	}
+	return attrs
 }
 
 /**
@@ -260,6 +281,7 @@ export function renderDataRows<T>(ctx: GridHost<T>): string {
 	// Actions column for button trigger mode (floating toolbar trigger)
 	const showActionsColumn = ctx.engine.isRowToolbarShown && ctx.engine.toolbarTrigger === 'button' && ctx.engine.toolbarPosition !== 'inline'
 	const colspanWithExtras = visualColumns.length + (showActionsColumn ? 1 : 0) + (showRowNumbers ? 1 : 0) + (showInlineActions ? 1 : 0)
+	const leadCount = leadColumnCount(ctx)
 
 	if (items.length === 0) return renderEmptyRow(ctx, colspanWithExtras)
 
@@ -291,12 +313,12 @@ export function renderDataRows<T>(ctx: GridHost<T>): string {
 
 			if (isLocked) {
 				const lockTooltip = ctx.engine.getLockTooltip(lockInfo)
-				rowNumberCell = `<td class="wg__cell wg__row-number wg__row-number--locked${frozenClass}" style="${stickyStyle}" data-tooltip="${escapeHtml(lockTooltip)}" data-row-number="${rowIndex}">🔒</td>`
+				rowNumberCell = `<td class="wg__cell wg__row-number wg__row-number--locked${frozenClass}" style="${stickyStyle}" role="rowheader" aria-colindex="1" data-tooltip="${escapeHtml(lockTooltip)}" data-row-number="${rowIndex}">🔒</td>`
 			} else if (isEmptyRow) {
-				rowNumberCell = `<td class="wg__cell wg__row-number wg__empty-row-indicator${frozenClass}" style="${stickyStyle}" data-row-number="${rowIndex}">${ctx.engine.newRowIndicator}</td>`
+				rowNumberCell = `<td class="wg__cell wg__row-number wg__empty-row-indicator${frozenClass}" style="${stickyStyle}" role="rowheader" aria-colindex="1" data-row-number="${rowIndex}">${ctx.engine.newRowIndicator}</td>`
 			} else {
 				const dirtyClass = ctx.engine.isDirtyIndicatorShown && ctx.engine.isRowDirty(rowIndex) ? ' wg__row-number--dirty' : ''
-				rowNumberCell = `<td class="wg__cell wg__row-number${dirtyClass}${frozenClass}" style="${stickyStyle}" data-row-number="${rowIndex}">${rowIndex + 1}</td>`
+				rowNumberCell = `<td class="wg__cell wg__row-number${dirtyClass}${frozenClass}" style="${stickyStyle}" role="rowheader" aria-colindex="1" data-row-number="${rowIndex}">${rowIndex + 1}</td>`
 			}
 
 			// Always include row number offset when visible (prevents frozen columns from overlapping)
@@ -313,7 +335,7 @@ export function renderDataRows<T>(ctx: GridHost<T>): string {
 		if (showActionsColumn) {
 			const isActive = activeToolbarRow === rowIndex
 			actionsCell = `
-				<td class="wg__cell wg__actions-column">
+				<td class="wg__cell wg__actions-column" role="gridcell" aria-colindex="${leadCount}">
 					${renderTriggerButton(rowIndex, isActive, ctx.engine.labels.rowActions)}
 				</td>
 			`
@@ -405,6 +427,9 @@ export function renderDataRows<T>(ctx: GridHost<T>): string {
 					data-row="${rowIndex}"
 					data-col="${originalIndex}"
 					data-field="${field}"
+					role="gridcell"
+					aria-colindex="${leadCount + visualIndex + 1}"
+					${cellAriaAttrs(ctx, rowIndex, visualIndex, isEditable)}
 					${tabindexAttr}
 					${tooltipAttr}
 				>
@@ -429,7 +454,7 @@ export function renderDataRows<T>(ctx: GridHost<T>): string {
 			? `data-tooltip="${escapeHtml(ctx.engine.getLockTooltip(lockInfo))}"`
 			: ''
 
-		return `<tr class="${rowClasses.join(' ')}" data-row-index="${rowIndex}" ${rowTooltipAttr}>${rowNumberCell}${inlineActionsCell}${actionsCell}${cells}<td class="wg__cell wg__filler" data-row="${rowIndex}"></td></tr>`
+		return `<tr class="${rowClasses.join(' ')}" data-row-index="${rowIndex}"${dataRowAttrs(ctx, item, rowIndex)} ${rowTooltipAttr}>${rowNumberCell}${inlineActionsCell}${actionsCell}${cells}<td class="wg__cell wg__filler" data-row="${rowIndex}" aria-hidden="true"></td></tr>`
 	}).join('') + renderLoadingMoreRow(ctx)
 }
 
@@ -452,7 +477,8 @@ function renderInlineActionsCell<T>(ctx: GridHost<T>, row: T, rowIndex: number):
 		return `<div class="wg__inline-actions-row">${html}</div>`
 	}).join('')
 
-	return `<td class="wg__cell wg__inline-actions-cell"><div class="wg__inline-actions-wrap">${rowsHtml}</div></td>`
+	const colIndex = ctx.engine.isRowNumbersShown ? 2 : 1
+	return `<td class="wg__cell wg__inline-actions-cell" role="gridcell" aria-colindex="${colIndex}"><div class="wg__inline-actions-wrap">${rowsHtml}</div></td>`
 }
 
 /**
@@ -484,6 +510,7 @@ export function renderDataRowsVirtual<T>(ctx: GridHost<T>, params: VirtualScroll
 	// Actions column for button trigger mode (floating toolbar trigger)
 	const showActionsColumn = ctx.engine.isRowToolbarShown && ctx.engine.toolbarTrigger === 'button' && ctx.engine.toolbarPosition !== 'inline'
 	const colspanWithExtras = visualColumns.length + (showActionsColumn ? 1 : 0) + (showRowNumbers ? 1 : 0) + (showInlineActions ? 1 : 0)
+	const leadCount = leadColumnCount(ctx)
 
 	if (items.length === 0) return renderEmptyRow(ctx, colspanWithExtras)
 
@@ -500,7 +527,7 @@ export function renderDataRowsVirtual<T>(ctx: GridHost<T>, params: VirtualScroll
 
 	// Top spacer row - height on TD for better browser compatibility
 	const topSpacer = topSpacerHeight > 0
-		? `<tr class="wg__spacer-top"><td colspan="${colspanWithExtras}" style="height: ${topSpacerHeight}px"></td></tr>`
+		? `<tr class="wg__spacer-top" aria-hidden="true"><td colspan="${colspanWithExtras}" style="height: ${topSpacerHeight}px"></td></tr>`
 		: ''
 
 	// Render only visible rows
@@ -529,12 +556,12 @@ export function renderDataRowsVirtual<T>(ctx: GridHost<T>, params: VirtualScroll
 
 			if (isLocked) {
 				const lockTooltip = ctx.engine.getLockTooltip(lockInfo)
-				rowNumberCell = `<td class="wg__cell wg__row-number wg__row-number--locked${frozenClass}" style="${stickyStyle}" data-tooltip="${escapeHtml(lockTooltip)}" data-row-number="${rowIndex}">🔒</td>`
+				rowNumberCell = `<td class="wg__cell wg__row-number wg__row-number--locked${frozenClass}" style="${stickyStyle}" role="rowheader" aria-colindex="1" data-tooltip="${escapeHtml(lockTooltip)}" data-row-number="${rowIndex}">🔒</td>`
 			} else if (isEmptyRow) {
-				rowNumberCell = `<td class="wg__cell wg__row-number wg__empty-row-indicator${frozenClass}" style="${stickyStyle}" data-row-number="${rowIndex}">${ctx.engine.newRowIndicator}</td>`
+				rowNumberCell = `<td class="wg__cell wg__row-number wg__empty-row-indicator${frozenClass}" style="${stickyStyle}" role="rowheader" aria-colindex="1" data-row-number="${rowIndex}">${ctx.engine.newRowIndicator}</td>`
 			} else {
 				const dirtyClass = ctx.engine.isDirtyIndicatorShown && ctx.engine.isRowDirty(rowIndex) ? ' wg__row-number--dirty' : ''
-				rowNumberCell = `<td class="wg__cell wg__row-number${dirtyClass}${frozenClass}" style="${stickyStyle}" data-row-number="${rowIndex}">${rowIndex + 1}</td>`
+				rowNumberCell = `<td class="wg__cell wg__row-number${dirtyClass}${frozenClass}" style="${stickyStyle}" role="rowheader" aria-colindex="1" data-row-number="${rowIndex}">${rowIndex + 1}</td>`
 			}
 
 			// Always include row number offset when visible (prevents frozen columns from overlapping)
@@ -551,7 +578,7 @@ export function renderDataRowsVirtual<T>(ctx: GridHost<T>, params: VirtualScroll
 		if (showActionsColumn) {
 			const isActive = activeToolbarRow === rowIndex
 			actionsCell = `
-				<td class="wg__cell wg__actions-column">
+				<td class="wg__cell wg__actions-column" role="gridcell" aria-colindex="${leadCount}">
 					${renderTriggerButton(rowIndex, isActive, ctx.engine.labels.rowActions)}
 				</td>
 			`
@@ -643,6 +670,9 @@ export function renderDataRowsVirtual<T>(ctx: GridHost<T>, params: VirtualScroll
 					data-row="${rowIndex}"
 					data-col="${originalIndex}"
 					data-field="${field}"
+					role="gridcell"
+					aria-colindex="${leadCount + visualIndex + 1}"
+					${cellAriaAttrs(ctx, rowIndex, visualIndex, isEditable)}
 					${tabindexAttr}
 					${tooltipAttr}
 				>
@@ -667,12 +697,12 @@ export function renderDataRowsVirtual<T>(ctx: GridHost<T>, params: VirtualScroll
 			? `data-tooltip="${escapeHtml(ctx.engine.getLockTooltip(lockInfo))}"`
 			: ''
 
-		visibleRows.push(`<tr class="${rowClasses.join(' ')}" data-row-index="${rowIndex}" ${rowTooltipAttr}>${rowNumberCell}${inlineActionsCell}${actionsCell}${cells}<td class="wg__cell wg__filler" data-row="${rowIndex}"></td></tr>`)
+		visibleRows.push(`<tr class="${rowClasses.join(' ')}" data-row-index="${rowIndex}"${dataRowAttrs(ctx, item, rowIndex)} ${rowTooltipAttr}>${rowNumberCell}${inlineActionsCell}${actionsCell}${cells}<td class="wg__cell wg__filler" data-row="${rowIndex}" aria-hidden="true"></td></tr>`)
 	}
 
 	// Bottom spacer row - height on TD for better browser compatibility
 	const bottomSpacer = bottomSpacerHeight > 0
-		? `<tr class="wg__spacer-bottom"><td colspan="${colspanWithExtras}" style="height: ${bottomSpacerHeight}px"></td></tr>`
+		? `<tr class="wg__spacer-bottom" aria-hidden="true"><td colspan="${colspanWithExtras}" style="height: ${bottomSpacerHeight}px"></td></tr>`
 		: ''
 
 	return topSpacer + visibleRows.join('') + bottomSpacer + renderLoadingMoreRow(ctx)

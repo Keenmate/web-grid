@@ -8,6 +8,7 @@ import { renderCellEditor } from '../editing/index.js'
 import { renderCellDisplay } from './display.js'
 import { wrapTreeCell } from './tree-render.js'
 import { getCellTooltip } from './table.js'
+import { isCellSelectable } from './aria.js'
 
 export type RenderCellOptions = {
 	/** Focus the editor after rendering (for edit mode) */
@@ -86,6 +87,14 @@ export function renderCell<T>(
 
 	// Update classes (replace all)
 	cell.className = classes.join(' ')
+
+	// ARIA state that can change with the cell (row lock, selection) — mirrors table.ts cellAriaAttrs
+	if (ctx.engine.isEffectivelyEditable && !isEditable) cell.setAttribute('aria-readonly', 'true')
+	else cell.removeAttribute('aria-readonly')
+	if (visualIndex >= 0 && isCellSelectable(ctx)) {
+		const isSelected = ctx.engine.isCellInSelectedRange(rowIndex, visualIndex) || ctx.engine.isColumnPositionSelected(visualIndex)
+		cell.setAttribute('aria-selected', String(isSelected))
+	}
 
 	// Tooltip attributes (a commit can make the cell invalid / valid again)
 	const tooltip = getCellTooltip(ctx, item, rowIndex, column)

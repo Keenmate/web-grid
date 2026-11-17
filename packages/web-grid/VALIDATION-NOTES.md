@@ -21,6 +21,29 @@ negative.
 - Run: `npx playwright test e2e/dark-mode.spec.ts` from the repo
   root.
 
+## C-CA-25 — Cell navigation stays the grid's own (no core `/a11y`)
+
+Cell navigation is the grid's own (Excel model over virtual rows, frozen
+columns, Tab-to-editable); core /a11y doesn't model it — decided 2026-11-17.
+
+Core `createRovingFocus` / `createActiveDescendant` move over a list of
+rendered items. The grid's cells are not such a list: the focused cell may sit
+in a row outside the rendered virtual window (arrows, Page Up / Down, Ctrl+End
+scroll it in first), frozen columns stay put while the rest scrolls, and Tab /
+Shift+Tab skip to the next *editable* cell and commit an open edit on the way
+(`docs/accessibility.md` → Keyboard navigation). The C-CA-25 `[semi]` grep
+therefore finds the grid's own `'Arrow…'` handlers (`src/modules/actions/` key mapping,
+`src/modules/events/`, cell-range extension) — expected. What C-CA-25 protects is still there:
+
+- the focused cell holds real DOM focus (every cell is focusable in navigate
+  mode; elsewhere the focused cell gets `tabindex="-1"`), so a screen reader
+  follows it without `aria-activedescendant`;
+- the structure is the ARIA grid pattern (`role="grid"` / `treegrid`, `row`,
+  `columnheader`, `rowheader`, `gridcell`, `aria-rowcount` / `aria-rowindex`
+  over the virtual rows, `aria-colindex`, `aria-selected`, `aria-readonly`,
+  `aria-sort`) — `src/modules/rendering/aria.ts`, `e2e/aria.spec.ts`;
+- the cell dropdown (a real list) does use core `createActiveDescendant`.
+
 ## C-NC-9 — Action-pipeline `tryHandle*` idiom
 
 The `ActionPipelineAdapter` uses `tryHandle*` (e.g. `tryHandleKeyDown`,

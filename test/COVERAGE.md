@@ -211,6 +211,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | `customStyles` / `getCustomStylesCallback` (core `createCustomStyles`): attribute + property, callback wins + ctx, page-wide `window.components['web-grid'].customStyles` (order, live update, instance override), `@import` linked once in head and released by `destroy()` | ✓ | `custom-styling.spec.ts` | `custom-styling.html` |
 | Properties set before `<web-grid>` is defined (`columns`, `items`, `pageSize`) applied at upgrade (core rc20) | ✓ | `pre-upgrade.spec.ts` | `pre-upgrade.html` |
 | Self-initiated scrolls via core `scrollIntoContainer` + `beforeScrollCallback` (keyboard: `nearest`, page stays put; `scrollToRow`: centre + reveal; `false` skips, partial options replace; virtual-scroll jump) | ✓ | `scroll.spec.ts` | `scroll.html` |
+| ARIA grid pattern: `grid` / `treegrid` + row / header / cell roles, `aria-rowcount` / `aria-rowindex` across a scrolled virtual window, `aria-colindex`, `aria-sort` after a sort click, `aria-selected` (row + column selection), `aria-readonly` (cell / read-only grid), `aria-level` / `aria-expanded` | ✓ | `aria.spec.ts` | `aria.html` |
 
 ## Not covered yet
 

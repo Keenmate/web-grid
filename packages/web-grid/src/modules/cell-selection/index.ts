@@ -4,6 +4,7 @@
 // =============================================================================
 
 import type { GridHost } from '../grid-context.js'
+import { syncSelectedAria } from '../rendering/aria.js'
 import type { CellRange, Column } from '../../types.js'
 import { updateFocusVisual, focusCellElement } from '../navigation/index.js'
 import { fieldAt, prepareRowReveal, finishCellReveal } from '../scroll/reveal.js'
@@ -281,6 +282,7 @@ function updateCellHighlighting<T>(ctx: GridHost<T>): void {
 			}
 		}
 	}
+	syncSelectedAria(ctx)
 }
 
 /**
@@ -328,6 +330,7 @@ function handleDocumentMouseUp(e: MouseEvent): void {
 		// User canceled selection by returning to start - restore focus, clear highlighting
 		const allCells = ctx.shadow.querySelectorAll('.wg__cell--in-range')
 		allCells.forEach(cell => cell.classList.remove('wg__cell--in-range'))
+		syncSelectedAria(ctx)
 		removeRangeBorder()
 
 		// Restore focus on the start cell (was cleared when drag began)
@@ -372,6 +375,7 @@ function handleDocumentKeyDown(e: KeyboardEvent): void {
 		if (selectionState.isDragging) {
 			const allCells = ctx.shadow.querySelectorAll('.wg__cell--in-range')
 			allCells.forEach(cell => cell.classList.remove('wg__cell--in-range'))
+			syncSelectedAria(ctx)
 			removeRangeBorder()
 
 			restoreStartFocus(ctx)

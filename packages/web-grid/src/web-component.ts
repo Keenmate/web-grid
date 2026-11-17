@@ -250,6 +250,7 @@ import {
 
 import type { GridHost } from './modules/grid-context.js'
 import { syncLoadingMoreLoader, removeAllLoaders } from './modules/rendering/loader.js'
+import { applyGridAria } from './modules/rendering/aria.js'
 
 // Core: reactive base class + the input-table converters. web-grid keeps its
 // rich config-object/property API (columns, items, callbacks stay properties);
@@ -2205,6 +2206,10 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 			// Wire up event listeners (only on full rebuild — surgical path keeps them alive)
 			this.attachEventListeners()
 		}
+
+		// role="grid" / "treegrid" + row / column counts (the surgical path keeps the <table>)
+		const table = container.querySelector('.wg__table') as HTMLTableElement | null
+		if (table) applyGridAria(this, table)
 
 		// Post-render focus restore (editor focus + selection / focused-cell restore)
 		// Extracted to modules/navigation/post-render-focus.ts
