@@ -165,12 +165,6 @@ import {
 	type ConnectorState
 } from './modules/toolbar/index.js'
 
-import {
-	parseKeyCombo,
-	matchesKeyCombo,
-	formatKeyCombo
-} from './modules/keyboard/index.js'
-
 import { scrollRowIntoView } from './modules/scroll/reveal.js'
 import {
 	VirtualScrollService,

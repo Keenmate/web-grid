@@ -13,7 +13,7 @@
 import { escapeHtml } from '@keenmate/web-components-core'
 import type { GridHost } from '../grid-context.js'
 import type { GridLabels } from '../../types.js'
-import { formatKeyCombo } from '../keyboard/index.js'
+import { formatShortcut } from '@keenmate/web-components-core/actions'
 
 /**
  * Build the shortcuts-help icon + overlay HTML string. Returns '' when the
@@ -36,7 +36,7 @@ export function renderShortcutsHelpIcon<T>(ctx: GridHost<T>): string {
 	const labels = ctx.engine.labels
 
 	const itemHtml = (shortcut: string, text: string | undefined) => `<div class="wg__shortcuts-help-item">
-			<span class="wg__shortcuts-help-key">${formatKeyCombo(shortcut)}</span>
+			<span class="wg__shortcuts-help-key">${escapeHtml(formatShortcut(shortcut))}</span>
 			<span class="wg__shortcuts-help-label">${escapeHtml(text ?? '')}</span>
 		</div>`
 	const rowItemsHtml = rowShortcuts.map(s =>

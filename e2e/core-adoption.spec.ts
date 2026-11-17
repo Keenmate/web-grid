@@ -86,3 +86,20 @@ test.describe('autocomplete search through createAsyncRunner (test/dropdowns.htm
 		expect(await page.evaluate(() => (window as unknown as { __aborted: string[] }).__aborted)).toContain('x')
 	})
 })
+
+test.describe('shortcuts through core /actions (test/shortcuts.html)', () => {
+	test('Mod+… is Ctrl off Apple; the help shows core-formatted keys', async ({ page }) => {
+		await page.goto('/test/shortcuts.html')
+		await expect(gridLocator(page).locator('tbody tr').first()).toBeVisible()
+		await page.evaluate(() => {
+			const grid = document.querySelector('web-grid') as unknown as { rowShortcuts: unknown[] }
+			const w = window as unknown as { __hits: number[] }
+			w.__hits = []
+			grid.rowShortcuts = [{ shortcut: 'Mod+Shift+Delete', id: 'x', text: 'Mod row', onClick: (ctx: { rowIndex: number }) => w.__hits.push(ctx.rowIndex) }]
+		})
+		await expect(gridLocator(page).locator('.wg__shortcuts-help-key')).toHaveText('Ctrl+Shift+Del')
+		await cell(page, 1, 1).click()
+		await page.keyboard.press('Control+Shift+Delete')
+		await expect.poll(() => page.evaluate(() => (window as unknown as { __hits: number[] }).__hits)).toEqual([1])
+	})
+})

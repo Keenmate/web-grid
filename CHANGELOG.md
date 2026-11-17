@@ -47,6 +47,11 @@ Target: **2.0.0-rc01** — a major: the callback, event and item API below is br
   `labels` input is unchanged. Rulebook C-CA-24.
 - `el.controller` is built by core `createControllerFacade` and is now **frozen** (the same 73 members, forwarded
   to the live engine / element). Rulebook C-CA-34.
+- **Shortcuts through core `/actions`:** `rowShortcuts` / `rangeShortcuts` match with core `matchesShortcut`
+  (new: `Mod` = ⌘ on Apple / Ctrl elsewhere, `Alt`+letter on a Mac matches by key code); the toolbar tooltip
+  and the shortcuts help show core `formatShortcut` text — **visible change:** `Ctrl+D` stays `Ctrl+D`, but key
+  names are the platform's (`Delete` → `Del`, `ArrowUp` → `↑`; Apple `⇧⌘D`), and the text is escaped. The
+  own `key-combo` module and the internal `ParsedKeyCombo` type are gone.
 - e2e: `copy.spec.ts` and the editors fixture no longer touch the real system clipboard (an in-page stub in
   every browser); new `core-adoption.spec.ts`.
 

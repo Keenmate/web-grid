@@ -33,7 +33,7 @@ import type {
 	GridRangeShortcut,
 	RangeContext
 } from '../../interaction.js'
-import { parseKeyCombo, matchesKeyCombo } from '../keyboard/index.js'
+import { matchesShortcut } from '@keenmate/web-components-core/actions'
 import { applySort } from '../events/sort.js'
 
 const ROW_ACTIONS: readonly GridRowAction[] = ['add', 'delete', 'duplicate', 'move-up', 'move-down']
@@ -389,7 +389,7 @@ export function findShortcut<T, S extends GridShortcut<T> | GridRangeShortcut<T>
 ): S | null {
 	if (!shortcuts?.length) return null
 	for (const shortcut of shortcuts) {
-		if (!shortcut?.shortcut || !matchesKeyCombo(e, parseKeyCombo(shortcut.shortcut))) continue
+		if (!shortcut?.shortcut || !matchesShortcut(e, shortcut.shortcut)) continue
 		const resolved = resolveActionItem(shortcut as ActionItem<any, any>, ctx, rowActionDefaults(host, shortcut.action, ctx as RowContext<T>))
 		if (resolved.isVisible && !resolved.isDisabled) return shortcut
 	}

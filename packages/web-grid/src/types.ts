@@ -317,13 +317,6 @@ export type CellRange = {
 }
 
 // Parsed key combination (internal use)
-export type ParsedKeyCombo = {
-	key: string
-	ctrl: boolean
-	shift: boolean
-	alt: boolean
-	meta: boolean
-}
 
 // =============================================================================
 // Component Props

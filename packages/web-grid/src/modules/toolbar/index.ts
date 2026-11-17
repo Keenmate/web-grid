@@ -8,7 +8,7 @@ import type { GridHost } from '../grid-context.js'
 import type { GridAction, GridToolbarEntry, GridToolbarItem } from '../../interaction.js'
 import type { OverlayHandle } from '@keenmate/web-components-core'
 import { anchor as anchorTo, type AnchorHandle, type Placement } from '@keenmate/web-components-core/positioning'
-import { isMenuDivider, resolveActionItem, type ResolvedActionItem } from '@keenmate/web-components-core/actions'
+import { formatShortcut, isMenuDivider, resolveActionItem, type ResolvedActionItem } from '@keenmate/web-components-core/actions'
 import { normalizeEntry, rowActionDefaults } from '../items/index.js'
 
 // =============================================================================
@@ -136,13 +136,6 @@ export function renderToolbarButton<T>(button: ToolbarButton<T>, index: number, 
 }
 
 /**
- * Format a keyboard shortcut for display (e.g., "Ctrl+D" -> "Ctrl + D")
- */
-function formatShortcut(key: string): string {
-	return key.replace(/\+/g, ' + ')
-}
-
-/**
  * Rich tooltip for a toolbar button: the text as heading, `tooltip` as the
  * description, and the shortcut (the item's, or a row shortcut's with the same id / action).
  */
@@ -151,7 +144,7 @@ export function buildToolbarTooltipHtml<T>(button: ToolbarButton<T>, shortcutKey
 	const lines: string[] = [`<span class="wg__tooltip-title">${escapeHtml(r.text)}</span>`]
 	if (r.tooltip) lines.push(`<div class="wg__tooltip-desc">${r.tooltip}</div>`)
 	const shortcut = r.shortcut || shortcutKey
-	if (shortcut) lines.push(`<div class="wg__tooltip-shortcut">${formatShortcut(shortcut)}</div>`)
+	if (shortcut) lines.push(`<div class="wg__tooltip-shortcut">${escapeHtml(formatShortcut(shortcut))}</div>`)
 	return lines.join('')
 }
 

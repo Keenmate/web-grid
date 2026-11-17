@@ -812,6 +812,10 @@ grid.rangeShortcuts = [
 
 Row shortcuts run on the focused / hovered row with the cell ctx; range shortcuts on the selected rows / cell range with `{ rows, rowIndices, cellRange?, cells? }` (custom items only). Both fire `action` with `source: 'keyboard'`. A toolbar item with the same `id` shows the shortcut in its tooltip.
 
+The syntax is core's (`@keenmate/web-components-core/actions`): modifiers `Ctrl`, `Shift`, `Alt` / `Option`,
+`Meta` / `Cmd`, and `Mod` = ⌘ on Apple platforms, Ctrl elsewhere (`'Mod+D'`). The tooltip and the shortcuts
+help show it formatted for the platform (`Ctrl+Shift+Del`, Apple `⇧⌘D`).
+
 ## Paste API
 
 | Property | Type | Description |
