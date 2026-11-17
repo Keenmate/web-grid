@@ -48,8 +48,7 @@ function executeFocusCell(ctx: ExecutorContext, action: FocusCellAction): GridAc
 		ctx.dropdown.setFilterText('')
 
 		// Cancel pending autocomplete search from previous cell
-		ctx.autocomplete.clearDebounceTimer()
-		ctx.autocomplete.abort()
+		ctx.autocomplete.reset()
 	}
 
 	ctx.engine.setFocusedCell(rowIndex, colIndex)

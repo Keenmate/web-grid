@@ -3,6 +3,7 @@
 // Selection, highlighting, scrolling, toggle, open for current editor
 // =============================================================================
 
+import { createTextMatcher } from '../search/text-match.js'
 import { syncLoader } from '../rendering/loader.js'
 import type { EditorOptions } from '../../types.js'
 import type { GridHost } from '../grid-context.js'
@@ -159,10 +160,10 @@ export function openDropdownForCurrentEditor<T>(ctx: GridHost<T>): void {
 		const allOptions = opts.options || []
 		// If there's a filter text (from typing to start editing), filter and highlight first match
 		if (ctx.dropdown.filterText) {
-			const searchLower = ctx.dropdown.filterText.toLowerCase()
+			const isMatch = createTextMatcher(ctx.dropdown.filterText)
 			ctx.dropdown.setOptions(allOptions.filter(opt => {
 				const label = getOptionLabel(opt, opts)
-				return label.toLowerCase().includes(searchLower)
+				return isMatch(label)
 			}))
 			targetIndex = ctx.dropdown.options.length > 0 ? 0 : -1
 		} else {
@@ -308,13 +309,13 @@ export function updateSelectFilter<T>(
 	opts: EditorOptions<any>
 ): void {
 	const allOptions = opts.options || []
-	const searchLower = ctx.dropdown.filterText.toLowerCase()
+	const isMatch = createTextMatcher(ctx.dropdown.filterText)
 	// Save filterText before renderDropdown (which calls removeDropdown that clears it)
 	const savedFilterText = ctx.dropdown.filterText
 
 	ctx.dropdown.setOptions(allOptions.filter(opt => {
 		const label = getOptionLabel(opt, opts)
-		return label.toLowerCase().includes(searchLower)
+		return isMatch(label)
 	}))
 	ctx.dropdown.setHighlightedIndex(ctx.dropdown.options.length > 0 ? 0 : -1)
 

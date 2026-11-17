@@ -1,56 +1,44 @@
 // =============================================================================
-// AutocompleteService — owns the autocomplete search runtime state
+// AutocompleteService — the autocomplete search runtime, on core createAsyncRunner
 // =============================================================================
-// Tracks the debounce timer, the in-flight AbortController for the search
-// request, and the "search in progress" flag the dropdown uses to switch its
-// "Searching…" placeholder on and off.
+// One "latest request wins" runner per grid: the debounce, the AbortSignal of the
+// in-flight `searchCallback`, the stale-answer drop and the "Searching…" state
+// (core createAsyncRunner, SPEC §12.22) — they used to be a hand-written timer,
+// AbortController and flag here.
+
+import { createAsyncRunner, type AsyncRunner } from '@keenmate/web-components-core'
+
+/** Per-search hooks: what the dropdown does when the searching state changes / the search fails. */
+export interface AutocompleteHooks {
+	onLoadingChange(isLoading: boolean): void
+	onError(error: unknown): void
+}
 
 export class AutocompleteService {
-	private _debounceTimer: ReturnType<typeof setTimeout> | null = null
-	private _abortController: AbortController | null = null
-	private _isSearching = false
+	#debounceMs = 300
+	#hooks: AutocompleteHooks | null = null
+	readonly #runner: AsyncRunner = createAsyncRunner({
+		debounceMs: () => this.#debounceMs,
+		onLoadingChange: (isLoading) => this.#hooks?.onLoadingChange(isLoading),
+		onError: (error) => this.#hooks?.onError(error)
+	})
 
-	/** True between the moment a search fires and its resolution (or its abort). */
-	get isSearching(): boolean { return this._isSearching }
-	setIsSearching(value: boolean): void { this._isSearching = value }
-
-	/** Pending debounce timeout for the next search trigger, or null. */
-	get debounceTimer(): ReturnType<typeof setTimeout> | null { return this._debounceTimer }
-
-	setDebounceTimer(handle: ReturnType<typeof setTimeout> | null): void {
-		this._debounceTimer = handle
-	}
-
-	/** Cancel any pending debounce. No-op when none is scheduled. */
-	clearDebounceTimer(): void {
-		if (this._debounceTimer !== null) {
-			clearTimeout(this._debounceTimer)
-			this._debounceTimer = null
-		}
-	}
-
-	/** AbortController for the current in-flight search, or null. */
-	get abortController(): AbortController | null { return this._abortController }
-
-	setAbortController(controller: AbortController | null): void {
-		this._abortController = controller
-	}
-
-	/** Abort any in-flight search and clear the controller reference. */
-	abort(): void {
-		if (this._abortController !== null) {
-			this._abortController.abort()
-			this._abortController = null
-		}
-	}
+	/** True while an async search is running — the dropdown shows "Searching…". */
+	get isSearching(): boolean { return this.#runner.isLoading }
 
 	/**
-	 * Cancel debounce + abort in-flight search + clear isSearching. Used when
-	 * the editor loses focus or the user cancels.
+	 * Run `task` after `debounceMs`, replacing the previous search: its debounce is dropped, its
+	 * signal aborts, a late answer from it is ignored. A synchronous task (local filtering) never
+	 * shows the searching state.
 	 */
+	search<R>(debounceMs: number, task: (signal: AbortSignal) => R | PromiseLike<R>, onResult: (result: R) => void, hooks: AutocompleteHooks): void {
+		this.#debounceMs = debounceMs
+		this.#hooks = hooks
+		this.#runner.run(task, onResult)
+	}
+
+	/** Drop the pending / running search and leave the searching state — another cell, blur, cancel. */
 	reset(): void {
-		this.clearDebounceTimer()
-		this.abort()
-		this._isSearching = false
+		this.#runner.cancel()
 	}
 }

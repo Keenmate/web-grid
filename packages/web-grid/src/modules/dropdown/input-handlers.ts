@@ -3,6 +3,7 @@
 // Handle combobox filtering and autocomplete async search
 // =============================================================================
 
+import { createTextMatcher } from '../search/text-match.js'
 import type { Column } from '../../types.js'
 import type { GridHost } from '../grid-context.js'
 import { getOptionLabel, withEmptyOption } from './options.js'
@@ -33,10 +34,10 @@ export function handleComboboxInput<T>(ctx: GridHost<T>, e: Event): void {
 
 	// Filter options
 	if (ctx.dropdown.filterText.trim()) {
-		const searchLower = ctx.dropdown.filterText.toLowerCase()
+		const isMatch = createTextMatcher(ctx.dropdown.filterText)
 		ctx.dropdown.setOptions(allOptions.filter(opt => {
 			const label = getOptionLabel(opt, opts)
-			return label.toLowerCase().includes(searchLower)
+			return isMatch(label)
 		}))
 	} else {
 		ctx.dropdown.setOptions(withEmptyOption(allOptions, opts, opts.labels?.dropdownEmptyOption ?? ctx.engine.labels.dropdownEmptyOption))
@@ -82,9 +83,6 @@ export function handleAutocompleteInput<T>(ctx: GridHost<T>, e: Event): void {
 	const debounceMs = opts.debounceMs ?? 300
 	const minLength = opts.minSearchLength ?? 1
 
-	// Clear existing timer
-	ctx.autocomplete.clearDebounceTimer()
-
 	// Show dropdown immediately with initial options
 	const wrapper = input.closest('.wg__editor--autocomplete') as HTMLElement
 	if (!ctx.dropdown.isOpen && wrapper) {
@@ -97,8 +95,9 @@ export function handleAutocompleteInput<T>(ctx: GridHost<T>, e: Event): void {
 		ctx.dropdown.setFilterText(query)
 	}
 
-	// Check minimum length
+	// Check minimum length — too short: drop the pending / running search
 	if (query.length < minLength) {
+		ctx.autocomplete.reset()
 		ctx.dropdown.setOptions(query ? (opts.initialOptions || []) : withEmptyOption(opts.initialOptions || [], opts, opts.labels?.dropdownEmptyOption ?? ctx.engine.labels.dropdownEmptyOption))
 		if (wrapper) {
 			const dropdown = renderDropdown(ctx, wrapper, ctx.dropdown.options, opts)
@@ -109,111 +108,64 @@ export function handleAutocompleteInput<T>(ctx: GridHost<T>, e: Event): void {
 		return
 	}
 
-	// Debounced search
-	ctx.autocomplete.setDebounceTimer(setTimeout(() => {
-		performAutocompleteSearch(ctx, query, column)
-	}, debounceMs))
+	// Debounced search (latest wins: a new keystroke drops the pending / running one)
+	startAutocompleteSearch(ctx, query, column, debounceMs)
+}
+
+/** Re-render the open autocomplete dropdown of the cell being edited with the current options. */
+function rerenderAutocomplete<T>(ctx: GridHost<T>, opts: Column<T>['editorOptions'] & object, highlightIndex?: number): void {
+	const editingCell = ctx.engine.editingCell
+	if (!editingCell) return
+	const { rowIndex, field } = editingCell
+	// Specific selector: a stale editor of another cell may still be in the DOM
+	const wrapper = ctx.shadow.querySelector(
+		`.wg__editor--autocomplete[data-row="${rowIndex}"][data-field="${field}"]`
+	) as HTMLElement
+	if (!wrapper) return
+	const dropdown = renderDropdown(ctx, wrapper, ctx.dropdown.options, opts)
+	attachDropdownListeners(ctx, dropdown)
+	if (highlightIndex !== undefined) ctx.dropdown.setHighlightedIndex(highlightIndex)
+	updateDropdownHighlight(ctx)
 }
 
 /**
- * Perform async autocomplete search
- * If no searchCallback is provided, falls back to local filtering of initialOptions
+ * Run the autocomplete search for `query` through the grid's runner (core createAsyncRunner):
+ * the column's `searchCallback` gets `{ term, signal }` and only the latest answer is shown;
+ * without a `searchCallback`, `initialOptions` / `options` are filtered locally (like a combobox).
  */
-export async function performAutocompleteSearch<T>(
+export function startAutocompleteSearch<T>(
 	ctx: GridHost<T>,
 	query: string,
-	column: Column<T>
-): Promise<void> {
+	column: Column<T>,
+	debounceMs = 0
+): void {
 	const opts = column.editorOptions || {}
-
-	// If no searchCallback, fall back to local filtering (like combobox)
-	if (!opts.searchCallback) {
-		const allOptions = opts.initialOptions || opts.options || []
-		const searchLower = query.toLowerCase()
-		ctx.dropdown.setOptions(allOptions.filter(opt => {
-			const label = getOptionLabel(opt, opts)
-			return label.toLowerCase().includes(searchLower)
-		}))
-		ctx.dropdown.setHighlightedIndex(ctx.dropdown.options.length > 0 ? 0 : -1)
-
-		const editingCell = ctx.engine.editingCell
-		if (editingCell) {
-			const { rowIndex, field } = editingCell
-			const wrapper = ctx.shadow.querySelector(
-				`.wg__editor--autocomplete[data-row="${rowIndex}"][data-field="${field}"]`
-			) as HTMLElement
-			if (wrapper) {
-				const dropdown = renderDropdown(ctx, wrapper, ctx.dropdown.options, opts)
-				attachDropdownListeners(ctx, dropdown)
-				updateDropdownHighlight(ctx)
-			}
+	const searchCallback = opts.searchCallback
+	const task = (signal: AbortSignal) => {
+		if (!searchCallback) {
+			const isMatch = createTextMatcher(query)
+			return (opts.initialOptions || opts.options || []).filter(opt => isMatch(getOptionLabel(opt, opts)))
 		}
-		return
+		const cell = ctx.engine.editingCell
+		if (!cell) return null
+		const item = ctx.engine.displayItems[cell.rowIndex]
+		const col = ctx.engine.columns.find(c => String(c.field) === cell.field)
+		if (!col) return null
+		return searchCallback(Object.assign(ctx.engine.cellCtx(item, cell.rowIndex, col), { term: query, signal }))
 	}
 
-	// Cancel previous request
-	ctx.autocomplete.abort()
-
-	const controller = new AbortController()
-	ctx.autocomplete.setAbortController(controller)
-	const signal = controller.signal
-
-	// Show loading
-	ctx.autocomplete.setIsSearching(true)
-	updateLoadingIndicator(ctx, true, opts.labels?.dropdownSearching ?? ctx.engine.labels.dropdownSearching)
-
-	try {
-		const editingCell = ctx.engine.editingCell
-		if (!editingCell) return
-
-		const item = ctx.engine.displayItems[editingCell.rowIndex]
-		const column = ctx.engine.columns.find(c => String(c.field) === editingCell.field)
-		if (!column) return
-		const results = await opts.searchCallback(Object.assign(
-			ctx.engine.cellCtx(item, editingCell.rowIndex, column),
-			{ term: query, signal }
-		))
-
-		if (!signal.aborted) {
-			// Clear searching state BEFORE rendering so dropdown shows correct message
-			ctx.autocomplete.setIsSearching(false)
-			updateLoadingIndicator(ctx, false)
-
-			ctx.dropdown.setOptions(results)
-
-			// Use specific selector to avoid finding stale editor elements
-			const { rowIndex, field } = editingCell
-			const wrapper = ctx.shadow.querySelector(
-				`.wg__editor--autocomplete[data-row="${rowIndex}"][data-field="${field}"]`
-			) as HTMLElement
-			if (wrapper) {
-				const dropdown = renderDropdown(ctx, wrapper, ctx.dropdown.options, opts)
-				attachDropdownListeners(ctx, dropdown)
-				ctx.dropdown.setHighlightedIndex(results.length > 0 ? 0 : -1)
-				updateDropdownHighlight(ctx)
-			}
+	ctx.autocomplete.search(debounceMs, task, (results) => {
+		if (!results) return
+		ctx.dropdown.setOptions(results)
+		if (!searchCallback) ctx.dropdown.setHighlightedIndex(results.length > 0 ? 0 : -1)
+		rerenderAutocomplete(ctx, opts, searchCallback ? (results.length > 0 ? 0 : -1) : undefined)
+	}, {
+		// The runner turns the state off BEFORE onResult, so the dropdown renders the right message.
+		onLoadingChange: (isLoading) => updateLoadingIndicator(ctx, isLoading, isLoading ? (opts.labels?.dropdownSearching ?? ctx.engine.labels.dropdownSearching) : ''),
+		onError: (error) => {
+			dataLogger.error('Autocomplete search failed:', error)
+			ctx.dropdown.setOptions([])
+			rerenderAutocomplete(ctx, opts)
 		}
-	} catch (error) {
-		if (error instanceof Error && error.name === 'AbortError') {
-			return // Expected - ignore
-		}
-		dataLogger.error('Autocomplete search failed:', error)
-
-		// Clear searching state BEFORE rendering
-		ctx.autocomplete.setIsSearching(false)
-		updateLoadingIndicator(ctx, false)
-
-		ctx.dropdown.setOptions([])
-		const editingCell = ctx.engine.editingCell
-		if (editingCell) {
-			const { rowIndex, field } = editingCell
-			const wrapper = ctx.shadow.querySelector(
-				`.wg__editor--autocomplete[data-row="${rowIndex}"][data-field="${field}"]`
-			) as HTMLElement
-			if (wrapper) {
-				const dropdown = renderDropdown(ctx, wrapper, ctx.dropdown.options, opts)
-				attachDropdownListeners(ctx, dropdown)
-			}
-		}
-	}
+	})
 }

@@ -52,3 +52,37 @@ test.describe('page-wide locale (test/datepicker.html)', () => {
 		await expect(page.locator('.wg-datepicker')).toContainText('Juni')
 	})
 })
+
+test.describe('autocomplete search through createAsyncRunner (test/dropdowns.html)', () => {
+	test('only the latest answer is shown; the replaced request is aborted', async ({ page }) => {
+		await page.goto('/test/dropdowns.html')
+		await expect(gridLocator(page).locator('tbody tr').first()).toBeVisible()
+		// The first term answers late (and would win a naive race); the second answers at once.
+		await page.evaluate(() => {
+			const grid = document.querySelector('web-grid') as unknown as { columns: Array<Record<string, any>> }
+			const w = window as unknown as { __aborted: string[] }
+			w.__aborted = []
+			grid.columns = grid.columns.map((c) => c.field !== 'assignee' ? c : {
+				...c,
+				editorOptions: {
+					...c.editorOptions,
+					debounceMs: 0,
+					searchCallback: ({ term, signal }: { term: string; signal: AbortSignal }) => {
+						signal.addEventListener('abort', () => w.__aborted.push(term))
+						const delay = term === 'x' ? 600 : 10
+						return new Promise((r) => setTimeout(() => r([{ value: `${term}-result`, label: `${term}-result` }]), delay))
+					}
+				}
+			})
+		})
+		await cell(page, 0, 4).click()
+		await page.keyboard.press('F2')
+		const input = cell(page, 0, 4).locator('.wg__autocomplete-input')
+		await input.pressSequentially('xy', { delay: 50 })
+		const options = gridLocator(page).locator('.wg__dropdown .wg__dropdown-option')
+		await expect(options.filter({ hasText: 'xy-result' })).toBeVisible()
+		await page.waitForTimeout(800) // the late 'x' answer arrives — and is dropped
+		await expect(options.filter({ hasText: 'x-result' }).filter({ hasNotText: 'xy' })).toHaveCount(0)
+		expect(await page.evaluate(() => (window as unknown as { __aborted: string[] }).__aborted)).toContain('x')
+	})
+})

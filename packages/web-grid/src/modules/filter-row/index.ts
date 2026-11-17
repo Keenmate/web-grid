@@ -17,23 +17,28 @@
 
 import type { GridHost } from '../grid-context.js'
 import { guardPageChange } from '../events/page-change.js'
+import { createDebounce, type Debounce } from '@keenmate/web-components-core'
 
 export const FILTER_DEBOUNCE_MS = 300
 
-/** Per-grid state: typed text not applied yet + its debounce timers. */
+/** Per-grid state: typed text not applied yet + one debounce per field (core createDebounce). */
 export class FilterRowService {
 	readonly pendingText = new Map<string, string>()
-	readonly timers = new Map<string, ReturnType<typeof setTimeout>>()
+	readonly #debounces = new Map<string, Debounce<[() => void]>>()
+
+	/** Run `apply` once typing in `field` pauses for FILTER_DEBOUNCE_MS (the last call wins). */
+	schedule(field: string, apply: () => void): void {
+		let debounce = this.#debounces.get(field)
+		if (!debounce) this.#debounces.set(field, (debounce = createDebounce((run: () => void) => run(), FILTER_DEBOUNCE_MS)))
+		debounce.schedule(apply)
+	}
 
 	clearTimer(field: string): void {
-		const t = this.timers.get(field)
-		if (t !== undefined) clearTimeout(t)
-		this.timers.delete(field)
+		this.#debounces.get(field)?.cancel()
 	}
 
 	reset(): void {
-		for (const t of this.timers.values()) clearTimeout(t)
-		this.timers.clear()
+		for (const debounce of this.#debounces.values()) debounce.cancel()
 		this.pendingText.clear()
 	}
 }
@@ -104,8 +109,7 @@ export function attachFilterRowListeners<T>(ctx: GridHost<T>, container: HTMLEle
 		const text = (input as HTMLInputElement).value
 		const svc = ctx.filterRow
 		svc.pendingText.set(field, text)
-		svc.clearTimer(field)
-		svc.timers.set(field, setTimeout(() => applyFilterInput(ctx, field, text), FILTER_DEBOUNCE_MS))
+		svc.schedule(field, () => applyFilterInput(ctx, field, text))
 	})
 	container.addEventListener('keydown', (e: KeyboardEvent) => {
 		const input = e.target as HTMLElement

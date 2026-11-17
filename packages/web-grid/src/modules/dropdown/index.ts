@@ -40,7 +40,7 @@ export {
 export {
 	handleComboboxInput,
 	handleAutocompleteInput,
-	performAutocompleteSearch
+	startAutocompleteSearch
 } from './input-handlers.js'
 
 // Services

@@ -30,6 +30,13 @@ Target: **2.0.0-rc01** — a major: the callback, event and item API below is br
 - Reduced motion: the own `prefers-reduced-motion` zeroing of `--wg-transition-*` and the date editor's scroll
   behaviour is gone — they follow `--base-duration-*` / `--base-scroll-behavior`, which core `MOTION_CSS` zeroes
   under the OS setting and under `motion="none"`. The loader still slows down.
+- **Dropdown / combobox / autocomplete option filtering ignores case and diacritics** (core `/search`:
+  `ces` finds `Česká`, `strasse` finds `Straße`; was `toLowerCase().includes`). The filter row keeps its plain
+  case-insensitive match for now (core's normalization is too slow for a 100k-row pass — reported).
+- The autocomplete search runs through core `createAsyncRunner` (one "latest request wins" runner per grid:
+  debounce, the `searchCallback`'s `signal` aborted when a newer term replaces it, a late answer dropped, the
+  "Searching…" state); a term shorter than `minSearchLength` now also drops a pending / running search. The
+  filter row's per-field debounce is core `createDebounce`.
 - e2e: `copy.spec.ts` and the editors fixture no longer touch the real system clipboard (an in-page stub in
   every browser); new `core-adoption.spec.ts`.
 
