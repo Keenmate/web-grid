@@ -71,6 +71,9 @@ Target: **2.0.0-rc01** — a major: the callback, event and item API below is br
   `aria-expanded`, `aria-controls` and `aria-activedescendant` (core `createActiveDescendant`,
   `shouldHandleKeys: false`: the grid keeps its keys), the panel `role="listbox"`, options `role="option"` +
   `aria-selected`. Screen readers now announce the highlighted option. Rulebook C-CA-25.
+- Row selection (the selected display indices + the Shift-click anchor) is core `createSelection`; the click /
+  Ctrl / Shift / Ctrl+Shift rules, `selectRow(rowIndex, mode)`, `selectRowRange()` and the `row-selection-change`
+  event are unchanged. Rulebook C-CA-27.
 - e2e: `copy.spec.ts` and the editors fixture no longer touch the real system clipboard (an in-page stub in
   every browser); new `core-adoption.spec.ts`.
 

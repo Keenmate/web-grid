@@ -92,7 +92,7 @@ const isThenable = (v: unknown): v is PromiseLike<unknown> =>
 	!!v && (typeof v === 'object' || typeof v === 'function') && typeof (v as { then?: unknown }).then === 'function'
 
 import type { StateStore } from '@keenmate/web-components-core'
-import { copyText, escapeHtml, renderSlotHtml } from '@keenmate/web-components-core'
+import { copyText, createSelection, escapeHtml, renderSlotHtml, type Selection } from '@keenmate/web-components-core'
 // Date formatting utilities for auto-formatting date columns
 import { parseFormat, formatDate } from './modules/datepicker/index.js'
 import { bindOptionContext } from './modules/dropdown/options.js'
@@ -302,8 +302,11 @@ export class GridEngine<T = unknown> {
 	protected _onInteractionChange: ((type: 'hoveredRow' | 'focusedCell' | 'editingCell' | 'focusedRow', detail: { prev: any, current: any }) => void) | null = null
 
 	// Row selection state
-	protected _selectedRowIndices: Set<number> = new Set()
-	protected _lastSelectedRowIndex: number | null = null  // For Shift+Click range selection
+	// Row selection by display index: core createSelection (SPEC §12.27) — the set + the anchor
+	// (Shift+click range start); the grid notifies through trackSelection(), not onChange.
+	protected _rowSelection: Selection<number> = createSelection<number>({
+		getOrderedKeys: () => this.displayItems.map((_, i) => i)
+	})
 	protected _rangeShortcuts: GridRangeShortcut<T>[] = []
 
 	// Cell range selection state
@@ -1115,7 +1118,7 @@ export class GridEngine<T = unknown> {
 	// Row selection
 	/** Display indices of the selected rows, ascending. */
 	get selectedRowIndices(): number[] {
-		return Array.from(this._selectedRowIndices).sort((a, b) => a - b)
+		return this._rowSelection.values().sort((a, b) => a - b)
 	}
 
 	/** The selected row objects, in display order. */
@@ -1130,7 +1133,7 @@ export class GridEngine<T = unknown> {
 	}
 
 	isRowSelected(rowIndex: number): boolean {
-		return this._selectedRowIndices.has(rowIndex)
+		return this._rowSelection.has(rowIndex)
 	}
 
 	selectRow(rowIndex: number, mode: 'replace' | 'toggle' | 'range' = 'replace'): void {
@@ -1148,29 +1151,14 @@ export class GridEngine<T = unknown> {
 
 		switch (mode) {
 			case 'replace':
-				this._selectedRowIndices.clear()
-				this._selectedRowIndices.add(rowIndex)
-				this._lastSelectedRowIndex = rowIndex
+				this._rowSelection.click(rowIndex)
 				break
 			case 'toggle':
-				if (this._selectedRowIndices.has(rowIndex)) {
-					this._selectedRowIndices.delete(rowIndex)
-				} else {
-					this._selectedRowIndices.add(rowIndex)
-				}
-				this._lastSelectedRowIndex = rowIndex
+				this._rowSelection.toggle(rowIndex)
 				break
 			case 'range':
-				if (this._lastSelectedRowIndex !== null) {
-					const start = Math.min(this._lastSelectedRowIndex, rowIndex)
-					const end = Math.max(this._lastSelectedRowIndex, rowIndex)
-					for (let i = start; i <= end; i++) {
-						this._selectedRowIndices.add(i)
-					}
-				} else {
-					this._selectedRowIndices.add(rowIndex)
-					this._lastSelectedRowIndex = rowIndex
-				}
+				// Added to the selection from the anchor (kept); no anchor → this row becomes it
+				this._rowSelection.extendTo(rowIndex, { isAdditive: true })
 				break
 		}
 	}
@@ -1181,20 +1169,16 @@ export class GridEngine<T = unknown> {
 			this._selectedColumns.clear()
 			this._selectedCellRange = null
 
-			this._selectedRowIndices.clear()
-			const start = Math.min(fromIndex, toIndex)
-			const end = Math.max(fromIndex, toIndex)
-			for (let i = start; i <= end; i++) {
-				this._selectedRowIndices.add(i)
-			}
-			this._lastSelectedRowIndex = toIndex
+			this._rowSelection.setAnchor(fromIndex)
+			this._rowSelection.extendTo(toIndex)
+			this._rowSelection.setAnchor(toIndex)
 		})
 		this.requestUpdate()
 	}
 
 	/** Clear every selection kind — rows, the cell range and columns (one notification per kind that changed). */
 	clearSelection(): void {
-		if (this._selectedRowIndices.size === 0 && !this._selectedCellRange && this._selectedColumns.size === 0) return
+		if (this._rowSelection.size === 0 && !this._selectedCellRange && this._selectedColumns.size === 0) return
 		this.trackSelection(() => {
 			this.clearRowSelection_noRender()
 			this.clearCellSelection_noRender()
@@ -1211,17 +1195,17 @@ export class GridEngine<T = unknown> {
 	keepRowSelection(): () => void {
 		const display = this.displayItems
 		const rows = this.selectedRowIndices.map(i => display[i]).filter(r => r !== undefined)
-		const anchor = this._lastSelectedRowIndex === null ? undefined : display[this._lastSelectedRowIndex]
+		const anchorIndex = this._rowSelection.anchor
+		const anchor = anchorIndex === null ? undefined : display[anchorIndex]
 		return () => {
 			if (rows.length === 0) return
 			const now = this.displayItems
 			const next = rows.map(r => now.indexOf(r)).filter(i => i >= 0)
-			if (next.length === this._selectedRowIndices.size && next.every(i => this._selectedRowIndices.has(i))) return
+			if (next.length === this._rowSelection.size && next.every(i => this._rowSelection.has(i))) return
 			this.trackSelection(() => {
-				this._selectedRowIndices.clear()
-				for (const i of next) this._selectedRowIndices.add(i)
+				this._rowSelection.set(next)
 				const a = anchor === undefined ? -1 : now.indexOf(anchor)
-				this._lastSelectedRowIndex = a >= 0 ? a : null
+				this._rowSelection.setAnchor(a >= 0 ? a : null)
 			})
 			this.requestUpdate()
 		}
@@ -1229,7 +1213,7 @@ export class GridEngine<T = unknown> {
 
 	/** Clear only the row selection. */
 	clearRowSelection(): void {
-		if (this._selectedRowIndices.size > 0) {
+		if (this._rowSelection.size > 0) {
 			this.clearRowSelection_noRender()
 			this.requestUpdate()
 		}
@@ -1238,8 +1222,8 @@ export class GridEngine<T = unknown> {
 	/** Clear row selection state without triggering re-render (caller handles visuals) */
 	clearRowSelection_noRender(): void {
 		this.trackSelection(() => {
-			this._selectedRowIndices.clear()
-			this._lastSelectedRowIndex = null
+			this._rowSelection.clear()
+			this._rowSelection.setAnchor(null)
 		})
 	}
 
@@ -2070,9 +2054,9 @@ export class GridEngine<T = unknown> {
 		interactionLogger.debug('selectCellRange:', { startRow: range.startRowIndex, startCol: range.startColIndex, endRow: range.endRowIndex, endCol: range.endColIndex })
 		this.trackSelection(() => {
 			// Clear row and column selection when selecting cells
-			if (this._selectedRowIndices.size > 0) {
-				this._selectedRowIndices.clear()
-				this._lastSelectedRowIndex = null
+			if (this._rowSelection.size > 0) {
+				this._rowSelection.clear()
+				this._rowSelection.setAnchor(null)
 			}
 			this._selectedColumns.clear()
 
@@ -2140,7 +2124,7 @@ export class GridEngine<T = unknown> {
 
 	private selectColumnState(colIndex: number, mode: 'replace' | 'toggle' | 'range'): void {
 		// Clear row selection and cell range when selecting columns
-		this._selectedRowIndices.clear()
+		this._rowSelection.clear()
 		this._selectedCellRange = null
 
 		if (mode === 'replace') {
@@ -2197,7 +2181,7 @@ export class GridEngine<T = unknown> {
 	selectColumnRangeAt(fromIndex: number, toIndex: number): void {
 		this.trackSelection(() => {
 			// Clear row selection and cell range when selecting columns
-			this._selectedRowIndices.clear()
+			this._rowSelection.clear()
 			this._selectedCellRange = null
 
 			this._selectedColumns.clear()
