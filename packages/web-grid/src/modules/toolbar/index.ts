@@ -10,6 +10,7 @@ import type { OverlayHandle } from '@keenmate/web-components-core'
 import { anchor as anchorTo, type AnchorHandle, type Placement } from '@keenmate/web-components-core/positioning'
 import { formatShortcut, isMenuDivider, resolveActionItem, type ResolvedActionItem } from '@keenmate/web-components-core/actions'
 import { normalizeEntry, rowActionDefaults } from '../items/index.js'
+import { removeConnector } from './connector-renderer.js'
 
 // =============================================================================
 // Offset Helpers
@@ -436,7 +437,7 @@ export function closeToolbar<T>(ctx: GridHost<T>): void {
 	}
 	// Reset connector state, and take a drawn connector line down with the toolbar
 	setConnector(ctx, NO_CONNECTOR)
-	ctx.shadow.querySelector('.wg__connector')?.remove()
+	removeConnector(ctx)
 }
 
 /** Hand the open toolbar its overlay-tree registration (destroyed when the toolbar closes). */
@@ -743,4 +744,4 @@ export {
 
 export { attachToolbarListeners } from './event-listeners.js'
 
-export { renderConnector } from './connector-renderer.js'
+export { renderConnector, removeConnector } from './connector-renderer.js'

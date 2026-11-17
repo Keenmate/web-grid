@@ -35,9 +35,9 @@ other Keenmate components and the page's own dialogs.
 | Phone sheet | `--wg-z-sheet` | `--base-z-modal` (7000) | `.wg__dropdown--sheet`, the date editor's sheet |
 | Go-to-row dialog | `--wg-z-dialog` | `--base-z-modal` (7000) | `.wg__goto-overlay` |
 | Dropdown | `--wg-z-dropdown` | `--base-z-dropdown` (7500) | Dropdown popover, date editor panel |
-| Toolbar | `--wg-z-toolbar` | `--base-z-popover` (7600) | `.wg__toolbar-container` (its connector one below) |
+| Toolbar | `--wg-z-toolbar` | `--base-z-popover` (7600) | `.wg__toolbar-container`; its connector one below, in a core `createLayer()` layer outside the grid |
 | Tooltip | `--wg-z-tooltip` | `--base-z-tooltip` (9000) | `.wg__tooltip` |
-| Reorder ghost | `--wg-z-reorder-ghost` | `--base-z-tooltip` (9000) | `.wg__reorder-ghost` |
+| Reorder ghost | `--wg-z-reorder-ghost` | `--base-z-tooltip` (9000) | `.wg__reorder-ghost` (a core `createLayer()` layer outside the grid) |
 | Context menu | `--wg-context-menu-z-index` (unset → `--km-menu-z-index`) | 9001 (`--base-z-tooltip` + 1) | `.km-menu` (core `openMenu()`) |
 
 ## Key Constraints

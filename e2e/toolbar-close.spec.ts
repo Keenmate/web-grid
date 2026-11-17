@@ -58,7 +58,8 @@ async function snap(page: Page, id: string): Promise<Snap> {
 			actions: (((window as unknown as { __events?: Logged[] }).__events) ?? [])
 				.filter((e) => e.via === 'event' && e.grid === id && e.type === 'action')
 				.map((e) => `${e.detail.id ?? e.detail.action}:${e.detail.rowIndex}`),
-			connector: root.querySelectorAll('.wg__connector').length
+			// the connector is a core layer outside the grid (modules/layers.ts)
+			connector: [...document.querySelectorAll('.km-layer')].filter((l) => l.shadowRoot?.querySelector('.wg__connector svg')).length
 		}
 	}, id)
 }

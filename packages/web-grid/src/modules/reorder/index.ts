@@ -7,13 +7,16 @@
 // and a drop indicator marks the slot; the drop moves the column (`column-reorder`).
 
 import { createPointerDrag, type PointerDrag } from '@keenmate/web-components-core'
+import type { Layer } from '@keenmate/web-components-core/positioning'
 import type { GridHost } from '../grid-context.js'
+import { openGridLayer } from '../layers/index.js'
 
 /** An active (or armed) reorder of one grid. */
 interface ReorderState {
 	field: string
 	headerCell: HTMLElement
-	ghost: HTMLElement | null
+	/** The ghost's core layer (modules/layers/index.ts): outside the grid, so no overflow clips it. */
+	ghost: Layer | null
 	dropIndicator: HTMLElement | null
 	fromIndex: number
 	currentDropIndex: number
@@ -60,7 +63,7 @@ export function createColumnReorder<T>(ctx: GridHost<T>, host: HTMLElement): Poi
 
 	const cleanup = (): void => {
 		if (!state) return
-		state.ghost?.remove()
+		state.ghost?.destroy()
 		state.dropIndicator?.remove()
 		ctx.shadow.querySelector('.wg')?.classList.remove('wg--reordering')
 		state.headerCell.classList.remove('wg__header--dragging')
@@ -71,9 +74,8 @@ export function createColumnReorder<T>(ctx: GridHost<T>, host: HTMLElement): Poi
 
 	const placeGhost = (x: number, y: number): void => {
 		if (!state?.ghost) return
-		// Viewport coordinates (the ghost is position: fixed)
-		state.ghost.style.left = `${x + 10}px`
-		state.ghost.style.top = `${y - 10}px`
+		// Viewport coordinates; the ghost sizes to its title inside the 0 × 0 layer
+		state.ghost.place({ left: x + 10, top: y - 10, width: 0, height: 0 })
 	}
 
 	return createPointerDrag(host, {
@@ -91,11 +93,9 @@ export function createColumnReorder<T>(ctx: GridHost<T>, host: HTMLElement): Poi
 			activeDrags++
 			ctx.shadow.querySelector('.wg')?.classList.add('wg--reordering')
 			state.headerCell.classList.add('wg__header--dragging')
-			// Ghost in the shadow root (not the .wg container) so the container's overflow can't clip it
-			const ghost = document.createElement('div')
-			ghost.className = 'wg__reorder-ghost'
-			ghost.textContent = state.headerCell.querySelector('.wg__header-title')?.textContent || ''
-			ctx.shadow.appendChild(ghost)
+			// Ghost in a core layer outside the grid (no overflow clips it; the hit test sees through it)
+			const ghost = openGridLayer(ctx, 'wg__reorder-ghost', '--wg-z-reorder-ghost')
+			ghost.element.textContent = state.headerCell.querySelector('.wg__header-title')?.textContent || ''
 			state.ghost = ghost
 			placeGhost(x, y)
 			const indicator = document.createElement('div')

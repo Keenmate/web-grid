@@ -12,22 +12,7 @@
   outline-offset: -2px;
 }
 
-/* Ghost element that follows cursor - fixed to viewport for simplicity */
-.wg__reorder-ghost {
-  position: fixed;
-  z-index: var(--wg-z-reorder-ghost);
-  background: var(--wg-header-bg);
-  border: 2px solid var(--wg-accent-color);
-  border-radius: var(--wg-border-radius-sm);
-  padding: 0.4em 0.8em;
-  font-size: var(--wg-font-size-sm);
-  font-weight: var(--wg-header-font-weight);
-  color: var(--wg-header-color);
-  box-shadow: var(--wg-dialog-shadow);
-  opacity: 0.95;
-  pointer-events: none;
-  white-space: nowrap;
-}
+/* The drag ghost lives in a core layer outside the grid: css/layers.css */
 
 /* Drop indicator line - top/height set dynamically to account for scroll */
 .wg__drop-indicator {

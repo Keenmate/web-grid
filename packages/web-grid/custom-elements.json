@@ -16349,6 +16349,56 @@
     },
     {
       "kind": "javascript-module",
+      "path": "src/modules/layers/index.ts",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "openGridLayer",
+          "return": {
+            "type": {
+              "text": "Layer"
+            }
+          },
+          "parameters": [
+            {
+              "name": "ctx",
+              "type": {
+                "text": "GridHost<T>"
+              }
+            },
+            {
+              "name": "className",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "name": "zIndexToken",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "name": "zIndexOffset",
+              "default": "0"
+            }
+          ],
+          "description": "Open a non-interactive grid layer (`pointer-events: none`: the hit test sees through it) stacked at\n`zIndexToken` (+ `zIndexOffset`)."
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "openGridLayer",
+          "declaration": {
+            "name": "openGridLayer",
+            "module": "src/modules/layers/index.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
       "path": "src/modules/navigation/cell-keydown.ts",
       "declarations": [
         {
@@ -16799,6 +16849,24 @@
             }
           ],
           "description": "Handle focus leaving the table\nDefers cleanup to allow focus transitions to complete"
+        },
+        {
+          "kind": "function",
+          "name": "isFocusInGrid",
+          "return": {
+            "type": {
+              "text": "boolean"
+            }
+          },
+          "parameters": [
+            {
+              "name": "ctx",
+              "type": {
+                "text": "GridHost<T>"
+              }
+            }
+          ],
+          "description": "Does this grid hold the focus — the host itself, its light DOM, or anything in its own\nshadow tree (at any depth: a custom editor's own shadow root included)?\nNot `document.activeElement`: inside another component's shadow root that is the OUTER\nhost, never this grid. Own shadow tree = `ctx.shadow.activeElement` (non-null exactly when\nthe focus is somewhere below this shadow root, whatever root the grid itself sits in);\nhost / light DOM = core `deepActiveElement()` (the real focused element across roots)."
         }
       ],
       "exports": [
@@ -16903,6 +16971,14 @@
           "name": "handleTableFocusOut",
           "declaration": {
             "name": "handleTableFocusOut",
+            "module": "src/modules/navigation/focus.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "isFocusInGrid",
+          "declaration": {
+            "name": "isFocusInGrid",
             "module": "src/modules/navigation/focus.ts"
           }
         }
@@ -19941,6 +20017,24 @@
       "declarations": [
         {
           "kind": "function",
+          "name": "removeConnector",
+          "return": {
+            "type": {
+              "text": "void"
+            }
+          },
+          "parameters": [
+            {
+              "name": "ctx",
+              "type": {
+                "text": "GridHost<T>"
+              }
+            }
+          ],
+          "description": "Take the grid's connector line down (its layer destroyed)."
+        },
+        {
+          "kind": "function",
           "name": "renderConnector",
           "return": {
             "type": {
@@ -19955,10 +20049,18 @@
               }
             }
           ],
-          "description": "Re-paint the SVG connector. No-op (after removing any previous connector)\nwhen the upstream state doesn't have a path or arrow position — i.e.\nthe toolbar isn't anchored to a row."
+          "description": "Re-paint the SVG connector. Removes the connector when the upstream state\ndoesn't have a path or arrow position — i.e. the toolbar isn't anchored to a row."
         }
       ],
       "exports": [
+        {
+          "kind": "js",
+          "name": "removeConnector",
+          "declaration": {
+            "name": "removeConnector",
+            "module": "src/modules/toolbar/connector-renderer.ts"
+          }
+        },
         {
           "kind": "js",
           "name": "renderConnector",
@@ -20056,7 +20158,7 @@
               }
             }
           ],
-          "description": "Attach `mouseenter` / `mouseleave` tooltip handlers to each toolbar button:\nthe text as heading, `tooltip` as description, the shortcut (the item's, or a\n`rowShortcuts` entry with the same `id` / built-in `action`)."
+          "description": "Register each toolbar button's tooltip with the grid's delegated toolbar tooltip\n(core createTooltip — hover + keyboard focus): the text as heading, `tooltip` as\ndescription, the shortcut (the item's, or a `rowShortcuts` entry with the same\n`id` / built-in `action`)."
         },
         {
           "kind": "function",
@@ -21134,6 +21236,14 @@
             "name": "renderConnector",
             "module": "./connector-renderer.js"
           }
+        },
+        {
+          "kind": "js",
+          "name": "removeConnector",
+          "declaration": {
+            "name": "removeConnector",
+            "module": "./connector-renderer.js"
+          }
         }
       ]
     },
@@ -21428,350 +21538,15 @@
     },
     {
       "kind": "javascript-module",
-      "path": "src/modules/tooltip/event-listeners.ts",
-      "declarations": [
-        {
-          "kind": "function",
-          "name": "attachTooltipListeners",
-          "return": {
-            "type": {
-              "text": "void"
-            }
-          },
-          "parameters": [
-            {
-              "name": "ctx",
-              "type": {
-                "text": "GridHost<T>"
-              }
-            },
-            {
-              "name": "table",
-              "type": {
-                "text": "Element"
-              }
-            }
-          ],
-          "description": "Attach the tooltip mouseenter / mouseleave listeners to the table in\ncapture phase. Capture phase is required so tooltips can fire on nested\nelements (e.g. icons inside cells) without relying on bubbling, which\ndoesn't fire for mouseenter / mouseleave.\n\nThe mouseleave handler skips the hide when the cursor stays within the same\ntooltip owner — prevents flicker when moving between a cell and its content."
-        }
-      ],
-      "exports": [
-        {
-          "kind": "js",
-          "name": "attachTooltipListeners",
-          "declaration": {
-            "name": "attachTooltipListeners",
-            "module": "src/modules/tooltip/event-listeners.ts"
-          }
-        }
-      ]
-    },
-    {
-      "kind": "javascript-module",
       "path": "src/modules/tooltip/index.ts",
       "declarations": [],
       "exports": [
         {
           "kind": "js",
-          "name": "showTooltip",
+          "name": "GridTooltips",
           "declaration": {
-            "name": "showTooltip",
+            "name": "GridTooltips",
             "module": "./tooltip.js"
-          }
-        },
-        {
-          "kind": "js",
-          "name": "hideTooltip",
-          "declaration": {
-            "name": "hideTooltip",
-            "module": "./tooltip.js"
-          }
-        },
-        {
-          "kind": "js",
-          "name": "createTooltip",
-          "declaration": {
-            "name": "createTooltip",
-            "module": "./tooltip.js"
-          }
-        },
-        {
-          "kind": "js",
-          "name": "TooltipResolver",
-          "declaration": {
-            "name": "TooltipResolver",
-            "module": "./tooltip.js"
-          }
-        },
-        {
-          "kind": "js",
-          "name": "TooltipService",
-          "declaration": {
-            "name": "TooltipService",
-            "module": "./tooltip-service.js"
-          }
-        },
-        {
-          "kind": "js",
-          "name": "attachTooltipListeners",
-          "declaration": {
-            "name": "attachTooltipListeners",
-            "module": "./event-listeners.js"
-          }
-        }
-      ]
-    },
-    {
-      "kind": "javascript-module",
-      "path": "src/modules/tooltip/tooltip-service.ts",
-      "declarations": [
-        {
-          "kind": "class",
-          "description": "",
-          "name": "TooltipService",
-          "members": [
-            {
-              "kind": "field",
-              "name": "_element",
-              "type": {
-                "text": "HTMLElement | null"
-              },
-              "privacy": "private",
-              "default": "null"
-            },
-            {
-              "kind": "field",
-              "name": "_positioning",
-              "type": {
-                "text": "AnchorHandle | null"
-              },
-              "privacy": "private",
-              "default": "null"
-            },
-            {
-              "kind": "field",
-              "name": "_arrowElement",
-              "type": {
-                "text": "HTMLElement | null"
-              },
-              "privacy": "private",
-              "default": "null"
-            },
-            {
-              "kind": "field",
-              "name": "_anchor",
-              "type": {
-                "text": "HTMLElement | null"
-              },
-              "privacy": "private",
-              "default": "null"
-            },
-            {
-              "kind": "field",
-              "name": "_showTimer",
-              "type": {
-                "text": "ReturnType<typeof setTimeout> | null"
-              },
-              "privacy": "private",
-              "default": "null"
-            },
-            {
-              "kind": "field",
-              "name": "_hideTimer",
-              "type": {
-                "text": "ReturnType<typeof setTimeout> | null"
-              },
-              "privacy": "private",
-              "default": "null"
-            },
-            {
-              "kind": "field",
-              "name": "element",
-              "type": {
-                "text": "HTMLElement | null"
-              },
-              "description": "The rendered tooltip element, or null when no tooltip is mounted.",
-              "readonly": true
-            },
-            {
-              "kind": "method",
-              "name": "setElement",
-              "return": {
-                "type": {
-                  "text": "void"
-                }
-              },
-              "parameters": [
-                {
-                  "name": "value",
-                  "type": {
-                    "text": "HTMLElement | null"
-                  }
-                }
-              ]
-            },
-            {
-              "kind": "method",
-              "name": "setPositioning",
-              "return": {
-                "type": {
-                  "text": "void"
-                }
-              },
-              "parameters": [
-                {
-                  "name": "value",
-                  "type": {
-                    "text": "AnchorHandle | null"
-                  }
-                }
-              ],
-              "description": "The core `anchor()` placing the rendered tooltip (destroyed with it)."
-            },
-            {
-              "kind": "field",
-              "name": "arrowElement",
-              "type": {
-                "text": "HTMLElement | null"
-              },
-              "description": "The arrow element inside the rendered tooltip, or null.",
-              "readonly": true
-            },
-            {
-              "kind": "method",
-              "name": "setArrowElement",
-              "return": {
-                "type": {
-                  "text": "void"
-                }
-              },
-              "parameters": [
-                {
-                  "name": "value",
-                  "type": {
-                    "text": "HTMLElement | null"
-                  }
-                }
-              ]
-            },
-            {
-              "kind": "field",
-              "name": "anchor",
-              "type": {
-                "text": "HTMLElement | null"
-              },
-              "description": "The element the tooltip is anchored to. Used to skip reposition when the same anchor re-fires hover.",
-              "readonly": true
-            },
-            {
-              "kind": "method",
-              "name": "setAnchor",
-              "return": {
-                "type": {
-                  "text": "void"
-                }
-              },
-              "parameters": [
-                {
-                  "name": "value",
-                  "type": {
-                    "text": "HTMLElement | null"
-                  }
-                }
-              ]
-            },
-            {
-              "kind": "field",
-              "name": "showTimer",
-              "type": {
-                "text": "ReturnType<typeof setTimeout> | null"
-              },
-              "description": "Pending show-delay timer, or null.",
-              "readonly": true
-            },
-            {
-              "kind": "method",
-              "name": "setShowTimer",
-              "return": {
-                "type": {
-                  "text": "void"
-                }
-              },
-              "parameters": [
-                {
-                  "name": "handle",
-                  "type": {
-                    "text": "ReturnType<typeof setTimeout> | null"
-                  }
-                }
-              ]
-            },
-            {
-              "kind": "method",
-              "name": "clearShowTimer",
-              "return": {
-                "type": {
-                  "text": "void"
-                }
-              },
-              "description": "Cancel any pending show timer. No-op when none is scheduled."
-            },
-            {
-              "kind": "field",
-              "name": "hideTimer",
-              "type": {
-                "text": "ReturnType<typeof setTimeout> | null"
-              },
-              "description": "Pending hide-delay timer, or null.",
-              "readonly": true
-            },
-            {
-              "kind": "method",
-              "name": "setHideTimer",
-              "return": {
-                "type": {
-                  "text": "void"
-                }
-              },
-              "parameters": [
-                {
-                  "name": "handle",
-                  "type": {
-                    "text": "ReturnType<typeof setTimeout> | null"
-                  }
-                }
-              ]
-            },
-            {
-              "kind": "method",
-              "name": "clearHideTimer",
-              "return": {
-                "type": {
-                  "text": "void"
-                }
-              },
-              "description": "Cancel any pending hide timer. No-op when none is scheduled."
-            },
-            {
-              "kind": "method",
-              "name": "clearMounted",
-              "return": {
-                "type": {
-                  "text": "void"
-                }
-              },
-              "description": "Clear the rendered-tooltip handles (element, arrow, anchor) after the DOM\nnode has been removed by the caller. Does not touch timers."
-            }
-          ]
-        }
-      ],
-      "exports": [
-        {
-          "kind": "js",
-          "name": "TooltipService",
-          "declaration": {
-            "name": "TooltipService",
-            "module": "src/modules/tooltip/tooltip-service.ts"
           }
         }
       ]
@@ -21781,134 +21556,113 @@
       "path": "src/modules/tooltip/tooltip.ts",
       "declarations": [
         {
-          "kind": "function",
-          "name": "showTooltip",
-          "return": {
-            "type": {
-              "text": "void"
+          "kind": "class",
+          "description": "The grid's two delegated core tooltips (cells / header / rows, toolbar buttons). Live\nwhile the grid is connected (`start()` in connect(), `stop()` in disconnect()); a delay\nchange restarts them (core reads `delay` once).",
+          "name": "GridTooltips",
+          "members": [
+            {
+              "kind": "field",
+              "name": "#cell",
+              "privacy": "private",
+              "type": {
+                "text": "TooltipHandle | null"
+              },
+              "default": "null"
+            },
+            {
+              "kind": "field",
+              "name": "#toolbar",
+              "privacy": "private",
+              "type": {
+                "text": "TooltipHandle | null"
+              },
+              "default": "null"
+            },
+            {
+              "kind": "field",
+              "name": "#toolbarContent",
+              "privacy": "private",
+              "default": "new WeakMap<Element, string>()",
+              "description": "Toolbar button → its tooltip HTML (heading, description, shortcut), set per toolbar render."
+            },
+            {
+              "kind": "method",
+              "name": "start",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "ctx",
+                  "type": {
+                    "text": "GridHost<T>"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "stop",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "setToolbarContent",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "button",
+                  "type": {
+                    "text": "Element"
+                  }
+                },
+                {
+                  "name": "html",
+                  "type": {
+                    "text": "string"
+                  }
+                }
+              ],
+              "description": "Register a toolbar button's tooltip HTML (escaped by the caller)."
+            },
+            {
+              "kind": "field",
+              "name": "toolbarTarget",
+              "type": {
+                "text": "HTMLElement | null"
+              },
+              "description": "The toolbar button whose tooltip shows, or null.",
+              "readonly": true
+            },
+            {
+              "kind": "method",
+              "name": "hideToolbar",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "description": "Hide the toolbar button tooltip now (its DOM is going away; a cell tooltip stays)."
             }
-          },
-          "parameters": [
-            {
-              "name": "ctx",
-              "type": {
-                "text": "GridHost<T>"
-              }
-            },
-            {
-              "name": "anchor",
-              "type": {
-                "text": "HTMLElement"
-              }
-            },
-            {
-              "name": "text",
-              "type": {
-                "text": "string | TooltipResolver"
-              }
-            },
-            {
-              "name": "delay",
-              "optional": true,
-              "type": {
-                "text": "number"
-              }
-            },
-            {
-              "name": "isHtml",
-              "optional": true,
-              "type": {
-                "text": "boolean"
-              }
-            }
-          ],
-          "description": "Show tooltip for an element. `text` is the content, or a resolver run when\nthe show delay elapses (so the content reflects the state at show time;\n`null` shows nothing)."
-        },
-        {
-          "kind": "function",
-          "name": "hideTooltip",
-          "return": {
-            "type": {
-              "text": "void"
-            }
-          },
-          "parameters": [
-            {
-              "name": "ctx",
-              "type": {
-                "text": "GridHost<T>"
-              }
-            },
-            {
-              "name": "delay",
-              "optional": true,
-              "type": {
-                "text": "number"
-              }
-            }
-          ],
-          "description": "Hide tooltip"
-        },
-        {
-          "kind": "function",
-          "name": "createTooltip",
-          "return": {
-            "type": {
-              "text": "void"
-            }
-          },
-          "parameters": [
-            {
-              "name": "ctx",
-              "type": {
-                "text": "GridHost<T>"
-              }
-            },
-            {
-              "name": "anchor",
-              "type": {
-                "text": "HTMLElement"
-              }
-            },
-            {
-              "name": "content",
-              "type": {
-                "text": "string"
-              }
-            },
-            {
-              "name": "isHtml",
-              "optional": true,
-              "type": {
-                "text": "boolean"
-              }
-            }
-          ],
-          "description": "Create and position tooltip element"
+          ]
         }
       ],
       "exports": [
         {
           "kind": "js",
-          "name": "showTooltip",
+          "name": "GridTooltips",
           "declaration": {
-            "name": "showTooltip",
-            "module": "src/modules/tooltip/tooltip.ts"
-          }
-        },
-        {
-          "kind": "js",
-          "name": "hideTooltip",
-          "declaration": {
-            "name": "hideTooltip",
-            "module": "src/modules/tooltip/tooltip.ts"
-          }
-        },
-        {
-          "kind": "js",
-          "name": "createTooltip",
-          "declaration": {
-            "name": "createTooltip",
+            "name": "GridTooltips",
             "module": "src/modules/tooltip/tooltip.ts"
           }
         }
@@ -21920,11 +21674,41 @@
       "declarations": [
         {
           "kind": "variable",
-          "name": "gridPerf",
-          "type": {
-            "text": "object"
+          "name": "gridPerf"
+        },
+        {
+          "kind": "function",
+          "name": "perfNow",
+          "return": {
+            "type": {
+              "text": "number"
+            }
           },
-          "default": "{ counters: { displayItems: 0, displayItemsMs: 0, paginatedItems: 0, paginatedItemsMs: 0, treeSorted: 0, treeSortedMs: 0, treeVisible: 0, treeVisibleMs: 0, cellDisplayItemsLookup: 0 }, reset(): void { const c = this.counters c.displayItems = 0 c.displayItemsMs = 0 c.paginatedItems = 0 c.paginatedItemsMs = 0 c.treeSorted = 0 c.treeSortedMs = 0 c.treeVisible = 0 c.treeVisibleMs = 0 c.cellDisplayItemsLookup = 0 }, summary(): string { const c = this.counters return [ `displayItems=${c.displayItems} (${c.displayItemsMs.toFixed(1)}ms)`, `paginatedItems=${c.paginatedItems} (${c.paginatedItemsMs.toFixed(1)}ms)`, `treeSorted=${c.treeSorted} (${c.treeSortedMs.toFixed(1)}ms)`, `treeVisible=${c.treeVisible} (${c.treeVisibleMs.toFixed(1)}ms)`, `cellDisplayItemsLookup=${c.cellDisplayItemsLookup}` ].join(' | ') } }"
+          "description": "`performance.now()` only while the perf logger records — the hot getters skip the clock otherwise."
+        },
+        {
+          "kind": "function",
+          "name": "perfCount",
+          "return": {
+            "type": {
+              "text": "void"
+            }
+          },
+          "parameters": [
+            {
+              "name": "label",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "name": "t0",
+              "type": {
+                "text": "number"
+              }
+            }
+          ],
+          "description": "Count one call of `label` with the time since `t0` (from perfNow)."
         }
       ],
       "exports": [
@@ -21933,6 +21717,22 @@
           "name": "gridPerf",
           "declaration": {
             "name": "gridPerf",
+            "module": "src/perf.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "perfNow",
+          "declaration": {
+            "name": "perfNow",
+            "module": "src/perf.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "perfCount",
+          "declaration": {
+            "name": "perfCount",
             "module": "src/perf.ts"
           }
         }
@@ -22204,6 +22004,16 @@
               "return": {
                 "type": {
                   "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "#customStylesOptions",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "CustomStylesOptions"
                 }
               }
             },

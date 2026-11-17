@@ -8,6 +8,7 @@ import type { ScrollEventManager } from './scroll-events/index.js'
 import type { FocusEventManager } from './focus-events/index.js'
 import type { DatePicker } from './datepicker/datepicker.js'
 import type { MenuDrawerSide, MenuHandle, MenuPresentation } from '@keenmate/web-components-core/menu'
+import type { Layer, LayerOptions } from '@keenmate/web-components-core/positioning'
 import type { AutocompleteService } from './dropdown/autocomplete-service.js'
 import type { DropdownService } from './dropdown/dropdown-service.js'
 import type { GridTooltips } from './tooltip/tooltip.js'
@@ -82,6 +83,9 @@ export interface GridHost<T = unknown> {
 
 	// Re-render the SVG connector that ties the floating toolbar to its row.
 	renderConnector(): void
+
+	/** A core createLayer() layer of this grid, with the grid's custom CSS in its root (destroyed with the layer). */
+	openLayer(options: LayerOptions): Layer
 
 	// Action pipeline adapter — handlers call `pipelineAdapter?.clearSelection()`
 	// to drop row / cell-range / column selections through the pipeline. Null

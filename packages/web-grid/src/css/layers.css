@@ -1,0 +1,50 @@
+/* ==============================================================================
+   LAYERS — the column-reorder drag ghost and the row-toolbar connector line
+   ==============================================================================
+   Rendered in core `createLayer()` layers (SPEC §12.29), outside the grid, so the grid's
+   (or a scroll parent's) `overflow` can't clip them. This sheet is adopted into each layer's
+   own shadow root; the `--wg-*` tokens it reads are copied from the host (`cssVars`, see
+   modules/layers/index.ts). The host's font, colour and `dir` come along (core). */
+
+/* Ghost that follows the pointer: its layer is placed at the pointer offset (0 × 0), the ghost
+   sizes to its title. */
+.wg__reorder-ghost {
+  inset: auto;
+  top: 0;
+  left: 0;
+  background: var(--wg-header-bg);
+  border: 2px solid var(--wg-accent-color);
+  border-radius: var(--wg-border-radius-sm);
+  padding: 0.4em 0.8em;
+  font-size: var(--wg-font-size-sm);
+  font-weight: var(--wg-header-font-weight);
+  color: var(--wg-header-color);
+  box-shadow: var(--wg-dialog-shadow);
+  opacity: 0.95;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* The line + arrow head from the floating row toolbar to its row: one viewport-sized layer,
+   the path is drawn in viewport coordinates. */
+.wg__connector {
+  pointer-events: none;
+}
+
+.wg__connector svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.wg__connector path {
+  stroke: var(--wg-accent-color);
+  stroke-width: 2;
+  fill: none;
+}
+
+.wg__connector polygon {
+  fill: var(--wg-accent-color);
+}

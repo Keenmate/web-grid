@@ -10,6 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Changed — reorder ghost + toolbar connector as core layers (2026-11-18)
+- The column-reorder drag ghost and the floating toolbar's connector line are core `createLayer()` layers
+  (`modules/layers/index.ts`, `css/layers.css`): mounted outside the grid (`<body>`, or the open modal dialog / popover the
+  grid sits in), so no `overflow` clips them and a transformed ancestor no longer shifts them. Same look and place;
+  the ghost is see-through for the hit test (`pointer-events: none`). The `--wg-*` tokens they read are copied
+  from the host (an instance override reaches them), core copies the host's font, colour and `dir`, and the grid's
+  page-wide + instance `customStyles` are written into each layer (a rule for `.wg__reorder-ghost` /
+  `.wg__connector` still applies). Neither is in the grid's shadow root any more: a page script that looked for
+  `.wg__reorder-ghost` / `.wg__connector` there finds them under `.km-layer` (its shadow root).
+
 ### Changed — tooltips on core `createTooltip` (2026-11-18)
 - **Added (accessibility): tooltips show on keyboard focus too** — a cell (navigate mode / arrow keys), a header
   info icon or a toolbar button that receives focus shows its tooltip after `tooltipShowDelay`, the same as on

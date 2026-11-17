@@ -274,6 +274,7 @@ import {
 	keepScrollAcrossMove,
 	type PointerDrag,
 	type CustomStylesHandle,
+	type CustomStylesOptions,
 	type LoadStateCallback,
 	type SaveStateCallback,
 	type InputDef,
@@ -286,6 +287,7 @@ import {
 } from '@keenmate/web-components-core'
 import { menuPresentationInputs, menuPresentationOptions } from '@keenmate/web-components-core/menu'
 import type { MenuDrawerSide, MenuHandle, MenuPresentation } from '@keenmate/web-components-core/menu'
+import { createLayer, type Layer, type LayerOptions } from '@keenmate/web-components-core/positioning'
 
 // Enum member lists for the input table (hoisted `as const` so the CEM
 // extractor and toEnum both read the same literal source of truth).
@@ -1268,11 +1270,33 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 
 	#applyCustomStyles(): void {
 		if (this.#customStyles) return this.#customStyles.refresh()
-		this.#customStyles = createCustomStyles(this, this.shadow, {
+		this.#customStyles = createCustomStyles(this, this.shadow, this.#customStylesOptions())
+	}
+
+	#customStylesOptions(): CustomStylesOptions {
+		return {
 			cssClass: 'wg-custom-styles',
 			getContext: () => this.engine.ctx({}),
 			getInstanceStyles: () => ({ css: this.config.customStyles as string | null, callback: this.config.getCustomStylesCallback as GridElementConfig<T>['getCustomStylesCallback'] }),
-		})
+		}
+	}
+
+	/**
+	 * A core createLayer() layer (the reorder ghost, the toolbar connector — modules/layers/index.ts) with the
+	 * grid's custom CSS (page-wide + instance) written into its root by a second, unshared
+	 * createCustomStyles handle; both go on `destroy()`.
+	 * @internal
+	 */
+	openLayer(options: LayerOptions): Layer {
+		const layer = createLayer(this, options)
+		const styles = createCustomStyles(this, layer.layer.shadowRoot!, { ...this.#customStylesOptions(), shouldShareLayers: false })
+		return {
+			...layer,
+			destroy: () => {
+				styles.destroy()
+				layer.destroy()
+			},
+		}
 	}
 
 	protected reinit(): void {

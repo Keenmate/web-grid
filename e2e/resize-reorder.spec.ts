@@ -414,11 +414,37 @@ test.describe('column reorder — core createPointerDrag (#gridReorder)', () => 
 		await page.mouse.move(sbox.x + 20, sbox.y + sbox.height / 2)
 		await page.mouse.down()
 		await page.mouse.move(dbox.x + dbox.width / 2, dbox.y + dbox.height / 2, { steps: 10 })
-		await expect(gridLocator(page, 'gridReorder').locator('.wg__reorder-ghost')).toHaveCount(1)
+		await expect(page.locator('.km-layer .wg__reorder-ghost')).toHaveCount(1)
 		await page.keyboard.press('Escape')
 		await page.mouse.up()
-		await expect(gridLocator(page, 'gridReorder').locator('.wg__reorder-ghost')).toHaveCount(0)
+		await expect(page.locator('.km-layer .wg__reorder-ghost')).toHaveCount(0)
 		expect(await getHeaderFieldOrder(page, 'gridReorder')).toEqual(before)
+	})
+})
+
+test.describe('column reorder — the ghost is a core layer (#gridReorder)', () => {
+	test('outside the grid, at the pointer, see-through, with host tokens + customStyles', async ({ page }) => {
+		await page.locator('#gridReorder').evaluate((el) => {
+			(el as HTMLElement).style.setProperty('--wg-accent-color', 'rgb(255, 0, 0)')
+			;(el as unknown as { customStyles: string }).customStyles = '.wg__reorder-ghost { outline: 3px solid rgb(0, 128, 0) }'
+		})
+		await header(page, 'gridReorder', 'email').scrollIntoViewIfNeeded()
+		const sbox = (await header(page, 'gridReorder', 'email').boundingBox())!
+		const y = sbox.y + sbox.height / 2
+		await page.mouse.move(sbox.x + 20, y)
+		await page.mouse.down()
+		await page.mouse.move(sbox.x + 60, y, { steps: 5 })
+		const ghost = page.locator('.km-layer .wg__reorder-ghost')
+		await expect(ghost).toHaveCount(1)
+		await expect(gridLocator(page, 'gridReorder').locator('.wg__reorder-ghost')).toHaveCount(0)
+		await expect(ghost).toHaveCSS('border-top-color', 'rgb(255, 0, 0)')
+		await expect(ghost).toHaveCSS('outline-color', 'rgb(0, 128, 0)')
+		expect(await page.evaluate(() => getComputedStyle(document.querySelector('.km-layer')!).pointerEvents)).toBe('none')
+		const box = (await ghost.boundingBox())!
+		expect(Math.abs(box.x - (sbox.x + 60 + 10))).toBeLessThan(2)
+		expect(Math.abs(box.y - (y - 10))).toBeLessThan(2)
+		await page.mouse.up()
+		await expect(page.locator('.km-layer')).toHaveCount(0)
 	})
 })
 
