@@ -318,8 +318,10 @@ export class GridEngine<T = unknown> {
 	// Column selection state (like row selection, supports non-contiguous). VISUAL
 	// positions (indices into `visualColumns`), like a CellRange; the public API
 	// takes / returns column indices (index into `columns`) and converts.
-	protected _selectedColumns: Set<number> = new Set()
-	protected _lastSelectedColumnIndex: number = -1  // visual position (range anchor)
+	// Column selection by VISUAL position: core createSelection — the set + the range anchor
+	protected _columnSelection: Selection<number> = createSelection<number>({
+		getOrderedKeys: () => this.visualColumns.map((_, i) => i)
+	})
 
 	// Paste configuration
 	protected _pasteMode: PasteMode = 'skip-non-editable'
@@ -1147,7 +1149,7 @@ export class GridEngine<T = unknown> {
 		if (this._selectedCellRange) {
 			this._selectedCellRange = null
 		}
-		this._selectedColumns.clear()
+		this._columnSelection.clear()
 
 		switch (mode) {
 			case 'replace':
@@ -1166,7 +1168,7 @@ export class GridEngine<T = unknown> {
 	selectRowRange(fromIndex: number, toIndex: number): void {
 		this.trackSelection(() => {
 			// Clear column selection when selecting rows
-			this._selectedColumns.clear()
+			this._columnSelection.clear()
 			this._selectedCellRange = null
 
 			this._rowSelection.setAnchor(fromIndex)
@@ -1178,7 +1180,7 @@ export class GridEngine<T = unknown> {
 
 	/** Clear every selection kind — rows, the cell range and columns (one notification per kind that changed). */
 	clearSelection(): void {
-		if (this._rowSelection.size === 0 && !this._selectedCellRange && this._selectedColumns.size === 0) return
+		if (this._rowSelection.size === 0 && !this._selectedCellRange && this._columnSelection.size === 0) return
 		this.trackSelection(() => {
 			this.clearRowSelection_noRender()
 			this.clearCellSelection_noRender()
@@ -1307,7 +1309,7 @@ export class GridEngine<T = unknown> {
 	selectedColumnFields(): string[] {
 		const visualCols = this.visualColumns
 		const fields: string[] = []
-		for (const pos of [...this._selectedColumns].sort((a, b) => a - b)) {
+		for (const pos of this._columnSelection.values().sort((a, b) => a - b)) {
 			const column = visualCols[pos]?.column
 			if (column) fields.push(String(column.field))
 		}
@@ -2058,7 +2060,7 @@ export class GridEngine<T = unknown> {
 				this._rowSelection.clear()
 				this._rowSelection.setAnchor(null)
 			}
-			this._selectedColumns.clear()
+			this._columnSelection.clear()
 
 			this._selectedCellRange = range
 		})
@@ -2128,25 +2130,12 @@ export class GridEngine<T = unknown> {
 		this._selectedCellRange = null
 
 		if (mode === 'replace') {
-			this._selectedColumns.clear()
-			this._selectedColumns.add(colIndex)
-			this._lastSelectedColumnIndex = colIndex
+			this._columnSelection.click(colIndex)
 		} else if (mode === 'toggle') {
-			if (this._selectedColumns.has(colIndex)) {
-				this._selectedColumns.delete(colIndex)
-			} else {
-				this._selectedColumns.add(colIndex)
-			}
-			this._lastSelectedColumnIndex = colIndex
+			this._columnSelection.toggle(colIndex)
 		} else if (mode === 'range') {
-			// Select range from last selected column to this one
-			const fromCol = this._lastSelectedColumnIndex >= 0 ? this._lastSelectedColumnIndex : colIndex
-			const minCol = Math.min(fromCol, colIndex)
-			const maxCol = Math.max(fromCol, colIndex)
-			for (let i = minCol; i <= maxCol; i++) {
-				this._selectedColumns.add(i)
-			}
-			// Don't update lastSelectedColumnIndex for range - keep the anchor
+			// Added from the anchor (kept) to this column
+			this._columnSelection.extendTo(colIndex, { isAdditive: true })
 		}
 	}
 
@@ -2161,8 +2150,8 @@ export class GridEngine<T = unknown> {
 	/** Clear column selection state without triggering re-render (caller handles visuals) */
 	clearColumnSelection_noRender(): void {
 		this.trackSelection(() => {
-			this._selectedColumns.clear()
-			this._lastSelectedColumnIndex = -1
+			this._columnSelection.clear()
+			this._columnSelection.setAnchor(null)
 		})
 	}
 
@@ -2184,13 +2173,9 @@ export class GridEngine<T = unknown> {
 			this._rowSelection.clear()
 			this._selectedCellRange = null
 
-			this._selectedColumns.clear()
-			const start = Math.min(fromIndex, toIndex)
-			const end = Math.max(fromIndex, toIndex)
-			for (let i = start; i <= end; i++) {
-				this._selectedColumns.add(i)
-			}
-			this._lastSelectedColumnIndex = toIndex
+			this._columnSelection.setAnchor(fromIndex)
+			this._columnSelection.extendTo(toIndex)
+			this._columnSelection.setAnchor(toIndex)
 		})
 		this.requestUpdate()
 	}
@@ -2199,7 +2184,7 @@ export class GridEngine<T = unknown> {
 	get selectedColumns(): number[] {
 		const visualCols = this.visualColumns
 		const indices: number[] = []
-		for (const pos of this._selectedColumns) {
+		for (const pos of this._columnSelection.values()) {
 			const entry = visualCols[pos]
 			if (entry) indices.push(entry.originalIndex)
 		}
@@ -2222,18 +2207,18 @@ export class GridEngine<T = unknown> {
 
 	/** Selected VISUAL positions (index into `visualColumns`), ascending — rendering / borders / copy. */
 	get selectedColumnPositions(): number[] {
-		return Array.from(this._selectedColumns).sort((a, b) => a - b)
+		return this._columnSelection.values().sort((a, b) => a - b)
 	}
 
 	/** Is the column (index into `columns`) selected? */
 	isColumnSelected(colIndex: number): boolean {
 		const pos = this.visualIndexOfColumn(colIndex)
-		return pos >= 0 && this._selectedColumns.has(pos)
+		return pos >= 0 && this._columnSelection.has(pos)
 	}
 
 	/** Is the column at this VISUAL position selected? */
 	isColumnPositionSelected(pos: number): boolean {
-		return this._selectedColumns.has(pos)
+		return this._columnSelection.has(pos)
 	}
 
 	/**
