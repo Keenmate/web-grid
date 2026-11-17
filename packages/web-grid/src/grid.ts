@@ -148,7 +148,7 @@ export class GridEngine<T = unknown> {
 	protected _isStriped: boolean = true
 	protected _isHoverable: boolean = true
 	protected _isEditingEnabled: boolean = false
-	protected _isRowEditable: boolean | undefined = undefined
+	protected _isRowEditable: boolean | null = null
 	protected _getIsRowEditableCallback: ((ctx: RowDataContext<T>) => boolean) | undefined = undefined
 	protected _editTrigger: EditTrigger = "dblclick"
 	protected _editButtonIcon: string = '✎'
@@ -540,9 +540,10 @@ export class GridEngine<T = unknown> {
 	/** Grid-level editing is on and neither `isReadonly` nor `isDisabled` blocks it. */
 	get isEffectivelyEditable(): boolean { return this._isEditingEnabled && !this._isReadonly && !this._isDisabled }
 
-	get isRowEditable(): boolean | undefined { return this._isRowEditable }
-	set isRowEditable(value: boolean | undefined) {
-		this._isRowEditable = value
+	/** `null` = unset (no row gate). */
+	get isRowEditable(): boolean | null { return this._isRowEditable }
+	set isRowEditable(value: boolean | null | undefined) {
+		this._isRowEditable = value ?? null
 		this.requestUpdate()
 	}
 

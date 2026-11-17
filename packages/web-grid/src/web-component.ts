@@ -56,7 +56,7 @@ import type {
 	GridScrollOptions
 } from './interaction.js'
 import { createGridController } from './controller.js'
-import { toBoolOrAuto, toBoolOrNullAuto, toNumberOrLength, toPipeList, toNullableInt, toOptionalBool, AREA_POSITIONS, PAGINATION_PARTS } from './converters.js'
+import { toBoolOrAuto, toBoolOrNullAuto, toNumberOrLength, toPipeList, AREA_POSITIONS, PAGINATION_PARTS } from './converters.js'
 
 // Import CSS (Vite inlines this as a string)
 import styles from './css/main.css?inline'
@@ -672,7 +672,7 @@ export interface GridElementConfig<T = unknown> {
 	/** Tree data: show the tree to this depth (`0` = only the roots, …), a whole number ≥ 0. `null` = everything expanded. Attribute `expand-level`. */
 	expandLevel: number | null
 	/** Static row editability for the whole grid (`getIsRowEditableCallback` decides per row). Attribute `row-editable`. */
-	isRowEditable: boolean | null | undefined
+	isRowEditable: boolean | null
 	/** Min width (CSS length; a number = px) of the row toolbar buttons; overrides `--wg-toolbar-btn-min-width`. Attribute `toolbar-btn-min-width`. */
 	toolbarBtnMinWidth: string | undefined
 	// Callbacks (property-only)
@@ -973,9 +973,9 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		{ configKey: 'levelMember', attribute: 'level-member', converter: toText({ isNullable: true }), default: null, on: 'update', type: 'string | null', description: 'Tree data: the field holding a row’s depth, when the data has levels instead of paths.' },
 		{ configKey: 'parentPathMember', attribute: 'parent-path-member', converter: toText({ isNullable: true }), default: null, on: 'update', type: 'string | null', description: 'Tree data: the field holding the parent row’s path.' },
 		{ configKey: 'treePathSeparator', attribute: 'tree-path-separator', converter: toText({ isNullable: true }), default: null, on: 'update', type: 'string | null', description: 'Tree data: the path separator. Unset = auto-detect.' },
-		{ configKey: 'expandLevel', attribute: 'expand-level', converter: toNullableInt({ min: 0 }), default: null, on: 'update', type: 'number | null', description: 'Tree data: show the tree to this depth (`0` = only the roots, `1` = the roots expanded, …), a whole number ≥ 0. Unset (`null`) = everything expanded. Ignored once `expandedPaths` is assigned.' },
+		{ configKey: 'expandLevel', attribute: 'expand-level', converter: toInt({ min: 0, isNullable: true }), default: null, on: 'update', type: 'number | null', description: 'Tree data: show the tree to this depth (`0` = only the roots, `1` = the roots expanded, …), a whole number ≥ 0. Unset (`null`) = everything expanded. Ignored once `expandedPaths` is assigned.' },
 		// Row editability (the static gate; `getIsRowEditableCallback` decides per row and wins)
-		{ configKey: 'isRowEditable', attribute: 'row-editable', converter: toOptionalBool(), on: 'update', type: 'boolean | null | undefined', description: 'Static row editability for the whole grid: `false` makes every row read-only (a column with `isEditable: true` still opts in); unset = no row gate. `getIsRowEditableCallback` decides per row and wins.' },
+		{ configKey: 'isRowEditable', attribute: 'row-editable', converter: toBool('tristate'), on: 'update', type: 'boolean | null', description: 'Static row editability for the whole grid: `false` makes every row read-only (a column with `isEditable: true` still opts in); unset (`null`) = no row gate. `getIsRowEditableCallback` decides per row and wins.' },
 		// Row toolbar button width (CSS length; a number means pixels)
 		{ configKey: 'toolbarBtnMinWidth', attribute: 'toolbar-btn-min-width', converter: toCssLength(), on: 'update', type: 'string | undefined', description: 'Min width of the row toolbar buttons — a CSS length; a number means pixels; overrides `--wg-toolbar-btn-min-width`. Unset = the CSS variable.' },
 		// Callbacks (property-only, no attribute): bridged into the engine, read when they run.

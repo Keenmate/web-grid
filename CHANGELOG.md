@@ -20,7 +20,10 @@ Target: **2.0.0-rc01** — a major: the callback, event and item API below is br
 - **Changed: these properties are validated now** — an invalid value warns, fires `input-rejected` and keeps the
   previous one: `expandLevel` takes a whole number ≥ 0 or `null` (a negative number used to mean "all");
   `toolbarBtnMinWidth` takes a CSS length (a number = px, `40` → `'40px'`); `isRowEditable` a boolean or
-  `null` / `undefined`.
+  `null` / `undefined` (both = unset).
+- **Changed: unset `isRowEditable` reads back `null`** (was `undefined`) — on the element and the engine; it still
+  means "no row gate". `expand-level` / `row-editable` now use core's `toInt({ isNullable })` / `toBool('tristate')`
+  (same parsing: `row-editable=""` is `true`, empty `expand-level` is unset).
 - **Changed: the grid-level callbacks are property-only core inputs** (no attribute) — `getIsRowEditableCallback`,
   `getIdCallback`, `getRowClassCallback`, `getValidationTooltipCallback`, `getPaginationLabelsCallback`,
   `renderSummaryCallback`, `renderChevronCallback`, `renderShortcutsHelpCallback`,

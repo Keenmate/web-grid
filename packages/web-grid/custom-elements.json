@@ -77,35 +77,6 @@
         },
         {
           "kind": "function",
-          "name": "toOptionalBool",
-          "return": {
-            "type": {
-              "text": "Converter<boolean | null | undefined>"
-            }
-          },
-          "description": "An optional boolean, unset spelled `undefined` (used by `row-editable` — the engine's\n\"no row gate\"). Attribute: absent → `undefined`; `\"\"` / `true` / `1` / `yes` / `on` → `true`;\n`false` / `0` / `no` / `off` → `false`; anything else is refused (warning + `input-rejected`,\nprevious value kept). Property path: a boolean, `null` or `undefined` (both = unset)."
-        },
-        {
-          "kind": "function",
-          "name": "toNullableInt",
-          "return": {
-            "type": {
-              "text": "Converter<number | null>"
-            }
-          },
-          "parameters": [
-            {
-              "name": "opts",
-              "default": "{}",
-              "type": {
-                "text": "{ min?: number; max?: number }"
-              }
-            }
-          ],
-          "description": "A whole number or `null` (used by `expand-level`). Attribute: absent / empty → `null`;\na base-10 integer within `min`..`max` → the number; anything else is refused (warning +\n`input-rejected`, previous value kept). Property path: such an integer or `null`."
-        },
-        {
-          "kind": "function",
           "name": "toNumberOrLength",
           "return": {
             "type": {
@@ -180,22 +151,6 @@
           "name": "toBoolOrNullAuto",
           "declaration": {
             "name": "toBoolOrNullAuto",
-            "module": "src/converters.ts"
-          }
-        },
-        {
-          "kind": "js",
-          "name": "toOptionalBool",
-          "declaration": {
-            "name": "toOptionalBool",
-            "module": "src/converters.ts"
-          }
-        },
-        {
-          "kind": "js",
-          "name": "toNullableInt",
-          "declaration": {
-            "name": "toNullableInt",
             "module": "src/converters.ts"
           }
         },
@@ -354,10 +309,10 @@
               "kind": "field",
               "name": "_isRowEditable",
               "type": {
-                "text": "boolean | undefined"
+                "text": "boolean | null"
               },
               "privacy": "protected",
-              "default": "undefined"
+              "default": "null"
             },
             {
               "kind": "field",
@@ -1855,8 +1810,9 @@
               "kind": "field",
               "name": "isRowEditable",
               "type": {
-                "text": "boolean | undefined"
-              }
+                "text": "boolean | null"
+              },
+              "description": "`null` = unset (no row gate)."
             },
             {
               "kind": "field",
@@ -24450,10 +24406,11 @@
               "name": "isRowEditable",
               "privacy": "public",
               "type": {
-                "text": "boolean | null | undefined"
+                "text": "boolean | null"
               },
+              "default": "null",
               "attribute": "row-editable",
-              "description": "Static row editability for the whole grid: `false` makes every row read-only (a column with `isEditable: true` still opts in); unset = no row gate. `getIsRowEditableCallback` decides per row and wins."
+              "description": "Static row editability for the whole grid: `false` makes every row read-only (a column with `isEditable: true` still opts in); unset (`null`) = no row gate. `getIsRowEditableCallback` decides per row and wins."
             },
             {
               "kind": "field",
@@ -25613,9 +25570,10 @@
               "name": "row-editable",
               "fieldName": "isRowEditable",
               "type": {
-                "text": "boolean | null | undefined"
+                "text": "boolean | null"
               },
-              "description": "Static row editability for the whole grid: `false` makes every row read-only (a column with `isEditable: true` still opts in); unset = no row gate. `getIsRowEditableCallback` decides per row and wins."
+              "default": "null",
+              "description": "Static row editability for the whole grid: `false` makes every row read-only (a column with `isEditable: true` still opts in); unset (`null`) = no row gate. `getIsRowEditableCallback` decides per row and wins."
             },
             {
               "name": "toolbar-btn-min-width",

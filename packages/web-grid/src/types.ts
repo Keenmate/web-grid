@@ -378,7 +378,7 @@ export type QuickGridProps<T> = {
 	// Row-level editability gate. Combined with grid-level `isEditingEnabled` and column-level `isEditable`:
 	// all three must pass for a cell to be editable. Use when every editable column shares the same
 	// row predicate — cheaper than repeating the predicate on every column.
-	isRowEditable?: boolean
+	isRowEditable?: boolean | null  // null / unset = no row gate
 	getIsRowEditableCallback?: (ctx: RowDataContext<T>) => boolean
 	editTrigger?: EditTrigger
 	editButtonIcon?: string  // Edit button HTML for editTrigger 'button' (default '✎'; e.g. '<span class="lucide-pencil"></span>')

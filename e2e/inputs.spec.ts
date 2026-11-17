@@ -387,7 +387,7 @@ test.describe('row identity / tree members + callbacks as input rows (rc25)', ()
 			.toEqual([null, null, null])
 		await mount(page, '')
 		expect(await read(page, el => [el.idMember, el.pathMember, el.expandLevel, el.isRowEditable, el.getIdCallback]))
-			.toEqual(['id', null, null, undefined, undefined])
+			.toEqual(['id', null, null, null, undefined])
 	})
 
 	test('an invalid value warns, fires input-rejected and keeps the previous value', async ({ page }) => {

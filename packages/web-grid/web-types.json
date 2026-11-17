@@ -437,8 +437,8 @@
             },
             {
               "name": "row-editable",
-              "description": "Static row editability for the whole grid: `false` makes every row read-only (a column with `isEditable: true` still opts in); unset = no row gate. `getIsRowEditableCallback` decides per row and wins.",
-              "value": { "type": "boolean | null | undefined" }
+              "description": "Static row editability for the whole grid: `false` makes every row read-only (a column with `isEditable: true` still opts in); unset (`null`) = no row gate. `getIsRowEditableCallback` decides per row and wins.",
+              "value": { "type": "boolean | null", "default": "null" }
             },
             {
               "name": "toolbar-btn-min-width",
@@ -1206,8 +1206,8 @@
               },
               {
                 "name": "isRowEditable",
-                "description": "Static row editability for the whole grid: `false` makes every row read-only (a column with `isEditable: true` still opts in); unset = no row gate. `getIsRowEditableCallback` decides per row and wins.",
-                "type": "boolean | null | undefined"
+                "description": "Static row editability for the whole grid: `false` makes every row read-only (a column with `isEditable: true` still opts in); unset (`null`) = no row gate. `getIsRowEditableCallback` decides per row and wins.",
+                "type": "boolean | null"
               },
               {
                 "name": "toolbarBtnMinWidth",
