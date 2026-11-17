@@ -523,11 +523,10 @@
   --wg-tooltip-shadow: 0 2px 8px var(--wg-shadow-color);
 }
 
-/* Reduced motion: no transitions. The loader slows instead (--base-loader-duration). */
+/* Reduced motion: the transitions follow --base-duration-* (core MOTION_CSS zeroes them under the OS
+   setting and under motion="none"). The loader keeps turning, slower (--base-loader-duration). */
 @media (prefers-reduced-motion: reduce) {
   :host {
-    --wg-transition-fast: 0s;
-    --wg-transition-normal: 0s;
     --wg-loader-duration: var(--base-loader-duration, 1.5s);
   }
 }

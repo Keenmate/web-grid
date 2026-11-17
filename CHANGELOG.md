@@ -24,6 +24,12 @@ Target: **2.0.0-rc01** — a major: the callback, event and item API below is br
   (7500), `--wg-z-tooltip` / `--wg-z-reorder-ghost` 10000 → `--base-z-tooltip` (9000); new `--wg-z-sheet` and
   `--wg-z-dialog` (`--base-z-modal`, 7000) for the phone sheets and the go-to-row dialog (was 9999 / 1000).
   A page that stacked its own layer between the old numbers re-checks it. Rulebook C-BV-15.
+- The grid's stylesheet is one shared constructable sheet (core `adoptStyles`) instead of a `<style>` element per
+  instance; the date editor outside a shadow root adopts its CSS into the document instead of a
+  `<style id="wg-datepicker-styles">` in `<head>`. Same layers, same cascade (custom CSS still wins).
+- Reduced motion: the own `prefers-reduced-motion` zeroing of `--wg-transition-*` and the date editor's scroll
+  behaviour is gone — they follow `--base-duration-*` / `--base-scroll-behavior`, which core `MOTION_CSS` zeroes
+  under the OS setting and under `motion="none"`. The loader still slows down.
 - e2e: `copy.spec.ts` and the editors fixture no longer touch the real system clipboard (an in-page stub in
   every browser); new `core-adoption.spec.ts`.
 

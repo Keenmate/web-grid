@@ -272,6 +272,7 @@ import {
 	toCssLength,
 	createCustomStyles,
 	createStateStore,
+	adoptStyles,
 	type CustomStylesHandle,
 	type LoadStateCallback,
 	type SaveStateCallback,
@@ -966,9 +967,6 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	/** @internal */
 	readonly shadow: ShadowRoot
 
-	// Style element (for initial CSS injection)
-	private styleElement: HTMLStyleElement
-
 	// Update batching
 	private updatePending = false
 
@@ -1086,13 +1084,10 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 			() => { this.dropdown.setIsClosingViaToggle(false) }
 		)
 
-		// Inject styles immediately to prevent FOUC
-		const styleElement = document.createElement('style')
-		/** @internal */
-		styleElement.textContent = styles
-		/** @internal */
-		this.styleElement = styleElement
-		this.shadow.appendChild(styleElement)
+		// The grid's own CSS (all in @layer variables / component / overrides): one shared constructable
+		// sheet per document (core adoptStyles), adopted before the first render — no FOUC; custom CSS
+		// (unlayered <style> slots) still wins.
+		adoptStyles(this.shadow, styles)
 
 		// Override requestUpdate to invalidate the data-pipeline cache and trigger DOM render.
 		// Every state-changing setter on GridEngine funnels through requestUpdate(), so this is

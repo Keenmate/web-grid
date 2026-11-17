@@ -65,12 +65,6 @@ const DATEPICKER_STYLES = `
 	--wg-dp-scroll-behavior: var(--base-scroll-behavior, smooth);
 }
 
-@media (prefers-reduced-motion: reduce) {
-	.wg-datepicker-container {
-		--wg-dp-scroll-behavior: var(--base-scroll-behavior, auto);
-	}
-}
-
 .wg-datepicker {
 	position: relative;
 	background: var(--wg-dp-background);
@@ -332,7 +326,6 @@ const DATEPICKER_SHEET_STYLES = `
 // In a shadow root the picker sits next to the grid's own CSS: same `component` layer.
 const LAYERED_DATEPICKER_STYLES = `@layer component {\n${DATEPICKER_STYLES}\n${DATEPICKER_SHEET_STYLES}\n}`
 
-let stylesInjected = false
 import {
 	renderDatePicker,
 	updateDaysHtml,
@@ -447,21 +440,12 @@ export class DatePicker {
 	}
 
 	/**
-	 * Styles for the mount root: adopted once per shadow root (core adoptStyles, in the grid's
-	 * `component` layer so custom CSS still wins), else one <style> in document.head.
+	 * Styles for the mount root (core adoptStyles, shared and deduplicated per root): the grid's shadow
+	 * root in its `component` layer, so custom CSS still wins; else the document, unlayered as before.
 	 */
 	private static injectStyles(root: ShadowRoot | HTMLElement): void {
-		if (root instanceof ShadowRoot) {
-			adoptStyles(root, LAYERED_DATEPICKER_STYLES)
-			return
-		}
-		if (stylesInjected) return
-
-		const style = document.createElement('style')
-		style.id = 'wg-datepicker-styles'
-		style.textContent = DATEPICKER_STYLES + DATEPICKER_SHEET_STYLES
-		document.head.appendChild(style)
-		stylesInjected = true
+		if (root instanceof ShadowRoot) adoptStyles(root, LAYERED_DATEPICKER_STYLES)
+		else adoptStyles(root.ownerDocument, DATEPICKER_STYLES + DATEPICKER_SHEET_STYLES)
 	}
 
 	/**
