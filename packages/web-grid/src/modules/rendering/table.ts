@@ -413,7 +413,10 @@ export function renderDataRows<T>(ctx: GridHost<T>): string {
 
 			// Cell tooltip: getTooltipCallback > tooltipMember > validation error
 			const tooltip = getCellTooltip(ctx, item, rowIndex, column)
-			const tooltipAttr = tooltip ? `${tooltip.attr}="${escapeHtml(tooltip.text)}"` : ''
+			// data-wg-tooltip: the column has a tooltip source — the cell is a tooltip target even
+			// when it resolved nothing at render time (resolved again at show, modules/tooltip)
+			const tooltipAttr = (tooltip ? `${tooltip.attr}="${escapeHtml(tooltip.text)}"` : '')
+				+ (column.getTooltipCallback || column.tooltipMember ? ' data-wg-tooltip' : '')
 
 			const innerHtml = shouldShowEditor
 				? renderCellEditor(ctx, rowIndex, originalIndex, column)
@@ -656,7 +659,10 @@ export function renderDataRowsVirtual<T>(ctx: GridHost<T>, params: VirtualScroll
 
 			// Cell tooltip: getTooltipCallback > tooltipMember > validation error
 			const tooltip = getCellTooltip(ctx, item, rowIndex, column)
-			const tooltipAttr = tooltip ? `${tooltip.attr}="${escapeHtml(tooltip.text)}"` : ''
+			// data-wg-tooltip: the column has a tooltip source — the cell is a tooltip target even
+			// when it resolved nothing at render time (resolved again at show, modules/tooltip)
+			const tooltipAttr = (tooltip ? `${tooltip.attr}="${escapeHtml(tooltip.text)}"` : '')
+				+ (column.getTooltipCallback || column.tooltipMember ? ' data-wg-tooltip' : '')
 
 			const innerHtml = shouldShowEditor
 				? renderCellEditor(ctx, rowIndex, originalIndex, column)

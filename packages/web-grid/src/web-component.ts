@@ -93,8 +93,7 @@ import {
 } from './modules/dropdown/index.js'
 
 import {
-	TooltipService,
-	attachTooltipListeners
+	GridTooltips
 } from './modules/tooltip/index.js'
 
 import {
@@ -1099,9 +1098,9 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	/** @internal */
 	autocomplete = new AutocompleteService()
 
-	// Tooltip runtime state — owned by TooltipService (element, arrow, anchor, show/hide timers).
+	// The delegated core tooltips (cells / header / rows + toolbar buttons) — live while connected.
 	/** @internal */
-	tooltip = new TooltipService()
+	tooltip = new GridTooltips()
 
 	// DatePicker instance (for date editor) - exposed via GridHost for pipeline access
 	/** @internal */
@@ -1321,6 +1320,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 			this.engine.loadPersistedState()
 		}
 		if ('customStyles' in partial || 'getCustomStylesCallback' in partial) this.#customStyles?.refresh()
+		// Core createTooltip reads its delays once: a new delay restarts the tooltips
+		if ('tooltipShowDelay' in partial || 'tooltipHideDelay' in partial) this.tooltip.start(this)
 	}
 
 	#columnResize: PointerDrag | null = null
@@ -1341,6 +1342,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		this.#columnReorder = createColumnReorder(this, this)
 		// Filter-row typing, IME-safe (delegated on the shadow root — survives the thead re-render)
 		this.#stopFilterText = watchFilterRowText(this, this.shadow)
+		// Tooltips: core createTooltip delegated over the shadow root (hover + keyboard focus)
+		this.tooltip.start(this)
 	}
 
 	protected override destroyCallback(): void {
@@ -1370,6 +1373,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		this.#columnReorder = null
 		this.#stopFilterText?.()
 		this.#stopFilterText = null
+		this.tooltip.stop()
 		if (this.datepicker) {
 			this.datepicker.destroy()
 			this.datepicker = null
@@ -1935,9 +1939,6 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 				this.clickEventsSubscribed = true
 			}
 		}
-
-		// Tooltip events
-		attachTooltipListeners(this, table)
 
 		// Row toolbar events — trigger / inline / hover / mousemove / click / outside click
 		attachToolbarListeners(this, table)

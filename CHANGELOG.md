@@ -10,6 +10,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Changed — tooltips on core `createTooltip` (2026-11-18)
+- **Added (accessibility): tooltips show on keyboard focus too** — a cell (navigate mode / arrow keys), a header
+  info icon or a toolbar button that receives focus shows its tooltip after `tooltipShowDelay`, the same as on
+  hover; a focused target keeps its tooltip while the pointer moves away, and **Escape** hides it (WCAG 1.4.13).
+  The tooltip is `role="tooltip"` and the target gets `aria-describedby` while it shows.
+- Internal: the grid's own tooltip layer (`modules/tooltip/{tooltip,tooltip-service,event-listeners}.ts`) is gone —
+  one delegated core `createTooltip` over the shadow root serves every cell / header / row target (content
+  resolved at every show — `getTooltipCallback`, `tooltipMember`, `getValidationTooltipCallback`, the plain error,
+  `data-tooltip(-html)`), a second one the floating toolbar's buttons (shown at once, as before). Same classes
+  (`.wg__tooltip`, `--visible`, `-content`, `-arrow`), `--wg-tooltip-*` variables and `tooltip-show-delay` /
+  `tooltip-hide-delay`. Moving from one target to the next while a tooltip shows switches at once (no second
+  show delay). Positioning: core's flip + shift (the tooltip stays on screen; no left / right fallback any more);
+  the arrow's side comes from core (the `data-placement` attribute is no longer set). Fade-in kept
+  (`@starting-style`); a hidden tooltip is removed at once (no fade-out).
+
 ### Fixed — cell focus inside another component's shadow root (2026-11-18)
 - **Fixed:** a grid placed inside another component's shadow root lost its focused cell when the focus moved to
   the grid's own container (range shortcuts), and a re-render no longer brought the focus back to the cell — two

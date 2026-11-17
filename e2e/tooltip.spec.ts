@@ -1,4 +1,4 @@
-import { test, expect, type Page, gridLocator, cell, header, onGrid, waitForRows, editCell } from './fixtures'
+import { test, expect, type Page, gridLocator, cell, header, onGrid, waitForRows, editCell, openToolbarOn } from './fixtures'
 
 /**
  * Tooltips — column `getTooltipCallback` / `tooltipMember` / `isTooltipHtml`,
@@ -215,5 +215,60 @@ test.describe('width variables', () => {
 		expect(short.width).toBeCloseTo(250, 0)
 		const box = await sizedTip(page).evaluate(el => el.getBoundingClientRect().width)
 		expect(box).toBeGreaterThan(250) // + --wg-tooltip-padding
+	})
+})
+
+test.describe('core createTooltip: keyboard focus, Escape, ARIA', () => {
+	test('a focused cell shows its tooltip (keyboard), Escape hides it, a cell without one hides it', async ({ page }) => {
+		await cell(page, 1, 1).click() // Beta / note: no hint → no tooltip
+		await page.mouse.move(5, 5)
+		await expect(tip(page)).toHaveCount(0)
+		await page.keyboard.press('ArrowLeft')
+		await expect(tip(page)).toHaveClass(/wg__tooltip--visible/)
+		await expect(tipContent(page)).toHaveText('Name: Beta')
+		await expect(tip(page)).toHaveAttribute('role', 'tooltip')
+		const id = await tip(page).getAttribute('id')
+		await expect(cell(page, 1, 0)).toHaveAttribute('aria-describedby', id!)
+		await page.keyboard.press('ArrowRight')
+		await expect(tip(page)).toHaveCount(0)
+		await page.keyboard.press('ArrowLeft')
+		await expect(tipContent(page)).toHaveText('Name: Beta')
+		await page.keyboard.press('Escape')
+		await expect(tip(page)).toHaveCount(0)
+	})
+
+	test('the arrow sits on the side facing the cell', async ({ page }) => {
+		await hover(page, cell(page, 1, 0))
+		await expect(tip(page)).toHaveClass(/wg__tooltip--visible/)
+		const [tipBox, arrowBox] = await Promise.all([
+			tip(page).boundingBox(),
+			tip(page).locator('.wg__tooltip-arrow').boundingBox()
+		])
+		// placement top: the arrow pokes out of the tooltip's bottom edge
+		expect(arrowBox!.y + arrowBox!.height).toBeGreaterThan(tipBox!.y + tipBox!.height)
+	})
+})
+
+test.describe('other tooltip targets', () => {
+	test('a locked row without row numbers: its cells show the row lock tooltip', async ({ page }) => {
+		await page.goto('/test/row-locking.html')
+		await waitForRows(page)
+		await onGrid(page, el => { el.isRowNumbersShown = false })
+		await hover(page, cell(page, 1, 1))
+		await expect(tipContent(page)).toHaveText('Locked by Carol')
+	})
+
+	test('a floating toolbar button shows its rich tooltip (title + shortcut) at once', async ({ page }) => {
+		await page.goto('/test/toolbar.html')
+		await expect(gridLocator(page, 'grid').locator('tbody tr').first()).toBeVisible()
+		await openToolbarOn(page, gridLocator(page, 'grid').locator('tr[data-row-index="0"]'))
+		const btn = gridLocator(page, 'grid').locator('.wg__toolbar-container .wg__toolbar-btn').first()
+		await expect(btn).toBeVisible()
+		await btn.hover()
+		const toolbarTip = gridLocator(page, 'grid').locator('.wg__tooltip--visible')
+		await expect(toolbarTip).toHaveCount(1)
+		await expect(toolbarTip.locator('.wg__tooltip-title')).not.toBeEmpty()
+		await page.mouse.move(5, 5)
+		await expect(gridLocator(page, 'grid').locator('.wg__tooltip')).toHaveCount(0, { timeout: 2000 })
 	})
 })

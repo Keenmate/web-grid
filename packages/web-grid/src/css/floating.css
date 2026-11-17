@@ -31,6 +31,13 @@
   opacity: 1;
 }
 
+/* core createTooltip mounts the tooltip and marks it visible in one go: fade in from 0 */
+@starting-style {
+  .wg__tooltip--visible {
+    opacity: 0;
+  }
+}
+
 .wg__tooltip-arrow {
   position: absolute;
   width: var(--wg-tooltip-arrow-size);
@@ -39,22 +46,8 @@
   transform: rotate(45deg);
 }
 
-/* Arrow positioning based on tooltip placement */
-.wg__tooltip[data-placement^="top"] .wg__tooltip-arrow {
-  bottom: calc(-0.5 * var(--wg-tooltip-arrow-size));
-}
-
-.wg__tooltip[data-placement^="bottom"] .wg__tooltip-arrow {
-  top: calc(-0.5 * var(--wg-tooltip-arrow-size));
-}
-
-.wg__tooltip[data-placement^="left"] .wg__tooltip-arrow {
-  right: calc(-0.5 * var(--wg-tooltip-arrow-size));
-}
-
-.wg__tooltip[data-placement^="right"] .wg__tooltip-arrow {
-  left: calc(-0.5 * var(--wg-tooltip-arrow-size));
-}
+/* The arrow's side + offset come from core createTooltip (anchor() arrow: inline
+   left / top + the side facing the cell at -half its size). */
 
 /* Rich tooltip content */
 .wg__tooltip-title {

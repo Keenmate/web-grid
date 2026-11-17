@@ -10,7 +10,7 @@ import type { DatePicker } from './datepicker/datepicker.js'
 import type { MenuDrawerSide, MenuHandle, MenuPresentation } from '@keenmate/web-components-core/menu'
 import type { AutocompleteService } from './dropdown/autocomplete-service.js'
 import type { DropdownService } from './dropdown/dropdown-service.js'
-import type { TooltipService } from './tooltip/tooltip-service.js'
+import type { GridTooltips } from './tooltip/tooltip.js'
 import type { ToolbarService } from './toolbar/toolbar-service.js'
 import type { VirtualScrollService } from './scroll/virtual-scroll-service.js'
 import type { FilterRowService } from './filter-row/index.js'
@@ -52,8 +52,8 @@ export interface GridHost<T = unknown> {
 	// Autocomplete async state — owned by AutocompleteService.
 	readonly autocomplete: AutocompleteService
 
-	// Tooltip runtime state — owned by TooltipService (element, arrow, anchor, show/hide timers).
-	readonly tooltip: TooltipService
+	// The grid's delegated core tooltips (cells / header / rows + toolbar buttons).
+	readonly tooltip: GridTooltips
 	// Tooltip configuration (grid-level), exposed as accessors.
 	readonly tooltipShowDelay: number
 	readonly tooltipHideDelay: number

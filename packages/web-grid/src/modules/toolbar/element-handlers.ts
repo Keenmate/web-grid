@@ -9,7 +9,6 @@
 
 import type { GridHost } from '../grid-context.js'
 import type { CellContext, GridToolbarEntry } from '../../interaction.js'
-import { showTooltip, hideTooltip } from '../tooltip/index.js'
 import { activateGridItem, handleRowShortcut, rowCellFields } from '../items/index.js'
 import { returnFocusToCell } from '../navigation/focus.js'
 import { deepActiveElement, registerOverlay, type OverlayDismissReason } from '@keenmate/web-components-core'
@@ -132,9 +131,10 @@ export function removeInlineShortcuts<T>(ctx: GridHost<T>): void {
 }
 
 /**
- * Attach `mouseenter` / `mouseleave` tooltip handlers to each toolbar button:
- * the text as heading, `tooltip` as description, the shortcut (the item's, or a
- * `rowShortcuts` entry with the same `id` / built-in `action`).
+ * Register each toolbar button's tooltip with the grid's delegated toolbar tooltip
+ * (core createTooltip — hover + keyboard focus): the text as heading, `tooltip` as
+ * description, the shortcut (the item's, or a `rowShortcuts` entry with the same
+ * `id` / built-in `action`).
  */
 export function setupToolbarTooltips<T>(ctx: GridHost<T>, buttons: ToolbarButton<T>[], elements?: Iterable<Element>): void {
 	const toolbarContainer = ctx.shadow.querySelector('.wg__toolbar-container')
@@ -147,12 +147,7 @@ export function setupToolbarTooltips<T>(ctx: GridHost<T>, buttons: ToolbarButton
 		const key = entry.item.id ?? entry.item.action
 		const matchingShortcut = ctx.engine.rowShortcuts?.find(s => (s.id ?? s.action) === key)
 
-		button.addEventListener('mouseenter', () => {
-			showTooltip(ctx, button, buildToolbarTooltipHtml(entry, matchingShortcut?.shortcut), 0, true)
-		})
-		button.addEventListener('mouseleave', () => {
-			hideTooltip(ctx)
-		})
+		ctx.tooltip.setToolbarContent(button, buildToolbarTooltipHtml(entry, matchingShortcut?.shortcut))
 	}
 }
 
@@ -452,7 +447,7 @@ function refreshOpenToolbar<T>(ctx: GridHost<T>, row: T, rowIndex: number): void
 		if (html === renderToolbarButton(previous[i], i, 'wg__toolbar-btn')) return
 		const el = active.toolbar.querySelector(`.wg__toolbar-btn[data-wg-index="${i}"]`)
 		if (!el) return
-		if (ctx.tooltip.anchor === el) hideToolbarTooltip(ctx)
+		if (ctx.tooltip.toolbarTarget === el) hideToolbarTooltip(ctx)
 		const temp = document.createElement('div')
 		temp.innerHTML = html
 		const fresh = temp.firstElementChild!
@@ -556,6 +551,5 @@ export function handleInlineActionClick<T>(
  * pointer leaves the grid must not cut the cell tooltip's `tooltipHideDelay` short.
  */
 function hideToolbarTooltip<T>(ctx: GridHost<T>): void {
-	const anchor = ctx.tooltip.anchor
-	if (anchor && anchor.matches('.wg__toolbar-btn')) hideTooltip(ctx, 0)
+	ctx.tooltip.hideToolbar()
 }
