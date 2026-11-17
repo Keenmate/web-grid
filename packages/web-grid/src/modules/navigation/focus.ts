@@ -517,10 +517,7 @@ export function handleTableFocusOut<T>(ctx: GridHost<T>, e: FocusEvent): void {
 
 		// Check if the web component (shadow host) still has focus
 		const host = ctx.shadow.host as HTMLElement
-		const componentHasFocus = document.activeElement === host ||
-			host.contains(document.activeElement as Node)
-
-		if (componentHasFocus) {
+		if (isFocusInGrid(ctx)) {
 			return
 		}
 
@@ -540,6 +537,22 @@ export function handleTableFocusOut<T>(ctx: GridHost<T>, e: FocusEvent): void {
 		// Only remove fill handle if this grid owns it (prevents one grid from removing another's)
 		removeFillHandle(host)
 	})
+}
+
+/**
+ * Does this grid hold the focus — the host itself, its light DOM, or anything in its own
+ * shadow tree (at any depth: a custom editor's own shadow root included)?
+ * Not `document.activeElement`: inside another component's shadow root that is the OUTER
+ * host, never this grid. Own shadow tree = `ctx.shadow.activeElement` (non-null exactly when
+ * the focus is somewhere below this shadow root, whatever root the grid itself sits in);
+ * host / light DOM = core `deepActiveElement()` (the real focused element across roots).
+ */
+export function isFocusInGrid<T>(ctx: GridHost<T>): boolean {
+	if (ctx.shadow.activeElement) return true
+	const deep = deepActiveElement()
+	if (!deep) return false
+	const host = ctx.shadow.host
+	return deep === host || host.contains(deep)
 }
 
 /**

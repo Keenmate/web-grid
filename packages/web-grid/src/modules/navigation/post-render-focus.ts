@@ -20,7 +20,8 @@
 
 import type { GridHost } from '../grid-context.js'
 import type { FocusedCell } from '../../types.js'
-import { focusCellTd } from './focus.js'
+import { focusCellTd, isFocusInGrid } from './focus.js'
+import { deepActiveElement } from '@keenmate/web-components-core'
 
 /** The open editor's text (+ caret) before a render replaced it — see captureEditorText(). */
 export type EditorText = {
@@ -139,10 +140,13 @@ export function restoreFocusAfterRender<T>(
 		const cell = container.querySelector(
 			`td[data-row="${focusedCell.rowIndex}"][data-col="${focusedCell.colIndex}"]`
 		) as HTMLElement | null
-		// Never pulled from an element outside the grid that holds the focus now
-		const docActive = document.activeElement
-		const host = ctx.shadow.host
-		const isFocusElsewhere = !!docActive && docActive !== document.body && docActive !== host && !host.contains(docActive)
+		// Never pulled from an element outside the grid that holds the focus now. Core
+		// deepActiveElement(): the real focused element across shadow roots — inside another
+		// component's shadow root document.activeElement is that OUTER host, which read as
+		// "focus elsewhere" and the cell never came back. In-grid = isFocusInGrid (own shadow
+		// root's activeElement, or the host / its light DOM).
+		const deepActive = deepActiveElement()
+		const isFocusElsewhere = !!deepActive && deepActive !== document.body && !isFocusInGrid(ctx)
 		if (cell) {
 			// Now, not on a timer: the render just replaced the focused cell, and a key pressed
 			// before a deferred focus() landed on nothing (two quick Shift+Arrows grew the range

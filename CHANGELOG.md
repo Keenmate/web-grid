@@ -10,6 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Fixed — cell focus inside another component's shadow root (2026-11-18)
+- **Fixed:** a grid placed inside another component's shadow root lost its focused cell when the focus moved to
+  the grid's own container (range shortcuts), and a re-render no longer brought the focus back to the cell — two
+  focus checks read `document.activeElement`, which there is the OUTER host, never the grid. Both now ask "is the
+  focus in this grid" through the grid's own shadow root `activeElement` (+ core `deepActiveElement()` for the host
+  / light DOM); "focus is elsewhere" uses `deepActiveElement()`. A top-level grid behaves as before.
+
 ### Internal — leftover core adoptions (2026-11-18)
 - Internal: the `GRID:PERF` timings go through core `createPerfLogger('GRID')` (`src/perf.ts`; the grid's
   always-on counter object is gone — nothing is counted or timed while PERF is silent). Line format changed:

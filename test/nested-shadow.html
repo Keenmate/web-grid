@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — grid inside another component's shadow root</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>grid inside a shadow root fixture</h1>
+	<p>Targeted by <code>e2e/nested-shadow.spec.ts</code>. The same grid twice: <code>#top</code> on the page,
+	<code>#inner</code> inside <code>&lt;grid-wrapper&gt;</code>'s shadow root (there <code>document.activeElement</code>
+	is the wrapper, never the grid). Reload resets all state.</p>
+
+	<h2>top-level</h2>
+	<web-grid id="top" style="max-width: 600px;"></web-grid>
+
+	<h2>inside a wrapper's shadow root</h2>
+	<grid-wrapper id="wrapper"></grid-wrapper>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+
+		customElements.define('grid-wrapper', class extends HTMLElement {
+			constructor() {
+				super()
+				this.attachShadow({ mode: 'open' }).innerHTML = '<web-grid id="inner" style="max-width: 600px;"></web-grid>'
+			}
+		})
+
+		const seed = () => [
+			{ id: 1, name: 'Alice', city: 'Prague' },
+			{ id: 2, name: 'Bob', city: 'Brno' },
+			{ id: 3, name: 'Carol', city: 'Ostrava' },
+			{ id: 4, name: 'David', city: 'Plzen' }
+		]
+		const configure = (grid) => {
+			grid.columns = [
+				{ field: 'id', title: 'ID', width: '60px', isEditable: false },
+				{ field: 'name', title: 'Name', width: '160px', editor: 'text', isFilterable: true },
+				{ field: 'city', title: 'City', width: '160px', editor: 'text', isFilterable: true }
+			]
+			grid.items = seed()
+			grid.isEditingEnabled = true
+			grid.editTrigger = 'dblclick'
+			grid.isFilteringEnabled = true
+		}
+		configure(document.getElementById('top'))
+		configure(document.getElementById('wrapper').shadowRoot.getElementById('inner'))
+	</script>
+</body>
+</html>
