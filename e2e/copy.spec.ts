@@ -9,17 +9,11 @@ import { test, expect, type Page, gridLocator, cell, header, onGrid, waitForRows
  * getCopyValueCallback rendering "12.50 EUR"; Banana's note is null.
  */
 
-// Reading the clipboard back needs the clipboard-read permission, which Playwright grants only in
-// Chromium (Firefox / WebKit: "Unknown permission: clipboard-read"). There the system clipboard is
-// replaced by an in-page one (navigator.clipboard.writeText / readText), so the grid's copy path —
-// what it writes and when — is still covered; Chromium keeps the real clipboard.
-test.use({
-	permissions: async ({ browserName }, use) => {
-		await use(browserName === 'chromium' ? ['clipboard-read', 'clipboard-write'] : [])
-	}
-})
-test.beforeEach(async ({ page, browserName }) => {
-	if (browserName === 'chromium') return
+// The spec never touches the real system clipboard (it is the developer's): every browser gets an
+// in-page clipboard — navigator.clipboard.writeText / readText and the document.execCommand('copy')
+// fallback core's copyText() uses when the Clipboard API refuses (it copies the selected text).
+// `window.__execCopyFails = true` makes that fallback fail too.
+test.beforeEach(async ({ page }) => {
 	await page.addInitScript(() => {
 		let text = ''
 		Object.defineProperty(navigator, 'clipboard', {
@@ -29,6 +23,12 @@ test.beforeEach(async ({ page, browserName }) => {
 				readText: async () => text
 			}
 		})
+		document.execCommand = ((command: string) => {
+			if (command !== 'copy' || (window as unknown as { __execCopyFails?: boolean }).__execCopyFails) return false
+			const active = document.activeElement as HTMLTextAreaElement | null
+			text = active && 'value' in active ? active.value.slice(active.selectionStart ?? 0, active.selectionEnd ?? undefined) : String(document.getSelection() ?? '')
+			return true
+		}) as typeof document.execCommand
 	})
 })
 
@@ -139,6 +139,7 @@ test.describe('API', () => {
 		const ok = await onGrid(page, el => {
 			const orig = navigator.clipboard.writeText
 			navigator.clipboard.writeText = () => Promise.reject(new Error('denied'))
+			;(window as unknown as { __execCopyFails?: boolean }).__execCopyFails = true // the fallback fails too
 			el.selectRow(0)
 			return el.copySelectedRowsToClipboard().finally(() => { navigator.clipboard.writeText = orig })
 		})

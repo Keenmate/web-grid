@@ -27,7 +27,7 @@ export interface DatePickerOptions {
 	showTodayButton?: boolean  // Show "Today" button (default: true)
 
 	// Locale
-	locale?: string  // e.g., 'en', 'cs', 'de' (default: browser locale)
+	locale?: string  // e.g., 'en', 'cs', 'de' (default: window.components.locale, else the browser locale)
 
 	// Rolling selector year range
 	rollingYearRange?: string  // e.g., '2020-2030' (default: current year ± 10)

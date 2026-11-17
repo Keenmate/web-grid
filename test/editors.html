@@ -131,9 +131,7 @@
 				text: 'Copy value',
 				icon: '📋',
 				onClick: (ctx) => {
-					// Headless runs have no clipboard permission — swallow the rejection so
-					// it doesn't surface as an unhandled page error (e2e pageerror guard).
-					navigator.clipboard.writeText(String(ctx.value || '')).catch(() => {})
+					// A fixture never touches the real system clipboard — the log is what the spec checks.
 					logEvent('Copy', `"${ctx.value}" copied to clipboard`)
 				}
 			},

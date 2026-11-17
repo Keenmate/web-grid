@@ -91,6 +91,7 @@ const isThenable = (v: unknown): v is PromiseLike<unknown> =>
 	!!v && (typeof v === 'object' || typeof v === 'function') && typeof (v as { then?: unknown }).then === 'function'
 
 import type { StateStore } from '@keenmate/web-components-core'
+import { copyText } from '@keenmate/web-components-core'
 // Date formatting utilities for auto-formatting date columns
 import { parseFormat, formatDate } from './modules/datepicker/index.js'
 import { bindOptionContext } from './modules/dropdown/options.js'
@@ -2341,14 +2342,9 @@ export class GridEngine<T = unknown> {
 		return String(value)
 	}
 
-	/** Write to the clipboard; a rejection (no permission / insecure context) resolves false. */
-	private async writeClipboardText(text: string): Promise<boolean> {
-		try {
-			await navigator.clipboard.writeText(text)
-			return true
-		} catch {
-			return false
-		}
+	/** Write to the clipboard (core `copyText`: the Clipboard API, else the execCommand fallback); never throws. */
+	private writeClipboardText(text: string): Promise<boolean> {
+		return copyText(text)
 	}
 
 	// ==========================================================================

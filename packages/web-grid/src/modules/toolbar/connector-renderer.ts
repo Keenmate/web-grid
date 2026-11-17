@@ -7,7 +7,7 @@
 // `getConnectorState`. This file just turns that state into actual SVG DOM.
 //
 // The SVG is appended to the shadow root as a fullscreen `position: fixed`
-// overlay (pointer-events: none, z-index: 999). Previous connector elements
+// overlay (pointer-events: none, one below the toolbar's tier). Previous connector elements
 // are removed before re-painting so repeated render calls don't pile up.
 
 import type { GridHost } from '../grid-context.js'
@@ -33,7 +33,7 @@ export function renderConnector<T>(ctx: GridHost<T>): void {
 	// Create SVG overlay
 	const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
 	svg.setAttribute('class', 'wg__connector')
-	svg.setAttribute('style', 'position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 999;')
+	svg.setAttribute('style', 'position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: calc(var(--wg-z-toolbar) - 1);')
 
 	// Create path
 	const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')

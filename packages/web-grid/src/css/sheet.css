@@ -40,7 +40,7 @@
   border-radius: 0;
   box-shadow: none;
   background: var(--wg-dropdown-bg);
-  z-index: var(--wg-z-dropdown);
+  z-index: var(--wg-z-sheet);
   --_wg-sheet-bg: var(--wg-dropdown-bg);
 }
 

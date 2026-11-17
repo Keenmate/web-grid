@@ -246,7 +246,7 @@ export async function dragSelect(page: Page, fromRow: number, fromCol: number, t
 	await expect.poll(() => gridLocator(page, gridId).evaluate(el => !!el.shadowRoot?.activeElement)).toBe(true)
 }
 
-/** Read the system clipboard (needs `permissions: ['clipboard-read', 'clipboard-write']`). */
+/** Read the page's clipboard — copy.spec.ts installs an in-page stub (never the real system clipboard). */
 export async function readClipboard(page: Page): Promise<string> {
 	// Windows clipboards hand back CRLF line breaks — normalise to the grid's LF.
 	return (await page.evaluate(() => navigator.clipboard.readText())).replace(/\r\n/g, '\n')

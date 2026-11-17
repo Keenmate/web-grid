@@ -10,7 +10,7 @@ import type {
 	PasteDetail
 } from '../../types.js'
 import type { BeforePasteContext } from '../../interaction.js'
-import { runBeforeCallback } from '@keenmate/web-components-core'
+import { runBeforeCallback, readPasteText } from '@keenmate/web-components-core'
 import { typePastedText } from '../editing/value-parse.js'
 
 /**
@@ -542,7 +542,7 @@ export async function handlePasteEvent<T>(ctx: GridHost<T>, e: ClipboardEvent): 
 	if (ctx.engine.isReadonly || ctx.engine.isDisabled) return
 
 	const { rowIndex, colIndex } = ctx.engine.focusedCell
-	const text = e.clipboardData?.getData('text') || ''
+	const text = readPasteText(e)
 	if (!text) return
 
 	// Check if this is multi-cell paste (contains tabs or multiple lines)

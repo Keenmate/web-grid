@@ -414,12 +414,16 @@
   --wg-z-resize-handle: 6;           /* Column resize handle */
   --wg-z-shortcuts-help: 10;         /* Keyboard shortcuts overlay */
 
-  /* Popover layers (above grid content): */
-  --wg-z-reorder-indicator: 100;     /* Column reorder drop indicator */
-  --wg-z-toolbar: 1000;
-  --wg-z-dropdown: 9999;
-  --wg-z-reorder-ghost: 10000;       /* Column reorder drag ghost */
-  --wg-z-tooltip: 10000;
+  --wg-z-reorder-indicator: 100;     /* Column reorder drop indicator (inside the grid) */
+
+  /* Page-level layers — the shared core tiers (--base-z-*, core Z_INDEX), so the grid stacks with
+     every other component and the page's own dialogs: */
+  --wg-z-toolbar: var(--base-z-popover, 7600);       /* Floating row toolbar */
+  --wg-z-dropdown: var(--base-z-dropdown, 7500);     /* Cell dropdown / date editor panel */
+  --wg-z-sheet: var(--base-z-modal, 7000);           /* Phone sheet (dropdown / date editor) */
+  --wg-z-dialog: var(--base-z-modal, 7000);          /* Go-to-row dialog (Ctrl+G) */
+  --wg-z-reorder-ghost: var(--base-z-tooltip, 9000); /* Column reorder drag ghost */
+  --wg-z-tooltip: var(--base-z-tooltip, 9000);
 
   /* ==========================================================================
      TREE

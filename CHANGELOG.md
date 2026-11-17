@@ -10,6 +10,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Changed — clipboard, locale, direction and stacking through core (2026-11-17, needs core 1.0.0-rc25)
+- **Copy falls back when the Clipboard API refuses** (an `http://` intranet page, an embedded webview): Ctrl+C,
+  `copySelectedRowsToClipboard()` / `copyCellSelectionToClipboard()` go through core `copyText` (Clipboard API,
+  else a hidden textarea + `execCommand('copy')`); they used to fail. Paste (grid and date editor) reads through
+  core `readPasteText` (`text/plain`, CRLF → LF). Rulebook C-CA-32.
+- **The date editor's month / weekday names follow `window.components.locale`** when the column sets no
+  `locale` (core `resolveLocale`: column → page → browser; was column → browser). Rulebook C-CA-24.
+- The row toolbar's connector reads the grid's effective direction (core `isRtl`: host, ancestors, CSS
+  `direction`), not only `document.dir`.
+- **BREAKING (stacking):** the page-level layers sit on the shared core tiers (`--base-z-*`) instead of grid
+  literals — `--wg-z-toolbar` 1000 → `--base-z-popover` (7600), `--wg-z-dropdown` 9999 → `--base-z-dropdown`
+  (7500), `--wg-z-tooltip` / `--wg-z-reorder-ghost` 10000 → `--base-z-tooltip` (9000); new `--wg-z-sheet` and
+  `--wg-z-dialog` (`--base-z-modal`, 7000) for the phone sheets and the go-to-row dialog (was 9999 / 1000).
+  A page that stacked its own layer between the old numbers re-checks it. Rulebook C-BV-15.
+- e2e: `copy.spec.ts` and the editors fixture no longer touch the real system clipboard (an in-page stub in
+  every browser); new `core-adoption.spec.ts`.
+
 ### Fixed — one document `mouseup` listener per grid (2026-11-16)
 - Every full table rebuild (a `table-border-only` flip, the first render after a structure change) added
   another anonymous capture `mouseup` listener on `document` and never removed it — a detached grid stayed

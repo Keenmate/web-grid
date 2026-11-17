@@ -3,7 +3,7 @@
 // Floating toolbar with row actions
 // =============================================================================
 
-import { escapeHtml } from '@keenmate/web-components-core'
+import { escapeHtml, isRtl } from '@keenmate/web-components-core'
 import type { GridHost } from '../grid-context.js'
 import type { GridAction, GridToolbarEntry, GridToolbarItem } from '../../interaction.js'
 import type { OverlayHandle } from '@keenmate/web-components-core'
@@ -596,7 +596,7 @@ export function updateConnector<T>(
 		return
 	}
 
-	const isRTL = document.dir === 'rtl' || document.documentElement.dir === 'rtl'
+	const isRTL = isRtl(ctx.shadow.host) // the grid's effective direction (host / ancestors / CSS), not only the document
 
 	// Check row visibility within container
 	// Row is only "not visible" when COMPLETELY outside the container

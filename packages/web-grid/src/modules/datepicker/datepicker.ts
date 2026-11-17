@@ -4,6 +4,7 @@
 // =============================================================================
 
 import { adoptStyles } from '@keenmate/web-components-core'
+import { resolveLocale } from '@keenmate/web-components-core/locale'
 import { createPopover, type PopoverCloseReason, type PopoverHandle } from '@keenmate/web-components-core/positioning'
 import type { DatePickerOptions, DatePickerState, LocaleStrings, FormatSpec } from './types.js'
 import { DEFAULT_LOCALE_STRINGS } from './types.js'
@@ -17,7 +18,7 @@ const DATEPICKER_STYLES = `
 	position: absolute;
 	top: 0;
 	left: 0;
-	z-index: var(--wg-dp-z-index, 9999);
+	z-index: var(--wg-dp-z-index, var(--wg-z-dropdown, var(--base-z-dropdown, 7500)));
 
 	/* Colors — contract inputs with their defaults and the contract's formulas on them;
 	   light-dark() follows the color-scheme of the mount root (the grid host in its shadow root). */
@@ -293,7 +294,7 @@ const DATEPICKER_SHEET_STYLES = `
 	overflow-y: auto;
 	overscroll-behavior: contain;
 	background: var(--wg-dp-background);
-	z-index: var(--wg-z-dropdown, var(--wg-dp-z-index, 9999));
+	z-index: var(--wg-z-sheet, var(--base-z-modal, 7000));
 	--_wg-sheet-bg: var(--wg-dp-background);
 }
 
@@ -401,10 +402,11 @@ export class DatePicker {
 	}
 
 	/**
-	 * Initialize locale strings (use browser Intl API if available)
+	 * Initialize locale strings (Intl): the picker's own `locale`, else the page-wide
+	 * `window.components.locale`, else the browser (core `resolveLocale`).
 	 */
 	private initLocaleStrings(locale?: string): LocaleStrings {
-		const resolvedLocale = locale || navigator.language || 'en'
+		const resolvedLocale = resolveLocale(locale)
 
 		try {
 			const monthFormatter = new Intl.DateTimeFormat(resolvedLocale, { month: 'long' })

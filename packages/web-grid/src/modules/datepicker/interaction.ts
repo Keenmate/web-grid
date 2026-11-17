@@ -3,6 +3,7 @@
 // Click handlers, input masking, focus management
 // =============================================================================
 
+import { readPasteText } from '@keenmate/web-components-core'
 import type { DatePickerState, DatePickerOptions, FormatSpec } from './types.js'
 import { parseDate, normalizeDate } from './formatting.js'
 
@@ -250,7 +251,7 @@ export function handleInputPaste(
 ): void {
 	event.preventDefault()
 
-	const pastedText = event.clipboardData?.getData('text') || ''
+	const pastedText = readPasteText(event)
 	const { separator } = formatInfo
 
 	// Clean pasted content

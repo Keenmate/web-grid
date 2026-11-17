@@ -57,7 +57,7 @@
 	   only the tooltip's max-width cap (--wg-tooltip-width / -min-width don't apply). */
 	min-width: 200px;
 	max-width: var(--wg-tooltip-max-width);
-	z-index: 100;
+	z-index: 1; /* above its siblings inside the help's own stacking context */
 }
 
 .wg__shortcuts-help--left .wg__shortcuts-help-overlay {
