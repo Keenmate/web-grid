@@ -227,6 +227,49 @@ return isExpanded
 }</code></pre></div>
     </div>
 
+    <div class="card">
+        <h2>TR07 · Tree and Row Inputs as HTML Attributes</h2>
+        <p>The row-identity and tree inputs are plain attributes now — the markup below configures the whole tree; the script only assigns <code>items</code> and <code>columns</code>. Each attribute also works as a property (<code>grid.expandLevel = 2</code>), and removing an attribute resets the input to its default.</p>
+        <div class="code-block" data-kmwc-snippet data-language="html"><pre><code>&lt;web-grid id="attrTree"
+    id-member="sku" path-member="loc" tree-path-separator=":"
+    expand-level="1" row-editable="false"
+    enable-editing edit-trigger="dblclick"&gt;&lt;/web-grid&gt;</code></pre></div>
+
+        <div class="controls mt-1">
+            <label>
+                expand-level:
+                <select id="attrExpand">
+                    <option value="">unset (everything expanded)</option>
+                    <option value="0">0 (only the roots)</option>
+                    <option value="1" selected>1 (the roots expanded)</option>
+                    <option value="2">2</option>
+                </select>
+            </label>
+            <label>
+                <input type="checkbox" id="attrRowEditable" checked> <code>row-editable="false"</code> (every row read-only)
+            </label>
+            <button type="button" id="attrRestock">updateRowById('W-PRG', …) — +10 in stock</button>
+        </div>
+
+        <web-grid id="attrTree" id-member="sku" path-member="loc" tree-path-separator=":" expand-level="1" row-editable="false" enable-editing edit-trigger="dblclick" style="max-height: 360px;"></web-grid>
+
+        <p class="mt-1"><strong>Attributes now:</strong> <code id="attrState" class="muted">—</code></p>
+
+        <table class="reference-table table-compact mt-1">
+            <thead><tr><th>Attribute</th><th>Property</th><th>Meaning</th></tr></thead>
+            <tbody>
+            <tr><td><code>id-member</code></td><td><code>idMember</code></td><td>Field that identifies a row (default <code>id</code>; <code>''</code> = none). <code>getRowById</code> / <code>updateRowById</code> / drafts / locks use it.</td></tr>
+            <tr><td><code>path-member</code></td><td><code>pathMember</code></td><td>Field holding the row's path; setting it turns the grid into a tree.</td></tr>
+            <tr><td><code>level-member</code></td><td><code>levelMember</code></td><td>Field holding the depth, when the data has levels instead of paths.</td></tr>
+            <tr><td><code>parent-path-member</code></td><td><code>parentPathMember</code></td><td>Field holding the parent row's path.</td></tr>
+            <tr><td><code>tree-path-separator</code></td><td><code>treePathSeparator</code></td><td>Path separator; unset = auto-detected (<code>.</code> <code>/</code> <code>\</code>).</td></tr>
+            <tr><td><code>expand-level</code></td><td><code>expandLevel</code></td><td>Initial depth shown (<code>0</code> = roots only); unset = everything expanded. Ignored once <code>expandedPaths</code> is assigned.</td></tr>
+            <tr><td><code>row-editable</code></td><td><code>isRowEditable</code></td><td><code>false</code> = every row read-only; unset = no row gate. <code>getIsRowEditableCallback</code> decides per row and wins.</td></tr>
+            <tr><td><code>toolbar-btn-min-width</code></td><td><code>toolbarBtnMinWidth</code></td><td>Min width of the row-toolbar buttons (a CSS length; a number = px).</td></tr>
+            </tbody>
+        </table>
+    </div>
+
 <script type="module">
     // -----------------------------------------------------------------
     // Org chart: 5 properties + path
@@ -667,4 +710,51 @@ return isExpanded
             ? '<i class="fa-solid fa-folder-open"></i>'
             : '<i class="fa-solid fa-folder"></i>'
     }
+</script>
+
+<script type="module">
+    // -----------------------------------------------------------------
+    // TR07 — tree + row inputs as attributes (see the markup)
+    // -----------------------------------------------------------------
+    const attrTree = document.getElementById('attrTree')
+    attrTree.columns = [
+        { field: 'name', title: 'Warehouse', isTree: true, width: '220px' },
+        { field: 'sku', title: 'SKU', width: '110px' },
+        { field: 'stock', title: 'In stock', width: '110px', horizontalAlign: 'right', editor: 'number', isEditable: true }
+    ]
+    attrTree.items = [
+        { sku: 'R-EU', loc: 'EU', name: 'Europe', stock: 0 },
+        { sku: 'C-CZ', loc: 'EU:CZ', name: 'Czechia', stock: 0 },
+        { sku: 'W-PRG', loc: 'EU:CZ:PRG', name: 'Prague', stock: 120 },
+        { sku: 'W-BRN', loc: 'EU:CZ:BRN', name: 'Brno', stock: 45 },
+        { sku: 'C-DE', loc: 'EU:DE', name: 'Germany', stock: 0 },
+        { sku: 'W-MUC', loc: 'EU:DE:MUC', name: 'Munich', stock: 80 },
+        { sku: 'R-NA', loc: 'NA', name: 'North America', stock: 0 },
+        { sku: 'C-US', loc: 'NA:US', name: 'United States', stock: 0 },
+        { sku: 'W-SEA', loc: 'NA:US:SEA', name: 'Seattle', stock: 210 }
+    ]
+
+    const attrState = document.getElementById('attrState')
+    const showAttrs = () => {
+        attrState.textContent = ['id-member', 'path-member', 'tree-path-separator', 'expand-level', 'row-editable']
+            .filter(name => attrTree.hasAttribute(name))
+            .map(name => `${name}="${attrTree.getAttribute(name)}"`)
+            .join(' ')
+    }
+    showAttrs()
+
+    document.getElementById('attrExpand').addEventListener('change', (e) => {
+        if (e.target.value === '') attrTree.removeAttribute('expand-level')
+        else attrTree.setAttribute('expand-level', e.target.value)
+        showAttrs()
+    })
+    document.getElementById('attrRowEditable').addEventListener('change', (e) => {
+        if (e.target.checked) attrTree.setAttribute('row-editable', 'false')
+        else attrTree.removeAttribute('row-editable')   // unset = no row gate: double-click a stock cell to edit
+        showAttrs()
+    })
+    document.getElementById('attrRestock').addEventListener('click', () => {
+        const row = attrTree.getRowById('W-PRG')   // id-member="sku"
+        if (row) attrTree.updateRowById('W-PRG', { stock: row.stock + 10 })
+    })
 </script>

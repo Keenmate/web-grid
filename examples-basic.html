@@ -99,6 +99,64 @@
         </div>
     </div>
 
+    <div class="card">
+        <h2>BU04 · Tooltips on Keyboard Focus</h2>
+        <p>
+            A tooltip shows on <strong>keyboard focus</strong> as well as on hover: click a cell (or Tab into the grid),
+            then move with the arrow keys — the <strong>Status</strong> and <strong>Note</strong> tooltips follow the focused cell after
+            <code>tooltip-show-delay</code>. A focused cell keeps its tooltip while the mouse moves away; <strong>Escape</strong> hides it.
+            The tooltip is <code>role="tooltip"</code> and the cell points to it with <code>aria-describedby</code> while it shows, so a
+            screen reader reads it after the cell. Floating-toolbar buttons behave the same.
+        </p>
+
+        <web-grid id="gridFocusTips" edit-trigger="navigate" tooltip-show-delay="300" style="max-height: 300px;"></web-grid>
+
+        <table class="reference-table table-compact mt-1">
+            <thead><tr><th>Input</th><th>Effect</th></tr></thead>
+            <tbody>
+            <tr><td><code>tooltipMember</code> / <code>getTooltipCallback</code> (column)</td><td>The cell's tooltip text (the callback wins; <code>isTooltipHtml</code> for HTML)</td></tr>
+            <tr><td><code>tooltip-show-delay</code> / <code>tooltipShowDelay</code></td><td>Delay before it shows — hover and keyboard focus alike (default 200 ms)</td></tr>
+            <tr><td><code>tooltip-hide-delay</code> / <code>tooltipHideDelay</code></td><td>Delay before it hides after the pointer leaves (default 100 ms)</td></tr>
+            <tr><td><kbd>Escape</kbd></td><td>Hides the tooltip of the focused cell</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <h2>BU05 · ARIA Grid and Screen Readers</h2>
+        <p>
+            The grid describes itself as an ARIA <code>grid</code> (a <code>treegrid</code> with tree data), so a screen reader
+            announces the row and column position and the header of every cell it reaches — also with virtual scrolling,
+            where only the visible rows exist in the DOM. Keyboard navigation stays Excel-like (focus moves cell to cell
+            in <code>edit-trigger="navigate"</code>).
+        </p>
+
+        <web-grid id="gridAria" enable-virtual-scroll edit-trigger="navigate" sort-mode="single" show-row-numbers style="max-height: 300px;"></web-grid>
+
+        <p class="mt-1"><strong>Focused cell exposes:</strong> <code id="ariaState" class="muted">click a cell, then use the arrows</code></p>
+
+        <table class="reference-table table-compact mt-1">
+            <thead><tr><th>Where</th><th>ARIA</th><th>What a screen reader gets</th></tr></thead>
+            <tbody>
+            <tr><td>Table</td><td><code>role="grid"</code> / <code>"treegrid"</code>, <code>aria-rowcount</code>, <code>aria-colcount</code>, <code>aria-multiselectable</code>, <code>aria-readonly</code></td><td>The full size ("1001 rows, 5 columns"), not the rendered window</td></tr>
+            <tr><td>Rows</td><td><code>role="row"</code>, <code>aria-rowindex</code>, <code>aria-selected</code></td><td>The row position, "selected"</td></tr>
+            <tr><td>Cells</td><td><code>role="gridcell"</code> / <code>"columnheader"</code> / <code>"rowheader"</code> (row numbers), <code>aria-colindex</code>, <code>aria-readonly</code></td><td>The column header and position of each cell</td></tr>
+            <tr><td>Sorted header</td><td><code>aria-sort="ascending"</code> / <code>"descending"</code></td><td>The direction of the primary sort column</td></tr>
+            <tr><td>Tree rows</td><td><code>aria-level</code>, <code>aria-expanded</code></td><td>"level 2, collapsed"</td></tr>
+            </tbody>
+        </table>
+
+        <div class="note mt-1">
+            <div class="note-title">Screen-reader note</div>
+            <p>
+                Screen readers read a page in <em>browse</em> mode and use their own table keys there. The grid's keys
+                (arrows, Enter / F2 to edit, Space, Escape) need <em>focus</em> mode: NVDA and JAWS switch to it when a cell
+                gets focus (<kbd>Insert</kbd>+<kbd>Space</kbd> toggles it in NVDA); with VoiceOver, interact with the table
+                (<kbd>VO</kbd>+<kbd>Shift</kbd>+<kbd>↓</kbd>). Cell tooltips are read as the cell's description (BU04).
+            </p>
+        </div>
+    </div>
+
 <script type="module">
     // Sample employee data
     const sampleData = [
@@ -395,4 +453,51 @@
     document.getElementById('isDirtyIndicatorShown').addEventListener('change', (e) => {
         grid.isDirtyIndicatorShown = e.target.checked
     })
+</script>
+
+<script type="module">
+    // =============================================================
+    // BU04 — tooltips on keyboard focus
+    // =============================================================
+    const gridFocusTips = document.getElementById('gridFocusTips')
+    gridFocusTips.columns = [
+        { field: 'name', title: 'Name', width: '170px' },
+        { field: 'status', title: 'Status', width: '120px', tooltipMember: 'statusTooltip' },
+        { field: 'note', title: 'Note', getTooltipCallback: ({ row }) => `${row.name}: ${row.note}` }
+    ]
+    gridFocusTips.items = [
+        { id: 1, name: 'Alice Johnson', status: 'Active', statusTooltip: 'Working on site', note: 'Team lead since 2021' },
+        { id: 2, name: 'Bob Smith', status: 'Remote', statusTooltip: 'Works from Lisbon this quarter', note: 'Prefers async reviews' },
+        { id: 3, name: 'Carol Williams', status: 'On Leave', statusTooltip: 'Back on 3 March', note: 'Hand-over to Alice' },
+        { id: 4, name: 'David Brown', status: 'Active', statusTooltip: 'Working on site', note: 'New starter, buddy: Bob' }
+    ]
+
+    // =============================================================
+    // BU05 — ARIA grid (1000 virtual rows)
+    // =============================================================
+    const gridAria = document.getElementById('gridAria')
+    const depts = ['Engineering', 'Marketing', 'Sales', 'HR']
+    gridAria.columns = [
+        { field: 'id', title: 'ID', width: '80px', horizontalAlign: 'right' },
+        { field: 'name', title: 'Name', width: '160px' },
+        { field: 'dept', title: 'Department', width: '140px' },
+        { field: 'salary', title: 'Salary', width: '110px', horizontalAlign: 'right' }
+    ]
+    gridAria.items = Array.from({ length: 1000 }, (_, i) => ({ id: i + 1, name: `Employee ${i + 1}`, dept: depts[i % depts.length], salary: 50000 + ((i * 7919) % 50000) }))
+
+    // What the focused cell exposes (read from the grid's shadow DOM, for the demo only)
+    const ariaState = document.getElementById('ariaState')
+    const showAria = () => {
+        requestAnimationFrame(() => {
+            const root = gridAria.shadowRoot
+            const table = root?.querySelector('table')
+            const cell = root?.activeElement?.closest?.('[aria-colindex]')
+            const row = cell?.closest('[aria-rowindex]')
+            if (!table || !cell || !row) return
+            const header = root.querySelector(`thead [aria-colindex="${cell.getAttribute('aria-colindex')}"]`)
+            ariaState.textContent = `${table.getAttribute('role')} (${table.getAttribute('aria-rowcount')} rows, ${table.getAttribute('aria-colcount')} columns) · row ${row.getAttribute('aria-rowindex')} · column ${cell.getAttribute('aria-colindex')} "${header?.querySelector('.wg__header-title')?.textContent.trim() ?? ''}" · ${cell.getAttribute('role')}`
+        })
+    }
+    gridAria.addEventListener('focusin', showAria)
+    gridAria.addEventListener('keyup', showAria)
 </script>

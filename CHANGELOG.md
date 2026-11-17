@@ -10,6 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Docs — example chapters for this pass (2026-11-18)
+- Examples: **BU04** tooltips on keyboard focus, **BU05** the ARIA grid with a screen-reader note
+  (`examples-basic.html`); **SP06** accent-insensitive filter row, **SP07** page-wide labels via
+  `window.components.locale` (`examples-sorting-paging.html`, + rows in the SP05 API snippet); **TR07** the
+  row-identity / tree inputs as HTML attributes (`id-member`, `path-member`, `tree-path-separator`, `expand-level`,
+  `row-editable`, … with a reference table; `examples-tree.html`).
+
 ### Changed — reorder ghost + toolbar connector as core layers (2026-11-18)
 - The column-reorder drag ghost and the floating toolbar's connector line are core `createLayer()` layers
   (`modules/layers/index.ts`, `css/layers.css`): mounted outside the grid (`<body>`, or the open modal dialog / popover the

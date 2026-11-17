@@ -1,5 +1,5 @@
 <meta name="kmwc:title" content="Sorting &amp; Pagination">
-<meta name="kmwc:subtitle" content="Multi-column sorting with Ctrl+Click, server-side pagination support">
+<meta name="kmwc:subtitle" content="Multi-column sorting with Ctrl+Click, server-side pagination, accent-insensitive filtering and page-wide labels">
 
     <div class="card">
         <h2>SP01 · Pagination Configuration</h2>
@@ -171,9 +171,56 @@ grid.isSummaryInline = true  // Share row when in same area
 // Result: [Summary] -------- [Pagination]
 
 // Separate rows
-grid.isSummaryInline = false  // Each on its own row</code></pre>
+grid.isSummaryInline = false  // Each on its own row
+
+// Filter row (SP06): contains, case- and accent-insensitive
+grid.isFilteringEnabled = true        // attribute: enable-filtering
+grid.columns = [{ field: 'name', isFilterable: true }]
+grid.filters = { name: 'zoe' }        // matches 'Zoë' too
+grid.onFilterChange = ({ filters }) =&gt; { /* … */ }
+
+// Page-wide labels (SP07): every grid / component on the page
+window.components.locale = {
+    locale: 'cs-CZ',
+    labels: { 'web-grid': { paginationItemCount: '{count} položek' } }
+}
+window.components.locale = null       // back to English
+// Per key: instance grid.labels → page-wide → English</code></pre>
             </div>
         </div>
+    </div>
+
+    <div class="card">
+        <h2>SP06 · Filter Row: Accent-Insensitive Matching</h2>
+        <p class="section-desc">
+            <code>enable-filtering</code> shows a filter input under every column with <code>isFilterable: true</code>.
+            Matching is <strong>contains</strong>, case- and <strong>accent-insensitive</strong>, and the typed term is trimmed:
+            try <code>zoe</code> (finds Zoë), <code>muller</code> (Müller), <code>sevcik</code> (Ševčík) or <code>CAFÉ</code> (café).
+        </p>
+
+        <web-grid id="gridFilter" enable-filtering sort-mode="single" style="max-height: 360px;"></web-grid>
+
+        <p class="mt-1"><strong>Active filters:</strong> <code id="filterState" class="muted">none</code></p>
+    </div>
+
+    <div class="card">
+        <h2>SP07 · Page-Wide Labels (<code>window.components.locale</code>)</h2>
+        <p class="section-desc">
+            One assignment translates every grid on the page — and every other Keenmate component:
+            <code>window.components.locale = { locale, labels: { 'web-grid': { … } } }</code>.
+            Per key, the instance <code>labels</code> win, then the page-wide labels, then English.
+            Numbers in a label follow the page locale (<code>1 234 položek</code> in Czech).
+            The button affects the <em>whole page</em>: the grids above switch too, except where an instance
+            <code>getPaginationLabelsCallback</code> sets its own text (SP03).
+        </p>
+
+        <div class="controls">
+            <button type="button" id="localeCs">Czech, page-wide</button>
+            <button type="button" id="localeReset">Reset (<code>null</code>)</button>
+            <span class="muted">window.components.locale = <code id="localeState">null</code></span>
+        </div>
+
+        <web-grid id="gridLocale" enable-paging page-size="10" enable-filtering style="max-height: 420px;"></web-grid>
     </div>
 
 <script type="module">
@@ -456,5 +503,66 @@ grid.isSummaryInline = false  // Each on its own row</code></pre>
         grid2.items = result.data
         grid2.totalItems = result.total
         grid2.summaryMetadata = result.aggregates
+    })
+</script>
+
+<script type="module">
+    // =============================================================
+    // SP06 — accent-insensitive filter row
+    // =============================================================
+    const gridFilter = document.getElementById('gridFilter')
+    gridFilter.columns = [
+        { field: 'name', title: 'Name', width: '200px', isFilterable: true },
+        { field: 'city', title: 'City', width: '160px', isFilterable: true },
+        { field: 'favourite', title: 'Favourite place', isFilterable: true }
+    ]
+    gridFilter.items = [
+        { id: 1, name: 'Zoë Laurent', city: 'Besançon', favourite: 'Café de Flore' },
+        { id: 2, name: 'Jürgen Müller', city: 'Köln', favourite: 'Brauhaus Früh' },
+        { id: 3, name: 'Tomáš Ševčík', city: 'Plzeň', favourite: 'Kavárna Náměstí' },
+        { id: 4, name: 'José Núñez', city: 'Málaga', favourite: 'Café Central' },
+        { id: 5, name: 'Renée Dvořák', city: 'Brno', favourite: 'Špilberk' },
+        { id: 6, name: 'Søren Ångström', city: 'Århus', favourite: 'Strandvejen' },
+        { id: 7, name: 'Zoe Miller', city: 'Boston', favourite: 'Cafe Nero' },
+        { id: 8, name: 'Ana Ionescu', city: 'Brașov', favourite: 'Piața Sfatului' }
+    ]
+    const filterState = document.getElementById('filterState')
+    gridFilter.addEventListener('filter-change', ({ detail }) => {
+        const active = Object.entries(detail.filters ?? {}).filter(([, value]) => value)
+        filterState.textContent = active.length ? active.map(([field, value]) => `${field}: "${value}"`).join(', ') : 'none'
+    })
+
+    // =============================================================
+    // SP07 — page-wide labels
+    // =============================================================
+    const gridLocale = document.getElementById('gridLocale')
+    const cities = ['Praha', 'Brno', 'Ostrava', 'Plzeň', 'Liberec', 'Olomouc']
+    gridLocale.columns = [
+        { field: 'id', title: '#', width: '80px', horizontalAlign: 'right' },
+        { field: 'city', title: 'City', isFilterable: true },
+        { field: 'orders', title: 'Orders', width: '120px', horizontalAlign: 'right' }
+    ]
+    gridLocale.items = Array.from({ length: 1234 }, (_, i) => ({ id: i + 1, city: cities[i % cities.length], orders: (i * 37) % 500 }))
+
+    const localeState = document.getElementById('localeState')
+    document.getElementById('localeCs').addEventListener('click', () => {
+        window.components.locale = {
+            locale: 'cs-CZ',
+            labels: {
+                'web-grid': {
+                    paginationPageInfo: 'Strana {current} z {total}',
+                    paginationItemCount: '{count} položek',
+                    paginationPerPage: 'na stránku',
+                    noResults: 'Nic nenalezeno',
+                    filterColumn: 'Filtrovat {column}',
+                    contextMenu: { sortAsc: 'Seřadit vzestupně', sortDesc: 'Seřadit sestupně', clearSort: 'Zrušit řazení' }
+                }
+            }
+        }
+        localeState.textContent = "{ locale: 'cs-CZ', labels: { 'web-grid': { … } } }"
+    })
+    document.getElementById('localeReset').addEventListener('click', () => {
+        window.components.locale = null
+        localeState.textContent = 'null'
     })
 </script>
