@@ -397,3 +397,17 @@ test('one tree level indents by --base-tree-indent (1.6 × the 10px rem = 16px)'
 		els.map((el) => parseFloat(getComputedStyle(el).paddingInlineStart)))
 	expect(after).toContain(20)
 })
+
+test.describe('tree filtering', () => {
+	test('a filter matches case- and accent-insensitively and keeps the ancestors of a match', async ({ page }) => {
+		await page.goto(PAGE)
+		await expect(gridLocator(page).locator('tbody tr').first()).toBeVisible()
+		await page.locator(GRID).evaluate((el: any) => {
+			el.items = el.items.map((i: any) => i.path === '1.3.1' ? { ...i, location: 'São Paulo' } : i)
+			el.isFilteringEnabled = true
+			el.filters = { location: 'SAO' }
+		})
+		await expect(gridLocator(page).locator('tbody tr')).toHaveCount(3)   // Acme Corp › Marketing › Brand
+		await expect(gridLocator(page).locator('tbody')).toContainText('Brand')
+	})
+})

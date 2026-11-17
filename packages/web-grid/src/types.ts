@@ -177,7 +177,7 @@ export type Column<T> = {
 	// single-line cells with ellipsis truncation. Header mirrors the body's nowrap so a
 	// body-nowrap column doesn't end up with a wrapping header above single-line cells.
 	nowrap?: boolean
-	// Custom filter predicate for this column. Replaces the built-in case-insensitive substring
+	// Custom filter predicate for this column. Replaces the built-in case- and accent-insensitive "contains"
 	// match. Return true → row passes filter; false → row excluded; null → input is incomplete
 	// (e.g. user typed `>` without a number) — grid ignores this filter (all rows pass) AND adds
 	// a visual `.wg__filter-input--invalid` class to the input so the user gets a red border instead of an empty grid.

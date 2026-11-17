@@ -7,6 +7,9 @@
 //
 //   - typing → debounced (FILTER_DEBOUNCE_MS) → `setFilter(field, text)` → page 1;
 //     Enter applies at once, Escape clears the input (and applies);
+//   - IME-safe (core onTextInput, delegated on the shadow root): a composition filters once, on
+//     commit; the Enter that confirms a candidate (isImeEnter) doesn't apply;
+//   - matching is core /search "contains", case- and accent-insensitive (grid.ts filteredItems);
 //   - server pagination: the change runs through `beforePageChangeCallback`
 //     (trigger 'filter') and fires `data-request` (trigger 'filter');
 //   - the typed-but-not-yet-applied text survives a re-render (the thead is
@@ -17,7 +20,7 @@
 
 import type { GridHost } from '../grid-context.js'
 import { guardPageChange } from '../events/page-change.js'
-import { createDebounce, type Debounce } from '@keenmate/web-components-core'
+import { createDebounce, isImeEnter, onTextInput, type Debounce } from '@keenmate/web-components-core'
 
 export const FILTER_DEBOUNCE_MS = 300
 
@@ -100,22 +103,28 @@ export function positionFilterRow<T>(ctx: GridHost<T>): void {
 	row.querySelectorAll<HTMLElement>('th').forEach(th => { th.style.top = `${height}px` })
 }
 
-/** Delegated listeners on the `.wg` container (survive the thead re-render). */
-export function attachFilterRowListeners<T>(ctx: GridHost<T>, container: HTMLElement): void {
-	container.addEventListener('input', (e: Event) => {
-		const input = e.target as HTMLElement
-		if (!input.matches?.('.wg__filter-input')) return
+/**
+ * Typed filter text — core `onTextInput`, delegated on the shadow root (one subscription covers the
+ * inputs every render rebuilds; an IME composition reports once, on commit). Returns the unsubscribe.
+ */
+export function watchFilterRowText<T>(ctx: GridHost<T>, root: ShadowRoot): () => void {
+	return onTextInput(root, (text, _event, input) => {
 		const field = (input as HTMLInputElement).dataset.field ?? ''
-		const text = (input as HTMLInputElement).value
 		const svc = ctx.filterRow
 		svc.pendingText.set(field, text)
 		svc.schedule(field, () => applyFilterInput(ctx, field, text))
-	})
+	}, { selector: '.wg__filter-input' })
+}
+
+/** Delegated key listener on the `.wg` container (survives the thead re-render). */
+export function attachFilterRowListeners<T>(ctx: GridHost<T>, container: HTMLElement): void {
 	container.addEventListener('keydown', (e: KeyboardEvent) => {
 		const input = e.target as HTMLElement
 		if (!input.matches?.('.wg__filter-input')) return
 		// The grid's own keys (type-to-edit, arrows, Ctrl+C, …) never see filter typing
 		e.stopPropagation()
+		// The IME confirming a candidate, not "apply now"
+		if (isImeEnter(e)) return
 		const el = input as HTMLInputElement
 		const field = el.dataset.field ?? ''
 		if (e.key === 'Enter') {

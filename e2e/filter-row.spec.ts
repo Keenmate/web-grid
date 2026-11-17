@@ -3,7 +3,7 @@ import { test, expect, type Page, gridLocator, cell, onGrid, domEvents, clearEve
 /**
  * Built-in filter row (NOTES.md #4) — grid `isFilterable` + `column.isFilterable`
  * text inputs; debounced `setFilter` → page 1; Enter / Escape; invalid
- * `filterCallback` input (`.wg__filter-input--invalid`); focus survives the re-render; frozen +
+ * `filterCallback` input (`.wg__filter-input--invalid`); case- + accent-insensitive matching; IME (CDP); focus survives the re-render; frozen +
  * sticky cells; server pagination → `beforePageChangeCallback` (trigger 'filter')
  * + `data-request` (trigger 'filter').
  *
@@ -102,6 +102,44 @@ test.describe('typing', () => {
 		await expect(input(page, 'name')).toHaveValue('gin')
 		await expect(input(page, 'name')).toBeFocused()
 		await expect.poll(() => onGrid(page, el => el.filters)).toEqual({ name: 'gin' })
+	})
+
+	test('matching ignores case and accents (core /search): an unaccented filter finds an accented value', async ({ page }) => {
+		await onGrid(page, el => { el.items = [...el.items, { id: 14, name: 'Šárka Černá', city: 'České Budějovice', salary: 1 }] })
+		await input(page, 'name').click()
+		await page.keyboard.type('CERN')
+		await page.keyboard.press('Enter')
+		await expect(rowCount(page)).toHaveCount(2)                      // Karel Cerny + Šárka Černá
+		await expect(gridLocator(page).locator('tbody')).toContainText('Šárka Černá')
+		await input(page, 'city').click()
+		await page.keyboard.type('ceske')
+		await page.keyboard.press('Enter')
+		await expect(rowCount(page)).toHaveCount(1)
+		// an accented filter finds the unaccented value too
+		await onGrid(page, el => { el.filters = { name: 'Dvořák' } })
+		await expect(rowCount(page)).toHaveCount(1)
+		await expect(gridLocator(page).locator('tbody')).toContainText('Hugo Dvorak')
+	})
+
+	test('an IME composition filters once, on commit (CDP)', async ({ page }, testInfo) => {
+		test.skip(testInfo.project.name !== 'chromium', 'CDP IME')
+		await onGrid(page, el => { el.items = [...el.items, { id: 14, name: '漢字 Kanji', city: 'Tokyo', salary: 1 }] })
+		await clearEvents(page, 'filter-row')
+		await input(page, 'name').focus()
+		const cdp = await page.context().newCDPSession(page)
+		await cdp.send('Input.imeSetComposition', { text: 'k', selectionStart: 1, selectionEnd: 1 })
+		await cdp.send('Input.imeSetComposition', { text: 'か', selectionStart: 1, selectionEnd: 1 })
+		await cdp.send('Input.imeSetComposition', { text: '漢字', selectionStart: 2, selectionEnd: 2 })
+		// the IME's Enter confirming a candidate doesn't apply the half-typed text
+		await page.keyboard.press('Enter')
+		await page.waitForTimeout(500)                                  // past the debounce
+		expect(await onGrid(page, el => el.filters)).toEqual({})
+		expect(await domEvents(page, 'filter-change', 'grid')).toEqual([])
+		await cdp.send('Input.insertText', { text: '漢字' })           // commit
+		await expect.poll(() => onGrid(page, el => el.filters)).toEqual({ name: '漢字' })
+		await expect(rowCount(page)).toHaveCount(1)
+		await expect(input(page, 'name')).toHaveValue('漢字')
+		expect(await domEvents(page, 'filter-change', 'grid')).toEqual([{ filters: { name: '漢字' } }])
 	})
 
 	test('Tab moves between the filter inputs (keyboard reachable)', async ({ page }) => {

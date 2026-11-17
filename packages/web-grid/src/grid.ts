@@ -105,6 +105,7 @@ import type { LabelParams } from '@keenmate/web-components-core/locale'
 
 // Perf instrumentation (temporary — investigating tree-toggle slowness)
 import { gridPerf } from './perf.js'
+import { FilterTextCache, matchesFilterTerm, prepareFilterTerm } from './modules/search/text-match.js'
 
 
 /** The settings a `preset` also sets. Shared by the engine's `preset`
@@ -230,6 +231,8 @@ export class GridEngine<T = unknown> {
 
 	// Filtering
 	protected _filters: Record<string, string> = {}
+	/** Normalized cell values for the filter row (core /search), once per data change. */
+	private _filterTextCache = new FilterTextCache()
 	protected _filterMode: 'client' | 'server' = 'client'
 	protected _columnMinWidth: string | undefined = undefined
 
@@ -1950,13 +1953,16 @@ export class GridEngine<T = unknown> {
 		const filterEntries = Object.entries(this._filters).filter(([, v]) => !!v)
 		if (filterEntries.length === 0) return null
 
+		// Core /search "contains", case- and accent-insensitive (the same rule as filteredItems)
+		const terms = filterEntries.map(([field, value]) => [field, prepareFilterTerm(value)] as const)
+		const cache = this._filterTextCache
+		cache.sync(this._items)
 		const matched = new Set<string>()
 		for (const node of this._treeIndex.nodes.values()) {
 			const item = this._items[node.rowIndex] as Record<string, unknown>
 			let ok = true
-			for (const [field, value] of filterEntries) {
-				const cell = String(item[field] ?? '').toLowerCase()
-				if (!cell.includes(value.toLowerCase())) { ok = false; break }
+			for (const [field, term] of terms) {
+				if (!matchesFilterTerm(term, cache.get(field, node.rowIndex, item[field]))) { ok = false; break }
 			}
 			if (ok) matched.add(node.path)
 		}
@@ -2363,10 +2369,17 @@ export class GridEngine<T = unknown> {
 			return this._items
 		}
 
-		return this._items.filter((item) => {
-			return Object.entries(this._filters).every(([field, filterValue]) => {
-				if (!filterValue) return true
-				const column = this._columns.find(c => String(c.field) === field)
+		// Per filter, resolved once per pass: a column's filterCallback, else core /search "contains"
+		// (case- and accent-insensitive; cell values normalized once per data change — _filterTextCache)
+		const filters = Object.entries(this._filters).filter(([, v]) => !!v).map(([field, filterValue]) => ({
+			field, filterValue,
+			column: this._columns.find(c => String(c.field) === field),
+			term: prepareFilterTerm(filterValue),
+		}))
+		const cache = this._filterTextCache
+		cache.sync(this._items)
+		return this._items.filter((item, index) => {
+			return filters.every(({ field, filterValue, column, term }) => {
 				// Per-column custom filter callback overrides built-in substring match
 				if (column?.filterCallback) {
 					const result = column.filterCallback(this.ctx({ row: item, column, field, filterValue }))
@@ -2374,8 +2387,7 @@ export class GridEngine<T = unknown> {
 					if (result === null) return true
 					return result
 				}
-				const cellValue = String((item as Record<string, unknown>)[field] ?? "").toLowerCase()
-				return cellValue.includes(filterValue.toLowerCase())
+				return matchesFilterTerm(term, cache.get(field, index, (item as Record<string, unknown>)[field]))
 			})
 		})
 	}

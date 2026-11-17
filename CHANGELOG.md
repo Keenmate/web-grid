@@ -31,8 +31,16 @@ Target: **2.0.0-rc01** — a major: the callback, event and item API below is br
   behaviour is gone — they follow `--base-duration-*` / `--base-scroll-behavior`, which core `MOTION_CSS` zeroes
   under the OS setting and under `motion="none"`. The loader still slows down.
 - **Dropdown / combobox / autocomplete option filtering ignores case and diacritics** (core `/search`:
-  `ces` finds `Česká`, `strasse` finds `Straße`; was `toLowerCase().includes`). The filter row keeps its plain
-  case-insensitive match for now (core's normalization is too slow for a 100k-row pass — reported).
+  `ces` finds `Česká`, `strasse` finds `Straße`; was `toLowerCase().includes`).
+- **BREAKING (filtering): the filter row and `setFilter` / `filters` match case- and accent-insensitively** — core
+  `/search` "contains", the same rule as the dropdown filtering and web-multiselect (`ces` finds `Český`; was
+  `toLowerCase().includes`). The term is trimmed (a blank / whitespace-only filter matches every row). Applies to
+  tree mode too; a column's `filterCallback` is unchanged. Cell values are normalized once per data change, not
+  per keystroke: a 100k-row keystroke pass is ~2× faster; the first pass after new `items` costs one
+  normalization (~50 ms per 100k values with accents, ~12 ms ASCII).
+- **The filter row is IME-safe** (core `onTextInput`, delegated on the shadow root): a Japanese / Chinese / Korean
+  composition filters once, on commit — not on every half-typed syllable — and the Enter that confirms a
+  candidate (`isImeEnter`) no longer applies the filter early.
 - The autocomplete search runs through core `createAsyncRunner` (one "latest request wins" runner per grid:
   debounce, the `searchCallback`'s `signal` aborted when a newer term replaces it, a late answer dropped, the
   "Searching…" state); a term shorter than `minSearchLength` now also drops a pending / running search. The

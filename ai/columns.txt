@@ -361,8 +361,8 @@ isFilterable (boolean)
     also have isFilterable set to true.
 
 filterCallback ((ctx: { filterValue, row, column, field }) => boolean | null)
-    Custom filter predicate, replacing the built-in case-insensitive
-    substring match. true = row passes, false = excluded, null = input
+    Custom filter predicate, replacing the built-in case- and accent-insensitive
+    "contains" match. true = row passes, false = excluded, null = input
     incomplete (filter ignored, input marked .invalid). Runs before
     sorting / pagination, so there is no rowIndex.
 

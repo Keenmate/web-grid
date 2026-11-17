@@ -70,7 +70,9 @@ The filter row sits under the header: columns with isFilterable: true get a
 text input (aria-label "Filter <column>", labels.filterColumn; Tab-reachable).
 Typing is debounced (300 ms; Enter applies at once, Escape clears) and calls
 setFilter(field, text), which resets currentPage to 1. Matching is a
-case-insensitive substring test unless the column has a filterCallback.
+case- and accent-insensitive "contains" (core /search: "ces" finds "Český";
+the term is trimmed) unless the column has a filterCallback. IME-safe: a
+composition filters once, on commit.
 
 Grid property:
   isFilteringEnabled  Boolean (attribute enable-filtering). Default: false. true = show the filter row and apply
@@ -86,7 +88,8 @@ Styling: .wg__filter-row / .wg__filter-input (.invalid) + --wg-filter-* vars.
 
 Client-side filtering (default): the grid filters items before sorting and
 pagination. For each active filter, the cell value is converted to a string
-and tested for case-insensitive inclusion of the filter text.
+and tested for case- and accent-insensitive inclusion of the filter text
+(normalized once per data change, not per keystroke).
 
 Custom matching per column: column.filterCallback(ctx) with
 ctx = { filterValue, row, column, field }. Return true (row passes), false
@@ -404,7 +407,7 @@ When using client-side mode, the grid processes items in this order:
 
   items --> filteredItems --> sortedItems --> paginatedItems --> displayItems
 
-1. filteredItems: applies column filters (case-insensitive substring match or
+1. filteredItems: applies column filters (case- and accent-insensitive "contains" or
    column.filterCallback; skipped when filterMode is 'server')
 2. sortedItems: applies multi-column sort using localeCompare / numeric compare
 3. paginatedItems: slices by currentPage and pageSize (client mode only;

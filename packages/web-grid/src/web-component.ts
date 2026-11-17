@@ -178,6 +178,7 @@ import {
 import {
 	FilterRowService,
 	attachFilterRowListeners,
+	watchFilterRowText,
 	captureFilterFocus,
 	restoreFilterFocus,
 	positionFilterRow
@@ -1236,6 +1237,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 
 	#columnResize: PointerDrag | null = null
 	#columnReorder: PointerDrag | null = null
+	#stopFilterText: (() => void) | null = null
 
 	protected connect(): void {
 		initLogger.debug('connect — grid activated')
@@ -1249,6 +1251,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		// Column resize: core pointer drag on the host (mouse + touch; survives the table re-render)
 		this.#columnResize = createColumnResize(this, this)
 		this.#columnReorder = createColumnReorder(this, this)
+		// Filter-row typing, IME-safe (delegated on the shadow root — survives the thead re-render)
+		this.#stopFilterText = watchFilterRowText(this, this.shadow)
 	}
 
 	protected override destroyCallback(): void {
@@ -1276,6 +1280,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		this.#columnResize = null
 		this.#columnReorder?.destroy()
 		this.#columnReorder = null
+		this.#stopFilterText?.()
+		this.#stopFilterText = null
 		if (this.datepicker) {
 			this.datepicker.destroy()
 			this.datepicker = null
