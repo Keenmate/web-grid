@@ -719,12 +719,14 @@ export function updateConnector<T>(
 /**
  * Render the toolbar trigger button HTML
  */
-export function renderTriggerButton(rowIndex: number, isActive: boolean, title: string = 'Row actions'): string {
+export function renderTriggerButton(rowIndex: number, isActive: boolean, title: string = 'Row actions', ariaLabel: string = title): string {
 	const activeClass = isActive ? 'wg__toolbar-trigger--active' : ''
+	// The "⋮" glyph is not a name: aria-label (`ariaLabels.rowActions`) names it, title (`tooltips.rowActions`) is the hover hint
 	return `<button
 		class="wg__toolbar-trigger ${activeClass}"
 		data-toolbar-trigger="${rowIndex}"
-		title="${title}"
+		title="${escapeHtml(title)}"
+		aria-label="${escapeHtml(ariaLabel)}"
 	>⋮</button>`
 }
 

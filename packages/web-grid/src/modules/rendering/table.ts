@@ -336,7 +336,7 @@ export function renderDataRows<T>(ctx: GridHost<T>): string {
 			const isActive = activeToolbarRow === rowIndex
 			actionsCell = `
 				<td class="wg__cell wg__actions-column" role="gridcell" aria-colindex="${leadCount}">
-					${renderTriggerButton(rowIndex, isActive, ctx.engine.labels['tooltips.rowActions'])}
+					${renderTriggerButton(rowIndex, isActive, ctx.engine.labels['tooltips.rowActions'], ctx.engine.labels['ariaLabels.rowActions'])}
 				</td>
 			`
 		}
@@ -582,7 +582,7 @@ export function renderDataRowsVirtual<T>(ctx: GridHost<T>, params: VirtualScroll
 			const isActive = activeToolbarRow === rowIndex
 			actionsCell = `
 				<td class="wg__cell wg__actions-column" role="gridcell" aria-colindex="${leadCount}">
-					${renderTriggerButton(rowIndex, isActive, ctx.engine.labels['tooltips.rowActions'])}
+					${renderTriggerButton(rowIndex, isActive, ctx.engine.labels['tooltips.rowActions'], ctx.engine.labels['ariaLabels.rowActions'])}
 				</td>
 			`
 		}
@@ -769,22 +769,22 @@ export function renderPagination<T>(ctx: GridHost<T>, position: string = 'bottom
 	// Build element HTML fragments
 	const elements: Record<string, string> = {
 		first: `
-			<button class="wg__pagination-btn" data-action="first" ${currentPage === 1 || isPending ? 'disabled' : ''}>
+			<button class="wg__pagination-btn" data-action="first" aria-label="${escapeHtml(gridLabels['ariaLabels.firstPage'])}" ${currentPage === 1 || isPending ? 'disabled' : ''}>
 				${labels.first}
 			</button>
 		`,
 		previous: `
-			<button class="wg__pagination-btn" data-action="prev" ${currentPage === 1 || isPending ? 'disabled' : ''}>
+			<button class="wg__pagination-btn" data-action="prev" aria-label="${escapeHtml(gridLabels['ariaLabels.previousPage'])}" ${currentPage === 1 || isPending ? 'disabled' : ''}>
 				${labels.previous}
 			</button>
 		`,
 		next: `
-			<button class="wg__pagination-btn" data-action="next" ${currentPage === totalPages || isPending ? 'disabled' : ''}>
+			<button class="wg__pagination-btn" data-action="next" aria-label="${escapeHtml(gridLabels['ariaLabels.nextPage'])}" ${currentPage === totalPages || isPending ? 'disabled' : ''}>
 				${labels.next}
 			</button>
 		`,
 		last: `
-			<button class="wg__pagination-btn" data-action="last" ${currentPage === totalPages || isPending ? 'disabled' : ''}>
+			<button class="wg__pagination-btn" data-action="last" aria-label="${escapeHtml(gridLabels['ariaLabels.lastPage'])}" ${currentPage === totalPages || isPending ? 'disabled' : ''}>
 				${labels.last}
 			</button>
 		`,

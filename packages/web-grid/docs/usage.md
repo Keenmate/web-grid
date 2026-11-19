@@ -929,6 +929,7 @@ All UI strings are customizable via `labels` — a partial object of flat `<elem
 grid.labels = {
   // Row toolbar / inline actions column
   'tooltips.rowActions': 'Row actions',          // the toolbar trigger button's title
+  'ariaLabels.rowActions': 'Row actions',        // its accessible name (the button shows only ⋮)
   'columnHeaders.inlineActions': 'Actions',      // the inline actions column header ('' = blank)
   // Shortcuts help
   'tooltips.keyboardShortcuts': 'Keyboard shortcuts',  // the help icon's title
@@ -939,6 +940,10 @@ grid.labels = {
   'buttons.previousPage': '◀',
   'buttons.nextPage': '▶',
   'buttons.lastPage': '⏭',
+  'ariaLabels.firstPage': 'First page',          // the buttons' accessible names (their text is a glyph;
+  'ariaLabels.previousPage': 'Previous page',    //  a customized buttons.* text names them while these are unset)
+  'ariaLabels.nextPage': 'Next page',
+  'ariaLabels.lastPage': 'Last page',
   'labels.pageInfo': 'Page {current} of {total}',
   'labels.itemCount': '{count} items',
   'labels.perPage': 'per page',

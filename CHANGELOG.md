@@ -23,15 +23,22 @@ Target: **2.0.0-rc01** — a major: the callback, event and item API below is br
   same English default: `ariaLabels.editCell` + `tooltips.editCell`, `messages.loading` + `ariaLabels.loading`,
   `messages.searching` + `ariaLabels.searching`, `tooltips.keyboardShortcuts` (icon title) + `headers.keyboardShortcuts`
   (overlay title). A column's `editorOptions.labels` takes the new dropdown keys.
+- One text, one key (rulebook D-NC-24): an element named by its visible text has no `ariaLabels.*` twin. The grid's
+  `ariaLabels.*` keys name only what shows no text — so no key is removed; NEW: `ariaLabels.firstPage` /
+  `previousPage` / `nextPage` / `lastPage` (the pagination buttons show a glyph, ⏮ ◀ ▶ ⏭ — they had no real
+  name; "First page" …) and `ariaLabels.rowActions` (the "⋮" toolbar trigger; its title alone didn't name it).
+  Twins share `<name>`, so an `ariaLabels.x` / `tooltips.x` you didn't set follows a customized twin (core
+  `createLabels`): `buttons.nextPage: 'Další'` also names the button, `tooltips.rowActions` names the trigger,
+  `menuItems.expand` / `collapse` name the tree chevron, `tooltips.editCell` ↔ `ariaLabels.editCell`.
 - `HeaderMenuContext.labels` / `engine.labels` are the flat resolved object (`labels['menuItems.sortAsc']`).
 
 | Old key | New key |
 |---|---|
-| `rowActions` | `tooltips.rowActions` |
+| `rowActions` | `tooltips.rowActions` (+ NEW `ariaLabels.rowActions`) |
 | `inlineActionsHeader` | `columnHeaders.inlineActions` |
 | `keyboardShortcuts` | `tooltips.keyboardShortcuts` (icon title) + `headers.keyboardShortcuts` (overlay title) |
 | `rangeShortcuts` | `headers.rangeShortcuts` |
-| `paginationFirst` / `paginationPrevious` / `paginationNext` / `paginationLast` | `buttons.firstPage` / `buttons.previousPage` / `buttons.nextPage` / `buttons.lastPage` |
+| `paginationFirst` / `paginationPrevious` / `paginationNext` / `paginationLast` | `buttons.firstPage` / `buttons.previousPage` / `buttons.nextPage` / `buttons.lastPage` (+ NEW `ariaLabels.firstPage` / … the buttons' accessible names) |
 | `paginationPageInfo` / `paginationItemCount` / `paginationPerPage` | `labels.pageInfo` / `labels.itemCount` / `labels.perPage` |
 | `noData` / `noResults` | `messages.noData` / `messages.noResults` |
 | `loading` | `messages.loading` (row text; `''` = no row) + `ariaLabels.loading` (loader name) |

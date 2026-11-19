@@ -41,6 +41,29 @@ test('defaults are English', async ({ page }) => {
 	await expect(toolbar(page).locator('[data-action="delete"]')).toHaveAttribute('aria-label', 'Delete row')
 })
 
+test('glyph-only buttons are named by ariaLabels; a customized twin names them too', async ({ page }) => {
+	// Pagination: the visible text is a glyph (⏮ ◀ ▶ ⏭) — ariaLabels.<name>Page names the button
+	await onGrid(page, el => el.setAttribute('pagination-layout', 'first|previous|page-info|next|last'))
+	await expect(pag(page).locator('[data-action="first"]')).toHaveAccessibleName('First page')
+	await expect(pag(page).locator('[data-action="prev"]')).toHaveAccessibleName('Previous page')
+	await expect(pag(page).locator('[data-action="next"]')).toHaveAccessibleName('Next page')
+	await expect(pag(page).locator('[data-action="last"]')).toHaveAccessibleName('Last page')
+	// The row toolbar trigger shows only "⋮"
+	await onGrid(page, el => el.setAttribute('toolbar-trigger', 'button'))
+	const trigger = gridLocator(page).locator('.wg__toolbar-trigger[data-toolbar-trigger="0"]')
+	await expect(trigger).toHaveAccessibleName('Row actions')
+
+	// Customizing the twin (buttons.nextPage / tooltips.rowActions) renames the unset ariaLabels key (core fallback)
+	await page.evaluate((cs) => { (document.getElementById('grid') as any).labels = cs }, CS)
+	await expect(pag(page).locator('[data-action="next"]')).toHaveAccessibleName('Další')
+	await expect(pag(page).locator('[data-action="first"]')).toHaveAccessibleName('First page')
+	await expect(trigger).toHaveAccessibleName('Akce řádku')
+	// A set ariaLabels key wins over the twin
+	await page.evaluate((cs) => { (document.getElementById('grid') as any).labels = { ...cs, 'ariaLabels.nextPage': 'Další stránka' } }, CS)
+	await expect(pag(page).locator('[data-action="next"]')).toHaveAccessibleName('Další stránka')
+	await expect(pag(page).locator('[data-action="next"]')).toHaveText('Další')
+})
+
 test('a full labels object translates toolbar, header menu, pagination, shortcuts help', async ({ page }) => {
 	await page.evaluate((cs) => { (document.getElementById('grid') as any).labels = cs }, CS)
 

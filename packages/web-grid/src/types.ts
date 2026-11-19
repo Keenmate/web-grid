@@ -589,6 +589,7 @@ export type PaginationLabelsCallback<T = any> = (ctx: PaginationLabelsContext<T>
 export type GridLabels = {
 	// Row toolbar / inline actions column
 	'tooltips.rowActions': string            // "Row actions" — the toolbar trigger button's title
+	'ariaLabels.rowActions': string          // "Row actions" — its accessible name (the button shows only "⋮")
 	'columnHeaders.inlineActions': string    // "Actions" — the inline actions column header
 
 	// Shortcuts help
@@ -601,6 +602,10 @@ export type GridLabels = {
 	'buttons.previousPage': string           // "◀"
 	'buttons.nextPage': string               // "▶"
 	'buttons.lastPage': string               // "⏭"
+	'ariaLabels.firstPage': string           // "First page" — the button's accessible name (its text is a glyph)
+	'ariaLabels.previousPage': string        // "Previous page"
+	'ariaLabels.nextPage': string            // "Next page"
+	'ariaLabels.lastPage': string            // "Last page"
 	'labels.pageInfo': string                // "Page {current} of {total}"
 	'labels.itemCount': string               // "{count} items"
 	'labels.perPage': string                 // "per page"

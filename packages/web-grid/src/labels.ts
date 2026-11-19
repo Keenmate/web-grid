@@ -17,6 +17,7 @@ import type { GridLabels, GridLabelsInput } from './types.js'
 export const DEFAULT_LABELS: GridLabels = {
 	// Row toolbar / inline actions column
 	'tooltips.rowActions': 'Row actions',
+	'ariaLabels.rowActions': 'Row actions',
 	'columnHeaders.inlineActions': 'Actions',
 
 	// Shortcuts help
@@ -29,6 +30,10 @@ export const DEFAULT_LABELS: GridLabels = {
 	'buttons.previousPage': '◀',
 	'buttons.nextPage': '▶',
 	'buttons.lastPage': '⏭',
+	'ariaLabels.firstPage': 'First page',
+	'ariaLabels.previousPage': 'Previous page',
+	'ariaLabels.nextPage': 'Next page',
+	'ariaLabels.lastPage': 'Last page',
 	'labels.pageInfo': 'Page {current} of {total}',
 	'labels.itemCount': '{count} items',
 	'labels.perPage': 'per page',
