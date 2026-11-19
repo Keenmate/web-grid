@@ -241,7 +241,7 @@ Configuration for all editor types. Properties are grouped by editor type.
     renderOptionCallback?: (ctx: OptionRenderContext<T>) => string
     onSelect?: (ctx: OptionSelectContext<T>) => void
     isEmptyAllowed?: boolean
-    labels?: { dropdownNoData?: string; dropdownNoResults?: string; dropdownSearching?: string; dropdownEmptyOption?: string }   per-column, over the grid labels
+    labels?: { 'messages.noOptions'?: string; 'messages.noMatchingOptions'?: string; 'messages.searching'?: string; 'ariaLabels.searching'?: string; 'labels.emptyOption'?: string }   per-column, over the grid labels
     dropdownMinWidth?: string
     placeholder?: string
     // Text
@@ -550,58 +550,41 @@ PAGINATION LABELS
 GRIDLABELS
 ----------------------------------------------------------------------
 
-  type GridLabels = {
-    rowActions: string
-    inlineActionsHeader: string
-    keyboardShortcuts: string
-    paginationFirst: string
-    paginationPrevious: string
-    paginationNext: string
-    paginationLast: string
-    paginationPageInfo: string
-    paginationItemCount: string
-    paginationPerPage: string
-    noData: string                empty-table text, no rows at all ("No items to display")
-    noResults: string             rows exist, the filter matched nothing ("No matching items")
-    loading: string               infinite-scroll load-more row ("Loading…")
-    dropdownNoData: string        "No options"
-    dropdownNoResults: string     "No matching options"
-    dropdownSearching: string     "Searching…"
-    dropdownEmptyOption: string   "—" (editorOptions.isEmptyAllowed)
-    sheetClose: string            "Close" — the phone sheet's close button (leaves the cell: saves)
-    sheetSearch: string           "Search…" — the phone sheet's search field (combobox / autocomplete)
-    rowLocked / rowLockedBy / goToRow / goToRowGo / goToRowCancel /
-    treeExpand / treeCollapse: string
-    editCell: string               "Edit" (edit button aria-label / title)
-    filterColumn: string           "Filter {column}" (filter-row input aria-label)
-    invalidNumber: string          "Not a number" (number editor / paste)
-    numberMin / numberMax: string  "Must be at least {min}" / "Must be at most {max}"
-    numberNegative: string         "Must not be negative"
-    invalidBoolean: string         "Not a yes / no value" (paste into a checkbox column)
-    invalidDate: string            "Not a valid date" (paste / typed into a date column)
-    actions: {                     built-in row / tree action texts
-      add: string
-      delete: string
-      duplicate: string
-      moveUp: string
-      moveDown: string
-      expand: string
-      collapse: string
-      expandAll: string
-      collapseAll: string
-    }
-    contextMenu: {                 header menu built-in texts
-      sortAsc: string
-      sortDesc: string
-      clearSort: string
-      hideColumn: string
-      freezeColumn: string
-      unfreezeColumn: string
-      columnVisibility: string
-      showAll: string
-    }
+  type GridLabels = {             flat <elementType>.<name> keys; `labels` (GridLabelsInput) takes
+                                 any subset, short keys or full 'web-grid.<key>' keys
+    'tooltips.rowActions': string            "Row actions" (toolbar trigger title)
+    'columnHeaders.inlineActions': string    "Actions"
+    'tooltips.keyboardShortcuts' / 'headers.keyboardShortcuts': string   help icon title / overlay title
+    'headers.rangeShortcuts': string         "Selection shortcuts"
+    'buttons.firstPage' / 'buttons.previousPage' / 'buttons.nextPage' / 'buttons.lastPage': string
+    'labels.pageInfo': string                "Page {current} of {total}"
+    'labels.itemCount': string               "{count} items"
+    'labels.perPage': string                 "per page"
+    'messages.noData': string                empty-table text, no rows at all ("No items to display")
+    'messages.noResults': string             rows exist, the filter matched nothing ("No matching items")
+    'messages.loading' / 'ariaLabels.loading': string   infinite-scroll load-more row text / loader name ("Loading…")
+    'messages.noOptions': string             "No options"
+    'messages.noMatchingOptions': string     "No matching options"
+    'messages.searching' / 'ariaLabels.searching': string   "Searching…" (text / loader name)
+    'labels.emptyOption': string             "—" (editorOptions.isEmptyAllowed)
+    'ariaLabels.closeSheet': string          "Close" — the phone sheet's close button (leaves the cell: saves)
+    'placeholders.search': string            "Search…" — the phone sheet's search field
+    'menuItems.back': string                 "Back" — a menu sheet's back row
+    'tooltips.rowLocked' / 'tooltips.rowLockedBy': string   "This row is locked" / "Locked by {lockedBy}"
+    'labels.goToRow' / 'buttons.go' / 'buttons.cancel': string   go-to-row dialog
+    'ariaLabels.expand' / 'ariaLabels.collapse': string     tree chevron
+    'ariaLabels.editCell' / 'tooltips.editCell': string     "Edit" (edit button aria-label / title)
+    'ariaLabels.filterColumn': string        "Filter {column}" (filter-row input aria-label)
+    'errors.invalidNumber': string           "Not a number" (number editor / paste)
+    'errors.numberMin' / 'errors.numberMax': string   "Must be at least {min}" / "Must be at most {max}"
+    'errors.numberNegative': string          "Must not be negative"
+    'errors.invalidBoolean': string          "Not a yes / no value" (paste into a checkbox column)
+    'errors.invalidDate': string             "Not a valid date" (paste / typed into a date column)
+    'menuItems.addRow' / 'deleteRow' / 'duplicateRow' / 'moveUp' / 'moveDown' / 'expand' / 'collapse' /
+      'expandSubtree' / 'collapseSubtree' / 'expandAll' / 'collapseAll': string   built-in row / tree actions
+    'menuItems.sortAsc' / 'sortDesc' / 'clearSort' / 'hideColumn' / 'freezeColumn' / 'unfreezeColumn' /
+      'columnVisibility' / 'showAllColumns': string   header menu built-ins
   }
-
 
 ----------------------------------------------------------------------
 CELLRANGE

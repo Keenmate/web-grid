@@ -139,7 +139,7 @@ test.describe('every input (table-driven)', () => {
 				newRowIndicator: ['*', '*'],
 				treeExpandedGlyph: ['-', '-'],
 				treeCollapsedGlyph: ['+', '+'],
-				labels: ['{"noData":"Nic"}', { noData: 'Nic' }],
+				labels: ['{"messages.noData":"Nic"}', { 'messages.noData': 'Nic' }],
 				customStyles: ['.wg { outline: 1px solid red; }', '.wg { outline: 1px solid red; }'],
 				storageKey: ['inputs-spec', 'inputs-spec'],
 				overlayGroup: ['grp', 'grp'],

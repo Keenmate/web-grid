@@ -48,7 +48,7 @@ tree actions. 'add' always inserts after the clicked row. The row
 selection follows its rows afterwards (deleted rows drop out); a row
 toolbar opened on a selected row keeps the selection.
 
-Each built-in gets a default SVG icon and text (labels.actions);
+Each built-in gets a default SVG icon and text (the menuItems.* labels);
 'delete' is isDanger. Override any of it with an object:
 
     { action: 'delete', icon: '🗑️', text: 'Remove task' }
@@ -229,8 +229,8 @@ Behavior differences from floating toolbar:
 Column header title:
 
     (default)                                     "Actions"
-    grid.labels = { inlineActionsHeader: 'Ops' }  custom header text
-    grid.labels = { inlineActionsHeader: '' }     no header text
+    grid.labels = { 'columnHeaders.inlineActions': 'Ops' }  custom header text
+    grid.labels = { 'columnHeaders.inlineActions': '' }     no header text
 
 The column width auto-sizes based on the maximum number of buttons
 across all rows, using --wg-toolbar-btn-min-width and --wg-inline-actions-gap
@@ -514,33 +514,33 @@ I18N LABELS
 -----------
 Relevant labels that can be customized:
 
-    grid.labels = {
-      rowActions: 'Row actions',      // toolbar trigger button title
-      inlineActionsHeader: 'Actions', // default inline actions column header
-      actions: {                      // built-in row / tree action texts
-        add: 'Add row',
-        delete: 'Delete row',
-        duplicate: 'Duplicate row',
-        moveUp: 'Move up',
-        moveDown: 'Move down',
-        expand: 'Expand',
-        collapse: 'Collapse',
-        expandAll: 'Expand all',
-        collapseAll: 'Collapse all'
-      },
-      contextMenu: {                  // header menu built-ins
-        sortAsc: 'Sort Ascending',
-        sortDesc: 'Sort Descending',
-        clearSort: 'Clear Sort',
-        hideColumn: 'Hide Column',
-        freezeColumn: 'Freeze Column',
-        unfreezeColumn: 'Unfreeze Column',
-        columnVisibility: 'Column Visibility',
-        showAll: 'Show all'
-      }
+    grid.labels = {                   // flat <elementType>.<name> keys
+      'tooltips.rowActions': 'Row actions',          // toolbar trigger button title
+      'columnHeaders.inlineActions': 'Actions',      // default inline actions column header
+      // built-in row / tree action texts (the item text: toolbar, cell menu, shortcuts help)
+      'menuItems.addRow': 'Add row',
+      'menuItems.deleteRow': 'Delete row',
+      'menuItems.duplicateRow': 'Duplicate row',
+      'menuItems.moveUp': 'Move up',
+      'menuItems.moveDown': 'Move down',
+      'menuItems.expand': 'Expand',
+      'menuItems.collapse': 'Collapse',
+      'menuItems.expandSubtree': 'Expand subtree',
+      'menuItems.collapseSubtree': 'Collapse subtree',
+      'menuItems.expandAll': 'Expand all',
+      'menuItems.collapseAll': 'Collapse all',
+      // header menu built-ins
+      'menuItems.sortAsc': 'Sort Ascending',
+      'menuItems.sortDesc': 'Sort Descending',
+      'menuItems.clearSort': 'Clear Sort',
+      'menuItems.hideColumn': 'Hide Column',
+      'menuItems.freezeColumn': 'Freeze Column',
+      'menuItems.unfreezeColumn': 'Unfreeze Column',
+      'menuItems.columnVisibility': 'Column Visibility',
+      'menuItems.showAllColumns': 'Show all'
     }
 
-labels.inlineActionsHeader is the inline actions column header
+columnHeaders.inlineActions is the inline actions column header
 (toolbarPosition 'inline'); '' gives a blank header.
 
 

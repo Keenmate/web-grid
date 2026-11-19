@@ -44,8 +44,8 @@ test.describe('rendering', () => {
 		await expect(filterRow(page)).toHaveCount(0)
 	})
 
-	test('the input label follows labels.filterColumn', async ({ page }) => {
-		await onGrid(page, el => { el.labels = { filterColumn: 'Filtrovat {column}' } })
+	test('the input label follows ariaLabels.filterColumn', async ({ page }) => {
+		await onGrid(page, el => { el.labels = { 'ariaLabels.filterColumn': 'Filtrovat {column}' } })
 		await expect(input(page, 'city')).toHaveAttribute('aria-label', 'Filtrovat City')
 	})
 })

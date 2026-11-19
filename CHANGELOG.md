@@ -10,6 +10,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Changed — BREAKING: label keys are flat `<elementType>.<name>` (2026-11-19)
+- Every `labels` key is renamed to the core / rulebook D-NC-24 shape `<elementType>.<name>`; the nested `actions` /
+  `contextMenu` groups are gone (flat `menuItems.*` keys). Resolution is core `createLabels(…, { tag: 'web-grid' })`
+  only — the grid's own group resolution is removed. The instance `labels` takes short keys (`messages.noData`) or
+  full keys (`web-grid.messages.noData`).
+- Page-wide `window.components.locale.labels` is ONE flat dictionary of full keys
+  (`'web-grid.labels.pageInfo': 'Strana {current} z {total}'`); the nested `labels: { 'web-grid': { … } }` shape is
+  ignored. `formatLabelCallback` is replaced by core's `translateCallback({ component, key, template, params, locale })`
+  — `key` is the full key (`web-grid.labels.pageInfo`).
+- A text that fed both `aria-label` and `title` (or visible text + a loader name) is split into two keys with the
+  same English default: `ariaLabels.editCell` + `tooltips.editCell`, `messages.loading` + `ariaLabels.loading`,
+  `messages.searching` + `ariaLabels.searching`, `tooltips.keyboardShortcuts` (icon title) + `headers.keyboardShortcuts`
+  (overlay title). A column's `editorOptions.labels` takes the new dropdown keys.
+- `HeaderMenuContext.labels` / `engine.labels` are the flat resolved object (`labels['menuItems.sortAsc']`).
+
+| Old key | New key |
+|---|---|
+| `rowActions` | `tooltips.rowActions` |
+| `inlineActionsHeader` | `columnHeaders.inlineActions` |
+| `keyboardShortcuts` | `tooltips.keyboardShortcuts` (icon title) + `headers.keyboardShortcuts` (overlay title) |
+| `rangeShortcuts` | `headers.rangeShortcuts` |
+| `paginationFirst` / `paginationPrevious` / `paginationNext` / `paginationLast` | `buttons.firstPage` / `buttons.previousPage` / `buttons.nextPage` / `buttons.lastPage` |
+| `paginationPageInfo` / `paginationItemCount` / `paginationPerPage` | `labels.pageInfo` / `labels.itemCount` / `labels.perPage` |
+| `noData` / `noResults` | `messages.noData` / `messages.noResults` |
+| `loading` | `messages.loading` (row text; `''` = no row) + `ariaLabels.loading` (loader name) |
+| `dropdownNoData` / `dropdownNoResults` | `messages.noOptions` / `messages.noMatchingOptions` |
+| `dropdownSearching` | `messages.searching` (text) + `ariaLabels.searching` (loader name) |
+| `dropdownEmptyOption` | `labels.emptyOption` |
+| `sheetClose` | `ariaLabels.closeSheet` |
+| `sheetSearch` | `placeholders.search` |
+| `menuBack` | `menuItems.back` |
+| `rowLocked` / `rowLockedBy` | `tooltips.rowLocked` / `tooltips.rowLockedBy` |
+| `goToRow` / `goToRowGo` / `goToRowCancel` | `labels.goToRow` / `buttons.go` / `buttons.cancel` |
+| `treeExpand` / `treeCollapse` | `ariaLabels.expand` / `ariaLabels.collapse` |
+| `filterColumn` | `ariaLabels.filterColumn` |
+| `editCell` | `ariaLabels.editCell` + `tooltips.editCell` |
+| `invalidNumber` / `numberMin` / `numberMax` / `numberNegative` / `invalidBoolean` / `invalidDate` | `errors.invalidNumber` / `errors.numberMin` / `errors.numberMax` / `errors.numberNegative` / `errors.invalidBoolean` / `errors.invalidDate` |
+| `actions.add` / `delete` / `duplicate` | `menuItems.addRow` / `menuItems.deleteRow` / `menuItems.duplicateRow` |
+| `actions.moveUp` / `moveDown` / `expand` / `collapse` / `expandSubtree` / `collapseSubtree` / `expandAll` / `collapseAll` | `menuItems.<same name>` |
+| `contextMenu.sortAsc` / `sortDesc` / `clearSort` / `hideColumn` / `freezeColumn` / `unfreezeColumn` / `columnVisibility` | `menuItems.<same name>` |
+| `contextMenu.showAll` | `menuItems.showAllColumns` |
+
 ### Docs — example chapters for this pass (2026-11-18)
 - Examples: **BU04** tooltips on keyboard focus, **BU05** the ARIA grid with a screen-reader note
   (`examples-basic.html`); **SP06** accent-insensitive filter row, **SP07** page-wide labels via

@@ -32,7 +32,7 @@ A major release — see the [CHANGELOG](https://github.com/KeenMate/web-grid/blo
 - **`readonly` and `disabled`** — `readonly` blocks edits, paste, fill and row add / delete / move but keeps selection and copy; `disabled` makes the grid inert. The `read-only` preset sets `readonly`.
 - **Ctrl+Delete deletes** — the `delete` built-in removes the row (veto with `beforeActionCallback`) and `row-delete` reports it after the fact.
 - **Core lifecycle** — `defer` / `release()` hold the first render, then `ready` / `:state(ready)` / `whenReady()`; `destroy()`.
-- **`labels`** — also a JSON attribute, with `labels.noData` / `labels.noResults` for the empty table (`''` = blank), `labels.loading` for a pending infinite-scroll load; `scrollToRow(rowIndex)` resolves when the row is in view.
+- **`labels`** — also a JSON attribute, with `messages.noData` / `messages.noResults` for the empty table (`''` = blank), `messages.loading` for a pending infinite-scroll load; `scrollToRow(rowIndex)` resolves when the row is in view.
 - **Dropdowns** — `editorOptions.isEmptyAllowed` adds an empty first item (→ `null`); "no options" vs "no matching options" texts.
 - **Shared loader** — the infinite-scroll row and async dropdown search draw one loader (`--base-loader-*` tokens); swap it with `renderLoadingCallback` or page-wide `window.components.renderLoadingCallback`.
 - **Lookups** — `getRowById(id)` → row or `null`, `getRowIndex(row)` → display index or `-1`.

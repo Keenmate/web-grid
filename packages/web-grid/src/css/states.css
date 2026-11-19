@@ -38,7 +38,7 @@
 /* ==============================================================================
    LOADING STATE
    ============================================================================== */
-/* The infinite-scroll "loading more" row: loader + labels.loading */
+/* The infinite-scroll "loading more" row: loader + messages.loading / ariaLabels.loading */
 .wg__loading-more {
   text-align: center;
   padding: var(--wg-cell-padding);

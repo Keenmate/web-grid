@@ -54,7 +54,7 @@ export function isEmptyOption(opt: EditorOption | undefined): boolean {
 
 /**
  * The option list as shown: with `editorOptions.isEmptyAllowed`, an empty first
- * item (value `null`, text `labels.dropdownEmptyOption`) ahead of `options`.
+ * item (value `null`, text `labels.emptyOption`) ahead of `options`.
  * Only for an unfiltered list — a typed filter / search shows its matches only.
  */
 export function withEmptyOption(options: EditorOption[], opts: EditorOptions<any>, text: string): EditorOption[] {

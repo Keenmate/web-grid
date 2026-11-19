@@ -285,7 +285,7 @@ test.describe('editorOptions.isEmptyAllowed', () => {
 
 	test('combobox: the empty item shows unfiltered, not for a typed filter; column label override', async ({ page }) => {
 		await gotoDropdowns(page)
-		await allowEmpty(page, 'product', { dropdownEmptyOption: '(none)' })
+		await allowEmpty(page, 'product', { 'labels.emptyOption': '(none)' })
 		await openEditor(page, 0, COL.product)
 		await expect(dropdownOptions(page)).toHaveCount(7)
 		await expect(dropdownOptions(page).first()).toHaveText('(none)')

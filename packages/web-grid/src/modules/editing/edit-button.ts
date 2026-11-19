@@ -4,7 +4,7 @@
 // An editable cell (not read-only, not locked) in display mode gets a small
 // button — shown on hover and in the focused cell (CSS). A click starts editing;
 // F2 / Enter work as usual. The icon is core renderIcon (markup / token name / text; (`editButtonIcon`, e.g.
-// `<span class="lucide-pencil"></span>`), the accessible name `labels.editCell`.
+// `<span class="lucide-pencil"></span>`), the accessible name `ariaLabels.editCell`, title `tooltips.editCell`.
 
 import { escapeHtml, renderIcon } from '@keenmate/web-components-core'
 import type { GridHost } from '../grid-context.js'
@@ -20,8 +20,9 @@ export function hasEditButton<T>(ctx: GridHost<T>, column: Column<T>, isEditable
 }
 
 export function renderEditButton<T>(ctx: GridHost<T>, rowIndex: number, colIndex: number): string {
-	const label = escapeHtml(ctx.engine.labels.editCell)
-	return `<button type="button" class="wg__edit-button" tabindex="-1" data-row="${rowIndex}" data-col="${colIndex}" aria-label="${label}" title="${label}">${renderIcon(ctx.engine.editButtonIcon, { prefix: 'wg' })}</button>`
+	const label = escapeHtml(ctx.engine.labels['ariaLabels.editCell'])
+	const title = escapeHtml(ctx.engine.labels['tooltips.editCell'])
+	return `<button type="button" class="wg__edit-button" tabindex="-1" data-row="${rowIndex}" data-col="${colIndex}" aria-label="${label}" title="${title}">${renderIcon(ctx.engine.editButtonIcon, { prefix: 'wg' })}</button>`
 }
 
 /**

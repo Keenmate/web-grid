@@ -192,12 +192,13 @@ function fillDropdown<T>(
 		const typed = (anchor.querySelector('input') as HTMLInputElement | null)?.value.trim() ?? ''
 		const hasSource = (opts.options?.length ?? 0) > 0 || (opts.initialOptions?.length ?? 0) > 0
 		const isNoResults = hasSource || (!!opts.searchCallback && typed !== '')
-		const key = ctx.autocomplete.isSearching ? 'dropdownSearching' : isNoResults ? 'dropdownNoResults' : 'dropdownNoData'
+		const key = ctx.autocomplete.isSearching ? 'messages.searching' : isNoResults ? 'messages.noMatchingOptions' : 'messages.noOptions'
 		const message = opts.labels?.[key] ?? ctx.engine.labels[key]
-		if (key === 'dropdownSearching') {
-			// Typed search in flight: the loader (core renderLoader, context 'search') + the text
+		if (key === 'messages.searching') {
+			// Typed search in flight: the loader (core renderLoader, context 'search'; ariaLabels.searching) + the text
+			const ariaLabel = opts.labels?.['ariaLabels.searching'] ?? ctx.engine.labels['ariaLabels.searching']
 			put(`<div class="wg__dropdown-empty wg__dropdown-searching"><span class="wg__dropdown-searching-indicator"></span>${message ? `<span aria-hidden="true">${escapeHtml(message)}</span>` : ''}</div>`)
-			syncLoader(ctx, 'search-dropdown', dropdown.querySelector('.wg__dropdown-searching-indicator') as HTMLElement, message)
+			syncLoader(ctx, 'search-dropdown', dropdown.querySelector('.wg__dropdown-searching-indicator') as HTMLElement, ariaLabel)
 		} else {
 			put(message ? `<div class="wg__dropdown-empty">${escapeHtml(message)}</div>` : '')
 		}
@@ -313,9 +314,9 @@ function enterDropdownSheet<T>(ctx: GridHost<T>, panel: HTMLElement): void {
 	const typed = editor instanceof HTMLInputElement ? editor : null
 	const header = buildSheetHeader({
 		title,
-		closeLabel: ctx.engine.labels.sheetClose,
+		closeLabel: ctx.engine.labels['ariaLabels.closeSheet'],
 		onClose: () => closeDropdownSheet(ctx, panel),
-		search: typed ? { placeholder: ctx.engine.labels.sheetSearch, value: typed.value } : undefined,
+		search: typed ? { placeholder: ctx.engine.labels['placeholders.search'], value: typed.value } : undefined,
 	})
 	// The sheet's search types into the cell's own input: the grid filters / searches as before
 	const search = header.querySelector('.wg__sheet-search') as HTMLInputElement | null

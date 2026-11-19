@@ -38,7 +38,7 @@ export function wrapTreeCell<T>(
 	let chevron: string
 	if (info.hasChildren) {
 		const expandedClass = shouldRotate && isExpanded ? ' wg__tree-chevron--expanded' : ''
-		chevron = `<button type="button" class="wg__tree-chevron${expandedClass}" data-tree-toggle="${escapeHtml(info.path)}" tabindex="-1" aria-label="${escapeHtml(isExpanded ? ctx.engine.labels.treeCollapse : ctx.engine.labels.treeExpand)}">${chevronInner}</button>`
+		chevron = `<button type="button" class="wg__tree-chevron${expandedClass}" data-tree-toggle="${escapeHtml(info.path)}" tabindex="-1" aria-label="${escapeHtml(isExpanded ? ctx.engine.labels['ariaLabels.collapse'] : ctx.engine.labels['ariaLabels.expand'])}">${chevronInner}</button>`
 	} else {
 		chevron = `<span class="wg__tree-leaf-spacer" aria-hidden="true">${chevronInner}</span>`
 	}

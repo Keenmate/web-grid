@@ -172,7 +172,7 @@ export function openCellDatePicker<T>(
 		// On a phone: the edge-to-edge sheet (core resolvePresentation(); see modules/sheet)
 		isSheet: ctx.isPhoneSheet,
 		sheetTitle: column?.title || at.field,
-		sheetCloseLabel: ctx.engine.labels.sheetClose,
+		sheetCloseLabel: ctx.engine.labels['ariaLabels.closeSheet'],
 		onSelect: (date, direction) => onSelect(date, direction, input),
 		onClose: (reason) => onDatePickerClose(ctx, picker, reason, at),
 	})
@@ -231,19 +231,19 @@ export function handleDatePickerSelect<T>(
 }
 
 /**
- * The parse error to save the date editor's text with: `labels.invalidDate` when the typed text
+ * The parse error to save the date editor's text with: `errors.invalidDate` when the typed text
  * is not a date (DatePicker marked it — invalid, incomplete, out of min / max), else `null`.
  * Every leave-the-cell path commits that text as is with this error (like a paste): the cell is
  * marked invalid, `validation-error` fires, the edit ends.
  */
 export function typedDateError<T>(ctx: GridHost<T>, input: HTMLInputElement): string | null {
-	return isTypedDateInvalid(input) && input.value.trim() !== '' ? ctx.engine.labels.invalidDate : null
+	return isTypedDateInvalid(input) && input.value.trim() !== '' ? ctx.engine.labels['errors.invalidDate'] : null
 }
 
 /**
  * Convert the input's typed value into the configured output format (ISO
  * string / Date / timestamp) and write it through grid.commitEdit. Text that
- * is not a date is committed as is, invalid (`labels.invalidDate`).
+ * is not a date is committed as is, invalid (`errors.invalidDate`).
  *
  * @param commitEmptyRow - If true and editing empty row, add it to items
  *                        (Enter-key behavior).
@@ -265,7 +265,7 @@ export async function commitDateEditor<T>(
 	const dateValue = input.value ? parseDateInput(input.value, formatInfo) : null
 
 	// Not a date (marked while typing, or no parse): saved as typed, marked invalid
-	const parseError = typedDateError(ctx, input) ?? (input.value.trim() !== '' && !dateValue ? ctx.engine.labels.invalidDate : null)
+	const parseError = typedDateError(ctx, input) ?? (input.value.trim() !== '' && !dateValue ? ctx.engine.labels['errors.invalidDate'] : null)
 	if (parseError) {
 		await ctx.engine.commitEdit(rowIndex, field, input.value, commitEmptyRow, 'edit', parseError)
 		return

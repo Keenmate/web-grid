@@ -141,7 +141,7 @@ test.describe('tree + infinite scroll (#isGrid)', () => {
 			.toContainText('trigger=load-more')
 	})
 
-	test('a pending load-more shows the labels.loading row until the request is answered', async ({ page }) => {
+	test('a pending load-more shows the messages.loading row until the request is answered', async ({ page }) => {
 		await gotoTreeScroll(page)
 		// Hold the request: no items appended until the test sets them
 		await page.locator('web-grid#isGrid').evaluate((el: any) => { el.onDataRequest = () => {} })

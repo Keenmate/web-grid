@@ -88,7 +88,7 @@ test.describe('number editor', () => {
 	})
 
 	test('the error messages are labels (i18n)', async ({ page }) => {
-		await onGrid(page, el => { el.labels = { invalidNumber: 'Není číslo' } })
+		await onGrid(page, el => { el.labels = { 'errors.invalidNumber': 'Není číslo' } })
 		await commitTyped(page, 0, 1, 'x')
 		expect((await domEvents(page, 'validation-error'))[0].error).toBe('Není číslo')
 	})
@@ -166,15 +166,16 @@ test.describe('editTrigger', () => {
 		await expect(cell(page, 1, 0).locator('.wg__edit-button')).toHaveCount(1)
 	})
 
-	test('editButtonIcon is HTML (icon fonts / sprites); labels.editCell names it', async ({ page }) => {
+	test('editButtonIcon is HTML (icon fonts / sprites); labels ariaLabels.editCell / tooltips.editCell name it', async ({ page }) => {
 		await onGrid(page, el => {
 			el.editTrigger = 'button'
 			el.editButtonIcon = '<span class="lucide-pencil" data-testid="pencil"></span>'
-			el.labels = { editCell: 'Upravit' }
+			el.labels = { 'ariaLabels.editCell': 'Upravit', 'tooltips.editCell': 'Upravit (title)' }
 		})
 		const btn = cell(page, 0, 0).locator('.wg__edit-button')
 		await expect(btn.locator('span.lucide-pencil')).toHaveCount(1)
 		await expect(btn).toHaveAttribute('aria-label', 'Upravit')
+		await expect(btn).toHaveAttribute('title', 'Upravit (title)')
 		// attribute form; removal → the default glyph
 		await onGrid(page, el => el.setAttribute('edit-button-icon', '<b>E</b>'))
 		await expect(btn.locator('b')).toHaveText('E')

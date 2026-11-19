@@ -418,7 +418,7 @@ export interface GridElementConfig<T = unknown> {
 	 * - `navigate` — Excel-like: arrows move the focus, typing starts editing the focused cell
 	 */
 	editTrigger: EditTrigger
-	/** Icon of the edit button — markup (`<span class="lucide-pencil"></span>`) as is, a token name (`pencil` → `--base-icon-pencil`), else text. Shown in editable cells with `editTrigger: 'button'` (or `column.isEditButtonShown`); its accessible name is `labels.editCell`. Default: `✎`. */
+	/** Icon of the edit button — markup (`<span class="lucide-pencil"></span>`) as is, a token name (`pencil` → `--base-icon-pencil`), else text. Shown in editable cells with `editTrigger: 'button'` (or `column.isEditButtonShown`); its accessible name is `labels['ariaLabels.editCell']`, its title `labels['tooltips.editCell']`. Default: `✎`. */
 	editButtonIcon: string
 	/**
 	 * Where the caret goes when an editor opens. Default: `mouse-position`.
@@ -636,7 +636,7 @@ export interface GridElementConfig<T = unknown> {
 	 * - `all` — also fills across columns
 	 */
 	fillDirection: FillDirection
-	/** UI strings (i18n) — a partial object (JSON attribute `labels`) merged per key over the English defaults: `noData`, `noResults`, `loading`, pager / go-to-row / menu texts, …. Reads back what was assigned. */
+	/** UI strings (i18n) — a partial object (JSON attribute `labels`) of flat `<elementType>.<name>` keys (`messages.noData`, `buttons.nextPage`, `menuItems.deleteRow`, …; or full `web-grid.*` keys) merged per key over the page-wide `window.components.locale.labels` and the English defaults. Reads back what was assigned. */
 	labels: GridLabelsInput | undefined
 	/** CSS for the grid's shadow root, after the page-wide `window.components['web-grid'].customStyles`. */
 	customStyles: string | null
@@ -812,7 +812,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 - \`always\` — every editable cell is always an editor
 - \`navigate\` — Excel-like: arrows move the focus, typing starts editing the focused cell` },
 		// HTML of the edit button (editTrigger 'button'), e.g. '<span class="lucide-pencil"></span>'
-		{ configKey: 'editButtonIcon', attribute: 'edit-button-icon', converter: toText({ default: '✎' }), default: '✎', on: 'update', description: 'Icon of the edit button — markup (`<span class="lucide-pencil"></span>`) as is, a token name (`pencil` → `--base-icon-pencil`), else text. Shown in editable cells with `editTrigger: \'button\'` (or `column.isEditButtonShown`); its accessible name is `labels.editCell`. Default: `✎`.' },
+		{ configKey: 'editButtonIcon', attribute: 'edit-button-icon', converter: toText({ default: '✎' }), default: '✎', on: 'update', description: 'Icon of the edit button — markup (`<span class="lucide-pencil"></span>`) as is, a token name (`pencil` → `--base-icon-pencil`), else text. Shown in editable cells with `editTrigger: \'button\'` (or `column.isEditButtonShown`); its accessible name is `labels[\'ariaLabels.editCell\']`, its title `labels[\'tooltips.editCell\']`. Default: `✎`.' },
 		{ configKey: 'editStartSelection', attribute: 'edit-start-selection', converter: toEnum(EDIT_START_SELECTIONS, { default: 'mouse-position' }), default: 'mouse-position', on: 'update', description: `Where the caret goes when an editor opens. Default: \`mouse-position\`.
 
 - \`mouse-position\` — at the clicked character
@@ -948,8 +948,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 - \`vertical\` — fills the source column only
 - \`all\` — also fills across columns` },
 		// UI strings (i18n): a partial object (also a JSON attribute) merged per key over the
-		// English defaults — `noData` / `noResults`, `loading`, `dropdownNoData`, pagination / go-to-row / menu texts, … (see labels.ts)
-		{ configKey: 'labels', attribute: 'labels', converter: toObject(), on: 'update', type: 'GridLabelsInput', description: 'UI strings (i18n) — a partial object (JSON attribute `labels`) merged per key over the English defaults: `noData`, `noResults`, `loading`, pager / go-to-row / menu texts, …. Reads back what was assigned.' },
+		// English defaults — flat `<elementType>.<name>` keys: `messages.noData`, `buttons.nextPage`, `menuItems.*`, … (see labels.ts)
+		{ configKey: 'labels', attribute: 'labels', converter: toObject(), on: 'update', type: 'GridLabelsInput', description: 'UI strings (i18n) — a partial object (JSON attribute `labels`) of flat `<elementType>.<name>` keys (`messages.noData`, `buttons.nextPage`, `menuItems.deleteRow`, …; or full `web-grid.*` keys) merged per key over the page-wide `window.components.locale.labels` and the English defaults. Reads back what was assigned.' },
 		// Custom CSS for the shadow root (core createCustomStyles(), rulebook C-CA-15): applied after the
 		// page-wide `window.components['web-grid'].customStyles`; the callback wins over the string.
 		{ configKey: 'customStyles', attribute: 'custom-styles', converter: toText({ isNullable: true }), on: 'update', type: 'string | null', description: "CSS injected into the grid's shadow root (after the page-wide `window.components['web-grid'].customStyles`); an `@import`ed font is also linked in the document head." },
@@ -1150,7 +1150,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		/** @internal */
 		this.engine = new GridEngine<T>()
 		this.engine.setStateStore(this.#stateStore)
-		// Labels through core /locale: page-wide labels['web-grid'] + formatLabelCallback, this element's logger
+		// Labels through core /locale: page-wide flat labels ('web-grid.<key>') + translateCallback, this element's logger
 		this.engine.setLabelHost(this)
 		// Every ctx / detail carries `controller` + `element`; the engine's
 		// notifications become events (emit → `on*` twin + DOM event).
@@ -1419,7 +1419,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	get items(): T[] { return this.engine.items }
 	set items(value: T[]) {
 		// Reset infinite scroll loading flag (before the re-render, so the
-		// `labels.loading` row goes away with it)
+		// `messages.loading` row goes away with it)
 		this.virtualScroll.setIsLoadingMore(false)
 		this.shadow?.querySelector('.wg__loading-more-row')?.remove()
 		if (this.shadow) syncLoadingMoreLoader(this)

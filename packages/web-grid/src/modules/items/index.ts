@@ -68,7 +68,7 @@ export function normalizeEntry<E>(entry: string | E): E {
  */
 export function rowActionDefaults<T>(host: GridHost<T>, action: string | undefined, ctx: { row?: T }): Partial<ResolvedActionItem<GridAction>> | undefined {
 	if (!isRowAction(action)) return undefined
-	const labels = host.engine.labels.actions
+	const labels = host.engine.labels
 	const display = host.engine.displayItems
 	const positions = rowTargets<T>(host, ctx.row).map(r => display.indexOf(r)).filter(p => p >= 0)
 	const top = positions.length ? Math.min(...positions) : -1
@@ -76,11 +76,11 @@ export function rowActionDefaults<T>(host: GridHost<T>, action: string | undefin
 	// A read-only grid changes no rows: every row built-in is disabled
 	const isLocked = host.engine.isReadonly || host.engine.isDisabled
 	switch (action) {
-		case 'add': return { text: labels.add, icon: ROW_ICONS.add, isDisabled: isLocked }
-		case 'delete': return { text: labels.delete, icon: ROW_ICONS.delete, isDanger: true, isDisabled: isLocked }
-		case 'duplicate': return { text: labels.duplicate, icon: ROW_ICONS.duplicate, isDisabled: isLocked }
-		case 'move-up': return { text: labels.moveUp, icon: ROW_ICONS['move-up'], isDisabled: isLocked || top <= 0 }
-		case 'move-down': return { text: labels.moveDown, icon: ROW_ICONS['move-down'], isDisabled: isLocked || bottom === -1 || bottom >= display.length - 1 }
+		case 'add': return { text: labels['menuItems.addRow'], icon: ROW_ICONS.add, isDisabled: isLocked }
+		case 'delete': return { text: labels['menuItems.deleteRow'], icon: ROW_ICONS.delete, isDanger: true, isDisabled: isLocked }
+		case 'duplicate': return { text: labels['menuItems.duplicateRow'], icon: ROW_ICONS.duplicate, isDisabled: isLocked }
+		case 'move-up': return { text: labels['menuItems.moveUp'], icon: ROW_ICONS['move-up'], isDisabled: isLocked || top <= 0 }
+		case 'move-down': return { text: labels['menuItems.moveDown'], icon: ROW_ICONS['move-down'], isDisabled: isLocked || bottom === -1 || bottom >= display.length - 1 }
 	}
 }
 
@@ -91,23 +91,23 @@ export function cellMenuDefaults<T>(host: GridHost<T>, action: string | undefine
 		return d && { ...d, icon: undefined }  // the toolbar SVGs don't suit a text menu
 	}
 	const engine = host.engine
-	const labels = engine.labels.actions
+	const labels = engine.labels
 	switch (action) {
 		// Per-row: the targets (the selection when the row is in it, else the row); leaves hide them.
 		// expand / collapse = one level; *-subtree = the row and everything under it.
 		case 'expand': {
 			const targets = treeTargetPaths(host, ctx.row)
-			return { text: labels.expand, icon: '▾', isVisible: targets.length > 0, isDisabled: targets.every(p => engine.isPathExpanded(p)) }
+			return { text: labels['menuItems.expand'], icon: '▾', isVisible: targets.length > 0, isDisabled: targets.every(p => engine.isPathExpanded(p)) }
 		}
 		case 'collapse': {
 			const targets = treeTargetPaths(host, ctx.row)
-			return { text: labels.collapse, icon: '▸', isVisible: targets.length > 0, isDisabled: !targets.some(p => engine.isPathExpanded(p)) }
+			return { text: labels['menuItems.collapse'], icon: '▸', isVisible: targets.length > 0, isDisabled: !targets.some(p => engine.isPathExpanded(p)) }
 		}
-		case 'expand-subtree': return { text: labels.expandSubtree, icon: '⇊', isVisible: treeTargetPaths(host, ctx.row).length > 0 }
-		case 'collapse-subtree': return { text: labels.collapseSubtree, icon: '⇈', isVisible: treeTargetPaths(host, ctx.row).length > 0 }
+		case 'expand-subtree': return { text: labels['menuItems.expandSubtree'], icon: '⇊', isVisible: treeTargetPaths(host, ctx.row).length > 0 }
+		case 'collapse-subtree': return { text: labels['menuItems.collapseSubtree'], icon: '⇈', isVisible: treeTargetPaths(host, ctx.row).length > 0 }
 		// The whole tree
-		case 'expand-all': return { text: labels.expandAll, icon: '⤓', isVisible: engine.isTreeMode }
-		case 'collapse-all': return { text: labels.collapseAll, icon: '⤒', isVisible: engine.isTreeMode && engine.expandedPathCount > 0 }
+		case 'expand-all': return { text: labels['menuItems.expandAll'], icon: '⤓', isVisible: engine.isTreeMode }
+		case 'collapse-all': return { text: labels['menuItems.collapseAll'], icon: '⤒', isVisible: engine.isTreeMode && engine.expandedPathCount > 0 }
 	}
 	return undefined
 }
@@ -120,18 +120,18 @@ const HEADER_ICONS: Partial<Record<GridHeaderAction, string>> = {
 /** Defaults of a header-menu built-in for the column in `ctx`. */
 export function headerMenuDefaults<T>(action: string | undefined, ctx: HeaderMenuContext<T>): Partial<ResolvedActionItem<GridAction>> | undefined {
 	if (!isHeaderAction(action)) return undefined
-	const l = ctx.labels.contextMenu
+	const l = ctx.labels
 	const icon = HEADER_ICONS[action]
 	switch (action) {
-		case 'sort-asc': return { text: l.sortAsc, icon, isVisible: !!ctx.column && ctx.column.isSortable !== false }
-		case 'sort-desc': return { text: l.sortDesc, icon, isVisible: !!ctx.column && ctx.column.isSortable !== false }
-		case 'clear-sort': return { text: l.clearSort, icon, isVisible: ctx.sortDirection !== null }
+		case 'sort-asc': return { text: l['menuItems.sortAsc'], icon, isVisible: !!ctx.column && ctx.column.isSortable !== false }
+		case 'sort-desc': return { text: l['menuItems.sortDesc'], icon, isVisible: !!ctx.column && ctx.column.isSortable !== false }
+		case 'clear-sort': return { text: l['menuItems.clearSort'], icon, isVisible: ctx.sortDirection !== null }
 		// The tree column hosts indent + chevron; hiding it would orphan the hierarchy
-		case 'hide-column': return { text: l.hideColumn, icon, isVisible: !!ctx.column && !(ctx.isTreeMode && ctx.column.isTree) }
-		case 'freeze-column': return { text: l.freezeColumn, icon, isVisible: !!ctx.column && !ctx.isFrozen }
-		case 'unfreeze-column': return { text: l.unfreezeColumn, icon, isVisible: !!ctx.column && ctx.isFrozen }
-		case 'column-visibility': return { text: l.columnVisibility, icon }
-		case 'show-all-columns': return { text: l.showAll }
+		case 'hide-column': return { text: l['menuItems.hideColumn'], icon, isVisible: !!ctx.column && !(ctx.isTreeMode && ctx.column.isTree) }
+		case 'freeze-column': return { text: l['menuItems.freezeColumn'], icon, isVisible: !!ctx.column && !ctx.isFrozen }
+		case 'unfreeze-column': return { text: l['menuItems.unfreezeColumn'], icon, isVisible: !!ctx.column && ctx.isFrozen }
+		case 'column-visibility': return { text: l['menuItems.columnVisibility'], icon }
+		case 'show-all-columns': return { text: l['menuItems.showAllColumns'] }
 	}
 	return undefined
 }

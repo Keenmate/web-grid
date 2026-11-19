@@ -26,7 +26,7 @@ editTrigger (EditTrigger, default: 'dblclick')
                    Enter work as usual, a plain click only focuses.
                    editButtonIcon (string, HTML, default '✎', attribute
                    edit-button-icon) sets its content, e.g.
-                   '<span class="lucide-pencil"></span>'; labels.editCell
+                   '<span class="lucide-pencil"></span>'; ariaLabels.editCell
                    ("Edit") its aria-label / title.
     'always'    -- Cells are always rendered as editors (input-matrix style).
     'navigate'  -- Arrow-key navigation mode. Typing a character starts editing
@@ -124,7 +124,7 @@ NUMBER EDITOR (editor: 'number')
 Numeric input rendered as type="text" with inputmode="numeric" for full cursor
 control. The text is parsed strictly on commit (Number() + isFinite, trimmed;
 empty → null). Not a number ("abc", "12abc"), outside min / max, or negative
-with allowNegative: false → the cell is INVALID (labels.invalidNumber /
+with allowNegative: false → the cell is INVALID (errors.invalidNumber /
 numberMin / numberMax / numberNegative), the draft keeps what was typed,
 validation-error fires. No clamping. decimalPlaces rounds (1.239 → 1.24).
 Pasted text uses the same parse.
@@ -212,7 +212,7 @@ Key options (editorOptions):
   displayMember         -- Property name for display text (default: 'label').
   renderOptionCallback  -- Custom HTML for each option.
   isEmptyAllowed        -- Empty first item that sets null (default false).
-  labels                -- { dropdownNoData, dropdownNoResults, dropdownSearching, dropdownEmptyOption } texts for this column.
+  labels                -- { 'messages.noOptions', 'messages.noMatchingOptions', 'messages.searching', 'ariaLabels.searching', 'labels.emptyOption' } texts for this column.
 
 Example:
   {

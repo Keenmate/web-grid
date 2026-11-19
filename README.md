@@ -22,7 +22,7 @@ A major release — see the CHANGELOG for every rename (no aliases).
 - **`readonly` and `disabled`** — `readonly` blocks edits, paste, fill and row add / delete / move but keeps selection and copy; `disabled` makes the grid inert. The `read-only` preset sets `readonly`.
 - **Ctrl+Delete deletes** — the `delete` built-in removes the row (veto with `beforeActionCallback`) and `row-delete` reports it after the fact.
 - **Core lifecycle** — `defer` / `release()` hold the first render, then `ready` / `:state(ready)` / `whenReady()`; `destroy()`.
-- **`labels`** — also a JSON attribute, with `labels.noData` / `labels.noResults` for the empty table (`''` = blank), `labels.loading` for a pending infinite-scroll load; `scrollToRow(rowIndex)` resolves when the row is in view.
+- **`labels`** — also a JSON attribute, with `messages.noData` / `messages.noResults` for the empty table (`''` = blank), `messages.loading` for a pending infinite-scroll load; `scrollToRow(rowIndex)` resolves when the row is in view.
 - **Dropdowns** — `editorOptions.isEmptyAllowed` adds an empty first item (→ `null`); "no options" vs "no matching options" texts.
 - **Shared loader** — the infinite-scroll row and async dropdown search draw one loader (`--base-loader-*` tokens); swap it with `renderLoadingCallback` or page-wide `window.components.renderLoadingCallback`.
 - **Lookups** — `getRowById(id)` → row or `null`, `getRowIndex(row)` → display index or `-1`.
@@ -351,7 +351,7 @@ This architecture separates mode detection (the adapter decides *what* action a 
 | `isRowEditable` | `boolean` | — | Static per-grid row editability |
 | `getIsRowEditableCallback` | `(ctx: { row }) => boolean` | — | Decides editability per row |
 | `editTrigger` | `EditTrigger` | `'dblclick'` | How editing starts: `'click'`, `'dblclick'`, `'button'` (an edit button in editable cells — on hover and in the focused cell; F2 / Enter too), `'always'`, `'navigate'` |
-| `editButtonIcon` | `string` (HTML) | `'✎'` | Content of the edit button (`editTrigger: 'button'` / `column.isEditButtonShown`) — HTML, e.g. `'<span class="lucide-pencil"></span>'`. Attribute `edit-button-icon`. Accessible name: `labels.editCell` |
+| `editButtonIcon` | `string` (HTML) | `'✎'` | Content of the edit button (`editTrigger: 'button'` / `column.isEditButtonShown`) — HTML, e.g. `'<span class="lucide-pencil"></span>'`. Attribute `edit-button-icon`. Accessible name: `ariaLabels.editCell` (title `tooltips.editCell`) |
 | `editStartSelection` | `EditStartSelection` | `'select-all'` | Cursor position when entering edit via navigate: `'mouse-position'`, `'select-all'`, `'cursor-at-start'`, `'cursor-at-end'` |
 | `dropdownToggleVisibility` | `ToggleVisibility` | `'on-focus'` | When to show dropdown toggle button: `'always'`, `'on-focus'` |
 | `shouldOpenDropdownOnFocus` | `boolean` | `false` | Auto-open dropdown when cell is focused |
@@ -502,13 +502,13 @@ This architecture separates mode detection (the adapter decides *what* action a 
 | `infiniteScrollThreshold` | `number` | `100` | Distance from bottom (px) to trigger load |
 | `hasMoreItems` | `boolean` | `true` | Set to `false` when no more data |
 
-While a `load-more` request is pending, a row at the bottom shows the loader + `labels.loading` (see [Loading states](#loading-states)).
+While a `load-more` request is pending, a row at the bottom shows the loader + `messages.loading` (see [Loading states](#loading-states)).
 
 ### Loading states
 
 Every loader draws through one shared hook (core `renderLoader`): the infinite-scroll row
-(`context: 'row'`, label `labels.loading`) and the autocomplete's async search (`context: 'search'`,
-label `labels.dropdownSearching` — in the editor and in the dropdown). The container gets
+(`context: 'row'`, label `ariaLabels.loading`) and the autocomplete's async search (`context: 'search'`,
+label `ariaLabels.searching` — in the editor and in the dropdown). The container gets
 `role="status"` + `aria-label`.
 
 | Property | Type | Default | Description |
@@ -549,7 +549,7 @@ window.components.renderLoadingCallback = ({ context, containerElement }) => {
 | `filters` | `Record<string, string>` | `{}` | Current filter value per field. Assigning it is silent (no `filter-change`, like a native `input.value`); `setFilter(field, text, { isSilent? })` fires it |
 | `filterMode` | `'client' \| 'server'` | `'client'` | `'server'`: the grid doesn't filter `items` — listen to `filter-change` (`{ filters }`) and load the rows. Attribute `filter-mode` |
 
-**Filter row.** With `isFilteringEnabled`, a row under the header gets a text input for every column with `isFilterable: true` (labelled "Filter &lt;column&gt;" via `labels.filterColumn`; Tab-reachable). Typing is debounced (300 ms; Enter applies at once, Escape clears) → `setFilter(field, text)` → page 1. A `filterCallback` returning `null` marks the input `.wg__filter-input--invalid` (red border, `aria-invalid`) and ignores that filter. In server pagination a filter change runs `beforePageChangeCallback` (trigger `'filter'`) and fires `data-request` (trigger `'filter'`). Styled by the `--wg-filter-*` variables. A filter change (UI or `setFilter` / `filters`) resets `currentPage` to 1.
+**Filter row.** With `isFilteringEnabled`, a row under the header gets a text input for every column with `isFilterable: true` (labelled "Filter &lt;column&gt;" via `ariaLabels.filterColumn`; Tab-reachable). Typing is debounced (300 ms; Enter applies at once, Escape clears) → `setFilter(field, text)` → page 1. A `filterCallback` returning `null` marks the input `.wg__filter-input--invalid` (red border, `aria-invalid`) and ignores that filter. In server pagination a filter change runs `beforePageChangeCallback` (trigger `'filter'`) and fires `data-request` (trigger `'filter'`). Styled by the `--wg-filter-*` variables. A filter change (UI or `setFilter` / `filters`) resets `currentPage` to 1.
 
 ### Styling
 
@@ -558,7 +558,7 @@ window.components.renderLoadingCallback = ({ context, containerElement }) => {
 | `customStyles` | `string \| null` | `null` | Attribute `custom-styles`. CSS for the grid's shadow root (raw — never pass user input). Applied after the page-wide layer, so it overrides it |
 | `getCustomStylesCallback` | `(ctx: GridContext) => string \| null` | `null` | Computes the instance CSS from the grid context; wins over `customStyles` |
 | `getRowClassCallback` | `(ctx: { row, rowIndex }) => string \| null` | — | Dynamic CSS class for rows |
-| `labels` | `GridLabelsInput` (partial `GridLabels`, nested groups too) | — | Override UI labels for i18n (see [i18n](#i18n)) |
+| `labels` | `GridLabelsInput` (partial `GridLabels`: flat `<elementType>.<name>` keys, or full `web-grid.*` keys) | — | Override UI labels for i18n (see [i18n](#i18n)) |
 | `getValidationTooltipCallback` | `(ctx: CellContext<T> & { error }) => string \| null` | — | Custom HTML for validation error tooltip (grid-level default) |
 | `invalidCells` | `CellValidationState[]` | `[]` | External validation state for cells |
 
@@ -710,7 +710,7 @@ An async `validateCallback` (a promise) never holds the edit: leaving the cell e
 | `getCopyValueCallback` | `(ctx: CellContext<T>) => string` | Text copied for this cell |
 | `getPasteValueCallback` | `(ctx: CellContext<T> & { text }) => unknown` | Value stored for the pasted text |
 
-Without `getPasteValueCallback`, pasted text is typed for the column: **number** — the editor's strict parse; **checkbox** — `true` / `1` / `yes` / `x` / `✓` or the text of `trueValue` → `trueValue`, `false` / `0` / `no` / blank or the text of `falseValue` → `falseValue`; **date** — the column's `dateFormat`, then ISO `YYYY-MM-DD`, stored per `outputFormat`. Text that doesn't parse is kept and the cell marked invalid (`labels.invalidNumber` / `invalidBoolean` / `invalidDate`).
+Without `getPasteValueCallback`, pasted text is typed for the column: **number** — the editor's strict parse; **checkbox** — `true` / `1` / `yes` / `x` / `✓` or the text of `trueValue` → `trueValue`, `false` / `0` / `no` / blank or the text of `falseValue` → `falseValue`; **date** — the column's `dateFormat`, then ISO `YYYY-MM-DD`, stored per `outputFormat`. Text that doesn't parse is kept and the cell marked invalid (`errors.invalidNumber` / `errors.invalidBoolean` / `errors.invalidDate`).
 
 Grid-level paste hooks: `beforePasteCallback(ctx)` runs before a multi-cell paste (`false` cancels, async OK; add `"rowIndex-colIndex"` keys to `ctx.skipCells` to skip cells) and `createRowCallback({ data, rowIndex })` builds rows for pasted data past the last row. `pasteMode` and `shouldValidateOnPaste` control what gets pasted; `cell-paste` reports the result.
 
@@ -764,7 +764,7 @@ Grid-level paste hooks: `beforePasteCallback(ctx)` runs before a multi-cell past
 | `decimalPlaces` | `number` | — | Round the value to this many decimals |
 | `allowNegative` | `boolean` | — | `false` → a negative value is invalid |
 
-The typed text is parsed strictly (`Number()` + `isFinite`, trimmed; blank → `null`): `abc` or `12abc` mark the cell invalid (`labels.invalidNumber`, "Not a number"), as do values outside `min` / `max` or a negative with `allowNegative: false` — **no clamping**; the draft keeps what was typed and `validation-error` fires. `decimalPlaces` rounds (`1.239` → `1.24`). Pasted text goes through the same parse.
+The typed text is parsed strictly (`Number()` + `isFinite`, trimmed; blank → `null`): `abc` or `12abc` mark the cell invalid (`errors.invalidNumber`, "Not a number"), as do values outside `min` / `max` or a negative with `allowNegative: false` — **no clamping**; the draft keeps what was typed and `validation-error` fires. `decimalPlaces` rounds (`1.239` → `1.24`). Pasted text goes through the same parse.
 
 ### Checkbox Options
 
@@ -812,8 +812,8 @@ By default, options use `value` and `label` properties. Override with member str
 |--------|------|-------------|
 | `renderOptionCallback` | `(ctx: { option, optionIndex, isFocused, isSelected, isDisabled }) => string` | Custom HTML for each option |
 | `onSelect` | `(ctx: { option, row, rowIndex, column, field, … }) => void` | Fires when an option is selected |
-| `isEmptyAllowed` | `boolean` | An empty first item (`labels.dropdownEmptyOption`, "—") that sets the value to `null` (default `false`) |
-| `labels` | `{ dropdownNoData?, dropdownNoResults?, dropdownSearching?, dropdownEmptyOption? }` | This column's dropdown texts, per key over the grid `labels` |
+| `isEmptyAllowed` | `boolean` | An empty first item (`labels.emptyOption`, "—") that sets the value to `null` (default `false`) |
+| `labels` | `{ 'messages.noOptions'?, 'messages.noMatchingOptions'?, 'messages.searching'?, 'ariaLabels.searching'?, 'labels.emptyOption'? }` | This column's dropdown texts, per key over the grid `labels` |
 | `dropdownMinWidth` | `string` | Minimum width for dropdown (e.g., `'300px'`) |
 | `placeholder` | `string` | Placeholder text (combobox/autocomplete) |
 
@@ -917,7 +917,7 @@ The row built-ins **do the work** — they run *before* the `action` event (orde
 
 **Targets** (same rule as the tree actions): the whole row selection when the clicked / focused row is in it, else just that row (a range shortcut: its `rows`). `add` always inserts after the clicked row. The row selection follows its rows afterwards (deleted rows drop out). A row toolbar opened on a selected row keeps the selection.
 
-Use a string (`'add'`) for the default look, or an object to restyle it: `{ action: 'delete', icon: '🗑️', text: 'Remove' }`. Built-in texts come from `labels.actions`. To veto one (e.g. confirm a delete), return `false` from `beforeActionCallback`.
+Use a string (`'add'`) for the default look, or an object to restyle it: `{ action: 'delete', icon: '🗑️', text: 'Remove' }`. Built-in texts come from the `menuItems.*` labels (`menuItems.deleteRow`, …). To veto one (e.g. confirm a delete), return `false` from `beforeActionCallback`.
 
 ```javascript
 grid.createEmptyRowCallback = () => ({ id: nextId(), name: '', status: 'new' })
@@ -1367,67 +1367,96 @@ grid.getCustomStylesCallback = () => `
 
 ### i18n
 
-All UI strings are customized via `labels` — a partial object (also a JSON attribute: `labels='{"empty":"Nothing here"}'`) merged per key over the built-in English texts; nested groups (`actions`, `contextMenu`) merge per key too. `{name}` placeholders are filled in. A column can override its dropdown texts with `editorOptions.labels`.
+All UI strings are customized via `labels` — a partial object of flat `<elementType>.<name>` keys (also a JSON attribute: `labels='{"messages.noData":"Nothing here"}'`; a full `web-grid.*` key works too) merged per key over the page-wide labels and the built-in English texts. `{name}` placeholders are filled in. A column can override its dropdown texts with `editorOptions.labels`.
 
 ```javascript
 grid.labels = {
-  rowActions: 'Actions',
-  keyboardShortcuts: 'Keyboard shortcuts',
-  rangeShortcuts: 'Selection shortcuts',  // shortcuts-help sub-heading for rangeShortcuts
-  paginationFirst: 'First',
-  paginationPrevious: 'Previous',
-  paginationNext: 'Next',
-  paginationLast: 'Last',
-  paginationPageInfo: 'Page {current} of {total}',
-  paginationItemCount: '{count} items',
-  paginationPerPage: 'per page',
-  noData: 'No items to display',        // the grid has no rows
-  noResults: 'No matching items',       // rows exist, the filter matched nothing
-  loading: 'Loading…',                  // infinite-scroll load-more row
-  dropdownNoData: 'No options',          // the editor has no options at all
-  dropdownNoResults: 'No matching options',  // a typed filter / search matched nothing
-  dropdownSearching: 'Searching…',
-  dropdownEmptyOption: '—',              // the empty first item (editorOptions.isEmptyAllowed)
-  sheetClose: 'Close',                   // the phone sheet's close button (leaves the cell: saves)
-  sheetSearch: 'Search…',                // the phone sheet's search field (combobox / autocomplete)
-  rowLocked: 'This row is locked',
-  rowLockedBy: 'Locked by {lockedBy}',
-  goToRow: 'Go to row (1-{max}):',  // Ctrl/Cmd+G dialog
-  goToRowGo: 'Go',
-  goToRowCancel: 'Cancel',
-  editCell: 'Edit',              // edit button aria-label / title (editTrigger: 'button')
-  treeExpand: 'Expand',          // tree chevron aria-label
-  treeCollapse: 'Collapse',
-  filterColumn: 'Filter {column}',           // aria-label of a filter-row input
-  invalidNumber: 'Not a number',              // built-in value checks (number editor, paste)
-  numberMin: 'Must be at least {min}',
-  numberMax: 'Must be at most {max}',
-  numberNegative: 'Must not be negative',
-  invalidBoolean: 'Not a yes / no value',     // text pasted into a checkbox column
-  invalidDate: 'Not a valid date',            // text pasted / typed into a date column
-  actions: {                       // built-in row / tree action texts
-    add: 'Add row',
-    delete: 'Delete row',
-    duplicate: 'Duplicate row',
-    moveUp: 'Move up',
-    moveDown: 'Move down',
-    expand: 'Expand',
-    collapse: 'Collapse',
-    expandSubtree: 'Expand subtree',
-    collapseSubtree: 'Collapse subtree',
-    expandAll: 'Expand all',
-    collapseAll: 'Collapse all'
-  },
-  contextMenu: {                   // header-menu built-in texts
-    sortAsc: 'Sort Ascending',
-    sortDesc: 'Sort Descending',
-    clearSort: 'Clear Sort',
-    hideColumn: 'Hide Column',
-    freezeColumn: 'Freeze Column',
-    unfreezeColumn: 'Unfreeze Column',
-    columnVisibility: 'Column Visibility',
-    showAll: 'Show all'
-  }
+  // Row toolbar / inline actions column
+  'tooltips.rowActions': 'Row actions',          // the toolbar trigger button's title
+  'columnHeaders.inlineActions': 'Actions',      // the inline actions column header ('' = blank)
+  // Shortcuts help
+  'tooltips.keyboardShortcuts': 'Keyboard shortcuts',  // the help icon's title
+  'headers.keyboardShortcuts': 'Keyboard shortcuts',   // the help overlay's title
+  'headers.rangeShortcuts': 'Selection shortcuts',     // sub-heading for rangeShortcuts
+  // Pagination (getPaginationLabelsCallback still wins)
+  'buttons.firstPage': '⏮',
+  'buttons.previousPage': '◀',
+  'buttons.nextPage': '▶',
+  'buttons.lastPage': '⏭',
+  'labels.pageInfo': 'Page {current} of {total}',
+  'labels.itemCount': '{count} items',
+  'labels.perPage': 'per page',
+  // Empty table / loading
+  'messages.noData': 'No items to display',      // the grid has no rows
+  'messages.noResults': 'No matching items',     // rows exist, the filter matched nothing
+  'messages.loading': 'Loading…',                // infinite-scroll load-more row ('' = no row)
+  'ariaLabels.loading': 'Loading…',              // its loader's accessible name
+  // Dropdown editors (a column can override these with editorOptions.labels)
+  'messages.noOptions': 'No options',            // the editor has no options at all
+  'messages.noMatchingOptions': 'No matching options',  // a typed filter / search matched nothing
+  'messages.searching': 'Searching…',            // a typed async search is in flight
+  'ariaLabels.searching': 'Searching…',          // the search loader's accessible name
+  'labels.emptyOption': '—',                     // the empty first item (editorOptions.isEmptyAllowed)
+  // Phone sheet / menu sheet
+  'ariaLabels.closeSheet': 'Close',              // the sheet's close button (leaves the cell: saves)
+  'placeholders.search': 'Search…',              // the sheet's search field (combobox / autocomplete)
+  'menuItems.back': 'Back',                      // a submenu level's back row
+  // Row locking
+  'tooltips.rowLocked': 'This row is locked',
+  'tooltips.rowLockedBy': 'Locked by {lockedBy}',
+  // Go-to-row dialog (Ctrl/Cmd+G)
+  'labels.goToRow': 'Go to row (1-{max}):',
+  'buttons.go': 'Go',
+  'buttons.cancel': 'Cancel',
+  // Cells
+  'ariaLabels.editCell': 'Edit',                 // edit button (editTrigger: 'button')
+  'tooltips.editCell': 'Edit',
+  'ariaLabels.expand': 'Expand',                 // tree chevron
+  'ariaLabels.collapse': 'Collapse',
+  'ariaLabels.filterColumn': 'Filter {column}',  // a filter-row input
+  // Built-in value checks (number editor, paste)
+  'errors.invalidNumber': 'Not a number',
+  'errors.numberMin': 'Must be at least {min}',
+  'errors.numberMax': 'Must be at most {max}',
+  'errors.numberNegative': 'Must not be negative',
+  'errors.invalidBoolean': 'Not a yes / no value',  // text pasted into a checkbox column
+  'errors.invalidDate': 'Not a valid date',         // text pasted / typed into a date column
+  // Built-in row / tree actions (the item text: toolbar, cell menu, shortcuts help)
+  'menuItems.addRow': 'Add row',
+  'menuItems.deleteRow': 'Delete row',
+  'menuItems.duplicateRow': 'Duplicate row',
+  'menuItems.moveUp': 'Move up',
+  'menuItems.moveDown': 'Move down',
+  'menuItems.expand': 'Expand',                  // one level
+  'menuItems.collapse': 'Collapse',
+  'menuItems.expandSubtree': 'Expand subtree',   // the row + everything under it
+  'menuItems.collapseSubtree': 'Collapse subtree',
+  'menuItems.expandAll': 'Expand all',           // the whole tree
+  'menuItems.collapseAll': 'Collapse all',
+  // Header menu built-ins
+  'menuItems.sortAsc': 'Sort Ascending',
+  'menuItems.sortDesc': 'Sort Descending',
+  'menuItems.clearSort': 'Clear Sort',
+  'menuItems.hideColumn': 'Hide Column',
+  'menuItems.freezeColumn': 'Freeze Column',
+  'menuItems.unfreezeColumn': 'Unfreeze Column',
+  'menuItems.columnVisibility': 'Column Visibility',
+  'menuItems.showAllColumns': 'Show all'         // first item of the column-visibility submenu
+}
+```
+
+Every grid on the page can be translated at once through core's page-wide locale (`@keenmate/web-components-core`
+`/locale`): per key the instance `labels` wins, then the page-wide flat dictionary
+`window.components.locale.labels['web-grid.<key>']`, then English. Assigning it re-renders every live grid.
+`translateCallback` (ICU / i18next / the app's own lookup) gets the full key (`web-grid.labels.pageInfo`), the
+resolved template and the params of every label the instance didn't set; `null` / `undefined` = "not mine" (the
+default `{name}` replacement).
+
+```javascript
+window.components.locale = {
+  locale: 'cs-CZ',                       // also the date editor's month / weekday names
+  labels: { 'web-grid.messages.noData': 'Žádné položky', 'web-grid.menuItems.deleteRow': 'Smazat řádek' },
+  translateCallback: ({ key, params }) => i18next.exists(key) ? i18next.t(key, params) : null,
 }
 ```
 

@@ -180,7 +180,7 @@ onSelect(ctx)
 
 isEmptyAllowed (boolean, default false)
   select / combobox / autocomplete: an empty first item (text
-  labels.dropdownEmptyOption, "—") ahead of the options; picking it sets
+  labels.emptyOption, "—") ahead of the options; picking it sets
   the value to null. Shown for the unfiltered list only (not for a typed
   filter / search).
 
@@ -188,14 +188,14 @@ PHONE SHEET: on a phone (core resolvePresentation(): touch-primary + short viewp
   dropdown and the date editor are an edge-to-edge sheet: column title, close button, a search
   field for combobox / autocomplete (types into the cell editor). Close button / phone Back = leave
   the cell = SAVE (select without a pick: no change); Escape cancels; a pick saves. Labels
-  sheetClose / sheetSearch. Desktop / tablet: the anchored panel (unchanged).
+  ariaLabels.closeSheet / placeholders.search. Desktop / tablet: the anchored panel (unchanged).
 
-labels ({ dropdownNoData?, dropdownNoResults?, dropdownSearching?, dropdownEmptyOption? })
+labels ({ 'messages.noOptions'?, 'messages.noMatchingOptions'?, 'messages.searching'?, 'ariaLabels.searching'?, 'labels.emptyOption'? })
   This column's dropdown texts, per key over the grid's labels ('' = blank):
-  dropdownNoData - the editor has no options at all ("No options");
-  dropdownNoResults - a typed filter / search matched nothing ("No matching options");
-  dropdownSearching - a typed async search is in flight ("Searching…");
-  dropdownEmptyOption - the isEmptyAllowed item ("—").
+  messages.noOptions - the editor has no options at all ("No options");
+  messages.noMatchingOptions - a typed filter / search matched nothing ("No matching options");
+  messages.searching / ariaLabels.searching - a typed async search is in flight ("Searching…": text / loader name);
+  labels.emptyOption - the isEmptyAllowed item ("—").
 
 dropdownMinWidth (string)
   CSS minimum width for the dropdown popup. Useful when the cell is narrow

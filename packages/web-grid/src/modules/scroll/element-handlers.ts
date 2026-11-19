@@ -92,7 +92,7 @@ export function handleInfiniteScroll<T>(ctx: GridHost<T>, container: HTMLElement
 
 	if (shouldLoad) {
 		ctx.virtualScroll.setIsLoadingMore(true)
-		// The `labels.loading` row at the bottom (gone with the next render / items set)
+		// The `messages.loading` row at the bottom (gone with the next render / items set)
 		const tbody = container.querySelector('tbody')
 		if (tbody && !tbody.querySelector('.wg__loading-more-row')) tbody.insertAdjacentHTML('beforeend', renderLoadingMoreRow(ctx))
 		syncLoadingMoreLoader(ctx)

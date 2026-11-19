@@ -67,7 +67,7 @@ Sort state type:
 FILTERING
 ---------
 The filter row sits under the header: columns with isFilterable: true get a
-text input (aria-label "Filter <column>", labels.filterColumn; Tab-reachable).
+text input (aria-label "Filter <column>", ariaLabels.filterColumn; Tab-reachable).
 Typing is debounced (300 ms; Enter applies at once, Escape clears) and calls
 setFilter(field, text), which resets currentPage to 1. Matching is a
 case- and accent-insensitive "contains" (core /search: "ces" finds "Český";
@@ -215,13 +215,13 @@ Example -- custom pagination labels (i18n):
 Static labels can also be set via the labels property:
 
   grid.labels = {
-    paginationFirst: 'First',
-    paginationPrevious: 'Previous',
-    paginationNext: 'Next',
-    paginationLast: 'Last',
-    paginationPageInfo: 'Page {current} of {total}',
-    paginationItemCount: '{count} items',
-    paginationPerPage: 'per page'
+    'buttons.firstPage': 'First',
+    'buttons.previousPage': 'Previous',
+    'buttons.nextPage': 'Next',
+    'buttons.lastPage': 'Last',
+    'labels.pageInfo': 'Page {current} of {total}',
+    'labels.itemCount': '{count} items',
+    'labels.perPage': 'per page'
   }
 
 

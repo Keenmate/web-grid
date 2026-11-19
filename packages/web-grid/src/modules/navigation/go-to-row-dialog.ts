@@ -36,11 +36,11 @@ export function openGoToRowDialog<T>(ctx: GridHost<T>, colIndex: number): void {
 	const labels = ctx.engine.labels
 	overlay.innerHTML = `
 		<div class="wg__goto-dialog">
-			<label class="wg__goto-label">${escapeHtml(ctx.engine.labelText('goToRow', { max: displayItems.length }))}</label>
+			<label class="wg__goto-label">${escapeHtml(ctx.engine.labelText('labels.goToRow', { max: displayItems.length }))}</label>
 			<input type="number" class="wg__goto-input" min="1" max="${displayItems.length}" value="1" />
 			<div class="wg__goto-buttons">
-				<button type="button" class="wg__goto-btn wg__goto-btn--cancel">${escapeHtml(labels.goToRowCancel)}</button>
-				<button type="button" class="wg__goto-btn wg__goto-btn--go">${escapeHtml(labels.goToRowGo)}</button>
+				<button type="button" class="wg__goto-btn wg__goto-btn--cancel">${escapeHtml(labels['buttons.cancel'])}</button>
+				<button type="button" class="wg__goto-btn wg__goto-btn--go">${escapeHtml(labels['buttons.go'])}</button>
 			</div>
 		</div>
 	`

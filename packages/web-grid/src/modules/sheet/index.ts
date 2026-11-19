@@ -27,7 +27,7 @@ import {
 export interface SheetHeaderOptions {
 	/** The sheet's title (the column's title) — also its accessible name. */
 	title: string
-	/** Accessible name of the close button (`labels.sheetClose`). */
+	/** Accessible name of the close button (`ariaLabels.closeSheet`). */
 	closeLabel: string
 	/** Close button pressed: leave the cell (save). */
 	onClose: () => void

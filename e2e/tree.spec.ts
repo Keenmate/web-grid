@@ -52,11 +52,11 @@ test.describe('tree mode — #grid', () => {
 		).toBeVisible()
 	})
 
-	test('chevron aria-label comes from labels.treeExpand / treeCollapse', async ({ page }) => {
+	test('chevron aria-label comes from ariaLabels.expand / ariaLabels.collapse', async ({ page }) => {
 		await gotoTreeDemo(page)
 		const acme = gridLocator(page).locator('.wg__tree-chevron[data-tree-toggle="1"]').first()
 		await expect(acme).toHaveAttribute('aria-label', 'Collapse')
-		await gridLocator(page).evaluate((el: any) => { el.labels = { treeExpand: 'Rozbalit', treeCollapse: 'Sbalit' } })
+		await gridLocator(page).evaluate((el: any) => { el.labels = { 'ariaLabels.expand': 'Rozbalit', 'ariaLabels.collapse': 'Sbalit' } })
 		await expect(acme).toHaveAttribute('aria-label', 'Sbalit')
 		await acme.click()
 		await expect(acme).toHaveAttribute('aria-label', 'Rozbalit')

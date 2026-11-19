@@ -102,7 +102,7 @@ export function renderHeaderRow<T>(ctx: GridHost<T>): string {
 		// Using calc with CSS vars so it respects theming
 		const colWidth = `calc(${maxBtns} * var(--wg-toolbar-btn-min-width) + ${Math.max(0, maxBtns - 1)} * var(--wg-inline-actions-gap) + 2 * var(--wg-spacing-sm))`
 		leadColIndex++
-		inlineActionsHeaderHtml = `<th class="wg__header wg__inline-actions-header" style="width: ${colWidth}" role="columnheader" aria-colindex="${leadColIndex}">${escapeHtml(ctx.engine.labels.inlineActionsHeader)}</th>`
+		inlineActionsHeaderHtml = `<th class="wg__header wg__inline-actions-header" style="width: ${colWidth}" role="columnheader" aria-colindex="${leadColIndex}">${escapeHtml(ctx.engine.labels['columnHeaders.inlineActions'])}</th>`
 		filterLeadHtml += `<th class="wg__filter-cell" role="gridcell" aria-colindex="${leadColIndex}"></th>`
 	}
 
@@ -169,7 +169,7 @@ export function renderHeaderRow<T>(ctx: GridHost<T>): string {
 			if (column.isFilterable) {
 				const isInvalid = invalidFilterFields.has(field)
 				const value = ctx.filterInputText(field) ?? filters[field] ?? ''
-				const label = ctx.engine.labelText('filterColumn', { column: column.title ?? field })
+				const label = ctx.engine.labelText('ariaLabels.filterColumn', { column: column.title ?? field })
 				filterCells.push(`<th class="wg__filter-cell${frozenClass}" style="${filterStyle}" data-field="${escapeHtml(field)}" role="gridcell" aria-colindex="${leadCount + visualIndex + 1}"><input type="text" class="wg__filter-input${isInvalid ? ' wg__filter-input--invalid' : ''}" data-field="${escapeHtml(field)}" value="${escapeHtml(value)}" aria-label="${escapeHtml(label)}"${isInvalid ? ' aria-invalid="true"' : ''} autocomplete="off" spellcheck="false"></th>`)
 			} else {
 				filterCells.push(`<th class="wg__filter-cell${frozenClass}" style="${filterStyle}" role="gridcell" aria-colindex="${leadCount + visualIndex + 1}"></th>`)
@@ -224,12 +224,12 @@ export function renderHeaderRow<T>(ctx: GridHost<T>): string {
 }
 
 /**
- * The single row shown when there is nothing to display: `labels.noResults` when
- * rows exist (or a filter is active) but nothing matched, else `labels.noData`.
+ * The single row shown when there is nothing to display: `messages.noResults` when
+ * rows exist (or a filter is active) but nothing matched, else `messages.noData`.
  */
 function renderEmptyRow<T>(ctx: GridHost<T>, colspan: number): string {
 	const hasActiveFilter = Object.values(ctx.engine.filters).some(v => !!v)
-	const text = ctx.engine.items.length > 0 || hasActiveFilter ? ctx.engine.labels.noResults : ctx.engine.labels.noData
+	const text = ctx.engine.items.length > 0 || hasActiveFilter ? ctx.engine.labels['messages.noResults'] : ctx.engine.labels['messages.noData']
 	const kind = ctx.engine.items.length > 0 || hasActiveFilter ? 'no-results' : 'no-data'
 	return `
 			<tr role="row" aria-rowindex="${headerRowCount(ctx) + 1}">
@@ -239,15 +239,15 @@ function renderEmptyRow<T>(ctx: GridHost<T>, colspan: number): string {
 }
 
 /**
- * The infinite-scroll "loading more" row (`labels.loading`; '' = no row), shown
+ * The infinite-scroll "loading more" row (`messages.loading`; '' = no row), shown
  * while a `load-more` data request is in flight. The loader itself is drawn into
  * `.wg__loading-more-indicator` by syncLoadingMoreLoader() (core renderLoader:
- * `role="status"` + `aria-label` = `labels.loading`), so the visible text is
+ * `role="status"` + `aria-label` = `ariaLabels.loading`), so the visible text is
  * aria-hidden.
  */
 export function renderLoadingMoreRow<T>(ctx: GridHost<T>): string {
-	if (!ctx.virtualScroll.isLoadingMore || !ctx.engine.labels.loading) return ''
-	return `<tr class="wg__loading-more-row" role="row"><td class="wg__loading-more" colspan="999" role="gridcell"><span class="wg__loading-more-indicator"></span><span class="wg__loading-more-text" aria-hidden="true">${escapeHtml(ctx.engine.labels.loading)}</span></td></tr>`
+	if (!ctx.virtualScroll.isLoadingMore || !ctx.engine.labels['messages.loading']) return ''
+	return `<tr class="wg__loading-more-row" role="row"><td class="wg__loading-more" colspan="999" role="gridcell"><span class="wg__loading-more-indicator"></span><span class="wg__loading-more-text" aria-hidden="true">${escapeHtml(ctx.engine.labels['messages.loading'])}</span></td></tr>`
 }
 
 /**
@@ -336,7 +336,7 @@ export function renderDataRows<T>(ctx: GridHost<T>): string {
 			const isActive = activeToolbarRow === rowIndex
 			actionsCell = `
 				<td class="wg__cell wg__actions-column" role="gridcell" aria-colindex="${leadCount}">
-					${renderTriggerButton(rowIndex, isActive, ctx.engine.labels.rowActions)}
+					${renderTriggerButton(rowIndex, isActive, ctx.engine.labels['tooltips.rowActions'])}
 				</td>
 			`
 		}
@@ -582,7 +582,7 @@ export function renderDataRowsVirtual<T>(ctx: GridHost<T>, params: VirtualScroll
 			const isActive = activeToolbarRow === rowIndex
 			actionsCell = `
 				<td class="wg__cell wg__actions-column" role="gridcell" aria-colindex="${leadCount}">
-					${renderTriggerButton(rowIndex, isActive, ctx.engine.labels.rowActions)}
+					${renderTriggerButton(rowIndex, isActive, ctx.engine.labels['tooltips.rowActions'])}
 				</td>
 			`
 		}
@@ -740,13 +740,13 @@ export function renderPagination<T>(ctx: GridHost<T>, position: string = 'bottom
 	// Build labels (grid.labels → getPaginationLabelsCallback → final)
 	const gridLabels = ctx.engine.labels
 	const defaultLabels = {
-		first: gridLabels.paginationFirst,
-		previous: gridLabels.paginationPrevious,
-		next: gridLabels.paginationNext,
-		last: gridLabels.paginationLast,
-		pageInfo: ctx.engine.labelText('paginationPageInfo', { current: currentPage, total: totalPages }),
-		itemCount: ctx.engine.labelText('paginationItemCount', { count: totalItems }),
-		perPage: gridLabels.paginationPerPage
+		first: gridLabels['buttons.firstPage'],
+		previous: gridLabels['buttons.previousPage'],
+		next: gridLabels['buttons.nextPage'],
+		last: gridLabels['buttons.lastPage'],
+		pageInfo: ctx.engine.labelText('labels.pageInfo', { current: currentPage, total: totalPages }),
+		itemCount: ctx.engine.labelText('labels.itemCount', { count: totalItems }),
+		perPage: gridLabels['labels.perPage']
 	}
 
 	const labelsCallback = ctx.engine.getPaginationLabelsCallback

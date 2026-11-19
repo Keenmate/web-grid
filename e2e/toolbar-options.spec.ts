@@ -115,25 +115,25 @@ test.describe('toolbarPosition', () => {
 		await cell(page, 0, 1).click()
 		await page.waitForTimeout(100)
 		await expect(toolbar(page)).toHaveCount(0)
-		// labels.inlineActionsHeader relabels the header
-		await onGrid(page, el => el.setAttribute('labels', '{"inlineActionsHeader":"Ops"}'))
+		// columnHeaders.inlineActions relabels the header
+		await onGrid(page, el => el.setAttribute('labels', '{"columnHeaders.inlineActions":"Ops"}'))
 		await expect(gridLocator(page).locator('thead th.wg__inline-actions-header')).toHaveText('Ops')
 	})
 })
 
-test('the inline actions header defaults to labels.inlineActionsHeader ("Actions")', async ({ page }) => {
+test('the inline actions header defaults to columnHeaders.inlineActions ("Actions")', async ({ page }) => {
 	await onGrid(page, el => el.setAttribute('toolbar-position', 'inline'))
 	await expect(gridLocator(page).locator('thead th.wg__inline-actions-header')).toHaveText('Actions', { timeout: 1500 })
-	await onGrid(page, el => { el.labels = { inlineActionsHeader: 'Akce' } })
+	await onGrid(page, el => { el.labels = { 'columnHeaders.inlineActions': 'Akce' } })
 	await expect(gridLocator(page).locator('thead th.wg__inline-actions-header')).toHaveText('Akce')
 })
 
-test("labels.inlineActionsHeader '' blanks the header; undefined restores the default", async ({ page }) => {
-	await onGrid(page, el => { el.setAttribute('toolbar-position', 'inline'); el.labels = { inlineActionsHeader: '' } })
+test("columnHeaders.inlineActions '' blanks the header; undefined restores the default", async ({ page }) => {
+	await onGrid(page, el => { el.setAttribute('toolbar-position', 'inline'); el.labels = { 'columnHeaders.inlineActions': '' } })
 	const th = gridLocator(page).locator('thead th.wg__inline-actions-header')
 	await expect(th).toHaveCount(1)
 	await expect(th).toHaveText('')
-	await onGrid(page, el => { el.labels = { inlineActionsHeader: undefined } })
+	await onGrid(page, el => { el.labels = { 'columnHeaders.inlineActions': undefined } })
 	await expect(th).toHaveText('Actions')
 })
 

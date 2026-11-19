@@ -104,7 +104,7 @@ export function scrollHighlightedIntoView<T>(ctx: GridHost<T>): void {
 
 /**
  * Show / hide the autocomplete editor's search loader (core renderLoader, context
- * 'search', `label` = `labels.dropdownSearching`). It takes the toggle's place.
+ * 'search', `label` = `ariaLabels.searching`). It takes the toggle's place.
  */
 export function updateLoadingIndicator<T>(ctx: GridHost<T>, show: boolean, label = ''): void {
 	const indicator = ctx.shadow.querySelector('.wg__loading-indicator') as HTMLElement | null
@@ -169,7 +169,7 @@ export function openDropdownForCurrentEditor<T>(ctx: GridHost<T>): void {
 			}))
 			targetIndex = ctx.dropdown.options.length > 0 ? 0 : -1
 		} else {
-			ctx.dropdown.setOptions(withEmptyOption(allOptions, opts, opts.labels?.dropdownEmptyOption ?? ctx.engine.labels.dropdownEmptyOption))
+			ctx.dropdown.setOptions(withEmptyOption(allOptions, opts, opts.labels?.['labels.emptyOption'] ?? ctx.engine.labels['labels.emptyOption']))
 			// Calculate highlight index for current value
 			const item = ctx.engine.displayItems[rowIndex]
 			const currentValue = item ? (item as Record<string, unknown>)[field] : undefined
@@ -181,7 +181,7 @@ export function openDropdownForCurrentEditor<T>(ctx: GridHost<T>): void {
 	} else if (editor === 'combobox' || editor === 'autocomplete') {
 		const baseOptions = withEmptyOption(editor === 'autocomplete'
 			? (opts.initialOptions || opts.options || [])
-			: (opts.options || []), opts, opts.labels?.dropdownEmptyOption ?? ctx.engine.labels.dropdownEmptyOption)
+			: (opts.options || []), opts, opts.labels?.['labels.emptyOption'] ?? ctx.engine.labels['labels.emptyOption'])
 
 		// Get current cell value
 		const item = ctx.engine.displayItems[rowIndex]

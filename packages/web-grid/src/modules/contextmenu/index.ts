@@ -59,7 +59,7 @@ export function openGridMenu<T, Ctx>(host: GridHost<T>, spec: GridMenuSpec<Ctx>)
 		host: host.shadow,
 		// menu-presentation / menu-side (core menuPresentationInputs(), rulebook C-RO-16)
 		...host.getMenuPresentationOptions(),
-		labels: { back: host.engine.labels.menuBack, close: host.engine.labels.sheetClose },
+		labels: { back: host.engine.labels['menuItems.back'], close: host.engine.labels['ariaLabels.closeSheet'] },
 		cssClass: MENU_CLASS[spec.kind],
 		offset: spec.offset ? { mainAxis: spec.offset.y, alignmentAxis: spec.offset.x } : undefined,
 		defaults: spec.defaults,

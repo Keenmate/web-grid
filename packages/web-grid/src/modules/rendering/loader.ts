@@ -67,7 +67,7 @@ export function pruneDetachedLoaders<T>(ctx: GridHost<T>): void {
 export function syncLoadingMoreLoader<T>(ctx: GridHost<T>): void {
 	pruneDetachedLoaders(ctx)
 	const container = ctx.shadow.querySelector('.wg__loading-more-indicator') as HTMLElement | null
-	syncLoader(ctx, 'row', container, ctx.engine.labels.loading)
+	syncLoader(ctx, 'row', container, ctx.engine.labels['ariaLabels.loading'])
 }
 
 /** Remove every loader of this grid (destroy). */

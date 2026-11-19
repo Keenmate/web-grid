@@ -196,7 +196,7 @@
   text-align: center;
 }
 
-/* Typed search in flight: the loader (core renderLoader) + labels.dropdownSearching */
+/* Typed search in flight: the loader (core renderLoader) + messages.searching / ariaLabels.searching */
 .wg__dropdown-searching {
   display: flex;
   align-items: center;

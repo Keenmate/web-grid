@@ -182,7 +182,7 @@ grid.onFilterChange = ({ filters }) =&gt; { /* … */ }
 // Page-wide labels (SP07): every grid / component on the page
 window.components.locale = {
     locale: 'cs-CZ',
-    labels: { 'web-grid': { paginationItemCount: '{count} položek' } }
+    labels: { 'web-grid.labels.itemCount': '{count} položek' }   // ONE flat dictionary of full keys
 }
 window.components.locale = null       // back to English
 // Per key: instance grid.labels → page-wide → English</code></pre>
@@ -207,7 +207,7 @@ window.components.locale = null       // back to English
         <h2>SP07 · Page-Wide Labels (<code>window.components.locale</code>)</h2>
         <p class="section-desc">
             One assignment translates every grid on the page — and every other Keenmate component:
-            <code>window.components.locale = { locale, labels: { 'web-grid': { … } } }</code>.
+            <code>window.components.locale = { locale, labels: { 'web-grid.labels.itemCount': '…', … } }</code> — one flat dictionary of full <code>&lt;component&gt;.&lt;elementType&gt;.&lt;name&gt;</code> keys.
             Per key, the instance <code>labels</code> win, then the page-wide labels, then English.
             Numbers in a label follow the page locale (<code>1 234 položek</code> in Czech).
             The button affects the <em>whole page</em>: the grids above switch too, except where an instance
@@ -549,17 +549,17 @@ window.components.locale = null       // back to English
         window.components.locale = {
             locale: 'cs-CZ',
             labels: {
-                'web-grid': {
-                    paginationPageInfo: 'Strana {current} z {total}',
-                    paginationItemCount: '{count} položek',
-                    paginationPerPage: 'na stránku',
-                    noResults: 'Nic nenalezeno',
-                    filterColumn: 'Filtrovat {column}',
-                    contextMenu: { sortAsc: 'Seřadit vzestupně', sortDesc: 'Seřadit sestupně', clearSort: 'Zrušit řazení' }
-                }
+                'web-grid.labels.pageInfo': 'Strana {current} z {total}',
+                'web-grid.labels.itemCount': '{count} položek',
+                'web-grid.labels.perPage': 'na stránku',
+                'web-grid.messages.noResults': 'Nic nenalezeno',
+                'web-grid.ariaLabels.filterColumn': 'Filtrovat {column}',
+                'web-grid.menuItems.sortAsc': 'Seřadit vzestupně',
+                'web-grid.menuItems.sortDesc': 'Seřadit sestupně',
+                'web-grid.menuItems.clearSort': 'Zrušit řazení'
             }
         }
-        localeState.textContent = "{ locale: 'cs-CZ', labels: { 'web-grid': { … } } }"
+        localeState.textContent = "{ locale: 'cs-CZ', labels: { 'web-grid.labels.pageInfo': …, … } }"
     })
     document.getElementById('localeReset').addEventListener('click', () => {
         window.components.locale = null

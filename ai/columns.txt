@@ -163,7 +163,7 @@ editorOptions (EditorOptions<T>)
       getValueCallback, getDisplayValueCallback, getSearchValueCallback,
       getIconCallback, getSubtitleCallback, getIsDisabledCallback,
       getGroupCallback, renderOptionCallback, onSelect,
-      isEmptyAllowed, labels ({ dropdownNoData, dropdownNoResults, dropdownSearching, dropdownEmptyOption }),
+      isEmptyAllowed, labels ({ 'messages.noOptions', 'messages.noMatchingOptions', 'messages.searching', 'ariaLabels.searching', 'labels.emptyOption' }),
       dropdownMinWidth, placeholder
     Autocomplete-specific:
       searchCallback, initialOptions, minSearchLength, debounceMs,

@@ -94,7 +94,7 @@
             },
             {
               "name": "edit-button-icon",
-              "description": "Icon of the edit button — markup (`<span class=\"lucide-pencil\"></span>`) as is, a token name (`pencil` → `--base-icon-pencil`), else text. Shown in editable cells with `editTrigger: 'button'` (or `column.isEditButtonShown`); its accessible name is `labels.editCell`. Default: `✎`.",
+              "description": "Icon of the edit button — markup (`<span class=\"lucide-pencil\"></span>`) as is, a token name (`pencil` → `--base-icon-pencil`), else text. Shown in editable cells with `editTrigger: 'button'` (or `column.isEditButtonShown`); its accessible name is `labels['ariaLabels.editCell']`, its title `labels['tooltips.editCell']`. Default: `✎`.",
               "value": { "type": "string", "default": "'✎'" }
             },
             {
@@ -382,7 +382,7 @@
             },
             {
               "name": "labels",
-              "description": "UI strings (i18n) — a partial object (JSON attribute `labels`) merged per key over the English defaults: `noData`, `noResults`, `loading`, pager / go-to-row / menu texts, …. Reads back what was assigned.",
+              "description": "UI strings (i18n) — a partial object (JSON attribute `labels`) of flat `<elementType>.<name>` keys (`messages.noData`, `buttons.nextPage`, `menuItems.deleteRow`, …; or full `web-grid.*` keys) merged per key over the page-wide `window.components.locale.labels` and the English defaults. Reads back what was assigned.",
               "value": { "type": "GridLabelsInput" }
             },
             {
@@ -871,7 +871,7 @@
               },
               {
                 "name": "editButtonIcon",
-                "description": "Icon of the edit button — markup (`<span class=\"lucide-pencil\"></span>`) as is, a token name (`pencil` → `--base-icon-pencil`), else text. Shown in editable cells with `editTrigger: 'button'` (or `column.isEditButtonShown`); its accessible name is `labels.editCell`. Default: `✎`.",
+                "description": "Icon of the edit button — markup (`<span class=\"lucide-pencil\"></span>`) as is, a token name (`pencil` → `--base-icon-pencil`), else text. Shown in editable cells with `editTrigger: 'button'` (or `column.isEditButtonShown`); its accessible name is `labels['ariaLabels.editCell']`, its title `labels['tooltips.editCell']`. Default: `✎`.",
                 "type": "string"
               },
               {
@@ -1136,7 +1136,7 @@
               },
               {
                 "name": "labels",
-                "description": "UI strings (i18n) — a partial object (JSON attribute `labels`) merged per key over the English defaults: `noData`, `noResults`, `loading`, pager / go-to-row / menu texts, …. Reads back what was assigned.",
+                "description": "UI strings (i18n) — a partial object (JSON attribute `labels`) of flat `<elementType>.<name>` keys (`messages.noData`, `buttons.nextPage`, `menuItems.deleteRow`, …; or full `web-grid.*` keys) merged per key over the page-wide `window.components.locale.labels` and the English defaults. Reads back what was assigned.",
                 "type": "GridLabelsInput"
               },
               {

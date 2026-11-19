@@ -40,7 +40,7 @@ export function handleComboboxInput<T>(ctx: GridHost<T>, e: Event): void {
 			return isMatch(label)
 		}))
 	} else {
-		ctx.dropdown.setOptions(withEmptyOption(allOptions, opts, opts.labels?.dropdownEmptyOption ?? ctx.engine.labels.dropdownEmptyOption))
+		ctx.dropdown.setOptions(withEmptyOption(allOptions, opts, opts.labels?.['labels.emptyOption'] ?? ctx.engine.labels['labels.emptyOption']))
 	}
 
 	ctx.dropdown.setHighlightedIndex(ctx.dropdown.options.length > 0 ? 0 : -1)
@@ -86,7 +86,7 @@ export function handleAutocompleteInput<T>(ctx: GridHost<T>, e: Event): void {
 	// Show dropdown immediately with initial options
 	const wrapper = input.closest('.wg__editor--autocomplete') as HTMLElement
 	if (!ctx.dropdown.isOpen && wrapper) {
-		ctx.dropdown.setOptions(query ? (opts.initialOptions || []) : withEmptyOption(opts.initialOptions || [], opts, opts.labels?.dropdownEmptyOption ?? ctx.engine.labels.dropdownEmptyOption))
+		ctx.dropdown.setOptions(query ? (opts.initialOptions || []) : withEmptyOption(opts.initialOptions || [], opts, opts.labels?.['labels.emptyOption'] ?? ctx.engine.labels['labels.emptyOption']))
 		const dropdown = renderDropdown(ctx, wrapper, ctx.dropdown.options, opts)
 		attachDropdownListeners(ctx, dropdown)
 		ctx.dropdown.setHighlightedIndex(ctx.dropdown.options.length > 0 ? 0 : -1)
@@ -98,7 +98,7 @@ export function handleAutocompleteInput<T>(ctx: GridHost<T>, e: Event): void {
 	// Check minimum length — too short: drop the pending / running search
 	if (query.length < minLength) {
 		ctx.autocomplete.reset()
-		ctx.dropdown.setOptions(query ? (opts.initialOptions || []) : withEmptyOption(opts.initialOptions || [], opts, opts.labels?.dropdownEmptyOption ?? ctx.engine.labels.dropdownEmptyOption))
+		ctx.dropdown.setOptions(query ? (opts.initialOptions || []) : withEmptyOption(opts.initialOptions || [], opts, opts.labels?.['labels.emptyOption'] ?? ctx.engine.labels['labels.emptyOption']))
 		if (wrapper) {
 			const dropdown = renderDropdown(ctx, wrapper, ctx.dropdown.options, opts)
 			attachDropdownListeners(ctx, dropdown)
@@ -161,7 +161,7 @@ export function startAutocompleteSearch<T>(
 		rerenderAutocomplete(ctx, opts, searchCallback ? (results.length > 0 ? 0 : -1) : undefined)
 	}, {
 		// The runner turns the state off BEFORE onResult, so the dropdown renders the right message.
-		onLoadingChange: (isLoading) => updateLoadingIndicator(ctx, isLoading, isLoading ? (opts.labels?.dropdownSearching ?? ctx.engine.labels.dropdownSearching) : ''),
+		onLoadingChange: (isLoading) => updateLoadingIndicator(ctx, isLoading, isLoading ? (opts.labels?.['ariaLabels.searching'] ?? ctx.engine.labels['ariaLabels.searching']) : ''),
 		onError: (error) => {
 			dataLogger.error('Autocomplete search failed:', error)
 			ctx.dropdown.setOptions([])

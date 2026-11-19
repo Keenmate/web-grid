@@ -100,8 +100,8 @@ export type EditorOptions<T = unknown> = {
 	onSelect?: (ctx: OptionSelectContext<T>) => void
 
 	// Other shared options
-	isEmptyAllowed?: boolean  // select / combobox / autocomplete: an empty first item (labels.dropdownEmptyOption, "—") that sets the value to null (default false)
-	labels?: Partial<Pick<GridLabels, 'dropdownNoData' | 'dropdownNoResults' | 'dropdownSearching' | 'dropdownEmptyOption'>>  // This column's dropdown texts (per key over the grid's `labels`)
+	isEmptyAllowed?: boolean  // select / combobox / autocomplete: an empty first item (labels['labels.emptyOption'], "—") that sets the value to null (default false)
+	labels?: Partial<Pick<GridLabels, 'messages.noOptions' | 'messages.noMatchingOptions' | 'messages.searching' | 'ariaLabels.searching' | 'labels.emptyOption'>>  // This column's dropdown texts (per key over the grid's `labels`)
 	dropdownMinWidth?: string  // Minimum width for dropdown (e.g., "300px") - useful when cell is narrow
 
 	// === TEXT ===
@@ -469,7 +469,7 @@ export type QuickGridProps<T> = {
 	getIdCallback?: (ctx: RowDataContext<T>) => unknown  // Computed id; wins over idMember
 	rowLocking?: RowLockingOptions<T>
 
-	labels?: Partial<GridLabels>
+	labels?: GridLabelsInput
 
 	// Event twins (each receives the event detail — see GridEventMap)
 	onRowChange?: (detail: GridEventMap<T>['row-change']) => void
@@ -585,104 +585,101 @@ export type PaginationLabels = {
 
 export type PaginationLabelsCallback<T = any> = (ctx: PaginationLabelsContext<T>) => Partial<PaginationLabels>
 
-// Grid labels for translation/i18n
+// Grid labels for translation/i18n — flat `<elementType>.<name>` keys (rulebook D-NC-24)
 export type GridLabels = {
-	// Toolbar
-	rowActions: string              // Toolbar trigger button title
-	inlineActionsHeader: string     // Default inline actions column header
+	// Row toolbar / inline actions column
+	'tooltips.rowActions': string            // "Row actions" — the toolbar trigger button's title
+	'columnHeaders.inlineActions': string    // "Actions" — the inline actions column header
 
 	// Shortcuts help
-	keyboardShortcuts: string       // Shortcuts help icon title
-	rangeShortcuts: string          // Shortcuts help sub-heading above the rangeShortcuts (with rowShortcuts too)
+	'tooltips.keyboardShortcuts': string     // "Keyboard shortcuts" — the help icon's title
+	'headers.keyboardShortcuts': string      // "Keyboard shortcuts" — the help overlay's title
+	'headers.rangeShortcuts': string         // "Selection shortcuts" — sub-heading above the rangeShortcuts (with rowShortcuts too)
 
 	// Pagination (defaults, can be overridden by getPaginationLabelsCallback)
-	paginationFirst: string
-	paginationPrevious: string
-	paginationNext: string
-	paginationLast: string
-	paginationPageInfo: string      // e.g., "Page {current} of {total}"
-	paginationItemCount: string     // e.g., "{count} items"
-	paginationPerPage: string       // e.g., "per page"
+	'buttons.firstPage': string              // "⏮"
+	'buttons.previousPage': string           // "◀"
+	'buttons.nextPage': string               // "▶"
+	'buttons.lastPage': string               // "⏭"
+	'labels.pageInfo': string                // "Page {current} of {total}"
+	'labels.itemCount': string               // "{count} items"
+	'labels.perPage': string                 // "per page"
 
 	// Empty table / loading
-	noData: string                  // "No items to display" — the grid has no rows at all
-	noResults: string               // "No matching items" — rows exist but the filter matched nothing
-	loading: string                 // "Loading…" — infinite-scroll load-more row (role="status")
+	'messages.noData': string                // "No items to display" — the grid has no rows at all
+	'messages.noResults': string             // "No matching items" — rows exist but the filter matched nothing
+	'messages.loading': string               // "Loading…" — the infinite-scroll load-more row's visible text ('' = no row)
+	'ariaLabels.loading': string             // "Loading…" — that row's loader (role="status") accessible name
 
 	// Dropdown
-	dropdownNoData: string          // "No options" — the editor has no options at all
-	dropdownNoResults: string       // "No matching options" — typed filter / search matched nothing
-	dropdownSearching: string       // "Searching…" — a typed async search is in flight
-	dropdownEmptyOption: string     // "—" — the empty first item of an `isEmptyAllowed` dropdown
+	'messages.noOptions': string             // "No options" — the editor has no options at all
+	'messages.noMatchingOptions': string     // "No matching options" — typed filter / search matched nothing
+	'messages.searching': string             // "Searching…" — a typed async search is in flight (visible text)
+	'ariaLabels.searching': string           // "Searching…" — the search loader's accessible name
+	'labels.emptyOption': string             // "—" — the empty first item of an `isEmptyAllowed` dropdown
 
-	// Phone sheet (the cell dropdown / date editor on a phone)
-	sheetClose: string              // "Close" — the sheet's close button (leaves the cell: saves); also the menu sheet's close button
-	sheetSearch: string             // "Search…" — the search field of a combobox / autocomplete sheet
+	// Phone sheet (the cell dropdown / date editor on a phone; the menu sheet / drawer too)
+	'ariaLabels.closeSheet': string          // "Close" — the sheet's close button (leaves the cell: saves)
+	'placeholders.search': string            // "Search…" — the search field of a combobox / autocomplete sheet
 
 	// Cell / header menu (core openMenu())
-	menuBack: string                // "Back" — the menu sheet's back row (a submenu level on a phone)
+	'menuItems.back': string                 // "Back" — the menu sheet's back row (a submenu level on a phone)
 
 	// Row locking (row-number / row tooltip)
-	rowLocked: string               // "This row is locked" - no lockedBy known
-	rowLockedBy: string             // "Locked by {lockedBy}"
+	'tooltips.rowLocked': string             // "This row is locked" — no lockedBy known
+	'tooltips.rowLockedBy': string           // "Locked by {lockedBy}"
 
 	// Go-to-row dialog (Ctrl/Cmd+G)
-	goToRow: string                 // "Go to row (1-{max}):"
-	goToRowGo: string               // "Go"
-	goToRowCancel: string           // "Cancel"
+	'labels.goToRow': string                 // "Go to row (1-{max}):"
+	'buttons.go': string                     // "Go"
+	'buttons.cancel': string                 // "Cancel"
 
 	// Tree chevron aria-label
-	treeExpand: string              // "Expand"
-	treeCollapse: string            // "Collapse"
-
-	// Edit button (editTrigger: 'button') — aria-label / title
-	editCell: string                // "Edit"
+	'ariaLabels.expand': string              // "Expand"
+	'ariaLabels.collapse': string            // "Collapse"
 
 	// Filter row
-	filterColumn: string            // "Filter {column}" — aria-label of a filter-row input
+	'ariaLabels.filterColumn': string        // "Filter {column}" — aria-label of a filter-row input
+
+	// Edit button (editTrigger: 'button')
+	'ariaLabels.editCell': string            // "Edit" — its accessible name
+	'tooltips.editCell': string              // "Edit" — its title
 
 	// Built-in value checks (number editor, paste typing) — the cell's validation error
-	invalidNumber: string           // "Not a number"
-	numberMin: string               // "Must be at least {min}"
-	numberMax: string               // "Must be at most {max}"
-	numberNegative: string          // "Must not be negative"
-	invalidBoolean: string          // "Not a yes / no value" (pasted into a checkbox column)
-	invalidDate: string             // "Not a valid date" (pasted / typed into a date column)
+	'errors.invalidNumber': string           // "Not a number"
+	'errors.numberMin': string               // "Must be at least {min}"
+	'errors.numberMax': string               // "Must be at most {max}"
+	'errors.numberNegative': string          // "Must not be negative"
+	'errors.invalidBoolean': string          // "Not a yes / no value" (pasted into a checkbox column)
+	'errors.invalidDate': string             // "Not a valid date" (pasted / typed into a date column)
 
-	// Built-in row / tree action texts (toolbar, cell context menu, shortcuts help)
-	actions: {
-		add: string                  // "Add row"
-		delete: string               // "Delete row"
-		duplicate: string            // "Duplicate row"
-		moveUp: string               // "Move up"
-		moveDown: string             // "Move down"
-		expand: string               // "Expand" (one level)
-		collapse: string             // "Collapse"
-		expandSubtree: string        // "Expand subtree" (the row and everything under it)
-		collapseSubtree: string      // "Collapse subtree" (the row and everything under it)
-		expandAll: string            // "Expand all" (the whole tree)
-		collapseAll: string          // "Collapse all" (the whole tree)
-	}
+	// Built-in row / tree action texts (the item text: toolbar, cell context menu, shortcuts help)
+	'menuItems.addRow': string               // "Add row"
+	'menuItems.deleteRow': string            // "Delete row"
+	'menuItems.duplicateRow': string         // "Duplicate row"
+	'menuItems.moveUp': string               // "Move up"
+	'menuItems.moveDown': string             // "Move down"
+	'menuItems.expand': string               // "Expand" (one level)
+	'menuItems.collapse': string             // "Collapse"
+	'menuItems.expandSubtree': string        // "Expand subtree" (the row and everything under it)
+	'menuItems.collapseSubtree': string      // "Collapse subtree"
+	'menuItems.expandAll': string            // "Expand all" (the whole tree)
+	'menuItems.collapseAll': string          // "Collapse all"
 
 	// Header context menu
-	contextMenu: {
-		sortAsc: string              // "Sort Ascending"
-		sortDesc: string             // "Sort Descending"
-		clearSort: string            // "Clear Sort"
-		hideColumn: string           // "Hide Column"
-		freezeColumn: string         // "Freeze Column"
-		unfreezeColumn: string       // "Unfreeze Column"
-		columnVisibility: string     // "Column Visibility"
-		showAll: string              // "Show all" - first option in column visibility submenu
-	}
+	'menuItems.sortAsc': string              // "Sort Ascending"
+	'menuItems.sortDesc': string             // "Sort Descending"
+	'menuItems.clearSort': string            // "Clear Sort"
+	'menuItems.hideColumn': string           // "Hide Column"
+	'menuItems.freezeColumn': string         // "Freeze Column"
+	'menuItems.unfreezeColumn': string       // "Unfreeze Column"
+	'menuItems.columnVisibility': string     // "Column Visibility"
+	'menuItems.showAllColumns': string       // "Show all" — first option in the column visibility submenu
 }
 
-/** What `labels` accepts: any subset, including a subset of the nested `actions` / `contextMenu`
- * groups — everything not given keeps its default. */
-export type GridLabelsInput = Partial<Omit<GridLabels, 'actions' | 'contextMenu'>> & {
-	actions?: Partial<GridLabels['actions']>
-	contextMenu?: Partial<GridLabels['contextMenu']>
-}
+/** What `labels` accepts: any subset of the short keys (`buttons.nextPage`) and / or the full keys
+ * (`web-grid.buttons.nextPage`) — everything not given keeps its page-wide / default text. */
+export type GridLabelsInput = Partial<GridLabels> & { readonly [fullKey: `web-grid.${string}`]: string | undefined }
 
 // Summary content callback (returns HTML)
 /**

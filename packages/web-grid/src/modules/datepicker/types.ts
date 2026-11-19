@@ -43,7 +43,7 @@ export interface DatePickerOptions {
 	overlayGroup?: string
 
 	// The phone sheet (an edge-to-edge, un-anchored panel with a title + close button; setSheet()
-	// switches it while open). Title = the column's title, closeLabel = labels.sheetClose.
+	// switches it while open). Title = the column's title, closeLabel = labels['ariaLabels.closeSheet'].
 	isSheet?: boolean
 	sheetTitle?: string
 	sheetCloseLabel?: string

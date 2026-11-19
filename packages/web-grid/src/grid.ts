@@ -939,31 +939,31 @@ export class GridEngine<T = unknown> {
 
 	// Labels/i18n - merge with defaults so partial updates work
 	get labels(): GridLabels { return this._labels }
-	/** Tooltip text for a locked row (`labels.rowLockedBy` / `labels.rowLocked`). */
+	/** Tooltip text for a locked row (`tooltips.rowLockedBy` / `tooltips.rowLocked`). */
 	getLockTooltip(lockInfo: RowLock | null | undefined): string {
 		return lockInfo?.lockedBy
-			? this.labelText('rowLockedBy', { lockedBy: String(lockInfo.lockedBy) })
-			: this._labels.rowLocked
+			? this.labelText('tooltips.rowLockedBy', { lockedBy: String(lockInfo.lockedBy) })
+			: this._labels['tooltips.rowLocked']
 	}
 
 	set labels(value: GridLabelsInput | null | undefined) {
-		// Per key: instance → page-wide window.components.locale → English (nested groups too) — see labels.ts
+		// Per key: instance → page-wide window.components.locale → English — see labels.ts
 		this._labelsResolver.setInput(value)
 		this._labels = this._labelsResolver.resolve()
 		this.requestUpdate()
 	}
 
-	/** One label with its `{name}` params, formatted (the page's `formatLabelCallback` when the grid has a host). */
+	/** One label with its `{name}` params, formatted (the page's `translateCallback` when the grid has a host). */
 	labelText(key: GridLabelKey, params?: LabelParams): string {
 		return this._labelsResolver.text(key, params)
 	}
 
-	/** The formatter value checks use for their messages (`numberMin` / `numberMax`). */
+	/** The formatter value checks use for their messages (`errors.numberMin` / `errors.numberMax`). */
 	get labelFormat(): LabelFormat {
 		return this._labelsResolver.format
 	}
 
-	/** The element the labels belong to (page-wide labels, `formatLabelCallback`, logging); `null` = none. */
+	/** The element the labels belong to (page-wide labels, `translateCallback`, logging); `null` = none. */
 	setLabelHost(host: Element | null): void {
 		this._labelsResolver.setHost(host)
 		this._labels = this._labelsResolver.resolve()

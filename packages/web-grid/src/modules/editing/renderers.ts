@@ -257,7 +257,7 @@ export function renderSelectEditor<T>(
 ): string {
 	const opts = column.editorOptions || {}
 	const displayValue = getOptionDisplayValue(value, opts.options || [], opts)
-	const options = withEmptyOption(opts.options || [], opts, opts.labels?.dropdownEmptyOption ?? ctx.engine.labels.dropdownEmptyOption)
+	const options = withEmptyOption(opts.options || [], opts, opts.labels?.['labels.emptyOption'] ?? ctx.engine.labels['labels.emptyOption'])
 	const initialQuery = ctx.engine.editingCell?.initialSearchQuery
 
 	// Initialize dropdown options for select
@@ -298,7 +298,7 @@ export function renderComboboxEditor<T>(
 	const opts = column.editorOptions || {}
 	const displayValue = getOptionDisplayValue(value, opts.options || [], opts)
 	const initialQuery = ctx.engine.editingCell?.initialSearchQuery
-	const options = initialQuery ? (opts.options || []) : withEmptyOption(opts.options || [], opts, opts.labels?.dropdownEmptyOption ?? ctx.engine.labels.dropdownEmptyOption)
+	const options = initialQuery ? (opts.options || []) : withEmptyOption(opts.options || [], opts, opts.labels?.['labels.emptyOption'] ?? ctx.engine.labels['labels.emptyOption'])
 
 	// If user typed a character to start editing, use that as initial value
 	const inputValue = initialQuery !== undefined ? initialQuery : displayValue
@@ -335,7 +335,7 @@ export function renderAutocompleteEditor<T>(
 	const opts = column.editorOptions || {}
 	const displayValue = getOptionDisplayValue(value, opts.initialOptions || opts.options || [], opts)
 	const initialQuery = ctx.engine.editingCell?.initialSearchQuery
-	const initialOptions = initialQuery ? (opts.initialOptions || opts.options || []) : withEmptyOption(opts.initialOptions || opts.options || [], opts, opts.labels?.dropdownEmptyOption ?? ctx.engine.labels.dropdownEmptyOption)
+	const initialOptions = initialQuery ? (opts.initialOptions || opts.options || []) : withEmptyOption(opts.initialOptions || opts.options || [], opts, opts.labels?.['labels.emptyOption'] ?? ctx.engine.labels['labels.emptyOption'])
 
 	// If user typed a character to start editing, use that as initial value
 	const inputValue = initialQuery !== undefined ? initialQuery : displayValue

@@ -333,12 +333,12 @@ test.describe('phone: the cell menu is a bottom sheet', () => {
 // =============================================================================
 
 test.describe('menu-presentation / menu-side', () => {
-	test('menu-presentation="drawer" opens the cell menu as the side drawer; labels.sheetClose names its close button', async ({ page }) => {
+	test('menu-presentation="drawer" opens the cell menu as the side drawer; ariaLabels.closeSheet names its close button', async ({ page }) => {
 		await page.evaluate(() => {
 			const grid = document.getElementById('grid') as any
 			grid.setAttribute('menu-presentation', 'drawer')
 			grid.setAttribute('menu-side', 'end')
-			grid.labels = { sheetClose: 'Zavřít' }
+			grid.labels = { 'ariaLabels.closeSheet': 'Zavřít' }
 		})
 		await dispatchContextMenu(page, cell(page, 'grid', 0, COL.name))
 		const sheet = page.locator('.km-menu-sheet')

@@ -73,7 +73,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Date editor (open, select, keyboard, min/max, months) | ✓ | `datepicker.spec.ts` | `datepicker.html` |
 | `editTrigger` click / dblclick / navigate, `shouldCommitOnClickAway` | ✓ | `edit-trigger.spec.ts` | `edit-trigger.html` |
 | `editTrigger` 'always', column override, `editStartSelection` (grid + column, all 4 modes) | ✓ | `edit-modes.spec.ts` | `edit-modes.html` |
-| `editTrigger: 'button'` edit button: editable / locked cells, hover + focused visibility, click edits, F2, `editButtonIcon` HTML + attribute, `labels.editCell`, `column.isEditButtonShown` (#26 fixed) | ✓ | `edit-modes.spec.ts` | `edit-modes.html` |
+| `editTrigger: 'button'` edit button: editable / locked cells, hover + focused visibility, click edits, F2, `editButtonIcon` HTML + attribute, `ariaLabels.editCell`, `column.isEditButtonShown` (#26 fixed) | ✓ | `edit-modes.spec.ts` | `edit-modes.html` |
 | Number editor parsing (ints, decimals, padding, empty → null, negatives) | ✓ | `edit-modes.spec.ts` | `edit-modes.html` |
 | Number editor: strict parse, non-numbers / min / max / negatives invalid (no clamping), decimals round, min/max/step attributes, label i18n (#25 fixed) | ✓ | `edit-modes.spec.ts` | `edit-modes.html` |
 | `dropdownToggleVisibility`, `shouldOpenDropdownOnFocus`, `shouldOpenDropdownOnEnter` (grid + column), checkbox Space toggle | ✓ | `dropdown-flags.spec.ts` | `dropdown-flags.html` |
@@ -140,7 +140,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Menu keyboard on core `openMenu()` (Shift+F10 / ContextMenu key on the focused cell, arrows skip disabled, Home/End, Enter/Space, Escape returns focus, submenu → / ←), `menuitemcheckbox` + `aria-checked` column toggles, `wg-context-menu` / `wg-header-menu` hooks, dismiss on page scroll and on the grid container's scroll (right-click menu: core rc21 point-menu rule) | ✓ | `context-menu-keyboard.spec.ts` | `contextmenu.html`, `column-visibility.html` |
 | Menu CSS-variable chain (`--wg-context-menu-*` → `--km-menu-*` → `--base-*` → default; per instance, both menus; hover colour; z-index) | ✓ | `context-menu-theming.spec.ts` | `contextmenu.html` |
 | Row toolbar (floating / multi-row / inline / cell-aware) | ✓ | `toolbar.spec.ts` | `toolbar.html` |
-| `toolbarTrigger` click / button, `toolbarPosition` left / right / top / inline, `toolbarHorizontalAlign`, `toolbarColumn`, `labels.inlineActionsHeader` | ✓ | `toolbar-options.spec.ts` | `toolbar-options.html` |
+| `toolbarTrigger` click / button, `toolbarPosition` left / right / top / inline, `toolbarHorizontalAlign`, `toolbarColumn`, `columnHeaders.inlineActions` | ✓ | `toolbar-options.spec.ts` | `toolbar-options.html` |
 | Row toolbar close paths per `toolbarTrigger` (hover / click / button): action click, outside click (pointer / keyboard), another row, same row, header, Escape, page / body scroll, items replaced, row removed, other overlays, `isDisabled`, a cell dropdown in the row, two grids | ✓ | `toolbar-close.spec.ts` | `toolbar-close.html` |
 | Inline actions header default label (#28 fixed), explicit `""` → blank header | ✓ | `toolbar-options.spec.ts` | `toolbar-options.html` |
 | Core action items, contexts, `on*` twins, controller | ✓ | `interaction-model.spec.ts` | `interaction-model.html` |
@@ -187,7 +187,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | --- | :-: | --- | --- |
 | `readonly` (nothing editable, still focusable) / `disabled` (container inert) | ✓ | `inputs.spec.ts` | `inputs.html` |
 | Core `defer` / `release()` / `ready` event / `ready` attribute | ✓ | `inputs.spec.ts` | `inputs.html` |
-| `labels` JSON attribute, `labels.noData` / `noResults` / `''` blank, column `editorOptions.labels`, dropdown no-data / no-results | ✓ | `i18n.spec.ts` | `i18n.html` |
+| `labels` JSON attribute, `messages.noData` / `noResults` / `''` blank, column `editorOptions.labels`, dropdown no-data / no-results | ✓ | `i18n.spec.ts` | `i18n.html` |
 | Dark-mode signals (per-instance, ancestor + theme-source, color-scheme, OS) | ✓ | `theming.spec.ts` | `theming.html` |
 | Core theme context (page signal → `data-context-theme`), `--base-*` chain | ✓ | `theme-context.spec.ts` | `theme-context.html` |
 | Contrast in dark mode (3 theme depths) | ✓ | `dark-mode.spec.ts` | `dark-mode.html` |

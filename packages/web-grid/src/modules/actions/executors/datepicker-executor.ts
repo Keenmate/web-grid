@@ -81,7 +81,7 @@ function handleDateSelect(
 	// legacy commitDateEditor behavior.
 	const column = ctx.engine.columns[colIndex]
 	const outputFormat = column?.editorOptions?.outputFormat ?? 'iso'
-	const parseError = date ? null : typedDateError(ctx, input) ?? ctx.engine.labels.invalidDate
+	const parseError = date ? null : typedDateError(ctx, input) ?? ctx.engine.labels['errors.invalidDate']
 	let value: unknown = input.value
 	if (date) {
 		switch (outputFormat) {

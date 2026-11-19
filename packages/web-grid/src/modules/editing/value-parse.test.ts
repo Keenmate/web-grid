@@ -6,8 +6,8 @@ import { describe, it, expect } from 'vitest'
 import { parseNumberText, typeNumberValue, typeCheckboxText, typeDateText } from './value-parse.js'
 
 const labels = {
-	invalidNumber: 'NaN', numberMin: 'min {min}', numberMax: 'max {max}', numberNegative: 'neg',
-	invalidBoolean: 'bool', invalidDate: 'date'
+	'errors.invalidNumber': 'NaN', 'errors.numberMin': 'min {min}', 'errors.numberMax': 'max {max}', 'errors.numberNegative': 'neg',
+	'errors.invalidBoolean': 'bool', 'errors.invalidDate': 'date'
 }
 
 describe('parseNumberText (strict)', () => {

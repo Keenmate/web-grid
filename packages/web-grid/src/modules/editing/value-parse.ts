@@ -24,7 +24,7 @@ export interface TypedValue {
 	error: string | null
 }
 
-type ValueLabels = Pick<GridLabels, 'invalidNumber' | 'numberMin' | 'numberMax' | 'numberNegative' | 'invalidBoolean' | 'invalidDate'>
+type ValueLabels = Pick<GridLabels, 'errors.invalidNumber' | 'errors.numberMin' | 'errors.numberMax' | 'errors.numberNegative' | 'errors.invalidBoolean' | 'errors.invalidDate'>
 
 /**
  * Strict number parse: trimmed, `''` → `null`, `Number()` + `isFinite`, else
@@ -45,9 +45,9 @@ function roundTo(n: number, decimalPlaces: number): number {
 /** Apply `decimalPlaces` (round) and check `allowNegative` / `min` / `max` (no clamping). */
 export function checkNumber(n: number, opts: EditorOptions<any>, labels: ValueLabels, format: LabelFormat = defaultLabelFormat): TypedValue {
 	const value = opts.decimalPlaces != null && opts.decimalPlaces >= 0 ? roundTo(n, opts.decimalPlaces) : n
-	if (opts.allowNegative === false && value < 0) return { value, error: labels.numberNegative }
-	if (opts.min != null && value < opts.min) return { value, error: format('numberMin', labels.numberMin, { min: opts.min }) }
-	if (opts.max != null && value > opts.max) return { value, error: format('numberMax', labels.numberMax, { max: opts.max }) }
+	if (opts.allowNegative === false && value < 0) return { value, error: labels['errors.numberNegative'] }
+	if (opts.min != null && value < opts.min) return { value, error: format('errors.numberMin', labels['errors.numberMin'], { min: opts.min }) }
+	if (opts.max != null && value > opts.max) return { value, error: format('errors.numberMax', labels['errors.numberMax'], { max: opts.max }) }
 	return { value, error: null }
 }
 
@@ -59,12 +59,12 @@ export function checkNumber(n: number, opts: EditorOptions<any>, labels: ValueLa
 export function typeNumberValue(raw: unknown, opts: EditorOptions<any>, labels: ValueLabels, format: LabelFormat = defaultLabelFormat): TypedValue {
 	if (raw === null || raw === undefined) return { value: null, error: null }
 	if (typeof raw === 'number') {
-		return Number.isFinite(raw) ? checkNumber(raw, opts, labels, format) : { value: raw, error: labels.invalidNumber }
+		return Number.isFinite(raw) ? checkNumber(raw, opts, labels, format) : { value: raw, error: labels['errors.invalidNumber'] }
 	}
 	if (typeof raw === 'string') {
 		const n = parseNumberText(raw)
 		if (n === null) return { value: null, error: null }
-		if (n === undefined) return { value: raw, error: labels.invalidNumber }
+		if (n === undefined) return { value: raw, error: labels['errors.invalidNumber'] }
 		return checkNumber(n, opts, labels, format)
 	}
 	return { value: raw, error: null }
@@ -81,7 +81,7 @@ export function typeCheckboxText(text: string, opts: EditorOptions<any>, labels:
 	const lower = t.toLowerCase()
 	if (TRUE_TEXTS.has(lower) || t === String(trueValue)) return { value: trueValue, error: null }
 	if (FALSE_TEXTS.has(lower) || t === String(falseValue)) return { value: falseValue, error: null }
-	return { value: text, error: labels.invalidBoolean }
+	return { value: text, error: labels['errors.invalidBoolean'] }
 }
 
 /** Digits + one separator, three parts — rejects `parseInt`-lenient text like `1x.2.2026`. */
@@ -103,7 +103,7 @@ export function typeDateText(text: string, opts: EditorOptions<any>, labels: Val
 		if (looksLikeDate(t, info.separator)) date = parseDateInput(t, info)
 		if (date) break
 	}
-	if (!date) return { value: text, error: labels.invalidDate }
+	if (!date) return { value: text, error: labels['errors.invalidDate'] }
 	switch (opts.outputFormat) {
 		case 'date': return { value: date, error: null }
 		case 'timestamp': return { value: date.getTime(), error: null }

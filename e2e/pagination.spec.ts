@@ -134,8 +134,8 @@ test.describe('labels', () => {
 		expect(await page.evaluate(() => (window as any).__labelsCtx)).toEqual({ currentPage: 1, totalPages: 5, totalItems: 23, pageSize: 5, hasController: true })
 	})
 
-	test('grid labels (paginationPageInfo / paginationItemCount templates) apply', async ({ page }) => {
-		await onGrid(page, el => { el.labels = { paginationPageInfo: '{current}/{total}', paginationItemCount: 'n={count}', paginationNext: 'NEXT' } })
+	test('grid labels (labels.pageInfo / labels.itemCount templates) apply', async ({ page }) => {
+		await onGrid(page, el => { el.labels = { 'labels.pageInfo': '{current}/{total}', 'labels.itemCount': 'n={count}', 'buttons.nextPage': 'NEXT' } })
 		await expect(info(page)).toContainText('1/5')
 		await expect(info(page)).toContainText('n=23')
 		await expect(btn(page, 'next')).toHaveText('NEXT')

@@ -13,7 +13,7 @@
 //    cell shouldn't flip the checkbox).
 //  - .wg__date-input: prefer the parsed dataset.dateValue, fall back to the
 //    raw input value; typed text that is not a date is saved as is, invalid
-//    (`labels.invalidDate`, typedDateError()).
+//    (`errors.invalidDate`, typedDateError()).
 //  - .wg__editor--number: the text as-is — engine.commitEdit parses it strictly
 //    and applies the editorOptions (modules/editing/value-parse.ts).
 //  - .wg__combobox-input / .wg__autocomplete-input: the typed text resolved to an
