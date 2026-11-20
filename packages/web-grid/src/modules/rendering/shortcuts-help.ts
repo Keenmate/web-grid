@@ -39,6 +39,7 @@ export function renderShortcutsHelpIcon<T>(ctx: GridHost<T>): string {
 			<span class="wg__shortcuts-help-key">${escapeHtml(formatShortcut(shortcut))}</span>
 			<span class="wg__shortcuts-help-label">${escapeHtml(text ?? '')}</span>
 		</div>`
+	// A built-in action's `menuItems.*` label stays TEXT (escaped): core openMenu() writes the same key as textContent
 	const rowItemsHtml = rowShortcuts.map(s =>
 		itemHtml(s.shortcut, s.text ?? (s.action ? labels[ACTION_LABEL_KEYS[s.action]!] : ''))
 	).join('')
@@ -48,7 +49,7 @@ export function renderShortcutsHelpIcon<T>(ctx: GridHost<T>): string {
 	// when both lists are present.
 	const listsHtml = rowItemsHtml && rangeItemsHtml
 		? `<div class="wg__shortcuts-help-list">${rowItemsHtml}</div>
-				<div class="wg__shortcuts-help-title">${escapeHtml(labels['headers.rangeShortcuts'])}</div>
+				<div class="wg__shortcuts-help-title">${ctx.engine.labelHtml('headers.rangeShortcuts')}</div>
 				<div class="wg__shortcuts-help-list">${rangeItemsHtml}</div>`
 		: `<div class="wg__shortcuts-help-list">${rowItemsHtml || rangeItemsHtml}</div>`
 
@@ -67,7 +68,7 @@ export function renderShortcutsHelpIcon<T>(ctx: GridHost<T>): string {
 			</button>
 			<div class="wg__shortcuts-help-overlay">
 				${customContent ? `<div class="wg__shortcuts-help-custom">${customContent}</div>` : ''}
-				<div class="wg__shortcuts-help-title">${escapeHtml(labels['headers.keyboardShortcuts'])}</div>
+				<div class="wg__shortcuts-help-title">${ctx.engine.labelHtml('headers.keyboardShortcuts')}</div>
 				${listsHtml}
 			</div>
 		</div>

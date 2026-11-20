@@ -61,9 +61,13 @@ test.describe('examples-localization.html', () => {
 		await expect(readout(page, 'lo05-readout')).toContainText('resolveLocale()  cs-CZ')
 		await expect(readout(page, 'lo05-readout')).toContainText('01.01.2026')
 
-		// LO06 · the switch flips window.components.security; the grid's labels render the same
-		await expectToggleChanges(page, 'lo06-escape', 'lo06-state')
-		await expect(readout(page, 'lo06-readout')).toContainText('&lt;b&gt;here&lt;/b&gt;')
+		// LO06 · off: content labels render their markup; the switch escapes the whole label
+		await expect(readout(page, 'lo06-readout')).toContainText('Nothing <b>here</b> yet')
+		await expect(readout(page, 'lo06-readout')).toContainText('Page <b>1</b> of 3')
+		await expectToggleChanges(page, 'lo06-escape', 'lo06-readout')
+		await expect(readout(page, 'lo06-readout')).toContainText('Nothing &lt;b&gt;here&lt;/b&gt; yet')
+		await expect(readout(page, 'lo06-readout')).toContainText('Page &lt;b&gt;1&lt;/b&gt; of 3')
+		await expect(page.locator('#lo06-state')).toContainText('shouldEscapeLabels')
 
 		expect(consoleErrors).toEqual([])
 	})

@@ -7,10 +7,17 @@
 // `web-grid.*` keys) → the page-wide flat `window.components.locale.labels['web-grid.<key>']`
 // → the English defaults below. A key set to `''` renders nothing (deliberately empty);
 // a non-string falls through. `{name}` placeholders and the page's `translateCallback`
-// (ICU / i18next) are applied by core when a label is read through `GridLabelsResolver.text()`.
-// Labels are TEXT here: renderers escape them for innerHTML (`escapeHtml`).
+// (ICU / i18next) are applied by core when a label is read through the resolver.
+// Escaping follows the core split (SPEC §12.24) by WHERE the label is written:
+// - CONTENT (innerHTML: pager, empty / loading message, headers, dialog texts) → `html(key, params)`
+//   (engine `labelHtml()`): the template is markup (`<b>` renders), `{…}` param values are escaped;
+//   `window.components.security.shouldEscapeLabels` escapes the whole label.
+// - an attribute (`aria-label`, `title`, `data-tooltip`), `textContent`, a core menu item, an
+//   announcement → `text(key, params)` / the resolved `labels` object (renderers `escapeHtml` it
+//   into attribute markup).
 
-import { createLabels, formatLabel as formatTemplate, resolveLabel, type LabelParams, type Labels } from '@keenmate/web-components-core/locale'
+import { escapeHtml } from '@keenmate/web-components-core'
+import { createLabels, formatLabel as formatTemplate, getPageSecurity, resolveLabel, type LabelParams, type Labels } from '@keenmate/web-components-core/locale'
 import type { GridLabels, GridLabelsInput } from './types.js'
 
 /** The built-in UI strings (English only). */
@@ -146,6 +153,17 @@ export class GridLabelsResolver {
 		return formatTemplate(resolveLabel(TAG, DEFAULT_LABELS, this.#input, key), params)
 	}
 
+	/** One label for innerHTML: template markup kept, `{…}` params escaped (all escaped with `shouldEscapeLabels`). */
+	html(key: GridLabelKey, params?: LabelParams): string {
+		if (this.#handle) return this.#handle.html(key, params)
+		const shouldEscapeAll = getPageSecurity()?.shouldEscapeLabels === true
+		const values = params && !shouldEscapeAll
+			? Object.fromEntries(Object.entries(params).map(([name, v]) => [name, typeof v === 'string' ? escapeHtml(v) : v]))
+			: params
+		const out = formatTemplate(resolveLabel(TAG, DEFAULT_LABELS, this.#input, key), values)
+		return shouldEscapeAll ? escapeHtml(out) : out
+	}
+
 	readonly format: LabelFormat = (key, _template, params) => this.text(key, params)
 
 	resolve(): GridLabels {
@@ -155,6 +173,14 @@ export class GridLabelsResolver {
 		}
 		return out as GridLabels
 	}
+}
+
+/**
+ * An already-resolved label template (no params — e.g. a column's own `labels` override) for innerHTML:
+ * as is, or escaped with `window.components.security.shouldEscapeLabels` — the same rule as `html()`.
+ */
+export function labelTemplateHtml(template: string): string {
+	return getPageSecurity()?.shouldEscapeLabels === true ? escapeHtml(template) : template
 }
 
 /** The labels resolved without an element (defaults + instance + page-wide). */

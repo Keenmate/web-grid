@@ -16,7 +16,7 @@
 // cell, or the target cell), not by the session.
 // Validation: numeric, in-range, otherwise the input is refocused + selected.
 
-import { escapeHtml, startModalSession, type ModalSession } from '@keenmate/web-components-core'
+import { startModalSession, type ModalSession } from '@keenmate/web-components-core'
 import type { GridHost } from '../grid-context.js'
 import { updateFocusVisual, moveFocus } from './focus.js'
 import { revealElement, scrollRowIntoView, fieldAt, JUMP_SCROLL } from '../scroll/reveal.js'
@@ -33,14 +33,13 @@ export function openGoToRowDialog<T>(ctx: GridHost<T>, colIndex: number): void {
 	// Create dialog overlay
 	const overlay = document.createElement('div')
 	overlay.className = 'wg__goto-overlay'
-	const labels = ctx.engine.labels
 	overlay.innerHTML = `
 		<div class="wg__goto-dialog">
-			<label class="wg__goto-label">${escapeHtml(ctx.engine.labelText('labels.goToRow', { max: displayItems.length }))}</label>
+			<label class="wg__goto-label">${ctx.engine.labelHtml('labels.goToRow', { max: displayItems.length })}</label>
 			<input type="number" class="wg__goto-input" min="1" max="${displayItems.length}" value="1" />
 			<div class="wg__goto-buttons">
-				<button type="button" class="wg__goto-btn wg__goto-btn--cancel">${escapeHtml(labels['buttons.cancel'])}</button>
-				<button type="button" class="wg__goto-btn wg__goto-btn--go">${escapeHtml(labels['buttons.go'])}</button>
+				<button type="button" class="wg__goto-btn wg__goto-btn--cancel">${ctx.engine.labelHtml('buttons.cancel')}</button>
+				<button type="button" class="wg__goto-btn wg__goto-btn--go">${ctx.engine.labelHtml('buttons.go')}</button>
 			</div>
 		</div>
 	`

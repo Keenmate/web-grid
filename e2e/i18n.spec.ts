@@ -243,3 +243,43 @@ test.describe('page-wide labels (core /locale: window.components.locale)', () =>
 		expect(perPage).toBe('early')
 	})
 })
+
+test.describe('escaping (core /locale split: content → labels.html, attributes → labels.text)', () => {
+	test.afterEach(async ({ page }) => {
+		await page.evaluate(() => { (window as any).components.security = null })
+	})
+
+	test('a pager label template is markup: <b> renders bold', async ({ page }) => {
+		await onGrid(page, el => { el.labels = { 'labels.pageInfo': 'Page <b>{current}</b> of {total}', 'buttons.nextPage': '<b>Next</b>' } })
+		await expect(pag(page).locator('.wg__pagination-info b')).toHaveText('1')
+		await expect(pag(page).locator('.wg__pagination-info')).toContainText('Page 1 of 2')
+		await expect(pag(page).locator('[data-action="next"] b')).toHaveText('Next')
+	})
+
+	test('a {param} value with markup is escaped (it is data)', async ({ page }) => {
+		const html = await onGrid(page, el => {
+			el.labels = { 'labels.pageInfo': '<b>{current}</b> / {total}' }
+			el.flush()
+			return el.engine.labelHtml('labels.pageInfo', { current: '<img src=x>', total: 2 })
+		})
+		expect(html).toBe('<b>&lt;img src=x&gt;</b> / 2')
+	})
+
+	test('shouldEscapeLabels: true escapes the template too (pager + empty message)', async ({ page }) => {
+		await onGrid(page, el => { el.labels = { 'labels.pageInfo': 'Page <b>{current}</b> of {total}' } })
+		await expect(pag(page).locator('.wg__pagination-info b')).toHaveCount(1)
+		// Flipping the page-wide switch alone re-renders the live grid (localeChanged)
+		await page.evaluate(() => { (window as any).components.security = { shouldEscapeLabels: true } })
+		await expect(pag(page).locator('.wg__pagination-info')).toContainText('Page <b>1</b> of 2')
+		await expect(pag(page).locator('.wg__pagination-info b')).toHaveCount(0)
+		await onGrid(page, el => { el.labels = { 'messages.noData': '<i>Nothing</i>' }; el.items = [] })
+		await expect(gridLocator(page).locator('.wg__empty')).toHaveText('<i>Nothing</i>')
+		await expect(gridLocator(page).locator('.wg__empty i')).toHaveCount(0)
+	})
+
+	test('the empty-table message follows the same rule: markup renders by default', async ({ page }) => {
+		await onGrid(page, el => { el.items = []; el.labels = { 'messages.noData': '<i>Nothing</i> here' } })
+		await expect(gridLocator(page).locator('.wg__empty i')).toHaveText('Nothing')
+		await expect(gridLocator(page).locator('.wg__empty')).toHaveText('Nothing here')
+	})
+})

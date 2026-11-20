@@ -159,11 +159,11 @@ grid.columns = [
             and <code>labels.pageInfo</code> = <code>Page &lt;b&gt;{current}&lt;/b&gt; of {total}</code>.
             The rule (core <code>/locale</code>): a label's template may be markup, its <code>{name}</code> values are DATA and are
             escaped (a user name like <code>&lt;i&gt;Ann&lt;/i&gt;</code> shows its tags as text);
-            <code>window.components.security.shouldEscapeLabels</code> escapes the whole label. What web-grid does today: it
-            reads every label as text (<code>.text()</code>, never <code>.html()</code>), so the switch changes nothing here.
-            The empty-table message is escaped — the <code>&lt;b&gt;</code> shows as typed. The pager texts
-            (<code>labels.pageInfo</code>, <code>labels.itemCount</code>, <code>buttons.*Page</code>) are written as markup,
-            so the <code>&lt;b&gt;</code> renders bold in both states. The readout shows the rendered HTML.
+            <code>window.components.security.shouldEscapeLabels</code> escapes the whole label. web-grid writes a label
+            that is CONTENT (the empty-table message, the pager texts, headers, the go-to-row dialog) through core
+            <code>.html()</code>: off, the <code>&lt;b&gt;</code> renders bold; tick the switch and both grids show the
+            tags as typed. Labels written into an attribute (<code>aria-label</code>, <code>title</code>, tooltips) or a
+            menu item stay <code>.text()</code>. The readout shows the rendered HTML.
         </p>
         <div class="controls">
             <label><input type="checkbox" id="lo06-escape"> <code>window.components.security.shouldEscapeLabels</code></label>
@@ -175,10 +175,10 @@ grid.columns = [
         </div>
         <div class="output mt-1"><pre id="lo06-readout"></pre></div>
         <div class="code-block" data-kmwc-snippet data-language="js"><pre><code>grid.labels = {
-  'messages.noData': 'Nothing &lt;b&gt;here&lt;/b&gt; yet',          // empty-table cell: escaped
-  'labels.pageInfo': 'Page &lt;b&gt;{current}&lt;/b&gt; of {total}'    // pager: written as markup
+  'messages.noData': 'Nothing &lt;b&gt;here&lt;/b&gt; yet',          // content: the template is markup
+  'labels.pageInfo': 'Page &lt;b&gt;{current}&lt;/b&gt; of {total}'    // {current} / {total} values are escaped
 }
-window.components.security = { shouldEscapeLabels: true }   // affects .html() labels — web-grid uses none</code></pre></div>
+window.components.security = { shouldEscapeLabels: true }   // escapes the whole label (template too)</code></pre></div>
     </div>
 
 <script type="module">

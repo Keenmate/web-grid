@@ -10,6 +10,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Fixed — labels follow the core content / text escaping split (2026-11-21)
+- A label written as CONTENT (innerHTML) now goes through core `labels.html()` (SPEC §12.24): the pager texts
+  (`buttons.*Page`, `labels.pageInfo`, `labels.itemCount`, `labels.perPage`), the empty-table message
+  (`messages.noData` / `messages.noResults`), `messages.loading`, `columnHeaders.inlineActions`, the shortcuts-help
+  headers, the go-to-row dialog texts and the dropdown messages (a column's `editorOptions.labels` too). The template
+  may be markup (`<b>` renders), `{…}` param values are escaped, and `window.components.security.shouldEscapeLabels`
+  escapes the whole label. Before, the pager wrote labels raw (params included) and the other spots escaped the
+  template, so `shouldEscapeLabels` did nothing in the grid. Labels written into attributes (`aria-label`, `title`,
+  tooltips), core menu items and the shortcuts-help action names stay text. A `getPaginationLabelsCallback` result
+  is the app's own markup (written as is). `examples-localization.html` LO06 now shows the switch working.
+
 ### Docs — localization page (2026-11-21)
 - `examples-localization.html` — the shared localization page (LO01–LO06: instance `labels`, page-wide dictionary,
   `translateCallback`, accessible-name follow, locale + formatting, `shouldEscapeLabels`); linked from the index.

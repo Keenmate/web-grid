@@ -959,6 +959,11 @@ export class GridEngine<T = unknown> {
 		return this._labelsResolver.text(key, params)
 	}
 
+	/** One label for innerHTML (template markup kept, `{…}` params escaped; all escaped with `shouldEscapeLabels`). */
+	labelHtml(key: GridLabelKey, params?: LabelParams): string {
+		return this._labelsResolver.html(key, params)
+	}
+
 	/** The formatter value checks use for their messages (`errors.numberMin` / `errors.numberMax`). */
 	get labelFormat(): LabelFormat {
 		return this._labelsResolver.format

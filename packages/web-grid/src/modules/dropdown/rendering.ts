@@ -10,6 +10,7 @@ import type { GridHost } from '../grid-context.js'
 import { getOptionLabel, getOptionValue, getOptionIcon, getOptionSubtitle, isOptionDisabled, isEmptyOption, optionCtx } from './options.js'
 import { removeFillHandle } from '../fill-handle/index.js'
 import { syncLoader, pruneDetachedLoaders } from '../rendering/loader.js'
+import { labelTemplateHtml } from '../../labels.js'
 import { clearEditingVisual, returnFocusToCell } from '../navigation/focus.js'
 import { commitEditorValue } from '../editing/commit-on-transition.js'
 import { renderCell } from '../rendering/cell.js'
@@ -193,14 +194,16 @@ function fillDropdown<T>(
 		const hasSource = (opts.options?.length ?? 0) > 0 || (opts.initialOptions?.length ?? 0) > 0
 		const isNoResults = hasSource || (!!opts.searchCallback && typed !== '')
 		const key = ctx.autocomplete.isSearching ? 'messages.searching' : isNoResults ? 'messages.noMatchingOptions' : 'messages.noOptions'
-		const message = opts.labels?.[key] ?? ctx.engine.labels[key]
+		// Content: the message is markup (core labels.html — `shouldEscapeLabels` escapes it); a column's own labels too
+		const own = opts.labels?.[key]
+		const message = own != null ? labelTemplateHtml(own) : ctx.engine.labelHtml(key)
 		if (key === 'messages.searching') {
 			// Typed search in flight: the loader (core renderLoader, context 'search'; ariaLabels.searching) + the text
 			const ariaLabel = opts.labels?.['ariaLabels.searching'] ?? ctx.engine.labels['ariaLabels.searching']
-			put(`<div class="wg__dropdown-empty wg__dropdown-searching"><span class="wg__dropdown-searching-indicator"></span>${message ? `<span aria-hidden="true">${escapeHtml(message)}</span>` : ''}</div>`)
+			put(`<div class="wg__dropdown-empty wg__dropdown-searching"><span class="wg__dropdown-searching-indicator"></span>${message ? `<span aria-hidden="true">${message}</span>` : ''}</div>`)
 			syncLoader(ctx, 'search-dropdown', dropdown.querySelector('.wg__dropdown-searching-indicator') as HTMLElement, ariaLabel)
 		} else {
-			put(message ? `<div class="wg__dropdown-empty">${escapeHtml(message)}</div>` : '')
+			put(message ? `<div class="wg__dropdown-empty">${message}</div>` : '')
 		}
 	} else {
 		// Get current value for isSelected check

@@ -102,7 +102,7 @@ export function renderHeaderRow<T>(ctx: GridHost<T>): string {
 		// Using calc with CSS vars so it respects theming
 		const colWidth = `calc(${maxBtns} * var(--wg-toolbar-btn-min-width) + ${Math.max(0, maxBtns - 1)} * var(--wg-inline-actions-gap) + 2 * var(--wg-spacing-sm))`
 		leadColIndex++
-		inlineActionsHeaderHtml = `<th class="wg__header wg__inline-actions-header" style="width: ${colWidth}" role="columnheader" aria-colindex="${leadColIndex}">${escapeHtml(ctx.engine.labels['columnHeaders.inlineActions'])}</th>`
+		inlineActionsHeaderHtml = `<th class="wg__header wg__inline-actions-header" style="width: ${colWidth}" role="columnheader" aria-colindex="${leadColIndex}">${ctx.engine.labelHtml('columnHeaders.inlineActions')}</th>`
 		filterLeadHtml += `<th class="wg__filter-cell" role="gridcell" aria-colindex="${leadColIndex}"></th>`
 	}
 
@@ -229,11 +229,12 @@ export function renderHeaderRow<T>(ctx: GridHost<T>): string {
  */
 function renderEmptyRow<T>(ctx: GridHost<T>, colspan: number): string {
 	const hasActiveFilter = Object.values(ctx.engine.filters).some(v => !!v)
-	const text = ctx.engine.items.length > 0 || hasActiveFilter ? ctx.engine.labels['messages.noResults'] : ctx.engine.labels['messages.noData']
+	// Content: the label is markup (core labels.html — `shouldEscapeLabels` escapes it)
+	const html = ctx.engine.labelHtml(ctx.engine.items.length > 0 || hasActiveFilter ? 'messages.noResults' : 'messages.noData')
 	const kind = ctx.engine.items.length > 0 || hasActiveFilter ? 'no-results' : 'no-data'
 	return `
 			<tr role="row" aria-rowindex="${headerRowCount(ctx) + 1}">
-				<td class="wg__empty" colspan="${colspan}" data-empty="${kind}" role="gridcell" aria-colindex="1">${escapeHtml(text)}</td>
+				<td class="wg__empty" colspan="${colspan}" data-empty="${kind}" role="gridcell" aria-colindex="1">${html}</td>
 			</tr>
 		`
 }
@@ -247,7 +248,7 @@ function renderEmptyRow<T>(ctx: GridHost<T>, colspan: number): string {
  */
 export function renderLoadingMoreRow<T>(ctx: GridHost<T>): string {
 	if (!ctx.virtualScroll.isLoadingMore || !ctx.engine.labels['messages.loading']) return ''
-	return `<tr class="wg__loading-more-row" role="row"><td class="wg__loading-more" colspan="999" role="gridcell"><span class="wg__loading-more-indicator"></span><span class="wg__loading-more-text" aria-hidden="true">${escapeHtml(ctx.engine.labels['messages.loading'])}</span></td></tr>`
+	return `<tr class="wg__loading-more-row" role="row"><td class="wg__loading-more" colspan="999" role="gridcell"><span class="wg__loading-more-indicator"></span><span class="wg__loading-more-text" aria-hidden="true">${ctx.engine.labelHtml('messages.loading')}</span></td></tr>`
 }
 
 /**
@@ -737,16 +738,18 @@ export function renderPagination<T>(ctx: GridHost<T>, position: string = 'bottom
 		? ctx.engine.totalItems
 		: (ctx.engine as unknown as { sortedItems: T[] }).sortedItems.length
 
-	// Build labels (grid.labels → getPaginationLabelsCallback → final)
+	// Build labels (grid.labels → getPaginationLabelsCallback → final). The texts are CONTENT:
+	// core labels.html() — template markup kept, `{…}` params escaped, all escaped with
+	// `shouldEscapeLabels`. A getPaginationLabelsCallback result is the app's own markup (as is).
 	const gridLabels = ctx.engine.labels
 	const defaultLabels = {
-		first: gridLabels['buttons.firstPage'],
-		previous: gridLabels['buttons.previousPage'],
-		next: gridLabels['buttons.nextPage'],
-		last: gridLabels['buttons.lastPage'],
-		pageInfo: ctx.engine.labelText('labels.pageInfo', { current: currentPage, total: totalPages }),
-		itemCount: ctx.engine.labelText('labels.itemCount', { count: totalItems }),
-		perPage: gridLabels['labels.perPage']
+		first: ctx.engine.labelHtml('buttons.firstPage'),
+		previous: ctx.engine.labelHtml('buttons.previousPage'),
+		next: ctx.engine.labelHtml('buttons.nextPage'),
+		last: ctx.engine.labelHtml('buttons.lastPage'),
+		pageInfo: ctx.engine.labelHtml('labels.pageInfo', { current: currentPage, total: totalPages }),
+		itemCount: ctx.engine.labelHtml('labels.itemCount', { count: totalItems }),
+		perPage: ctx.engine.labelHtml('labels.perPage')
 	}
 
 	const labelsCallback = ctx.engine.getPaginationLabelsCallback
