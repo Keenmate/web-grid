@@ -203,7 +203,7 @@
         },
         {
           "kind": "class",
-          "description": "GridEngine - Core logic class for the data grid\n\nThis class contains all the state management and business logic.\nGridElement extends this to add DOM rendering and web component lifecycle.",
+          "description": "GridEngine - Core logic class for the data grid\n\nThis class contains all the state management and business logic.\nInternal (not exported from the package): GridElement composes one instance\n(`this.engine = new GridEngine()`) and adds DOM rendering and the web component lifecycle.",
           "name": "GridEngine",
           "members": [
             {
@@ -5967,14 +5967,6 @@
           "declaration": {
             "name": "ResponsiveContext",
             "package": "@keenmate/web-components-core"
-          }
-        },
-        {
-          "kind": "js",
-          "name": "GridEngine",
-          "declaration": {
-            "name": "GridEngine",
-            "module": "./grid.js"
           }
         },
         {

@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Removed — BREAKING: `GridEngine` export (2026-11-20)
+- `GridEngine` is no longer exported: it only drew the same UI without the custom element. Use `<web-grid>`
+  (`el.controller` for the programmatic API). The config / context / event types stay exported.
+
 ### Added — `translateCallback` (2026-11-20)
 - `translateCallback({ component, key, template, params, locale })` — this grid's own translation hook (core
   `createLabels`, SPEC §12.24; property-only input like the other grid callbacks): asked for every label key the
@@ -975,7 +979,7 @@ both non-enumerable, so `JSON.stringify` / logs see only the data.
 
 | Old | New |
 |---|---|
-| `el.grid` (the internal `WebGrid`) | `el.controller` — the public facade (rows, drafts, validation, locking, selection, tree, columns, focus, menus). The engine is `GridEngine` (exported for standalone use; `el.engine` is internal) |
+| `el.grid` (the internal `WebGrid`) | `el.controller` — the public facade (rows, drafts, validation, locking, selection, tree, columns, focus, menus). The engine is internal (not exported; `el.engine` is internal) |
 | `rowClassCallback(row, rowIndex)` | `getRowClassCallback({ row, rowIndex })` |
 | `customStylesCallback()` | `getCustomStylesCallback(ctx)` |
 | `paginationLabelsCallback(ctx)` / `summaryContentCallback(ctx)` / `shortcutsHelpContentCallback()` | `getPaginationLabelsCallback(ctx)` / `renderSummaryCallback(ctx)` / `renderShortcutsHelpCallback(ctx)` |

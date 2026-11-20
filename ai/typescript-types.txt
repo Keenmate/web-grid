@@ -6,9 +6,8 @@ Types are exported from the package entry point:
   import type { Column, EditorOptions, SortState, GridController, CellContext } from '@keenmate/web-grid'
 
 Runtime exports: GridElement (also the default export; auto-registers
-<web-grid>), GridEngine (the state engine, for standalone / advanced use -
-not the element's public API) and createMenuDivider (divider factory for
-toolbar / menu entry lists).
+<web-grid>) and createMenuDivider (divider factory for toolbar / menu entry
+lists). The state engine is internal - use <web-grid> (el.controller).
 
 
 ----------------------------------------------------------------------

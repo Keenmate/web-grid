@@ -8,9 +8,6 @@ export { GridElement } from './web-component.js'
 export type { GridElementConfig, GridInputKey, GridResponsiveConfig, GridResponsiveMap, GridResponsiveCallback } from './web-component.js'
 export type { ResponsiveContext } from '@keenmate/web-components-core'
 
-// Core state engine (standalone / advanced usage — not the element's public API)
-export { GridEngine } from './grid.js'
-
 // Divider factory for toolbar / menu entry lists (web-components-core /actions)
 export { createMenuDivider } from '@keenmate/web-components-core/actions'
 // Loader render hook types (renderLoadingCallback, window.components.renderLoadingCallback — core SPEC §12.14)

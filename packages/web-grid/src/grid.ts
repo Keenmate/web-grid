@@ -130,7 +130,8 @@ export const GRID_PRESETS: Record<GridPreset, {
  * GridEngine - Core logic class for the data grid
  *
  * This class contains all the state management and business logic.
- * GridElement extends this to add DOM rendering and web component lifecycle.
+ * Internal (not exported from the package): GridElement composes one instance
+ * (`this.engine = new GridEngine()`) and adds DOM rendering and the web component lifecycle.
  */
 export class GridEngine<T = unknown> {
 	// ==========================================================================
