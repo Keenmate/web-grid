@@ -212,6 +212,16 @@ renderLoadingCallback
   window.components.renderLoadingCallback (same signature, every Keenmate component);
   neither set -> the default <span class="wg__loader"> (--wg-loader-* tokens).
 
+renderIconCallback
+  Signature: (name: string, ctx: IconRenderContext) => string | null | undefined
+  ctx: { component: 'web-grid', element, prefix: 'wg' } + item (toolbar / row action) or option (dropdown)
+  This grid's icon hook for every grid icon (toolbar / row actions, editButtonIcon, dropdown
+  option icons), core renderIcon order: markup (<svg ...>) as is -> a built-in name (add, check,
+  close, delete, edit, settings, ... --base-icon-*; never sent to a hook) -> renderIconCallback ->
+  window.components.renderIconCallback -> icon-font classes ('fa-solid fa-star' ->
+  <i class="wg__icon fa-solid fa-star">) -> anything else (emoji) as text. Returns markup, '' = no
+  icon, null / undefined = not mine (the next rule decides). Property only; a change re-renders.
+
 getCustomStylesCallback
   Signature: (ctx: GridContext<T>) => string | null
   Returns CSS injected into the shadow DOM; wins over customStyles (attribute

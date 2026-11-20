@@ -280,6 +280,7 @@ import {
 	type InputDef,
 	type EventDef,
 	type RenderLoaderCallback,
+	type RenderIconCallback,
 	type ResponsiveMap,
 	type ResponsiveCallback,
 	type EnvironmentSnapshot,
@@ -644,6 +645,13 @@ export interface GridElementConfig<T = unknown> {
 	getCustomStylesCallback: ((ctx: GridCallbackContext<T>) => string | null | undefined) | null
 	/** Custom render for the grid's loading states (`ctx.context`: 'row' | 'search'); beats `window.components.renderLoadingCallback`. */
 	renderLoadingCallback: RenderLoaderCallback | null
+	/**
+	 * This grid's icon hook (core `renderIcon`, SPEC §12.33): `(name, ctx) => markup | null` for the toolbar / row-action
+	 * / edit-button / dropdown-option icons. Asked after the built-in names (`check`, `close`, … never reach it) and
+	 * before the page-wide `window.components.renderIconCallback`; `null` / `undefined` = not mine (the next rule decides),
+	 * `''` = no icon. `ctx`: `{ component, element, prefix: 'wg' }` + `item` (toolbar / row action) or `option` (dropdown).
+	 */
+	renderIconCallback: RenderIconCallback | null
 	/** Runs before the grid scrolls a cell / row into view on its own: `false` skips, a partial `options` replaces the defaults (synchronous). */
 	beforeScrollCallback: ((ctx: GridBeforeScrollContext<T>) => false | Partial<GridScrollOptions> | void) | null
 	/** Delay (ms) before a cell tooltip shows. Default: `200`. */
@@ -958,6 +966,9 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		// (infinite-scroll load-more row) or 'search' (async dropdown search). Beats the page-wide
 		// `window.components.renderLoadingCallback`; may return a cleanup function.
 		{ configKey: 'renderLoadingCallback', converter: toFunction<RenderLoaderCallback>(), default: null, on: 'update', type: 'RenderLoaderCallback | null', description: "Custom render for the grid's loading states (`ctx.context`: 'row' | 'search'); fills `ctx.containerElement`, may return a cleanup." },
+		// Icons (core renderIcon, SPEC §12.33): core reads `host.renderIconCallback` — the element's own hook, asked
+		// after the built-in names and before the page-wide `window.components.renderIconCallback`. A change re-renders.
+		{ configKey: 'renderIconCallback', converter: toFunction<RenderIconCallback>(), default: null, on: 'update', type: 'RenderIconCallback | null', description: "This grid's icon hook: `(name, ctx) => markup | null` for the toolbar / row-action / edit-button / dropdown-option icons. Asked after the built-in names (never sent to it) and before the page-wide `window.components.renderIconCallback`; `null` / `undefined` = not mine (the next rule decides), `''` = no icon. `ctx`: `{ component, element, prefix }` + `item` (toolbar / row action) or `option` (dropdown option)." },
 		// Gate of every scroll the grid makes on its own (keyboard moves, scrollToRow, go-to-row; rulebook
 		// D-CA-5): `false` skips it, a partial `options` replaces the defaults. Element-local (not on the engine).
 		{ configKey: 'beforeScrollCallback', converter: toFunction<(ctx: GridBeforeScrollContext) => unknown>(), on: 'update', type: '((ctx: GridBeforeScrollContext) => false | Partial<GridScrollOptions> | void) | null', description: 'Runs before the grid scrolls a cell / row into view on its own (`ctx.source`: keyboard | scroll-to-row | go-to-row); `false` skips, a partial `options` replaces the defaults. Synchronous.' },
@@ -1344,6 +1355,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 			this.engine.loadPersistedState()
 		}
 		if ('customStyles' in partial || 'getCustomStylesCallback' in partial) this.#customStyles?.refresh()
+		// Icons are rendered with the table / toolbar markup: a new icon hook redraws them
+		if ('renderIconCallback' in partial) this.requestUpdate()
 		// Core createTooltip reads its delays once: a new delay restarts the tooltips
 		if ('tooltipShowDelay' in partial || 'tooltipHideDelay' in partial) this.tooltip.start(this)
 	}

@@ -163,3 +163,16 @@ thead .wg__actions-column {
   background: var(--wg-filter-bg);
   border-bottom: var(--wg-filter-border);
 }
+
+/* ==============================================================================
+   ICONS (core renderIcon, SPEC §12.33)
+   ==============================================================================
+   Every icon the grid renders carries wg__icon: a built-in name is the masked
+   km-icon span (core ICON_CSS), an icon-font class list an <i class="wg__icon …">.
+   The font icon sits like the masked span: no flex shrink/grow, the text's size.
+*/
+.wg__icon {
+  flex: none;
+  font-size: inherit;
+  line-height: 1;
+}

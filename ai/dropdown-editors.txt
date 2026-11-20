@@ -102,7 +102,9 @@ searchMember / getSearchValueCallback
   getSearchValueCallback: ({ option }) => option.code + ' ' + option.name
 
 iconMember / getIconCallback
-  Property containing an icon string (emoji or text) shown before the label.
+  Property containing an icon shown before the label, read like every grid icon (core renderIcon):
+  markup as is, a built-in name (add, check, close, delete, edit, ...) masked, the grid's /
+  page's renderIconCallback, icon-font classes ('fa-solid fa-star') -> <i>, an emoji as text.
 
   iconMember: 'emoji'
   -- or --

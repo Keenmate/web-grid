@@ -119,7 +119,7 @@ export function maxToolbarRowLength<T>(entries: readonly GridToolbarEntry<T>[] |
  * One button. `data-action` (built-in name or `custom`) + `data-id` identify the item;
  * `data-wg-index` points into the resolved list the click handler holds.
  */
-export function renderToolbarButton<T>(button: ToolbarButton<T>, index: number, baseClass: string): string {
+export function renderToolbarButton<T>(button: ToolbarButton<T>, index: number, baseClass: string, host: Element | null): string {
 	const r = button.resolved
 	const classes = [
 		baseClass,
@@ -133,7 +133,7 @@ export function renderToolbarButton<T>(button: ToolbarButton<T>, index: number, 
 	const labelHtml = showText && r.text ? `<span class="wg__toolbar-label">${text}</span>` : ''
 	const idAttr = r.id !== undefined ? ` data-id="${escapeHtml(r.id)}"` : ''
 	const pressed = r.isToggled ? ' aria-pressed="true"' : ''
-	return `<button type="button" class="${classes}" data-action="${escapeHtml(r.action)}"${idAttr} data-wg-index="${index}" title="${text}" aria-label="${text}"${pressed}${r.isDisabled ? ' disabled' : ''}>${renderIcon(r.icon, { prefix: 'wg' })}${labelHtml}</button>`
+	return `<button type="button" class="${classes}" data-action="${escapeHtml(r.action)}"${idAttr} data-wg-index="${index}" title="${text}" aria-label="${text}"${pressed}${r.isDisabled ? ' disabled' : ''}>${renderIcon(r.icon, { prefix: 'wg', host, context: { item: button.item } })}${labelHtml}</button>`
 }
 
 /**
@@ -154,14 +154,14 @@ export function buildToolbarTooltipHtml<T>(button: ToolbarButton<T>, shortcutKey
  * @param reverseRows - If true, reverse row order so Row 1 ends up at top visually
  *                      (CSS column-reverse makes last HTML row appear at top)
  */
-export function renderToolbarHTML<T>(buttons: ToolbarButton<T>[], reverseRows: boolean = false): string {
+export function renderToolbarHTML<T>(buttons: ToolbarButton<T>[], reverseRows: boolean, host: Element | null): string {
 	const rowNums = [...new Set(buttons.map(b => b.row))].sort((a, b) => a - b)
 	if (reverseRows) rowNums.reverse()
 	const rowsHtml = rowNums.map(rowNum => {
 		const html = buttons.map((b, i) => {
 			if (b.row !== rowNum) return ''
 			const divider = b.isDividerBefore ? '<div class="wg__toolbar-divider"></div>' : ''
-			return divider + renderToolbarButton(b, i, 'wg__toolbar-btn')
+			return divider + renderToolbarButton(b, i, 'wg__toolbar-btn', host)
 		}).join('')
 		return `<div class="wg__toolbar-row">${html}</div>`
 	}).join('')
@@ -208,7 +208,7 @@ export function openToolbar<T>(
 	// For 'bottom' (toolbar top at row level), we need Row 1 at TOP → reverse
 	// For 'top' (toolbar bottom at row level), Row 1 at BOTTOM is correct → no reverse
 	const reverseRows = ctx.engine.toolbarVerticalAlign !== 'top'
-	const html = renderToolbarHTML(buttons, reverseRows)
+	const html = renderToolbarHTML(buttons, reverseRows, ctx.shadow.host)
 
 	// Create container - append to shadow root to stay in same DOM context as rowElement
 	const container = document.createElement('div')

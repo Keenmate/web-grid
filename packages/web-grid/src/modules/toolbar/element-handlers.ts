@@ -381,7 +381,7 @@ export function updateToolbarWithCellItems<T>(
 	if (!activeToolbar) return
 
 	const temp = document.createElement('div')
-	temp.innerHTML = renderToolbarHTML(buttons, ctx.engine.toolbarVerticalAlign !== 'top')
+	temp.innerHTML = renderToolbarHTML(buttons, ctx.engine.toolbarVerticalAlign !== 'top', ctx.shadow.host)
 	const newToolbarContent = temp.querySelector('.wg__toolbar')
 	if (newToolbarContent) {
 		// Keep position styles
@@ -434,7 +434,7 @@ function refreshOpenToolbar<T>(ctx: GridHost<T>, row: T, rowIndex: number): void
 	if (!isSameLayout) {
 		hideToolbarTooltip(ctx)
 		const temp = document.createElement('div')
-		temp.innerHTML = renderToolbarHTML(buttons, ctx.engine.toolbarVerticalAlign !== 'top')
+		temp.innerHTML = renderToolbarHTML(buttons, ctx.engine.toolbarVerticalAlign !== 'top', ctx.shadow.host)
 		active.toolbar.innerHTML = temp.querySelector('.wg__toolbar')?.innerHTML ?? ''
 		setActiveToolbarButtons(ctx, buttons)
 		setupToolbarTooltips(ctx, buttons)
@@ -443,8 +443,8 @@ function refreshOpenToolbar<T>(ctx: GridHost<T>, row: T, rowIndex: number): void
 
 	const replaced: Element[] = []
 	buttons.forEach((b, i) => {
-		const html = renderToolbarButton(b, i, 'wg__toolbar-btn')
-		if (html === renderToolbarButton(previous[i], i, 'wg__toolbar-btn')) return
+		const html = renderToolbarButton(b, i, 'wg__toolbar-btn', ctx.shadow.host)
+		if (html === renderToolbarButton(previous[i], i, 'wg__toolbar-btn', ctx.shadow.host)) return
 		const el = active.toolbar.querySelector(`.wg__toolbar-btn[data-wg-index="${i}"]`)
 		if (!el) return
 		if (ctx.tooltip.toolbarTarget === el) hideToolbarTooltip(ctx)

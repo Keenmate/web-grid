@@ -351,7 +351,7 @@ This architecture separates mode detection (the adapter decides *what* action a 
 | `isRowEditable` | `boolean` | — | Static per-grid row editability |
 | `getIsRowEditableCallback` | `(ctx: { row }) => boolean` | — | Decides editability per row |
 | `editTrigger` | `EditTrigger` | `'dblclick'` | How editing starts: `'click'`, `'dblclick'`, `'button'` (an edit button in editable cells — on hover and in the focused cell; F2 / Enter too), `'always'`, `'navigate'` |
-| `editButtonIcon` | `string` (HTML) | `'✎'` | Content of the edit button (`editTrigger: 'button'` / `column.isEditButtonShown`) — HTML, e.g. `'<span class="lucide-pencil"></span>'`. Attribute `edit-button-icon`. Accessible name: `ariaLabels.editCell` (title `tooltips.editCell`) |
+| `editButtonIcon` | `string` (icon) | `'✎'` | Icon of the edit button (`editTrigger: 'button'` / `column.isEditButtonShown`), read like every icon (see [Icons](#icons)) — markup (`'<span class="lucide-pencil"></span>'`), a built-in name (`'edit'`), icon-font classes or text. Attribute `edit-button-icon`. Accessible name: `ariaLabels.editCell` (title `tooltips.editCell`) |
 | `editStartSelection` | `EditStartSelection` | `'select-all'` | Cursor position when entering edit via navigate: `'mouse-position'`, `'select-all'`, `'cursor-at-start'`, `'cursor-at-end'` |
 | `dropdownToggleVisibility` | `ToggleVisibility` | `'on-focus'` | When to show dropdown toggle button: `'always'`, `'on-focus'` |
 | `shouldOpenDropdownOnFocus` | `boolean` | `false` | Auto-open dropdown when cell is focused |
@@ -525,6 +525,18 @@ window.components.renderLoadingCallback = ({ context, containerElement }) => {
   containerElement.innerHTML = '<span class="my-dots"></span>'
 }
 ```
+
+### Icons
+
+Toolbar / row-action icons, the edit button (`editButtonIcon`) and the dropdown option icons all go through core
+`renderIcon` — first match wins: markup (`<svg …>`) as is → a built-in name (`add`, `check`, `close`, `delete`,
+`edit`, `settings`, … the `--base-icon-*` glyphs; reserved, never sent to a hook) → this grid's `renderIconCallback`
+→ the page-wide `window.components.renderIconCallback` → icon-font classes (`'fa-solid fa-folder'` →
+`<i class="wg__icon fa-solid fa-folder">`) → anything else (an emoji) as text.
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `renderIconCallback` | `(name, ctx) => string \| null \| undefined` | `null` | This grid's icon hook (`ctx`: `{ component, element, prefix: 'wg' }` + `item` or `option`); markup, `''` = no icon, `null` = not mine (the page-wide hook decides). Property only |
 
 ### Tooltip
 
@@ -801,7 +813,7 @@ By default, options use `value` and `label` properties. Override with member str
 | `valueMember` | `getValueCallback` | Property/callback for the option value |
 | `displayMember` | `getDisplayValueCallback` | Property/callback for display text |
 | `searchMember` | `getSearchValueCallback` | Property/callback for searchable text (falls back to display) |
-| `iconMember` | `getIconCallback` | Property/callback for icon/emoji |
+| `iconMember` | `getIconCallback` | Property/callback for the option icon — read like every icon (see [Icons](#icons)) |
 | `subtitleMember` | `getSubtitleCallback` | Property/callback for subtitle/description |
 | `disabledMember` | `getIsDisabledCallback` | Property/callback for disabled state |
 | `groupMember` | `getGroupCallback` | Property/callback for grouping options |
@@ -875,7 +887,7 @@ Callbacks, events and clickable items follow the shared Keenmate interaction mod
 | `action` | built-in name | Runs a built-in (see the tables below). Omit for a custom item |
 | `id` | `string` | Identifies a custom item; reported back in the `action` event |
 | `text` | `string` | Label. On icon toolbar buttons it's the accessible name + tooltip heading (shown as a label only without an `icon` or with `isTextVisible`) |
-| `icon` | `string` | Icon (glyph / markup) |
+| `icon` | `string` | Icon — markup, a built-in name, `renderIconCallback`, icon-font classes or an emoji (see [Icons](#icons)) |
 | `tooltip` | `string` | Tooltip description line |
 | `shortcut` | `string` | Key chord hint (`'Ctrl+D'`); on `rowShortcuts` / `rangeShortcuts` it's the binding |
 | `isDanger` | `boolean` | Destructive styling |

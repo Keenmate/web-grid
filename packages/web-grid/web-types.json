@@ -1155,6 +1155,11 @@
                 "type": "RenderLoaderCallback | null"
               },
               {
+                "name": "renderIconCallback",
+                "description": "This grid's icon hook: `(name, ctx) => markup | null` for the toolbar / row-action / edit-button / dropdown-option icons. Asked after the built-in names (never sent to it) and before the page-wide `window.components.renderIconCallback`; `null` / `undefined` = not mine (the next rule decides), `''` = no icon. `ctx`: `{ component, element, prefix }` + `item` (toolbar / row action) or `option` (dropdown option).",
+                "type": "RenderIconCallback | null"
+              },
+              {
                 "name": "beforeScrollCallback",
                 "description": "Runs before the grid scrolls a cell / row into view on its own (`ctx.source`: keyboard | scroll-to-row | go-to-row); `false` skips, a partial `options` replaces the defaults. Synchronous.",
                 "type": "((ctx: GridBeforeScrollContext) => false | Partial<GridScrollOptions> | void) | null"

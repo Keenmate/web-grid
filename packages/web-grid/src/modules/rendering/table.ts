@@ -475,7 +475,7 @@ function renderInlineActionsCell<T>(ctx: GridHost<T>, row: T, rowIndex: number):
 		const html = buttons.map((b, i) => {
 			if (b.row !== rowNum) return ''
 			// data-row lets the click handler find the row; data-wg-index the item
-			return renderToolbarButton(b, i, 'wg__inline-action-btn').replace('<button ', `<button data-row="${rowIndex}" `)
+			return renderToolbarButton(b, i, 'wg__inline-action-btn', ctx.shadow.host).replace('<button ', `<button data-row="${rowIndex}" `)
 		}).join('')
 		return `<div class="wg__inline-actions-row">${html}</div>`
 	}).join('')

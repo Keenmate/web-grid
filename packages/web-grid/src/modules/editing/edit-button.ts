@@ -22,7 +22,7 @@ export function hasEditButton<T>(ctx: GridHost<T>, column: Column<T>, isEditable
 export function renderEditButton<T>(ctx: GridHost<T>, rowIndex: number, colIndex: number): string {
 	const label = escapeHtml(ctx.engine.labels['ariaLabels.editCell'])
 	const title = escapeHtml(ctx.engine.labels['tooltips.editCell'])
-	return `<button type="button" class="wg__edit-button" tabindex="-1" data-row="${rowIndex}" data-col="${colIndex}" aria-label="${label}" title="${title}">${renderIcon(ctx.engine.editButtonIcon, { prefix: 'wg' })}</button>`
+	return `<button type="button" class="wg__edit-button" tabindex="-1" data-row="${rowIndex}" data-col="${colIndex}" aria-label="${label}" title="${title}">${renderIcon(ctx.engine.editButtonIcon, { prefix: 'wg', host: ctx.shadow.host })}</button>`
 }
 
 /**

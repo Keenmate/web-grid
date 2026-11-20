@@ -10,6 +10,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Added — `renderIconCallback` (2026-11-20)
+- `renderIconCallback(name, ctx)` — this grid's own icon hook (core `renderIcon`, SPEC §12.33; property-only input
+  like the other grid callbacks): asked after the built-in names (never sent to it) and before the page-wide
+  `window.components.renderIconCallback`; markup wins, `''` = no icon, `null` / `undefined` = not mine (the next rule
+  decides). `ctx`: `{ component: 'web-grid', element, prefix: 'wg' }` + `item` (toolbar / row action) or `option`
+  (dropdown option). One grid on a page needs no `window.components` setup. A change re-renders the icons.
+- Every grid icon (toolbar / row actions, edit button, dropdown options) passes the element to core `renderIcon`, so
+  both hooks see `element` / `component`. New `.wg__icon` rule (`flex: none`, inherited size) so an icon-font `<i>`
+  sits like the masked built-in.
+
+### Changed — BREAKING: icons follow the core icon order (2026-11-20)
+- A one-word icon that is NOT a built-in name (`'gear'`, `'pencil'`) now renders an icon-font
+  `<i class="wg__icon gear" aria-hidden="true">` instead of a `--base-icon-gear` mask. Use a built-in name (`add`,
+  `check`, `close`, `delete`, `edit`, `settings`, …), markup, or map the name in `renderIconCallback`.
+- The cell dropdown's option icon (`iconMember` / `getIconCallback`) was always escaped text; it now goes through core
+  `renderIcon` like every other grid icon: markup is inserted as is (the page vouches for it), a built-in name draws
+  the masked glyph, icon-font classes render an `<i>`, a plain one-word name (`'star'`) becomes `<i class="wg__icon star">`.
+  Emoji / other text is unchanged (escaped text).
+
 ### Changed — BREAKING: label keys are flat `<elementType>.<name>` (2026-11-19)
 - Every `labels` key is renamed to the core / rulebook D-NC-24 shape `<elementType>.<name>`; the nested `actions` /
   `contextMenu` groups are gone (flat `menuItems.*` keys). Resolution is core `createLabels(…, { tag: 'web-grid' })`

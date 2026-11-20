@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — icons fixture</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>icons fixture</h1>
+	<p>Targeted by <code>e2e/icons.spec.ts</code>: core <code>renderIcon</code> order for the grid's icons — the
+	element's <code>renderIconCallback</code> beats the page-wide <code>window.components.renderIconCallback</code>,
+	<code>null</code> falls through, a built-in name never reaches a hook, a class list renders
+	<code>&lt;i class="wg__icon …"&gt;</code>. Dropdown option icons (<code>iconMember</code>) + the edit button.</p>
+
+	<web-grid id="grid" enable-editing edit-trigger="navigate" style="max-width: 600px;"></web-grid>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+
+		/* col 0 name (text, edit button)  1 status (select; option icons: one per resolution rule) */
+		const grid = document.getElementById('grid')
+		window.__elementCalls = []
+		window.__pageCalls = []
+		window.components.renderIconCallback = (name, ctx) => {
+			window.__pageCalls.push({ name, component: ctx.component, hasElement: ctx.element === grid })
+			return name === 'both' || name === 'page' ? `<b class="from-page">${name}</b>` : null
+		}
+		const status = [
+			{ value: 'builtin', label: 'Built-in', icon: 'check' },
+			{ value: 'element', label: 'Element', icon: 'mine' },
+			{ value: 'both', label: 'Both', icon: 'both' },
+			{ value: 'page', label: 'Page', icon: 'page' },
+			{ value: 'font', label: 'Font', icon: 'fa-solid fa-star' },
+			{ value: 'markup', label: 'Markup', icon: '<b class="raw">R</b>' },
+			{ value: 'emoji', label: 'Emoji', icon: '🙂' }
+		]
+		grid.idMember = 'id'
+		grid.renderIconCallback = (name, ctx) => {
+			window.__elementCalls.push({ name, component: ctx.component, prefix: ctx.prefix, option: ctx.option?.value ?? null })
+			return name.startsWith('mine') || name === 'both' ? `<b class="from-element">${name}</b>` : null
+		}
+		grid.editButtonIcon = 'mine-edit'
+		grid.columns = [
+			{ field: 'name', title: 'Name', width: '140px', editor: 'text', isEditButtonShown: true },
+			{ field: 'status', title: 'Status', width: '160px', editor: 'select', editorOptions: { options: status, iconMember: 'icon' } }
+		]
+		grid.items = [
+			{ id: 1, name: 'Alpha', status: 'builtin' },
+			{ id: 2, name: 'Beta', status: 'element' }
+		]
+	</script>
+</body>
+</html>

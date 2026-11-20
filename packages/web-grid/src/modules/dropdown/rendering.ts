@@ -3,7 +3,7 @@
 // Render dropdown overlay — a core createPopover() (/positioning) in the grid's shadow root
 // =============================================================================
 
-import { escapeHtml, renderSlotHtml } from '@keenmate/web-components-core'
+import { escapeHtml, renderIcon, renderSlotHtml } from '@keenmate/web-components-core'
 import { createPopover, type PopoverCloseReason, type PopoverHandle } from '@keenmate/web-components-core/positioning'
 import type { EditorOption, EditorOptions } from '../../types.js'
 import type { GridHost } from '../grid-context.js'
@@ -231,7 +231,9 @@ function fillDropdown<T>(
 				if (disabled) classes.push('wg__dropdown-option--disabled')
 				if (isEmpty) classes.push('wg__dropdown-option--empty')
 
-				const iconHtml = icon ? `<span class="wg__dropdown-option-icon">${escapeHtml(icon)}</span>` : ''
+				// Core renderIcon: markup / built-in name / renderIconCallback (element, then page) / icon-font classes / text
+				const iconMarkup = icon ? renderIcon(icon, { prefix: 'wg', host: ctx.shadow.host, context: { option: opt } }) : ''
+				const iconHtml = iconMarkup ? `<span class="wg__dropdown-option-icon">${iconMarkup}</span>` : ''
 				const subtitleHtml = subtitle ? `<span class="wg__dropdown-option-subtitle">${escapeHtml(subtitle)}</span>` : ''
 
 				return `<div class="${classes.join(' ')}" data-index="${i}" ${disabled ? 'data-disabled="true"' : ''}>

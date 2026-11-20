@@ -105,7 +105,7 @@ test.describe('shortcuts through core /actions (test/shortcuts.html)', () => {
 })
 
 test.describe('icons through core renderIcon (test/edit-modes.html)', () => {
-	test('editButtonIcon: a token name is a masked glyph, markup is raw, anything else is text', async ({ page }) => {
+	test('editButtonIcon: a built-in name is a masked glyph, markup is raw, anything else is text', async ({ page }) => {
 		await page.goto('/test/edit-modes.html')
 		await expect(gridLocator(page).locator('tbody tr').first()).toBeVisible()
 		const btn = cell(page, 0, 0).locator('.wg__edit-button')
@@ -114,8 +114,8 @@ test.describe('icons through core renderIcon (test/edit-modes.html)', () => {
 			grid.editTrigger = 'button'
 			grid.editButtonIcon = i
 		}, icon)
-		await set('pencil')
-		await expect(btn.locator('.km-icon.wg__icon--pencil')).toHaveCount(1)
+		await set('edit')
+		await expect(btn.locator('.km-icon.wg__icon--edit')).toHaveCount(1)
 		await set('<i class="my-icon"></i>')
 		await expect(btn.locator('i.my-icon')).toHaveCount(1)
 		await set('✎ <b>')

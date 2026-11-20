@@ -213,6 +213,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Properties set before `<web-grid>` is defined (`columns`, `items`, `pageSize`) applied at upgrade (core rc20) | ✓ | `pre-upgrade.spec.ts` | `pre-upgrade.html` |
 | Self-initiated scrolls via core `scrollIntoContainer` + `beforeScrollCallback` (keyboard: `nearest`, page stays put; `scrollToRow`: centre + reveal; `false` skips, partial options replace; virtual-scroll jump) | ✓ | `scroll.spec.ts` | `scroll.html` |
 | ARIA grid pattern: `grid` / `treegrid` + row / header / cell roles, `aria-rowcount` / `aria-rowindex` across a scrolled virtual window, `aria-colindex`, `aria-sort` after a sort click, `aria-selected` (row + column selection), `aria-readonly` (cell / read-only grid), `aria-level` / `aria-expanded` | ✓ | `aria.spec.ts` | `aria.html` |
+| Icons through core `renderIcon` with the grid as host: dropdown option icons + edit button — built-in name masked and never sent to a hook, element `renderIconCallback` beats the page-wide one (ctx `option` / `component` / `element`), element `null` → page hook, class list → `<i class="wg__icon …">` (`flex: none`), markup raw, emoji text, hook change re-renders, non-function refused | ✓ | `icons.spec.ts` | `icons.html` |
 
 ## Not covered yet
 

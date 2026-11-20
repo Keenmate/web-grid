@@ -191,6 +191,7 @@ R
 -
 renderCellCallback -> columns.txt, callbacks-events.txt
 renderEditorCallback -> columns.txt, callbacks-events.txt
+renderIconCallback, window.components.renderIconCallback (icons) -> callbacks-events.txt, dropdown-editors.txt
 renderLoadingCallback, window.components.renderLoadingCallback (loaders) -> callbacks-events.txt, styling-theming.txt
 renderOptionCallback -> dropdown-editors.txt, callbacks-events.txt
 Resize -> columns.txt

@@ -20578,6 +20578,12 @@
               "type": {
                 "text": "string"
               }
+            },
+            {
+              "name": "host",
+              "type": {
+                "text": "Element | null"
+              }
             }
           ],
           "description": "One button. `data-action` (built-in name or `custom`) + `data-id` identify the item;\n`data-wg-index` points into the resolved list the click handler holds."
@@ -20624,11 +20630,16 @@
             },
             {
               "name": "reverseRows",
-              "default": "false",
               "type": {
                 "text": "boolean"
               },
               "description": "If true, reverse row order so Row 1 ends up at top visually\n  (CSS column-reverse makes last HTML row appear at top)"
+            },
+            {
+              "name": "host",
+              "type": {
+                "text": "Element | null"
+              }
             }
           ],
           "description": "Render the floating toolbar for resolved buttons."
@@ -24110,6 +24121,16 @@
               },
               "default": "null",
               "description": "Custom render for the grid's loading states (`ctx.context`: 'row' | 'search'); fills `ctx.containerElement`, may return a cleanup."
+            },
+            {
+              "kind": "field",
+              "name": "renderIconCallback",
+              "privacy": "public",
+              "type": {
+                "text": "RenderIconCallback | null"
+              },
+              "default": "null",
+              "description": "This grid's icon hook: `(name, ctx) => markup | null` for the toolbar / row-action / edit-button / dropdown-option icons. Asked after the built-in names (never sent to it) and before the page-wide `window.components.renderIconCallback`; `null` / `undefined` = not mine (the next rule decides), `''` = no icon. `ctx`: `{ component, element, prefix }` + `item` (toolbar / row action) or `option` (dropdown option)."
             },
             {
               "kind": "field",
