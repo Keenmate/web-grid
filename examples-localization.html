@@ -1,0 +1,367 @@
+<meta name="kmwc:title" content="🌐 Localization">
+<meta name="kmwc:subtitle" content="Labels, the page-wide dictionary, translateCallback, accessible-name follow, locale formatting and label escaping">
+
+    <div class="card">
+        <h2>LO01 · Instance <code>labels</code></h2>
+        <p>
+            Every text the grid shows has a flat key <code>&lt;elementType&gt;.&lt;name&gt;</code>
+            (<code>labels.perPage</code>, <code>messages.noData</code>, <code>menuItems.deleteRow</code>, …).
+            <code>labels</code> on ONE element overrides keys for that grid only — a short key
+            (<code>labels.perPage</code>) or the full key (<code>web-grid.labels.itemCount</code>), as a property or the
+            JSON attribute <code>labels='{…}'</code>. Keys you don't set keep the page-wide text, then the English default.
+        </p>
+        <div class="controls">
+            <label><input type="checkbox" id="lo01-short"> short key <code>labels.perPage</code></label>
+            <label><input type="checkbox" id="lo01-full"> full key <code>web-grid.labels.itemCount</code></label>
+        </div>
+        <web-grid id="lo01-grid" enable-paging page-size="5" style="max-height: 320px;"></web-grid>
+        <div class="output mt-1"><pre id="lo01-readout"></pre></div>
+        <div class="code-block" data-kmwc-snippet data-language="js"><pre><code>grid.labels = {
+  'labels.perPage': 'rows per page',              // short key
+  'web-grid.labels.itemCount': '{count} records'  // full key — same effect
+}
+// or in HTML: &lt;web-grid labels='{"labels.perPage":"rows per page"}'&gt;
+grid.labels = null   // back to page-wide / English</code></pre></div>
+    </div>
+
+    <div class="card">
+        <h2>LO02 · Page-wide dictionary</h2>
+        <p>
+            An app loads ONE flat translation JSON and hands it to <code>window.components.locale.labels</code>; the keys are
+            the full <code>web-grid.&lt;elementType&gt;.&lt;name&gt;</code> keys, so the same dictionary can hold every
+            component's (and the app's own) texts. It translates every grid on the page at once — both grids below, and
+            the grids in the other sections too. Assigning replaces the page object and re-renders every live component.
+        </p>
+        <div class="controls">
+            <label><input type="checkbox" id="lo02-dictionary"> load the Czech dictionary</label>
+            <span class="muted">window.components.locale = <code data-page-locale>null</code></span>
+        </div>
+        <div class="grid-2">
+            <web-grid id="lo02-grid-a" enable-paging page-size="5" style="max-height: 320px;"></web-grid>
+            <web-grid id="lo02-grid-b" enable-paging page-size="5" style="max-height: 320px;"></web-grid>
+        </div>
+        <div class="output mt-1"><pre id="lo02-readout"></pre></div>
+        <div class="code-block" data-kmwc-snippet data-language="js"><pre><code>const cs = await (await fetch('/i18n/cs.json')).json()
+// cs.json:
+// {
+//   "web-grid.labels.pageInfo": "Strana {current} z {total}",
+//   "web-grid.labels.itemCount": "{count} položek",
+//   "web-grid.labels.perPage": "na stránku",
+//   "web-grid.messages.noData": "Žádné položky",
+//   "web-grid.menuItems.sortAsc": "Seřadit vzestupně",
+//   "web-grid.menuItems.sortDesc": "Seřadit sestupně",
+//   "web-grid.menuItems.clearSort": "Zrušit řazení",
+//   "web-grid.menuItems.hideColumn": "Skrýt sloupec"
+// }
+window.components.locale = { labels: cs }
+window.components.locale = null   // back to English</code></pre></div>
+    </div>
+
+    <div class="card">
+        <h2>LO03 · <code>translateCallback</code></h2>
+        <p>
+            An app with its own i18n library plugs it in as <code>translateCallback({ component, key, template, params, locale })</code>:
+            it gets the full key and returns the text, or <code>null</code> for "not mine". The grid's OWN
+            <code>translateCallback</code> is asked first; its <code>null</code> passes the key on to the page-wide
+            <code>window.components.locale.translateCallback</code>, then the dictionary / English. A key the instance
+            <code>labels</code> set is never sent to either callback — the instance text wins. Below: a tiny
+            i18next-like lookup (no real i18next). The grid's own callback knows German <code>labels.pageInfo</code> only; the page
+            one knows Czech; this grid's <code>labels</code> sets <code>labels.perPage</code>.
+            The page-wide callback is page-wide: the other grids follow it too.
+        </p>
+        <div class="controls">
+            <label><input type="checkbox" id="lo03-own" checked> the grid's own <code>translateCallback</code> (German)</label>
+            <label><input type="checkbox" id="lo03-page"> page-wide <code>translateCallback</code> (Czech)</label>
+        </div>
+        <web-grid id="lo03-grid" enable-paging page-size="5" labels='{"labels.perPage":"/ page (instance labels)"}' style="max-height: 320px;"></web-grid>
+        <div class="output mt-1"><pre id="lo03-readout"></pre></div>
+        <div class="code-block" data-kmwc-snippet data-language="js"><pre><code>// an i18next-like lookup: resources + t(key, params) with {{name}} interpolation
+const i18n = {
+  resources: {
+    cs: { 'web-grid.labels.pageInfo': 'Strana {{current}} z {{total}}', 'web-grid.labels.itemCount': '{{count}} položek', 'web-grid.labels.perPage': 'na stránku' },
+    de: { 'web-grid.labels.pageInfo': 'Seite {{current}} von {{total}}' }
+  },
+  exists: (lng, key) =&gt; key in i18n.resources[lng],
+  t: (lng, key, params) =&gt; i18n.resources[lng][key].replace(/\{\{(\w+)\}\}/g, (_, name) =&gt; params?.[name] ?? '')
+}
+// this grid only — asked first; null = not mine
+grid.translateCallback = ({ key, params }) =&gt; (i18n.exists('de', key) ? i18n.t('de', key, params) : null)
+// every component on the page
+window.components.locale = {
+  translateCallback: ({ key, params }) =&gt; (i18n.exists('cs', key) ? i18n.t('cs', key, params) : null)
+}
+grid.labels = { 'labels.perPage': '/ page (instance labels)' }   // never sent to a callback</code></pre></div>
+    </div>
+
+    <div class="card">
+        <h2>LO04 · Screen-reader name / tooltip follow</h2>
+        <p>
+            The pager buttons show glyphs (<code>buttons.firstPage</code> = ⏮) and name themselves through
+            <code>ariaLabels.firstPage</code> ("First page"). Translate only the visible caption and the
+            <code>ariaLabels.x</code> / <code>tooltips.x</code> nobody set follows it — a page that translates what it
+            sees never leaves an English screen-reader name behind. An <code>ariaLabels.x</code> you set yourself wins.
+            The accessible names below are read from the buttons' <code>aria-label</code> in the shadow root.
+        </p>
+        <div class="controls">
+            <label><input type="checkbox" id="lo04-captions"> translate the visible captions (<code>buttons.*Page</code>)</label>
+            <label><input type="checkbox" id="lo04-explicit"> set <code>ariaLabels.nextPage</code> explicitly</label>
+        </div>
+        <web-grid id="lo04-grid" enable-paging page-size="5" pagination-layout="first|previous|page-info|next|last" style="max-height: 320px;"></web-grid>
+        <div class="output mt-1"><div class="output-label">pager buttons: text → accessible name</div><pre id="lo04-readout"></pre></div>
+        <div class="code-block" data-kmwc-snippet data-language="js"><pre><code>grid.labels = {
+  'buttons.firstPage': '« První',
+  'buttons.previousPage': '‹ Předchozí',
+  'buttons.nextPage': 'Další ›',
+  'buttons.lastPage': 'Poslední »'
+  // ariaLabels.firstPage … nobody set → they follow: aria-label="« První", …
+}
+grid.labels = { ...grid.labels, 'ariaLabels.nextPage': 'Přejít na další stránku' }   // set = wins
+button.getAttribute('aria-label')   // read from the shadow root's pager buttons</code></pre></div>
+    </div>
+
+    <div class="card">
+        <h2>LO05 · <code>locale</code> + formatting</h2>
+        <p>
+            web-grid has no <code>locale</code> input of its own — it follows the page locale
+            (<code>window.components.locale.locale</code>), else the browser. What follows it: number values inside labels
+            (the pager's <code>{count}</code>: "1,234 items" / "1 234 items") and the date editor's month / weekday names
+            (double-click a <em>Due (editor)</em> cell). What does NOT: cell values. A number cell shows the raw value
+            (<code>String(value)</code>), a <code>date</code> column shows its <code>editorOptions.dateFormat</code> pattern
+            (<code>DD.MM.YYYY</code> here, in every locale). For locale-formatted cells, format them yourself in
+            <code>getDisplayValueCallback</code> with the resolved locale (the <em>(Intl)</em> columns).
+        </p>
+        <div class="controls"><strong class="muted">page locale</strong>
+            <label><input type="radio" name="lo05-locale" value="" checked> unset (browser)</label>
+            <label><input type="radio" name="lo05-locale" value="cs-CZ"> cs-CZ</label>
+            <label><input type="radio" name="lo05-locale" value="de-DE"> de-DE</label>
+            <label><input type="radio" name="lo05-locale" value="en-US"> en-US</label>
+        </div>
+        <web-grid id="lo05-grid" enable-paging page-size="5" style="max-height: 360px;"></web-grid>
+        <div class="output mt-1"><pre id="lo05-readout"></pre></div>
+        <div class="code-block" data-kmwc-snippet data-language="js"><pre><code>import { resolveLocale } from '@keenmate/web-components-core/locale'
+
+grid.isEditingEnabled = true
+window.components.locale = { locale: 'cs-CZ' }   // pager count "1 234 items", Czech calendar
+grid.columns = [
+  { field: 'amount', title: 'Amount (raw)' },                                     // 1234567.891 — as is
+  { field: 'amount', title: 'Amount (Intl)',
+    getDisplayValueCallback: ({ value }) =&gt; new Intl.NumberFormat(resolveLocale()).format(value) },
+  { field: 'due', title: 'Due (editor)', isEditable: true, editor: 'date', editorOptions: { dateFormat: 'DD.MM.YYYY' } },
+  { field: 'due', title: 'Due (Intl)',
+    getDisplayValueCallback: ({ value }) =&gt; new Intl.DateTimeFormat(resolveLocale(), { dateStyle: 'medium' }).format(new Date(value)) }
+]</code></pre></div>
+    </div>
+
+    <div class="card">
+        <h2>LO06 · <code>shouldEscapeLabels</code></h2>
+        <p>
+            Below, both labels carry markup: <code>messages.noData</code> = <code>Nothing &lt;b&gt;here&lt;/b&gt; yet</code>
+            and <code>labels.pageInfo</code> = <code>Page &lt;b&gt;{current}&lt;/b&gt; of {total}</code>.
+            The rule (core <code>/locale</code>): a label's template may be markup, its <code>{name}</code> values are DATA and are
+            escaped (a user name like <code>&lt;i&gt;Ann&lt;/i&gt;</code> shows its tags as text);
+            <code>window.components.security.shouldEscapeLabels</code> escapes the whole label. What web-grid does today: it
+            reads every label as text (<code>.text()</code>, never <code>.html()</code>), so the switch changes nothing here.
+            The empty-table message is escaped — the <code>&lt;b&gt;</code> shows as typed. The pager texts
+            (<code>labels.pageInfo</code>, <code>labels.itemCount</code>, <code>buttons.*Page</code>) are written as markup,
+            so the <code>&lt;b&gt;</code> renders bold in both states. The readout shows the rendered HTML.
+        </p>
+        <div class="controls">
+            <label><input type="checkbox" id="lo06-escape"> <code>window.components.security.shouldEscapeLabels</code></label>
+            <span class="muted">window.components.security = <code id="lo06-state">undefined</code></span>
+        </div>
+        <div class="grid-2">
+            <web-grid id="lo06-empty" style="max-height: 200px;"></web-grid>
+            <web-grid id="lo06-paged" enable-paging page-size="5" style="max-height: 320px;"></web-grid>
+        </div>
+        <div class="output mt-1"><pre id="lo06-readout"></pre></div>
+        <div class="code-block" data-kmwc-snippet data-language="js"><pre><code>grid.labels = {
+  'messages.noData': 'Nothing &lt;b&gt;here&lt;/b&gt; yet',          // empty-table cell: escaped
+  'labels.pageInfo': 'Page &lt;b&gt;{current}&lt;/b&gt; of {total}'    // pager: written as markup
+}
+window.components.security = { shouldEscapeLabels: true }   // affects .html() labels — web-grid uses none</code></pre></div>
+    </div>
+
+<script type="module">
+    import { resolveLocale } from '@keenmate/web-components-core/locale'
+
+    await customElements.whenDefined('web-grid')
+    const $ = (id) => document.getElementById(id)
+    const shadowOf = (grid) => grid.shadowRoot
+    /** The pager's visible texts, read from the shadow root. */
+    const pagerText = (grid) => {
+        const info = shadowOf(grid).querySelector('.wg__pagination-info')
+        const perPage = shadowOf(grid).querySelector('.wg__pagination-pagesize')
+        return [
+            `pager info  ${info ? info.textContent.replace(/\s+/g, ' ').trim() : '(none)'}`,
+            perPage ? `page size   ${[...perPage.childNodes].filter((n) => n.nodeName !== 'SELECT').map((n) => n.textContent).join(' ').replace(/\s+/g, ' ').trim()}` : null
+        ].filter(Boolean).join('\n')
+    }
+    /** Re-read a readout after the grid re-rendered. */
+    const later = (fn) => requestAnimationFrame(() => requestAnimationFrame(fn))
+
+    const cities = ['Praha', 'Brno', 'Ostrava', 'Plzeň', 'Liberec', 'Olomouc']
+    const rows = (count) => Array.from({ length: count }, (_, i) => ({ id: i + 1, city: cities[i % cities.length], orders: (i * 37) % 500 }))
+    const simpleColumns = () => [
+        { field: 'id', title: '#', width: '70px', horizontalAlign: 'right' },
+        { field: 'city', title: 'City' },
+        { field: 'orders', title: 'Orders', width: '110px', horizontalAlign: 'right' }
+    ]
+    const setup = (grid, count) => {
+        grid.columns = simpleColumns()
+        grid.items = rows(count)
+        grid.pageSizes = [5, 10, 25]
+    }
+
+    // ── the page-wide object, composed from LO02 / LO03 / LO05 ──────────────
+    const CZECH = {
+        'web-grid.labels.pageInfo': 'Strana {current} z {total}',
+        'web-grid.labels.itemCount': '{count} položek',
+        'web-grid.labels.perPage': 'na stránku',
+        'web-grid.messages.noData': 'Žádné položky',
+        'web-grid.menuItems.sortAsc': 'Seřadit vzestupně',
+        'web-grid.menuItems.sortDesc': 'Seřadit sestupně',
+        'web-grid.menuItems.clearSort': 'Zrušit řazení',
+        'web-grid.menuItems.hideColumn': 'Skrýt sloupec'
+    }
+    const i18n = {
+        resources: {
+            cs: { 'web-grid.labels.pageInfo': 'Strana {{current}} z {{total}}', 'web-grid.labels.itemCount': '{{count}} položek', 'web-grid.labels.perPage': 'na stránku' },
+            de: { 'web-grid.labels.pageInfo': 'Seite {{current}} von {{total}}' }
+        },
+        exists: (lng, key) => key in i18n.resources[lng],
+        t: (lng, key, params) => i18n.resources[lng][key].replace(/\{\{(\w+)\}\}/g, (_, name) => params?.[name] ?? '')
+    }
+    const pageTranslate = ({ key, params }) => (i18n.exists('cs', key) ? i18n.t('cs', key, params) : null)
+    const ownTranslate = ({ key, params }) => (i18n.exists('de', key) ? i18n.t('de', key, params) : null)
+
+    const pageState = { dictionary: false, pageCallback: false, locale: '' }
+    const readouts = []
+    function applyPageLocale() {
+        const next = {}
+        if (pageState.locale) next.locale = pageState.locale
+        if (pageState.dictionary) next.labels = CZECH
+        if (pageState.pageCallback) next.translateCallback = pageTranslate
+        window.components.locale = Object.keys(next).length ? next : null
+        const shown = Object.keys(next).length
+            ? `{ ${[
+                next.locale ? `locale: '${next.locale}'` : null,
+                next.labels ? 'labels: cs' : null,
+                next.translateCallback ? 'translateCallback' : null
+            ].filter(Boolean).join(', ')} }`
+            : 'null'
+        for (const el of document.querySelectorAll('[data-page-locale]')) el.textContent = shown
+        later(() => readouts.forEach((fn) => fn()))
+    }
+
+    // ── LO01 · instance labels ───────────────────────────────────────────────
+    const lo01 = $('lo01-grid')
+    setup(lo01, 23)
+    function lo01Apply() {
+        const labels = {}
+        if ($('lo01-short').checked) labels['labels.perPage'] = 'rows per page'
+        if ($('lo01-full').checked) labels['web-grid.labels.itemCount'] = '{count} records'
+        lo01.labels = Object.keys(labels).length ? labels : null
+        later(lo01Read)
+    }
+    const lo01Read = () => { $('lo01-readout').textContent = `grid.labels ${JSON.stringify(lo01.labels ?? null)}\n${pagerText(lo01)}` }
+    $('lo01-short').addEventListener('change', lo01Apply)
+    $('lo01-full').addEventListener('change', lo01Apply)
+    readouts.push(lo01Read)
+
+    // ── LO02 · page-wide dictionary ──────────────────────────────────────────
+    const lo02a = $('lo02-grid-a')
+    const lo02b = $('lo02-grid-b')
+    setup(lo02a, 17)
+    setup(lo02b, 1234)
+    const lo02Read = () => { $('lo02-readout').textContent = `grid A  ${pagerText(lo02a).replace(/\n/g, ' · ')}\ngrid B  ${pagerText(lo02b).replace(/\n/g, ' · ')}` }
+    $('lo02-dictionary').addEventListener('change', (e) => { pageState.dictionary = e.target.checked; applyPageLocale() })
+    readouts.push(lo02Read)
+
+    // ── LO03 · translateCallback ─────────────────────────────────────────────
+    const lo03 = $('lo03-grid')
+    setup(lo03, 42)
+    lo03.translateCallback = ownTranslate
+    const lo03Read = () => {
+        $('lo03-readout').textContent = `own callback ${lo03.translateCallback ? 'German' : 'null'} · page callback ${pageState.pageCallback ? 'Czech' : 'unset'}\n${pagerText(lo03)}`
+    }
+    $('lo03-own').addEventListener('change', (e) => { lo03.translateCallback = e.target.checked ? ownTranslate : null; later(lo03Read) })
+    $('lo03-page').addEventListener('change', (e) => { pageState.pageCallback = e.target.checked; applyPageLocale() })
+    readouts.push(lo03Read)
+
+    // ── LO04 · accessible-name follow ────────────────────────────────────────
+    const lo04 = $('lo04-grid')
+    setup(lo04, 30)
+    function lo04Apply() {
+        const labels = {}
+        if ($('lo04-captions').checked) Object.assign(labels, {
+            'buttons.firstPage': '« První',
+            'buttons.previousPage': '‹ Předchozí',
+            'buttons.nextPage': 'Další ›',
+            'buttons.lastPage': 'Poslední »'
+        })
+        if ($('lo04-explicit').checked) labels['ariaLabels.nextPage'] = 'Přejít na další stránku'
+        lo04.labels = Object.keys(labels).length ? labels : null
+        later(lo04Read)
+    }
+    const lo04Read = () => {
+        $('lo04-readout').textContent = [...shadowOf(lo04).querySelectorAll('.wg__pagination-btn')]
+            .map((btn) => `${btn.dataset.action.padEnd(6)} "${btn.textContent.trim()}" → aria-label "${btn.getAttribute('aria-label')}"`)
+            .join('\n')
+    }
+    $('lo04-captions').addEventListener('change', lo04Apply)
+    $('lo04-explicit').addEventListener('change', lo04Apply)
+    readouts.push(lo04Read)
+
+    // ── LO05 · locale + formatting ───────────────────────────────────────────
+    const lo05 = $('lo05-grid')
+    lo05.isEditingEnabled = true
+    lo05.columns = [
+        { field: 'id', title: '#', width: '60px', horizontalAlign: 'right', isEditable: false },
+        { field: 'amount', title: 'Amount (raw)', horizontalAlign: 'right', isEditable: false },
+        { field: 'amount', title: 'Amount (Intl)', horizontalAlign: 'right', isEditable: false,
+            getDisplayValueCallback: ({ value }) => new Intl.NumberFormat(resolveLocale()).format(value) },
+        { field: 'due', title: 'Due (editor)', isEditable: true, editor: 'date', editorOptions: { dateFormat: 'DD.MM.YYYY' } },
+        { field: 'due', title: 'Due (Intl)', isEditable: false,
+            getDisplayValueCallback: ({ value }) => new Intl.DateTimeFormat(resolveLocale(), { dateStyle: 'medium' }).format(new Date(value)) }
+    ]
+    lo05.items = Array.from({ length: 1234 }, (_, i) => ({
+        id: i + 1,
+        amount: 1234567.891 + i * 1000.5,
+        due: `2026-${String((i % 12) + 1).padStart(2, '0')}-${String((i % 27) + 1).padStart(2, '0')}`
+    }))
+    const lo05Read = () => {
+        const firstRow = shadowOf(lo05).querySelector('tbody tr')
+        const cells = firstRow ? [...firstRow.querySelectorAll('td')].map((td) => td.textContent.trim()) : []
+        $('lo05-readout').textContent = `resolveLocale()  ${resolveLocale()}\nfirst row        ${cells.join(' · ')}\n${pagerText(lo05)}`
+    }
+    for (const radio of document.querySelectorAll('input[name="lo05-locale"]')) {
+        radio.addEventListener('change', (e) => { pageState.locale = e.target.value; applyPageLocale() })
+    }
+    readouts.push(lo05Read)
+
+    // ── LO06 · shouldEscapeLabels ────────────────────────────────────────────
+    const lo06Empty = $('lo06-empty')
+    const lo06Paged = $('lo06-paged')
+    const markupLabels = { 'messages.noData': 'Nothing <b>here</b> yet', 'labels.pageInfo': 'Page <b>{current}</b> of {total}' }
+    lo06Empty.columns = simpleColumns()
+    lo06Empty.items = []
+    lo06Empty.labels = markupLabels
+    setup(lo06Paged, 12)
+    lo06Paged.labels = markupLabels
+    const lo06Read = () => {
+        const empty = shadowOf(lo06Empty).querySelector('.wg__empty')
+        const info = shadowOf(lo06Paged).querySelector('.wg__pagination-info')
+        $('lo06-state').textContent = window.components.security ? JSON.stringify(window.components.security) : 'undefined'
+        $('lo06-readout').textContent = [
+            `empty cell  ${empty ? empty.innerHTML.trim() : '(none)'}`,
+            `pager info  ${info ? info.innerHTML.replace(/\s+/g, ' ').trim() : '(none)'}`
+        ].join('\n')
+    }
+    $('lo06-escape').addEventListener('change', (e) => {
+        window.components.security = e.target.checked ? { shouldEscapeLabels: true } : null
+        later(lo06Read)
+    })
+    readouts.push(lo06Read)
+
+    later(() => readouts.forEach((fn) => fn()))
+</script>
