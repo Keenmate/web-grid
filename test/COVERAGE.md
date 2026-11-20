@@ -195,6 +195,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Table-driven attribute → property → removal → property loop over all inputs; enum inputs reject unknown values | ✓ | `inputs.spec.ts` | `inputs.html` |
 | `labels` across toolbar / header menu / pagination / shortcuts help / dropdown | ✓ | `i18n.spec.ts` | `i18n.html` |
 | Nested `labels` merge (#31 fixed), go-to-row + chevron texts (#32 fixed) | ✓ | `i18n.spec.ts` | `i18n.html` |
+| Element `translateCallback` beats the page-wide one, `null` → page hook, instance `labels` beat both, `null` re-renders, assigned before connect → first render | ✓ | `i18n.spec.ts` | `i18n.html` |
 | Logging quiet by default (`warn`), `getCategories`, `setCategoryLevel` | ✓ | `logging.spec.ts` | `logging.html` |
 | `enableLogging` / `setLogLevel` reach the categories (#33 fixed — core `/logging`) | ✓ | `logging.spec.ts` | `logging.html` |
 | Summary row (`renderSummaryCallback` ctx, `summaryPosition`, `isSummaryInline`, `summaryMetadata`, totalItems) | ✓ | `summary.spec.ts` | `summary.html` |

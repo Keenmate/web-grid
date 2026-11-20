@@ -10,6 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Added — `translateCallback` (2026-11-20)
+- `translateCallback({ component, key, template, params, locale })` — this grid's own translation hook (core
+  `createLabels`, SPEC §12.24; property-only input like the other grid callbacks): asked for every label key the
+  instance `labels` did not set, before the page-wide `window.components.locale.translateCallback`; `null` /
+  `undefined` = not mine (the page hook, then the default `{name}` formatting). One grid on a page needs no
+  `window.components` setup. A change re-renders the texts.
+
 ### Added — `renderIconCallback` (2026-11-20)
 - `renderIconCallback(name, ctx)` — this grid's own icon hook (core `renderIcon`, SPEC §12.33; property-only input
   like the other grid callbacks): asked after the built-in names (never sent to it) and before the page-wide

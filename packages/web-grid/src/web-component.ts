@@ -289,6 +289,7 @@ import {
 import { menuPresentationInputs, menuPresentationOptions } from '@keenmate/web-components-core/menu'
 import type { MenuDrawerSide, MenuHandle, MenuPresentation } from '@keenmate/web-components-core/menu'
 import { createLayer, type Layer, type LayerOptions } from '@keenmate/web-components-core/positioning'
+import type { TranslateCallback } from '@keenmate/web-components-core/locale'
 
 // Enum member lists for the input table (hoisted `as const` so the CEM
 // extractor and toEnum both read the same literal source of truth).
@@ -652,6 +653,13 @@ export interface GridElementConfig<T = unknown> {
 	 * `''` = no icon. `ctx`: `{ component, element, prefix: 'wg' }` + `item` (toolbar / row action) or `option` (dropdown).
 	 */
 	renderIconCallback: RenderIconCallback | null
+	/**
+	 * This grid's translation hook (core `createLabels`, SPEC §12.24): `({ component, key, template, params, locale })
+	 * => string | null` for every label key this grid's own `labels` did not set (`key` is the full
+	 * `web-grid.<elementType>.<name>`). Asked before the page-wide `window.components.locale.translateCallback`;
+	 * `null` / `undefined` = not mine (the page hook, then the default `{name}` formatting). A change re-renders the texts.
+	 */
+	translateCallback: TranslateCallback | null
 	/** Runs before the grid scrolls a cell / row into view on its own: `false` skips, a partial `options` replaces the defaults (synchronous). */
 	beforeScrollCallback: ((ctx: GridBeforeScrollContext<T>) => false | Partial<GridScrollOptions> | void) | null
 	/** Delay (ms) before a cell tooltip shows. Default: `200`. */
@@ -969,6 +977,9 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		// Icons (core renderIcon, SPEC §12.33): core reads `host.renderIconCallback` — the element's own hook, asked
 		// after the built-in names and before the page-wide `window.components.renderIconCallback`. A change re-renders.
 		{ configKey: 'renderIconCallback', converter: toFunction<RenderIconCallback>(), default: null, on: 'update', type: 'RenderIconCallback | null', description: "This grid's icon hook: `(name, ctx) => markup | null` for the toolbar / row-action / edit-button / dropdown-option icons. Asked after the built-in names (never sent to it) and before the page-wide `window.components.renderIconCallback`; `null` / `undefined` = not mine (the next rule decides), `''` = no icon. `ctx`: `{ component, element, prefix }` + `item` (toolbar / row action) or `option` (dropdown option)." },
+		// Labels (core createLabels, SPEC §12.24): core reads `host.translateCallback` — the element's own hook, asked
+		// for every key the instance `labels` did not set, before `window.components.locale.translateCallback`. A change re-renders.
+		{ configKey: 'translateCallback', converter: toFunction<TranslateCallback>(), default: null, on: 'update', type: 'TranslateCallback | null', description: "This grid's translation hook: `({ component, key, template, params, locale }) => string | null`, asked for every label key this grid's own `labels` did not set (`key` = the full `web-grid.<elementType>.<name>`), before the page-wide `window.components.locale.translateCallback`; `null` / `undefined` = not mine (the page hook, then the default `{name}` formatting). A change re-renders the texts." },
 		// Gate of every scroll the grid makes on its own (keyboard moves, scrollToRow, go-to-row; rulebook
 		// D-CA-5): `false` skips it, a partial `options` replaces the defaults. Element-local (not on the engine).
 		{ configKey: 'beforeScrollCallback', converter: toFunction<(ctx: GridBeforeScrollContext) => unknown>(), on: 'update', type: '((ctx: GridBeforeScrollContext) => false | Partial<GridScrollOptions> | void) | null', description: 'Runs before the grid scrolls a cell / row into view on its own (`ctx.source`: keyboard | scroll-to-row | go-to-row); `false` skips, a partial `options` replaces the defaults. Synchronous.' },
@@ -1357,6 +1368,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		if ('customStyles' in partial || 'getCustomStylesCallback' in partial) this.#customStyles?.refresh()
 		// Icons are rendered with the table / toolbar markup: a new icon hook redraws them
 		if ('renderIconCallback' in partial) this.requestUpdate()
+		// Labels are resolved into the engine's labels object: a new translate hook re-resolves + re-renders them
+		if ('translateCallback' in partial) this.engine.refreshLabels()
 		// Core createTooltip reads its delays once: a new delay restarts the tooltips
 		if ('tooltipShowDelay' in partial || 'tooltipHideDelay' in partial) this.tooltip.start(this)
 	}

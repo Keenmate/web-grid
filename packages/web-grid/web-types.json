@@ -1160,6 +1160,11 @@
                 "type": "RenderIconCallback | null"
               },
               {
+                "name": "translateCallback",
+                "description": "This grid's translation hook: `({ component, key, template, params, locale }) => string | null`, asked for every label key this grid's own `labels` did not set (`key` = the full `web-grid.<elementType>.<name>`), before the page-wide `window.components.locale.translateCallback`; `null` / `undefined` = not mine (the page hook, then the default `{name}` formatting). A change re-renders the texts.",
+                "type": "TranslateCallback | null"
+              },
+              {
                 "name": "beforeScrollCallback",
                 "description": "Runs before the grid scrolls a cell / row into view on its own (`ctx.source`: keyboard | scroll-to-row | go-to-row); `false` skips, a partial `options` replaces the defaults. Synchronous.",
                 "type": "((ctx: GridBeforeScrollContext) => false | Partial<GridScrollOptions> | void) | null"

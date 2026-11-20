@@ -571,6 +571,7 @@ Toolbar / row-action icons, the edit button (`editButtonIcon`) and the dropdown 
 | `getCustomStylesCallback` | `(ctx: GridContext) => string \| null` | `null` | Computes the instance CSS from the grid context; wins over `customStyles` |
 | `getRowClassCallback` | `(ctx: { row, rowIndex }) => string \| null` | — | Dynamic CSS class for rows |
 | `labels` | `GridLabelsInput` (partial `GridLabels`: flat `<elementType>.<name>` keys, or full `web-grid.*` keys) | — | Override UI labels for i18n (see [i18n](#i18n)) |
+| `translateCallback` | `(ctx: { component, key, template, params, locale }) => string \| null \| undefined` | `null` | This grid's label hook — asked for every key `labels` didn't set, before the page-wide `window.components.locale.translateCallback`; `null` = not mine. Property only |
 | `getValidationTooltipCallback` | `(ctx: CellContext<T> & { error }) => string \| null` | — | Custom HTML for validation error tooltip (grid-level default) |
 | `invalidCells` | `CellValidationState[]` | `[]` | External validation state for cells |
 
@@ -1475,6 +1476,14 @@ window.components.locale = {
   labels: { 'web-grid.messages.noData': 'Žádné položky', 'web-grid.menuItems.deleteRow': 'Smazat řádek' },
   translateCallback: ({ key, params }) => i18next.exists(key) ? i18next.t(key, params) : null,
 }
+```
+
+One grid needs no page setup: its own `translateCallback` property (same signature) is asked first for every key its
+`labels` didn't set, then the page-wide one; `null` / `undefined` = "not mine" (the page hook decides). Keys the
+instance `labels` set never reach either hook. Assigning it re-renders the texts.
+
+```javascript
+grid.translateCallback = ({ key, params }) => i18next.exists(key) ? i18next.t(key, params) : null
 ```
 
 ## Runtime API

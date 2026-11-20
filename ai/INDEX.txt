@@ -226,6 +226,7 @@ T
 Text overflow -> columns.txt
 Theming -> styling-theming.txt
 Toolbar -> toolbar-actions.txt
+translateCallback, window.components.locale.translateCallback (labels / i18n) -> callbacks-events.txt
 TypeScript -> typescript-types.txt
 Types -> typescript-types.txt
 

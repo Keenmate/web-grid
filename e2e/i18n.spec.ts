@@ -202,4 +202,44 @@ test.describe('page-wide labels (core /locale: window.components.locale)', () =>
 		await expect(pag(page).locator('.wg__pagination-label')).toHaveText('[web-grid.labels.perPage]')
 		await expect(pag(page).locator('.wg__pagination-info')).toContainText('3 items') // undefined → the default formatting
 	})
+
+	test("the grid's own translateCallback beats the page one; null → the page's; instance labels beat both", async ({ page }) => {
+		await page.evaluate(() => {
+			(window as any).components.locale = {
+				translateCallback: ({ key }: { key: string }) =>
+					key === 'web-grid.labels.perPage' || key === 'web-grid.buttons.nextPage' || key === 'web-grid.labels.pageInfo' ? `page:${key}` : null
+			}
+		})
+		await onGrid(page, el => {
+			el.labels = { 'buttons.nextPage': 'NEXT (mine)' }
+			el.translateCallback = ({ component, key, params }: { component: string; key: string; params: Record<string, unknown> }) =>
+				key === 'web-grid.labels.pageInfo' ? `element:${component}:${params.current}/${params.total}`
+					: key === 'web-grid.buttons.nextPage' ? 'element:next'
+						: null
+		})
+		// The element hook wins over the page hook
+		await expect(pag(page).locator('.wg__pagination-info')).toContainText('element:web-grid:1/2')
+		// The element hook says null → the page hook decides
+		await expect(pag(page).locator('.wg__pagination-label')).toHaveText('page:web-grid.labels.perPage')
+		// A key the instance labels set is never sent to a hook
+		await expect(pag(page).locator('[data-action="next"]')).toHaveText('NEXT (mine)')
+		// Neither hook answers → the English default
+		await expect(pag(page).locator('[data-action="prev"]')).toHaveText('◀')
+		// Removing the element hook re-renders: the page hook takes over
+		await onGrid(page, el => { el.translateCallback = null })
+		await expect(pag(page).locator('.wg__pagination-info')).toContainText('page:web-grid.labels.pageInfo')
+	})
+
+	test('a translateCallback assigned before the grid connects is used by the first render', async ({ page }) => {
+		const perPage = await page.evaluate(async () => {
+			const el = document.createElement('web-grid') as any
+			el.translateCallback = ({ key }: { key: string }) => (key === 'web-grid.labels.perPage' ? 'early' : null)
+			document.body.append(el)
+			await el.whenReady()
+			const text = el.engine.labels['labels.perPage']
+			el.remove()
+			return text
+		})
+		expect(perPage).toBe('early')
+	})
 })

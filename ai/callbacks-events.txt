@@ -212,6 +212,14 @@ renderLoadingCallback
   window.components.renderLoadingCallback (same signature, every Keenmate component);
   neither set -> the default <span class="wg__loader"> (--wg-loader-* tokens).
 
+translateCallback
+  Signature: (ctx: { component, key, template, params, locale }) => string | null | undefined
+  This grid's label hook (core createLabels): asked for every label key the instance labels did
+  not set (key = the full 'web-grid.<elementType>.<name>', e.g. 'web-grid.labels.pageInfo'),
+  before the page-wide window.components.locale.translateCallback; null / undefined = not mine
+  (the page hook, then the default {name} formatting). Property only; a change re-renders the texts.
+  grid.translateCallback = ({ key, params }) => i18next.exists(key) ? i18next.t(key, params) : null
+
 renderIconCallback
   Signature: (name: string, ctx: IconRenderContext) => string | null | undefined
   ctx: { component: 'web-grid', element, prefix: 'wg' } + item (toolbar / row action) or option (dropdown)
