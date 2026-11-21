@@ -6,6 +6,7 @@
 
 import { describe, it, expect, afterEach } from 'vitest'
 import './index.js'
+import { renderNumberEditor } from './modules/editing/renderers.js'
 
 const items = Array.from({ length: 1234 }, (_, i) => ({ id: i, name: `Row ${i}` }))
 const columns = [{ field: 'name', title: 'Name' }]
@@ -67,5 +68,98 @@ describe('web-grid locale input', () => {
 		;(window as any).components.locale = { locale: 'de' }
 		await mount({ locale: 'auto' })
 		expect(countText()).toBe('1.234 items')
+	})
+})
+
+// =============================================================================
+// Number columns follow the locale, Excel-style (2026-11-21): display with the
+// locale's separators + grouping (`decimalPlaces` digits), the editor opens with
+// the locale decimal separator and no grouping, typed / pasted text parses with
+// the locale, copy = the displayed text. The stored value stays a number.
+// =============================================================================
+
+describe('web-grid number columns by locale', () => {
+	const NBSP = ' '
+	const numberColumns = [{ field: 'amount', title: 'Amount', editor: 'number', editorOptions: { decimalPlaces: 2 } }]
+
+	async function mountNumbers(attrs: Record<string, string> = {}, extra: Record<string, unknown> = {}) {
+		el = document.createElement('web-grid')
+		for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+		el.columns = [{ ...numberColumns[0], ...extra }]
+		el.items = [{ id: 1, amount: 1234.5 }]
+		document.body.appendChild(el)
+		await el.whenReady()
+		await el.whenSettled()
+		return el
+	}
+	const cellText = () => el.shadowRoot.querySelector('td[data-field="amount"]')?.textContent?.trim()
+	const copyText = () => el.engine.clipboardCellText(el.engine.displayItems[0], 0, el.engine.columns[0])
+	const editorText = async () => {
+		const box = document.createElement('div')
+		box.innerHTML = renderNumberEditor(el, 0, 'amount', el.items[0].amount, el.engine.columns[0])
+		return (box.querySelector('input') as HTMLInputElement).value
+	}
+
+	it.each([
+		['en-US', '1,234.50', '1234.50'],
+		['de', '1.234,50', '1234,50'],
+		['cs', `1${NBSP}234,50`, '1234,50'],
+	])('%s: display %s, copy = display, editor opens with %s', async (locale, display, editor) => {
+		await mountNumbers({ locale })
+		expect(cellText()).toBe(display)
+		expect(copyText()).toBe(display)
+		expect(await editorText()).toBe(editor)
+	})
+
+	it.each([
+		['en-US', '1,234.5'],
+		['de', '1.234,5'],
+		['cs', '1 234,5'],
+	])('%s: typed text commits as a number (%s → 1234.5)', async (locale, typed) => {
+		await mountNumbers({ locale })
+		el.engine.startEdit(0, 'amount')
+		await el.engine.commitEdit(0, 'amount', typed)
+		await el.whenSettled()
+		expect(el.items[0].amount).toBe(1234.5)
+	})
+
+	it('invalid text stays strict (12abc → invalid, kept as typed)', async () => {
+		await mountNumbers({ locale: 'de' })
+		el.engine.startEdit(0, 'amount')
+		await el.engine.commitEdit(0, 'amount', '12abc')
+		await el.whenSettled()
+		expect(el.engine.isCellInvalid(0, 'amount')).toBe(true)
+		expect(el.items[0].amount).toBe(1234.5)
+	})
+
+	it('no decimalPlaces: the value as-is (no rounding to 3 digits)', async () => {
+		await mountNumbers({ locale: 'de' }, { editorOptions: {} })
+		el.items = [{ id: 1, amount: 1234.56789 }]
+		await el.whenSettled()
+		expect(cellText()).toBe('1.234,56789')
+	})
+
+	it('a locale change and a page-wide locale change re-render the cells', async () => {
+		await mountNumbers()
+		expect(cellText()).toBe('1,234.50')
+		el.locale = 'de'
+		await el.whenSettled()
+		expect(cellText()).toBe('1.234,50')
+		el.locale = null
+		;(window as any).components.locale = { locale: 'cs' }
+		await el.whenSettled()
+		expect(cellText()).toBe(`1${NBSP}234,50`)
+	})
+
+	it('page-wide decimalSeparator / thousandsSeparator override the locale', async () => {
+		;(window as any).components.locale = { decimalSeparator: ',', thousandsSeparator: "'" }
+		await mountNumbers({ locale: 'en-US' })
+		expect(cellText()).toBe("1'234,50")
+		expect(await editorText()).toBe('1234,50')
+	})
+
+	it('getDisplayValueCallback still wins over the locale display', async () => {
+		await mountNumbers({ locale: 'de' }, { getDisplayValueCallback: ({ value }: any) => `${value} EUR` })
+		expect(cellText()).toBe('1234.5 EUR')
 	})
 })

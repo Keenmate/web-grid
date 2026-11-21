@@ -962,6 +962,16 @@
             },
             {
               "kind": "field",
+              "name": "_numberSettingsCache",
+              "type": {
+                "text": "{ locale: string | null; page: unknown; settings: LocaleSettings } | null"
+              },
+              "privacy": "private",
+              "default": "null",
+              "description": "Resolved number settings (locale + separators), keyed by the `locale` input and the page-wide locale object."
+            },
+            {
+              "kind": "field",
               "name": "_labels",
               "type": {
                 "text": "GridLabels"
@@ -2376,7 +2386,7 @@
               "type": {
                 "text": "string | null"
               },
-              "description": "BCP-47 locale for the numbers in labels (`{count}` items, page info, …) and the date picker's month /\nweekday names; `null` = the page-wide `window.components.locale`, else the browser (core `resolveLocale`)."
+              "description": "BCP-47 locale for the numbers in labels (`{count}` items, page info, …), number columns\n(`numberSettings`) and the date picker's month / weekday names; `null` = the page-wide `window.components.locale`, else the browser (core `resolveLocale`)."
             },
             {
               "kind": "method",
@@ -2387,6 +2397,46 @@
                 }
               },
               "description": "Re-resolve after a page-wide `window.components.locale` change (the element's `localeChanged()`)."
+            },
+            {
+              "kind": "field",
+              "name": "numberSettings",
+              "type": {
+                "text": "LocaleSettings"
+              },
+              "description": "The locale settings number columns use (display, editor text, typed / pasted parse, copy): the\n`locale` input → page-wide `window.components.locale` → browser, with the page-wide\n`decimalSeparator` / `thousandsSeparator` overrides (core `getLocaleSettings`). Resolved once\nper locale state.",
+              "readonly": true
+            },
+            {
+              "kind": "method",
+              "name": "formatNumberValue",
+              "return": {
+                "type": {
+                  "text": "string"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "value",
+                  "type": {
+                    "text": "unknown"
+                  }
+                },
+                {
+                  "name": "column",
+                  "type": {
+                    "text": "Column<T>"
+                  }
+                },
+                {
+                  "name": "isGrouped",
+                  "default": "true",
+                  "type": {
+                    "text": "boolean"
+                  }
+                }
+              ],
+              "description": "A number column's value as text in the grid's locale (core `formatNumber`): `decimalPlaces`\nfixes the fraction digits, else the value's own digits. `isGrouped: false` = the editor's text\n(no thousands separators). Not a finite number → `String(value)`."
             },
             {
               "kind": "field",
@@ -3905,7 +3955,7 @@
                   "text": ""
                 }
               },
-              "description": "Copy the focused cell to the clipboard (single-cell Ctrl+C): the column's\n`getCopyValueCallback` text when set, otherwise the raw (draft-aware) value."
+              "description": "Copy the focused cell to the clipboard (single-cell Ctrl+C): the column's\n`getCopyValueCallback` text when set, otherwise the raw (draft-aware) value — a number\ncolumn's number as displayed (the grid's locale)."
             },
             {
               "kind": "method",
@@ -3930,13 +3980,13 @@
                   }
                 },
                 {
-                  "name": "field",
+                  "name": "column",
                   "type": {
-                    "text": "string"
+                    "text": "Column<T>"
                   }
                 }
               ],
-              "description": "Clipboard text for one cell: the draft-aware raw value; null → '', objects → JSON."
+              "description": "Clipboard text for one cell: the draft-aware raw value; null → '', objects → JSON; a number\ncolumn's number → its locale text (as displayed, `formatNumberValue`)."
             },
             {
               "kind": "method",
@@ -4655,7 +4705,7 @@
                   }
                 }
               ],
-              "description": "The built-in display text of a cell (`getDisplayValueCallback`, date format, the raw value)."
+              "description": "The built-in display text of a cell (`getDisplayValueCallback`, date format, number locale, the raw value)."
             },
             {
               "kind": "method",
@@ -14441,9 +14491,16 @@
               "type": {
                 "text": "string"
               }
+            },
+            {
+              "name": "settings",
+              "default": "{}",
+              "type": {
+                "text": "LocaleSettings"
+              }
             }
           ],
-          "description": "Strict number parse: trimmed, `''` → `null`, `Number()` + `isFinite`, else\n`undefined` (not a number — `'abc'`, `'12abc'`, `'Infinity'`)."
+          "description": "Strict number parse with the locale's separators (core `parseNumber`: grouping\noptional, spaces ignored): trimmed `''` → `null`, not a number → `undefined`\n(`'abc'`, `'12abc'`, `'Infinity'`). `settings` = the grid's locale settings\n(`engine.numberSettings`); `{}` = page-wide `window.components.locale` → browser."
         },
         {
           "kind": "function",
@@ -14515,9 +14572,16 @@
               "type": {
                 "text": "LabelFormat"
               }
+            },
+            {
+              "name": "numberSettings",
+              "default": "{}",
+              "type": {
+                "text": "LocaleSettings"
+              }
             }
           ],
-          "description": "A number column's value from an editor / paste / programmatic commit: text is\nparsed strictly, numbers are checked against the options; `null` / `undefined`\nstay empty. Anything else is passed through untouched."
+          "description": "A number column's value from an editor / paste / programmatic commit: text is\nparsed strictly with `numberSettings` (the grid's locale), numbers are checked against the options; `null` / `undefined`\nstay empty. Anything else is passed through untouched."
         },
         {
           "kind": "function",
@@ -14611,6 +14675,13 @@
               "default": "defaultLabelFormat",
               "type": {
                 "text": "LabelFormat"
+              }
+            },
+            {
+              "name": "numberSettings",
+              "default": "{}",
+              "type": {
+                "text": "LocaleSettings"
               }
             }
           ],
@@ -24213,7 +24284,7 @@
                 "text": "string | null"
               },
               "attribute": "locale",
-              "description": "BCP-47 locale for the numbers in labels (`{count}` items, page info, number-range errors) and the date picker's month / weekday names, or unset (the page-wide `window.components.locale`, else the browser language). UI strings are `labels`."
+              "description": "BCP-47 locale for the numbers in labels (`{count}` items, page info, number-range errors), `editor: 'number'` columns (display, editor text, typed / pasted parse, copy) and the date picker's month / weekday names, or unset (the page-wide `window.components.locale`, else the browser language). UI strings are `labels`."
             },
             {
               "kind": "field",
@@ -25454,7 +25525,7 @@
               "type": {
                 "text": "string | null"
               },
-              "description": "BCP-47 locale for the numbers in labels (`{count}` items, page info, number-range errors) and the date picker's month / weekday names, or unset (the page-wide `window.components.locale`, else the browser language). UI strings are `labels`."
+              "description": "BCP-47 locale for the numbers in labels (`{count}` items, page info, number-range errors), `editor: 'number'` columns (display, editor text, typed / pasted parse, copy) and the date picker's month / weekday names, or unset (the page-wide `window.components.locale`, else the browser language). UI strings are `labels`."
             },
             {
               "name": "custom-styles",

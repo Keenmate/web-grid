@@ -93,13 +93,14 @@ export function renderNumberEditor<T>(
 ): string {
 	const opts = column.editorOptions || {}
 	const initialQuery = ctx.engine.editingCell?.initialSearchQuery
-	// If user typed a digit to start editing, use that as initial value
-	const numValue = initialQuery !== undefined ? initialQuery : (value != null ? String(value) : '')
+	// If user typed a digit to start editing, use that as initial value; else the value in the
+	// grid's locale without grouping (`1234,50` in `de` / `cs`) — parsed back the same way on commit
+	const numValue = initialQuery !== undefined ? initialQuery : (value != null ? ctx.engine.formatNumberValue(value, column, false) : '')
 	const vAlignClass = getVerticalAlignClass(column)
 
 	// type="text" keeps caret control; min / max / step mirror the editorOptions for
 	// assistive tech and styling — the value itself is checked by engine.commitEdit
-	// (modules/editing/value-parse.ts: strict parse, decimalPlaces rounds, min / max /
+	// (modules/editing/value-parse.ts: strict locale parse, decimalPlaces rounds, min / max /
 	// allowNegative reject).
 	const min = opts.min ?? (opts.allowNegative === false ? 0 : undefined)
 	const step = opts.step ?? (opts.decimalPlaces != null ? 10 ** -opts.decimalPlaces : undefined)

@@ -51,10 +51,10 @@ test.describe('examples-localization.html', () => {
 		await expectToggleChanges(page, 'lo04-explicit', 'lo04-readout')
 		await expect(readout(page, 'lo04-readout')).toContainText('aria-label "Přejít na další stránku"')
 
-		// LO05 · page locale → pager count + Intl columns; the raw / pattern cells stay
+		// LO05 · page locale → pager count + number column + Intl column; the text / pattern cells stay
 		await page.locator('input[name="lo05-locale"][value="en-US"]').check()
 		await expect(readout(page, 'lo05-readout')).toContainText('1,234 items')
-		await expect(readout(page, 'lo05-readout')).toContainText('1234567.891')
+		await expect(readout(page, 'lo05-readout')).toContainText('1,234,567.89 · 1234567.891')
 		const enText = await readout(page, 'lo05-readout').textContent()
 		await page.locator('input[name="lo05-locale"][value="cs-CZ"]').check()
 		await expect(readout(page, 'lo05-readout')).not.toHaveText(enText ?? '')
@@ -64,6 +64,7 @@ test.describe('examples-localization.html', () => {
 		await page.locator('input[name="lo05-grid-locale"][value="de"]').check()
 		await expect(readout(page, 'lo05-readout')).toContainText('grid.locale      de')
 		await expect(readout(page, 'lo05-readout')).toContainText('1.234 items')
+		await expect(readout(page, 'lo05-readout')).toContainText('1.234.567,89 · 1234567.891')
 		await page.locator('input[name="lo05-grid-locale"][value=""]').check()
 		await expect(readout(page, 'lo05-readout')).toContainText('grid.locale      null (page)')
 

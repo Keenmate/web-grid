@@ -10,11 +10,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Changed — number columns follow the locale (2026-11-21)
+- **Visible:** `editor: 'number'` columns now show the locale's decimal separator and thousands grouping, Excel-style,
+  for the grid's effective locale (`locale` input → page-wide `window.components.locale` → browser): `1,234.50` en-US,
+  `1.234,50` de, `1 234,50` cs (value `1234.5`, `decimalPlaces: 2` — fixed digits when set, else the value's own).
+  The editor opens with the locale decimal separator and no grouping (`1234,50`; a digit typed to start editing stays
+  as typed); typed and pasted text is parsed with the locale (core `parseNumber`, grouping optional, still strict —
+  `abc` / `12abc` are invalid); copy without `getCopyValueCallback` is the shown text. Page-wide
+  `window.components.locale.decimalSeparator` / `thousandsSeparator` override the locale's. A `locale` change or a
+  page-wide locale change re-renders the cells. The stored value stays a number (sort, filter, events, form value
+  unchanged); `getDisplayValueCallback`, `renderCellCallback` and `getCopyValueCallback` still win. Text, date and
+  other columns are unchanged. To force one format, set `locale="en-US"` on the grid or `window.components.locale`.
+  `examples-localization.html` LO05 shows a number column switching with the locale toggles.
+
 ### Added — `locale` input (2026-11-21)
 - `locale` input (attribute + property): BCP-47 locale for the numbers in labels (`{count}` items, page info, the
   number-range errors — core `createLabels` `getLocale`) and the date editor's month / weekday names; unset (or
   `'auto'`) follows the page-wide `window.components.locale.locale`, else the browser (rulebook C-CA-38). A change
-  re-renders the texts. Cell values stay unformatted (`getDisplayValueCallback` with `resolveLocale(grid.locale)`).
+  re-renders the texts. Other cell values stay unformatted (`getDisplayValueCallback` with `resolveLocale(grid.locale)`);
+  number columns: see Changed above.
   `examples-localization.html` LO05 has a grid-`locale` toggle next to the page locale.
 
 ### Fixed — labels follow the core content / text escaping split (2026-11-21)

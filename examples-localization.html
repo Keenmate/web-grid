@@ -125,11 +125,14 @@ button.getAttribute('aria-label')   // read from the shadow root's pager buttons
             The grid's own <code>locale</code> input (attribute + property, BCP-47) wins; unset, it follows the page locale
             (<code>window.components.locale.locale</code>), else the browser (<code>'auto'</code> = unset). What follows it:
             number values inside labels (the pager's <code>{count}</code>: "1,234 items" / "1.234 items" / "1 234 items",
-            the number-range errors) and the date editor's month / weekday names (double-click a <em>Due (editor)</em> cell).
-            What does NOT: cell values. A number cell shows the raw value (<code>String(value)</code>), a <code>date</code>
-            column shows its <code>editorOptions.dateFormat</code> pattern (<code>DD.MM.YYYY</code> here, in every locale).
-            For locale-formatted cells, format them yourself in <code>getDisplayValueCallback</code> with
-            <code>resolveLocale(grid.locale)</code> (the <em>(Intl)</em> columns).
+            the number-range errors), the date editor's month / weekday names (double-click a <em>Due (editor)</em> cell)
+            and <code>editor: 'number'</code> columns, Excel-style: the cell shows the locale's separators + grouping
+            (<code>decimalPlaces</code> digits), the editor opens with the locale decimal separator and no grouping
+            (double-click an <em>Amount (number)</em> cell), typed / pasted text is read the same way, copy = the shown text.
+            The stored value stays a number. Other columns do not follow it: a text column shows the raw value
+            (<em>Amount (text)</em>), a <code>date</code> column shows its <code>editorOptions.dateFormat</code> pattern
+            (<code>DD.MM.YYYY</code> here, in every locale). <code>getDisplayValueCallback</code> still wins
+            (the <em>Due (Intl)</em> column formats with <code>resolveLocale(grid.locale)</code>).
         </p>
         <div class="controls"><strong class="muted">page locale</strong>
             <label><input type="radio" name="lo05-locale" value="" checked> unset (browser)</label>
@@ -150,9 +153,9 @@ grid.isEditingEnabled = true
 window.components.locale = { locale: 'cs-CZ' }   // page-wide: pager count "1 234 items", Czech calendar
 grid.locale = 'de'                                // this grid wins: "1.234 items", German calendar (null = page)
 grid.columns = [
-  { field: 'amount', title: 'Amount (raw)' },                                     // 1234567.891 — as is
-  { field: 'amount', title: 'Amount (Intl)',
-    getDisplayValueCallback: ({ value }) =&gt; new Intl.NumberFormat(resolveLocale(grid.locale)).format(value) },
+  { field: 'amount', title: 'Amount (number)', isEditable: true,                   // 1,234,567.89 / 1.234.567,89 / 1 234 567,89
+    editor: 'number', editorOptions: { decimalPlaces: 2 } },
+  { field: 'amount', title: 'Amount (text)' },                                    // 1234567.891 — as is
   { field: 'due', title: 'Due (editor)', isEditable: true, editor: 'date', editorOptions: { dateFormat: 'DD.MM.YYYY' } },
   { field: 'due', title: 'Due (Intl)',
     getDisplayValueCallback: ({ value }) =&gt; new Intl.DateTimeFormat(resolveLocale(grid.locale), { dateStyle: 'medium' }).format(new Date(value)) }
@@ -324,9 +327,9 @@ window.components.security = { shouldEscapeLabels: true }   // escapes the whole
     lo05.isEditingEnabled = true
     lo05.columns = [
         { field: 'id', title: '#', width: '60px', horizontalAlign: 'right', isEditable: false },
-        { field: 'amount', title: 'Amount (raw)', horizontalAlign: 'right', isEditable: false },
-        { field: 'amount', title: 'Amount (Intl)', horizontalAlign: 'right', isEditable: false,
-            getDisplayValueCallback: ({ value }) => new Intl.NumberFormat(resolveLocale(lo05.locale)).format(value) },
+        { field: 'amount', title: 'Amount (number)', horizontalAlign: 'right', isEditable: true,
+            editor: 'number', editorOptions: { decimalPlaces: 2 } },
+        { field: 'amount', title: 'Amount (text)', horizontalAlign: 'right', isEditable: false },
         { field: 'due', title: 'Due (editor)', isEditable: true, editor: 'date', editorOptions: { dateFormat: 'DD.MM.YYYY' } },
         { field: 'due', title: 'Due (Intl)', isEditable: false,
             getDisplayValueCallback: ({ value }) => new Intl.DateTimeFormat(resolveLocale(lo05.locale), { dateStyle: 'medium' }).format(new Date(value)) }

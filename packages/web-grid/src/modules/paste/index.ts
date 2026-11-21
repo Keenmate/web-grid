@@ -237,7 +237,7 @@ export async function executePaste<T>(
 					const mapping = headerMapping[cellIndex]
 					if (mapping) {
 						const column = grid.columns.find(c => String(c.field) === mapping.gridField)
-						pastedData[mapping.gridField] = column ? typePastedText(column, value, grid.labels, grid.labelFormat).value : value
+						pastedData[mapping.gridField] = column ? typePastedText(column, value, grid.labels, grid.labelFormat, grid.numberSettings).value : value
 					}
 				})
 			} else {
@@ -246,7 +246,7 @@ export async function executePaste<T>(
 					const colIndex = targetColIndex + cellIndex
 					if (colIndex < visualCols.length) {
 						const column = visualCols[colIndex].column
-						pastedData[String(column.field)] = typePastedText(column, value, grid.labels, grid.labelFormat).value
+						pastedData[String(column.field)] = typePastedText(column, value, grid.labels, grid.labelFormat, grid.numberSettings).value
 					}
 				})
 			}
@@ -399,7 +399,7 @@ export async function executePaste<T>(
 			// Convert the pasted text through the column's getPasteValueCallback
 			// (else the built-in typing: number / checkbox / date — an unparseable text is
 			// kept and the cell marked invalid with `parseError`)
-			const typed = typePastedText(column, value, grid.labels, grid.labelFormat)
+			const typed = typePastedText(column, value, grid.labels, grid.labelFormat, grid.numberSettings)
 			let processedValue: unknown = typed.value
 			let parseError: string | null = typed.error
 			if (column.getPasteValueCallback && rowData) {
@@ -564,7 +564,7 @@ export async function handlePasteEvent<T>(ctx: GridHost<T>, e: ClipboardEvent): 
 
 		e.preventDefault()
 
-		const typed = typePastedText(column, text, ctx.engine.labels, ctx.engine.labelFormat)
+		const typed = typePastedText(column, text, ctx.engine.labels, ctx.engine.labelFormat, ctx.engine.numberSettings)
 		let processedText: unknown = typed.value
 		let parseError: string | null = typed.error
 		if (column.getPasteValueCallback) {

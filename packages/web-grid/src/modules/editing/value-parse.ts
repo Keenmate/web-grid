@@ -1,8 +1,8 @@
 // =============================================================================
 // Typed cell values — the one place editor / pasted text becomes a value
 // =============================================================================
-// Number columns: strict parse (`Number()` + `isFinite`, trimmed; blank → null),
-// then the `editorOptions` rules (`decimalPlaces` rounds; `min` / `max` /
+// Number columns: strict, locale-aware parse (core `parseNumber` with the grid's
+// `locale` settings — `1 234,5` in `cs`, `1.234,5` in `de`; blank → null), then the `editorOptions` rules (`decimalPlaces` rounds; `min` / `max` /
 // `allowNegative: false` reject — never clamp). Checkbox / date columns: the
 // paste typing (what text means true, which date formats are accepted).
 //
@@ -10,12 +10,12 @@
 // `error` and the caller runs the normal invalid flow (the draft keeps what was
 // typed, the cell is marked invalid, `validation-error` fires).
 //
-// `parseNumberText` is the single number-parsing function — the swap point for
-// a locale-aware parse (decimal / thousand separators) later.
+// `parseNumberText` is the single number-parsing function (typed + pasted text).
 
 import type { Column, EditorOptions, GridLabels } from '../../types.js'
 import { parseFormat, parseDateInput, toISODateString } from '../datepicker/formatting.js'
 import { defaultLabelFormat, type LabelFormat } from '../../labels.js'
+import { parseNumber, type LocaleSettings } from '@keenmate/web-components-core/locale'
 
 export interface TypedValue {
 	/** The typed value — or, when `error` is set, what to keep in the draft (the typed text / number). */
@@ -27,14 +27,14 @@ export interface TypedValue {
 type ValueLabels = Pick<GridLabels, 'errors.invalidNumber' | 'errors.numberMin' | 'errors.numberMax' | 'errors.numberNegative' | 'errors.invalidBoolean' | 'errors.invalidDate'>
 
 /**
- * Strict number parse: trimmed, `''` → `null`, `Number()` + `isFinite`, else
- * `undefined` (not a number — `'abc'`, `'12abc'`, `'Infinity'`).
+ * Strict number parse with the locale's separators (core `parseNumber`: grouping
+ * optional, spaces ignored): trimmed `''` → `null`, not a number → `undefined`
+ * (`'abc'`, `'12abc'`, `'Infinity'`). `settings` = the grid's locale settings
+ * (`engine.numberSettings`); `{}` = page-wide `window.components.locale` → browser.
  */
-export function parseNumberText(text: string): number | null | undefined {
-	const trimmed = text.trim()
-	if (trimmed === '') return null
-	const n = Number(trimmed)
-	return Number.isFinite(n) ? n : undefined
+export function parseNumberText(text: string, settings: LocaleSettings = {}): number | null | undefined {
+	if (text.trim() === '') return null
+	return parseNumber(text, settings) ?? undefined
 }
 
 function roundTo(n: number, decimalPlaces: number): number {
@@ -53,16 +53,16 @@ export function checkNumber(n: number, opts: EditorOptions<any>, labels: ValueLa
 
 /**
  * A number column's value from an editor / paste / programmatic commit: text is
- * parsed strictly, numbers are checked against the options; `null` / `undefined`
+ * parsed strictly with `numberSettings` (the grid's locale), numbers are checked against the options; `null` / `undefined`
  * stay empty. Anything else is passed through untouched.
  */
-export function typeNumberValue(raw: unknown, opts: EditorOptions<any>, labels: ValueLabels, format: LabelFormat = defaultLabelFormat): TypedValue {
+export function typeNumberValue(raw: unknown, opts: EditorOptions<any>, labels: ValueLabels, format: LabelFormat = defaultLabelFormat, numberSettings: LocaleSettings = {}): TypedValue {
 	if (raw === null || raw === undefined) return { value: null, error: null }
 	if (typeof raw === 'number') {
 		return Number.isFinite(raw) ? checkNumber(raw, opts, labels, format) : { value: raw, error: labels['errors.invalidNumber'] }
 	}
 	if (typeof raw === 'string') {
-		const n = parseNumberText(raw)
+		const n = parseNumberText(raw, numberSettings)
 		if (n === null) return { value: null, error: null }
 		if (n === undefined) return { value: raw, error: labels['errors.invalidNumber'] }
 		return checkNumber(n, opts, labels, format)
@@ -115,10 +115,10 @@ export function typeDateText(text: string, opts: EditorOptions<any>, labels: Val
  * Pasted text typed for its column (when no `getPasteValueCallback` takes over):
  * number / checkbox / date columns get typed values; other editors keep the text.
  */
-export function typePastedText<T>(column: Column<T>, text: string, labels: ValueLabels, format: LabelFormat = defaultLabelFormat): TypedValue {
+export function typePastedText<T>(column: Column<T>, text: string, labels: ValueLabels, format: LabelFormat = defaultLabelFormat, numberSettings: LocaleSettings = {}): TypedValue {
 	const opts = column.editorOptions || {}
 	switch (column.editor) {
-		case 'number': return typeNumberValue(text, opts, labels, format)
+		case 'number': return typeNumberValue(text, opts, labels, format, numberSettings)
 		case 'checkbox': return typeCheckboxText(text, opts, labels)
 		case 'date': return typeDateText(text, opts, labels)
 		default: return { value: text, error: null }

@@ -3,7 +3,8 @@
 // =============================================================================
 
 import { describe, it, expect } from 'vitest'
-import { parseNumberText, typeNumberValue, typeCheckboxText, typeDateText } from './value-parse.js'
+import { parseNumberText, typeNumberValue, typeCheckboxText, typeDateText, typePastedText } from './value-parse.js'
+import '@keenmate/web-components-core/locale' // publishes window.components.locale
 
 const labels = {
 	'errors.invalidNumber': 'NaN', 'errors.numberMin': 'min {min}', 'errors.numberMax': 'max {max}', 'errors.numberNegative': 'neg',
@@ -19,6 +20,46 @@ describe('parseNumberText (strict)', () => {
 		expect(parseNumberText('abc')).toBe(undefined)
 		expect(parseNumberText('12abc')).toBe(undefined)
 		expect(parseNumberText('Infinity')).toBe(undefined)
+	})
+})
+
+describe('parseNumberText (locale)', () => {
+	it('en-US: dot decimal, comma grouping optional', () => {
+		expect(parseNumberText('1234.5', { locale: 'en-US' })).toBe(1234.5)
+		expect(parseNumberText('1,234.5', { locale: 'en-US' })).toBe(1234.5)
+	})
+
+	it('de: comma decimal, dot grouping optional', () => {
+		expect(parseNumberText('1234,5', { locale: 'de' })).toBe(1234.5)
+		expect(parseNumberText('1.234,5', { locale: 'de' })).toBe(1234.5)
+	})
+
+	it('cs: comma decimal, space grouping (plain or no-break) optional', () => {
+		expect(parseNumberText('1234,5', { locale: 'cs' })).toBe(1234.5)
+		expect(parseNumberText('1 234,5', { locale: 'cs' })).toBe(1234.5)
+		expect(parseNumberText('1 234,5', { locale: 'cs' })).toBe(1234.5)
+	})
+
+	it('stays strict in every locale', () => {
+		for (const locale of ['en-US', 'de', 'cs']) {
+			expect(parseNumberText('abc', { locale })).toBe(undefined)
+			expect(parseNumberText('12abc', { locale })).toBe(undefined)
+			expect(parseNumberText(' ', { locale })).toBe(null)
+		}
+	})
+
+	it('page-wide window.components.locale separators win over the locale ones', () => {
+		;(window as any).components.locale = { decimalSeparator: ',', thousandsSeparator: "'" }
+		try {
+			expect(parseNumberText("1'234,5", { locale: 'en-US' })).toBe(1234.5)
+		} finally {
+			;(window as any).components.locale = null
+		}
+	})
+
+	it('typeNumberValue / typePastedText parse with the given settings', () => {
+		expect(typeNumberValue('1.234,5', { decimalPlaces: 2 }, labels, undefined, { locale: 'de' })).toEqual({ value: 1234.5, error: null })
+		expect(typePastedText({ field: 'n', editor: 'number' } as any, '1 234,5', labels, undefined, { locale: 'cs' })).toEqual({ value: 1234.5, error: null })
 	})
 })
 

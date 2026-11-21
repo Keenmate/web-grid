@@ -571,7 +571,7 @@ Toolbar / row-action icons, the edit button (`editButtonIcon`) and the dropdown 
 | `getCustomStylesCallback` | `(ctx: GridContext) => string \| null` | `null` | Computes the instance CSS from the grid context; wins over `customStyles` |
 | `getRowClassCallback` | `(ctx: { row, rowIndex }) => string \| null` | — | Dynamic CSS class for rows |
 | `labels` | `GridLabelsInput` (partial `GridLabels`: flat `<elementType>.<name>` keys, or full `web-grid.*` keys) | — | Override UI labels for i18n (see [i18n](#i18n)) |
-| `locale` | `string \| null` | `null` | BCP-47 locale for the numbers in labels (`{count}` items, page info, number-range errors) and the date editor's month / weekday names; unset (or `'auto'`) = the page-wide `window.components.locale.locale`, else the browser language. UI strings are `labels`; cell values are not formatted (use `getDisplayValueCallback`). Attribute `locale` |
+| `locale` | `string \| null` | `null` | BCP-47 locale for the numbers in labels (`{count}` items, page info, number-range errors), `editor: 'number'` columns (display, editor text, typed / pasted parse, copy) and the date editor's month / weekday names; unset (or `'auto'`) = the page-wide `window.components.locale.locale`, else the browser language. UI strings are `labels`; other cell values are not formatted (use `getDisplayValueCallback`). Attribute `locale` |
 | `translateCallback` | `(ctx: { component, key, template, params, locale }) => string \| null \| undefined` | `null` | This grid's label hook — asked for every key `labels` didn't set, before the page-wide `window.components.locale.translateCallback`; `null` = not mine. Property only |
 | `getValidationTooltipCallback` | `(ctx: CellContext<T> & { error }) => string \| null` | — | Custom HTML for validation error tooltip (grid-level default) |
 | `invalidCells` | `CellValidationState[]` | `[]` | External validation state for cells |
@@ -778,7 +778,9 @@ Grid-level paste hooks: `beforePasteCallback(ctx)` runs before a multi-cell past
 | `decimalPlaces` | `number` | — | Round the value to this many decimals |
 | `allowNegative` | `boolean` | — | `false` → a negative value is invalid |
 
-The typed text is parsed strictly (`Number()` + `isFinite`, trimmed; blank → `null`): `abc` or `12abc` mark the cell invalid (`errors.invalidNumber`, "Not a number"), as do values outside `min` / `max` or a negative with `allowNegative: false` — **no clamping**; the draft keeps what was typed and `validation-error` fires. `decimalPlaces` rounds (`1.239` → `1.24`). Pasted text goes through the same parse.
+A number column follows the grid's effective `locale` (the `locale` input → page-wide `window.components.locale` → browser), Excel-style: the cell shows the locale's separators and grouping (`1,234.50` en-US, `1.234,50` de, `1 234,50` cs) with `decimalPlaces` digits when set (else the value's own digits); the editor opens with the locale decimal separator and no grouping (`1234,50`); copy (no `getCopyValueCallback`) is the shown text. Page-wide `window.components.locale.decimalSeparator` / `thousandsSeparator` override the locale's. The stored value stays a number (sort, filter, events, form value unchanged); `getDisplayValueCallback` / `renderCellCallback` / `getCopyValueCallback` still win. To force one format, set `locale="en-US"` on the grid (or `window.components.locale`).
+
+The typed text is parsed strictly with the locale's separators (core `parseNumber`; grouping optional, blank → `null`: `1234,5` and `1.234,5` in de, `1 234,5` in cs): `abc` or `12abc` mark the cell invalid (`errors.invalidNumber`, "Not a number"), as do values outside `min` / `max` or a negative with `allowNegative: false` — **no clamping**; the draft keeps what was typed and `validation-error` fires. `decimalPlaces` rounds (`1.239` → `1.24`). Pasted text goes through the same parse.
 
 ### Checkbox Options
 

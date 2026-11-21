@@ -101,7 +101,7 @@ import { bindOptionContext } from './modules/dropdown/options.js'
 import { initLogger, dataLogger, interactionLogger, perfLogger } from './logger.js'
 import { typeNumberValue } from './modules/editing/value-parse.js'
 import { GridLabelsResolver, type GridLabelKey, type LabelFormat } from './labels.js'
-import type { LabelParams } from '@keenmate/web-components-core/locale'
+import { formatNumber, getLocaleSettings, getPageLocale, type LabelParams, type LocaleSettings } from '@keenmate/web-components-core/locale'
 
 // Perf instrumentation (temporary — investigating tree-toggle slowness)
 import { perfNow, perfCount } from './perf.js'
@@ -257,6 +257,8 @@ export class GridEngine<T = unknown> {
 	// Labels/i18n (core /locale: instance → page-wide → English, see labels.ts)
 	protected _labelsResolver = new GridLabelsResolver()
 	protected _locale: string | null = null
+	/** Resolved number settings (locale + separators), keyed by the `locale` input and the page-wide locale object. */
+	private _numberSettingsCache: { locale: string | null; page: unknown; settings: LocaleSettings } | null = null
 	protected _labels: GridLabels = this._labelsResolver.resolve()
 
 	// Scroll behavior
@@ -977,8 +979,8 @@ export class GridEngine<T = unknown> {
 	}
 
 	/**
-	 * BCP-47 locale for the numbers in labels (`{count}` items, page info, …) and the date picker's month /
-	 * weekday names; `null` = the page-wide `window.components.locale`, else the browser (core `resolveLocale`).
+	 * BCP-47 locale for the numbers in labels (`{count}` items, page info, …), number columns
+	 * (`numberSettings`) and the date picker's month / weekday names; `null` = the page-wide `window.components.locale`, else the browser (core `resolveLocale`).
 	 */
 	get locale(): string | null { return this._locale }
 	set locale(value: string | null | undefined) {
@@ -991,8 +993,37 @@ export class GridEngine<T = unknown> {
 
 	/** Re-resolve after a page-wide `window.components.locale` change (the element's `localeChanged()`). */
 	refreshLabels(): void {
+		this._numberSettingsCache = null
 		this._labels = this._labelsResolver.resolve()
 		this.requestUpdate()
+	}
+
+	/**
+	 * The locale settings number columns use (display, editor text, typed / pasted parse, copy): the
+	 * `locale` input → page-wide `window.components.locale` → browser, with the page-wide
+	 * `decimalSeparator` / `thousandsSeparator` overrides (core `getLocaleSettings`). Resolved once
+	 * per locale state.
+	 */
+	get numberSettings(): LocaleSettings {
+		const page = getPageLocale()
+		const cache = this._numberSettingsCache
+		if (cache && cache.locale === this._locale && cache.page === page) return cache.settings
+		const { locale, decimalSeparator, thousandsSeparator } = getLocaleSettings({ locale: this._locale })
+		const settings = Object.freeze({ locale, decimalSeparator, thousandsSeparator })
+		this._numberSettingsCache = { locale: this._locale, page, settings }
+		return settings
+	}
+
+	/**
+	 * A number column's value as text in the grid's locale (core `formatNumber`): `decimalPlaces`
+	 * fixes the fraction digits, else the value's own digits. `isGrouped: false` = the editor's text
+	 * (no thousands separators). Not a finite number → `String(value)`.
+	 */
+	formatNumberValue(value: unknown, column: Column<T>, isGrouped: boolean = true): string {
+		if (typeof value !== 'number' || !Number.isFinite(value)) return String(value ?? '')
+		const decimalPlaces = column.editorOptions?.decimalPlaces
+		const digits = decimalPlaces != null && decimalPlaces >= 0 ? Math.min(decimalPlaces, 100) : fractionDigits(value)
+		return formatNumber(value, { ...this.numberSettings, minimumFractionDigits: digits, maximumFractionDigits: digits, shouldGroup: isGrouped })
 	}
 
 	// Scroll behavior
@@ -1367,7 +1398,7 @@ export class GridEngine<T = unknown> {
 
 			const rowCells: string[] = []
 			for (const vc of this.visualColumns) {
-				rowCells.push(this.clipboardCellText(rowData, rowIndex, String(vc.column.field)))
+				rowCells.push(this.clipboardCellText(rowData, rowIndex, vc.column))
 			}
 			rows.push(rowCells.join('\t'))
 		}
@@ -1406,7 +1437,7 @@ export class GridEngine<T = unknown> {
 			for (const colIndex of selectedColIndices) {
 				const vc = this.visualColumns[colIndex]
 				if (!vc) continue
-				rowCells.push(this.clipboardCellText(rowData, rowIndex, String(vc.column.field)))
+				rowCells.push(this.clipboardCellText(rowData, rowIndex, vc.column))
 			}
 			rows.push(rowCells.join('\t'))
 		}
@@ -2333,7 +2364,7 @@ export class GridEngine<T = unknown> {
 					continue
 				}
 
-				rowCells.push(this.clipboardCellText(rowData, row, String(column.field)))
+				rowCells.push(this.clipboardCellText(rowData, row, column))
 			}
 			rows.push(rowCells.join('\t'))
 		}
@@ -2343,7 +2374,8 @@ export class GridEngine<T = unknown> {
 
 	/**
 	 * Copy the focused cell to the clipboard (single-cell Ctrl+C): the column's
-	 * `getCopyValueCallback` text when set, otherwise the raw (draft-aware) value.
+	 * `getCopyValueCallback` text when set, otherwise the raw (draft-aware) value — a number
+	 * column's number as displayed (the grid's locale).
 	 * @returns true if copy was successful, false if no focused cell or clipboard failed
 	 */
 	async copyFocusedCellToClipboard(): Promise<boolean> {
@@ -2354,14 +2386,18 @@ export class GridEngine<T = unknown> {
 		if (!row || !column) return false
 		const text = column.getCopyValueCallback
 			? String(column.getCopyValueCallback(this.cellCtx(row, focused.rowIndex, column, focused.colIndex)) ?? '')
-			: this.clipboardCellText(row, focused.rowIndex, String(column.field))
+			: this.clipboardCellText(row, focused.rowIndex, column)
 		return this.writeClipboardText(text)
 	}
 
-	/** Clipboard text for one cell: the draft-aware raw value; null → '', objects → JSON. */
-	private clipboardCellText(row: T, rowIndex: number, field: string): string {
-		const value = this.getCellRawValue(row, rowIndex, field)
+	/**
+	 * Clipboard text for one cell: the draft-aware raw value; null → '', objects → JSON; a number
+	 * column's number → its locale text (as displayed, `formatNumberValue`).
+	 */
+	private clipboardCellText(row: T, rowIndex: number, column: Column<T>): string {
+		const value = this.getCellRawValue(row, rowIndex, String(column.field))
 		if (value == null) return ''
+		if (column.editor === 'number' && typeof value === 'number') return this.formatNumberValue(value, column)
 		if (typeof value === 'object' && !(value instanceof Date)) return JSON.stringify(value)
 		return String(value)
 	}
@@ -3034,7 +3070,7 @@ export class GridEngine<T = unknown> {
 		return this.getCellDisplayText(item, column, rowIndex)
 	}
 
-	/** The built-in display text of a cell (`getDisplayValueCallback`, date format, the raw value). */
+	/** The built-in display text of a cell (`getDisplayValueCallback`, date format, number locale, the raw value). */
 	protected getCellDisplayText(item: T, column: Column<T>, rowIndex: number): string {
 		const value = this.getCellRawValue(item, rowIndex, String(column.field))
 		if (column.getDisplayValueCallback) {
@@ -3056,6 +3092,10 @@ export class GridEngine<T = unknown> {
 				// Fall through to default string conversion
 			}
 		}
+
+		// Number columns: the grid's locale (separators + grouping, `decimalPlaces` digits).
+		// Text saved as an invalid number (typed / pasted) shows as typed.
+		if (column.editor === 'number' && typeof value === 'number') return this.formatNumberValue(value, column)
 
 		return String(value ?? "")
 	}
@@ -3246,7 +3286,7 @@ export class GridEngine<T = unknown> {
 		// keeps what was typed, validateCallback is skipped.
 		let builtInError = parseError
 		if (!builtInError && column.editor === 'number') {
-			const typed = typeNumberValue(newValue, column.editorOptions || {}, this._labels, this.labelFormat)
+			const typed = typeNumberValue(newValue, column.editorOptions || {}, this._labels, this.labelFormat, this.numberSettings)
 			newValue = typed.value
 			builtInError = typed.error
 		}
@@ -4265,3 +4305,10 @@ export class GridEngine<T = unknown> {
 }
 
 export default GridEngine
+
+/** Fraction digits a number needs to show as-is (`1.25` → 2, `1e-7` → 7, `1.5e21` → 0), at most 100. */
+function fractionDigits(n: number): number {
+	const m = /^\d+(?:\.(\d+))?(?:e([-+]\d+))?$/i.exec(String(Math.abs(n)))
+	if (!m) return 0
+	return Math.min(100, Math.max(0, (m[1]?.length ?? 0) - Number(m[2] ?? 0)))
+}
