@@ -69,6 +69,13 @@ test.describe('open / close', () => {
 			.toHaveAttribute('data-date', '2026-06-15')
 	})
 
+	test('month / weekday names follow the grid locale input', async ({ page }) => {
+		await gotoDp(page)
+		await page.locator(GRID).evaluate((el) => el.setAttribute('locale', 'de'))
+		await openPicker(page, 0, COL.iso)
+		await expect(picker(page).locator('.wg-datepicker__month-year')).toHaveText(/Juni\s+2026/)
+	})
+
 	test('Escape closes the picker without committing', async ({ page }) => {
 		await gotoDp(page)
 		await openPicker(page, 0, COL.iso)

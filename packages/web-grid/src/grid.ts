@@ -256,6 +256,7 @@ export class GridEngine<T = unknown> {
 
 	// Labels/i18n (core /locale: instance → page-wide → English, see labels.ts)
 	protected _labelsResolver = new GridLabelsResolver()
+	protected _locale: string | null = null
 	protected _labels: GridLabels = this._labelsResolver.resolve()
 
 	// Scroll behavior
@@ -973,6 +974,19 @@ export class GridEngine<T = unknown> {
 	setLabelHost(host: Element | null): void {
 		this._labelsResolver.setHost(host)
 		this._labels = this._labelsResolver.resolve()
+	}
+
+	/**
+	 * BCP-47 locale for the numbers in labels (`{count}` items, page info, …) and the date picker's month /
+	 * weekday names; `null` = the page-wide `window.components.locale`, else the browser (core `resolveLocale`).
+	 */
+	get locale(): string | null { return this._locale }
+	set locale(value: string | null | undefined) {
+		const next = value ?? null
+		if (next === this._locale) return
+		this._locale = next
+		this._labelsResolver.setLocale(next)
+		this.refreshLabels()
 	}
 
 	/** Re-resolve after a page-wide `window.components.locale` change (the element's `localeChanged()`). */

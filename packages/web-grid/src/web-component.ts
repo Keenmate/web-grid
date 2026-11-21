@@ -640,6 +640,8 @@ export interface GridElementConfig<T = unknown> {
 	fillDirection: FillDirection
 	/** UI strings (i18n) — a partial object (JSON attribute `labels`) of flat `<elementType>.<name>` keys (`messages.noData`, `buttons.nextPage`, `menuItems.deleteRow`, …; or full `web-grid.*` keys) merged per key over the page-wide `window.components.locale.labels` and the English defaults. Reads back what was assigned. */
 	labels: GridLabelsInput | undefined
+	/** BCP-47 locale for the numbers in labels (`{count}` items, page info, number-range errors) and the date picker's month / weekday names, or unset (the page-wide `window.components.locale`, else the browser language). UI strings are `labels`. */
+	locale: string | null
 	/** CSS for the grid's shadow root, after the page-wide `window.components['web-grid'].customStyles`. */
 	customStyles: string | null
 	/** Computes the instance CSS from the grid context; wins over `customStyles`. */
@@ -966,6 +968,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		// UI strings (i18n): a partial object (also a JSON attribute) merged per key over the
 		// English defaults — flat `<elementType>.<name>` keys: `messages.noData`, `buttons.nextPage`, `menuItems.*`, … (see labels.ts)
 		{ configKey: 'labels', attribute: 'labels', converter: toObject(), on: 'update', type: 'GridLabelsInput', description: 'UI strings (i18n) — a partial object (JSON attribute `labels`) of flat `<elementType>.<name>` keys (`messages.noData`, `buttons.nextPage`, `menuItems.deleteRow`, …; or full `web-grid.*` keys) merged per key over the page-wide `window.components.locale.labels` and the English defaults. Reads back what was assigned.' },
+		{ configKey: 'locale', attribute: 'locale', converter: toText({ isNullable: true }), on: 'update', description: "BCP-47 locale for the numbers in labels (`{count}` items, page info, number-range errors) and the date picker's month / weekday names, or unset (the page-wide `window.components.locale`, else the browser language). UI strings are `labels`." },
 		// Custom CSS for the shadow root (core createCustomStyles(), rulebook C-CA-15): applied after the
 		// page-wide `window.components['web-grid'].customStyles`; the callback wins over the string.
 		{ configKey: 'customStyles', attribute: 'custom-styles', converter: toText({ isNullable: true }), on: 'update', type: 'string | null', description: "CSS injected into the grid's shadow root (after the page-wide `window.components['web-grid'].customStyles`); an `@import`ed font is also linked in the document head." },

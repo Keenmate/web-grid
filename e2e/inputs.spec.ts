@@ -141,6 +141,7 @@ test.describe('every input (table-driven)', () => {
 				treeCollapsedGlyph: ['+', '+'],
 				labels: ['{"messages.noData":"Nic"}', { 'messages.noData': 'Nic' }],
 				customStyles: ['.wg { outline: 1px solid red; }', '.wg { outline: 1px solid red; }'],
+				locale: ['de', 'de'],
 				storageKey: ['inputs-spec', 'inputs-spec'],
 				overlayGroup: ['grp', 'grp'],
 				// true / false / "auto" (property null); default false — the opt-in value

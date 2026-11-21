@@ -122,13 +122,14 @@ button.getAttribute('aria-label')   // read from the shadow root's pager buttons
     <div class="card">
         <h2>LO05 · <code>locale</code> + formatting</h2>
         <p>
-            web-grid has no <code>locale</code> input of its own — it follows the page locale
-            (<code>window.components.locale.locale</code>), else the browser. What follows it: number values inside labels
-            (the pager's <code>{count}</code>: "1,234 items" / "1 234 items") and the date editor's month / weekday names
-            (double-click a <em>Due (editor)</em> cell). What does NOT: cell values. A number cell shows the raw value
-            (<code>String(value)</code>), a <code>date</code> column shows its <code>editorOptions.dateFormat</code> pattern
-            (<code>DD.MM.YYYY</code> here, in every locale). For locale-formatted cells, format them yourself in
-            <code>getDisplayValueCallback</code> with the resolved locale (the <em>(Intl)</em> columns).
+            The grid's own <code>locale</code> input (attribute + property, BCP-47) wins; unset, it follows the page locale
+            (<code>window.components.locale.locale</code>), else the browser (<code>'auto'</code> = unset). What follows it:
+            number values inside labels (the pager's <code>{count}</code>: "1,234 items" / "1.234 items" / "1 234 items",
+            the number-range errors) and the date editor's month / weekday names (double-click a <em>Due (editor)</em> cell).
+            What does NOT: cell values. A number cell shows the raw value (<code>String(value)</code>), a <code>date</code>
+            column shows its <code>editorOptions.dateFormat</code> pattern (<code>DD.MM.YYYY</code> here, in every locale).
+            For locale-formatted cells, format them yourself in <code>getDisplayValueCallback</code> with
+            <code>resolveLocale(grid.locale)</code> (the <em>(Intl)</em> columns).
         </p>
         <div class="controls"><strong class="muted">page locale</strong>
             <label><input type="radio" name="lo05-locale" value="" checked> unset (browser)</label>
@@ -136,19 +137,25 @@ button.getAttribute('aria-label')   // read from the shadow root's pager buttons
             <label><input type="radio" name="lo05-locale" value="de-DE"> de-DE</label>
             <label><input type="radio" name="lo05-locale" value="en-US"> en-US</label>
         </div>
+        <div class="controls"><strong class="muted">grid <code>locale</code></strong>
+            <label><input type="radio" name="lo05-grid-locale" value="" checked> unset (page)</label>
+            <label><input type="radio" name="lo05-grid-locale" value="de"> de</label>
+            <label><input type="radio" name="lo05-grid-locale" value="cs"> cs</label>
+        </div>
         <web-grid id="lo05-grid" enable-paging page-size="5" style="max-height: 360px;"></web-grid>
         <div class="output mt-1"><pre id="lo05-readout"></pre></div>
         <div class="code-block" data-kmwc-snippet data-language="js"><pre><code>import { resolveLocale } from '@keenmate/web-components-core/locale'
 
 grid.isEditingEnabled = true
-window.components.locale = { locale: 'cs-CZ' }   // pager count "1 234 items", Czech calendar
+window.components.locale = { locale: 'cs-CZ' }   // page-wide: pager count "1 234 items", Czech calendar
+grid.locale = 'de'                                // this grid wins: "1.234 items", German calendar (null = page)
 grid.columns = [
   { field: 'amount', title: 'Amount (raw)' },                                     // 1234567.891 — as is
   { field: 'amount', title: 'Amount (Intl)',
-    getDisplayValueCallback: ({ value }) =&gt; new Intl.NumberFormat(resolveLocale()).format(value) },
+    getDisplayValueCallback: ({ value }) =&gt; new Intl.NumberFormat(resolveLocale(grid.locale)).format(value) },
   { field: 'due', title: 'Due (editor)', isEditable: true, editor: 'date', editorOptions: { dateFormat: 'DD.MM.YYYY' } },
   { field: 'due', title: 'Due (Intl)',
-    getDisplayValueCallback: ({ value }) =&gt; new Intl.DateTimeFormat(resolveLocale(), { dateStyle: 'medium' }).format(new Date(value)) }
+    getDisplayValueCallback: ({ value }) =&gt; new Intl.DateTimeFormat(resolveLocale(grid.locale), { dateStyle: 'medium' }).format(new Date(value)) }
 ]</code></pre></div>
     </div>
 
@@ -319,10 +326,10 @@ window.components.security = { shouldEscapeLabels: true }   // escapes the whole
         { field: 'id', title: '#', width: '60px', horizontalAlign: 'right', isEditable: false },
         { field: 'amount', title: 'Amount (raw)', horizontalAlign: 'right', isEditable: false },
         { field: 'amount', title: 'Amount (Intl)', horizontalAlign: 'right', isEditable: false,
-            getDisplayValueCallback: ({ value }) => new Intl.NumberFormat(resolveLocale()).format(value) },
+            getDisplayValueCallback: ({ value }) => new Intl.NumberFormat(resolveLocale(lo05.locale)).format(value) },
         { field: 'due', title: 'Due (editor)', isEditable: true, editor: 'date', editorOptions: { dateFormat: 'DD.MM.YYYY' } },
         { field: 'due', title: 'Due (Intl)', isEditable: false,
-            getDisplayValueCallback: ({ value }) => new Intl.DateTimeFormat(resolveLocale(), { dateStyle: 'medium' }).format(new Date(value)) }
+            getDisplayValueCallback: ({ value }) => new Intl.DateTimeFormat(resolveLocale(lo05.locale), { dateStyle: 'medium' }).format(new Date(value)) }
     ]
     lo05.items = Array.from({ length: 1234 }, (_, i) => ({
         id: i + 1,
@@ -332,10 +339,17 @@ window.components.security = { shouldEscapeLabels: true }   // escapes the whole
     const lo05Read = () => {
         const firstRow = shadowOf(lo05).querySelector('tbody tr')
         const cells = firstRow ? [...firstRow.querySelectorAll('td')].map((td) => td.textContent.trim()) : []
-        $('lo05-readout').textContent = `resolveLocale()  ${resolveLocale()}\nfirst row        ${cells.join(' · ')}\n${pagerText(lo05)}`
+        $('lo05-readout').textContent = `resolveLocale()  ${resolveLocale()}\ngrid.locale      ${lo05.locale ?? 'null (page)'}\nfirst row        ${cells.join(' · ')}\n${pagerText(lo05)}`
     }
     for (const radio of document.querySelectorAll('input[name="lo05-locale"]')) {
         radio.addEventListener('change', (e) => { pageState.locale = e.target.value; applyPageLocale() })
+    }
+    for (const radio of document.querySelectorAll('input[name="lo05-grid-locale"]')) {
+        radio.addEventListener('change', async (e) => {
+            lo05.locale = e.target.value || null
+            await lo05.whenSettled()
+            lo05Read()
+        })
     }
     readouts.push(lo05Read)
 

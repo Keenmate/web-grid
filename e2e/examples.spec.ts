@@ -60,6 +60,12 @@ test.describe('examples-localization.html', () => {
 		await expect(readout(page, 'lo05-readout')).not.toHaveText(enText ?? '')
 		await expect(readout(page, 'lo05-readout')).toContainText('resolveLocale()  cs-CZ')
 		await expect(readout(page, 'lo05-readout')).toContainText('01.01.2026')
+		// the grid's own `locale` input wins over the page locale
+		await page.locator('input[name="lo05-grid-locale"][value="de"]').check()
+		await expect(readout(page, 'lo05-readout')).toContainText('grid.locale      de')
+		await expect(readout(page, 'lo05-readout')).toContainText('1.234 items')
+		await page.locator('input[name="lo05-grid-locale"][value=""]').check()
+		await expect(readout(page, 'lo05-readout')).toContainText('grid.locale      null (page)')
 
 		// LO06 · off: content labels render their markup; the switch escapes the whole label
 		await expect(readout(page, 'lo06-readout')).toContainText('Nothing <b>here</b> yet')

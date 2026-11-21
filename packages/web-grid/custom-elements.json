@@ -953,6 +953,15 @@
             },
             {
               "kind": "field",
+              "name": "_locale",
+              "type": {
+                "text": "string | null"
+              },
+              "privacy": "protected",
+              "default": "null"
+            },
+            {
+              "kind": "field",
               "name": "_labels",
               "type": {
                 "text": "GridLabels"
@@ -2310,6 +2319,31 @@
               "description": "One label with its `{name}` params, formatted (the page's `translateCallback` when the grid has a host)."
             },
             {
+              "kind": "method",
+              "name": "labelHtml",
+              "return": {
+                "type": {
+                  "text": "string"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "key",
+                  "type": {
+                    "text": "GridLabelKey"
+                  }
+                },
+                {
+                  "name": "params",
+                  "optional": true,
+                  "type": {
+                    "text": "LabelParams"
+                  }
+                }
+              ],
+              "description": "One label for innerHTML (template markup kept, `{…}` params escaped; all escaped with `shouldEscapeLabels`)."
+            },
+            {
               "kind": "field",
               "name": "labelFormat",
               "type": {
@@ -2335,6 +2369,14 @@
                 }
               ],
               "description": "The element the labels belong to (page-wide labels, `translateCallback`, logging); `null` = none."
+            },
+            {
+              "kind": "field",
+              "name": "locale",
+              "type": {
+                "text": "string | null"
+              },
+              "description": "BCP-47 locale for the numbers in labels (`{count}` items, page info, …) and the date picker's month /\nweekday names; `null` = the page-wide `window.components.locale`, else the browser (core `resolveLocale`)."
             },
             {
               "kind": "method",
@@ -6494,6 +6536,33 @@
               "default": "null"
             },
             {
+              "kind": "field",
+              "name": "#locale",
+              "privacy": "private",
+              "type": {
+                "text": "string | null"
+              },
+              "default": "null"
+            },
+            {
+              "kind": "method",
+              "name": "setLocale",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "locale",
+                  "type": {
+                    "text": "string | null | undefined"
+                  }
+                }
+              ],
+              "description": "The grid's own `locale` input (numbers in labels, `translateCallback`'s `ctx.locale`); `null` = page → browser."
+            },
+            {
               "kind": "method",
               "name": "setInput",
               "return": {
@@ -6552,6 +6621,31 @@
               ]
             },
             {
+              "kind": "method",
+              "name": "html",
+              "return": {
+                "type": {
+                  "text": "string"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "key",
+                  "type": {
+                    "text": "GridLabelKey"
+                  }
+                },
+                {
+                  "name": "params",
+                  "optional": true,
+                  "type": {
+                    "text": "LabelParams"
+                  }
+                }
+              ],
+              "description": "One label for innerHTML: template markup kept, `{…}` params escaped (all escaped with `shouldEscapeLabels`)."
+            },
+            {
               "kind": "field",
               "name": "format",
               "type": {
@@ -6569,6 +6663,24 @@
               }
             }
           ]
+        },
+        {
+          "kind": "function",
+          "name": "labelTemplateHtml",
+          "return": {
+            "type": {
+              "text": "string"
+            }
+          },
+          "parameters": [
+            {
+              "name": "template",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "description": "An already-resolved label template (no params — e.g. a column's own `labels` override) for innerHTML:\nas is, or escaped with `window.components.security.shouldEscapeLabels` — the same rule as `html()`."
         },
         {
           "kind": "function",
@@ -6611,6 +6723,14 @@
           "name": "GridLabelsResolver",
           "declaration": {
             "name": "GridLabelsResolver",
+            "module": "src/labels.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "labelTemplateHtml",
+          "declaration": {
+            "name": "labelTemplateHtml",
             "module": "src/labels.ts"
           }
         },
@@ -24087,6 +24207,16 @@
             },
             {
               "kind": "field",
+              "name": "locale",
+              "privacy": "public",
+              "type": {
+                "text": "string | null"
+              },
+              "attribute": "locale",
+              "description": "BCP-47 locale for the numbers in labels (`{count}` items, page info, number-range errors) and the date picker's month / weekday names, or unset (the page-wide `window.components.locale`, else the browser language). UI strings are `labels`."
+            },
+            {
+              "kind": "field",
               "name": "customStyles",
               "privacy": "public",
               "type": {
@@ -25317,6 +25447,14 @@
                 "text": "GridLabelsInput"
               },
               "description": "UI strings (i18n) — a partial object (JSON attribute `labels`) of flat `<elementType>.<name>` keys (`messages.noData`, `buttons.nextPage`, `menuItems.deleteRow`, …; or full `web-grid.*` keys) merged per key over the page-wide `window.components.locale.labels` and the English defaults. Reads back what was assigned."
+            },
+            {
+              "name": "locale",
+              "fieldName": "locale",
+              "type": {
+                "text": "string | null"
+              },
+              "description": "BCP-47 locale for the numbers in labels (`{count}` items, page info, number-range errors) and the date picker's month / weekday names, or unset (the page-wide `window.components.locale`, else the browser language). UI strings are `labels`."
             },
             {
               "name": "custom-styles",

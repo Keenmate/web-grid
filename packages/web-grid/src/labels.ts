@@ -139,13 +139,19 @@ export const defaultLabelFormat: LabelFormat = (_key, template, params) => forma
 export class GridLabelsResolver {
 	#input: GridLabelsInput | null | undefined = null
 	#handle: Labels<GridLabels> | null = null
+	#locale: string | null = null
+
+	/** The grid's own `locale` input (numbers in labels, `translateCallback`'s `ctx.locale`); `null` = page → browser. */
+	setLocale(locale: string | null | undefined): void {
+		this.#locale = locale ?? null
+	}
 
 	setInput(input: GridLabelsInput | null | undefined): void {
 		this.#input = input
 	}
 
 	setHost(host: Element | null): void {
-		this.#handle = host ? createLabels<GridLabels>(host, DEFAULT_LABELS, () => this.#input, { tag: TAG }) : null
+		this.#handle = host ? createLabels<GridLabels>(host, DEFAULT_LABELS, () => this.#input, { tag: TAG, getLocale: () => this.#locale }) : null
 	}
 
 	text(key: GridLabelKey, params?: LabelParams): string {

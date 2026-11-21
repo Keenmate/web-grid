@@ -10,6 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Added — `locale` input (2026-11-21)
+- `locale` input (attribute + property): BCP-47 locale for the numbers in labels (`{count}` items, page info, the
+  number-range errors — core `createLabels` `getLocale`) and the date editor's month / weekday names; unset (or
+  `'auto'`) follows the page-wide `window.components.locale.locale`, else the browser (rulebook C-CA-38). A change
+  re-renders the texts. Cell values stay unformatted (`getDisplayValueCallback` with `resolveLocale(grid.locale)`).
+  `examples-localization.html` LO05 has a grid-`locale` toggle next to the page locale.
+
 ### Fixed — labels follow the core content / text escaping split (2026-11-21)
 - A label written as CONTENT (innerHTML) now goes through core `labels.html()` (SPEC §12.24): the pager texts
   (`buttons.*Page`, `labels.pageInfo`, `labels.itemCount`, `labels.perPage`), the empty-table message

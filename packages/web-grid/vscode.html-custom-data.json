@@ -388,6 +388,11 @@
           "values": [{ "name": "GridLabelsInput" }]
         },
         {
+          "name": "locale",
+          "description": "BCP-47 locale for the numbers in labels (`{count}` items, page info, number-range errors) and the date picker's month / weekday names, or unset (the page-wide `window.components.locale`, else the browser language). UI strings are `labels`.",
+          "values": []
+        },
+        {
           "name": "custom-styles",
           "description": "CSS injected into the grid's shadow root (after the page-wide `window.components['web-grid'].customStyles`); an `@import`ed font is also linked in the document head.",
           "values": []

@@ -571,6 +571,7 @@ Toolbar / row-action icons, the edit button (`editButtonIcon`) and the dropdown 
 | `getCustomStylesCallback` | `(ctx: GridContext) => string \| null` | `null` | Computes the instance CSS from the grid context; wins over `customStyles` |
 | `getRowClassCallback` | `(ctx: { row, rowIndex }) => string \| null` | — | Dynamic CSS class for rows |
 | `labels` | `GridLabelsInput` (partial `GridLabels`: flat `<elementType>.<name>` keys, or full `web-grid.*` keys) | — | Override UI labels for i18n (see [i18n](#i18n)) |
+| `locale` | `string \| null` | `null` | BCP-47 locale for the numbers in labels (`{count}` items, page info, number-range errors) and the date editor's month / weekday names; unset (or `'auto'`) = the page-wide `window.components.locale.locale`, else the browser language. UI strings are `labels`; cell values are not formatted (use `getDisplayValueCallback`). Attribute `locale` |
 | `translateCallback` | `(ctx: { component, key, template, params, locale }) => string \| null \| undefined` | `null` | This grid's label hook — asked for every key `labels` didn't set, before the page-wide `window.components.locale.translateCallback`; `null` = not mine. Property only |
 | `getValidationTooltipCallback` | `(ctx: CellContext<T> & { error }) => string \| null` | — | Custom HTML for validation error tooltip (grid-level default) |
 | `invalidCells` | `CellValidationState[]` | `[]` | External validation state for cells |
@@ -1477,6 +1478,10 @@ window.components.locale = {
   translateCallback: ({ key, params }) => i18next.exists(key) ? i18next.t(key, params) : null,
 }
 ```
+
+One grid can use another locale than the page: its `locale` input (attribute `locale="de"` or `grid.locale = 'de'`)
+wins over `window.components.locale.locale` for this grid's label numbers ("1.234 items") and its date editor; unset
+(`null`, or `'auto'`) follows the page, else the browser. A change re-renders the texts.
 
 One grid needs no page setup: its own `translateCallback` property (same signature) is asked first for every key its
 `labels` didn't set, then the page-wide one; `null` / `undefined` = "not mine" (the page hook decides). Keys the

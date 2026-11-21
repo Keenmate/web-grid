@@ -386,6 +386,11 @@
               "value": { "type": "GridLabelsInput" }
             },
             {
+              "name": "locale",
+              "description": "BCP-47 locale for the numbers in labels (`{count}` items, page info, number-range errors) and the date picker's month / weekday names, or unset (the page-wide `window.components.locale`, else the browser language). UI strings are `labels`.",
+              "value": { "type": "string | null" }
+            },
+            {
               "name": "custom-styles",
               "description": "CSS injected into the grid's shadow root (after the page-wide `window.components['web-grid'].customStyles`); an `@import`ed font is also linked in the document head.",
               "value": { "type": "string | null" }
@@ -1138,6 +1143,11 @@
                 "name": "labels",
                 "description": "UI strings (i18n) — a partial object (JSON attribute `labels`) of flat `<elementType>.<name>` keys (`messages.noData`, `buttons.nextPage`, `menuItems.deleteRow`, …; or full `web-grid.*` keys) merged per key over the page-wide `window.components.locale.labels` and the English defaults. Reads back what was assigned.",
                 "type": "GridLabelsInput"
+              },
+              {
+                "name": "locale",
+                "description": "BCP-47 locale for the numbers in labels (`{count}` items, page info, number-range errors) and the date picker's month / weekday names, or unset (the page-wide `window.components.locale`, else the browser language). UI strings are `labels`.",
+                "type": "string | null"
               },
               {
                 "name": "customStyles",
