@@ -995,6 +995,16 @@ export class GridEngine<T = unknown> {
 		this.refreshLabels()
 	}
 
+	/**
+	 * Redraw every icon the table holds (edit buttons, inline row actions, tree chevrons, a
+	 * consumer's cell renders) after an icon hook changed: the cached chevron renders are
+	 * re-run, the rest re-renders with the table (selection, active cell, editor, scroll kept).
+	 */
+	refreshIcons(): void {
+		this._treeChevronCache = new WeakMap()
+		this.requestUpdate()
+	}
+
 	/** Re-resolve after a page-wide `window.components.locale` change (the element's `localeChanged()`). */
 	refreshLabels(): void {
 		this._numberSettingsCache = null

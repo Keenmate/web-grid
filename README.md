@@ -533,6 +533,10 @@ Toolbar / row-action icons, the edit button (`editButtonIcon`) and the dropdown 
 `edit`, `settings`, … the `--base-icon-*` glyphs; reserved, never sent to a hook) → this grid's `renderIconCallback`
 → the page-wide `window.components.renderIconCallback` → icon-font classes (`'fa-solid fa-folder'` →
 `<i class="wg__icon fa-solid fa-folder">`) → anything else (an emoji) as text.
+Changing `window.components.renderIconCallback` later repaints the icons (in place — the active cell, selection, an
+open editor / dropdown / row toolbar and the scroll stay). Icon-font classes render inside the grid's shadow root, so
+the font's CSS must reach it: pass it through `customStyles` (or the page-wide
+`window.components['web-grid'].customStyles`) — page CSS alone does not style it.
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|

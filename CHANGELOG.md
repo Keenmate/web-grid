@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Added — icons repaint when the page-wide icon hook changes (2026-11-22)
+- Changing `window.components.renderIconCallback` after the grid rendered repaints its icons in place (core
+  `iconsChanged()`, C-CA-40): edit buttons, inline row actions, a cached `renderChevronCallback` render, the open
+  row toolbar and the open dropdown's options — the active cell, selection, open editor / dropdown / toolbar and
+  scroll stay. A new element `renderIconCallback` now repaints the open toolbar / dropdown the same way.
+
 ### Added — `parseNumberCallback` (2026-11-21)
 - `parseNumberCallback` input (property): this grid's own number reader for `editor: 'number'` columns, typed and
   pasted text — `({ text, locale, decimalSeparator, thousandsSeparator, parseDefault }) => number | null | undefined`;

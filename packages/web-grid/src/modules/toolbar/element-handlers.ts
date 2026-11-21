@@ -409,6 +409,28 @@ function setActiveToolbarCell<T>(ctx: GridHost<T>, cell: Omit<CellContext<T>, 'c
 const toolbarEntries = new WeakMap<object, GridToolbarEntry<any>[]>()
 
 /**
+ * The page-wide icon hook changed (the element's `iconsChanged()`): redraw the icons of the
+ * open floating toolbar in place — same buttons, same position, the toolbar stays open.
+ */
+export function repaintOpenToolbarIcons<T>(ctx: GridHost<T>): void {
+	const active = getActiveToolbar(ctx)
+	const buttons = getActiveToolbarButtons<T>(ctx)
+	if (!active || !buttons) return
+	const replaced: Element[] = []
+	buttons.forEach((b, i) => {
+		const el = active.toolbar.querySelector(`.wg__toolbar-btn[data-wg-index="${i}"]`)
+		if (!el) return
+		if (ctx.tooltip.toolbarTarget === el) hideToolbarTooltip(ctx)
+		const temp = document.createElement('div')
+		temp.innerHTML = renderToolbarButton(b, i, 'wg__toolbar-btn', ctx.shadow.host)
+		const fresh = temp.firstElementChild!
+		el.replaceWith(fresh)
+		replaced.push(fresh)
+	})
+	if (replaced.length) setupToolbarTooltips(ctx, buttons, replaced)
+}
+
+/**
  * Re-resolve the open toolbar against the row's current position (a move changes the
  * built-ins' defaults: move-up / move-down at an edge) and patch the buttons whose
  * state changed in place — the rest (and the button under the pointer) stay put.

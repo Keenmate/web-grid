@@ -739,6 +739,7 @@ export {
 	setupToolbarTooltips,
 	showToolbarForRow,
 	closeToolbarAndReset,
+	repaintOpenToolbarIcons,
 	updateToolbarWithCellItems,
 	handleToolbarItemClick,
 	handleInlineActionClick

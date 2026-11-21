@@ -1,4 +1,4 @@
-import { test, expect, type Page, gridLocator, cell, waitForRows } from './fixtures'
+import { test, expect, type Page, gridLocator, cell, waitForRows, openToolbarOn } from './fixtures'
 
 /**
  * Icons through core renderIcon (SPEC §12.33) with the grid as host: the element's own
@@ -84,5 +84,79 @@ test.describe('edit button icon', () => {
 			return grid.renderIconCallback === before
 		})
 		expect(kept).toBe(true)
+	})
+})
+
+/**
+ * Changing the page-wide `window.components.renderIconCallback` after the grid rendered repaints
+ * its icons in place (core `iconsChanged()`, C-CA-40) — the table, the open dropdown, the open
+ * row toolbar, a cached chevron render — keeping the active cell / selection / open panels.
+ */
+test.describe('page-wide icon hook changed later → repaint in place', () => {
+	const setPageHook = (page: Page, names: string[]) => page.evaluate((names) => {
+		window.components.renderIconCallback = (name: string) => names.includes(name) ? '<b data-test-icon>x</b>' : null
+	}, names)
+
+	test.afterEach(async ({ page }) => {
+		await page.evaluate(() => { window.components.renderIconCallback = null })
+	})
+
+	test('edit button repaints; the active cell stays', async ({ page }) => {
+		const btn = cell(page, 1, 0).locator('.wg__edit-button')
+		// the element hook would answer 'mine-edit' itself: drop it so the page hook decides
+		await page.evaluate(() => {
+			(document.querySelector('web-grid') as unknown as { renderIconCallback: unknown }).renderIconCallback = null
+		})
+		await expect(btn.locator('i.wg__icon.mine-edit')).toHaveCount(1)
+		await cell(page, 1, 1).click()
+		await page.keyboard.press('Escape')
+		await expect(cell(page, 1, 1)).toHaveClass(/wg__cell--focused/)
+		await setPageHook(page, ['mine-edit'])
+		await expect(btn.locator('b[data-test-icon]')).toHaveCount(1)
+		await expect(cell(page, 1, 1)).toHaveClass(/wg__cell--focused/)
+	})
+
+	test('open dropdown repaints its option icons, stays open and still selects', async ({ page }) => {
+		await cell(page, 0, 1).click()
+		await expect(dropdown(page)).toBeVisible()
+		await expect(optionIcon(page, 'Font').locator('i.wg__icon')).toHaveCount(1)
+		await setPageHook(page, ['fa-solid fa-star'])
+		await expect(optionIcon(page, 'Font').locator('b[data-test-icon]')).toHaveCount(1)
+		await expect(dropdown(page)).toBeVisible()
+		await expect(dropdown(page).locator('.wg__dropdown-option')).toHaveCount(7)
+		await dropdown(page).locator('.wg__dropdown-option', { hasText: 'Font' }).click()
+		await expect(dropdown(page)).toHaveCount(0)
+		await expect(cell(page, 0, 1)).toContainText('Font')
+	})
+
+	test('open row toolbar repaints in place (stays open)', async ({ page }) => {
+		await page.evaluate(() => {
+			const grid = document.querySelector('web-grid') as unknown as { rowToolbar: unknown; isHoverable: boolean; isRowToolbarShown: boolean }
+			grid.isHoverable = true
+			grid.isRowToolbarShown = true
+			grid.rowToolbar = [{ id: 'mark', text: 'Mark', icon: 'tb-mark', onClick: () => {} }]
+		})
+		await openToolbarOn(page, gridLocator(page).locator('tr[data-row-index="0"]'))
+		const toolbar = gridLocator(page).locator('.wg__toolbar-container .wg__toolbar')
+		await expect(toolbar).toBeVisible()
+		await expect(toolbar.locator('.wg__toolbar-btn i.wg__icon.tb-mark')).toHaveCount(1)
+		await setPageHook(page, ['tb-mark'])
+		await expect(toolbar.locator('.wg__toolbar-btn b[data-test-icon]')).toHaveCount(1)
+		await expect(toolbar).toBeVisible()
+	})
+
+	test('a cached consumer chevron render that draws page icons is re-run', async ({ page }) => {
+		await page.goto('/test/display-options.html')
+		await expect(gridLocator(page, 'tree').locator('tbody tr').first()).toBeVisible()
+		await page.evaluate(() => {
+			const tree = document.getElementById('tree') as unknown as { renderChevronCallback: unknown }
+			const hook = () => (window.components as unknown as { renderIconCallback?: ((n: string) => string | null) | null }).renderIconCallback
+			tree.renderChevronCallback = ({ hasChildren }: { hasChildren: boolean }) => hasChildren ? (hook()?.('chev') ?? '<span class="plain-chev">&gt;</span>') : ''
+		})
+		const tree = gridLocator(page, 'tree')
+		await expect(tree.locator('.plain-chev').first()).toBeVisible()
+		await setPageHook(page, ['chev'])
+		await expect(tree.locator('.plain-chev')).toHaveCount(0)
+		await expect(tree.locator('b[data-test-icon]').first()).toBeVisible()
 	})
 })

@@ -75,6 +75,7 @@ import {
 	renderDropdown,
 	removeDropdown,
 	applyDropdownPresentation,
+	repaintDropdownIcons,
 	selectDropdownOption,
 	updateDropdownHighlight,
 	scrollHighlightedIntoView,
@@ -160,6 +161,7 @@ import {
 	ToolbarService,
 	removeInlineShortcuts,
 	closeToolbarAndReset,
+	repaintOpenToolbarIcons,
 	attachToolbarListeners,
 	renderConnector as renderConnectorModule,
 	type ConnectorState
@@ -1361,6 +1363,21 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		this.engine.refreshLabels()
 	}
 
+	/**
+	 * The page-wide `window.components.renderIconCallback` changed (core C-CA-40): repaint the icons
+	 * in place — the table (edit buttons, inline row actions, chevrons, cell renders), the open row
+	 * toolbar and the open dropdown's options; nothing closes, nothing rebuilds.
+	 */
+	protected override iconsChanged(): void {
+		this.#repaintIcons()
+	}
+
+	#repaintIcons(): void {
+		this.engine.refreshIcons()
+		repaintOpenToolbarIcons(this)
+		repaintDropdownIcons(this)
+	}
+
 	protected override disabledChanged(isDisabled: boolean): void {
 		this.engine.isDisabled = isDisabled
 		if (isDisabled) {
@@ -1377,8 +1394,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 			this.engine.loadPersistedState()
 		}
 		if ('customStyles' in partial || 'getCustomStylesCallback' in partial) this.#customStyles?.refresh()
-		// Icons are rendered with the table / toolbar markup: a new icon hook redraws them
-		if ('renderIconCallback' in partial) this.requestUpdate()
+		// Icons are rendered with the table / toolbar / dropdown markup: a new icon hook redraws them
+		if ('renderIconCallback' in partial) this.#repaintIcons()
 		// Labels are resolved into the engine's labels object: a new translate hook re-resolves + re-renders them
 		if ('translateCallback' in partial) this.engine.refreshLabels()
 		// Core createTooltip reads its delays once: a new delay restarts the tooltips

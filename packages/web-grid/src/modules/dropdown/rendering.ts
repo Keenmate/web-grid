@@ -171,6 +171,21 @@ export function renderDropdown<T>(
 }
 
 /**
+ * The page-wide icon hook changed (the element's `iconsChanged()`): re-fill the open dropdown's
+ * options in place — same panel / popover / sheet header, highlight, filter and scroll kept.
+ */
+export function repaintDropdownIcons<T>(ctx: GridHost<T>): void {
+	const open = ctx.shadow.querySelector('.wg__dropdown') as HTMLElement | null
+	const info = open ? panelInfos.get(open) : undefined
+	if (!open || !info) return
+	const sheet = sheets.get(open)
+	const scrollTop = open.scrollTop
+	if (sheet) while (sheet.header.nextSibling) sheet.header.nextSibling.remove()
+	fillDropdown(ctx, open, info.anchor, ctx.dropdown.options, info.opts, sheet?.header ?? null)
+	open.scrollTop = scrollTop
+}
+
+/**
  * The panel's options (or its empty / no-results / searching message): after `after` (the
  * sheet header), else as its whole content.
  */

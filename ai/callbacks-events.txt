@@ -229,6 +229,9 @@ renderIconCallback
   window.components.renderIconCallback -> icon-font classes ('fa-solid fa-star' ->
   <i class="wg__icon fa-solid fa-star">) -> anything else (emoji) as text. Returns markup, '' = no
   icon, null / undefined = not mine (the next rule decides). Property only; a change re-renders.
+  Changing window.components.renderIconCallback later repaints the icons too (in place: active
+  cell, selection, open editor / dropdown / row toolbar, scroll kept). Icon-font CSS must reach the
+  shadow root: customStyles / window.components['web-grid'].customStyles (page CSS alone doesn't).
 
 getCustomStylesCallback
   Signature: (ctx: GridContext<T>) => string | null
