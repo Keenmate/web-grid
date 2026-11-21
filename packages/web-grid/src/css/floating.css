@@ -23,20 +23,9 @@
   border-radius: var(--wg-border-radius-sm);
   box-shadow: var(--wg-tooltip-shadow);
   pointer-events: none;
-  opacity: 0;
-  transition: opacity var(--wg-transition-fast) var(--wg-easing);
 }
 
-.wg__tooltip--visible {
-  opacity: 1;
-}
-
-/* core createTooltip mounts the tooltip and marks it visible in one go: fade in from 0 */
-@starting-style {
-  .wg__tooltip--visible {
-    opacity: 0;
-  }
-}
+/* Fade in / out: core createTooltip (TOOLTIP_CSS, km-tooltip--hiding, --base-duration-fast). */
 
 .wg__tooltip-arrow {
   position: absolute;

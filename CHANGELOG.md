@@ -175,8 +175,8 @@ Target: **2.0.0-rc01** — a major: the callback, event and item API below is br
   (`.wg__tooltip`, `--visible`, `-content`, `-arrow`), `--wg-tooltip-*` variables and `tooltip-show-delay` /
   `tooltip-hide-delay`. Moving from one target to the next while a tooltip shows switches at once (no second
   show delay). Positioning: core's flip + shift (the tooltip stays on screen; no left / right fallback any more);
-  the arrow's side comes from core (the `data-placement` attribute is no longer set). Fade-in kept
-  (`@starting-style`); a hidden tooltip is removed at once (no fade-out).
+  the arrow's side comes from core, which also sets `data-placement` on the tooltip. Fade in and out are
+  core's (`createTooltip`, `--base-duration-fast`; the grid's own fade rules are gone).
 
 ### Fixed — cell focus inside another component's shadow root (2026-11-18)
 - **Fixed:** a grid placed inside another component's shadow root lost its focused cell when the focus moved to
