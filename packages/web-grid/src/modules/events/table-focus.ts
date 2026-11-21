@@ -16,7 +16,7 @@
 // to avoid spurious focus-change while the user is dragging out a range.
 
 import type { GridHost } from '../grid-context.js'
-import { handleCellFocus, ensureCellNotBehindFrozen } from '../navigation/index.js'
+import { handleCellFocus, ensureCellNotBehindFrozen, syncTabStop } from '../navigation/index.js'
 import { updateFillHandle } from '../fill-handle/index.js'
 import { isCellSelectionPending, isCellSelecting } from '../cell-selection/index.js'
 
@@ -30,6 +30,8 @@ export function handleTableFocus<T>(ctx: GridHost<T>, e: Event): void {
 		const rowIndex = parseInt(target.dataset.row || '0', 10)
 		const colIndex = parseInt(target.dataset.col || '0', 10)
 		handleCellFocus(ctx, rowIndex, colIndex)
+		// The focused cell is the tab stop (roving tabindex, navigate mode)
+		syncTabStop(ctx, target)
 		updateFillHandle(ctx)
 		// Only fire focus-change for keyboard-triggered focus (Tab, arrows).
 		// For mouse interactions, defer to click handler so focus-change fires on mouseup, not mousedown.
@@ -47,6 +49,7 @@ export function handleTableFocus<T>(ctx: GridHost<T>, e: Event): void {
 	if (target.matches('.wg__editor, .wg__combobox-input, .wg__autocomplete-input, .wg__date-input, .wg__select-trigger')) {
 		const cell = target.closest('.wg__cell') as HTMLElement
 		if (cell) {
+			syncTabStop(ctx, cell)
 			const rowIndex = parseInt(cell.dataset.row || '0', 10)
 			const colIndex = parseInt(cell.dataset.col || '0', 10)
 			const column = ctx.engine.columns[colIndex]

@@ -105,6 +105,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | `cellSelectionMode` click / disabled / shift; row + cell-range selection API | ✓ | `selection-api.spec.ts` | `selection-api.html` |
 | Arrow navigation in navigate mode | ✓ | `basic.spec.ts` | `basic.html` |
 | Home/End/PageUp/PageDown + Ctrl variants, Delete commits null, typing starts edit, Ctrl+G dialog | ✓ | `keyboard.spec.ts` | `keyboard.html` |
+| Navigate mode = ONE tab stop (roving tabindex): Tab in → active / first cell, Tab / Shift+Tab leave the grid, arrows / Home / End / PageDown / Ctrl+Home move the stop, a re-render / rows replaced / a virtual window swap keep exactly one `tabindex="0"`, an open editor keeps Tab = save + next cell | ✓ | `keyboard.spec.ts`, `virtual-keyboard.spec.ts` | `keyboard.html`, `virtual-scroll.html` |
 | A grid inside another component's shadow root keeps / restores cell focus like a top-level one (arrows, edit cancel / commit, focus on the grid container kept, re-render brings focus back to the cell, focus elsewhere in the wrapper never pulled) | ✓ | `nested-shadow.spec.ts` | `nested-shadow.html` |
 | Go-to-row Escape / Cancel keeps focus (#24 fixed) | ✓ | `keyboard.spec.ts` | `keyboard.html` |
 | Meta+G go-to-row (#3 fixed), Cmd+Delete row-delete | ✓ | `keyboard.spec.ts`, `events.spec.ts` | `keyboard.html`, `events.html` |

@@ -290,6 +290,7 @@ test.describe('Tab navigation — heterogeneous tree (#navGrid)', () => {
 		await navCell(page, 9, 4).click()
 		await expect(navCell(page, 9, 4)).toHaveClass(/wg__cell--focused/)
 
+		await page.keyboard.press('F2')  // Tab walks cells from an open editor (not editing, Tab leaves the grid)
 		await page.keyboard.press('Tab')
 
 		// Verify Sales (row 10) was not focused — focus jumps directly to Enterprise (row 11).
@@ -300,6 +301,7 @@ test.describe('Tab navigation — heterogeneous tree (#navGrid)', () => {
 	test('Shift-Tab walks backward across read-only rows the same way', async ({ page }) => {
 		// Reverse of the above: focus Enterprise (row 11) col 1 → Shift-Tab → Data Science (row 9) col 4.
 		await navCell(page, 11, 1).click()
+		await page.keyboard.press('F2')  // Tab walks cells from an open editor (not editing, Tab leaves the grid)
 		await page.keyboard.press('Shift+Tab')
 		await expect(navCell(page, 9, 4)).toHaveClass(/wg__cell--focused/)
 	})
@@ -309,6 +311,7 @@ test.describe('Tab navigation — heterogeneous tree (#navGrid)', () => {
 		// At col 1 (first editable), Shift-Tab should NOT land on col 0 (tree column);
 		// it should jump to the previous leaf row's last editable col.
 		await navCell(page, 11, 1).click()
+		await page.keyboard.press('F2')  // Tab walks cells from an open editor (not editing, Tab leaves the grid)
 		await page.keyboard.press('Shift+Tab')
 
 		await expect(navCell(page, 11, 0)).not.toHaveClass(/wg__cell--focused/)
@@ -335,6 +338,7 @@ test.describe('isRowEditable — Tab skips read-only rows (#rowGateGrid)', () =>
 		await rgCell(page, 12, 4).click()
 		await expect(rgCell(page, 12, 4)).toHaveClass(/wg__cell--focused/)
 
+		await page.keyboard.press('F2')  // Tab walks cells from an open editor (not editing, Tab leaves the grid)
 		await page.keyboard.press('Tab')
 
 		await expect(rgCell(page, 14, 1)).toHaveClass(/wg__cell--focused/)
@@ -343,6 +347,7 @@ test.describe('isRowEditable — Tab skips read-only rows (#rowGateGrid)', () =>
 
 	test('Shift-Tab from Marketing (row 14) col 1 jumps back over Channel (row 13) to SMB (row 12)', async ({ page }) => {
 		await rgCell(page, 14, 1).click()
+		await page.keyboard.press('F2')  // Tab walks cells from an open editor (not editing, Tab leaves the grid)
 		await page.keyboard.press('Shift+Tab')
 		await expect(rgCell(page, 12, 4)).toHaveClass(/wg__cell--focused/)
 	})

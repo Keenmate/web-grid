@@ -268,6 +268,18 @@ export function cellAriaAttrs<T>(ctx: GridHost<T>, rowIndex: number, visualIndex
 /**
  * Render data rows
  */
+/**
+ * A body cell's `tabindex` in navigate mode — roving tabindex (ARIA grid pattern): `0` on the
+ * tab stop (`engine.tabStopCell`, the focused / last focused cell), `-1` on every other cell
+ * (focusable by arrows / click, not by Tab). No stop yet / not rendered → navigation's
+ * syncTabStop() gives it to the first rendered cell. Outside navigate mode: none.
+ */
+function cellTabindexAttr<T>(ctx: GridHost<T>, rowIndex: number, colIndex: number): string {
+	if (!ctx.engine.isNavigateMode) return ''
+	const stop = ctx.engine.tabStopCell
+	return stop && stop.rowIndex === rowIndex && stop.colIndex === colIndex ? 'tabindex="0"' : 'tabindex="-1"'
+}
+
 export function renderDataRows<T>(ctx: GridHost<T>): string {
 	const items = ctx.engine.displayItems
 	const visualColumns = ctx.engine.visualColumns
@@ -409,8 +421,8 @@ export function renderDataRows<T>(ctx: GridHost<T>): string {
 				cumulativeOffset += columnWidths[visualIndex]
 			}
 
-			// In navigate mode, ALL cells are focusable (not just editable)
-			const tabindexAttr = ctx.engine.isNavigateMode ? 'tabindex="0"' : ''
+			// Navigate mode: every cell is focusable, ONE is the tab stop (roving tabindex)
+			const tabindexAttr = cellTabindexAttr(ctx, rowIndex, originalIndex)
 
 			// Cell tooltip: getTooltipCallback > tooltipMember > validation error
 			const tooltip = getCellTooltip(ctx, item, rowIndex, column)
@@ -655,8 +667,8 @@ export function renderDataRowsVirtual<T>(ctx: GridHost<T>, params: VirtualScroll
 				cumulativeOffset += columnWidths[visualIndex]
 			}
 
-			// In navigate mode, ALL cells are focusable (not just editable)
-			const tabindexAttr = ctx.engine.isNavigateMode ? 'tabindex="0"' : ''
+			// Navigate mode: every cell is focusable, ONE is the tab stop (roving tabindex)
+			const tabindexAttr = cellTabindexAttr(ctx, rowIndex, originalIndex)
 
 			// Cell tooltip: getTooltipCallback > tooltipMember > validation error
 			const tooltip = getCellTooltip(ctx, item, rowIndex, column)

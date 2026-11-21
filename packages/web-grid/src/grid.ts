@@ -300,6 +300,8 @@ export class GridEngine<T = unknown> {
 
 	// Navigation
 	protected _focusedCell: FocusedCell = null
+	/** The navigate-mode tab stop: the last focused cell — kept when the focus leaves the grid (roving tabindex) */
+	protected _tabStopCell: FocusedCell = null
 	protected _isCommittingFromKeyboard: boolean = false
 	protected _skipNextDropdownAutoEdit: boolean = false
 	protected _tabTraversalStartColIndex: number | null = null
@@ -3733,12 +3735,21 @@ export class GridEngine<T = unknown> {
 	}
 
 	/**
+	 * The navigate-mode tab stop (roving tabindex): the focused cell, else the last one focused —
+	 * NOT cleared when the focus leaves the grid, so Tab comes back to it. null before any focus.
+	 */
+	get tabStopCell(): FocusedCell {
+		return this._focusedCell ?? this._tabStopCell
+	}
+
+	/**
 	 * Set focus to a specific cell (state only, DOM focus handled by GridElement)
 	 * NOTE: Does NOT call requestUpdate() - GridElement handles DOM updates surgically
 	 */
 	setFocusedCell(rowIndex: number, colIndex: number): void {
 		const prev = this._focusedCell
 		const next: FocusedCell = { rowIndex, colIndex }
+		this._tabStopCell = next
 		if (prev?.rowIndex === next.rowIndex && prev?.colIndex === next.colIndex) return
 		this._focusedCell = next
 		this._onInteractionChange?.('focusedCell', { prev, current: next })

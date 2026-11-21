@@ -7,7 +7,8 @@ import { test, expect, type Page, gridLocator, cell, onGrid, domEvents, clearEve
  * digits only — GRID-1).
  *
  * Fixture: test/keyboard.html — 25 rows (id, name "Row NN", qty = id*10,
- * note "nN"); cols 0=id (read-only), 1=name, 2=qty (number), 3=note.
+ * note "nN"); cols 0=id (read-only), 1=name, 2=qty (number), 3=note; a #before /
+ * #after button around the grid (navigate mode = ONE tab stop, roving tabindex).
  */
 
 const PAGE = '/test/keyboard.html'
@@ -22,6 +23,84 @@ test.beforeEach(async ({ page }) => {
 	await page.goto(PAGE)
 	await waitForRows(page)
 	await clearEvents(page, 'keyboard')
+})
+
+/** The body cells with tabindex="0" as [row, col] (navigate mode: exactly one — the tab stop). */
+const tabStops = (page: Page) => onGrid(page, el => [...el.shadowRoot!.querySelectorAll('tbody td.wg__cell[tabindex="0"]')]
+	.map(td => [Number((td as HTMLElement).dataset.row), Number((td as HTMLElement).dataset.col)]))
+/** id of the focused light-DOM element outside the grid ('' = none / the grid). */
+const outsideFocus = (page: Page) => page.evaluate(() => document.activeElement?.id ?? '')
+
+test.describe('one tab stop (navigate mode, ARIA grid pattern)', () => {
+	test('Tab enters on the first cell when none is active; every other cell is tabindex -1', async ({ page }) => {
+		expect(await tabStops(page)).toEqual([[0, 0]])
+		expect(await onGrid(page, el => el.shadowRoot!.querySelectorAll('tbody td.wg__cell[data-col][tabindex="-1"]').length)).toBeGreaterThan(90)
+		await page.locator('#before').focus()
+		await page.keyboard.press('Tab')
+		await expect(cell(page, 0, 0)).toBeFocused()
+		expect(await focused(page)).toEqual([0, 0])
+	})
+
+	test('Tab leaves the grid, Shift+Tab comes back to the active cell, Shift+Tab again leaves backwards', async ({ page }) => {
+		await cell(page, 3, 2).click()
+		await page.keyboard.press('Tab')
+		expect(await outsideFocus(page)).toBe('after')
+		expect(await tabStops(page)).toEqual([[3, 2]])   // the stop stays on the last active cell
+		await page.keyboard.press('Shift+Tab')
+		await expect(cell(page, 3, 2)).toBeFocused()
+		expect(await focused(page)).toEqual([3, 2])
+		await page.keyboard.press('Shift+Tab')
+		expect(await outsideFocus(page)).toBe('before')
+		expect(await domEvents(page, 'row-change')).toEqual([])
+	})
+
+	test('arrows / Home / End / PageDown / Ctrl+Home move the active cell AND the tab stop', async ({ page }) => {
+		await cell(page, 3, 1).click()
+		await page.keyboard.press('ArrowDown')
+		await page.keyboard.press('ArrowRight')
+		expect(await tabStops(page)).toEqual([[4, 2]])
+		await page.keyboard.press('End')
+		expect(await tabStops(page)).toEqual([[4, 3]])
+		await page.keyboard.press('PageDown')
+		expect(await tabStops(page)).toEqual([[14, 3]])
+		await page.keyboard.press('Home')
+		expect(await tabStops(page)).toEqual([[14, 0]])
+		await page.keyboard.press('Control+Home')
+		expect(await tabStops(page)).toEqual([[0, 0]])
+		await page.keyboard.press('ArrowDown')
+		await page.keyboard.press('Tab')
+		expect(await outsideFocus(page)).toBe('after')
+		await page.keyboard.press('Shift+Tab')
+		await expect(cell(page, 1, 0)).toBeFocused()
+	})
+
+	test('a re-render keeps exactly one tab stop, on the active cell (also after focus left the grid)', async ({ page }) => {
+		await cell(page, 5, 1).click()
+		await page.keyboard.press('ArrowRight')
+		await onGrid(page, el => { el.items = [...el.items] })
+		await onGrid(page, el => el.whenSettled())
+		expect(await tabStops(page)).toEqual([[5, 2]])
+		await page.keyboard.press('Tab')
+		expect(await outsideFocus(page)).toBe('after')
+		await onGrid(page, el => { el.items = [...el.items] })
+		await onGrid(page, el => el.whenSettled())
+		expect(await tabStops(page)).toEqual([[5, 2]])
+		// rows replaced so the stop's row is gone → the first cell takes the stop
+		await onGrid(page, el => { el.items = el.items.slice(0, 3) })
+		await onGrid(page, el => el.whenSettled())
+		expect(await tabStops(page)).toEqual([[0, 0]])
+	})
+
+	test('an open editor keeps Tab = save + next editable cell (Excel), focus stays in the grid', async ({ page }) => {
+		await cell(page, 2, 1).click()
+		await page.keyboard.press('F2')
+		await editorIn(cell(page, 2, 1)).fill('Renamed')
+		await page.keyboard.press('Tab')
+		await expect(cell(page, 2, 2)).toBeFocused()
+		expect(await focused(page)).toEqual([2, 2])
+		expect(await tabStops(page)).toEqual([[2, 2]])
+		await expect(cell(page, 2, 1)).toContainText('Renamed')
+	})
 })
 
 test.describe('navigation keys', () => {

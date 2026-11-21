@@ -23,6 +23,31 @@ export function focusCellTd(cell: HTMLElement): void {
 }
 
 /**
+ * Navigate mode = ONE tab stop (ARIA grid pattern, roving tabindex): the active cell — the
+ * focused one, else the last focused (`engine.tabStopCell`) — has `tabindex="0"`, every other
+ * body cell `-1`, so Tab enters the grid on it and the next Tab leaves the grid. The renderers
+ * write the same rule into the markup; this re-applies it in the live DOM after a focus move
+ * (`cell` = the newly focused one) or a body re-render. When the stop cell isn't rendered (a
+ * virtual window, rows replaced) the first rendered data cell takes the stop, so there is
+ * always exactly one. No-op outside navigate mode (cells are not tab stops there).
+ */
+export function syncTabStop<T>(ctx: GridHost<T>, cell?: HTMLElement | null): void {
+	if (!ctx.engine.isNavigateMode) return
+	const tbody = ctx.shadow.querySelector('.wg__table > tbody') as HTMLElement | null
+	if (!tbody) return
+	let stop = cell && tbody.contains(cell) ? cell : null
+	if (!stop) {
+		const at = ctx.engine.tabStopCell
+		if (at) stop = tbody.querySelector(`td.wg__cell[data-row="${at.rowIndex}"][data-col="${at.colIndex}"]`) as HTMLElement | null
+	}
+	stop ??= tbody.querySelector('td.wg__cell[data-col]') as HTMLElement | null
+	for (const other of tbody.querySelectorAll('td.wg__cell[data-col][tabindex="0"]')) {
+		if (other !== stop) other.setAttribute('tabindex', '-1')
+	}
+	stop?.setAttribute('tabindex', '0')
+}
+
+/**
  * Focus the appropriate element within a cell.
  * In 'always' edit mode, focuses the editor input inside the cell.
  * Otherwise, focuses the cell element itself.
@@ -250,6 +275,8 @@ export function updateFocusVisual<T>(
 				}
 			}
 		}
+		// The tab stop follows the active cell (roving tabindex, navigate mode)
+		syncTabStop(ctx)
 	}
 }
 

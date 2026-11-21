@@ -11,7 +11,7 @@ Spreadsheet-like key bindings drive all navigation. Most are active in **navigat
 | Key | Action |
 |---|---|
 | **↑ / ↓ / ← / →** | Move focused cell one step in the arrow's direction |
-| **Tab / Shift + Tab** | Move to next / previous editable cell. Skips read-only cells in heterogeneous grids; auto-opens the editor on the destination cell when committing |
+| **Tab / Shift + Tab** | Leave the grid to the next / previous focusable on the page (pager, toolbar, …). Navigate mode is **one tab stop** (ARIA grid pattern): Tab enters on the active cell — the last focused one, else the first cell — and the next Tab leaves. With an editor open, Tab commits and moves (see Editing) |
 | **Home / End** | Jump to first / last cell of the current row |
 | **Ctrl + Home / End** | Jump to top-left / bottom-right of the grid |
 | **Page Up / Page Down** | Move focus one page-height of cells up / down |
@@ -25,7 +25,7 @@ Spreadsheet-like key bindings drive all navigation. Most are active in **navigat
 | **F2** | Open the editor on the focused cell |
 | **Space** | Toggle a checkbox cell; open a dropdown editor |
 | **Enter** | Commit the edit and move down |
-| **Tab** | Commit the edit and move right |
+| **Tab / Shift + Tab** | Commit the edit and move to the next / previous editable cell (Excel; skips read-only cells in heterogeneous grids) — focus stays in the grid |
 | **Escape** | Cancel the edit, restore the original value |
 | **Type any character** | Start editing the focused cell with that character as the first input (navigate mode) |
 
@@ -99,11 +99,11 @@ Interactive controls inside the grid carry their own ARIA:
 | Select / combobox editor wrapper | `role="combobox"`, `aria-haspopup="listbox"` | Announces the combobox pattern |
 | Open cell dropdown | field: `role="combobox"`, `aria-expanded`, `aria-controls`, `aria-activedescendant` (+ `aria-autocomplete="list"` on an input); panel `role="listbox"`, options `role="option"` + `aria-selected` / `aria-disabled` | Focus stays in the field; the screen reader follows the highlighted option (core `createActiveDescendant`, ARIA-only mode). The phone sheet stays a `role="dialog"` |
 | Go-to-row dialog (Ctrl+G) | `role="dialog"`, `aria-modal="true"`; the page behind is `inert` | A real modal (core `startModalSession`): Tab stays inside, Escape / Back / backdrop cancel |
-| Cells in navigate mode | `tabindex="0"` on every body cell | Every cell is focusable; Arrow keys move within the grid and Tab moves to the next editable cell (the grid handles the key) |
+| Cells in navigate mode | Roving tabindex: `tabindex="0"` on the active cell only, `tabindex="-1"` on every other body cell | The grid is ONE tab stop (ARIA grid pattern): Tab enters on the active cell, the next Tab leaves the grid; Arrow keys / Home / End / Page Up / Down / Ctrl+Home move the active cell and the tab stop with it. A re-render or a virtual-scroll window swap keeps exactly one stop (the first rendered cell when the active row isn't rendered). Header cells are not focusable; the filter-row inputs are separate widgets and stay tab stops of their own |
 
 ## Focus management
 
-- Cells in **navigate mode** receive DOM focus when navigated to (via arrow keys, click, or `focusCell()`). The host element is *not* itself focusable; focus lives at the cell level.
+- Cells in **navigate mode** receive DOM focus when navigated to (via arrow keys, click, or `focusCell()`). The host element is *not* itself focusable; focus lives at the cell level. Only the active cell is in the page's tab order (it stays the stop after the focus leaves the grid, so Shift+Tab comes back to it).
 - Cells in **click / dblclick mode** receive `tabindex="-1"` only when they are programmatically focused — the cell becomes the focus target so subsequent keyboard input lands on the right element.
 - The grid container has `tabindex="-1"` so it can receive focus programmatically (for instance after a dialog closes) without being a tab stop itself.
 - Opening an editor moves focus to the editor input. Committing or cancelling returns focus to the cell.

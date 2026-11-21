@@ -44,6 +44,8 @@ function handleOffWindowCellKey<T>(ctx: GridHost<T>, e: KeyboardEvent): boolean 
 		return true
 	}
 	if (!CELL_KEYS.has(e.key)) return false
+	// Navigate mode: Tab is the browser's (the grid is one tab stop) — no replay on the cell
+	if (e.key === 'Tab' && ctx.engine.isNavigateMode) return false
 	// Rendering the row's window refocuses the focused cell (renderVirtualRows)
 	prepareRowReveal(ctx, { rowIndex: focused.rowIndex, field: fieldAt(ctx, focused.colIndex) }, 'keyboard')
 	const cell = ctx.shadow.querySelector(`td[data-row="${focused.rowIndex}"][data-col="${focused.colIndex}"]`) as HTMLElement | null

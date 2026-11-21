@@ -5,6 +5,7 @@
 export {
 	focusCellElement,
 	focusCellTd,
+	syncTabStop,
 	ensureCellNotBehindFrozen,
 	updateFocusVisual,
 	clearEditingVisual,

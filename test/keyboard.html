@@ -9,11 +9,14 @@
 <body>
 	<h1>keyboard fixture</h1>
 	<p>Targeted by <code>e2e/keyboard.spec.ts</code>. 25 rows, navigate mode, click cell-selection,
-	row numbers; <code>rangeShortcuts</code> Ctrl+Shift+S (sum) and Ctrl+Shift+X (disabled). Events in
+	row numbers, a <code>#before</code> / <code>#after</code> button around the grid (one tab stop);
+	<code>rangeShortcuts</code> Ctrl+Shift+S (sum) and Ctrl+Shift+X (disabled). Events in
 	<code>keyboard-log</code>, shortcut calls in <code>window.__shortcuts</code>.</p>
 
+	<button type="button" id="before">before</button>
 	<web-grid id="grid" enable-editing edit-trigger="navigate" cell-selection-mode="click" show-row-numbers
 		style="max-width: 600px; max-height: 1400px;"></web-grid>
+	<button type="button" id="after">after</button>
 	<pre data-testid="keyboard-log"></pre>
 
 	<script type="module">

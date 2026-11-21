@@ -164,7 +164,7 @@ test.describe('async validateCallback: moving between cells', () => {
 		await load(page, { p: 400, q: 0 })
 		await edit(page, 1, 1, 'p')
 		await page.keyboard.press('Tab')
-		await page.keyboard.press('Shift+Tab')
+		await page.keyboard.press('ArrowLeft')  // not editing: Shift+Tab would leave the grid (one tab stop)
 		await editFocused(page, 1, 1, 'q')
 		await page.keyboard.press('Tab')
 		await settle(page)

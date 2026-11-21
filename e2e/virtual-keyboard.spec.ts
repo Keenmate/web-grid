@@ -164,3 +164,20 @@ for (const editTrigger of ['dblclick', 'navigate']) test.describe(`virtual grid 
 		expect(names).toEqual(Array.from({ length: 25 }, (_, i) => `Edited ${i}`))
 	})
 })
+
+test.describe('virtual grid (navigate) — one tab stop', () => {
+	const tabStops = (page: Page) => onGrid(page, (el: any) => [...el.shadowRoot.querySelectorAll('tbody td.wg__cell[tabindex="0"]')]
+		.map((td: HTMLElement) => [Number(td.dataset.row), Number(td.dataset.col)]), GRID)
+
+	test('a window swap keeps exactly one tab stop; the active cell takes it back when its row returns', async ({ page }) => {
+		await gotoGrid(page, 'navigate')
+		await focusCell(page, 2, 1)
+		expect(await tabStops(page)).toEqual([[2, 1]])
+		// scroll far away: the stop's row leaves the rendered window → the first rendered cell holds the stop
+		await gridLocator(page, GRID).evaluate((el: any) => { el.shadowRoot.querySelector('.wg').scrollTop = 20000 })
+		await expect.poll(async () => (await tabStops(page)).length === 1 && (await tabStops(page))[0][0] > 100).toBe(true)
+		// back to the top: the active cell is the stop again
+		await gridLocator(page, GRID).evaluate((el: any) => { el.shadowRoot.querySelector('.wg').scrollTop = 0 })
+		await expect.poll(() => tabStops(page)).toEqual([[2, 1]])
+	})
+})

@@ -286,7 +286,12 @@ export class ActionPipelineAdapter<T = unknown> {
 			return true
 		}
 
-		// Not editing (navigate mode): handle navigation and cell-edit-start keys
+		// Not editing, navigate mode: the grid is ONE tab stop (ARIA grid pattern, roving
+		// tabindex) — Tab / Shift+Tab are the browser's: they leave the grid to the next /
+		// previous focusable. (An open editor keeps Tab = commit + next cell, above.)
+		if (e.key === 'Tab' && this.ctx.engine.isNavigateMode) return false
+
+		// Not editing: handle navigation and cell-edit-start keys
 		// Navigation keys move focus between cells
 		const navKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab', 'Home', 'End', 'PageUp', 'PageDown']
 		if (navKeys.includes(e.key)) {

@@ -10,6 +10,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Changed — navigate mode is ONE tab stop (2026-11-22)
+- **Visible: Tab now leaves the grid.** Navigate mode (`editTrigger: 'navigate'`, `mode: 'excel'`) follows the ARIA
+  grid pattern (roving tabindex), like Excel: only the active cell has `tabindex="0"` (the first cell before any
+  focus), every other body cell `tabindex="-1"` (was `0` on every cell). Tab enters the grid on the active cell and
+  the next Tab / Shift+Tab leaves it to the next / previous focusable on the page (pager, toolbar, …) — it no longer
+  walks the cells. Arrow keys / Home / End / Page Up / Down / Ctrl+Home move the active cell and the tab stop; the
+  cell stays the stop after the focus leaves, so Shift+Tab comes back to it. A re-render or a virtual-scroll window
+  swap keeps exactly one stop. With an editor open Tab / Shift+Tab still save and move to the next / previous
+  editable cell. Header cells stay unfocusable; the filter-row inputs stay their own tab stops. Click / dblclick /
+  button modes are unchanged.
+
 ### Added — icons repaint when the page-wide icon hook changes (2026-11-22)
 - Changing `window.components.renderIconCallback` after the grid rendered repaints its icons in place (core
   `iconsChanged()`, C-CA-40): edit buttons, inline row actions, a cached `renderChevronCallback` render, the open
