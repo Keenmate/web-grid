@@ -1150,6 +1150,11 @@
                 "type": "string | null"
               },
               {
+                "name": "parseNumberCallback",
+                "description": "This grid's own number reader for `editor: 'number'` columns (typed + pasted text): `({ text, locale, decimalSeparator, thousandsSeparator, parseDefault }) => number | null | undefined`; `null` = not a number (the cell turns invalid), `undefined` = not mine (the page-wide `window.components.locale.parseNumberCallback`, then core's strict parse — `'1.5'` in `de` is invalid).",
+                "type": "ParseNumberCallback | null"
+              },
+              {
                 "name": "customStyles",
                 "description": "CSS injected into the grid's shadow root (after the page-wide `window.components['web-grid'].customStyles`); an `@import`ed font is also linked in the document head.",
                 "type": "string | null"

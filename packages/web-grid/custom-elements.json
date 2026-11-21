@@ -972,6 +972,15 @@
             },
             {
               "kind": "field",
+              "name": "_parseNumberCallback",
+              "type": {
+                "text": "ParseNumberCallback | null"
+              },
+              "privacy": "protected",
+              "default": "null"
+            },
+            {
+              "kind": "field",
               "name": "_labels",
               "type": {
                 "text": "GridLabels"
@@ -1574,6 +1583,16 @@
               },
               "privacy": "protected",
               "default": "null"
+            },
+            {
+              "kind": "field",
+              "name": "_hostElement",
+              "type": {
+                "text": "HTMLElement | null"
+              },
+              "privacy": "protected",
+              "default": "null",
+              "description": "The element (`attachHost`) — core's `source` for number parsing (page settings, logger); `null` standalone."
             },
             {
               "kind": "method",
@@ -2405,6 +2424,23 @@
                 "text": "LocaleSettings"
               },
               "description": "The locale settings number columns use (display, editor text, typed / pasted parse, copy): the\n`locale` input → page-wide `window.components.locale` → browser, with the page-wide\n`decimalSeparator` / `thousandsSeparator` overrides (core `getLocaleSettings`). Resolved once\nper locale state.",
+              "readonly": true
+            },
+            {
+              "kind": "field",
+              "name": "parseNumberCallback",
+              "type": {
+                "text": "ParseNumberCallback | null"
+              },
+              "description": "This grid's own number reader for `editor: 'number'` columns (typed + pasted text): `({ text, locale,\ndecimalSeparator, thousandsSeparator, parseDefault }) => number | null | undefined` — `null` = not a number,\n`undefined` = not mine (the page-wide `window.components.locale.parseNumberCallback`, then core's strict parse)."
+            },
+            {
+              "kind": "field",
+              "name": "numberParseOptions",
+              "type": {
+                "text": "NumberParseOptions"
+              },
+              "description": "What number columns parse typed / pasted text with: `numberSettings` + `parseNumberCallback` + the element as `source`.",
               "readonly": true
             },
             {
@@ -3955,7 +3991,7 @@
                   "text": ""
                 }
               },
-              "description": "Copy the focused cell to the clipboard (single-cell Ctrl+C): the column's\n`getCopyValueCallback` text when set, otherwise the raw (draft-aware) value — a number\ncolumn's number as displayed (the grid's locale)."
+              "description": "Copy the focused cell to the clipboard (single-cell Ctrl+C): the cell's clipboard text\n(`clipboardCellText` — `getCopyValueCallback`, else what the cell shows)."
             },
             {
               "kind": "method",
@@ -3984,9 +4020,16 @@
                   "type": {
                     "text": "Column<T>"
                   }
+                },
+                {
+                  "name": "colIndex",
+                  "default": "this._columns.indexOf(column)",
+                  "type": {
+                    "text": "number"
+                  }
                 }
               ],
-              "description": "Clipboard text for one cell: the draft-aware raw value; null → '', objects → JSON; a number\ncolumn's number → its locale text (as displayed, `formatNumberValue`)."
+              "description": "Clipboard text for one cell (single-cell, range, row and column copy) — what the cell SHOWS,\nlike Excel: the column's `getCopyValueCallback` when set, else its `getDisplayValueCallback`\ntext, else the draft-aware raw value (null → '', objects → JSON; a number column's number →\nits locale text, `formatNumberValue`)."
             },
             {
               "kind": "method",
@@ -14493,14 +14536,14 @@
               }
             },
             {
-              "name": "settings",
+              "name": "options",
               "default": "{}",
               "type": {
-                "text": "LocaleSettings"
+                "text": "NumberParseOptions"
               }
             }
           ],
-          "description": "Strict number parse with the locale's separators (core `parseNumber`: grouping\noptional, spaces ignored): trimmed `''` → `null`, not a number → `undefined`\n(`'abc'`, `'12abc'`, `'Infinity'`). `settings` = the grid's locale settings\n(`engine.numberSettings`); `{}` = page-wide `window.components.locale` → browser."
+          "description": "Strict number parse with the locale's separators (core `parseNumber`: grouping\noptional but only in real group positions — `'1.5'` in `de` is not a number):\ntrimmed `''` → `null`, not a number → `undefined` (`'abc'`, `'12abc'`, `'Infinity'`).\n`options` = `engine.numberParseOptions` (the grid's locale settings + `parseNumberCallback`\n+ the element as `source`); `{}` = page-wide `window.components.locale` → browser.\nThe grid's `parseNumberCallback`, then the page-wide one, answer before core."
         },
         {
           "kind": "function",
@@ -14574,14 +14617,14 @@
               }
             },
             {
-              "name": "numberSettings",
+              "name": "numberParse",
               "default": "{}",
               "type": {
-                "text": "LocaleSettings"
+                "text": "NumberParseOptions"
               }
             }
           ],
-          "description": "A number column's value from an editor / paste / programmatic commit: text is\nparsed strictly with `numberSettings` (the grid's locale), numbers are checked against the options; `null` / `undefined`\nstay empty. Anything else is passed through untouched."
+          "description": "A number column's value from an editor / paste / programmatic commit: text is\nparsed strictly with `numberParse` (`engine.numberParseOptions`), numbers are checked against the options; `null` / `undefined`\nstay empty. Anything else is passed through untouched."
         },
         {
           "kind": "function",
@@ -14678,10 +14721,10 @@
               }
             },
             {
-              "name": "numberSettings",
+              "name": "numberParse",
               "default": "{}",
               "type": {
-                "text": "LocaleSettings"
+                "text": "NumberParseOptions"
               }
             }
           ],
@@ -24285,6 +24328,16 @@
               },
               "attribute": "locale",
               "description": "BCP-47 locale for the numbers in labels (`{count}` items, page info, number-range errors), `editor: 'number'` columns (display, editor text, typed / pasted parse, copy) and the date picker's month / weekday names, or unset (the page-wide `window.components.locale`, else the browser language). UI strings are `labels`."
+            },
+            {
+              "kind": "field",
+              "name": "parseNumberCallback",
+              "privacy": "public",
+              "type": {
+                "text": "ParseNumberCallback | null"
+              },
+              "default": "null",
+              "description": "This grid's own number reader for `editor: 'number'` columns (typed + pasted text): `({ text, locale, decimalSeparator, thousandsSeparator, parseDefault }) => number | null | undefined`; `null` = not a number (the cell turns invalid), `undefined` = not mine (the page-wide `window.components.locale.parseNumberCallback`, then core's strict parse — `'1.5'` in `de` is invalid)."
             },
             {
               "kind": "field",

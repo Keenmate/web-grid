@@ -41,7 +41,7 @@ test.beforeEach(async ({ page }) => {
 test.describe('number editor', () => {
 	test('renders a numeric text input', async ({ page }) => {
 		await cell(page, 0, 1).dblclick()
-		await expect(editorIn(cell(page, 0, 1))).toHaveAttribute('inputmode', 'numeric')
+		await expect(editorIn(cell(page, 0, 1))).toHaveAttribute('inputmode', 'decimal')
 		await expect(editorIn(cell(page, 0, 1))).toHaveValue('10')
 	})
 

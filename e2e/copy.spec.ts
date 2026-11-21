@@ -6,7 +6,8 @@ import { test, expect, type Page, gridLocator, cell, header, onGrid, waitForRows
  * `copySelectedRowsToClipboard()` / `copyCellSelectionToClipboard()`.
  *
  * Fixture: test/copy.html — 3 rows × (id, name, price, note); price has a
- * getCopyValueCallback rendering "12.50 EUR"; Banana's note is null.
+ * getCopyValueCallback rendering "12.50 EUR" (single-cell, range, row and column copy);
+ * Banana's note is null.
  */
 
 // The spec never touches the real system clipboard (it is the developer's): every browser gets an
@@ -83,7 +84,7 @@ test.describe('keyboard Ctrl+C', () => {
 	test('a dragged cell range copies TSV (null → empty)', async ({ page }) => {
 		await dragSelect(page, 0, 1, 1, 3)
 		await page.keyboard.press('Control+c')
-		expect(await copied(page)).toBe('Apple\t12.5\tfresh\nBanana\t3\t')
+		expect(await copied(page)).toBe('Apple\t12.50 EUR\tfresh\nBanana\t3.00 EUR\t')
 	})
 
 	test('a dragged range with shouldCopyWithHeaders prepends the titles', async ({ page }) => {
@@ -96,14 +97,14 @@ test.describe('keyboard Ctrl+C', () => {
 	test('a selected row copies all columns as TSV; with headers prepends titles', async ({ page }) => {
 		await rowNumber(page, 2).click()
 		await page.keyboard.press('Control+c')
-		expect(await copied(page)).toBe('3\tCherry\t7.25\tripe')
+		expect(await copied(page)).toBe('3\tCherry\t7.25 EUR\tripe')
 
 		await primeClipboard(page)
 		await onGrid(page, el => { el.shouldCopyWithHeaders = true })
 		await rowNumber(page, 0).click()
 		await rowNumber(page, 1).click({ modifiers: ['Shift'] })
 		await page.keyboard.press('Control+c')
-		expect(await copied(page)).toBe('ID\tName\tPrice\tNote\n1\tApple\t12.5\tfresh\n2\tBanana\t3\t')
+		expect(await copied(page)).toBe('ID\tName\tPrice\tNote\n1\tApple\t12.50 EUR\tfresh\n2\tBanana\t3.00 EUR\t')
 	})
 
 	test('a selected column copies every row of it', async ({ page }) => {
@@ -118,12 +119,12 @@ test.describe('API', () => {
 		expect(await onGrid(page, el => el.copySelectedRowsToClipboard())).toBe(false)
 		expect(await readClipboard(page)).toBe('<sentinel>')
 		expect(await onGrid(page, async el => { el.selectRow(0); el.selectRow(2, 'toggle'); return el.copySelectedRowsToClipboard() })).toBe(true)
-		expect(await readClipboard(page)).toBe('1\tApple\t12.5\tfresh\n3\tCherry\t7.25\tripe')
+		expect(await readClipboard(page)).toBe('1\tApple\t12.50 EUR\tfresh\n3\tCherry\t7.25 EUR\tripe')
 	})
 
 	test('copySelectedRowsToClipboard honours shouldCopyWithHeaders', async ({ page }) => {
 		await onGrid(page, async el => { el.shouldCopyWithHeaders = true; el.selectRow(1); await el.copySelectedRowsToClipboard() })
-		expect(await readClipboard(page)).toBe('ID\tName\tPrice\tNote\n2\tBanana\t3\t')
+		expect(await readClipboard(page)).toBe('ID\tName\tPrice\tNote\n2\tBanana\t3.00 EUR\t')
 	})
 
 	test('copyCellSelectionToClipboard copies a programmatic range', async ({ page }) => {
@@ -132,7 +133,7 @@ test.describe('API', () => {
 			return el.copyCellSelectionToClipboard()
 		})
 		expect(ok).toBe(true)
-		expect(await readClipboard(page)).toBe('12.5\n3\n7.25')
+		expect(await readClipboard(page)).toBe('12.50 EUR\n3.00 EUR\n7.25 EUR')
 	})
 
 	test('a clipboard failure resolves false instead of throwing', async ({ page }) => {

@@ -10,6 +10,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Added — `parseNumberCallback` (2026-11-21)
+- `parseNumberCallback` input (property): this grid's own number reader for `editor: 'number'` columns, typed and
+  pasted text — `({ text, locale, decimalSeparator, thousandsSeparator, parseDefault }) => number | null | undefined`;
+  `null` = not a number (the cell turns invalid), `undefined` = not mine (the page-wide
+  `window.components.locale.parseNumberCallback`, then core's parse).
+- The number editor has `inputmode="decimal"` (was `numeric`) — mobile keypads show the decimal key.
+
+### Changed — copy text + strict group separators (2026-11-21)
+- **Copy = what the cell shows (Excel):** without `getCopyValueCallback`, copy uses the column's
+  `getDisplayValueCallback` text when set (else the formatted number / raw value as before), and `getCopyValueCallback`
+  now applies to range, row and column copies too (was single-cell only).
+- **`1.5` in a `de` grid is an invalid number** (was a silent 15): core `parseNumber` accepts a group separator only in
+  a real group position (`1.234,5` → 1234.5). Use `parseNumberCallback` to read such text your own way.
+
 ### Changed — number columns follow the locale (2026-11-21)
 - **Visible:** `editor: 'number'` columns now show the locale's decimal separator and thousands grouping, Excel-style,
   for the grid's effective locale (`locale` input → page-wide `window.components.locale` → browser): `1,234.50` en-US,

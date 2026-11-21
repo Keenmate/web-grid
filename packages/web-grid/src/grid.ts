@@ -99,9 +99,9 @@ import { bindOptionContext } from './modules/dropdown/options.js'
 
 // Logging
 import { initLogger, dataLogger, interactionLogger, perfLogger } from './logger.js'
-import { typeNumberValue } from './modules/editing/value-parse.js'
+import { typeNumberValue, type NumberParseOptions } from './modules/editing/value-parse.js'
 import { GridLabelsResolver, type GridLabelKey, type LabelFormat } from './labels.js'
-import { formatNumber, getLocaleSettings, getPageLocale, type LabelParams, type LocaleSettings } from '@keenmate/web-components-core/locale'
+import { formatNumber, getLocaleSettings, getPageLocale, type LabelParams, type LocaleSettings, type ParseNumberCallback } from '@keenmate/web-components-core/locale'
 
 // Perf instrumentation (temporary — investigating tree-toggle slowness)
 import { perfNow, perfCount } from './perf.js'
@@ -259,6 +259,7 @@ export class GridEngine<T = unknown> {
 	protected _locale: string | null = null
 	/** Resolved number settings (locale + separators), keyed by the `locale` input and the page-wide locale object. */
 	private _numberSettingsCache: { locale: string | null; page: unknown; settings: LocaleSettings } | null = null
+	protected _parseNumberCallback: ParseNumberCallback | null = null
 	protected _labels: GridLabels = this._labelsResolver.resolve()
 
 	// Scroll behavior
@@ -381,6 +382,8 @@ export class GridEngine<T = unknown> {
 	// data) and an object costs one allocation on the per-cell hot paths.
 	protected _ctxProto: object = {}
 	protected _notifier: (<K extends GridEventName>(name: K, detail: object) => void) | null = null
+	/** The element (`attachHost`) — core's `source` for number parsing (page settings, logger); `null` standalone. */
+	protected _hostElement: HTMLElement | null = null
 
 	/**
 	 * Wire the component context: every ctx / event detail gets `controller` +
@@ -393,6 +396,7 @@ export class GridEngine<T = unknown> {
 			element: { value: element, enumerable: false }
 		})
 		this._notifier = notify
+		this._hostElement = element
 	}
 
 	/** A callback ctx: `fields` + the component context. */
@@ -1015,6 +1019,21 @@ export class GridEngine<T = unknown> {
 	}
 
 	/**
+	 * This grid's own number reader for `editor: 'number'` columns (typed + pasted text): `({ text, locale,
+	 * decimalSeparator, thousandsSeparator, parseDefault }) => number | null | undefined` — `null` = not a number,
+	 * `undefined` = not mine (the page-wide `window.components.locale.parseNumberCallback`, then core's strict parse).
+	 */
+	get parseNumberCallback(): ParseNumberCallback | null { return this._parseNumberCallback }
+	set parseNumberCallback(value: ParseNumberCallback | null | undefined) {
+		this._parseNumberCallback = value ?? null
+	}
+
+	/** What number columns parse typed / pasted text with: `numberSettings` + `parseNumberCallback` + the element as `source`. */
+	get numberParseOptions(): NumberParseOptions {
+		return { ...this.numberSettings, parseNumberCallback: this._parseNumberCallback, source: this._hostElement ?? undefined }
+	}
+
+	/**
 	 * A number column's value as text in the grid's locale (core `formatNumber`): `decimalPlaces`
 	 * fixes the fraction digits, else the value's own digits. `isGrouped: false` = the editor's text
 	 * (no thousands separators). Not a finite number → `String(value)`.
@@ -1398,7 +1417,7 @@ export class GridEngine<T = unknown> {
 
 			const rowCells: string[] = []
 			for (const vc of this.visualColumns) {
-				rowCells.push(this.clipboardCellText(rowData, rowIndex, vc.column))
+				rowCells.push(this.clipboardCellText(rowData, rowIndex, vc.column, vc.originalIndex))
 			}
 			rows.push(rowCells.join('\t'))
 		}
@@ -1437,7 +1456,7 @@ export class GridEngine<T = unknown> {
 			for (const colIndex of selectedColIndices) {
 				const vc = this.visualColumns[colIndex]
 				if (!vc) continue
-				rowCells.push(this.clipboardCellText(rowData, rowIndex, vc.column))
+				rowCells.push(this.clipboardCellText(rowData, rowIndex, vc.column, vc.originalIndex))
 			}
 			rows.push(rowCells.join('\t'))
 		}
@@ -2358,13 +2377,13 @@ export class GridEngine<T = unknown> {
 
 			const rowCells: string[] = []
 			for (let col = minCol; col <= maxCol; col++) {
-				const column = this.visualColumns[col]?.column
-				if (!column) {
+				const vc = this.visualColumns[col]
+				if (!vc) {
 					rowCells.push('')
 					continue
 				}
 
-				rowCells.push(this.clipboardCellText(rowData, row, column))
+				rowCells.push(this.clipboardCellText(rowData, row, vc.column, vc.originalIndex))
 			}
 			rows.push(rowCells.join('\t'))
 		}
@@ -2373,9 +2392,8 @@ export class GridEngine<T = unknown> {
 	}
 
 	/**
-	 * Copy the focused cell to the clipboard (single-cell Ctrl+C): the column's
-	 * `getCopyValueCallback` text when set, otherwise the raw (draft-aware) value — a number
-	 * column's number as displayed (the grid's locale).
+	 * Copy the focused cell to the clipboard (single-cell Ctrl+C): the cell's clipboard text
+	 * (`clipboardCellText` — `getCopyValueCallback`, else what the cell shows).
 	 * @returns true if copy was successful, false if no focused cell or clipboard failed
 	 */
 	async copyFocusedCellToClipboard(): Promise<boolean> {
@@ -2384,17 +2402,18 @@ export class GridEngine<T = unknown> {
 		const row = this.displayItems[focused.rowIndex]
 		const column = this._columns[focused.colIndex]
 		if (!row || !column) return false
-		const text = column.getCopyValueCallback
-			? String(column.getCopyValueCallback(this.cellCtx(row, focused.rowIndex, column, focused.colIndex)) ?? '')
-			: this.clipboardCellText(row, focused.rowIndex, column)
-		return this.writeClipboardText(text)
+		return this.writeClipboardText(this.clipboardCellText(row, focused.rowIndex, column, focused.colIndex))
 	}
 
 	/**
-	 * Clipboard text for one cell: the draft-aware raw value; null → '', objects → JSON; a number
-	 * column's number → its locale text (as displayed, `formatNumberValue`).
+	 * Clipboard text for one cell (single-cell, range, row and column copy) — what the cell SHOWS,
+	 * like Excel: the column's `getCopyValueCallback` when set, else its `getDisplayValueCallback`
+	 * text, else the draft-aware raw value (null → '', objects → JSON; a number column's number →
+	 * its locale text, `formatNumberValue`).
 	 */
-	private clipboardCellText(row: T, rowIndex: number, column: Column<T>): string {
+	private clipboardCellText(row: T, rowIndex: number, column: Column<T>, colIndex: number = this._columns.indexOf(column)): string {
+		if (column.getCopyValueCallback) return String(column.getCopyValueCallback(this.cellCtx(row, rowIndex, column, colIndex)) ?? '')
+		if (column.getDisplayValueCallback) return String(column.getDisplayValueCallback(this.cellCtx(row, rowIndex, column, colIndex)) ?? '')
 		const value = this.getCellRawValue(row, rowIndex, String(column.field))
 		if (value == null) return ''
 		if (column.editor === 'number' && typeof value === 'number') return this.formatNumberValue(value, column)
@@ -3286,7 +3305,7 @@ export class GridEngine<T = unknown> {
 		// keeps what was typed, validateCallback is skipped.
 		let builtInError = parseError
 		if (!builtInError && column.editor === 'number') {
-			const typed = typeNumberValue(newValue, column.editorOptions || {}, this._labels, this.labelFormat, this.numberSettings)
+			const typed = typeNumberValue(newValue, column.editorOptions || {}, this._labels, this.labelFormat, this.numberParseOptions)
 			newValue = typed.value
 			builtInError = typed.error
 		}

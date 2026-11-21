@@ -32,6 +32,8 @@ describe('parseNumberText (locale)', () => {
 	it('de: comma decimal, dot grouping optional', () => {
 		expect(parseNumberText('1234,5', { locale: 'de' })).toBe(1234.5)
 		expect(parseNumberText('1.234,5', { locale: 'de' })).toBe(1234.5)
+		// a group separator only in a real group position: never a silent 15
+		expect(parseNumberText('1.5', { locale: 'de' })).toBe(undefined)
 	})
 
 	it('cs: comma decimal, space grouping (plain or no-break) optional', () => {

@@ -4,7 +4,7 @@
 // unset = the page-wide `window.components.locale`, else the browser.
 // =============================================================================
 
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import './index.js'
 import { renderNumberEditor } from './modules/editing/renderers.js'
 
@@ -93,6 +93,8 @@ describe('web-grid number columns by locale', () => {
 		return el
 	}
 	const cellText = () => el.shadowRoot.querySelector('td[data-field="amount"]')?.textContent?.trim()
+	/** The draft-aware value (a commit lands in the row's draft, `el.items` stays untouched). */
+	const amount = () => el.engine.getCellRawValue(el.engine.displayItems[0], 0, 'amount')
 	const copyText = () => el.engine.clipboardCellText(el.engine.displayItems[0], 0, el.engine.columns[0])
 	const editorText = async () => {
 		const box = document.createElement('div')
@@ -112,15 +114,15 @@ describe('web-grid number columns by locale', () => {
 	})
 
 	it.each([
-		['en-US', '1,234.5'],
-		['de', '1.234,5'],
-		['cs', '1 234,5'],
-	])('%s: typed text commits as a number (%s → 1234.5)', async (locale, typed) => {
+		['en-US', '9,876.5'],
+		['de', '9.876,5'],
+		['cs', '9 876,5'],
+	])('%s: typed text commits as a number (%s → 9876.5)', async (locale, typed) => {
 		await mountNumbers({ locale })
 		el.engine.startEdit(0, 'amount')
 		await el.engine.commitEdit(0, 'amount', typed)
 		await el.whenSettled()
-		expect(el.items[0].amount).toBe(1234.5)
+		expect(amount()).toBe(9876.5)
 	})
 
 	it('invalid text stays strict (12abc → invalid, kept as typed)', async () => {
@@ -161,5 +163,72 @@ describe('web-grid number columns by locale', () => {
 	it('getDisplayValueCallback still wins over the locale display', async () => {
 		await mountNumbers({ locale: 'de' }, { getDisplayValueCallback: ({ value }: any) => `${value} EUR` })
 		expect(cellText()).toBe('1234.5 EUR')
+	})
+
+	it("'1.5' typed in a de grid is an invalid number (never a silent 15)", async () => {
+		await mountNumbers({ locale: 'de' })
+		el.engine.startEdit(0, 'amount')
+		await el.engine.commitEdit(0, 'amount', '1.5')
+		await el.whenSettled()
+		expect(el.engine.isCellInvalid(0, 'amount')).toBe(true)
+		expect(el.items[0].amount).toBe(1234.5)
+	})
+
+	it('parseNumberCallback: the element wins over the page-wide one; undefined = the next rule', async () => {
+		const seen: any[] = []
+		;(window as any).components.locale = { parseNumberCallback: () => 2 }
+		await mountNumbers({ locale: 'de' })
+		el.parseNumberCallback = (ctx: any) => { seen.push(ctx); return ctx.text === 'seven' ? 7 : undefined }
+		await el.whenSettled()
+		el.engine.startEdit(0, 'amount')
+		await el.engine.commitEdit(0, 'amount', 'seven')
+		await el.whenSettled()
+		expect(amount()).toBe(7)
+		expect(seen[0]).toMatchObject({ text: 'seven', locale: 'de', decimalSeparator: ',' })
+		// The element's callback answers undefined → the page-wide one decides
+		el.engine.startEdit(0, 'amount')
+		await el.engine.commitEdit(0, 'amount', 'other')
+		await el.whenSettled()
+		expect(amount()).toBe(2)
+		// Pasted text goes through the same chain
+		expect(el.engine.numberParseOptions.source).toBe(el)
+	})
+
+	it('parseNumberCallback returning null marks the cell invalid', async () => {
+		await mountNumbers({ locale: 'en-US' })
+		el.parseNumberCallback = () => null
+		await el.whenSettled()
+		el.engine.startEdit(0, 'amount')
+		await el.engine.commitEdit(0, 'amount', '5')
+		await el.whenSettled()
+		expect(el.engine.isCellInvalid(0, 'amount')).toBe(true)
+	})
+
+	it('copy = what the cell shows: getDisplayValueCallback text, single-cell and range copy', async () => {
+		const writeText = vi.fn(() => Promise.resolve())
+		Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+		try {
+			await mountNumbers({ locale: 'de' }, { getDisplayValueCallback: ({ value }: any) => `${value} EUR` })
+			expect(copyText()).toBe('1234.5 EUR')
+			el.engine.selectCellRange({ startRowIndex: 0, startColIndex: 0, endRowIndex: 0, endColIndex: 0 })
+			expect(await el.engine.copyCellSelectionToClipboard()).toBe(true)
+			expect(writeText).toHaveBeenLastCalledWith('1234.5 EUR')
+		} finally {
+			delete (navigator as any).clipboard
+		}
+	})
+
+	it('getCopyValueCallback wins over the display text, in range copy too', async () => {
+		const writeText = vi.fn(() => Promise.resolve())
+		Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+		try {
+			await mountNumbers({ locale: 'de' }, { getDisplayValueCallback: () => 'shown', getCopyValueCallback: ({ value }: any) => `raw:${value}` })
+			expect(copyText()).toBe('raw:1234.5')
+			el.engine.selectCellRange({ startRowIndex: 0, startColIndex: 0, endRowIndex: 0, endColIndex: 0 })
+			await el.engine.copyCellSelectionToClipboard()
+			expect(writeText).toHaveBeenLastCalledWith('raw:1234.5')
+		} finally {
+			delete (navigator as any).clipboard
+		}
 	})
 })

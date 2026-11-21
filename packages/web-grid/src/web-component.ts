@@ -289,7 +289,7 @@ import {
 import { menuPresentationInputs, menuPresentationOptions } from '@keenmate/web-components-core/menu'
 import type { MenuDrawerSide, MenuHandle, MenuPresentation } from '@keenmate/web-components-core/menu'
 import { createLayer, type Layer, type LayerOptions } from '@keenmate/web-components-core/positioning'
-import type { TranslateCallback } from '@keenmate/web-components-core/locale'
+import type { ParseNumberCallback, TranslateCallback } from '@keenmate/web-components-core/locale'
 
 // Enum member lists for the input table (hoisted `as const` so the CEM
 // extractor and toEnum both read the same literal source of truth).
@@ -642,6 +642,13 @@ export interface GridElementConfig<T = unknown> {
 	labels: GridLabelsInput | undefined
 	/** BCP-47 locale for the numbers in labels (`{count}` items, page info, number-range errors), `editor: 'number'` columns (display, editor text, typed / pasted parse, copy) and the date picker's month / weekday names, or unset (the page-wide `window.components.locale`, else the browser language). UI strings are `labels`. */
 	locale: string | null
+	/**
+	 * This grid's own number reader (core `parseNumber`, SPEC §12.24) for `editor: 'number'` columns — typed and pasted
+	 * text: `({ text, locale, decimalSeparator, thousandsSeparator, parseDefault }) => number | null | undefined`.
+	 * `null` = not a number (the cell turns invalid), `undefined` = not mine (the page-wide
+	 * `window.components.locale.parseNumberCallback`, then core's strict parse — `'1.5'` in `de` is invalid).
+	 */
+	parseNumberCallback: ParseNumberCallback | null
 	/** CSS for the grid's shadow root, after the page-wide `window.components['web-grid'].customStyles`. */
 	customStyles: string | null
 	/** Computes the instance CSS from the grid context; wins over `customStyles`. */
@@ -969,6 +976,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		// English defaults — flat `<elementType>.<name>` keys: `messages.noData`, `buttons.nextPage`, `menuItems.*`, … (see labels.ts)
 		{ configKey: 'labels', attribute: 'labels', converter: toObject(), on: 'update', type: 'GridLabelsInput', description: 'UI strings (i18n) — a partial object (JSON attribute `labels`) of flat `<elementType>.<name>` keys (`messages.noData`, `buttons.nextPage`, `menuItems.deleteRow`, …; or full `web-grid.*` keys) merged per key over the page-wide `window.components.locale.labels` and the English defaults. Reads back what was assigned.' },
 		{ configKey: 'locale', attribute: 'locale', converter: toText({ isNullable: true }), on: 'update', description: "BCP-47 locale for the numbers in labels (`{count}` items, page info, number-range errors), `editor: 'number'` columns (display, editor text, typed / pasted parse, copy) and the date picker's month / weekday names, or unset (the page-wide `window.components.locale`, else the browser language). UI strings are `labels`." },
+		{ configKey: 'parseNumberCallback', converter: toFunction<ParseNumberCallback>(), default: null, on: 'update', type: 'ParseNumberCallback | null', description: "This grid's own number reader for `editor: 'number'` columns (typed + pasted text): `({ text, locale, decimalSeparator, thousandsSeparator, parseDefault }) => number | null | undefined`; `null` = not a number (the cell turns invalid), `undefined` = not mine (the page-wide `window.components.locale.parseNumberCallback`, then core's strict parse — `'1.5'` in `de` is invalid)." },
 		// Custom CSS for the shadow root (core createCustomStyles(), rulebook C-CA-15): applied after the
 		// page-wide `window.components['web-grid'].customStyles`; the callback wins over the string.
 		{ configKey: 'customStyles', attribute: 'custom-styles', converter: toText({ isNullable: true }), on: 'update', type: 'string | null', description: "CSS injected into the grid's shadow root (after the page-wide `window.components['web-grid'].customStyles`); an `@import`ed font is also linked in the document head." },

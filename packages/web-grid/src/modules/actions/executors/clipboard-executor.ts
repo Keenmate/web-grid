@@ -29,7 +29,7 @@ export const clipboardExecutor: ActionExecutor = {
  * Copy the active selection to the clipboard — cell range > columns > rows >
  * the focused cell. Delegates to the engine's copy methods, so the keyboard and
  * the public API share one implementation (draft-aware values,
- * `shouldCopyWithHeaders`, `getCopyValueCallback` for a single cell, and a
+ * `shouldCopyWithHeaders`, `getCopyValueCallback` else the shown text per cell, and a
  * clipboard rejection resolves false instead of surfacing as unhandled).
  */
 async function executeCopy(ctx: ExecutorContext): Promise<void> {

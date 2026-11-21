@@ -107,7 +107,7 @@ export function renderNumberEditor<T>(
 	return `
 		<input
 			type="text"
-			inputmode="numeric"
+			inputmode="decimal"
 			class="wg__editor wg__editor--number ${vAlignClass}"
 			value="${escapeHtml(numValue)}"
 			data-row="${rowIndex}"
