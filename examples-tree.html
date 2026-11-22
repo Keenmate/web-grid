@@ -53,7 +53,7 @@
         <ul>
             <li><strong>Ctrl/Cmd + ←</strong>: collapse the focused parent row, or walk up to the nearest expanded ancestor and collapse that (refocuses the ancestor).</li>
             <li><strong>Ctrl/Cmd + →</strong>: expand the focused row when it has children and is collapsed.</li>
-            <li><strong>Tab / Shift-Tab</strong>: jumps to the next/previous <em>editable</em> cell. In this grid <strong>only leaf rows are editable</strong> — Tab skips Acme / Engineering / Platform Team and walks straight from leaf to leaf. The tree column itself is always read-only (since v1.2.0), so Tab skips it too.</li>
+            <li><strong>Tab / Shift-Tab</strong> with an editor open (F2): saves and jumps to the next/previous <em>editable</em> cell (without an editor Tab leaves the grid — one tab stop). In this grid <strong>only leaf rows are editable</strong> — Tab skips Acme / Engineering / Platform Team and walks straight from leaf to leaf. The tree column itself is always read-only (since v1.2.0), so Tab skips it too.</li>
             <li><strong>Right-click any row</strong>: tree context-menu items (<code>'expand'</code>, <code>'collapse'</code> (one level), <code>'expand-subtree'</code>, <code>'collapse-subtree'</code>, <code>'expand-all'</code>, <code>'collapse-all'</code>) plus a custom "Show row data" action. The first two only show on parent rows.</li>
         </ul>
 

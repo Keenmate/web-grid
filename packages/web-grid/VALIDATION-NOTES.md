@@ -32,15 +32,16 @@ in a row outside the rendered virtual window (arrows, Page Up / Down, Ctrl+End
 scroll it in first), frozen columns stay put while the rest scrolls, and Tab /
 Shift+Tab from an open editor commit it and skip to the next *editable* cell
 (`docs/accessibility.md` → Keyboard navigation). Its tab-stop RULE mirrors core
-`createRovingFocus` (2026-11-22): navigate mode is one tab stop — `tabindex="0"` on
+`createRovingFocus` (2026-11-22): the grid is one tab stop in every editTrigger mode — `tabindex="0"` on
 the active cell only (else the first rendered cell), `-1` on the rest, kept across
 re-renders / virtual window swaps (`syncTabStop()`, `src/modules/navigation/focus.ts`);
 a non-editing Tab leaves the grid. The C-CA-25 `[semi]` grep
 therefore finds the grid's own `'Arrow…'` handlers (`src/modules/actions/` key mapping,
 `src/modules/events/`, cell-range extension) — expected. What C-CA-25 protects is still there:
 
-- the focused cell holds real DOM focus (every cell is focusable in navigate
-  mode, one of them the tab stop; elsewhere the focused cell gets `tabindex="-1"`), so a screen reader
+- the focused cell holds real DOM focus (every cell is focusable, one of them the
+  tab stop; controls inside cells are `tabindex="-1"`, reached with Enter / F2 —
+  `src/modules/navigation/widget-cell.ts`), so a screen reader
   follows it without `aria-activedescendant`;
 - the structure is the ARIA grid pattern (`role="grid"` / `treegrid`, `row`,
   `columnheader`, `rowheader`, `gridcell`, `aria-rowcount` / `aria-rowindex`

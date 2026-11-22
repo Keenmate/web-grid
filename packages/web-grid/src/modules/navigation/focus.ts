@@ -13,9 +13,9 @@ import { revealElement, fieldAt, prepareRowReveal, finishCellReveal } from '../s
 import { deepActiveElement } from '@keenmate/web-components-core'
 
 /**
- * Focus a body cell (<td>) without scrolling. A cell is focusable by its markup only in
- * navigate mode; elsewhere (click / dblclick / button triggers) it gets `tabindex="-1"` here,
- * so a cell re-rendered from markup (a render, a virtual-window swap) can take focus back.
+ * Focus a body cell (<td>) without scrolling. Rendered cells carry their roving tabindex
+ * (`0` / `-1`); a cell without one (a surgical re-render of an odd cell) gets `tabindex="-1"`
+ * here so it can take focus.
  */
 export function focusCellTd(cell: HTMLElement): void {
 	if (!cell.hasAttribute('tabindex')) cell.setAttribute('tabindex', '-1')
@@ -23,16 +23,15 @@ export function focusCellTd(cell: HTMLElement): void {
 }
 
 /**
- * Navigate mode = ONE tab stop (ARIA grid pattern, roving tabindex): the active cell — the
- * focused one, else the last focused (`engine.tabStopCell`) — has `tabindex="0"`, every other
- * body cell `-1`, so Tab enters the grid on it and the next Tab leaves the grid. The renderers
- * write the same rule into the markup; this re-applies it in the live DOM after a focus move
- * (`cell` = the newly focused one) or a body re-render. When the stop cell isn't rendered (a
- * virtual window, rows replaced) the first rendered data cell takes the stop, so there is
- * always exactly one. No-op outside navigate mode (cells are not tab stops there).
+ * The grid is ONE tab stop (ARIA grid pattern, roving tabindex) in every editTrigger mode: the
+ * active cell — the focused one, else the last focused (`engine.tabStopCell`) — has
+ * `tabindex="0"`, every other body cell `-1`, so Tab enters the grid on it and the next Tab
+ * leaves the grid. The renderers write the same rule into the markup; this re-applies it in the
+ * live DOM after a focus move (`cell` = the newly focused one — a data cell or a lead widget
+ * cell) or a body re-render. When the stop cell isn't rendered (a virtual window, rows
+ * replaced) the first rendered data cell takes the stop, so there is always exactly one.
  */
 export function syncTabStop<T>(ctx: GridHost<T>, cell?: HTMLElement | null): void {
-	if (!ctx.engine.isNavigateMode) return
 	const tbody = ctx.shadow.querySelector('.wg__table > tbody') as HTMLElement | null
 	if (!tbody) return
 	let stop = cell && tbody.contains(cell) ? cell : null
@@ -41,7 +40,7 @@ export function syncTabStop<T>(ctx: GridHost<T>, cell?: HTMLElement | null): voi
 		if (at) stop = tbody.querySelector(`td.wg__cell[data-row="${at.rowIndex}"][data-col="${at.colIndex}"]`) as HTMLElement | null
 	}
 	stop ??= tbody.querySelector('td.wg__cell[data-col]') as HTMLElement | null
-	for (const other of tbody.querySelectorAll('td.wg__cell[data-col][tabindex="0"]')) {
+	for (const other of tbody.querySelectorAll('td.wg__cell[tabindex="0"]')) {
 		if (other !== stop) other.setAttribute('tabindex', '-1')
 	}
 	stop?.setAttribute('tabindex', '0')
@@ -319,8 +318,6 @@ export function handleCellFocus<T>(
 	rowIndex: number,
 	colIndex: number
 ): void {
-	if (!ctx.engine.isNavigateMode) return
-
 	const oldFocus = ctx.engine.focusedCell
 	const newFocus = { rowIndex, colIndex }
 

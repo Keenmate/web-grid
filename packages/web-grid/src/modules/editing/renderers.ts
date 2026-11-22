@@ -9,7 +9,10 @@ import type { GridHost } from '../grid-context.js'
 import { getOptionDisplayValue, getOptionValue, withEmptyOption } from '../dropdown/index.js'
 
 /**
- * Render the appropriate editor for a cell
+ * Render the appropriate editor for a cell. Every editor is `tabindex="-1"`: the grid is ONE
+ * tab stop (roving tabindex on the cells) — the grid focuses an editor itself (arrows into an
+ * `editTrigger: 'always'` cell, F2 / Enter / typing), and Tab in an editor is the grid's
+ * (save + next editable cell), so an editor is never a tab stop of its own.
  */
 export function renderCellEditor<T>(
 	ctx: GridHost<T>,
@@ -68,7 +71,7 @@ export function renderTextEditor<T>(
 	const vAlignClass = getVerticalAlignClass(column)
 
 	return `
-		<input
+		<input tabindex="-1"
 			type="text"
 			class="wg__editor wg__editor--text ${vAlignClass}"
 			value="${escapeHtml(strValue)}"
@@ -105,7 +108,7 @@ export function renderNumberEditor<T>(
 	const min = opts.min ?? (opts.allowNegative === false ? 0 : undefined)
 	const step = opts.step ?? (opts.decimalPlaces != null ? 10 ** -opts.decimalPlaces : undefined)
 	return `
-		<input
+		<input tabindex="-1"
 			type="text"
 			inputmode="decimal"
 			class="wg__editor wg__editor--number ${vAlignClass}"
@@ -139,7 +142,7 @@ export function renderDateEditor<T>(
 
 	return `
 		<div class="wg__editor wg__editor--date" data-row="${rowIndex}" data-field="${field}">
-			<input
+			<input tabindex="-1"
 				type="text"
 				class="wg__date-input"
 				value="${escapeHtml(displayValue)}"
@@ -234,7 +237,7 @@ export function renderCheckboxEditor<T>(
 		: Boolean(value)
 
 	return `
-		<input
+		<input tabindex="-1"
 			type="checkbox"
 			class="wg__editor wg__editor--checkbox"
 			${isChecked ? 'checked' : ''}
@@ -273,7 +276,7 @@ export function renderSelectEditor<T>(
 	return `
 		<div
 			class="wg__editor wg__editor--select wg__select-trigger"
-			tabindex="0"
+			tabindex="-1"
 			role="combobox"
 			aria-haspopup="listbox"
 			data-row="${rowIndex}"
@@ -311,7 +314,7 @@ export function renderComboboxEditor<T>(
 
 	return `
 		<div class="wg__editor wg__editor--combobox" data-row="${rowIndex}" data-field="${field}">
-			<input
+			<input tabindex="-1"
 				type="text"
 				class="wg__combobox-input"
 				value="${escapeHtml(inputValue)}"
@@ -348,7 +351,7 @@ export function renderAutocompleteEditor<T>(
 
 	return `
 		<div class="wg__editor wg__editor--autocomplete" data-row="${rowIndex}" data-field="${field}">
-			<input
+			<input tabindex="-1"
 				type="text"
 				class="wg__autocomplete-input"
 				value="${escapeHtml(inputValue)}"
@@ -382,7 +385,7 @@ export function renderCustomEditor<T>(
 	return `
 		<div
 			class="wg__editor wg__editor--custom"
-			tabindex="0"
+			tabindex="-1"
 			data-row="${rowIndex}"
 			data-field="${field}"
 		>

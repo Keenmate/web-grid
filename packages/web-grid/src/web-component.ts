@@ -111,6 +111,7 @@ import {
 	handleCellKeyDown,
 	restoreFocusAfterRender,
 	syncTabStop,
+	untabCellWidgets,
 	captureEditorText,
 	openGoToRowDialog as openGoToRowDialogModule
 } from './modules/navigation/index.js'
@@ -2270,7 +2271,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		// Extracted to modules/navigation/post-render-focus.ts
 		// (a focused filter-row input keeps the focus — the cell isn't re-focused)
 		restoreFocusAfterRender(this, container, filterFocus ? null : focusedCell, editorText)
-		// Navigate mode: exactly one body cell is the tab stop (roving tabindex)
+		// Exactly one body cell is the tab stop (roving tabindex); controls inside cells are none
+		untabCellWidgets(container.querySelector('.wg__table > tbody'))
 		syncTabStop(this)
 		restoreFilterFocus(this, filterFocus)
 		if (this.#isEditedRowGone) {

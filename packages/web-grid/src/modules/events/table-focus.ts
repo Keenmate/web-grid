@@ -26,11 +26,11 @@ import { isCellSelectionPending, isCellSelecting } from '../cell-selection/index
  */
 export function handleTableFocus<T>(ctx: GridHost<T>, e: Event): void {
 	const target = e.target as HTMLElement
-	if (target.matches('.wg__cell')) {
+	if (target.matches('.wg__cell[data-col]')) {
 		const rowIndex = parseInt(target.dataset.row || '0', 10)
 		const colIndex = parseInt(target.dataset.col || '0', 10)
 		handleCellFocus(ctx, rowIndex, colIndex)
-		// The focused cell is the tab stop (roving tabindex, navigate mode)
+		// The focused cell is the tab stop (roving tabindex)
 		syncTabStop(ctx, target)
 		updateFillHandle(ctx)
 		// Only fire focus-change for keyboard-triggered focus (Tab, arrows).
@@ -43,6 +43,16 @@ export function handleTableFocus<T>(ctx: GridHost<T>, e: Event): void {
 
 		// Auto-scroll if cell is behind frozen columns
 		ensureCellNotBehindFrozen(ctx, target, rowIndex)
+	}
+	// A lead widget cell (row actions): it is the tab stop now; keyboard focus moves the row focus
+	if (target.matches('td.wg__widget-cell')) {
+		syncTabStop(ctx, target)
+		const rowIndex = Number(target.dataset.widgetRow)
+		if (!ctx.isMouseDown && Number.isInteger(rowIndex)) {
+			const prevFocusedRow = ctx.engine.focusedRowIndex
+			ctx.engine.setFocusedRow(rowIndex)
+			ctx.updateRowFocusVisual(prevFocusedRow, rowIndex)
+		}
 	}
 	// Handle focus on editor inputs in always-editing mode
 	// When Tab/Enter moves focus to an editor input, we need to update the grid's focus state

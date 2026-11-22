@@ -9,6 +9,7 @@ import { renderCellDisplay } from './display.js'
 import { wrapTreeCell } from './tree-render.js'
 import { getCellTooltip } from './table.js'
 import { isCellSelectable } from './aria.js'
+import { untabCellWidgets } from './cell-widgets.js'
 
 export type RenderCellOptions = {
 	/** Focus the editor after rendering (for edit mode) */
@@ -113,6 +114,8 @@ export function renderCell<T>(
 	} else {
 		const value = ctx.engine.getCellValue(item, column, rowIndex)
 		cell.innerHTML = wrapTreeCell(ctx, column, item, renderCellDisplay(ctx, rowIndex, colIndex, column, value, isFocused, isEditable))
+		// renderCellCallback controls are no tab stops of their own (the grid is ONE tab stop)
+		untabCellWidgets(cell)
 	}
 
 	// The row's dirty state may have changed with this cell — keep the row-number

@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
-### Changed — navigate mode is ONE tab stop (2026-11-22)
+### Changed — the grid is ONE tab stop (2026-11-22)
 - **Visible: Tab now leaves the grid.** Navigate mode (`editTrigger: 'navigate'`, `mode: 'excel'`) follows the ARIA
   grid pattern (roving tabindex), like Excel: only the active cell has `tabindex="0"` (the first cell before any
   focus), every other body cell `tabindex="-1"` (was `0` on every cell). Tab enters the grid on the active cell and
@@ -18,8 +18,25 @@ Target: **2.0.0-rc01** — a major: the callback, event and item API below is br
   walks the cells. Arrow keys / Home / End / Page Up / Down / Ctrl+Home move the active cell and the tab stop; the
   cell stays the stop after the focus leaves, so Shift+Tab comes back to it. A re-render or a virtual-scroll window
   swap keeps exactly one stop. With an editor open Tab / Shift+Tab still save and move to the next / previous
-  editable cell. Header cells stay unfocusable; the filter-row inputs stay their own tab stops. Click / dblclick /
-  button modes are unchanged.
+  editable cell. Header cells stay unfocusable; the filter-row inputs stay their own tab stops.
+- **Every editTrigger mode is navigable and one tab stop** (was: click / dblclick / button grids, and the
+  `read-only` preset, had no cell in the tab order — the grid was unreachable by Tab except its filter inputs —
+  and a non-editing Tab walked the editable cells). Navigation no longer depends on the edit trigger: the same
+  roving tab stop, arrows / Home / End / Page Up / Down, Enter (move down), Escape, Ctrl+G and row shortcuts on a
+  focused cell in every mode; the trigger only decides how an editor opens (a click, a double click, the edit
+  button, F2 / typing). Mouse behaviour is unchanged.
+- **Controls inside body cells are no tab stops** (`tabindex="-1"`, were tabbable): the inline row actions
+  (`toolbarPosition: 'inline'`), the row-toolbar trigger in the actions column (`toolbarTrigger: 'button'`),
+  every cell editor (also the always-on `editTrigger: 'always'` ones) and the links / buttons / inputs a
+  `renderCellCallback` renders (marked `data-wg-widget`). The keyboard reaches them the ARIA way: the actions
+  cells are navigable cells (ArrowLeft from a row's first cell enters them, ArrowRight leaves, ArrowUp / Down
+  move along the column); **Enter / F2** on a cell holding controls moves focus into the first one (a
+  `renderCellCallback` cell when it isn't editable), **Tab / Shift+Tab** cycle the controls inside that cell,
+  **Escape** returns to the cell. An always-on editor is entered by arrows as before (its dropdown may open);
+  Escape with nothing left to close returns to its cell, from where Tab leaves the grid and Enter / F2 go back in.
+  In an open or always-on editor Tab still saves + moves to the next editable cell.
+- **Virtual grid:** Tab while the focus sits on the grid's container (the active row scrolled out of the window)
+  leaves the grid instead of landing on the first control inside it.
 
 ### Added — icons repaint when the page-wide icon hook changes (2026-11-22)
 - Changing `window.components.renderIconCallback` after the grid rendered repaints its icons in place (core

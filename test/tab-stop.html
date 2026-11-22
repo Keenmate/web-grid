@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — one tab stop fixture</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>one tab stop fixture</h1>
+	<p>Targeted by <code>e2e/tab-stop.spec.ts</code>. The grid is ONE tab stop in every editTrigger mode;
+	controls inside cells are reached with Enter / F2. Each grid sits between two buttons
+	(<code>#b0</code> … <code>#b6</code>). Action clicks in <code>window.__actions</code>, cell-widget clicks in
+	<code>window.__widgets</code>.</p>
+
+	<button type="button" id="b0">b0</button>
+	<!-- navigate grid with an inline actions column, an 'always' select column and a renderCellCallback column -->
+	<web-grid id="widgetGrid" style="max-width: 760px; max-height: 300px;"></web-grid>
+	<button type="button" id="b1">b1</button>
+	<!-- actions column (toolbarTrigger 'button') -->
+	<web-grid id="buttonGrid" style="max-width: 600px; max-height: 300px;"></web-grid>
+	<button type="button" id="b2">b2</button>
+	<web-grid id="dblclickGrid" style="max-width: 600px; max-height: 260px;"></web-grid>
+	<button type="button" id="b3">b3</button>
+	<web-grid id="clickGrid" style="max-width: 600px; max-height: 260px;"></web-grid>
+	<button type="button" id="b4">b4</button>
+	<web-grid id="readonlyGrid" style="max-width: 600px; max-height: 260px;"></web-grid>
+	<button type="button" id="b5">b5</button>
+	<web-grid id="matrixGrid" style="max-width: 600px; max-height: 260px;"></web-grid>
+	<button type="button" id="b6">b6</button>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+
+		/*
+		 *  every grid: 6 rows { id: r+1, name: 'Row r+1', status: 'open', qty: r*10 }
+		 *  #widgetGrid  col 0=id (read-only) 1=name 2=status (select, editTrigger 'always')
+		 *               3=link (read-only, renderCellCallback: <a href> + <button class="go">)
+		 *               inline actions: ping · pong   (navigate)
+		 *  #buttonGrid  col 0=id 1=name 2=qty; toolbarTrigger 'button' (actions column): ping · delete  (navigate)
+		 *  #dblclickGrid / #clickGrid / #readonlyGrid (preset read-only) / #matrixGrid (preset input-matrix):
+		 *               col 0=id (read-only) 1=name 2=qty
+		 */
+		window.__actions = []
+		window.__widgets = []
+		const statusOptions = [
+			{ value: 'open', label: 'Open' },
+			{ value: 'done', label: 'Done' }
+		]
+		const rows = () => Array.from({ length: 6 }, (_, r) => ({ id: r + 1, name: 'Row ' + (r + 1), status: 'open', qty: r * 10 }))
+		const basic = [
+			{ field: 'id', title: 'ID', width: '50px', isEditable: false },
+			{ field: 'name', title: 'Name', width: '140px' },
+			{ field: 'qty', title: 'Qty', width: '80px', editor: 'number' }
+		]
+
+		const widgetGrid = document.getElementById('widgetGrid')
+		widgetGrid.items = rows()
+		widgetGrid.columns = [
+			{ field: 'id', title: 'ID', width: '50px', isEditable: false },
+			{ field: 'name', title: 'Name', width: '140px' },
+			{ field: 'status', title: 'Status', width: '120px', editor: 'select', editTrigger: 'always', editorOptions: { options: statusOptions } },
+			{
+				field: 'link', title: 'Link', width: '150px', isEditable: false,
+				renderCellCallback: ({ row }) => `<a href="#row-${row.id}" class="open">open</a> <button type="button" class="go" data-id="${row.id}">go</button>`
+			}
+		]
+		widgetGrid.isEditingEnabled = true
+		widgetGrid.editTrigger = 'navigate'
+		widgetGrid.isRowToolbarShown = true
+		widgetGrid.toolbarPosition = 'inline'
+		widgetGrid.rowToolbar = [{ id: 'ping', text: 'Ping', icon: '•' }, { id: 'pong', text: 'Pong', icon: '◦' }]
+		widgetGrid.onAction = ({ id, row }) => window.__actions.push(['widgetGrid', id, row.id])
+		widgetGrid.addEventListener('click', (e) => {
+			const go = e.composedPath().find(n => n instanceof HTMLElement && n.classList?.contains('go'))
+			if (go) window.__widgets.push(Number(go.dataset.id))
+		})
+
+		const buttonGrid = document.getElementById('buttonGrid')
+		buttonGrid.items = rows()
+		buttonGrid.columns = basic
+		buttonGrid.isEditingEnabled = true
+		buttonGrid.editTrigger = 'navigate'
+		buttonGrid.isRowToolbarShown = true
+		buttonGrid.toolbarTrigger = 'button'
+		buttonGrid.rowToolbar = [{ id: 'ping', text: 'Ping', icon: '•' }, 'delete']
+		buttonGrid.onAction = ({ id, action, row }) => window.__actions.push(['buttonGrid', id ?? action, row.id])
+
+		for (const [id, setup] of [
+			['dblclickGrid', g => { g.isEditingEnabled = true; g.editTrigger = 'dblclick' }],
+			['clickGrid', g => { g.isEditingEnabled = true; g.editTrigger = 'click' }],
+			['readonlyGrid', g => { g.preset = 'read-only' }],
+			['matrixGrid', g => { g.preset = 'input-matrix' }]
+		]) {
+			const g = document.getElementById(id)
+			g.items = rows()
+			g.columns = basic
+			setup(g)
+		}
+	</script>
+</body>
+</html>

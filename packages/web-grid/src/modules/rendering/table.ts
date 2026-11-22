@@ -269,13 +269,12 @@ export function cellAriaAttrs<T>(ctx: GridHost<T>, rowIndex: number, visualIndex
  * Render data rows
  */
 /**
- * A body cell's `tabindex` in navigate mode — roving tabindex (ARIA grid pattern): `0` on the
- * tab stop (`engine.tabStopCell`, the focused / last focused cell), `-1` on every other cell
- * (focusable by arrows / click, not by Tab). No stop yet / not rendered → navigation's
- * syncTabStop() gives it to the first rendered cell. Outside navigate mode: none.
+ * A body cell's `tabindex` — roving tabindex (ARIA grid pattern), in every editTrigger mode:
+ * `0` on the tab stop (`engine.tabStopCell`, the focused / last focused cell), `-1` on every
+ * other cell (focusable by arrows / click, not by Tab). No stop yet / not rendered →
+ * navigation's syncTabStop() gives it to the first rendered cell.
  */
 function cellTabindexAttr<T>(ctx: GridHost<T>, rowIndex: number, colIndex: number): string {
-	if (!ctx.engine.isNavigateMode) return ''
 	const stop = ctx.engine.tabStopCell
 	return stop && stop.rowIndex === rowIndex && stop.colIndex === colIndex ? 'tabindex="0"' : 'tabindex="-1"'
 }
@@ -348,7 +347,7 @@ export function renderDataRows<T>(ctx: GridHost<T>): string {
 		if (showActionsColumn) {
 			const isActive = activeToolbarRow === rowIndex
 			actionsCell = `
-				<td class="wg__cell wg__actions-column" role="gridcell" aria-colindex="${leadCount}">
+				<td class="wg__cell wg__actions-column wg__widget-cell" role="gridcell" aria-colindex="${leadCount}" data-widget-row="${rowIndex}" tabindex="-1">
 					${renderTriggerButton(rowIndex, isActive, ctx.engine.labels['tooltips.rowActions'], ctx.engine.labels['ariaLabels.rowActions'])}
 				</td>
 			`
@@ -421,7 +420,7 @@ export function renderDataRows<T>(ctx: GridHost<T>): string {
 				cumulativeOffset += columnWidths[visualIndex]
 			}
 
-			// Navigate mode: every cell is focusable, ONE is the tab stop (roving tabindex)
+			// Every cell is focusable, ONE is the tab stop (roving tabindex, any editTrigger)
 			const tabindexAttr = cellTabindexAttr(ctx, rowIndex, originalIndex)
 
 			// Cell tooltip: getTooltipCallback > tooltipMember > validation error
@@ -488,13 +487,15 @@ function renderInlineActionsCell<T>(ctx: GridHost<T>, row: T, rowIndex: number):
 		const html = buttons.map((b, i) => {
 			if (b.row !== rowNum) return ''
 			// data-row lets the click handler find the row; data-wg-index the item
-			return renderToolbarButton(b, i, 'wg__inline-action-btn', ctx.shadow.host).replace('<button ', `<button data-row="${rowIndex}" `)
+			// tabindex -1: the grid is ONE tab stop — Enter / F2 on the cell moves into its buttons
+			return renderToolbarButton(b, i, 'wg__inline-action-btn', ctx.shadow.host).replace('<button ', `<button data-row="${rowIndex}" tabindex="-1" `)
 		}).join('')
 		return `<div class="wg__inline-actions-row">${html}</div>`
 	}).join('')
 
 	const colIndex = ctx.engine.isRowNumbersShown ? 2 : 1
-	return `<td class="wg__cell wg__inline-actions-cell" role="gridcell" aria-colindex="${colIndex}"><div class="wg__inline-actions-wrap">${rowsHtml}</div></td>`
+	// A widget cell (navigation/widget-cell.ts): reached by ArrowLeft from the row's first cell
+	return `<td class="wg__cell wg__inline-actions-cell wg__widget-cell" role="gridcell" aria-colindex="${colIndex}" data-widget-row="${rowIndex}" tabindex="-1"><div class="wg__inline-actions-wrap">${rowsHtml}</div></td>`
 }
 
 /**
@@ -594,7 +595,7 @@ export function renderDataRowsVirtual<T>(ctx: GridHost<T>, params: VirtualScroll
 		if (showActionsColumn) {
 			const isActive = activeToolbarRow === rowIndex
 			actionsCell = `
-				<td class="wg__cell wg__actions-column" role="gridcell" aria-colindex="${leadCount}">
+				<td class="wg__cell wg__actions-column wg__widget-cell" role="gridcell" aria-colindex="${leadCount}" data-widget-row="${rowIndex}" tabindex="-1">
 					${renderTriggerButton(rowIndex, isActive, ctx.engine.labels['tooltips.rowActions'], ctx.engine.labels['ariaLabels.rowActions'])}
 				</td>
 			`
@@ -667,7 +668,7 @@ export function renderDataRowsVirtual<T>(ctx: GridHost<T>, params: VirtualScroll
 				cumulativeOffset += columnWidths[visualIndex]
 			}
 
-			// Navigate mode: every cell is focusable, ONE is the tab stop (roving tabindex)
+			// Every cell is focusable, ONE is the tab stop (roving tabindex, any editTrigger)
 			const tabindexAttr = cellTabindexAttr(ctx, rowIndex, originalIndex)
 
 			// Cell tooltip: getTooltipCallback > tooltipMember > validation error

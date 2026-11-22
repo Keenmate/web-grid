@@ -721,10 +721,12 @@ export function updateConnector<T>(
  */
 export function renderTriggerButton(rowIndex: number, isActive: boolean, title: string = 'Row actions', ariaLabel: string = title): string {
 	const activeClass = isActive ? 'wg__toolbar-trigger--active' : ''
+	// tabindex -1: the grid is ONE tab stop — Enter / F2 on its actions cell moves focus here.
 	// The "⋮" glyph is not a name: aria-label (`ariaLabels.rowActions`) names it, title (`tooltips.rowActions`) is the hover hint
 	return `<button
 		class="wg__toolbar-trigger ${activeClass}"
 		data-toolbar-trigger="${rowIndex}"
+		tabindex="-1"
 		title="${escapeHtml(title)}"
 		aria-label="${escapeHtml(ariaLabel)}"
 	>⋮</button>`

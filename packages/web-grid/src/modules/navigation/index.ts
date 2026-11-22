@@ -20,5 +20,6 @@ export {
 } from './focus.js'
 
 export { handleCellKeyDown } from './cell-keydown.js'
+export { untabCellWidgets, handleWidgetCellKeyDown } from './widget-cell.js'
 export { restoreFocusAfterRender, captureEditorText } from './post-render-focus.js'
 export { openGoToRowDialog } from './go-to-row-dialog.js'

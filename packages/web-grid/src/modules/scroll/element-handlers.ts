@@ -9,6 +9,7 @@
 
 import type { GridHost } from '../grid-context.js'
 import { updateFocusVisual, focusCellTd, syncTabStop } from '../navigation/focus.js'
+import { untabCellWidgets } from '../rendering/cell-widgets.js'
 import { renderDataRowsVirtual, renderLoadingMoreRow, type VirtualScrollParams } from '../rendering/table.js'
 import { syncLoadingMoreLoader } from '../rendering/loader.js'
 import { visibleRowRange, shouldTriggerInfiniteScroll } from './calculations.js'
@@ -54,6 +55,7 @@ export function renderVirtualRows<T>(ctx: GridHost<T>, container: HTMLElement): 
 	const hadBodyFocus = !!active && tbody.contains(active)
 
 	tbody.innerHTML = renderDataRowsVirtual(ctx, params)
+	untabCellWidgets(tbody)
 	syncLoadingMoreLoader(ctx)
 
 	// Re-focus the focusedCell after re-render (if it's in the rendered range).
@@ -75,7 +77,7 @@ export function renderVirtualRows<T>(ctx: GridHost<T>, container: HTMLElement): 
 			(ctx.shadow.querySelector('.wg') as HTMLElement | null)?.focus({ preventScroll: true })
 		}
 	}
-	// Navigate mode: the new window keeps exactly one tab stop (roving tabindex)
+	// The new window keeps exactly one tab stop (roving tabindex)
 	syncTabStop(ctx)
 }
 

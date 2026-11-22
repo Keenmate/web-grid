@@ -1,5 +1,5 @@
 // =============================================================================
-// Cell-level keyboard handling (navigate mode, residual keys)
+// Cell-level keyboard handling (residual keys, every editTrigger mode)
 // =============================================================================
 // ONE key path: the action pipeline adapter (`modules/actions/adapter.ts`,
 // `tryHandleKeyDown`) owns every built-in key on a cell — arrows, Tab,
@@ -45,7 +45,7 @@ export function tryCellShortcuts<T>(ctx: GridHost<T>, e: KeyboardEvent, rowIndex
  * Handle the residual keydowns on a focused (non-editing) cell — see the file
  * header for the keys the action pipeline leaves to this handler.
  *
- * Returns early if the grid isn't in navigate mode.
+ * Navigation is the same in every editTrigger mode (the trigger only decides how an editor opens).
  */
 export function handleCellKeyDown<T>(
 	ctx: GridHost<T>,
@@ -53,10 +53,6 @@ export function handleCellKeyDown<T>(
 	rowIndex: number,
 	colIndex: number
 ): void {
-	if (!ctx.engine.isNavigateMode) {
-		return
-	}
-
 	const columns = ctx.engine.columns
 	const displayItems = ctx.engine.displayItems
 

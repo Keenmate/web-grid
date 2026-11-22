@@ -4,19 +4,33 @@
 
 ## Keyboard navigation
 
-Spreadsheet-like key bindings drive all navigation. Most are active in **navigate mode** (`editTrigger: 'navigate'` or `mode: 'excel'`), where Arrow keys move the focused cell without entering edit mode.
+Spreadsheet-like key bindings drive all navigation, the same in **every `editTrigger` mode** (`navigate`, `click`, `dblclick`, `button`, `always`, the `read-only` preset): Arrow keys move the focused cell without entering edit mode. The edit trigger only decides how an editor opens — a click, a double click, the edit button, or F2 / typing (navigate mode types to edit).
 
 ### Cell navigation
 
 | Key | Action |
 |---|---|
 | **↑ / ↓ / ← / →** | Move focused cell one step in the arrow's direction |
-| **Tab / Shift + Tab** | Leave the grid to the next / previous focusable on the page (pager, toolbar, …). Navigate mode is **one tab stop** (ARIA grid pattern): Tab enters on the active cell — the last focused one, else the first cell — and the next Tab leaves. With an editor open, Tab commits and moves (see Editing) |
+| **Tab / Shift + Tab** | Leave the grid to the next / previous focusable on the page (pager, toolbar, …). The grid is **one tab stop** (ARIA grid pattern) in every mode: Tab enters on the active cell — the last focused one, else the first cell — and the next Tab leaves. With an editor open, Tab commits and moves (see Editing) |
 | **Home / End** | Jump to first / last cell of the current row |
 | **Ctrl + Home / End** | Jump to top-left / bottom-right of the grid |
 | **Page Up / Page Down** | Move focus one page-height of cells up / down |
 | **Enter** | Move down (or open dropdown if `shouldOpenDropdownOnEnter` is `true`) |
 | **Escape** | Cancel an in-progress edit; close an open dropdown |
+
+### Controls inside cells
+
+Controls inside body cells are never tab stops of their own (`tabindex="-1"`) — the inline row actions (`toolbarPosition: 'inline'`), the row-toolbar trigger in the actions column (`toolbarTrigger: 'button'`), cell editors (also the always-on ones of `editTrigger: 'always'`) and the links / buttons / inputs a `renderCellCallback` renders (the grid marks those `data-wg-widget`). The keyboard reaches them the ARIA grid way:
+
+| Key | Action |
+|---|---|
+| **←** on a row's first cell | Enter the row's actions cell(s) (inline actions, actions column); **→** leaves back to the first cell, **↑ / ↓** move along the actions column, **Home** / **End** = first actions cell / last cell of the row |
+| **Enter / F2** on a cell holding controls | Move focus into its first control (an actions cell; a `renderCellCallback` cell when it isn't editable — an editable one keeps F2 = edit, Enter = move down) |
+| **Tab / Shift + Tab** in a control | Cycle the controls inside that cell |
+| **Escape** in a control | Back to the cell |
+| **Enter / Space** in a control | The control's own (activate the button / link) |
+
+An always-on editor (`editTrigger: 'always'`) is the cell's control too: Arrow keys land directly in it (a dropdown editor may open its list on arrival), Tab saves + moves to the next editable cell like any open editor, Escape with nothing left to close returns to the cell — from there Tab leaves the grid and Enter / F2 go back into the editor.
 
 ### Editing
 
@@ -86,7 +100,7 @@ The `<table>` declares the [ARIA grid pattern](https://www.w3.org/WAI/ARIA/apg/p
 
 Indexes are 1-based and count the rendered lead columns (row numbers, row-actions column) before the data columns. With pagination the counts and indexes are those of the current page (the row number column shows the same numbers).
 
-The focused cell holds real DOM focus (see [Focus management](#focus-management)); there is no `aria-activedescendant` on the grid. Cell navigation is the grid's own Excel model (virtual rows, frozen columns, Tab to the next editable cell), not core `/a11y` roving focus — the rest of the pattern is unchanged.
+The focused cell holds real DOM focus (see [Focus management](#focus-management)); there is no `aria-activedescendant` on the grid. Cell navigation is the grid's own Excel model (virtual rows, frozen columns, Tab from an open editor to the next editable cell), not core `/a11y` roving focus — the rest of the pattern is unchanged.
 
 ### Controls
 
@@ -99,13 +113,14 @@ Interactive controls inside the grid carry their own ARIA:
 | Select / combobox editor wrapper | `role="combobox"`, `aria-haspopup="listbox"` | Announces the combobox pattern |
 | Open cell dropdown | field: `role="combobox"`, `aria-expanded`, `aria-controls`, `aria-activedescendant` (+ `aria-autocomplete="list"` on an input); panel `role="listbox"`, options `role="option"` + `aria-selected` / `aria-disabled` | Focus stays in the field; the screen reader follows the highlighted option (core `createActiveDescendant`, ARIA-only mode). The phone sheet stays a `role="dialog"` |
 | Go-to-row dialog (Ctrl+G) | `role="dialog"`, `aria-modal="true"`; the page behind is `inert` | A real modal (core `startModalSession`): Tab stays inside, Escape / Back / backdrop cancel |
-| Cells in navigate mode | Roving tabindex: `tabindex="0"` on the active cell only, `tabindex="-1"` on every other body cell | The grid is ONE tab stop (ARIA grid pattern): Tab enters on the active cell, the next Tab leaves the grid; Arrow keys / Home / End / Page Up / Down / Ctrl+Home move the active cell and the tab stop with it. A re-render or a virtual-scroll window swap keeps exactly one stop (the first rendered cell when the active row isn't rendered). Header cells are not focusable; the filter-row inputs are separate widgets and stay tab stops of their own |
+| Body cells (every editTrigger mode) | Roving tabindex: `tabindex="0"` on the active cell only, `tabindex="-1"` on every other body cell | The grid is ONE tab stop (ARIA grid pattern): Tab enters on the active cell, the next Tab leaves the grid; Arrow keys / Home / End / Page Up / Down / Ctrl+Home move the active cell and the tab stop with it. A re-render or a virtual-scroll window swap keeps exactly one stop (the first rendered cell when the active row isn't rendered). Header cells are not focusable; the filter-row inputs are separate widgets and stay tab stops of their own |
+| Row-action cells (inline actions, actions column) | `role="gridcell"`, `tabindex="-1"` (the tab stop while focused); their buttons `tabindex="-1"` | Navigable cells holding controls — see [Controls inside cells](#controls-inside-cells) |
+| Controls inside cells (editors, `renderCellCallback` links / buttons / inputs) | `tabindex="-1"` (+ `data-wg-widget` on the rendered ones) | Not tab stops; Enter / F2 on the cell moves into them |
 
 ## Focus management
 
-- Cells in **navigate mode** receive DOM focus when navigated to (via arrow keys, click, or `focusCell()`). The host element is *not* itself focusable; focus lives at the cell level. Only the active cell is in the page's tab order (it stays the stop after the focus leaves the grid, so Shift+Tab comes back to it).
-- Cells in **click / dblclick mode** receive `tabindex="-1"` only when they are programmatically focused — the cell becomes the focus target so subsequent keyboard input lands on the right element.
-- The grid container has `tabindex="-1"` so it can receive focus programmatically (for instance after a dialog closes) without being a tab stop itself.
+- Cells receive DOM focus when navigated to (via arrow keys, click, or `focusCell()`), in every edit-trigger mode. The host element is *not* itself focusable; focus lives at the cell level. Only the active cell is in the page's tab order (it stays the stop after the focus leaves the grid, so Shift+Tab comes back to it).
+- The grid container has `tabindex="-1"` so it can receive focus programmatically (for instance after a dialog closes, or when a virtual grid's active row scrolls out of the rendered window) without being a tab stop itself. Tab from the container leaves the grid; any other cell key brings the active row back.
 - Opening an editor moves focus to the editor input. Committing or cancelling returns focus to the cell.
 - Opening the cell or header context menu moves focus to the first menu item; closing returns focus to the originating cell / header.
 - Opening the datepicker keeps focus inside the picker until a date is committed or Escape is pressed.

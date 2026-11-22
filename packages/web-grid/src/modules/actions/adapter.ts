@@ -23,7 +23,7 @@ import { cellSelectionExecutor } from './executors/cell-selection-executor.js'
 import { macroExecutor } from './executors/macro-executor.js'
 import { customEditorExecutor } from './executors/custom-editor-executor.js'
 import { mapKeyDownToAction, isPipelineKey, mapMouseDownToActions } from './event-mapper.js'
-import { getCursorPositionFromClick } from '../navigation/focus.js'
+import { getCursorPositionFromClick, focusCellTd } from '../navigation/focus.js'
 import type { CellCoordinates } from './types.js'
 import { extendCellRangeTo, extendCellRangeByKey, isRangeExtensionKey } from '../cell-selection/index.js'
 
@@ -189,6 +189,31 @@ export class ActionPipelineAdapter<T = unknown> {
 
 		// For 'always' mode, use full pipeline key handling
 		if (isAlways) {
+			const cellTd = target.closest('.wg__cell') as HTMLElement
+			// The focusable part: the inner input of a wrapped editor (date / combobox / autocomplete),
+			// else the editor itself (text / number input)
+			const editor = (cellTd.querySelector('.wg__combobox-input, .wg__autocomplete-input, .wg__date-input, .wg__select-trigger')
+				?? cellTd.querySelector('.wg__editor')) as HTMLElement | null
+			const hasModifier = e.ctrlKey || e.metaKey || e.altKey
+			if (target === cellTd) {
+				// The cell itself (Tab entered the grid on it, Escape left its editor): the grid is
+				// ONE tab stop — Tab leaves; Enter / F2 move into the cell's editor (its widget)
+				if (e.key === 'Tab') return false
+				if ((e.key === 'Enter' || e.key === 'F2') && !hasModifier && !e.shiftKey && editor) {
+					e.preventDefault()
+					e.stopPropagation()
+					editor.focus({ preventScroll: true })
+					if (editor instanceof HTMLInputElement && editor.type === 'text') editor.select()
+					return true
+				}
+			} else if (e.key === 'Escape' && !hasModifier && !dropdownOpen && !isEditing) {
+				// Escape in the always-on editor (nothing to close / cancel): back to the cell —
+				// from there Tab leaves the grid
+				e.preventDefault()
+				e.stopPropagation()
+				focusCellTd(cellTd)
+				return true
+			}
 			if (!isPipelineKey(e.key, dropdownOpen, isDropdown, isCheckbox)) return false
 
 			const action = mapKeyDownToAction(e, {
@@ -286,14 +311,14 @@ export class ActionPipelineAdapter<T = unknown> {
 			return true
 		}
 
-		// Not editing, navigate mode: the grid is ONE tab stop (ARIA grid pattern, roving
-		// tabindex) — Tab / Shift+Tab are the browser's: they leave the grid to the next /
+		// Not editing: the grid is ONE tab stop in every editTrigger mode (ARIA grid pattern,
+		// roving tabindex) — Tab / Shift+Tab are the browser's: they leave the grid to the next /
 		// previous focusable. (An open editor keeps Tab = commit + next cell, above.)
-		if (e.key === 'Tab' && this.ctx.engine.isNavigateMode) return false
+		if (e.key === 'Tab') return false
 
 		// Not editing: handle navigation and cell-edit-start keys
 		// Navigation keys move focus between cells
-		const navKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab', 'Home', 'End', 'PageUp', 'PageDown']
+		const navKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'PageUp', 'PageDown']
 		if (navKeys.includes(e.key)) {
 			const action = mapKeyDownToAction(e, {
 				currentCell: cell,

@@ -22,7 +22,7 @@ import { removeRangeBorder, isRangeExtensionKey, extendCellRangeByKey } from '..
 import { prepareRowReveal, fieldAt } from '../scroll/reveal.js'
 
 /** Keys a focused cell answers that bring a focused row outside the virtual window back first. */
-const CELL_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'PageUp', 'PageDown', 'Tab', 'Enter', 'F2'])
+const CELL_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'PageUp', 'PageDown', 'Enter', 'F2'])
 
 /**
  * Virtual scroll: the keyboard sits on the container while the focused cell's row is outside
@@ -44,8 +44,6 @@ function handleOffWindowCellKey<T>(ctx: GridHost<T>, e: KeyboardEvent): boolean 
 		return true
 	}
 	if (!CELL_KEYS.has(e.key)) return false
-	// Navigate mode: Tab is the browser's (the grid is one tab stop) — no replay on the cell
-	if (e.key === 'Tab' && ctx.engine.isNavigateMode) return false
 	// Rendering the row's window refocuses the focused cell (renderVirtualRows)
 	prepareRowReveal(ctx, { rowIndex: focused.rowIndex, field: fieldAt(ctx, focused.colIndex) }, 'keyboard')
 	const cell = ctx.shadow.querySelector(`td[data-row="${focused.rowIndex}"][data-col="${focused.colIndex}"]`) as HTMLElement | null
@@ -61,12 +59,46 @@ function handleOffWindowCellKey<T>(ctx: GridHost<T>, e: KeyboardEvent): boolean 
 	return true
 }
 
+/** Natively tabbable elements (the ones `tabindex="-1"` takes out of the tab order). */
+const TABBABLE = 'a[href], button, input, select, textarea, iframe, [contenteditable="true"], [tabindex]'
+
 /**
- * Handle keydown on the .wg container — Escape, Ctrl+C, and user-defined
- * range shortcuts. Routes the shortcut context to either the row-selection
+ * Forward Tab while the keyboard sits on the `.wg` container itself (a virtual grid whose
+ * active row scrolled out of the window, a selection's post-mousedown focus): the grid is ONE
+ * tab stop, so Tab leaves it — it must not land on the first tab stop INSIDE the container
+ * (the filter row, the first rendered cell). Every tabbable inside the container leaves the
+ * tab order for this one key press; the browser's own Tab then moves past the grid, and the
+ * tabindexes come back on the next task (after the focus moved). Shift+Tab needs nothing: the
+ * previous focusable is before the container already.
+ */
+function leaveGridOnContainerTab(e: KeyboardEvent): void {
+	if (e.key !== 'Tab' || e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) return
+	const container = e.target as HTMLElement
+	if (!container.classList.contains('wg')) return
+	const hidden: Array<[HTMLElement, string | null]> = []
+	for (const el of container.querySelectorAll<HTMLElement>(TABBABLE)) {
+		if (el.tabIndex < 0) continue
+		hidden.push([el, el.getAttribute('tabindex')])
+		el.setAttribute('tabindex', '-1')
+	}
+	if (hidden.length === 0) return
+	setTimeout(() => {
+		for (const [el, value] of hidden) {
+			// A tabindex rewritten meanwhile (the roving stop moved) is the newer truth
+			if (el.getAttribute('tabindex') !== '-1') continue
+			if (value === null) el.removeAttribute('tabindex')
+			else el.setAttribute('tabindex', value)
+		}
+	}, 0)
+}
+
+/**
+ * Handle keydown on the .wg container — Tab (leaves the grid), Escape, Ctrl+C, and
+ * user-defined range shortcuts. Routes the shortcut context to either the row-selection
  * shape or the cell-range shape based on which selection is active.
  */
 export function handleContainerKeyDown<T>(ctx: GridHost<T>, e: KeyboardEvent): void {
+	leaveGridOnContainerTab(e)
 	if (handleOffWindowCellKey(ctx, e)) return
 
 	const selectedRowIndices = ctx.engine.selectedRowIndices

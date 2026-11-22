@@ -67,3 +67,20 @@
 .wg--editable.wg--navigate-mode .wg__row--focused > .wg__cell.wg__row-number {
   background: var(--wg-row-focus-row-number-bg);
 }
+
+/* ==============================================================================
+   WIDGET CELLS (one tab stop, ARIA grid pattern)
+   ==============================================================================
+   The lead row-action cells (inline actions, actions column) are keyboard-navigable
+   cells; while one (or a control inside it) has the focus, the data cell's focus
+   ring steps back so only one cell looks focused. Controls inside cells are reached
+   with Enter / F2 and show a focus ring of their own. */
+.wg__table:has(.wg__widget-cell:focus-within) .wg__cell.wg__cell--focused {
+  box-shadow: inset calc(-1 * var(--wg-cell-splitter-width)) 0 0 var(--wg-cell-splitter-color);
+}
+
+.wg__cell [data-wg-widget]:focus-visible,
+.wg__widget-cell button:focus-visible {
+  outline: var(--wg-focus-border-width) solid var(--wg-focus-border-color);
+  outline-offset: -1px;
+}

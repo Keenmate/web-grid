@@ -7,7 +7,7 @@ import { test, expect, Page, cell, onGrid, gridLocator } from './fixtures'
  * Excel rule: every move lands on its target cell — the grid renders the target's window
  * first, then focuses it. Focus never drops to <body> / the container, `focusedCell` never
  * goes null, and a held key (keydowns faster than frames) moves exactly one row per press.
- * Run in the default dblclick mode (cells get tabindex only when focused) and navigate mode.
+ * Run in the default dblclick mode and navigate mode (both: one tab stop, roving tabindex).
  */
 
 const PAGE = '/test/virtual-scroll.html'
@@ -179,5 +179,21 @@ test.describe('virtual grid (navigate) — one tab stop', () => {
 		// back to the top: the active cell is the stop again
 		await gridLocator(page, GRID).evaluate((el: any) => { el.shadowRoot.querySelector('.wg').scrollTop = 0 })
 		await expect.poll(() => tabStops(page)).toEqual([[2, 1]])
+	})
+})
+
+for (const editTrigger of ['navigate', 'dblclick']) test.describe(`virtual grid (${editTrigger}) — Tab from the container`, () => {
+	test('the active row scrolled out (focus on the container): Tab leaves the grid, not onto the first rendered cell', async ({ page }) => {
+		await gotoGrid(page, editTrigger)
+		await focusCell(page, 2, 1)
+		await gridLocator(page, GRID).evaluate((el: any) => { el.shadowRoot.querySelector('.wg').scrollTop = 20000 })
+		await expect.poll(() => onGrid(page, (el: any) => el.shadowRoot.activeElement?.classList.contains('wg'), GRID)).toBe(true)
+		await page.keyboard.press('Tab')
+		expect(await page.evaluate(() => document.activeElement?.id)).toBe('vAfter')
+		// the in-grid tab stop is back once the focus left (exactly one)
+		await expect.poll(async () => (await onGrid(page, (el: any) => el.shadowRoot.querySelectorAll('tbody td.wg__cell[tabindex="0"]').length, GRID))).toBe(1)
+		// Shift+Tab comes back into the grid
+		await page.keyboard.press('Shift+Tab')
+		expect(await onGrid(page, (el: any) => !!el.shadowRoot.activeElement, GRID)).toBe(true)
 	})
 })
