@@ -49,14 +49,14 @@ test.beforeEach(async ({ page }) => {
 
 test('a per-tag page rule applies to a grid without explicit values (no reflection)', async ({ page }) => {
 	await mount(page, '')
-	expect(await read(page, el => [el.pageSize, el.isStriped, el[Symbol.for('@keenmate/web-grid:engine')].pageSize])).toEqual([5, false, 5])
+	expect(await read(page, el => [el.pageSize, el.isStriped, (window as any).__wgEngineOf(el).pageSize])).toEqual([5, false, 5])
 	expect(await read(page, el => [el.hasAttribute('page-size'), el.hasAttribute('striped')])).toEqual([false, false])
 	await expect(bodyRows(page)).toHaveCount(5)
 })
 
 test('an instance attribute beats the page rule; the rest of the rule still applies', async ({ page }) => {
 	await mount(page, 'page-size="20"')
-	expect(await read(page, el => [el.pageSize, el.isStriped, el[Symbol.for('@keenmate/web-grid:engine')].pageSize])).toEqual([20, false, 20])
+	expect(await read(page, el => [el.pageSize, el.isStriped, (window as any).__wgEngineOf(el).pageSize])).toEqual([20, false, 20])
 	await expect(bodyRows(page)).toHaveCount(20)
 })
 

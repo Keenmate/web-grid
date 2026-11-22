@@ -89,6 +89,10 @@ A major: the callback, event and item API below is breaking, so
   `@internal`, visible in the emitted `.d.ts` and at runtime). `el.engine` is now `undefined`; use the element's
   properties / methods or `el.controller`. The `.d.ts` of `<web-grid>` no longer names the engine, and the
   element no longer declares `implements GridHost` (module plumbing).
+- No key reaches it either: the element carries no string- or symbol-keyed engine member (the test-only
+  `el[Symbol.for('@keenmate/web-grid:engine')]` handle is gone). The modules' symbol is a non-registered
+  `Symbol()` on a private host object; the e2e fixtures reach the engine through a module-private registry
+  (`test/engine-handle.js` → `window.__wgEngineOf`) that the package entry does not export.
 
 ### Changed — the grid is ONE tab stop (2026-11-22)
 - **Visible: Tab now leaves the grid.** Navigate mode (`editTrigger: 'navigate'`, `mode: 'excel'`) follows the ARIA

@@ -144,7 +144,7 @@ test('a partial labels object resolves per key; a full web-grid.* key works too'
 	expect(await onGrid(page, el => {
 		el.labels = { 'menuItems.hideColumn': 'Skrýt', 'web-grid.menuItems.sortDesc': 'Sestupně' }
 		el.flush()
-		const l = el[Symbol.for('@keenmate/web-grid:engine')].labels  // the resolved (merged) texts; el.labels reads back what was assigned
+		const l = (window as any).__wgEngineOf(el).labels  // the resolved (merged) texts; el.labels reads back what was assigned
 		return [l['menuItems.hideColumn'], l['menuItems.sortDesc'], l['menuItems.sortAsc'], l['menuItems.addRow'], l['buttons.nextPage'], el.labels]
 	})).toEqual(['Skrýt', 'Sestupně', 'Sort Ascending', 'Add row', '▶', { 'menuItems.hideColumn': 'Skrýt', 'web-grid.menuItems.sortDesc': 'Sestupně' }])
 })
@@ -257,7 +257,7 @@ test.describe('page-wide labels (core /locale: window.components.locale)', () =>
 			el.translateCallback = ({ key }: { key: string }) => (key === 'web-grid.labels.perPage' ? 'early' : null)
 			document.body.append(el)
 			await el.whenReady()
-			const text = el[Symbol.for('@keenmate/web-grid:engine')].labels['labels.perPage']
+			const text = (window as any).__wgEngineOf(el).labels['labels.perPage']
 			el.remove()
 			return text
 		})
@@ -281,7 +281,7 @@ test.describe('escaping (core /locale split: content → labels.html, attributes
 		const html = await onGrid(page, el => {
 			el.labels = { 'labels.pageInfo': '<b>{current}</b> / {total}' }
 			el.flush()
-			return el[Symbol.for('@keenmate/web-grid:engine')].labelHtml('labels.pageInfo', { current: '<img src=x>', total: 2 })
+			return (window as any).__wgEngineOf(el).labelHtml('labels.pageInfo', { current: '<img src=x>', total: 2 })
 		})
 		expect(html).toBe('<b>&lt;img src=x&gt;</b> / 2')
 	})

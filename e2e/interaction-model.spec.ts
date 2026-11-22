@@ -337,15 +337,16 @@ test.describe('contexts, twins, controller', () => {
 		expect(r).toEqual({ isFrozen: true, hasEngineInternals: false, keys: 73, itemsLive: true })
 	})
 
-	test('the engine is private: no `el.engine`, no string-keyed member holds it', async ({ page }) => {
+	test('the engine is private: no `el.engine`, no string- or symbol-keyed member holds it', async ({ page }) => {
 		const r = await grid(page).evaluate((el: any) => {
-			const engine = el[Symbol.for('@keenmate/web-grid:engine')]  // test-only handle
-			const stringKeys = new Set<string>()
-			for (let o = el; o && o !== HTMLElement.prototype; o = Object.getPrototypeOf(o)) Object.getOwnPropertyNames(o).forEach(k => stringKeys.add(k))
-			const holders = [...stringKeys].filter(k => { try { return el[k] === engine } catch { return false } })
-			return { hasEngine: 'engine' in el, isEngineReachable: !!engine, holders }
+			const engine = (window as any).__wgEngineOf(el)  // test-only handle (test/engine-handle.js)
+			const keys = new Set<string | symbol>()
+			for (let o = el; o && o !== HTMLElement.prototype; o = Object.getPrototypeOf(o)) Reflect.ownKeys(o).forEach(k => keys.add(k))
+			const holders = [...keys].filter(k => { try { return el[k] === engine } catch { return false } }).map(String)
+			const registered = el[Symbol.for('@keenmate/web-grid:engine')]  // the old registered test key
+			return { hasEngine: 'engine' in el, isEngineReachable: !!engine, holders, hasRegisteredKey: registered !== undefined }
 		})
-		expect(r).toEqual({ hasEngine: false, isEngineReachable: true, holders: [] })
+		expect(r).toEqual({ hasEngine: false, isEngineReachable: true, holders: [], hasRegisteredKey: false })
 	})
 
 	test('the module internals are private: no dropdown / toolbar / render / event managers / … on the element', async ({ page }) => {
@@ -378,7 +379,7 @@ test.describe('open gaps (interaction-model-plan follow-ups)', () => {
 		await page.keyboard.press('Alt+ArrowDown')
 		await expect.poll(() => names(page)).toEqual(['Alpha', 'Gamma', 'Beta', 'Delta'])
 		await expect(cell(page, 2, 1)).toBeFocused({ timeout: 1500 })
-		expect(await grid(page).evaluate((el: any) => el[Symbol.for('@keenmate/web-grid:engine')].focusedCell)).toMatchObject({ rowIndex: 2, colIndex: 1 })
+		expect(await grid(page).evaluate((el: any) => (window as any).__wgEngineOf(el).focusedCell)).toMatchObject({ rowIndex: 2, colIndex: 1 })
 		// repeated: the same row keeps moving
 		await page.keyboard.press('Alt+ArrowDown')
 		await expect.poll(() => names(page)).toEqual(['Alpha', 'Gamma', 'Delta', 'Beta'])

@@ -18,12 +18,11 @@ import type { FilterRowService } from './filter-row/index.js'
 import type { ActionPipelineAdapter } from './actions/adapter.js'
 
 /**
- * Key of the element's internal {@link GridEngine} on the module host. A symbol, so the engine is
- * never a public member of `<web-grid>` (the element itself keeps it in `#engine`; not exported
- * from the package). Registered (`Symbol.for`) ONLY so e2e fixtures can reach the engine —
- * test-only, not API: `el[Symbol.for('@keenmate/web-grid:engine')]`.
+ * Key of the element's internal {@link GridEngine} on the module host (a private object, never the
+ * element). A non-registered symbol: nothing outside the bundle can recreate it. The element keeps the
+ * engine in `#engine`; tests reach it through `engineOf()` (modules/engine-registry.ts), never a key.
  */
-export const GRID_ENGINE: unique symbol = Symbol.for('@keenmate/web-grid:engine')
+export const GRID_ENGINE: unique symbol = Symbol('@keenmate/web-grid:engine')
 
 /**
  * The module host: a private object of the element (`GridElement#host`), never the element itself and

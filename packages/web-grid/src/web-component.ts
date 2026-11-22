@@ -254,6 +254,7 @@ import {
 
 import type { GridHost } from './modules/grid-context.js'
 import { GRID_ENGINE } from './modules/grid-context.js'
+import { registerEngine } from './modules/engine-registry.js'
 import { syncLoadingMoreLoader, removeAllLoaders } from './modules/rendering/loader.js'
 import { applyGridAria } from './modules/rendering/aria.js'
 
@@ -1085,8 +1086,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	declare onAction: ((detail: GridEventMap<T>['action']) => void) | null
 
 	/**
-	 * The internal state engine (composition). Truly private: the modules reach it through
-	 * the symbol-keyed `GRID_ENGINE` property (modules/grid-context.ts), never a public member.
+	 * The internal state engine (composition). Truly private: the modules reach it through the module
+	 * host's symbol-keyed `GRID_ENGINE` property (modules/grid-context.ts), never a member of the element.
 	 */
 	readonly #engine: GridEngine<T>
 
@@ -1118,8 +1119,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		super()
 		this.#shadow = this.attachShadow({ mode: 'open' })
 		this.#engine = new GridEngine<T>()
-		// The engine under a registered symbol, non-enumerable — the controller's and e2e's handle (not a public member)
-		Object.defineProperty(this, GRID_ENGINE, { value: this.#engine })
+		// Test-only lookup (module-private WeakMap, not exported from the package) — no key on the element
+		registerEngine(this, this.#engine)
 		this.#host = this.#createHost()
 		this.#engine.setStateStore(this.#stateStore)
 		// Labels through core /locale: page-wide flat labels ('web-grid.<key>') + translateCallback, this element's logger

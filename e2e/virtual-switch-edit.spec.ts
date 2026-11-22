@@ -26,7 +26,7 @@ async function snap(page: Page, col: number): Promise<Snap> {
 		const focus = td
 			? `${td.dataset.row}:${td.dataset.col}${a === td ? '' : '/editor'}`
 			: a?.classList.contains('wg') ? 'grid' : `${a?.tagName.toLowerCase()}`
-		const pending = (g as unknown as Record<symbol, { editingCell: { rowIndex: number; field: string } | null }>)[Symbol.for('@keenmate/web-grid:engine')].editingCell
+		const pending = (window as unknown as { __wgEngineOf(el: Element): { editingCell: { rowIndex: number; field: string } | null } }).__wgEngineOf(g).editingCell
 		const target = root.querySelector(`td.wg__cell[data-row="${row}"][data-col="${col}"]`)
 		const input = target?.querySelector('input') as HTMLInputElement | null
 		type Logged = { type: string; via: string; grid: string; detail: { rowIndex: number; field: string; newValue?: unknown } }

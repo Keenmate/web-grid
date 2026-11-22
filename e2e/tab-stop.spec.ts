@@ -45,7 +45,7 @@ const gridFocus = (page: Page, id: string) => onGrid(page, (el: any) => {
 const pageFocus = (page: Page) => page.evaluate(() => document.activeElement?.id ?? '')
 
 const focusedCell = (page: Page, id: string) => onGrid(page, (el: any) => {
-	const f = el[Symbol.for('@keenmate/web-grid:engine')].focusedCell
+	const f = (window as any).__wgEngineOf(el).focusedCell
 	return f ? [f.rowIndex, f.colIndex] : null
 }, id)
 
