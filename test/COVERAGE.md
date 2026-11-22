@@ -117,6 +117,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Ctrl+C honours `getCopyValueCallback` (#1 fixed) and drafts (#9 fixed); clipboard rejection handled (GRID-2) | ✓ | `copy.spec.ts` | `copy.html` |
 | Copy = the shown text for date / dropdown cells (single / range / row / column; callback precedence); a pasted option label maps back to its value | ✓ | `copy.spec.ts` | `copy.html` #shown |
 | Typing starts editing + Ctrl+V pastes on a focused cell in every editTrigger mode (an `always` cell after Escape; a read-only `always` cell takes focus on click); read-only / disabled grids take neither | ✓ | `type-paste.spec.ts` | `type-paste.html` |
+| An open dropdown re-anchors to its cell's new editor after a full table / virtual window re-render (position + combobox ARIA) | ✓ | `dropdown-close.spec.ts` | `dropdown-close.html` |
 | `copySelectedRowsToClipboard`, `copyCellSelectionToClipboard`, failure → false | ✓ | `copy.spec.ts` | `copy.html` |
 | `rowShortcuts`, Ctrl+U move, disabled callback, help overlay | ✓ | `shortcuts.spec.ts` | `shortcuts.html` |
 

@@ -317,3 +317,40 @@ test.describe("dropdown: a move's scroll saves, a user scroll cancels", () => {
 		expect(await snap(page, 'grid', 3, COL.product)).toEqual({ dropdown: 0, editing: [], focus: '3:2', value: 'Phone', events: ['cell-edit-start(3.product)', 'cell-edit-cancel(3.product)'] })
 	})
 })
+
+// A render that replaces the edited cell (the table, the virtual window) while the dropdown is open:
+// the panel moves onto the new cell's editor — position and the combobox ARIA follow it.
+test.describe('dropdown: a re-render keeps the open panel on its cell', () => {
+	/** The open panel vs the edited cell's editor (now in the DOM). */
+	const anchorState = (page: Page, id: string, row: number, field: string) => gridLocator(page, id).evaluate((el: any, [row, field]) => {
+		const root = el.shadowRoot as ShadowRoot
+		const panel = root.querySelector('.wg__dropdown') as HTMLElement | null
+		const editor = root.querySelector(`[data-row="${row}"][data-field="${field}"].wg__editor--select, [data-row="${row}"][data-field="${field}"].wg__editor--combobox`) as HTMLElement | null
+		const field_ = editor?.matches('[role="combobox"]') ? editor : (editor?.querySelector('input') ?? editor)
+		const p = panel?.getBoundingClientRect(), c = editor?.getBoundingClientRect()
+		return {
+			isOpen: !!panel,
+			isUnderCell: !!p && !!c && Math.abs(p.left - c.left) <= 1 && p.top >= c.bottom - 1 && p.top - c.bottom <= 12,
+			expanded: field_?.getAttribute('aria-expanded') ?? null,
+			isControlled: !!panel && field_?.getAttribute('aria-controls') === panel.id
+		}
+	}, [row, field] as const)
+
+	test('a full table render that moves the cell (row numbers shown): the panel follows it', async ({ page }) => {
+		await openEditor(page, 'grid', 2, COL.product)
+		expect(await anchorState(page, 'grid', 2, 'product')).toEqual({ isOpen: true, isUnderCell: true, expanded: 'true', isControlled: true })
+		await gridLocator(page, 'grid').evaluate((el: any) => { el.isRowNumbersShown = true })
+		await expect.poll(() => anchorState(page, 'grid', 2, 'product')).toEqual({ isOpen: true, isUnderCell: true, expanded: 'true', isControlled: true })
+		// The edit goes on: a pick saves on the same cell
+		await gridLocator(page, 'grid').locator('.wg__dropdown-option', { hasText: 'Laptop' }).click()
+		await expect(gridLocator(page, 'grid').locator('.wg__dropdown')).toHaveCount(0)
+		expect((await snap(page, 'grid', 2, COL.product)).value).toBe('Laptop')
+	})
+
+	test('a virtual window re-render: the panel stays on the cell', async ({ page }) => {
+		await openEditor(page, 'vgrid', 1, COL.status)
+		expect((await anchorState(page, 'vgrid', 1, 'status')).isUnderCell).toBe(true)
+		await gridLocator(page, 'vgrid').evaluate((el: any) => { el.items = [...el.items] })
+		await expect.poll(() => anchorState(page, 'vgrid', 1, 'status')).toEqual({ isOpen: true, isUnderCell: true, expanded: 'true', isControlled: true })
+	})
+})

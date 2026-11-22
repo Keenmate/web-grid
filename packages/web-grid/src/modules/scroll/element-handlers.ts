@@ -13,6 +13,7 @@ import { untabCellWidgets } from '../rendering/cell-widgets.js'
 import { renderDataRowsVirtual, renderLoadingMoreRow, type VirtualScrollParams } from '../rendering/table.js'
 import { syncLoadingMoreLoader } from '../rendering/loader.js'
 import { visibleRowRange, shouldTriggerInfiniteScroll } from './calculations.js'
+import { reanchorOpenDropdown } from '../dropdown/rendering.js'
 import { GRID_ENGINE } from '../grid-context.js'
 
 /**
@@ -57,6 +58,7 @@ export function renderVirtualRows<T>(ctx: GridHost<T>, container: HTMLElement): 
 
 	tbody.innerHTML = renderDataRowsVirtual(ctx, params)
 	untabCellWidgets(tbody)
+	reanchorOpenDropdown(ctx)  // an open dropdown follows its cell's new editor
 	syncLoadingMoreLoader(ctx)
 
 	// Re-focus the focusedCell after re-render (if it's in the rendered range).

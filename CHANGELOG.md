@@ -18,6 +18,13 @@ Target: **2.0.0-rc01** — a major: the callback, event and item API below is br
   whole chain (instance → page dictionary → `translateCallback` → default). `ctx.labels['menuItems.sortAsc']` →
   `ctx.labels.text('menuItems.sortAsc')`.
 
+### Fixed — an open dropdown follows its cell through a re-render (2026-11-22)
+- A render that replaced the edited cell while its dropdown was open (a full table render — e.g. `items` replaced,
+  row numbers shown —, the virtual window, a single-cell render) left the panel anchored to the removed cell: it
+  stayed at the old coordinates when the cell moved, the next re-positioning measured a detached element, and the
+  new combobox field lost `aria-expanded` / `aria-controls`. The panel now re-anchors to the new cell's editor
+  (core popover `reanchor()`), and the ARIA wiring moves with it.
+
 ### Changed — typing and paste on a focused cell in every edit mode (2026-11-22)
 - **Ctrl+V pastes into the focused cell in every `editTrigger` mode** (was navigate mode only): click / dblclick /
   button / always grids now take a one-cell or TSV paste at the focused cell like Excel. Read-only / disabled grids

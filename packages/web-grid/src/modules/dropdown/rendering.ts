@@ -138,7 +138,8 @@ export function renderDropdown<T>(
 	// On a phone it opens un-anchored as the sheet (enterDropdownSheet(); css/sheet.css).
 	if (opts.dropdownMinWidth) dropdown.style.minWidth = opts.dropdownMinWidth
 	const popover = createPopover({
-		reference: anchor,
+		// Read at every (re)anchoring: a table re-render replaces the cell → reanchorOpenDropdown()
+		reference: () => panelInfos.get(dropdown)?.anchor ?? anchor,
 		panel: dropdown,
 		container: ctx.shadow,
 		inheritThemeFrom: false,
@@ -169,6 +170,31 @@ export function renderDropdown<T>(
 	removeFillHandle()  // Hide fill handle when dropdown opens
 
 	return dropdown
+}
+
+/**
+ * A render replaced the cell the open dropdown hangs on (a full table render, the virtual window,
+ * a single-cell render): move the panel onto the new cell's editor — the same selector the
+ * openers use (`.wg__editor--select / --combobox / --autocomplete` with the edited row / field).
+ * The popover re-anchors (position from the new cell; core's scroll rule watches the new one),
+ * the ARIA combobox wiring moves to the new field. No new editor (the edit ended): nothing here —
+ * the edit's own close path removes the panel.
+ */
+export function reanchorOpenDropdown<T>(ctx: GridHost<T>): void {
+	const open = ctx.shadow.querySelector('.wg__dropdown') as HTMLElement | null
+	const info = open ? panelInfos.get(open) : undefined
+	if (!open || !info || info.anchor.isConnected) return
+	const { row, field } = info.anchor.dataset
+	if (row === undefined || field === undefined) return
+	const next = ctx.shadow.querySelector(
+		`.wg__editor--select[data-row="${row}"][data-field="${CSS.escape(field)}"],
+		 .wg__editor--combobox[data-row="${row}"][data-field="${CSS.escape(field)}"],
+		 .wg__editor--autocomplete[data-row="${row}"][data-field="${CSS.escape(field)}"]`
+	) as HTMLElement | null
+	if (!next) return
+	info.anchor = next
+	popovers.get(open)?.reanchor()  // no-op as the (un-anchored) phone sheet; setAnchored(true) reads the new one
+	if (!sheets.has(open)) wireDropdownAria(open, next, ctx.dropdown.highlightedIndex)
 }
 
 /**

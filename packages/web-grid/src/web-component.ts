@@ -90,7 +90,8 @@ import {
 	AutocompleteService,
 	DropdownService,
 	handleSelectBlur,
-	handleComboboxBlur
+	handleComboboxBlur,
+	reanchorOpenDropdown
 } from './modules/dropdown/index.js'
 
 import {
@@ -2279,6 +2280,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		// Extracted to modules/navigation/post-render-focus.ts
 		// (a focused filter-row input keeps the focus — the cell isn't re-focused)
 		restoreFocusAfterRender(this.#host, container, filterFocus ? null : focusedCell, editorText)
+		// An open dropdown follows its cell's new editor (the old one went with the table)
+		reanchorOpenDropdown(this.#host)
 		// Exactly one body cell is the tab stop (roving tabindex); controls inside cells are none
 		untabCellWidgets(container.querySelector('.wg__table > tbody'))
 		syncTabStop(this.#host)

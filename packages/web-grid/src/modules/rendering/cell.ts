@@ -10,6 +10,7 @@ import { wrapTreeCell } from './tree-render.js'
 import { getCellTooltip } from './table.js'
 import { isCellSelectable } from './aria.js'
 import { untabCellWidgets } from './cell-widgets.js'
+import { reanchorOpenDropdown } from '../dropdown/rendering.js'
 import { GRID_ENGINE } from '../grid-context.js'
 
 export type RenderCellOptions = {
@@ -107,6 +108,7 @@ export function renderCell<T>(
 	// Update content
 	if (shouldShowEditor) {
 		cell.innerHTML = wrapTreeCell(ctx, column, item, renderCellEditor(ctx, rowIndex, colIndex, column))
+		reanchorOpenDropdown(ctx)  // an open dropdown on this cell follows its new editor
 
 		// Focus editor if requested
 		if (options.focusEditor) {
