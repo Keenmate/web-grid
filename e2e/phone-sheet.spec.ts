@@ -236,22 +236,33 @@ test.describe('phone: the cell popups are a full-screen sheet', () => {
 		const scrollY = () => page.evaluate(() => Math.round(window.scrollY))
 		const before = await scrollY()
 		expect(before).toBeGreaterThan(1000)
+		// Scroll events are dispatched at the next rendering step, not when the position changes: two
+		// animation frames flush the ones already queued (the open's scroll lock) before / after a check.
+		const frames = () => page.evaluate(() => new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r()))))
 		// Every scroll position from the close on (the browser's own restore would flash to 0)
 		const track = () => page.evaluate(() => {
-			const w = window as unknown as { __ys: number[] }
+			const w = window as unknown as { __ys: number[]; __track?: () => void }
 			w.__ys = []
-			addEventListener('scroll', () => w.__ys.push(Math.round(scrollY)))
+			if (w.__track) removeEventListener('scroll', w.__track)
+			w.__track = () => w.__ys.push(Math.round(scrollY))
+			addEventListener('scroll', w.__track)
 		})
 		const seen = () => page.evaluate(() => (window as unknown as { __ys: number[] }).__ys)
+		// The close is over once our history entry is gone and the page's own scrollRestoration is back
+		// (core claimBackEntry: a deferred history.back(), its popstate, then the mode one task later)
+		const historySettled = () => page.evaluate(() =>
+			!(history.state as { kmBackEntry?: boolean } | null)?.kmBackEntry && history.scrollRestoration === 'auto')
 
 		for (const close of ['close button', 'Back'] as const) {
 			await cell(page, ROW, 1).tap()
 			await expect(sheetOf(page)).toHaveCount(1)
+			await frames()  // the open's own scroll events (the page lock) are not the close's
 			await track()
 			if (close === 'Back') await page.evaluate(() => history.back())
 			else await sheetOf(page).locator('.wg__sheet-close').tap()
 			await expect(sheetOf(page)).toHaveCount(0)
-			await page.waitForTimeout(300) // the deferred history.back() and its traversal
+			await expect.poll(historySettled, { message: close }).toBe(true)
+			await frames()  // any scroll the traversal caused is dispatched by now
 			expect(await scrollY(), close).toBe(before)
 			expect((await seen()).filter((y) => y !== before), close).toEqual([])
 		}
