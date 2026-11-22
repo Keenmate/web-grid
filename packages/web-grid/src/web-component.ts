@@ -792,7 +792,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	// filters, focusedRowIndex, totalItems, expandedPaths, hasMoreItems)
 	// deliberately stay property-only.
 	// `as const` keeps the configKey literals: they type GridResponsiveConfig.
-	/** @internal */
+	/** The core input table (read by BlissElement; `GridInputKey` is derived from it). @ignore */
 	static inputs = [
 		// Filtering & pagination
 		{ configKey: 'isFilteringEnabled', attribute: 'enable-filtering', converter: toBool('default-false'), default: false, on: 'update', description: 'Show the filter row (an input under the header of every column with `isFilterable: true`) and apply `filters`. Default: `false`.' },
@@ -1040,7 +1040,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		...menuPresentationInputs(),
 	] as const satisfies readonly InputDef[]
 
-	/** @internal */
+	/** The core event table (read by BlissElement for the `on<Name>` twins). @ignore */
 	static events = EVENTS
 
 	// Type-only: core installs the `on<Name>` twins at runtime (§12.5); each is
@@ -1090,111 +1090,37 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	 */
 	readonly #engine: GridEngine<T>
 
-	/** This element as the module host (`GridHost`: the element + its engine under `GRID_ENGINE`). */
-	get #host(): GridHost<T> {
-		const host: Omit<GridHost<T>, typeof GRID_ENGINE> = this
-		return host as GridHost<T>
-	}
+	/**
+	 * The module host (`GridHost`, modules/grid-context.ts): a private object holding the grid's runtime
+	 * services / UI state (dropdown, toolbar, filter row, datepicker, menu, virtual scroll, event managers,
+	 * the action-pipeline adapter, …) plus the element calls the modules make. Not a member of `<web-grid>`:
+	 * none of it is public API (no `el.dropdown`, `el.render()`, … in the .d.ts or at runtime).
+	 */
+	readonly #host: GridHost<T>
 
-	// Shadow DOM root
-	/** @internal */
-	readonly shadow: ShadowRoot
+	/** Shadow root (open; `el.shadowRoot` is the platform's own accessor). */
+	readonly #shadow: ShadowRoot
 
 	// Update batching
-	private updatePending = false
-
-	// Flag to prevent blur from committing when keyboard already handled it
-	/** @internal */
-	isCommittingFromKeyboard = false
-
-	// Flag to prevent blur from cancelling edit when switching between dropdown cells
-	/** @internal */
-	isTransitioningCells = false
+	#updatePending = false
 
 	// Flag to track if clickEvents subscriptions have been added (only subscribe once)
-	private clickEventsSubscribed = false
+	#clickEventsSubscribed = false
 
 	// Flag to track if focusEvents subscriptions have been added (only subscribe once)
-	private focusEventsSubscribed = false
+	#focusEventsSubscribed = false
 
-	// Floating-toolbar runtime state — owned by ToolbarService (hover hide-timeout,
-	// hover/move flags, hovered cell, cell-items JSON snapshot, document keydown handlers
-	// for both floating and inline modes).
-	/** @internal */
-	toolbar = new ToolbarService()
-
-	// Filter row runtime state — typed text not applied yet + debounce timers.
-	/** @internal */
-	filterRow = new FilterRowService()
-
-	/** The filter-row text typed for `field` but not applied yet (survives re-renders). */
-	/** @internal */
-	filterInputText(field: string): string | undefined {
-		return this.filterRow.pendingText.get(field)
-	}
-
-	// Dropdown runtime state — owned by DropdownService (open flag, options, highlight,
-	// filter text, race-condition flags: isOpening / isClosingViaToggle / justSelected /
-	// userInteracted / isUserFiltering).
-	/** @internal */
-	dropdown = new DropdownService()
-
-	// Autocomplete async state
-	// Autocomplete async state — owned by AutocompleteService (debounce timer, abort controller, search-in-flight flag).
-	/** @internal */
-	autocomplete = new AutocompleteService()
-
-	// The delegated core tooltips (cells / header / rows + toolbar buttons) — live while connected.
-	/** @internal */
-	tooltip = new GridTooltips()
-
-	// DatePicker instance (for date editor) - exposed via GridHost for pipeline access
-	/** @internal */
-	datepicker: DatePicker | null = null
-
-	// Phone presentation of the cell dropdown / date editor (core resolvePresentation(): fullscreen
-	// on a phone) — set by environmentChanged(), read by the two popups (see modules/sheet)
-	/** @internal */
-	isPhoneSheet = false
-
-	// The open cell / header menu (core openMenu(), in the shadow root) - exposed via GridHost for pipeline access
-	/** @internal */
-	menu: MenuHandle | null = null
-
-	/** @internal The cell / header menu's presentation + drawer side (inputs `menu-presentation` / `menu-side`), read at every open. */
-	getMenuPresentationOptions(): { presentation: MenuPresentation; side: MenuDrawerSide } {
-		return menuPresentationOptions(this.config)
-	}
-
-	// Virtual scroll state — owned by VirtualScrollService (visible-range, load-more flag, programmatic-scroll guard).
-	/** @internal */
-	virtualScroll = new VirtualScrollService()
-
-	// Scroll event manager (pub/sub for scroll events)
-	/** @internal */
-	readonly scrollEvents: ScrollEventManager
-
-	// Focus event manager (pub/sub for blur/focusout events)
-	/** @internal */
-	readonly focusEvents: FocusEventManager
-
-	// Click event manager (pub/sub for click inside/outside events)
-	/** @internal */
-	readonly clickEvents: ClickEventManager
-
-	// Action pipeline adapter (for 'always' editTrigger mode)
-	/** @internal */
-	pipelineAdapter: ActionPipelineAdapter<T> | null = null
+	// Click event manager (pub/sub for click inside/outside events) — element-only
+	readonly #clickEvents: ClickEventManager
 
 	/** function Object() { [native code] } */
 	constructor() {
 		super()
-		/** @internal */
-		this.shadow = this.attachShadow({ mode: 'open' })
-		/** @internal */
+		this.#shadow = this.attachShadow({ mode: 'open' })
 		this.#engine = new GridEngine<T>()
-		// The modules' handle on the engine (symbol-keyed, non-enumerable — not a public member)
+		// The engine under a registered symbol, non-enumerable — the controller's and e2e's handle (not a public member)
 		Object.defineProperty(this, GRID_ENGINE, { value: this.#engine })
+		this.#host = this.#createHost()
 		this.#engine.setStateStore(this.#stateStore)
 		// Labels through core /locale: page-wide flat labels ('web-grid.<key>') + translateCallback, this element's logger
 		this.#engine.setLabelHost(this)
@@ -1203,31 +1129,18 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		this.#engine.attachHost(this, () => this.controller, (name, detail) => {
 			this.emit(name, detail as never)
 			// Commits update cells surgically (no full render) — refresh the summary too
-			if (name === 'row-change') this.scheduleSummaryRefresh()
+			if (name === 'row-change') this.#scheduleSummaryRefresh()
 		})
 
-		/** @internal */
-		this.scrollEvents = createScrollEventManager()
-		/** @internal */
-		this.clickEvents = createClickEventManager()
-		/** @internal */
-		this.focusEvents = createFocusEventManager(
-			() => ({
-				isCommittingFromKeyboard: this.isCommittingFromKeyboard,
-				isTransitioningCells: this.isTransitioningCells,
-				isClosingViaToggle: this.dropdown.isClosingViaToggle,
-				isOpeningDropdown: this.dropdown.isOpening
-			}),
-			() => { this.dropdown.setIsClosingViaToggle(false) }
-		)
+		this.#clickEvents = createClickEventManager()
 
 		// The grid's own CSS (all in @layer variables / component / overrides): one shared constructable
 		// sheet per document (core adoptStyles), adopted before the first render — no FOUC; custom CSS
 		// (unlayered <style> slots) still wins.
-		adoptStyles(this.shadow, styles, ICON_CSS)
+		adoptStyles(this.#shadow, styles, ICON_CSS)
 		// A DOM move (dashboard reorder, re-parent) keeps the grid's state; this keeps its scroll position too
 		// (core keepScrollAcrossMove — the browser resets a detached scroller to 0).
-		keepScrollAcrossMove(this, () => [this.shadow.querySelector('.wg')])
+		keepScrollAcrossMove(this, () => [this.#shadow.querySelector('.wg')])
 
 		// Override requestUpdate to invalidate the data-pipeline cache and trigger DOM render.
 		// Every state-changing setter on GridEngine funnels through requestUpdate(), so this is
@@ -1238,34 +1151,101 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 			_onInteractionChange: ((type: string, detail: { prev: unknown, current: unknown }) => void) | null
 			_onCommitApplied: ((rowIndex: number, field: string) => void) | null
 		}
-		/** @internal */
+		/** @ignore engine wiring, not an element member (the CEM analyzer reads constructor assignments) */
 		engineHooks.requestUpdate = () => {
 			this.#engine.invalidateDisplayCache()
-			this.requestUpdate()
+			this.#requestUpdate()
 		}
 
 		// Handle interaction changes (cleanup dropdown when editing is cancelled externally)
-		/** @internal */
+		/** @ignore engine wiring, not an element member (the CEM analyzer reads constructor assignments) */
 		engineHooks._onInteractionChange = (type, detail) => {
 			if (type === 'editingCell' && detail.current === null) {
 				// The edit ended (saved / cancelled, any path) - close its dropdown / date picker
 				// ('api': whoever ended the edit already saved or cancelled it)
 				removeDropdown(this.#host)
-				if (this.datepicker) {
-					this.datepicker.close()
-					this.datepicker = null
+				if (this.#host.datepicker) {
+					this.#host.datepicker.close()
+					this.#host.datepicker = null
 				}
 			}
 		}
 
 		// An async validateCallback's result arrived after the edit ended: show it (the value, a
 		// transform, the invalid mark). A cell being edited again keeps its editor.
-		/** @internal */
+		/** @ignore engine wiring, not an element member (the CEM analyzer reads constructor assignments) */
 		engineHooks._onCommitApplied = (rowIndex, field) => {
 			if (this.#engine.isEditing(rowIndex, field)) return
 			const colIndex = this.#engine.columns.findIndex(c => String(c.field) === field)
 			if (colIndex >= 0) renderCell(this.#host, rowIndex, colIndex)
 		}
+	}
+
+	/** Build the module host (see `#host`). State lives on it; element calls delegate back here. */
+	#createHost(): GridHost<T> {
+		// eslint-disable-next-line @typescript-eslint/no-this-alias
+		const el = this
+		const engine = this.#engine
+		const host: GridHost<T> = {
+			[GRID_ENGINE]: engine,
+			shadow: this.#shadow,
+			setAttributes: (values) => el.setAttributes(values),
+			dispatchEvent: (event) => el.dispatchEvent(event),
+			dropdown: new DropdownService(),
+			isCommittingFromKeyboard: false,
+			isTransitioningCells: false,
+			menu: null,
+			getMenuPresentationOptions: () => menuPresentationOptions(el.config),
+			datepicker: null,
+			isPhoneSheet: false,
+			autocomplete: new AutocompleteService(),
+			tooltip: new GridTooltips(),
+			get tooltipShowDelay() { return el.tooltipShowDelay },
+			get tooltipHideDelay() { return el.tooltipHideDelay },
+			get overlayGroup() { return el.overlayGroup },
+			get beforeScrollCallback() { return el.beforeScrollCallback },
+			virtualScroll: new VirtualScrollService(),
+			toolbar: new ToolbarService(),
+			filterRow: new FilterRowService(),
+			filterInputText: (field) => host.filterRow.pendingText.get(field),
+			render: () => el.#render(),
+			renderConnector: () => renderConnectorModule(host),
+			openLayer: (options) => el.#openLayer(options),
+			pipelineAdapter: null,
+			getCurrentEditingColumn: () => {
+				const editingCell = engine.editingCell
+				if (!editingCell) return null
+				return engine.columns.find(c => String(c.field) === editingCell.field) || null
+			},
+			getCurrentEditorOptions: () => host.getCurrentEditingColumn()?.editorOptions || {},
+			moveFocusAfterCommit: (rowIndex, field, direction) => moveFocusAfterCommit(host, rowIndex, field, direction),
+			openCustomEditor: (rowIndex, colIndex) => el.openCustomEditor(rowIndex, colIndex),
+			scrollToRow: (rowIndex) => el.scrollToRow(rowIndex),
+			openGoToRowDialog: (colIndex) => openGoToRowDialogModule(host, colIndex),
+			clearAllSelections: () => clearAllSelectionsModule(host),
+			commitOrCancelEditOnTransition: () => commitOrCancelEditOnTransitionModule(host),
+			updateRowFocusVisual: (prevRowIndex, newRowIndex) => {
+				if (prevRowIndex === newRowIndex) return
+				if (prevRowIndex !== null) {
+					el.#shadow.querySelector(`tr[data-row-index="${prevRowIndex}"]`)?.classList.remove('wg__row--focused')
+				}
+				if (newRowIndex !== null) {
+					el.#shadow.querySelector(`tr[data-row-index="${newRowIndex}"]`)?.classList.add('wg__row--focused')
+				}
+			},
+			isMouseDown: false,
+			scrollEvents: createScrollEventManager(),
+			focusEvents: createFocusEventManager(
+				() => ({
+					isCommittingFromKeyboard: host.isCommittingFromKeyboard,
+					isTransitioningCells: host.isTransitioningCells,
+					isClosingViaToggle: host.dropdown.isClosingViaToggle,
+					isOpeningDropdown: host.dropdown.isOpening
+				}),
+				() => { host.dropdown.setIsClosingViaToggle(false) }
+			),
+		}
+		return host
 	}
 
 	// ==========================================================================
@@ -1316,7 +1296,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 
 	#applyCustomStyles(): void {
 		if (this.#customStyles) return this.#customStyles.refresh()
-		this.#customStyles = createCustomStyles(this, this.shadow, this.#customStylesOptions())
+		this.#customStyles = createCustomStyles(this, this.#shadow, this.#customStylesOptions())
 	}
 
 	#customStylesOptions(): CustomStylesOptions {
@@ -1331,9 +1311,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	 * A core createLayer() layer (the reorder ghost, the toolbar connector — modules/layers/index.ts) with the
 	 * grid's custom CSS (page-wide + instance) written into its root by a second, unshared
 	 * createCustomStyles handle; both go on `destroy()`.
-	 * @internal
 	 */
-	openLayer(options: LayerOptions): Layer {
+	#openLayer(options: LayerOptions): Layer {
 		const layer = createLayer(this, options)
 		const styles = createCustomStyles(this, layer.layer.shadowRoot!, { ...this.#customStylesOptions(), shouldShareLayers: false })
 		return {
@@ -1363,10 +1342,10 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	 */
 	protected override environmentChanged(env: EnvironmentSnapshot): void {
 		const isPhoneSheet = resolvePresentation('auto', env) === 'fullscreen'
-		if (isPhoneSheet === this.isPhoneSheet) return
-		this.isPhoneSheet = isPhoneSheet
+		if (isPhoneSheet === this.#host.isPhoneSheet) return
+		this.#host.isPhoneSheet = isPhoneSheet
 		applyDropdownPresentation(this.#host)
-		this.datepicker?.setSheet(isPhoneSheet)
+		this.#host.datepicker?.setSheet(isPhoneSheet)
 	}
 
 	/** The page-wide `window.components.locale` changed: re-resolve the labels and re-render. */
@@ -1410,7 +1389,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		// Labels are resolved into the engine's labels object: a new translate hook re-resolves + re-renders them
 		if ('translateCallback' in partial) this.#engine.refreshLabels()
 		// Core createTooltip reads its delays once: a new delay restarts the tooltips
-		if ('tooltipShowDelay' in partial || 'tooltipHideDelay' in partial) this.tooltip.start(this.#host)
+		if ('tooltipShowDelay' in partial || 'tooltipHideDelay' in partial) this.#host.tooltip.start(this.#host)
 	}
 
 	#columnResize: PointerDrag | null = null
@@ -1420,19 +1399,19 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	protected connect(): void {
 		initLogger.debug('connect — grid activated')
 		// Initialize action pipeline adapter for 'always' editTrigger mode
-		this.pipelineAdapter = createActionPipelineAdapter(this.#host)
-		this.render()
+		this.#host.pipelineAdapter = createActionPipelineAdapter(this.#host)
+		this.#render()
 		// Register paste handler for navigate mode
-		this.addEventListener('paste', this.handlePaste as EventListener)
+		this.addEventListener('paste', this.#handlePaste as EventListener)
 		// A mouse button released anywhere ends the table press (see attachEventListeners)
 		document.addEventListener('mouseup', this.#onDocumentMouseUp, true)
 		// Column resize: core pointer drag on the host (mouse + touch; survives the table re-render)
 		this.#columnResize = createColumnResize(this.#host, this)
 		this.#columnReorder = createColumnReorder(this.#host, this)
 		// Filter-row typing, IME-safe (delegated on the shadow root — survives the thead re-render)
-		this.#stopFilterText = watchFilterRowText(this.#host, this.shadow)
+		this.#stopFilterText = watchFilterRowText(this.#host, this.#shadow)
 		// Tooltips: core createTooltip delegated over the shadow root (hover + keyboard focus)
-		this.tooltip.start(this.#host)
+		this.#host.tooltip.start(this.#host)
 	}
 
 	protected override destroyCallback(): void {
@@ -1447,14 +1426,14 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	protected disconnect(): void {
 		initLogger.debug('disconnect — grid deactivated')
 		// Cleanup event managers
-		this.scrollEvents.destroy()
-		this.focusEvents.destroy()
-		this.clickEvents.destroy()
-		this.clickEventsSubscribed = false
-		this.focusEventsSubscribed = false
+		this.#host.scrollEvents.destroy()
+		this.#host.focusEvents.destroy()
+		this.#clickEvents.destroy()
+		this.#clickEventsSubscribed = false
+		this.#focusEventsSubscribed = false
 
 		// Cleanup event listeners, observers, etc.
-		this.removeEventListener('paste', this.handlePaste as EventListener)
+		this.removeEventListener('paste', this.#handlePaste as EventListener)
 		document.removeEventListener('mouseup', this.#onDocumentMouseUp, true)
 		this.#columnResize?.destroy()
 		this.#columnResize = null
@@ -1462,10 +1441,10 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		this.#columnReorder = null
 		this.#stopFilterText?.()
 		this.#stopFilterText = null
-		this.tooltip.stop()
-		if (this.datepicker) {
-			this.datepicker.destroy()
-			this.datepicker = null
+		this.#host.tooltip.stop()
+		if (this.#host.datepicker) {
+			this.#host.datepicker.destroy()
+			this.#host.datepicker = null
 		}
 		closeGridMenu(this.#host)
 		// Close any open toolbar
@@ -1485,11 +1464,11 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	set items(value: T[]) {
 		// Reset infinite scroll loading flag (before the re-render, so the
 		// `messages.loading` row goes away with it)
-		this.virtualScroll.setIsLoadingMore(false)
-		this.shadow?.querySelector('.wg__loading-more-row')?.remove()
-		if (this.shadow) syncLoadingMoreLoader(this.#host)
+		this.#host.virtualScroll.setIsLoadingMore(false)
+		this.#shadow?.querySelector('.wg__loading-more-row')?.remove()
+		if (this.#shadow) syncLoadingMoreLoader(this.#host)
 		const wasEditing = !!this.#engine.editingCell
-		const hadFocus = !!this.shadow?.activeElement
+		const hadFocus = !!this.#shadow?.activeElement
 		this.#engine.items = value
 		// The edited row is gone (the engine cancelled the edit): its editor goes with the
 		// render, so keyboard focus moves to the grid instead of falling to <body>
@@ -1651,9 +1630,9 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	set hasMoreItems(value: boolean) {
 		this.#engine.hasMoreItems = value
 		if (!value) {
-			this.virtualScroll.setIsLoadingMore(false)
-			this.shadow?.querySelector('.wg__loading-more-row')?.remove()
-			if (this.shadow) syncLoadingMoreLoader(this.#host)
+			this.#host.virtualScroll.setIsLoadingMore(false)
+			this.#shadow?.querySelector('.wg__loading-more-row')?.remove()
+			if (this.#shadow) syncLoadingMoreLoader(this.#host)
 		}
 	}
 
@@ -1778,19 +1757,19 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		if (old && (old.rowIndex !== rowIndex || oldColIndex !== colIndex)) {
 			if (!this.#engine.canEditCell(rowIndex, field)) return
 			const oldCell = oldColIndex >= 0
-				? this.shadow.querySelector(`td[data-row="${old.rowIndex}"][data-col="${oldColIndex}"]`)
+				? this.#shadow.querySelector(`td[data-row="${old.rowIndex}"][data-col="${oldColIndex}"]`)
 				: null
-			const active = this.shadow.activeElement
+			const active = this.#shadow.activeElement
 			shouldFocusEditor = !!active && !!oldCell?.contains(active)
 			// Always saved, even with shouldCommitOnClickAway: false — the edit MOVES to another
 			// cell (like Tab / Enter), it isn't a click-away discard.
 			// The old editor goes away below: keep the blur handlers out of it
-			this.isTransitioningCells = true
+			this.#host.isTransitioningCells = true
 			removeDropdown(this.#host)
 			clearEditingVisual(this.#host)
 			commitEditorValue(this.#host)
 			if (oldColIndex >= 0) renderCell(this.#host, old.rowIndex, oldColIndex)
-			requestAnimationFrame(() => { this.isTransitioningCells = false })
+			requestAnimationFrame(() => { this.#host.isTransitioningCells = false })
 		}
 
 		// Update state (no longer triggers requestUpdate)
@@ -1800,7 +1779,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		if (!editing || editing.rowIndex !== rowIndex || editing.field !== field) return
 
 		// Surgical DOM update
-		const cell = this.shadow.querySelector(
+		const cell = this.#shadow.querySelector(
 			`td[data-row="${rowIndex}"][data-col="${colIndex}"]`
 		) as HTMLElement
 		if (cell) {
@@ -1816,61 +1795,38 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	}
 
 	// ==========================================================================
-	// GridHost Implementation - Required by module functions
-	// ==========================================================================
-
-	/** @internal */
-	getCurrentEditingColumn(): Column<T> | null {
-		const editingCell = this.#engine.editingCell
-		if (!editingCell) return null
-		return this.#engine.columns.find(c => String(c.field) === editingCell.field) || null
-	}
-
-	/** @internal */
-	getCurrentEditorOptions(): EditorOptions<T> {
-		const column = this.getCurrentEditingColumn()
-		return column?.editorOptions || {}
-	}
-
-	// Delegate to module function - needed for lifecycle module
-	/** @internal */
-	moveFocusAfterCommit(rowIndex: number, field: string, direction: 'down' | 'up' | 'next' | 'prev'): void {
-		moveFocusAfterCommit(this.#host, rowIndex, field, direction)
-	}
-
-	// ==========================================================================
 	// Update Mechanism
 	// ==========================================================================
 
-	private isSummaryRefreshPending = false
+	#isSummaryRefreshPending = false
 
 	/** Re-render the summary blocks (once per microtask burst) without a full render. */
-	private scheduleSummaryRefresh(): void {
-		if (!this.#engine.renderSummaryCallback || this.isSummaryRefreshPending) return
-		this.isSummaryRefreshPending = true
+	#scheduleSummaryRefresh(): void {
+		if (!this.#engine.renderSummaryCallback || this.#isSummaryRefreshPending) return
+		this.#isSummaryRefreshPending = true
 		queueMicrotask(() => {
-			this.isSummaryRefreshPending = false
-			if (this.updatePending) return  // a full render is queued — it renders the summary
-			const blocks = this.shadow.querySelectorAll('.wg__summary')
+			this.#isSummaryRefreshPending = false
+			if (this.#updatePending) return  // a full render is queued — it renders the summary
+			const blocks = this.#shadow.querySelectorAll('.wg__summary')
 			if (blocks.length === 0) return
 			const content = renderSummaryContent(this.#host)
 			blocks.forEach(block => { block.innerHTML = content })
 		})
 	}
 
-	private requestUpdate(): void {
+	#requestUpdate(): void {
 		// Nothing renders before the first build (core `defer` / first connect) — connect() renders.
 		if (!this.#isBuilt) return
-		if (this.updatePending) return
+		if (this.#updatePending) return
 		uiLogger.debug('requestUpdate: scheduling render')
-		this.updatePending = true
+		this.#updatePending = true
 		const __reqT0 = performance.now()
 
 		// Batch updates using microtask
 		queueMicrotask(() => {
-			this.updatePending = false
+			this.#updatePending = false
 			perfLogger.debug('microtask delay:', (performance.now() - __reqT0).toFixed(2), 'ms')
-			gridPerf.measure('render() total', () => this.render())
+			gridPerf.measure('render() total', () => this.#render())
 		})
 	}
 
@@ -1883,19 +1839,16 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	// Event Listener Attachment
 	// ==========================================================================
 
-	/** Tracks whether a mouse button is currently pressed on the table (mousedown→mouseup) */
-	/** @internal */
-	isMouseDown = false
 	/** One listener per element, added in connect() / removed in disconnect() — not one per rebuild. */
-	#onDocumentMouseUp = (): void => { this.isMouseDown = false }
+	#onDocumentMouseUp = (): void => { this.#host.isMouseDown = false }
 
-	private attachEventListeners(): void {
-		const table = this.shadow.querySelector('.wg__table')
+	#attachEventListeners(): void {
+		const table = this.#shadow.querySelector('.wg__table')
 		if (!table) return
 
 		// Track mouse button state so focus handler can distinguish mouse vs keyboard focus
 		// (the document mouseup that clears it is added once in connect())
-		table.addEventListener('mousedown', () => { this.isMouseDown = true }, true)
+		table.addEventListener('mousedown', () => { this.#host.isMouseDown = true }, true)
 
 		// Focus — capture-phase, drives handleCellFocus + always-edit-mode swap + focus-change (keyboard only)
 		// Extracted to modules/events/table-focus.ts
@@ -1906,10 +1859,10 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		table.addEventListener('keydown', (e: Event) => handleTableKeyDown(this.#host, e))
 
 		// Initialize focus event manager on table
-		this.focusEvents.init(table as HTMLElement)
+		this.#host.focusEvents.init(table as HTMLElement)
 
 		// Focus out - subscribe to focusout events
-		this.focusEvents.subscribe('focusout', (_target, relatedTarget) => {
+		this.#host.focusEvents.subscribe('focusout', (_target, relatedTarget) => {
 			if (!relatedTarget || !table.contains(relatedTarget)) {
 				handleTableFocusOut(this.#host, { relatedTarget } as unknown as FocusEvent)
 			}
@@ -1971,23 +1924,23 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		// Blur events — internal focus change dispatch. Capture phase + skip guard
 		// handled by focusEvents; outsideClick owns leaving-grid cleanup.
 		// Extracted to modules/events/blur-subscription.ts
-		if (!this.focusEventsSubscribed) {
-			this.focusEvents.subscribe('blur', (target, relatedTarget) => {
-				if (this.focusEvents.shouldSkipBlur()) return
-				const isLeavingGrid = !relatedTarget || !this.shadow.contains(relatedTarget)
+		if (!this.#focusEventsSubscribed) {
+			this.#host.focusEvents.subscribe('blur', (target, relatedTarget) => {
+				if (this.#host.focusEvents.shouldSkipBlur()) return
+				const isLeavingGrid = !relatedTarget || !this.#shadow.contains(relatedTarget)
 				if (isLeavingGrid) return
 				// Into the cell's own phone sheet (dropdown / date editor): the edit goes on there
 				if (relatedTarget.closest('.wg__dropdown, .wg-datepicker-container')) return
 				handleInternalBlur(this.#host, target, relatedTarget)
 			})
-			this.focusEventsSubscribed = true
+			this.#focusEventsSubscribed = true
 		}
 
 		// Scroll events - close dropdown + virtual scroll + infinite scroll + connector update
-		const container = this.shadow.querySelector('.wg') as HTMLElement
+		const container = this.#shadow.querySelector('.wg') as HTMLElement
 		// When isTableBorderOnly is enabled, scroll container is .wg__table-container
 		const scrollContainer = this.#engine.isTableBorderOnly
-			? (this.shadow.querySelector('.wg__table-container') as HTMLElement) || container
+			? (this.#shadow.querySelector('.wg__table-container') as HTMLElement) || container
 			: container
 		if (container) {
 			// Make container focusable for keyboard events when rows are selected
@@ -1998,34 +1951,34 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 			container.addEventListener('keydown', (e: KeyboardEvent) => handleContainerKeyDown(this.#host, e))
 
 			// Initialize scroll event manager and subscribe to scroll events
-			this.scrollEvents.init(scrollContainer)
+			this.#host.scrollEvents.init(scrollContainer)
 
 			// Container + window scroll subscriptions
 			// Extracted to modules/events/scroll-handlers.ts
-			this.scrollEvents.subscribe('container', () => handleContainerScroll(this.#host, container, scrollContainer))
-			this.scrollEvents.subscribe('window', () => handleWindowScroll(this.#host))
+			this.#host.scrollEvents.subscribe('container', () => handleContainerScroll(this.#host, container, scrollContainer))
+			this.#host.scrollEvents.subscribe('window', () => handleWindowScroll(this.#host))
 
 			// Initialize click event manager for outside-click detection
 			// Only subscribe once (attachEventListeners is called on every render)
-			if (!this.clickEventsSubscribed) {
+			if (!this.#clickEventsSubscribed) {
 				// Treat clicks inside our popovers (the datepicker, outside the table) as
 				// inside the grid — otherwise outsideClick fires while the user
 				// is interacting with the picker/menu and tears down editing.
 				const isPathInOwnedScope = (path: EventTarget[]): boolean => {
-					const dpEl = this.datepicker?.getElement() ?? null
+					const dpEl = this.#host.datepicker?.getElement() ?? null
 					for (const node of path) {
 						if (dpEl && dpEl === node) return true
 					}
 					return false
 				}
-				this.clickEvents.init(container, this, isPathInOwnedScope)
+				this.#clickEvents.init(container, this, isPathInOwnedScope)
 
 				// Outside-click + sort-click subscriptions
 				// Extracted to modules/events/click-subscriptions.ts
-				this.clickEvents.subscribe('outsideClick', () => handleOutsideClick(this.#host))
-				this.clickEvents.subscribe('sortClick', (subCtx) => handleSortClickSubscription(this.#host, subCtx))
+				this.#clickEvents.subscribe('outsideClick', () => handleOutsideClick(this.#host))
+				this.#clickEvents.subscribe('sortClick', (subCtx) => handleSortClickSubscription(this.#host, subCtx))
 
-				this.clickEventsSubscribed = true
+				this.#clickEventsSubscribed = true
 			}
 		}
 
@@ -2033,7 +1986,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		attachToolbarListeners(this.#host, table)
 
 		// Pagination events (delegated on .wg container — see attachPaginationListeners)
-		const wgContainer = this.shadow.querySelector('.wg') as HTMLElement | null
+		const wgContainer = this.#shadow.querySelector('.wg') as HTMLElement | null
 		if (wgContainer) {
 			attachPaginationListeners(this.#host, wgContainer)
 			// Filter row (delegated too — the thead is rebuilt on every render)
@@ -2060,12 +2013,11 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	// ==========================================================================
 
 	/** Shortcuts help icon + overlay — see modules/rendering/shortcuts-help.ts */
-	private renderShortcutsHelpIcon(): string {
+	#renderShortcutsHelpIcon(): string {
 		return renderShortcutsHelpIconModule(this.#host)
 	}
 
-	/** @internal */
-	render(): void {
+	#render(): void {
 		// Drop any stale data-pipeline cache. Normally requestUpdate() has already
 		// done this, but render() is also called directly in a few places.
 		this.#engine.invalidateDisplayCache()
@@ -2074,13 +2026,13 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		uiLogger.debug('render:', this.#engine.displayItems.length, 'rows,', this.#engine.visualColumns.length, 'columns')
 		// Preserve scroll position before re-render
 		// When isTableBorderOnly is enabled, scroll container is .wg__table-container
-		const oldContainer = this.shadow.querySelector('.wg') as HTMLElement
+		const oldContainer = this.#shadow.querySelector('.wg') as HTMLElement
 		// A focused filter-row input (+ caret) is restored after the thead is rebuilt
 		const filterFocus = captureFilterFocus(this.#host)
 		// The open editor's typed text (+ caret): the edit goes on through the re-render
 		const editorText = captureEditorText(this.#host)
 		const oldScrollContainer = this.#engine.isTableBorderOnly
-			? (this.shadow.querySelector('.wg__table-container') as HTMLElement) || oldContainer
+			? (this.#shadow.querySelector('.wg__table-container') as HTMLElement) || oldContainer
 			: oldContainer
 		const scrollTop = oldScrollContainer?.scrollTop || 0
 		const scrollLeft = oldScrollContainer?.scrollLeft || 0
@@ -2158,7 +2110,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 			const { startIndex, endIndex } = visibleRowRange(this.#host, scrollTop, viewportHeight)
 
 			// Store for later comparison
-			this.virtualScroll.setRange(startIndex, endIndex)
+			this.#host.virtualScroll.setRange(startIndex, endIndex)
 
 			const params: VirtualScrollParams = {
 				startIndex,
@@ -2172,7 +2124,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		}
 
 		// Render shortcuts help icon if enabled
-		const shortcutsHelpHtml = this.renderShortcutsHelpIcon()
+		const shortcutsHelpHtml = this.#renderShortcutsHelpIcon()
 
 		const headerRowHtml = renderHeaderRow(this.#host)
 
@@ -2253,7 +2205,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 				<div class="wg__bottom-area">${bottomContent}</div>
 			`
 
-			this.shadow.appendChild(container)
+			this.#shadow.appendChild(container)
 
 			// Restore scroll position (only needed when container was replaced)
 			const scrollContainer = this.#engine.isTableBorderOnly
@@ -2269,7 +2221,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 			scrollContainer.scrollLeft = scrollLeft
 
 			// Wire up event listeners (only on full rebuild — surgical path keeps them alive)
-			this.attachEventListeners()
+			this.#attachEventListeners()
 		}
 
 		// role="grid" / "treegrid" + row / column counts (the surgical path keeps the <table>)
@@ -2288,7 +2240,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		restoreFilterFocus(this.#host, filterFocus)
 		if (this.#isEditedRowGone) {
 			this.#isEditedRowGone = false
-			if (!this.shadow.activeElement) (this.shadow.querySelector('.wg') as HTMLElement | null)?.focus({ preventScroll: true })
+			if (!this.#shadow.activeElement) (this.#shadow.querySelector('.wg') as HTMLElement | null)?.focus({ preventScroll: true })
 		}
 		positionFilterRow(this.#host)
 
@@ -2305,7 +2257,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		}
 
 		// Render connector arrow if active
-		this.renderConnector()
+		this.#host.renderConnector()
 
 		// Update fill handle after render
 		updateFillHandle(this.#host)
@@ -2336,62 +2288,20 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		gridPerf.summary('render()')
 	}
 
-	/** SVG connector arrow for toolbar row tracking — see modules/toolbar/connector-renderer.ts */
-	/** @internal */
-	renderConnector(): void {
-		renderConnectorModule(this.#host)
-	}
-
-	/** Surgical clear-all-selections (no render) — see modules/selection-border/clear-all.ts */
-	/** @internal */
-	clearAllSelections(): void {
-		clearAllSelectionsModule(this.#host)
-	}
-
-	/** Excel-like commit-on-click-away — see modules/editing/commit-on-transition.ts */
-	/** @internal */
-	commitOrCancelEditOnTransition(): void {
-		commitOrCancelEditOnTransitionModule(this.#host)
-	}
-
-	/**
-	 * Surgically update row focus visual (add/remove wg__row--focused class)
-	 * Avoids full re-render to preserve cell focus
-	 */
-	/** @internal */
-	updateRowFocusVisual(prevRowIndex: number | null, newRowIndex: number | null): void {
-		if (prevRowIndex === newRowIndex) return
-
-		if (prevRowIndex !== null) {
-			const prevRow = this.shadow.querySelector(`tr[data-row-index="${prevRowIndex}"]`)
-			prevRow?.classList.remove('wg__row--focused')
-		}
-		if (newRowIndex !== null) {
-			const newRow = this.shadow.querySelector(`tr[data-row-index="${newRowIndex}"]`)
-			newRow?.classList.add('wg__row--focused')
-		}
-	}
-
-	/** "Go to row" dialog (Ctrl+G) — see modules/navigation/go-to-row-dialog.ts */
-	/** @internal */
-	openGoToRowDialog(colIndex: number): void {
-		openGoToRowDialogModule(this.#host, colIndex)
-	}
-
 	/** Custom editor lifecycle — see modules/editing/custom-editor.ts */
 	openCustomEditor(rowIndex: number, colIndex: number): void {
 		openCustomEditorModule(this.#host, rowIndex, colIndex)
 	}
 
 	/** Paste event handler — see modules/paste/handlePasteEvent */
-	private handlePaste = (e: ClipboardEvent): Promise<void> => handlePasteEvent(this.#host, e)
+	#handlePaste = (e: ClipboardEvent): Promise<void> => handlePasteEvent(this.#host, e)
 
 	/**
 	 * The public facade (`el.controller`, and `controller` on every callback ctx and
 	 * event detail).
 	 */
 	protected override createController(): GridController<T> {
-		return createGridController<T>(this)
+		return createGridController<T>(this, this.#host)
 	}
 }
 

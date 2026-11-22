@@ -1,5 +1,5 @@
 // =============================================================================
-// GridHost - the GridElement subset that module functions consume
+// GridHost - the private module host of a GridElement (state + the calls modules make)
 // =============================================================================
 
 import type { GridEngine } from '../grid.js'
@@ -26,8 +26,9 @@ import type { ActionPipelineAdapter } from './actions/adapter.js'
 export const GRID_ENGINE: unique symbol = Symbol.for('@keenmate/web-grid:engine')
 
 /**
- * GridElement context interface for module functions
- * This is the subset of GridElement that modules need access to
+ * The module host: a private object of the element (`GridElement#host`), never the element itself and
+ * never a public member. It holds the grid's runtime services / UI state and delegates the element calls
+ * the modules need (render, scrollToRow, dispatchEvent, setAttributes, …). The element is `shadow.host`.
  */
 export interface GridHost<T = unknown> {
 	// Shadow DOM
@@ -56,7 +57,7 @@ export interface GridHost<T = unknown> {
 	datepicker: DatePicker | null
 
 	/** The cell dropdown / date editor are the phone sheet (core resolvePresentation(), see modules/sheet). */
-	readonly isPhoneSheet: boolean
+	isPhoneSheet: boolean
 
 	// Autocomplete async state — owned by AutocompleteService.
 	readonly autocomplete: AutocompleteService
@@ -98,7 +99,7 @@ export interface GridHost<T = unknown> {
 	// Action pipeline adapter — handlers call `pipelineAdapter?.clearSelection()`
 	// to drop row / cell-range / column selections through the pipeline. Null
 	// when the pipeline isn't installed (non-'always' edit-trigger modes).
-	readonly pipelineAdapter: ActionPipelineAdapter<T> | null
+	pipelineAdapter: ActionPipelineAdapter<T> | null
 
 	// Helper methods that modules may need
 	getCurrentEditingColumn(): Column<T> | null

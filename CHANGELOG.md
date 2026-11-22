@@ -10,6 +10,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Removed — BREAKING: the undocumented `@internal` members of `<web-grid>` (2026-11-22)
+- The module plumbing that was public (marked `@internal`, but in the emitted `.d.ts` and on the element at
+  runtime) is gone from the element: `shadow`, `dropdown`, `autocomplete`, `toolbar`, `filterRow`,
+  `filterInputText()`, `tooltip`, `datepicker`, `menu`, `isPhoneSheet`, `getMenuPresentationOptions()`,
+  `virtualScroll`, `scrollEvents`, `focusEvents`, `clickEvents`, `pipelineAdapter`, `isCommittingFromKeyboard`,
+  `isTransitioningCells`, `isMouseDown`, `openLayer()`, `render()`, `renderConnector()`, `clearAllSelections()`,
+  `commitOrCancelEditOnTransition()`, `updateRowFocusVisual()`, `openGoToRowDialog()`, `getCurrentEditingColumn()`,
+  `getCurrentEditorOptions()`, `moveFocusAfterCommit()` (and the TS-`private` `requestUpdate` / `handlePaste` /
+  … are `#private` now). They live on a private module host object. The `.d.ts` / CEM list only the documented API
+  (inputs, properties, methods, `on*` twins); `el.shadowRoot` (open) is the platform's own. The documented calls
+  stay: `scrollToRow()`, `openCustomEditor()`, `focusCell()`, `startEditing()`, `el.controller`.
+
 ### Changed — BREAKING: header-menu `ctx.labels` is `{ text, html }` (2026-11-22)
 - The header context menu's ctx (`HeaderMenuContext.labels` — `beforeHeaderMenuOpenCallback`, item
   `onClick` / `getTextCallback` / `getChildrenCallback`, the `action` event detail) carried the grid's own resolved

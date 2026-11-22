@@ -347,6 +347,22 @@ test.describe('contexts, twins, controller', () => {
 		})
 		expect(r).toEqual({ hasEngine: false, isEngineReachable: true, holders: [] })
 	})
+
+	test('the module internals are private: no dropdown / toolbar / render / event managers / … on the element', async ({ page }) => {
+		const INTERNALS = [
+			'shadow', 'dropdown', 'autocomplete', 'toolbar', 'filterRow', 'filterInputText', 'tooltip', 'datepicker', 'menu',
+			'isPhoneSheet', 'getMenuPresentationOptions', 'virtualScroll', 'scrollEvents', 'focusEvents', 'clickEvents',
+			'pipelineAdapter', 'isCommittingFromKeyboard', 'isTransitioningCells', 'isMouseDown', 'openLayer', 'render',
+			'renderConnector', 'clearAllSelections', 'commitOrCancelEditOnTransition', 'updateRowFocusVisual',
+			'openGoToRowDialog', 'getCurrentEditingColumn', 'getCurrentEditorOptions', 'moveFocusAfterCommit',
+			'requestUpdate', 'handlePaste', 'updatePending', 'attachEventListeners', 'scheduleSummaryRefresh',
+		]
+		const present = await grid(page).evaluate((el: any, names: string[]) => names.filter(n => n in el), INTERNALS)
+		expect(present).toEqual([])
+		// The documented element calls stay
+		const pub = await grid(page).evaluate((el: any) => ['scrollToRow', 'openCustomEditor', 'focusCell', 'startEditing'].filter(n => typeof el[n] === 'function'))
+		expect(pub).toEqual(['scrollToRow', 'openCustomEditor', 'focusCell', 'startEditing'])
+	})
 })
 
 // Open gaps listed in core docs/interaction-model-plan.md ("grid (from phase 5)").

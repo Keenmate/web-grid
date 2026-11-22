@@ -35,9 +35,8 @@ const ENGINE_STATE = [
 	'selectedRows', 'selectedRowIndices', 'selectedCellRange', 'expandedPaths',
 ] as const
 
-export function createGridController<T>(el: GridElement<T>): GridController<T> {
-	// The element as the module host (its private engine sits under the GRID_ENGINE symbol)
-	const host = el as unknown as GridHost<T>
+export function createGridController<T>(el: GridElement<T>, host: GridHost<T>): GridController<T> {
+	// `host` = the element's private module host (its engine sits under the GRID_ENGINE symbol)
 	const engine = createControllerFacade<object>(() => { el.flush(); return host[GRID_ENGINE] }, {
 		methods: ENGINE_METHODS,
 		state: Object.fromEntries(ENGINE_STATE.map(name => [name, null]))
