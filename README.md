@@ -1046,7 +1046,7 @@ grid.headerContextMenu = [
     icon: '⚙️',
     children: [...],                          // static submenu, or
     getChildrenCallback: (ctx) => [...],      // dynamic submenu (sync or async)
-    onClick: (detail) => { /* detail: { column, field, colIndex, sortDirection, isFrozen, isTreeMode, allColumns, labels, … } */ }
+    onClick: (detail) => { /* detail: { column, field, colIndex, sortDirection, isFrozen, isTreeMode, allColumns, labels: { text(key, params?), html(key, params?) }, … } */ }
   }
 ]
 ```

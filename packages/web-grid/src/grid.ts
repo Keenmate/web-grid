@@ -101,7 +101,7 @@ import { bindOptionContext } from './modules/dropdown/options.js'
 import { initLogger, dataLogger, interactionLogger, perfLogger } from './logger.js'
 import { typeNumberValue, type NumberParseOptions } from './modules/editing/value-parse.js'
 import { GridLabelsResolver, type GridLabelKey, type LabelFormat } from './labels.js'
-import { formatNumber, getLocaleSettings, getPageLocale, type LabelParams, type LocaleSettings, type ParseNumberCallback } from '@keenmate/web-components-core/locale'
+import { formatNumber, getLocaleSettings, getPageLocale, type LabelParams, type LabelsView, type LocaleSettings, type ParseNumberCallback } from '@keenmate/web-components-core/locale'
 
 // Perf instrumentation (temporary — investigating tree-toggle slowness)
 import { perfNow, perfCount } from './perf.js'
@@ -971,6 +971,11 @@ export class GridEngine<T = unknown> {
 	/** One label for innerHTML (template markup kept, `{…}` params escaped; all escaped with `shouldEscapeLabels`). */
 	labelHtml(key: GridLabelKey, params?: LabelParams): string {
 		return this._labelsResolver.html(key, params)
+	}
+
+	/** `ctx.labels` for user callbacks: a frozen `{ text, html }` (core `LabelsView`). */
+	get labelsView(): LabelsView<GridLabels> {
+		return this._labelsResolver.view
 	}
 
 	/** The formatter value checks use for their messages (`errors.numberMin` / `errors.numberMax`). */

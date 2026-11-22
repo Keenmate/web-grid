@@ -186,7 +186,7 @@ export function handleHeaderContextMenu<T>(
 		isFrozen: colIndex < engine.frozenColumnCount,
 		isTreeMode: engine.isTreeMode,
 		allColumns: engine.columns,  // All columns (hidden included) for the visibility submenu
-		labels: engine.labels
+		labels: engine.labelsView
 	}, engine.headerContextMenu ?? [])
 }
 
@@ -217,6 +217,6 @@ export function handleFillerContextMenu<T>(ctx: GridHost<T>, e: MouseEvent): voi
 		isFrozen: false,
 		isTreeMode: engine.isTreeMode,
 		allColumns: engine.columns,
-		labels: engine.labels
+		labels: engine.labelsView
 	}, fillerEntries)
 }

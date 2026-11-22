@@ -87,6 +87,27 @@ test('a full labels object translates toolbar, header menu, pagination, shortcut
 	await expect(menuRoot(page)).not.toContainText('Sort Ascending')
 })
 
+test('header-menu ctx.labels is a frozen { text, html } view (never the grid\'s labels object)', async ({ page }) => {
+	await page.evaluate((cs) => {
+		const el = document.getElementById('grid') as any
+		el.labels = cs
+		el.beforeHeaderMenuOpenCallback = (ctx: any) => {
+			(window as any).__seen = {
+				keys: Object.keys(ctx.labels).sort(),
+				isFrozen: Object.isFrozen(ctx.labels),
+				text: ctx.labels.text('menuItems.sortAsc'),
+				html: ctx.labels.html('labels.pageInfo', { current: '<b>', total: 2 }),
+				raw: ctx.labels['menuItems.sortAsc'] ?? null
+			}
+		}
+	}, CS)
+	await openContextMenu(page, header(page, 'name'))
+	await expect(menuRoot(page)).toContainText('Seřadit vzestupně')
+	expect(await page.evaluate(() => (window as any).__seen)).toEqual({
+		keys: ['html', 'text'], isFrozen: true, text: 'Seřadit vzestupně', html: 'Strana &lt;b&gt; z 2', raw: null
+	})
+})
+
 test('the dropdown "no options" text is translatable', async ({ page }) => {
 	await page.evaluate((cs) => { (document.getElementById('grid') as any).labels = cs }, CS)
 	await cell(page, 0, 2).click()

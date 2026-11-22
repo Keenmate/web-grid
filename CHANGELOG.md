@@ -10,6 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Changed — BREAKING: header-menu `ctx.labels` is `{ text, html }` (2026-11-22)
+- The header context menu's ctx (`HeaderMenuContext.labels` — `beforeHeaderMenuOpenCallback`, item
+  `onClick` / `getTextCallback` / `getChildrenCallback`, the `action` event detail) carried the grid's own resolved
+  labels object (a live, mutable internal). It is now the core `LabelsView` (rulebook core-adoption: callback
+  labels = `ctx.labels.text()` / `.html()`): a frozen `{ text(key, params?), html(key, params?) }` that runs the
+  whole chain (instance → page dictionary → `translateCallback` → default). `ctx.labels['menuItems.sortAsc']` →
+  `ctx.labels.text('menuItems.sortAsc')`.
+
 ### Removed — BREAKING: `el.engine` (2026-11-22)
 - The element's internal engine is truly private (was a `readonly engine: GridEngine<T>` member marked
   `@internal`, visible in the emitted `.d.ts` and at runtime). `el.engine` is now `undefined`; use the element's

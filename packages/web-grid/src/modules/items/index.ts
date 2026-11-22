@@ -124,15 +124,15 @@ export function headerMenuDefaults<T>(action: string | undefined, ctx: HeaderMen
 	const l = ctx.labels
 	const icon = HEADER_ICONS[action]
 	switch (action) {
-		case 'sort-asc': return { text: l['menuItems.sortAsc'], icon, isVisible: !!ctx.column && ctx.column.isSortable !== false }
-		case 'sort-desc': return { text: l['menuItems.sortDesc'], icon, isVisible: !!ctx.column && ctx.column.isSortable !== false }
-		case 'clear-sort': return { text: l['menuItems.clearSort'], icon, isVisible: ctx.sortDirection !== null }
+		case 'sort-asc': return { text: l.text('menuItems.sortAsc'), icon, isVisible: !!ctx.column && ctx.column.isSortable !== false }
+		case 'sort-desc': return { text: l.text('menuItems.sortDesc'), icon, isVisible: !!ctx.column && ctx.column.isSortable !== false }
+		case 'clear-sort': return { text: l.text('menuItems.clearSort'), icon, isVisible: ctx.sortDirection !== null }
 		// The tree column hosts indent + chevron; hiding it would orphan the hierarchy
-		case 'hide-column': return { text: l['menuItems.hideColumn'], icon, isVisible: !!ctx.column && !(ctx.isTreeMode && ctx.column.isTree) }
-		case 'freeze-column': return { text: l['menuItems.freezeColumn'], icon, isVisible: !!ctx.column && !ctx.isFrozen }
-		case 'unfreeze-column': return { text: l['menuItems.unfreezeColumn'], icon, isVisible: !!ctx.column && ctx.isFrozen }
-		case 'column-visibility': return { text: l['menuItems.columnVisibility'], icon }
-		case 'show-all-columns': return { text: l['menuItems.showAllColumns'] }
+		case 'hide-column': return { text: l.text('menuItems.hideColumn'), icon, isVisible: !!ctx.column && !(ctx.isTreeMode && ctx.column.isTree) }
+		case 'freeze-column': return { text: l.text('menuItems.freezeColumn'), icon, isVisible: !!ctx.column && !ctx.isFrozen }
+		case 'unfreeze-column': return { text: l.text('menuItems.unfreezeColumn'), icon, isVisible: !!ctx.column && ctx.isFrozen }
+		case 'column-visibility': return { text: l.text('menuItems.columnVisibility'), icon }
+		case 'show-all-columns': return { text: l.text('menuItems.showAllColumns') }
 	}
 	return undefined
 }

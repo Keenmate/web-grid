@@ -17,7 +17,7 @@
 //   into attribute markup).
 
 import { escapeHtml } from '@keenmate/web-components-core'
-import { createLabels, formatLabel as formatTemplate, getPageSecurity, resolveLabel, type LabelParams, type Labels } from '@keenmate/web-components-core/locale'
+import { createLabels, formatLabel as formatTemplate, getPageSecurity, resolveLabel, type LabelParams, type Labels, type LabelsView } from '@keenmate/web-components-core/locale'
 import type { GridLabels, GridLabelsInput } from './types.js'
 
 /** The built-in UI strings (English only). */
@@ -171,6 +171,15 @@ export class GridLabelsResolver {
 	}
 
 	readonly format: LabelFormat = (key, _template, params) => this.text(key, params)
+
+	/**
+	 * `ctx.labels` for a user callback (core `LabelsView` — the shape of `createLabelsView`): a frozen
+	 * `{ text, html }` running the whole chain, never the grid's resolved labels object.
+	 */
+	readonly view: LabelsView<GridLabels> = Object.freeze({
+		text: (key: GridLabelKey, params?: LabelParams) => this.text(key, params),
+		html: (key: GridLabelKey, params?: LabelParams) => this.html(key, params)
+	})
 
 	resolve(): GridLabels {
 		const out = {} as Record<string, string>

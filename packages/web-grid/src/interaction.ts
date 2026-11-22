@@ -11,6 +11,7 @@
 // only the data.
 
 import type { ComponentContext } from '@keenmate/web-components-core'
+import type { LabelsView } from '@keenmate/web-components-core/locale'
 import type { ActionItem, MenuItem, MenuEntry, MenuDivider, ActionEventDetail } from '@keenmate/web-components-core/actions'
 import type {
 	Column,
@@ -327,7 +328,8 @@ export interface HeaderMenuContext<T = any> extends GridContext<T> {
 	isTreeMode: boolean
 	/** All columns, hidden ones included. */
 	allColumns: Column<T>[]
-	labels: GridLabels
+	/** The grid's texts: `labels.text(key, params?)` / `labels.html(key, params?)` (core `LabelsView`, frozen). */
+	labels: LabelsView<GridLabels>
 }
 
 /** ctx of `beforeFillCallback` (fill handle). */
