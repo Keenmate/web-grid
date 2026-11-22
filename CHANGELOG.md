@@ -21,6 +21,9 @@ A major: the callback, event and item API below is breaking, so
   `GoToRowLabelContext` (`labels.goToRow`), `FilterColumnLabelContext` (`ariaLabels.filterColumn`: `title`,
   `field`) and `NumberRangeLabelContext` (`errors.numberMin` / `numberMax`: `value`, `min`, `max`).
 - English default `labels.itemCount` is `Items: {ctx.count}` (was `{count} items` — no plural noun after a number).
+- Docs: `examples-localization.html` LO03 is the generic i18next bridge (`{ ...params, count: params.ctx?.count }`,
+  `_one` / `_few` / `_other` keys; the page picks the same forms with `Intl.PluralRules`); new LO07 — `labels.itemCount`
+  in Czech plural forms (1 položka / 3 položky / 5 položek) as the row count changes.
 
 ### Changed — `renderCellCallback` wins in every column type (2026-11-22)
 - The documented order (`renderCellCallback` > `getDisplayValueCallback` > the built-in text) held only for text

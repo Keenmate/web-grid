@@ -38,7 +38,7 @@ test.describe('examples-localization.html', () => {
 		await expect(readout(page, 'lo03-readout')).toContainText('Seite 1 von 9')
 		await expectToggleChanges(page, 'lo03-page', 'lo03-readout')
 		await expect(readout(page, 'lo03-readout')).toContainText('Seite 1 von 9')
-		await expect(readout(page, 'lo03-readout')).toContainText('Položky: 42')
+		await expect(readout(page, 'lo03-readout')).toContainText('42 položek')   // i18next-style _other form via Intl.PluralRules
 		await expect(readout(page, 'lo03-readout')).toContainText('/ page (instance labels)')
 		await expectToggleChanges(page, 'lo03-own', 'lo03-readout')
 		await expect(readout(page, 'lo03-readout')).toContainText('Strana 1 z 9')
@@ -75,6 +75,15 @@ test.describe('examples-localization.html', () => {
 		await expect(readout(page, 'lo06-readout')).toContainText('Nothing &lt;b&gt;here&lt;/b&gt; yet')
 		await expect(readout(page, 'lo06-readout')).toContainText('Page &lt;b&gt;1&lt;/b&gt; of 3')
 		await expect(page.locator('#lo06-state')).toContainText('shouldEscapeLabels')
+
+		// LO07 · the grid's own translateCallback picks the Czech plural form from ctx.count
+		await expect(readout(page, 'lo07-readout')).toContainText('5 položek')
+		await page.locator('input[name="lo07-rows"][value="1"]').check()
+		await expect(readout(page, 'lo07-readout')).toContainText('1 položka')
+		await page.locator('input[name="lo07-rows"][value="3"]').check()
+		await expect(readout(page, 'lo07-readout')).toContainText('3 položky')
+		await page.locator('input[name="lo07-rows"][value="5"]').check()
+		await expect(readout(page, 'lo07-readout')).toContainText('5 položek')
 
 		expect(consoleErrors).toEqual([])
 	})

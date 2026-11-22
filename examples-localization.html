@@ -60,37 +60,54 @@ window.components.locale = null   // back to English</code></pre></div>
     <div class="card">
         <h2>LO03 · <code>translateCallback</code></h2>
         <p>
-            An app with its own i18n library plugs it in as <code>translateCallback({ component, key, template, params, locale })</code>:
-            it gets the full key and returns the text, or <code>null</code> for "not mine". The grid's OWN
-            <code>translateCallback</code> is asked first; its <code>null</code> passes the key on to the page-wide
-            <code>window.components.locale.translateCallback</code>, then the dictionary / English. A key the instance
-            <code>labels</code> set is never sent to either callback — the instance text wins. Below: a tiny
-            i18next-like lookup (no real i18next). The grid's own callback knows German <code>labels.pageInfo</code> only; the page
-            one knows Czech; this grid's <code>labels</code> sets <code>labels.perPage</code>.
+            An app with its own i18n (i18next, FormatJS, …) answers keys through a callback instead of a dictionary. It gets
+            <code>{ component, key, template, params, locale }</code> — <code>key</code> is the full
+            <code>web-grid.&lt;elementType&gt;.&lt;name&gt;</code> — and returns the text, or <code>null</code> = not mine.
+            The grid's OWN <code>translateCallback</code> is asked first (German, only <code>labels.pageInfo</code> here); its
+            <code>null</code> passes the key on to the page-wide <code>window.components.locale.translateCallback</code> — the
+            app's i18next (Czech, with plural forms: the bridge hands i18next <code>params.ctx.count</code> as its
+            <code>count</code>), then the dictionary / English. The page itself runs without i18next: the same forms are picked
+            with <code>Intl.PluralRules('cs')</code>. A key the instance <code>labels</code> set (this grid's
+            <code>labels.perPage</code>) is never sent to either callback — the instance text wins.
             The page-wide callback is page-wide: the other grids follow it too.
         </p>
         <div class="controls">
             <label><input type="checkbox" id="lo03-own" checked> the grid's own <code>translateCallback</code> (German)</label>
-            <label><input type="checkbox" id="lo03-page"> page-wide <code>translateCallback</code> (Czech)</label>
+            <label><input type="checkbox" id="lo03-page"> page-wide <code>translateCallback</code> (Czech, i18next)</label>
         </div>
         <web-grid id="lo03-grid" enable-paging page-size="5" labels='{"labels.perPage":"/ page (instance labels)"}' style="max-height: 320px;"></web-grid>
         <div class="output mt-1"><pre id="lo03-readout"></pre></div>
-        <div class="code-block" data-kmwc-snippet data-language="js"><pre><code>// an i18next-like lookup: resources + t(key, params) with {{ctx.name}} interpolation (params = { ctx })
-const i18n = {
-  resources: {
-    cs: { 'web-grid.labels.pageInfo': 'Strana {{ctx.currentPage}} z {{ctx.totalPages}}', 'web-grid.labels.itemCount': 'Položky: {{ctx.count}}', 'web-grid.labels.perPage': 'na stránku' },
-    de: { 'web-grid.labels.pageInfo': 'Seite {{ctx.currentPage}} von {{ctx.totalPages}}' }
-  },
-  exists: (lng, key) =&gt; key in i18n.resources[lng],
-  t: (lng, key, params) =&gt; i18n.resources[lng][key].replace(/\{\{([\w.]+)\}\}/g, (_, path) =&gt; path.split('.').reduce((v, k) =&gt; v?.[k], params) ?? '')
-}
-// this grid only — asked first; null = not mine
-grid.translateCallback = ({ key, params }) =&gt; (i18n.exists('de', key) ? i18n.t('de', key, params) : null)
-// every component on the page
+        <div class="code-block" data-kmwc-snippet data-language="js"><pre><code>// the app's own i18next — its JSON, plural forms as i18next's _one / _few / _other suffixes
+i18next.init({
+  lng: 'cs',
+  interpolation: { escapeValue: false },   // the grid escapes what goes into HTML
+  resources: { cs: { translation: {
+    'web-grid': {
+      labels: {
+        pageInfo: 'Strana {{ctx.currentPage}} z {{ctx.totalPages}}',
+        itemCount_one: '{{count}} položka',
+        itemCount_few: '{{count}} položky',
+        itemCount_other: '{{count}} položek',
+        perPage: 'na stránku',
+      },
+    },
+  } } },
+});
+
+// page-wide — ONE generic bridge for every key of every component. params.ctx = the label's context;
+// ctx.count = the number the text's noun agrees with → i18next's `count` (exists() needs it too)
 window.components.locale = {
-  translateCallback: ({ key, params }) =&gt; (i18n.exists('cs', key) ? i18n.t('cs', key, params) : null)
-}
-grid.labels = { 'labels.perPage': '/ page (instance labels)' }   // never sent to a callback</code></pre></div>
+  translateCallback: ({ key, params }) =&gt; {
+    const options = { ...params, count: params.ctx?.count };
+    return i18next.exists(key, options) ? i18next.t(key, options) : null;   // null = not mine
+  },
+};
+
+// this grid only — asked first; null = not mine → the page-wide callback
+grid.translateCallback = ({ key, params }) =&gt;
+  key === 'web-grid.labels.pageInfo' ? `Seite ${params.ctx.currentPage} von ${params.ctx.totalPages}` : null;
+
+grid.labels = { 'labels.perPage': '/ page (instance labels)' };   // never sent to a callback</code></pre></div>
     </div>
 
     <div class="card">
@@ -191,6 +208,35 @@ grid.columns = [
 window.components.security = { shouldEscapeLabels: true }   // escapes the whole label (template too)</code></pre></div>
     </div>
 
+    <div class="card">
+        <h2>LO07 · Item count in Czech (plural rules)</h2>
+        <p>
+            The pager's <code>labels.itemCount</code>, translated by the grid's own <code>translateCallback</code>.
+            <code>params.ctx.count</code> is the number the noun agrees with — here the grid's row count — so
+            <code>Intl.PluralRules('cs')</code> picks the form: "1 položka / 3 položky / 5 položek". Change the rows and the form
+            switches. No i18n library needed; with i18next it is the generic bridge of LO03
+            (<code>labels.itemCount_one</code> / <code>_few</code> / <code>_other</code> in the app's JSON).
+        </p>
+        <div class="controls"><strong class="muted">rows</strong>
+            <label><input type="radio" name="lo07-rows" value="1"> 1</label>
+            <label><input type="radio" name="lo07-rows" value="3"> 3</label>
+            <label><input type="radio" name="lo07-rows" value="5" checked> 5</label>
+        </div>
+        <web-grid id="lo07-grid" enable-paging page-size="5" style="max-height: 320px;"></web-grid>
+        <div class="output mt-1"><pre id="lo07-readout"></pre></div>
+        <div class="code-block" data-kmwc-snippet data-language="js"><pre><code>const plural = new Intl.PluralRules('cs');
+const forms = { one: 'položka', few: 'položky', many: 'položky', other: 'položek' };
+
+grid.translateCallback = ({ key, params }) =&gt;
+  key === 'web-grid.labels.itemCount'
+    ? `${params.ctx.count} ${forms[plural.select(params.ctx.count)]}`
+    : null;   // null = not mine → the next layer / English
+
+grid.items = rows;   // 1 → "1 položka", 3 → "3 položky", 5 → "5 položek"
+
+// with i18next: the one generic bridge of LO03 (labels.itemCount_one / _few / _other in the app's JSON)</code></pre></div>
+    </div>
+
 <script type="module">
     import { resolveLocale } from '@keenmate/web-components-core/locale'
 
@@ -233,16 +279,23 @@ window.components.security = { shouldEscapeLabels: true }   // escapes the whole
         'web-grid.menuItems.clearSort': 'Zrušit řazení',
         'web-grid.menuItems.hideColumn': 'Skrýt sloupec'
     }
-    const i18n = {
-        resources: {
-            cs: { 'web-grid.labels.pageInfo': 'Strana {{ctx.currentPage}} z {{ctx.totalPages}}', 'web-grid.labels.itemCount': 'Položky: {{ctx.count}}', 'web-grid.labels.perPage': 'na stránku' },
-            de: { 'web-grid.labels.pageInfo': 'Seite {{ctx.currentPage}} von {{ctx.totalPages}}' }
-        },
-        exists: (lng, key) => key in i18n.resources[lng],
-        t: (lng, key, params) => i18n.resources[lng][key].replace(/\{\{([\w.]+)\}\}/g, (_, path) => path.split('.').reduce((v, k) => v?.[k], params) ?? '')
+    // LO03's i18next setup without loading i18next: the same Czech forms, picked with Intl.PluralRules.
+    const csPlural = new Intl.PluralRules('cs')
+    const CS_I18N = {
+        'web-grid.labels.pageInfo': ({ ctx }) => `Strana ${ctx.currentPage} z ${ctx.totalPages}`,
+        'web-grid.labels.itemCount': { one: '{n} položka', few: '{n} položky', other: '{n} položek' },
+        'web-grid.labels.perPage': 'na stránku'
     }
-    const pageTranslate = ({ key, params }) => (i18n.exists('cs', key) ? i18n.t('cs', key, params) : null)
-    const ownTranslate = ({ key, params }) => (i18n.exists('de', key) ? i18n.t('de', key, params) : null)
+    const pageTranslate = ({ key, params }) => {
+        const entry = CS_I18N[key]
+        if (entry === undefined) return null   // not mine
+        if (typeof entry === 'string') return entry
+        if (typeof entry === 'function') return entry(params)
+        const n = params.ctx?.count
+        return (entry[csPlural.select(n)] ?? entry.other).replace('{n}', String(n))
+    }
+    const ownTranslate = ({ key, params }) =>
+        key === 'web-grid.labels.pageInfo' ? `Seite ${params.ctx.currentPage} von ${params.ctx.totalPages}` : null
 
     const pageState = { dictionary: false, pageCallback: false, locale: '' }
     const readouts = []
@@ -379,6 +432,25 @@ window.components.security = { shouldEscapeLabels: true }   // escapes the whole
         later(lo06Read)
     })
     readouts.push(lo06Read)
+
+    // ── LO07 · Czech plural forms via the grid's own translateCallback ───────
+    const lo07 = $('lo07-grid')
+    setup(lo07, 5)
+    const csForms = { one: 'položka', few: 'položky', many: 'položky', other: 'položek' }
+    // With i18next: the generic bridge shown in LO03.
+    lo07.translateCallback = ({ key, params }) =>
+        key === 'web-grid.labels.itemCount'
+            ? `${params.ctx.count} ${csForms[csPlural.select(params.ctx.count)]}`
+            : null
+    const lo07Read = () => { $('lo07-readout').textContent = `grid.items ${lo07.items.length} rows\n${pagerText(lo07)}` }
+    for (const radio of document.querySelectorAll('input[name="lo07-rows"]')) {
+        radio.addEventListener('change', async (e) => {
+            lo07.items = rows(Number(e.target.value))
+            await lo07.whenSettled()
+            later(lo07Read)
+        })
+    }
+    readouts.push(lo07Read)
 
     later(() => readouts.forEach((fn) => fn()))
 </script>
