@@ -329,8 +329,9 @@ The editing flow is: Start -> Edit -> Commit or Cancel.
    - A draft copy of the row is created (if not already drafted).
    - The cell DOM is replaced with the appropriate editor.
    - The cell-edit-start event (onCellEditStart) fires.
-   - For editTrigger='navigate', typing a printable character starts editing
-     with that character pre-filled.
+   - In every editTrigger mode, typing a printable character on a focused
+     cell starts editing with that character pre-filled ('always': after
+     Escape put focus on the cell, the key goes back into the editor).
 
 2. EDIT
    - The user modifies the value in the editor.

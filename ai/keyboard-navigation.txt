@@ -419,7 +419,9 @@ CLIPBOARD KEYS
                   cell range to clipboard as TSV (tab-separated values).
                   Compatible with Excel paste.
   Ctrl+V          Paste TSV data from clipboard into the grid starting at
-                  the focused cell. Multi-cell paste supported.
+                  the focused cell. Multi-cell paste supported. Every
+                  editTrigger mode (Excel); inside an 'always' editor a
+                  one-cell text is the editor's own paste.
 
 shouldCopyWithHeaders (boolean, default false): when true, column headers
 are included as the first row when copying cell selections.
