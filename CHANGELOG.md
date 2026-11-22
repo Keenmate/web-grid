@@ -5,9 +5,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.0.0-rc01] - 2026-11-22
 
-Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
+A major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
 ### Changed — `renderCellCallback` wins in every column type (2026-11-22)
@@ -117,12 +117,20 @@ Target: **2.0.0-rc01** — a major: the callback, event and item API below is br
   In an open or always-on editor Tab still saves + moves to the next editable cell.
 - **Virtual grid:** Tab while the focus sits on the grid's container (the active row scrolled out of the window)
   leaves the grid instead of landing on the first control inside it.
+- **Visible: one focus ring.** While a row-action cell (or a control inside it) has the focus, the focused data
+  cell's ring steps back; a control inside a cell (`data-wg-widget`, a row-action button) shows its own
+  `:focus-visible` outline (`--wg-focus-border-width` / `--wg-focus-border-color`).
 
 ### Added — icons repaint when the page-wide icon hook changes (2026-11-22)
 - Changing `window.components.renderIconCallback` after the grid rendered repaints its icons in place (core
   `iconsChanged()`, C-CA-40): edit buttons, inline row actions, a cached `renderChevronCallback` render, the open
   row toolbar and the open dropdown's options — the active cell, selection, open editor / dropdown / toolbar and
   scroll stay. A new element `renderIconCallback` now repaints the open toolbar / dropdown the same way.
+
+### Internal — Custom Elements Manifest keeps to the public API (2026-11-21)
+- `custom-elements.json` / `web-types.json` / `vscode.html-custom-data.json` regenerated with core rc25's
+  `blissAnalyzerConfig` public-API filter: private / protected / `#` / `_` members and modules the package doesn't
+  re-export are left out (114 → 4 modules). `<web-grid>` keeps its 86 attributes, 21 events and every public method.
 
 ### Added — `parseNumberCallback` (2026-11-21)
 - `parseNumberCallback` input (property): this grid's own number reader for `editor: 'number'` columns, typed and
@@ -176,7 +184,7 @@ Target: **2.0.0-rc01** — a major: the callback, event and item API below is br
   `e2e/examples.spec.ts` smoke-tests it.
 
 ### Removed — BREAKING: `GridEngine` export (2026-11-20)
-- `GridEngine` is no longer exported: it only drew the same UI without the custom element. Use `<web-grid>`
+- `GridEngine` (the 1.x `WebGrid` export, renamed in this cycle) is no longer exported: it only drew the same UI without the custom element. Use `<web-grid>`
   (`el.controller` for the programmatic API). The config / context / event types stay exported.
 
 ### Added — `translateCallback` (2026-11-20)
@@ -438,6 +446,10 @@ Target: **2.0.0-rc01** — a major: the callback, event and item API below is br
 
 ### Internal — core 1.0.0-rc24 (2026-11-15)
 - core `^1.0.0-rc24`.
+
+### Internal — base-css-variables 2.0.2 (2026-11-13)
+- devDependency `@keenmate/base-css-variables` `^2.0.2` (defines `--base-touch-target-min`); the
+  `contract-check.json` exception for that variable is gone.
 
 ### Examples and docs — stacked API tables, highlighted code, reference brought up to date (2026-11-13)
 - Devkit `^1.0.0-rc14`: every API table has a header row (a card per row on a phone), the 46 hand-written
@@ -1132,6 +1144,12 @@ Unchanged: `filter-mode`, `page-size`, `pagination-mode`, `pagination-position`,
   select / combobox / autocomplete get an empty first item (`labels.dropdownEmptyOption`) for the
   unfiltered list; picking it sets the value to `null`.
 
+### Fixed — configured shortcuts win over the grid's own keys (2026-10-24)
+- A `rowShortcuts` / `rangeShortcuts` item bound to a key the grid handles itself (Delete, F2, modified arrows,
+  printable keys) never fired on a focused cell: the grid's key handling claimed the key first. Configured
+  shortcuts now run before it. `el.controller` gains `getSelectedColumns()`, `isColumnSelected()` and
+  `copySelectedColumnsToClipboard()`.
+
 ### Changed — BREAKING (interaction model, web-components-core rc15)
 
 Callbacks, events and every clickable item (row toolbar, cell / header context menu,
@@ -1581,6 +1599,12 @@ The cell and column-header menus are the shared KeenMate menu, core `openMenu()`
 - **`--wg-tree-*` variable declarations consolidated into `variables.css`.** The four `--wg-tree-indent` / `--wg-tree-chevron-*` declarations moved from a `:host` block in `tree.css` into the existing `:host` block in `variables.css` (new `/* === TREE === */` section). Honors the "one place for `--wg-*`" contract — consumers can now find every overrideable variable in a single file. No visual or runtime change.
 - **`--wg-selection-row-number-color` fallback chain canonicalized.** Was `var(--base-text-inverted, #fff)`; now `var(--base-text-color-on-accent, light-dark(#fff, #fff))`. `--base-text-inverted` was not part of the canonical `--base-*` taxonomy; `--base-text-color-on-accent` is the correct read and matches `--ms-text-color-on-accent` in web-multiselect. The `light-dark()` wrap makes the fallback script-conformant — the white-on-accent reading is identical in both branches because the accent stays the same color across schemes. `--base-text-inverted` removed from `component-variables.manifest.json` (the entry described a `--base-*` read that no longer exists).
 - **README migration to the canonical landing-page + `docs/` layout.** README slimmed from 1076 → 117 lines (under the 200-line soft target). Four new files at `packages/web-grid/docs/`: `usage.md` (full property / column / editor / event / method reference), `theming.md` (the four contracts — container / variables / color-scheme / cascade layers), `examples.md` (cookbook of recipes pointing at the 24 runnable `docs/examples-*.html` demos), `accessibility.md` (keyboard model, ARIA additions, focus management, contrast targets). Resolves the BlissFramework readme-structure validation triad and consolidates the theming contract that was scattered across the README into a single dedicated file.
+
+### Fixed — Escape right after a selection click (2026-06-18)
+- **Escape clears a column / row selection right after the header / row-number click.** The grid focused its
+  container two animation frames after the click, so a quick Escape landed outside the grid and the selection
+  stayed. The container is focused on the microtask now (the two-frame focus stays as a fallback), for column
+  and row selection alike.
 
 ## [1.2.0-rc02] - 2026-06-11 [PUBLISHED]
 
