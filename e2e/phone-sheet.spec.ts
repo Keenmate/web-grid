@@ -50,23 +50,38 @@ async function snap(page: Page, col: number): Promise<Snap> {
 	}, [ROW, col] as const)
 }
 
-/** Tap row 3's `col`, F2: its editor + popup open. */
+const sheetOf = (page: Page) => gridLocator(page).locator('.wg__dropdown--sheet, .wg-datepicker-container--sheet')
+
+/** Two animation frames: scroll events / rAF work queued so far (the sheet's page lock, focus moves) have run. */
+const frames = (page: Page) => page.evaluate(() => new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r()))))
+
+/** No sheet history entry left (core claimBackEntry: a deferred history.back(), its popstate, then the page's scrollRestoration). */
+const historySettled = (page: Page) => page.evaluate(() =>
+	!(history.state as { kmBackEntry?: boolean } | null)?.kmBackEntry && history.scrollRestoration === 'auto')
+
+/** Tap row 3's `col` (the date cell: then F2): its editor + sheet are open, the focus inside the sheet. */
 async function openEditor(page: Page, col: number): Promise<void> {
 	await page.goto(PAGE)
 	await expect(gridLocator(page).locator('tbody tr.wg__row').first()).toBeVisible()
-	// A tap focuses the cell — a dropdown cell (navigate mode) opens its editor right away, else F2
+	// A tap focuses the cell — a dropdown cell (navigate mode) opens its editor right away, the date cell needs F2
 	await cell(page, ROW, col).tap()
-	await page.waitForTimeout(150)
-	if ((await snap(page, col)).editing.length === 0) {
+	if (col === 4) {
 		await expect.poll(async () => (await snap(page, col)).focus).toBe(`${ROW}:${col}`)
 		await page.keyboard.press('F2')
 	}
 	await expect(cell(page, ROW, col)).toHaveClass(/wg__cell--editing/)
-	await page.waitForTimeout(150)
+	await expect(sheetOf(page)).toHaveCount(1)
+	await expect.poll(async () => (await snap(page, col)).focus).toBe('sheet')
+	await frames(page)
 }
 
-const sheetOf = (page: Page) => gridLocator(page).locator('.wg__dropdown--sheet, .wg-datepicker-container--sheet')
-const settle = (page: Page) => page.waitForTimeout(250)
+/** The popup closed and the close is over: no sheet / panel, no cell editing, its history entry gone, two frames. */
+async function closed(page: Page): Promise<void> {
+	await expect(gridLocator(page).locator('.wg__dropdown, .wg-datepicker-container')).toHaveCount(0)
+	await expect(gridLocator(page).locator('.wg__cell--editing')).toHaveCount(0)
+	await expect.poll(() => historySettled(page)).toBe(true)
+	await frames(page)
+}
 
 test.describe('phone: the cell popups are a full-screen sheet', () => {
 	test.use(PHONE)
@@ -122,7 +137,7 @@ test.describe('phone: the cell popups are a full-screen sheet', () => {
 	test('select: a picked option saves, the sheet closes, focus back on the cell, the page unlocked', async ({ page }) => {
 		await openEditor(page, 1)
 		await sheetOf(page).locator('.wg__dropdown-option', { hasText: 'Done' }).tap()
-		await settle(page)
+		await closed(page)
 		const s = await snap(page, 1)
 		expect(s).toEqual({ sheet: 0, dropdown: 0, picker: 0, editing: [], focus: `${ROW}:1`, value: 'Done', events: [`cell-edit-start(${ROW}.status)`, `row-change(${ROW}.status=done)`] })
 		expect(await page.evaluate(() => getComputedStyle(document.body).position)).not.toBe('fixed')
@@ -131,7 +146,7 @@ test.describe('phone: the cell popups are a full-screen sheet', () => {
 	test('select: the close button without a pick changes nothing (cell-edit-cancel), focus on the cell', async ({ page }) => {
 		await openEditor(page, 1)
 		await sheetOf(page).locator('.wg__sheet-close').tap()
-		await settle(page)
+		await closed(page)
 		expect(await snap(page, 1)).toEqual({ sheet: 0, dropdown: 0, picker: 0, editing: [], focus: `${ROW}:1`, value: 'Open', events: [`cell-edit-start(${ROW}.status)`, `cell-edit-cancel(${ROW}.status)`] })
 	})
 
@@ -139,7 +154,7 @@ test.describe('phone: the cell popups are a full-screen sheet', () => {
 		await openEditor(page, 1)
 		await page.keyboard.press('ArrowDown')
 		await page.keyboard.press('Enter')
-		await settle(page)
+		await closed(page)
 		const s = await snap(page, 1)
 		expect(s.sheet).toBe(0)
 		expect(s.events).toEqual([`cell-edit-start(${ROW}.status)`, `row-change(${ROW}.status=done)`])
@@ -148,7 +163,7 @@ test.describe('phone: the cell popups are a full-screen sheet', () => {
 	test('select: Escape cancels, focus on the cell', async ({ page }) => {
 		await openEditor(page, 1)
 		await page.keyboard.press('Escape')
-		await settle(page)
+		await closed(page)
 		expect(await snap(page, 1)).toEqual({ sheet: 0, dropdown: 0, picker: 0, editing: [], focus: `${ROW}:1`, value: 'Open', events: [`cell-edit-start(${ROW}.status)`, `cell-edit-cancel(${ROW}.status)`] })
 	})
 
@@ -162,7 +177,7 @@ test.describe('phone: the cell popups are a full-screen sheet', () => {
 		// the sheet stayed the same element (its search kept the focus)
 		await expect(search).toBeFocused()
 		await sheetOf(page).locator('.wg__sheet-close').tap()
-		await settle(page)
+		await closed(page)
 		const s = await snap(page, 2)
 		expect(s).toEqual({ sheet: 0, dropdown: 0, picker: 0, editing: [], focus: `${ROW}:2`, value: 'Tab', events: [`cell-edit-start(${ROW}.product)`, `row-change(${ROW}.product=Tab)`] })
 	})
@@ -171,18 +186,17 @@ test.describe('phone: the cell popups are a full-screen sheet', () => {
 		await openEditor(page, 2)
 		await sheetOf(page).locator('.wg__sheet-search').fill('Tablet')
 		await sheetOf(page).locator('.wg__dropdown-option', { hasText: 'Tablet' }).tap()
-		await settle(page)
+		await closed(page)
 		expect((await snap(page, 2)).events).toEqual([`cell-edit-start(${ROW}.product)`, `row-change(${ROW}.product=tablet)`])
 
 		await openEditor(page, 2)
 		await sheetOf(page).locator('.wg__sheet-search').fill('Laptop')
 		// the first Escape restores the cell's text (the grid's two-phase Escape), the sheet stays
 		await page.keyboard.press('Escape')
-		await settle(page)
 		await expect(sheetOf(page).locator('.wg__sheet-search')).toHaveValue('Phone')
 		await expect(sheetOf(page).locator('.wg__sheet-search')).toBeFocused()
 		await page.keyboard.press('Escape')
-		await settle(page)
+		await closed(page)
 		expect(await snap(page, 2)).toEqual({ sheet: 0, dropdown: 0, picker: 0, editing: [], focus: `${ROW}:2`, value: 'Phone', events: [`cell-edit-start(${ROW}.product)`, `cell-edit-cancel(${ROW}.product)`] })
 	})
 
@@ -191,7 +205,7 @@ test.describe('phone: the cell popups are a full-screen sheet', () => {
 		await sheetOf(page).locator('.wg__sheet-search').fill('car')
 		await expect(sheetOf(page).locator('.wg__dropdown-option')).toHaveText(['Carol'])
 		await page.keyboard.press('Enter')
-		await settle(page)
+		await closed(page)
 		const s = await snap(page, 3)
 		expect(s.sheet).toBe(0)
 		expect(s.value).toBe('Carol')
@@ -202,7 +216,7 @@ test.describe('phone: the cell popups are a full-screen sheet', () => {
 		await openEditor(page, 2)
 		await sheetOf(page).locator('.wg__sheet-search').fill('Laptop')
 		await page.evaluate(() => history.back())
-		await settle(page)
+		await closed(page)
 		const s = await snap(page, 2)
 		expect(s.sheet).toBe(0)
 		expect(s.editing).toEqual([])
@@ -216,7 +230,7 @@ test.describe('phone: the cell popups are a full-screen sheet', () => {
 		await cell(page, ROW, 1).tap()
 		await expect(sheetOf(page)).toHaveCount(1)
 		await sheetOf(page).locator('.wg__dropdown-option', { hasText: 'Done' }).tap()
-		await settle(page)
+		await closed(page)
 		// pushState + back(): the entry is popped (history.length keeps it as a forward entry)
 		expect(await page.evaluate(() => (history.state as { kmBackEntry?: boolean } | null)?.kmBackEntry ?? false)).toBe(false)
 		expect(await page.evaluate(() => history.length)).toBeGreaterThanOrEqual(before)
@@ -238,7 +252,6 @@ test.describe('phone: the cell popups are a full-screen sheet', () => {
 		expect(before).toBeGreaterThan(1000)
 		// Scroll events are dispatched at the next rendering step, not when the position changes: two
 		// animation frames flush the ones already queued (the open's scroll lock) before / after a check.
-		const frames = () => page.evaluate(() => new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r()))))
 		// Every scroll position from the close on (the browser's own restore would flash to 0)
 		const track = () => page.evaluate(() => {
 			const w = window as unknown as { __ys: number[]; __track?: () => void }
@@ -248,21 +261,17 @@ test.describe('phone: the cell popups are a full-screen sheet', () => {
 			addEventListener('scroll', w.__track)
 		})
 		const seen = () => page.evaluate(() => (window as unknown as { __ys: number[] }).__ys)
-		// The close is over once our history entry is gone and the page's own scrollRestoration is back
-		// (core claimBackEntry: a deferred history.back(), its popstate, then the mode one task later)
-		const historySettled = () => page.evaluate(() =>
-			!(history.state as { kmBackEntry?: boolean } | null)?.kmBackEntry && history.scrollRestoration === 'auto')
 
 		for (const close of ['close button', 'Back'] as const) {
 			await cell(page, ROW, 1).tap()
 			await expect(sheetOf(page)).toHaveCount(1)
-			await frames()  // the open's own scroll events (the page lock) are not the close's
+			await frames(page)  // the open's own scroll events (the page lock) are not the close's
 			await track()
 			if (close === 'Back') await page.evaluate(() => history.back())
 			else await sheetOf(page).locator('.wg__sheet-close').tap()
 			await expect(sheetOf(page)).toHaveCount(0)
-			await expect.poll(historySettled, { message: close }).toBe(true)
-			await frames()  // any scroll the traversal caused is dispatched by now
+			await expect.poll(() => historySettled(page), { message: close }).toBe(true)
+			await frames(page)  // any scroll the traversal caused is dispatched by now
 			expect(await scrollY(), close).toBe(before)
 			expect((await seen()).filter((y) => y !== before), close).toEqual([])
 		}
@@ -272,19 +281,19 @@ test.describe('phone: the cell popups are a full-screen sheet', () => {
 	test('date: a tapped day saves, focus back on the cell', async ({ page }) => {
 		await openEditor(page, 4)
 		await sheetOf(page).locator('.wg-datepicker__day[data-date="2026-06-18"]').tap()
-		await settle(page)
+		await closed(page)
 		expect(await snap(page, 4)).toEqual({ sheet: 0, dropdown: 0, picker: 0, editing: [], focus: `${ROW}:4`, value: '2026-06-18', events: [`cell-edit-start(${ROW}.due)`, `row-change(${ROW}.due=2026-06-18)`] })
 	})
 
 	test('date: the close button saves (unchanged: no event), focus on the cell; Escape cancels', async ({ page }) => {
 		await openEditor(page, 4)
 		await sheetOf(page).locator('.wg__sheet-close').tap()
-		await settle(page)
+		await closed(page)
 		expect(await snap(page, 4)).toEqual({ sheet: 0, dropdown: 0, picker: 0, editing: [], focus: `${ROW}:4`, value: '2026-06-13', events: [`cell-edit-start(${ROW}.due)`] })
 
 		await openEditor(page, 4)
 		await page.keyboard.press('Escape')
-		await settle(page)
+		await closed(page)
 		expect(await snap(page, 4)).toEqual({ sheet: 0, dropdown: 0, picker: 0, editing: [], focus: `${ROW}:4`, value: '2026-06-13', events: [`cell-edit-start(${ROW}.due)`, `cell-edit-cancel(${ROW}.due)`] })
 	})
 
@@ -295,7 +304,7 @@ test.describe('phone: the cell popups are a full-screen sheet', () => {
 			input.dispatchEvent(new Event('input', { bubbles: true }))
 		})
 		await sheetOf(page).locator('.wg__sheet-close').tap()
-		await settle(page)
+		await closed(page)
 		const s = await snap(page, 4)
 		expect(s.value).toBe('2026-06-25')
 		expect(s.events).toEqual([`cell-edit-start(${ROW}.due)`, `row-change(${ROW}.due=2026-06-25)`])
@@ -318,7 +327,7 @@ test.describe('phone: the cell popups are a full-screen sheet', () => {
 		await page.setViewportSize({ width: 412, height: 839 })
 		await expect(panel).toHaveClass(/wg__dropdown--sheet/)
 		await sheetOf(page).locator('.wg__dropdown-option', { hasText: 'On hold' }).tap()
-		await settle(page)
+		await closed(page)
 		expect((await snap(page, 1)).events).toEqual([`cell-edit-start(${ROW}.status)`, `row-change(${ROW}.status=hold)`])
 	})
 })
@@ -339,7 +348,7 @@ test.describe('desktop: the anchored panels are unchanged', () => {
 			expect(Math.abs(p!.y - (c!.y + c!.height))).toBeLessThan(12)
 			expect(await page.evaluate(() => getComputedStyle(document.body).position)).not.toBe('fixed')
 			await page.keyboard.press('Escape')
-			await settle(page)
+			await closed(page)
 		}
 	})
 })
