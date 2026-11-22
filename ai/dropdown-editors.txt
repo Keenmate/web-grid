@@ -88,6 +88,8 @@ valueMember / getValueCallback
 displayMember / getDisplayValueCallback
   Which property holds the text shown in the dropdown and in the cell.
   Default property: "label"
+  (A COLUMN-level getDisplayValueCallback(ctx: CellContext) wins in the cell
+  display -- and in copy; the editorOptions one still labels the options.)
 
   displayMember: 'name'
   -- or --

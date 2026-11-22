@@ -72,13 +72,20 @@ function renderCellDisplayContent<T>(
 	}
 
 	if (isDropdown) {
-		// Get display value using proper fallback chain (getDisplayCallback -> displayMember -> label -> raw value)
+		// The column's getDisplayValueCallback wins (as in every other cell, and as copy does); else the option's
+		// display via the fallback chain (editorOptions.getDisplayValueCallback -> displayMember -> label -> raw value)
 		gridPerf.count('cellDisplayItemsLookup')
-		const item = ctx[GRID_ENGINE].displayItems[rowIndex]
-		const rawValue = item ? ctx[GRID_ENGINE].getCellRawValue(item, rowIndex, field) : undefined
-		const opts = column.editorOptions || {}
-		const options = opts.initialOptions || opts.options || []
-		const displayValue = getOptionDisplayValue(rawValue, options, opts)
+		const engine = ctx[GRID_ENGINE]
+		const item = engine.displayItems[rowIndex]
+		let displayValue: string
+		if (column.getDisplayValueCallback) {
+			displayValue = item ? String(column.getDisplayValueCallback(engine.cellCtx(item, rowIndex, column)) ?? '') : ''
+		} else {
+			const rawValue = item ? engine.getCellRawValue(item, rowIndex, field) : undefined
+			const opts = column.editorOptions || {}
+			const options = opts.initialOptions || opts.options || []
+			displayValue = getOptionDisplayValue(rawValue, options, opts)
+		}
 
 		// Add modifier class for on-focus visibility (CSS handles hover/focus show)
 		const visibility = ctx[GRID_ENGINE].getEffectiveToggleVisibility(column)

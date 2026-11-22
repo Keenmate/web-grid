@@ -99,6 +99,10 @@ getDisplayValueCallback ((ctx: CellContext<T>) => string)
     checkbox column, the formatted text is shown instead of the default
     checkbox element.
 
+    Dropdown (select / combobox / autocomplete), date and number columns: a
+    column-level getDisplayValueCallback is what the cell shows (instead of the
+    option label / formatted date / locale number) -- and what copy takes.
+
 renderCellCallback ((ctx: CellContext<T>) => string)
     Returns raw HTML to render in the cell. NOT HTML-escaped -- you can
     include tags, images, links, etc. ctx has the full row as well as

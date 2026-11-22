@@ -673,7 +673,7 @@ Every column callback takes one `ctx`. The cell ctx (`CellContext<T>`) is `{ row
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `getDisplayValueCallback` | `(ctx: CellContext<T>) => string` | Display text for the cell (escaped) |
+| `getDisplayValueCallback` | `(ctx: CellContext<T>) => string` | Display text for the cell (escaped); in dropdown / date / number cells too (wins over the option label / formatted date / locale number) — copy takes the same text |
 | `renderCellCallback` | `(ctx: CellContext<T>) => string` | Custom cell HTML (wins over `getDisplayValueCallback`) |
 
 ### Filtering

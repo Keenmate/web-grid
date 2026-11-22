@@ -148,12 +148,29 @@ test.describe('copy = what the cell shows (date / dropdown columns)', () => {
 		await primeClipboard(page)
 		await gridLocator(page, 'shown').locator('.wg__row-number[data-row-number="0"]').click()
 		await page.keyboard.press('Control+c')
-		expect(await copied(page)).toBe('1\tActive\t05.03.2026\tsize:s\tQ1')
+		expect(await copied(page)).toBe('1\tActive\t05.03.2026\tsize:s\tQ1\t★ Gold\t1500 pcs')
 
 		await primeClipboard(page)
 		await header(page, 'shown', 'status').click({ modifiers: ['Shift'] })
 		await page.keyboard.press('Control+c')
 		expect(await copied(page)).toBe('Active\nPaused')
+	})
+
+	test("the column's getDisplayValueCallback is what a dropdown / date / number cell SHOWS, and copy = shown", async ({ page }) => {
+		// select + callback: the callback text, not the option label (Excel: copy what you see)
+		await expect(cell(page, 'shown', 0, 5).locator('.wg__select-value')).toHaveText('★ Gold')
+		await expect(cell(page, 'shown', 1, 5).locator('.wg__select-value')).toHaveText('★ Silver')
+		await expect(cell(page, 'shown', 1, 4)).toHaveText('Q4')
+		await expect(cell(page, 'shown', 0, 6)).toHaveText('1500 pcs')
+		for (const [row, col, text] of [[0, 5, '★ Gold'], [1, 4, 'Q4'], [0, 6, '1500 pcs']] as const) {
+			await primeClipboard(page)
+			await cell(page, 'shown', row, col).click()
+			await page.keyboard.press('Control+c')
+			expect(await copied(page)).toBe(text)
+		}
+		// an edit commit re-renders the cell with the callback too
+		await onGrid(page, async el => { el.updateRowById(1, { tier: 's' }); await el.whenSettled() }, 'shown')
+		await expect(cell(page, 'shown', 0, 5).locator('.wg__select-value')).toHaveText('★ Silver')
 	})
 
 	test('a copied option label pastes back to the option value', async ({ page }) => {

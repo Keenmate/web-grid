@@ -41,11 +41,14 @@
 		 * #shown — copy = what the cell SHOWS for date / dropdown columns (Excel)
 		 *  col:  0=id  1=status (select: a→Active, p→Paused)  2=due (date, DD.MM.YYYY)
 		 *        3=size (combobox, getCopyValueCallback → "size:<value>")  4=when (date, getDisplayValueCallback → "Q<n>")
-		 *  row 0 | 1 | a | 2026-03-05 | s | 2026-02-10
-		 *  row 1 | 2 | p | (null)     | l | 2026-11-01
+		 *        5=tier (select g→Gold / s→Silver, getDisplayValueCallback → "★ <label>")
+		 *        6=qty (number, getDisplayValueCallback → "<n> pcs")
+		 *  row 0 | 1 | a | 2026-03-05 | s | 2026-02-10 | g | 1500
+		 *  row 1 | 2 | p | (null)     | l | 2026-11-01 | s | 2
 		 */
 		const shown = document.getElementById('shown')
 		const sizes = [{ value: 's', label: 'Small' }, { value: 'l', label: 'Large' }]
+		const tiers = [{ value: 'g', label: 'Gold' }, { value: 's', label: 'Silver' }]
 		shown.columns = [
 			{ field: 'id', title: 'ID', width: '50px', isEditable: false },
 			{ field: 'status', title: 'Status', width: '110px', editor: 'select',
@@ -54,11 +57,15 @@
 			{ field: 'size', title: 'Size', width: '100px', editor: 'combobox', editorOptions: { options: sizes },
 				getCopyValueCallback: ({ value }) => `size:${value}` },
 			{ field: 'when', title: 'When', width: '90px', editor: 'date',
-				getDisplayValueCallback: ({ value }) => `Q${Math.floor(new Date(value).getMonth() / 3) + 1}` }
+				getDisplayValueCallback: ({ value }) => `Q${Math.floor(new Date(value).getMonth() / 3) + 1}` },
+			{ field: 'tier', title: 'Tier', width: '100px', editor: 'select', editorOptions: { options: tiers },
+				getDisplayValueCallback: ({ value }) => `★ ${tiers.find(t => t.value === value)?.label ?? value}` },
+			{ field: 'qty', title: 'Qty', width: '90px', editor: 'number',
+				getDisplayValueCallback: ({ value }) => `${value} pcs` }
 		]
 		shown.items = [
-			{ id: 1, status: 'a', due: '2026-03-05', size: 's', when: '2026-02-10' },
-			{ id: 2, status: 'p', due: null, size: 'l', when: '2026-11-01' }
+			{ id: 1, status: 'a', due: '2026-03-05', size: 's', when: '2026-02-10', tier: 'g', qty: 1500 },
+			{ id: 2, status: 'p', due: null, size: 'l', when: '2026-11-01', tier: 's', qty: 2 }
 		]
 	</script>
 </body>

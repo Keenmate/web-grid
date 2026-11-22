@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Changed — a column `getDisplayValueCallback` is shown in dropdown cells too (2026-11-22)
+- A `select` / `combobox` / `autocomplete` cell showed its option label even when the column has a
+  `getDisplayValueCallback`, while copy took the callback's text. The app's display callback now wins everywhere:
+  the dropdown cell shows it (option label otherwise), so copy = shown stays true. Date and number cells already
+  showed it. The editor and its option list are unchanged (`editorOptions.getDisplayValueCallback` labels options).
+
 ### Removed — BREAKING: the undocumented `@internal` members of `<web-grid>` (2026-11-22)
 - The module plumbing that was public (marked `@internal`, but in the emitted `.d.ts` and on the element at
   runtime) is gone from the element: `shadow`, `dropdown`, `autocomplete`, `toolbar`, `filterRow`,
