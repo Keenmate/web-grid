@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — type-to-edit + paste in every edit mode</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>type-to-edit + paste fixture</h1>
+	<p>Targeted by <code>e2e/type-paste.spec.ts</code>. Excel: a focused editable cell takes a typed key (starts editing
+	with it) and a paste (Ctrl+V) in every editTrigger mode; read-only / disabled grids take neither.</p>
+
+	<web-grid id="navigateGrid" edit-trigger="navigate" style="max-width: 480px;"></web-grid>
+	<web-grid id="clickGrid" edit-trigger="click" style="max-width: 480px;"></web-grid>
+	<web-grid id="dblclickGrid" edit-trigger="dblclick" style="max-width: 480px;"></web-grid>
+	<web-grid id="buttonGrid" edit-trigger="button" style="max-width: 480px;"></web-grid>
+	<web-grid id="alwaysGrid" edit-trigger="always" style="max-width: 480px;"></web-grid>
+	<web-grid id="readonlyGrid" edit-trigger="dblclick" readonly style="max-width: 480px;"></web-grid>
+	<web-grid id="disabledGrid" edit-trigger="dblclick" disabled style="max-width: 480px;"></web-grid>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+		/*
+		 * Every grid: col 0 = id (read-only), 1 = name (text), 2 = status (select a→Active / p→Paused)
+		 *  row 0 | 1 | Alice | a
+		 *  row 1 | 2 | Bob   | p
+		 * Cell edits in window.__edits (cell-edit-start: '<grid>:<row>.<field>').
+		 */
+		window.__edits = []
+		for (const el of document.querySelectorAll('web-grid')) {
+			el.isEditingEnabled = true
+			el.shouldOpenDropdownOnFocus = false
+			el.columns = [
+				{ field: 'id', title: 'ID', width: '60px', isEditable: false },
+				{ field: 'name', title: 'Name', width: '160px', editor: 'text' },
+				{ field: 'status', title: 'Status', width: '120px', editor: 'select',
+					editorOptions: { options: [{ value: 'a', label: 'Active' }, { value: 'p', label: 'Paused' }] } }
+			]
+			el.items = [{ id: 1, name: 'Alice', status: 'a' }, { id: 2, name: 'Bob', status: 'p' }]
+			el.addEventListener('cell-edit-start', e => window.__edits.push(`${el.id}:${e.detail.rowIndex}.${e.detail.field}`))
+		}
+	</script>
+</body>
+</html>

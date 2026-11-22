@@ -104,6 +104,9 @@ function executeFocusCell(ctx: ExecutorContext, action: FocusCellAction): GridAc
 			if (action.selectText !== false && editor instanceof HTMLInputElement && editor.type === 'text') {
 				editor.select()
 			}
+		} else {
+			// No editor (a read-only cell of an 'always' column): the cell itself takes focus
+			focusCellTd(cell)
 		}
 	} else {
 		// Default: focus the cell itself

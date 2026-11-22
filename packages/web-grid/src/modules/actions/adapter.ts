@@ -207,6 +207,24 @@ export class ActionPipelineAdapter<T = unknown> {
 					if (editor instanceof HTMLInputElement && editor.type === 'text') editor.select()
 					return true
 				}
+				// A printable key on the cell starts editing with that key (Excel): back into the
+				// editor, its text replaced by the key (a number cell: only a digit / minus / point)
+				if (e.key.length === 1 && !hasModifier && editor && !e.isComposing) {
+					const isNumber = this.ctx[GRID_ENGINE].columns[cell.colIndex]?.editor === 'number'
+					e.preventDefault()
+					e.stopPropagation()
+					if (isNumber && !/[\d.\-]/.test(e.key)) return true  // consumed: a letter on a number cell does nothing
+					editor.focus({ preventScroll: true })
+					if (editor instanceof HTMLInputElement) {
+						editor.value = e.key
+						editor.setSelectionRange(editor.value.length, editor.value.length)
+						editor.dispatchEvent(new Event('input', { bubbles: true, composed: true }))
+					} else {
+						// A select trigger: the key as if typed on it (opens / filters the dropdown)
+						editor.dispatchEvent(new KeyboardEvent('keydown', { key: e.key, code: e.code, shiftKey: e.shiftKey, bubbles: true, composed: true, cancelable: true }))
+					}
+					return true
+				}
 			} else if (e.key === 'Escape' && !hasModifier && !dropdownOpen && !isEditing) {
 				// Escape in the always-on editor (nothing to close / cancel): back to the cell —
 				// from there Tab leaves the grid

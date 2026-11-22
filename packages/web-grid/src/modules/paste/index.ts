@@ -527,9 +527,12 @@ export async function executePaste<T>(
 
 /**
  * Top-level paste event handler — wired on the GridElement itself so it
- * fires for any paste while the grid has focus. Only does work in navigate
- * mode with a focused cell and no in-progress edit; the editor's own
- * default paste handles edit-mode pasting.
+ * fires for any paste while the grid has focus. Works in every editTrigger mode
+ * (Excel: a focused cell takes a paste) with a focused cell and no in-progress
+ * edit; the editor's own default paste handles edit-mode pasting — also inside an
+ * always-on editor, unless the text is a TSV range (tab / newline), which spreads
+ * over the cells from the focused one. Read-only / disabled grids and non-editable
+ * cells take nothing (`isCellEditable` per cell).
  *
  * Multi-cell detection: presence of tab or newline. Multi-cell goes through
  * executePaste (TSV parse + header detection + per-cell validation + new-
@@ -537,8 +540,8 @@ export async function executePaste<T>(
  * converts, then grid.commitEdit. Both paths render after.
  */
 export async function handlePasteEvent<T>(ctx: GridHost<T>, e: ClipboardEvent): Promise<void> {
-	// Only in navigate mode with focused cell, not while editing
-	if (!ctx[GRID_ENGINE].isNavigateMode || ctx[GRID_ENGINE].editingCell || !ctx[GRID_ENGINE].focusedCell) return
+	// A focused cell, not while editing (every editTrigger mode)
+	if (ctx[GRID_ENGINE].editingCell || !ctx[GRID_ENGINE].focusedCell) return
 	// A read-only / disabled grid takes no paste
 	if (ctx[GRID_ENGINE].isReadonly || ctx[GRID_ENGINE].isDisabled) return
 
@@ -548,6 +551,8 @@ export async function handlePasteEvent<T>(ctx: GridHost<T>, e: ClipboardEvent): 
 
 	// Check if this is multi-cell paste (contains tabs or multiple lines)
 	const isMultiCell = text.includes('\t') || text.includes('\n')
+	// Inside an always-on editor (a text field of the cell) a one-cell text is the editor's own paste
+	if (!isMultiCell && isTextField(e.composedPath()[0])) return
 
 	if (isMultiCell) {
 		// Multi-cell paste - use paste module
@@ -578,4 +583,9 @@ export async function handlePasteEvent<T>(ctx: GridHost<T>, e: ClipboardEvent): 
 		await ctx[GRID_ENGINE].commitEdit(rowIndex, field, processedText, false, 'paste', parseError)
 		ctx.render()
 	}
+}
+
+/** A text field of a cell editor (its own native paste inserts at the caret). */
+function isTextField(target: EventTarget | undefined): boolean {
+	return target instanceof HTMLElement && (target.matches('input, textarea, select') || target.isContentEditable)
 }

@@ -18,6 +18,17 @@ Target: **2.0.0-rc01** — a major: the callback, event and item API below is br
   whole chain (instance → page dictionary → `translateCallback` → default). `ctx.labels['menuItems.sortAsc']` →
   `ctx.labels.text('menuItems.sortAsc')`.
 
+### Changed — typing and paste on a focused cell in every edit mode (2026-11-22)
+- **Ctrl+V pastes into the focused cell in every `editTrigger` mode** (was navigate mode only): click / dblclick /
+  button / always grids now take a one-cell or TSV paste at the focused cell like Excel. Read-only / disabled grids
+  and non-editable cells still take nothing. Inside an always-on editor a one-cell text is the editor's own paste
+  (inserted at the caret); a TSV range spreads over the cells from the focused one.
+- **Typing on an `always` cell starts editing with that key** (Excel): after Escape left the editor (focus on the
+  cell), a printable key goes back into the editor with its text replaced by the key (a number cell: only a digit /
+  minus / point); on a select the key goes to its trigger (opens the dropdown). Typing on a focused cell already
+  started editing in the other modes.
+- **A click on a read-only cell of an `always` column focuses it** (was: nothing got focus).
+
 ### Changed — copy of date / dropdown cells = the shown text (2026-11-22)
 - **Copy = what the cell shows (Excel), date and dropdown columns too** (number columns since 2026-11-21): with no
   `getCopyValueCallback` / `getDisplayValueCallback`, a `select` / `combobox` / `autocomplete` cell copies its option

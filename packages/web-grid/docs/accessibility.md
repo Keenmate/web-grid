@@ -4,7 +4,7 @@
 
 ## Keyboard navigation
 
-Spreadsheet-like key bindings drive all navigation, the same in **every `editTrigger` mode** (`navigate`, `click`, `dblclick`, `button`, `always`, the `read-only` preset): Arrow keys move the focused cell without entering edit mode. The edit trigger only decides how an editor opens — a click, a double click, the edit button, or F2 / typing (navigate mode types to edit).
+Spreadsheet-like key bindings drive all navigation, the same in **every `editTrigger` mode** (`navigate`, `click`, `dblclick`, `button`, `always`, the `read-only` preset): Arrow keys move the focused cell without entering edit mode. The edit trigger only decides how an editor opens — a click, a double click, the edit button, or F2. Like Excel, typing on a focused editable cell starts editing with that key and Ctrl+V pastes into it in every mode (an `always` cell after Escape too).
 
 ### Cell navigation
 
@@ -41,7 +41,7 @@ An always-on editor (`editTrigger: 'always'`) is the cell's control too: Arrow k
 | **Enter** | Commit the edit and move down |
 | **Tab / Shift + Tab** | Commit the edit and move to the next / previous editable cell (Excel; skips read-only cells in heterogeneous grids) — focus stays in the grid |
 | **Escape** | Cancel the edit, restore the original value |
-| **Type any character** | Start editing the focused cell with that character as the first input (navigate mode) |
+| **Type any character** | Start editing the focused cell with that character as the first input (every mode; an `always` cell after Escape: back into its editor, the text replaced by the key) |
 
 The cursor position on cell-edit-start is configurable via `editStartSelection`: `'select-all'` (default), `'mouse-position'`, `'cursor-at-start'`, `'cursor-at-end'`.
 
@@ -53,7 +53,7 @@ The cursor position on cell-edit-start is configurable via `editStartSelection`:
 | **Ctrl + click** | Toggle selection on a row |
 | **Ctrl + A** | Select all cells (where supported) |
 | **Ctrl + C** | Copy the selected range as TSV (Excel-compatible) |
-| **Ctrl + V** | Paste TSV at the focused cell (runs the paste pipeline) |
+| **Ctrl + V** | Paste at the focused cell (one value, or TSV over the cells from there; every mode — inside an `always` editor a one-cell text is the editor's own paste) |
 | **Ctrl + Delete** | Request deleting the current row — fires the `row-delete` event (`onRowDelete`); the grid itself doesn't delete |
 
 ### Tree mode
