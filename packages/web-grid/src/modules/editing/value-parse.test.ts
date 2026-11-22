@@ -102,3 +102,17 @@ describe('typeDateText', () => {
 		expect(typeDateText('', {}, labels)).toEqual({ value: null, error: null })
 	})
 })
+
+describe('typePastedText — dropdown columns (copy = the label, paste maps it back)', () => {
+	const column = { field: 'status', editor: 'select', editorOptions: { options: [{ value: 'a', label: 'Active' }, { value: 'p', label: 'Paused' }] } } as any
+	it('a label → its value (exact, then case-insensitive); a value stays; no match keeps the text', () => {
+		expect(typePastedText(column, 'Paused', labels).value).toBe('p')
+		expect(typePastedText(column, ' active ', labels).value).toBe('a')
+		expect(typePastedText(column, 'p', labels).value).toBe('p')
+		expect(typePastedText(column, 'Other', labels)).toEqual({ value: 'Other', error: null })
+	})
+	it('displayMember / valueMember are honoured', () => {
+		const col = { field: 'c', editor: 'combobox', editorOptions: { valueMember: 'id', displayMember: 'name', options: [{ id: 7, name: 'Seven' }] } } as any
+		expect(typePastedText(col, 'Seven', labels).value).toBe(7)
+	})
+})

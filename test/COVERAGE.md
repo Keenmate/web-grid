@@ -115,6 +115,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Number column ignores letters (GRID-1, #1 fixed) | ✓ | `keyboard.spec.ts` | `keyboard.html` |
 | Ctrl+C cell / range / row / column TSV, `shouldCopyWithHeaders` | ✓ | `copy.spec.ts` | `copy.html` |
 | Ctrl+C honours `getCopyValueCallback` (#1 fixed) and drafts (#9 fixed); clipboard rejection handled (GRID-2) | ✓ | `copy.spec.ts` | `copy.html` |
+| Copy = the shown text for date / dropdown cells (single / range / row / column; callback precedence); a pasted option label maps back to its value | ✓ | `copy.spec.ts` | `copy.html` #shown |
 | `copySelectedRowsToClipboard`, `copyCellSelectionToClipboard`, failure → false | ✓ | `copy.spec.ts` | `copy.html` |
 | `rowShortcuts`, Ctrl+U move, disabled callback, help overlay | ✓ | `shortcuts.spec.ts` | `shortcuts.html` |
 

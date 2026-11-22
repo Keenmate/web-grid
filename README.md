@@ -726,7 +726,7 @@ An async `validateCallback` (a promise) never holds the edit: leaving the cell e
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `getCopyValueCallback` | `(ctx: CellContext<T>) => string` | Text copied for this cell (single-cell, range, row and column copy); unset = what the cell shows (`getDisplayValueCallback`, the formatted number, else the raw value) |
+| `getCopyValueCallback` | `(ctx: CellContext<T>) => string` | Text copied for this cell (single-cell, range, row and column copy); unset = what the cell shows (`getDisplayValueCallback`, else a dropdown's option label, a date's formatted date, the formatted number, else the raw value); a pasted option label maps back to its value |
 | `getPasteValueCallback` | `(ctx: CellContext<T> & { text }) => unknown` | Value stored for the pasted text |
 
 Without `getPasteValueCallback`, pasted text is typed for the column: **number** — the editor's strict parse; **checkbox** — `true` / `1` / `yes` / `x` / `✓` or the text of `trueValue` → `trueValue`, `false` / `0` / `no` / blank or the text of `falseValue` → `falseValue`; **date** — the column's `dateFormat`, then ISO `YYYY-MM-DD`, stored per `outputFormat`. Text that doesn't parse is kept and the cell marked invalid (`errors.invalidNumber` / `errors.invalidBoolean` / `errors.invalidDate`).

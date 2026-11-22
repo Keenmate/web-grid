@@ -14,6 +14,7 @@
 
 import type { Column, EditorOptions, GridLabels } from '../../types.js'
 import { parseFormat, parseDateInput, toISODateString } from '../datepicker/formatting.js'
+import { findOptionValueByText } from '../dropdown/options.js'
 import { defaultLabelFormat, type LabelFormat } from '../../labels.js'
 import { parseNumber, type ParseNumberOptions } from '@keenmate/web-components-core/locale'
 
@@ -124,7 +125,9 @@ export function typeDateText(text: string, opts: EditorOptions<any>, labels: Val
 
 /**
  * Pasted text typed for its column (when no `getPasteValueCallback` takes over):
- * number / checkbox / date columns get typed values; other editors keep the text.
+ * number / checkbox / date columns get typed values; a dropdown column (select / combobox /
+ * autocomplete) maps an option's shown label back to its value (copy = the label, Excel) — no
+ * matching local option keeps the text; other editors keep the text.
  */
 export function typePastedText<T>(column: Column<T>, text: string, labels: ValueLabels, format: LabelFormat = defaultLabelFormat, numberParse: NumberParseOptions = {}): TypedValue {
 	const opts = column.editorOptions || {}
@@ -132,6 +135,10 @@ export function typePastedText<T>(column: Column<T>, text: string, labels: Value
 		case 'number': return typeNumberValue(text, opts, labels, format, numberParse)
 		case 'checkbox': return typeCheckboxText(text, opts, labels)
 		case 'date': return typeDateText(text, opts, labels)
+		case 'select': case 'combobox': case 'autocomplete': {
+			const match = findOptionValueByText(text, opts.initialOptions || opts.options || [], opts)
+			return { value: match ? match.value : text, error: null }
+		}
 		default: return { value: text, error: null }
 	}
 }

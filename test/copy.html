@@ -12,6 +12,7 @@
 	row numbers, click cell-selection; the price column has a <code>getCopyValueCallback</code>.</p>
 
 	<web-grid id="grid" enable-editing edit-trigger="navigate" show-row-numbers cell-selection-mode="click" style="max-width: 600px;"></web-grid>
+	<web-grid id="shown" enable-editing edit-trigger="navigate" show-row-numbers cell-selection-mode="click" open-dropdown-on-focus="false" style="max-width: 600px;"></web-grid>
 
 	<script type="module">
 		import '@keenmate/web-grid'
@@ -34,6 +35,30 @@
 			{ id: 1, name: 'Apple', price: 12.5, note: 'fresh' },
 			{ id: 2, name: 'Banana', price: 3, note: null },
 			{ id: 3, name: 'Cherry', price: 7.25, note: 'ripe' }
+		]
+
+		/*
+		 * #shown — copy = what the cell SHOWS for date / dropdown columns (Excel)
+		 *  col:  0=id  1=status (select: a→Active, p→Paused)  2=due (date, DD.MM.YYYY)
+		 *        3=size (combobox, getCopyValueCallback → "size:<value>")  4=when (date, getDisplayValueCallback → "Q<n>")
+		 *  row 0 | 1 | a | 2026-03-05 | s | 2026-02-10
+		 *  row 1 | 2 | p | (null)     | l | 2026-11-01
+		 */
+		const shown = document.getElementById('shown')
+		const sizes = [{ value: 's', label: 'Small' }, { value: 'l', label: 'Large' }]
+		shown.columns = [
+			{ field: 'id', title: 'ID', width: '50px', isEditable: false },
+			{ field: 'status', title: 'Status', width: '110px', editor: 'select',
+				editorOptions: { options: [{ value: 'a', label: 'Active' }, { value: 'p', label: 'Paused' }] } },
+			{ field: 'due', title: 'Due', width: '120px', editor: 'date', editorOptions: { dateFormat: 'DD.MM.YYYY' } },
+			{ field: 'size', title: 'Size', width: '100px', editor: 'combobox', editorOptions: { options: sizes },
+				getCopyValueCallback: ({ value }) => `size:${value}` },
+			{ field: 'when', title: 'When', width: '90px', editor: 'date',
+				getDisplayValueCallback: ({ value }) => `Q${Math.floor(new Date(value).getMonth() / 3) + 1}` }
+		]
+		shown.items = [
+			{ id: 1, status: 'a', due: '2026-03-05', size: 's', when: '2026-02-10' },
+			{ id: 2, status: 'p', due: null, size: 'l', when: '2026-11-01' }
 		]
 	</script>
 </body>

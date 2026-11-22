@@ -114,6 +114,63 @@ test.describe('keyboard Ctrl+C', () => {
 	})
 })
 
+// #shown: status = select (a→Active), due = date DD.MM.YYYY, size = combobox + getCopyValueCallback,
+// when = date + getDisplayValueCallback ("Q<n>"). Copy = what the cell shows (Excel).
+test.describe('copy = what the cell shows (date / dropdown columns)', () => {
+	test('a focused dropdown cell copies its option label; a date cell its formatted date', async ({ page }) => {
+		await cell(page, 'shown', 0, 1).click()
+		await expect(cell(page, 'shown', 0, 1)).toContainText('Active')
+		await page.keyboard.press('Control+c')
+		expect(await copied(page)).toBe('Active')
+
+		await primeClipboard(page)
+		await cell(page, 'shown', 0, 2).click()
+		await page.keyboard.press('Control+c')
+		expect(await copied(page)).toBe('05.03.2026')
+	})
+
+	test('getCopyValueCallback > getDisplayValueCallback > the shown text', async ({ page }) => {
+		await cell(page, 'shown', 0, 3).click()
+		await page.keyboard.press('Control+c')
+		expect(await copied(page)).toBe('size:s')
+
+		await primeClipboard(page)
+		await cell(page, 'shown', 1, 4).click()
+		await page.keyboard.press('Control+c')
+		expect(await copied(page)).toBe('Q4')
+	})
+
+	test('range, row and column copies use the shown text too (null date → empty)', async ({ page }) => {
+		await dragSelect(page, 0, 1, 1, 2, 'shown')
+		await page.keyboard.press('Control+c')
+		expect(await copied(page)).toBe('Active\t05.03.2026\nPaused\t')
+
+		await primeClipboard(page)
+		await gridLocator(page, 'shown').locator('.wg__row-number[data-row-number="0"]').click()
+		await page.keyboard.press('Control+c')
+		expect(await copied(page)).toBe('1\tActive\t05.03.2026\tsize:s\tQ1')
+
+		await primeClipboard(page)
+		await header(page, 'shown', 'status').click({ modifiers: ['Shift'] })
+		await page.keyboard.press('Control+c')
+		expect(await copied(page)).toBe('Active\nPaused')
+	})
+
+	test('a copied option label pastes back to the option value', async ({ page }) => {
+		await cell(page, 'shown', 1, 1).click()
+		await gridLocator(page, 'shown').evaluate(async (el) => {
+			const dt = new DataTransfer()
+			dt.setData('text', 'Active')
+			const event = new Event('paste', { bubbles: true, cancelable: true })
+			Object.defineProperty(event, 'clipboardData', { value: dt })
+			el.dispatchEvent(event)
+			await el.whenSettled()
+		})
+		await expect(cell(page, 'shown', 1, 1)).toContainText('Active')
+		expect(await onGrid(page, el => (el.getRowDraft(1) ?? el.items[1]).status, 'shown')).toBe('a')
+	})
+})
+
 test.describe('API', () => {
 	test('copySelectedRowsToClipboard resolves true and writes TSV; false without a selection', async ({ page }) => {
 		expect(await onGrid(page, el => el.copySelectedRowsToClipboard())).toBe(false)

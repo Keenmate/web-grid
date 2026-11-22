@@ -44,6 +44,20 @@ export function getOptionDisplayValue(
 	return value != null ? String(value) : ''
 }
 
+/**
+ * The option value for a text (pasted, typed): the option whose shown label is the text (exact, then
+ * case-insensitive), else the option whose value reads as the text; `undefined` = no option matches.
+ * The inverse of {@link getOptionDisplayValue}, so a copied dropdown cell pastes back to its value.
+ */
+export function findOptionValueByText(text: string, options: EditorOption[], opts: EditorOptions<any>): { value: unknown } | undefined {
+	const t = text.trim()
+	const lower = t.toLowerCase()
+	const opt = options.find(o => getOptionLabel(o, opts) === t)
+		?? options.find(o => getOptionLabel(o, opts).toLowerCase() === lower)
+		?? options.find(o => String(getOptionValue(o, opts) ?? '') === t)
+	return opt ? { value: getOptionValue(opt, opts) } : undefined
+}
+
 // The synthetic first item of an `isEmptyAllowed` dropdown (value null)
 const EMPTY_OPTION = Symbol('wg-empty-option')
 

@@ -95,7 +95,7 @@ import type { StateStore } from '@keenmate/web-components-core'
 import { copyText, createSelection, escapeHtml, renderSlotHtml, type Selection } from '@keenmate/web-components-core'
 // Date formatting utilities for auto-formatting date columns
 import { parseFormat, formatDate } from './modules/datepicker/index.js'
-import { bindOptionContext } from './modules/dropdown/options.js'
+import { bindOptionContext, getOptionDisplayValue } from './modules/dropdown/options.js'
 
 // Logging
 import { initLogger, dataLogger, interactionLogger, perfLogger } from './logger.js'
@@ -2425,15 +2425,21 @@ export class GridEngine<T = unknown> {
 	/**
 	 * Clipboard text for one cell (single-cell, range, row and column copy) — what the cell SHOWS,
 	 * like Excel: the column's `getCopyValueCallback` when set, else its `getDisplayValueCallback`
-	 * text, else the draft-aware raw value (null → '', objects → JSON; a number column's number →
-	 * its locale text, `formatNumberValue`).
+	 * text, else the shown text of the draft-aware value: a dropdown column's option label, a date
+	 * column's formatted date (`dateFormat`), a number column's locale text (`formatNumberValue`);
+	 * null → '', other objects → JSON.
 	 */
 	private clipboardCellText(row: T, rowIndex: number, column: Column<T>, colIndex: number = this._columns.indexOf(column)): string {
 		if (column.getCopyValueCallback) return String(column.getCopyValueCallback(this.cellCtx(row, rowIndex, column, colIndex)) ?? '')
 		if (column.getDisplayValueCallback) return String(column.getDisplayValueCallback(this.cellCtx(row, rowIndex, column, colIndex)) ?? '')
 		const value = this.getCellRawValue(row, rowIndex, String(column.field))
 		if (value == null) return ''
-		if (column.editor === 'number' && typeof value === 'number') return this.formatNumberValue(value, column)
+		if (column.editor === 'select' || column.editor === 'combobox' || column.editor === 'autocomplete') {
+			// The option label the cell shows (modules/rendering/display.ts)
+			const opts = column.editorOptions || {}
+			return getOptionDisplayValue(value, opts.initialOptions || opts.options || [], opts)
+		}
+		if (column.editor === 'date' || column.editor === 'number') return this.getCellDisplayText(row, column, rowIndex)
 		if (typeof value === 'object' && !(value instanceof Date)) return JSON.stringify(value)
 		return String(value)
 	}

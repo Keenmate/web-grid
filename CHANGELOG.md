@@ -18,6 +18,15 @@ Target: **2.0.0-rc01** — a major: the callback, event and item API below is br
   whole chain (instance → page dictionary → `translateCallback` → default). `ctx.labels['menuItems.sortAsc']` →
   `ctx.labels.text('menuItems.sortAsc')`.
 
+### Changed — copy of date / dropdown cells = the shown text (2026-11-22)
+- **Copy = what the cell shows (Excel), date and dropdown columns too** (number columns since 2026-11-21): with no
+  `getCopyValueCallback` / `getDisplayValueCallback`, a `select` / `combobox` / `autocomplete` cell copies its option
+  label (was the raw value) and a `date` cell its formatted date (`dateFormat`, was the stored ISO / Date text) — for
+  single-cell, range, row and column copies.
+- **Paste maps an option label back to its value:** text pasted into a dropdown column (single cell or TSV) that
+  matches an option's shown label (exact, then case-insensitive) stores that option's value; a value's own text still
+  works; no match keeps the text as before. A copied dropdown cell pastes back as the same value.
+
 ### Removed — BREAKING: `el.engine` (2026-11-22)
 - The element's internal engine is truly private (was a `readonly engine: GridEngine<T>` member marked
   `@internal`, visible in the emitted `.d.ts` and at runtime). `el.engine` is now `undefined`; use the element's
