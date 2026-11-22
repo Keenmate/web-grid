@@ -19,6 +19,7 @@ import type { GridHost } from '../grid-context.js'
 import { handleCellFocus, ensureCellNotBehindFrozen, syncTabStop } from '../navigation/index.js'
 import { updateFillHandle } from '../fill-handle/index.js'
 import { isCellSelectionPending, isCellSelecting } from '../cell-selection/index.js'
+import { GRID_ENGINE } from '../grid-context.js'
 
 /**
  * Capture-phase focus handler. Capture phase is required so the handler
@@ -36,8 +37,8 @@ export function handleTableFocus<T>(ctx: GridHost<T>, e: Event): void {
 		// Only fire focus-change for keyboard-triggered focus (Tab, arrows).
 		// For mouse interactions, defer to click handler so focus-change fires on mouseup, not mousedown.
 		if (!ctx.isMouseDown && !isCellSelectionPending() && !isCellSelecting()) {
-			const prevFocusedRow = ctx.engine.focusedRowIndex
-			ctx.engine.setFocusedRow(rowIndex)
+			const prevFocusedRow = ctx[GRID_ENGINE].focusedRowIndex
+			ctx[GRID_ENGINE].setFocusedRow(rowIndex)
 			ctx.updateRowFocusVisual(prevFocusedRow, rowIndex)
 		}
 
@@ -49,8 +50,8 @@ export function handleTableFocus<T>(ctx: GridHost<T>, e: Event): void {
 		syncTabStop(ctx, target)
 		const rowIndex = Number(target.dataset.widgetRow)
 		if (!ctx.isMouseDown && Number.isInteger(rowIndex)) {
-			const prevFocusedRow = ctx.engine.focusedRowIndex
-			ctx.engine.setFocusedRow(rowIndex)
+			const prevFocusedRow = ctx[GRID_ENGINE].focusedRowIndex
+			ctx[GRID_ENGINE].setFocusedRow(rowIndex)
 			ctx.updateRowFocusVisual(prevFocusedRow, rowIndex)
 		}
 	}
@@ -62,14 +63,14 @@ export function handleTableFocus<T>(ctx: GridHost<T>, e: Event): void {
 			syncTabStop(ctx, cell)
 			const rowIndex = parseInt(cell.dataset.row || '0', 10)
 			const colIndex = parseInt(cell.dataset.col || '0', 10)
-			const column = ctx.engine.columns[colIndex]
+			const column = ctx[GRID_ENGINE].columns[colIndex]
 			// Check if this cell uses 'always' editTrigger
-			const effectiveTrigger = column?.editTrigger ?? ctx.engine.editTrigger
+			const effectiveTrigger = column?.editTrigger ?? ctx[GRID_ENGINE].editTrigger
 			if (effectiveTrigger === 'always') {
 				// Update focused cell state and visual
-				const oldFocus = ctx.engine.focusedCell
+				const oldFocus = ctx[GRID_ENGINE].focusedCell
 				if (!oldFocus || oldFocus.rowIndex !== rowIndex || oldFocus.colIndex !== colIndex) {
-					ctx.engine.setFocusedCell(rowIndex, colIndex)
+					ctx[GRID_ENGINE].setFocusedCell(rowIndex, colIndex)
 					// Remove focus class from old cell (don't re-render - just update class)
 					if (oldFocus) {
 						const oldCell = ctx.shadow.querySelector(
@@ -83,8 +84,8 @@ export function handleTableFocus<T>(ctx: GridHost<T>, e: Event): void {
 					cell.classList.add('wg__cell--always-edit-focused')
 					// Update row focus (only for keyboard — mouse defers to click handler)
 					if (!ctx.isMouseDown) {
-						const prevFocusedRow = ctx.engine.focusedRowIndex
-						ctx.engine.setFocusedRow(rowIndex)
+						const prevFocusedRow = ctx[GRID_ENGINE].focusedRowIndex
+						ctx[GRID_ENGINE].setFocusedRow(rowIndex)
 						ctx.updateRowFocusVisual(prevFocusedRow, rowIndex)
 					}
 				}

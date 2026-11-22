@@ -25,6 +25,7 @@
 import type { GridHost } from '../grid-context.js'
 import { moveFocus, focusCellTd, syncTabStop } from './focus.js'
 import { prepareRowReveal, revealElement, fieldAt } from '../scroll/reveal.js'
+import { GRID_ENGINE } from '../grid-context.js'
 export { untabCellWidgets } from '../rendering/cell-widgets.js'
 
 /** The widgets of a cell, in DOM order: the grid's row-action buttons + controls a cell renderer made. */
@@ -67,7 +68,7 @@ function focusDataCell<T>(ctx: GridHost<T>, cell: HTMLElement | null): void {
 /** ArrowUp / ArrowDown on a lead widget cell: the same lead cell of the next / previous row. */
 function moveVertically<T>(ctx: GridHost<T>, cell: HTMLElement, delta: number): void {
 	const rowIndex = Number(cell.dataset.widgetRow) + delta
-	if (rowIndex < 0 || rowIndex >= ctx.engine.displayItems.length) return
+	if (rowIndex < 0 || rowIndex >= ctx[GRID_ENGINE].displayItems.length) return
 	const kind = cell.classList.contains('wg__actions-column') ? 'wg__actions-column' : 'wg__inline-actions-cell'
 	const row = cell.closest('tr') as HTMLElement | null
 	const firstCol = Number((row && edgeDataCell(row, 'first'))?.dataset.col ?? 0)
@@ -167,7 +168,7 @@ export function handleWidgetCellKeyDown<T>(ctx: GridHost<T>, e: KeyboardEvent): 
 	if (cell.classList.contains('wg__widget-cell')) return handleLeadCellKey(ctx, e, cell)
 
 	// A data cell (not editing)
-	if (!cell.hasAttribute('data-col') || ctx.engine.editingCell) return false
+	if (!cell.hasAttribute('data-col') || ctx[GRID_ENGINE].editingCell) return false
 	const isPlain = !hasModifier(e) && !e.shiftKey
 	if (!isPlain) return false
 	const row = cell.closest('tr') as HTMLElement | null
@@ -185,8 +186,8 @@ export function handleWidgetCellKeyDown<T>(ctx: GridHost<T>, e: KeyboardEvent): 
 		// cell is editable, where F2 / Enter keep editing / moving down
 		const widgets = cellWidgets(cell)
 		if (widgets.length === 0) return false
-		const column = ctx.engine.columns[Number(cell.dataset.col)]
-		if (column && ctx.engine.canEditCell(Number(cell.dataset.row), String(column.field))) return false
+		const column = ctx[GRID_ENGINE].columns[Number(cell.dataset.col)]
+		if (column && ctx[GRID_ENGINE].canEditCell(Number(cell.dataset.row), String(column.field))) return false
 		e.preventDefault()
 		widgets[0].focus({ preventScroll: true })
 		return true

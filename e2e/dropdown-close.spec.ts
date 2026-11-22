@@ -37,7 +37,7 @@ async function snap(page: Page, id: string, row: number, col: number): Promise<E
 			? `${td.dataset.row}:${td.dataset.col}${a === td ? '' : '/editor'}`
 			: a?.classList.contains('wg') ? 'grid' : `${a?.tagName.toLowerCase()}${a?.id ? '#' + a.id : ''}`
 		type Logged = { type: string; via: string; grid: string; detail: { rowIndex: number; field: string; newValue?: unknown } }
-		const pending = (g as unknown as { engine: { editingCell: { rowIndex: number; field: string } | null } }).engine.editingCell
+		const pending = (g as unknown as Record<symbol, { editingCell: { rowIndex: number; field: string } | null }>)[Symbol.for('@keenmate/web-grid:engine')].editingCell
 		return {
 			dropdown: root.querySelectorAll('.wg__dropdown').length,
 			editing: [...root.querySelectorAll<HTMLElement>('.wg__cell--editing')].map((c) => `${c.dataset.row}:${c.dataset.col}`)

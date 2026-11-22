@@ -8,6 +8,7 @@ import { syncSelectedAria } from '../rendering/aria.js'
 import type { CellRange, Column } from '../../types.js'
 import { updateFocusVisual, focusCellElement } from '../navigation/index.js'
 import { fieldAt, prepareRowReveal, finishCellReveal } from '../scroll/reveal.js'
+import { GRID_ENGINE } from '../grid-context.js'
 
 /** Minimum distance (px) mouse must move before drag starts */
 const DRAG_THRESHOLD = 5
@@ -19,12 +20,12 @@ const DRAG_THRESHOLD = 5
 
 /** Visual position of a column index (`data-col`); -1 when hidden. */
 function toVisual<T>(ctx: GridHost<T>, colIndex: number): number {
-	return ctx.engine.visualIndexOfColumn(colIndex)
+	return ctx[GRID_ENGINE].visualIndexOfColumn(colIndex)
 }
 
 /** Column index (`data-col`) at a visual position. */
 function toColumn<T>(ctx: GridHost<T>, pos: number): number | undefined {
-	return ctx.engine.visualColumns[pos]?.originalIndex
+	return ctx[GRID_ENGINE].visualColumns[pos]?.originalIndex
 }
 
 /** The cell element at (row, visual position). */
@@ -91,9 +92,9 @@ export function handleCellMouseDown<T>(ctx: GridHost<T>, rowIndex: number, colIn
 	// We'll preventDefault() later if/when drag threshold is exceeded
 
 	// Clear any existing selection before starting new one (unless extending with Shift)
-	const isExtendingSelection = event.shiftKey && ctx.engine.cellSelectionMode === 'shift'
-	if (ctx.engine.selectedCellRange && !isExtendingSelection) {
-		ctx.engine.clearCellSelection()
+	const isExtendingSelection = event.shiftKey && ctx[GRID_ENGINE].cellSelectionMode === 'shift'
+	if (ctx[GRID_ENGINE].selectedCellRange && !isExtendingSelection) {
+		ctx[GRID_ENGINE].clearCellSelection()
 		removeRangeBorder()
 	}
 
@@ -130,9 +131,9 @@ export function handleCellShiftClick<T>(ctx: GridHost<T>, rowIndex: number, colI
 	removeRangeBorder()
 
 	// If there's a last clicked cell, create range from it to current cell
-	if (ctx.engine.lastClickedCell) {
-		const { rowIndex: startRow, colIndex: startCol } = ctx.engine.lastClickedCell
-		const visualCols = ctx.engine.visualColumns
+	if (ctx[GRID_ENGINE].lastClickedCell) {
+		const { rowIndex: startRow, colIndex: startCol } = ctx[GRID_ENGINE].lastClickedCell
+		const visualCols = ctx[GRID_ENGINE].visualColumns
 		const startPos = toVisual(ctx, startCol)
 		const endPos = toVisual(ctx, colIndex)
 		const startColumn = visualCols[startPos]?.column
@@ -148,8 +149,8 @@ export function handleCellShiftClick<T>(ctx: GridHost<T>, rowIndex: number, colI
 				endField: String(endColumn.field)
 			}
 			// Clear focused cell when creating selection (avoid visual conflict)
-			ctx.engine.clearFocusedCell()
-			ctx.engine.selectCellRange(range)
+			ctx[GRID_ENGINE].clearFocusedCell()
+			ctx[GRID_ENGINE].selectCellRange(range)
 			createRangeBorder(ctx)
 
 			// Focus the container so keyboard shortcuts work
@@ -163,7 +164,7 @@ export function handleCellShiftClick<T>(ctx: GridHost<T>, rowIndex: number, colI
 		}
 	} else {
 		// First shift+click, just remember this cell
-		ctx.engine.lastClickedCell = { rowIndex, colIndex }
+		ctx[GRID_ENGINE].lastClickedCell = { rowIndex, colIndex }
 	}
 }
 
@@ -234,8 +235,8 @@ function startActualDrag<T>(ctx: GridHost<T>): void {
 	container?.classList.add('wg--selecting-cells')
 
 	// Clear focused cell and row so focus outlines disappear immediately when drag begins
-	const oldFocus = ctx.engine.focusedCell
-	ctx.engine.clearFocusedCell()
+	const oldFocus = ctx[GRID_ENGINE].focusedCell
+	ctx[GRID_ENGINE].clearFocusedCell()
 	updateFocusVisual(ctx, oldFocus, null)
 
 	// Blur the DOM element — mousedown gave it :focus, whose box-shadow persists until blur
@@ -243,11 +244,11 @@ function startActualDrag<T>(ctx: GridHost<T>): void {
 	focused?.blur()
 
 	// Clear focused row visual (tracked separately from cell focus)
-	const focusedRowIndex = ctx.engine.focusedRowIndex
+	const focusedRowIndex = ctx[GRID_ENGINE].focusedRowIndex
 	if (focusedRowIndex !== null) {
 		const row = ctx.shadow.querySelector(`tr[data-row-index="${focusedRowIndex}"]`)
 		row?.classList.remove('wg__row--focused')
-		ctx.engine.clearRowFocus()
+		ctx[GRID_ENGINE].clearRowFocus()
 	}
 
 	// Apply cell highlighting immediately
@@ -295,15 +296,15 @@ function handleDocumentMouseUp(e: MouseEvent): void {
 
 	// If still pending (no drag) in shift mode, create range from last clicked cell
 	if (selectionState.isPending) {
-		const isShiftMode = e.shiftKey && ctx.engine.cellSelectionMode === 'shift'
+		const isShiftMode = e.shiftKey && ctx[GRID_ENGINE].cellSelectionMode === 'shift'
 		
 		const startCol = toColumn(ctx, selectionState.startColIndex) ?? -1
-		if (isShiftMode && ctx.engine.lastClickedCell) {
+		if (isShiftMode && ctx[GRID_ENGINE].lastClickedCell) {
 			// Shift+click without drag - create range from last clicked cell
 			handleCellShiftClick(ctx, selectionState.startRowIndex, startCol)
 		} else {
 			// Regular click - just remember the clicked cell (data-col) for future shift+click
-			ctx.engine.lastClickedCell = {
+			ctx[GRID_ENGINE].lastClickedCell = {
 				rowIndex: selectionState.startRowIndex,
 				colIndex: startCol
 			}
@@ -358,7 +359,7 @@ function restoreStartFocus<T>(ctx: GridHost<T>): void {
 	const { startRowIndex } = selectionState
 	const col = toColumn(ctx, selectionState.startColIndex)
 	if (col === undefined) return
-	ctx.engine.setFocusedCell(startRowIndex, col)
+	ctx[GRID_ENGINE].setFocusedCell(startRowIndex, col)
 	updateFocusVisual(ctx, null, { rowIndex: startRowIndex, colIndex: col })
 	focusCellElement(ctx, startRowIndex, col)
 }
@@ -411,7 +412,7 @@ function applySelection<T>(ctx: GridHost<T>): void {
 	const { startRowIndex, startColIndex, currentRowIndex, currentColIndex } = selectionState
 
 	// Get the columns
-	const visualCols = ctx.engine.visualColumns
+	const visualCols = ctx[GRID_ENGINE].visualColumns
 	const startColumn = visualCols[startColIndex]?.column
 	const endColumn = visualCols[currentColIndex]?.column
 
@@ -428,10 +429,10 @@ function applySelection<T>(ctx: GridHost<T>): void {
 	}
 
 	// Clear focused cell when creating selection (avoid visual conflict)
-	ctx.engine.clearFocusedCell()
+	ctx[GRID_ENGINE].clearFocusedCell()
 
 	// Apply to grid
-	ctx.engine.selectCellRange(range)
+	ctx[GRID_ENGINE].selectCellRange(range)
 
 	// Create persistent border
 	createRangeBorder(ctx)
@@ -522,7 +523,7 @@ export function createRangeBorder<T>(ctx: GridHost<T>): void {
 	// Remove existing border
 	removeRangeBorder()
 
-	const range = ctx.engine.selectedCellRange
+	const range = ctx[GRID_ENGINE].selectedCellRange
 	if (!range) return
 
 	const container = ctx.shadow.querySelector('.wg') as HTMLElement
@@ -645,7 +646,7 @@ function cleanup<T>(ctx: GridHost<T>): void {
  * to anchor on (no focused cell) or cell selection is disabled.
  */
 export function extendCellRangeTo<T>(ctx: GridHost<T>, rowIndex: number, colIndex: number): boolean {
-	const engine = ctx.engine
+	const engine = ctx[GRID_ENGINE]
 	if (engine.cellSelectionMode === 'none') return false
 	const anchor = engine.focusedCell
 	if (!anchor) return false
@@ -690,7 +691,7 @@ export function isRangeExtensionKey(e: KeyboardEvent): boolean {
  * handled (the caller prevents the default).
  */
 export function extendCellRangeByKey<T>(ctx: GridHost<T>, e: KeyboardEvent): boolean {
-	const engine = ctx.engine
+	const engine = ctx[GRID_ENGINE]
 	const anchor = engine.focusedCell
 	if (!anchor || engine.cellSelectionMode === 'none') return false
 

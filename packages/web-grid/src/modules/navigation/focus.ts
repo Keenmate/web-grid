@@ -11,6 +11,7 @@ import { removeFillHandle } from '../fill-handle/index.js'
 import { isInGridMenu } from '../contextmenu/index.js'
 import { revealElement, fieldAt, prepareRowReveal, finishCellReveal } from '../scroll/reveal.js'
 import { deepActiveElement } from '@keenmate/web-components-core'
+import { GRID_ENGINE } from '../grid-context.js'
 
 /**
  * Focus a body cell (<td>) without scrolling. Rendered cells carry their roving tabindex
@@ -36,7 +37,7 @@ export function syncTabStop<T>(ctx: GridHost<T>, cell?: HTMLElement | null): voi
 	if (!tbody) return
 	let stop = cell && tbody.contains(cell) ? cell : null
 	if (!stop) {
-		const at = ctx.engine.tabStopCell
+		const at = ctx[GRID_ENGINE].tabStopCell
 		if (at) stop = tbody.querySelector(`td.wg__cell[data-row="${at.rowIndex}"][data-col="${at.colIndex}"]`) as HTMLElement | null
 	}
 	stop ??= tbody.querySelector('td.wg__cell[data-col]') as HTMLElement | null
@@ -90,15 +91,15 @@ export function returnFocusToCell<T>(ctx: GridHost<T>, rowIndex: number, colInde
 	const viewRect = scroller?.getBoundingClientRect()
 	const isInView = !!cellRect && (!viewRect || (cellRect.bottom > viewRect.top && cellRect.top < viewRect.bottom))
 	if (cell && isInView) {
-		const oldFocus = ctx.engine.focusedCell
-		ctx.engine.setFocusedCell(rowIndex, colIndex)
+		const oldFocus = ctx[GRID_ENGINE].focusedCell
+		ctx[GRID_ENGINE].setFocusedCell(rowIndex, colIndex)
 		updateFocusVisual(ctx, oldFocus, { rowIndex, colIndex })
-		const column = ctx.engine.columns[colIndex]
+		const column = ctx[GRID_ENGINE].columns[colIndex]
 		const fresh = ctx.shadow.querySelector(
 			`td[data-row="${rowIndex}"][data-col="${colIndex}"]`
 		) as HTMLElement | null
 		if (fresh) {
-			focusElementInCell(fresh, (column?.editTrigger ?? ctx.engine.editTrigger) === 'always')
+			focusElementInCell(fresh, (column?.editTrigger ?? ctx[GRID_ENGINE].editTrigger) === 'always')
 			const active = ctx.shadow.activeElement
 			if (active && fresh.contains(active)) return
 		}
@@ -116,13 +117,13 @@ export function focusCellElement<T>(
 	colIndex: number
 ): void {
 	// Check if this cell uses 'always' editTrigger
-	const column = ctx.engine.columns[colIndex]
-	const effectiveTrigger = column?.editTrigger ?? ctx.engine.editTrigger
+	const column = ctx[GRID_ENGINE].columns[colIndex]
+	const effectiveTrigger = column?.editTrigger ?? ctx[GRID_ENGINE].editTrigger
 	const isAlwaysEditMode = effectiveTrigger === 'always'
 
 	// Virtual scroll: render the target row's window and scroll to it first (synchronously —
 	// the row may be outside the rendered window), then focus the cell
-	if (ctx.engine.shouldUseVirtualScroll()) {
+	if (ctx[GRID_ENGINE].shouldUseVirtualScroll()) {
 		const target = { rowIndex, field: fieldAt(ctx, colIndex) }
 		const state = prepareRowReveal(ctx, target, 'keyboard')
 		const cell = ctx.shadow.querySelector(
@@ -214,7 +215,7 @@ export function updateFocusVisual<T>(
 	}
 	lastFocusVisualUpdate = now
 
-	const editingCell = ctx.engine.editingCell
+	const editingCell = ctx[GRID_ENGINE].editingCell
 
 	// Re-render old cell (will remove --focused class)
 	// Skip re-render if this cell is currently being edited or in 'always' mode (don't disrupt editor)
@@ -224,9 +225,9 @@ export function updateFocusVisual<T>(
 	if (oldFocus) {
 		const isOldCellEditing = editingCell &&
 			editingCell.rowIndex === oldFocus.rowIndex &&
-			ctx.engine.columns.findIndex(c => String(c.field) === editingCell.field) === oldFocus.colIndex
-		const oldColumn = ctx.engine.columns[oldFocus.colIndex]
-		const oldTrigger = oldColumn?.editTrigger ?? ctx.engine.editTrigger
+			ctx[GRID_ENGINE].columns.findIndex(c => String(c.field) === editingCell.field) === oldFocus.colIndex
+		const oldColumn = ctx[GRID_ENGINE].columns[oldFocus.colIndex]
+		const oldTrigger = oldColumn?.editTrigger ?? ctx[GRID_ENGINE].editTrigger
 		const isOldCellAlwaysMode = oldTrigger === 'always'
 
 		if (!isOldCellEditing && !isOldCellAlwaysMode) {
@@ -249,14 +250,14 @@ export function updateFocusVisual<T>(
 	// Also skip for 'click'/'dblclick' modes - re-rendering between mousedown and click
 	// would remove the original target element, preventing the click event from firing
 	if (newFocus) {
-		const column = ctx.engine.columns[newFocus.colIndex]
-		const effectiveTrigger = column?.editTrigger ?? ctx.engine.editTrigger
+		const column = ctx[GRID_ENGINE].columns[newFocus.colIndex]
+		const effectiveTrigger = column?.editTrigger ?? ctx[GRID_ENGINE].editTrigger
 		const isAlwaysMode = effectiveTrigger === 'always'
 		const isClickOrDblClickMode = effectiveTrigger === 'click' || effectiveTrigger === 'dblclick'
 
 		const isNewCellEditing = editingCell &&
 			editingCell.rowIndex === newFocus.rowIndex &&
-			ctx.engine.columns.findIndex(c => String(c.field) === editingCell.field) === newFocus.colIndex
+			ctx[GRID_ENGINE].columns.findIndex(c => String(c.field) === editingCell.field) === newFocus.colIndex
 
 		if (!isNewCellEditing && !isAlwaysMode && !isClickOrDblClickMode) {
 			renderCell(ctx, newFocus.rowIndex, newFocus.colIndex)
@@ -286,9 +287,9 @@ export function updateFocusVisual<T>(
  * after cancelEdit() clears the state.
  */
 export function clearEditingVisual<T>(ctx: GridHost<T>): void {
-	const editingCell = ctx.engine.editingCell
+	const editingCell = ctx[GRID_ENGINE].editingCell
 	if (editingCell) {
-		const colIndex = ctx.engine.columns.findIndex(c => String(c.field) === editingCell.field)
+		const colIndex = ctx[GRID_ENGINE].columns.findIndex(c => String(c.field) === editingCell.field)
 		const cell = ctx.shadow.querySelector(
 			`[data-row="${editingCell.rowIndex}"][data-col="${colIndex}"]`
 		) as HTMLElement
@@ -318,7 +319,7 @@ export function handleCellFocus<T>(
 	rowIndex: number,
 	colIndex: number
 ): void {
-	const oldFocus = ctx.engine.focusedCell
+	const oldFocus = ctx[GRID_ENGINE].focusedCell
 	const newFocus = { rowIndex, colIndex }
 
 	// Skip if already focused on this cell
@@ -326,7 +327,7 @@ export function handleCellFocus<T>(
 		return
 	}
 
-	ctx.engine.setFocusedCell(rowIndex, colIndex)  // Just updates state (no re-render)
+	ctx[GRID_ENGINE].setFocusedCell(rowIndex, colIndex)  // Just updates state (no re-render)
 	updateFocusVisual(ctx, oldFocus, newFocus)     // Updates DOM directly
 }
 
@@ -338,10 +339,10 @@ export function moveFocus<T>(
 	newRowIndex: number,
 	newColIndex: number
 ): void {
-	const oldFocus = ctx.engine.focusedCell
+	const oldFocus = ctx[GRID_ENGINE].focusedCell
 	const newFocus = { rowIndex: newRowIndex, colIndex: newColIndex }
 
-	ctx.engine.setFocusedCell(newRowIndex, newColIndex)
+	ctx[GRID_ENGINE].setFocusedCell(newRowIndex, newColIndex)
 	updateFocusVisual(ctx, oldFocus, newFocus)
 	focusCellElement(ctx, newRowIndex, newColIndex)
 }
@@ -356,13 +357,13 @@ export function tryStartEdit<T>(
 	colIndex: number,
 	options?: { initialSearchQuery?: string; cursorPosition?: number }
 ): void {
-	const column = ctx.engine.columns[colIndex]
+	const column = ctx[GRID_ENGINE].columns[colIndex]
 	if (!column) return
 
 	const field = String(column.field)
 
 	// Check if cell can be edited (column editability + row locking)
-	if (!ctx.engine.canEditCell(rowIndex, field)) {
+	if (!ctx[GRID_ENGINE].canEditCell(rowIndex, field)) {
 		return
 	}
 
@@ -374,23 +375,23 @@ export function tryStartEdit<T>(
 	// Clear old editing cell if editing a different cell
 	// Must check editingCell, not focusedCell, because focusedCell is already updated
 	// by the focusCell action that runs before startEdit
-	const oldEditing = ctx.engine.editingCell
+	const oldEditing = ctx[GRID_ENGINE].editingCell
 	if (oldEditing) {
-		const oldColIndex = ctx.engine.columns.findIndex(c => String(c.field) === oldEditing.field)
+		const oldColIndex = ctx[GRID_ENGINE].columns.findIndex(c => String(c.field) === oldEditing.field)
 		if (oldEditing.rowIndex !== rowIndex || oldColIndex !== colIndex) {
 			// Set transition flag to prevent blur handlers from clearing focus
 			ctx.isTransitioningCells = true
 			// Cancel old edit FIRST so renderCell shows display mode
 			// (editingCell must be null before re-rendering, otherwise the cell
 			// will still render with the editing visual)
-			ctx.engine.cancelEdit()
+			ctx[GRID_ENGINE].cancelEdit()
 			// Now re-render - will show display mode since editingCell is null
 			renderCell(ctx, oldEditing.rowIndex, oldColIndex)
 		}
 	}
 
 	// Update state (no longer triggers requestUpdate)
-	ctx.engine.startEdit(rowIndex, field, options)
+	ctx[GRID_ENGINE].startEdit(rowIndex, field, options)
 
 	// Re-render the cell in edit mode with focus
 	renderCell(ctx, rowIndex, colIndex, {
@@ -479,18 +480,18 @@ export function cleanupEditState<T>(ctx: GridHost<T>): void {
 	if (ctx.dropdown.isOpen) {
 		removeDropdown(ctx)
 	}
-	if (ctx.engine.editingCell) {
-		const editingCell = ctx.engine.editingCell
-		const colIndex = ctx.engine.columns.findIndex(c => String(c.field) === editingCell.field)
+	if (ctx[GRID_ENGINE].editingCell) {
+		const editingCell = ctx[GRID_ENGINE].editingCell
+		const colIndex = ctx[GRID_ENGINE].columns.findIndex(c => String(c.field) === editingCell.field)
 		clearEditingVisual(ctx)
-		ctx.engine.cancelEdit()
+		ctx[GRID_ENGINE].cancelEdit()
 		if (colIndex >= 0) {
 			renderCell(ctx, editingCell.rowIndex, colIndex)
 		}
 	}
-	if (ctx.engine.focusedCell) {
-		const oldFocus = ctx.engine.focusedCell
-		ctx.engine.clearFocusedCell()
+	if (ctx[GRID_ENGINE].focusedCell) {
+		const oldFocus = ctx[GRID_ENGINE].focusedCell
+		ctx[GRID_ENGINE].clearFocusedCell()
 		updateFocusVisual(ctx, oldFocus, null)
 		removeFillHandle(ctx.shadow.host as HTMLElement)
 	}
@@ -555,8 +556,8 @@ export function handleTableFocusOut<T>(ctx: GridHost<T>, e: FocusEvent): void {
 		}
 
 		// Focus truly left the component - clear focus state
-		const oldFocus = ctx.engine.focusedCell
-		ctx.engine.clearFocusedCell()
+		const oldFocus = ctx[GRID_ENGINE].focusedCell
+		ctx[GRID_ENGINE].clearFocusedCell()
 		updateFocusVisual(ctx, oldFocus, null)
 		// Only remove fill handle if this grid owns it (prevents one grid from removing another's)
 		removeFillHandle(host)

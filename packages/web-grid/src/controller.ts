@@ -12,6 +12,8 @@ import type { GridController } from './types.js'
 import type { GridElement } from './web-component.js'
 import { closeGridMenu } from './modules/contextmenu/index.js'
 import { closeToolbarAndReset } from './modules/toolbar/index.js'
+import { GRID_ENGINE } from './modules/grid-context.js'
+import type { GridHost } from './modules/grid-context.js'
 
 /** Engine methods the controller forwards. */
 const ENGINE_METHODS = [
@@ -34,7 +36,9 @@ const ENGINE_STATE = [
 ] as const
 
 export function createGridController<T>(el: GridElement<T>): GridController<T> {
-	const engine = createControllerFacade<object>(() => { el.flush(); return el.engine }, {
+	// The element as the module host (its private engine sits under the GRID_ENGINE symbol)
+	const host = el as unknown as GridHost<T>
+	const engine = createControllerFacade<object>(() => { el.flush(); return host[GRID_ENGINE] }, {
 		methods: ENGINE_METHODS,
 		state: Object.fromEntries(ENGINE_STATE.map(name => [name, null]))
 	})
@@ -43,8 +47,8 @@ export function createGridController<T>(el: GridElement<T>): GridController<T> {
 		focusCell: (rowIndex: number, colIndex: number) => el.focusCell(rowIndex, colIndex),
 		startEditing: (rowIndex: number, colIndex: number) => el.startEditing(rowIndex, colIndex),
 		scrollToRow: (rowIndex: number) => el.scrollToRow(rowIndex),
-		closeContextMenu: () => closeGridMenu(el),
-		closeToolbar: () => closeToolbarAndReset(el)
+		closeContextMenu: () => closeGridMenu(host),
+		closeToolbar: () => closeToolbarAndReset(host)
 	}, ['focusCell', 'startEditing', 'scrollToRow', 'closeContextMenu', 'closeToolbar'])
 	return Object.freeze(Object.defineProperties({}, {
 		...Object.getOwnPropertyDescriptors(engine),

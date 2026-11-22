@@ -14,6 +14,7 @@ import { escapeHtml, renderSlotHtml } from '@keenmate/web-components-core'
 import type { GridHost } from '../grid-context.js'
 import type { GridLabels } from '../../types.js'
 import { formatShortcut } from '@keenmate/web-components-core/actions'
+import { GRID_ENGINE } from '../grid-context.js'
 
 /**
  * Build the shortcuts-help icon + overlay HTML string. Returns '' when the
@@ -25,15 +26,15 @@ const ACTION_LABEL_KEYS: Record<string, keyof GridLabels> = {
 }
 
 export function renderShortcutsHelpIcon<T>(ctx: GridHost<T>): string {
-	const rowShortcuts = ctx.engine.rowShortcuts ?? []
-	const rangeShortcuts = ctx.engine.rangeShortcuts ?? []
-	if (!ctx.engine.isShortcutsHelpShown || (rowShortcuts.length === 0 && rangeShortcuts.length === 0)) {
+	const rowShortcuts = ctx[GRID_ENGINE].rowShortcuts ?? []
+	const rangeShortcuts = ctx[GRID_ENGINE].rangeShortcuts ?? []
+	if (!ctx[GRID_ENGINE].isShortcutsHelpShown || (rowShortcuts.length === 0 && rangeShortcuts.length === 0)) {
 		return ''
 	}
 
-	const position = ctx.engine.shortcutsHelpPosition
+	const position = ctx[GRID_ENGINE].shortcutsHelpPosition
 	const positionClass = position === 'top-left' ? 'wg__shortcuts-help--left' : ''
-	const labels = ctx.engine.labels
+	const labels = ctx[GRID_ENGINE].labels
 
 	const itemHtml = (shortcut: string, text: string | undefined) => `<div class="wg__shortcuts-help-item">
 			<span class="wg__shortcuts-help-key">${escapeHtml(formatShortcut(shortcut))}</span>
@@ -49,13 +50,13 @@ export function renderShortcutsHelpIcon<T>(ctx: GridHost<T>): string {
 	// when both lists are present.
 	const listsHtml = rowItemsHtml && rangeItemsHtml
 		? `<div class="wg__shortcuts-help-list">${rowItemsHtml}</div>
-				<div class="wg__shortcuts-help-title">${ctx.engine.labelHtml('headers.rangeShortcuts')}</div>
+				<div class="wg__shortcuts-help-title">${ctx[GRID_ENGINE].labelHtml('headers.rangeShortcuts')}</div>
 				<div class="wg__shortcuts-help-list">${rangeItemsHtml}</div>`
 		: `<div class="wg__shortcuts-help-list">${rowItemsHtml || rangeItemsHtml}</div>`
 
 	// Get custom content if callback is provided
-	const callback = ctx.engine.renderShortcutsHelpCallback
-	const customContent = callback ? renderSlotHtml(() => callback(ctx.engine.ctx({}))).html : ''
+	const callback = ctx[GRID_ENGINE].renderShortcutsHelpCallback
+	const customContent = callback ? renderSlotHtml(() => callback(ctx[GRID_ENGINE].ctx({}))).html : ''
 
 	return `
 		<div class="wg__shortcuts-help ${positionClass}">
@@ -68,7 +69,7 @@ export function renderShortcutsHelpIcon<T>(ctx: GridHost<T>): string {
 			</button>
 			<div class="wg__shortcuts-help-overlay">
 				${customContent ? `<div class="wg__shortcuts-help-custom">${customContent}</div>` : ''}
-				<div class="wg__shortcuts-help-title">${ctx.engine.labelHtml('headers.keyboardShortcuts')}</div>
+				<div class="wg__shortcuts-help-title">${ctx[GRID_ENGINE].labelHtml('headers.keyboardShortcuts')}</div>
 				${listsHtml}
 			</div>
 		</div>

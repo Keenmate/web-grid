@@ -10,6 +10,7 @@ import { wrapTreeCell } from './tree-render.js'
 import { getCellTooltip } from './table.js'
 import { isCellSelectable } from './aria.js'
 import { untabCellWidgets } from './cell-widgets.js'
+import { GRID_ENGINE } from '../grid-context.js'
 
 export type RenderCellOptions = {
 	/** Focus the editor after rendering (for edit mode) */
@@ -35,7 +36,7 @@ export function renderCell<T>(
 	colIndex: number,
 	options: RenderCellOptions = {}
 ): void {
-	const column = ctx.engine.columns[colIndex]
+	const column = ctx[GRID_ENGINE].columns[colIndex]
 	if (!column) return
 
 	const cell = ctx.shadow.querySelector(
@@ -44,24 +45,24 @@ export function renderCell<T>(
 	if (!cell) return
 
 	const field = String(column.field)
-	const item = ctx.engine.displayItems[rowIndex]
+	const item = ctx[GRID_ENGINE].displayItems[rowIndex]
 	if (!item) return
 
 	// Determine cell state
-	const shouldShowEditor = ctx.engine.shouldShowEditor(rowIndex, colIndex)
-	const isActivelyEditing = ctx.engine.isEditing(rowIndex, field)  // Only the ONE tracked cell
-	const isFocused = ctx.engine.isCellFocused(rowIndex, colIndex)
+	const shouldShowEditor = ctx[GRID_ENGINE].shouldShowEditor(rowIndex, colIndex)
+	const isActivelyEditing = ctx[GRID_ENGINE].isEditing(rowIndex, field)  // Only the ONE tracked cell
+	const isFocused = ctx[GRID_ENGINE].isCellFocused(rowIndex, colIndex)
 	// Use canEditCell to check both column editability AND row locking
-	const isEditable = ctx.engine.canEditCell(rowIndex, field)
-	const isInvalid = ctx.engine.isCellInvalid(rowIndex, field)
+	const isEditable = ctx[GRID_ENGINE].canEditCell(rowIndex, field)
+	const isInvalid = ctx[GRID_ENGINE].isCellInvalid(rowIndex, field)
 
 	// Find visual index for frozen column checks
-	const visualIndex = ctx.engine.visualColumns.findIndex(vc => vc.originalIndex === colIndex)
-	const isFrozen = visualIndex >= 0 && ctx.engine.isColumnFrozen(visualIndex)
-	const isLastFrozen = isFrozen && visualIndex === ctx.engine.totalFrozenColumns - 1
+	const visualIndex = ctx[GRID_ENGINE].visualColumns.findIndex(vc => vc.originalIndex === colIndex)
+	const isFrozen = visualIndex >= 0 && ctx[GRID_ENGINE].isColumnFrozen(visualIndex)
+	const isLastFrozen = isFrozen && visualIndex === ctx[GRID_ENGINE].totalFrozenColumns - 1
 
 	// Determine if this is 'always' editTrigger mode
-	const effectiveTrigger = column.editTrigger ?? ctx.engine.editTrigger
+	const effectiveTrigger = column.editTrigger ?? ctx[GRID_ENGINE].editTrigger
 
 	// Build class list
 	const classes = ['wg__cell']
@@ -73,16 +74,16 @@ export function renderCell<T>(
 	if (column.maxLines) classes.push('wg__cell--line-clamp')
 	if (isActivelyEditing) classes.push('wg__cell--editing')
 	if (isInvalid) classes.push('wg__cell--invalid')
-	if (ctx.engine.isDirtyIndicatorShown && ctx.engine.isCellDirty(rowIndex, field)) {
+	if (ctx[GRID_ENGINE].isDirtyIndicatorShown && ctx[GRID_ENGINE].isCellDirty(rowIndex, field)) {
 		classes.push('wg__cell--dirty')
 	}
-	if (visualIndex >= 0 && ctx.engine.isCellInSelectedRange(rowIndex, visualIndex)) classes.push('wg__cell--in-range')
-	if (visualIndex >= 0 && ctx.engine.isColumnPositionSelected(visualIndex)) classes.push('wg__cell--column-selected')
+	if (visualIndex >= 0 && ctx[GRID_ENGINE].isCellInSelectedRange(rowIndex, visualIndex)) classes.push('wg__cell--in-range')
+	if (visualIndex >= 0 && ctx[GRID_ENGINE].isColumnPositionSelected(visualIndex)) classes.push('wg__cell--column-selected')
 	if (isFrozen) classes.push('wg__cell--frozen')
 	if (isLastFrozen) classes.push('wg__cell--frozen-last')
 	if (column.cellClass) classes.push(column.cellClass)
 	if (column.getCellClassCallback) {
-		const dynamicClass = column.getCellClassCallback(ctx.engine.cellCtx(item, rowIndex, column))
+		const dynamicClass = column.getCellClassCallback(ctx[GRID_ENGINE].cellCtx(item, rowIndex, column))
 		if (dynamicClass) classes.push(dynamicClass)
 	}
 
@@ -90,10 +91,10 @@ export function renderCell<T>(
 	cell.className = classes.join(' ')
 
 	// ARIA state that can change with the cell (row lock, selection) — mirrors table.ts cellAriaAttrs
-	if (ctx.engine.isEffectivelyEditable && !isEditable) cell.setAttribute('aria-readonly', 'true')
+	if (ctx[GRID_ENGINE].isEffectivelyEditable && !isEditable) cell.setAttribute('aria-readonly', 'true')
 	else cell.removeAttribute('aria-readonly')
 	if (visualIndex >= 0 && isCellSelectable(ctx)) {
-		const isSelected = ctx.engine.isCellInSelectedRange(rowIndex, visualIndex) || ctx.engine.isColumnPositionSelected(visualIndex)
+		const isSelected = ctx[GRID_ENGINE].isCellInSelectedRange(rowIndex, visualIndex) || ctx[GRID_ENGINE].isColumnPositionSelected(visualIndex)
 		cell.setAttribute('aria-selected', String(isSelected))
 	}
 
@@ -112,7 +113,7 @@ export function renderCell<T>(
 			focusEditorInCell(ctx, cell, column, options)
 		}
 	} else {
-		const value = ctx.engine.getCellValue(item, column, rowIndex)
+		const value = ctx[GRID_ENGINE].getCellValue(item, column, rowIndex)
 		cell.innerHTML = wrapTreeCell(ctx, column, item, renderCellDisplay(ctx, rowIndex, colIndex, column, value, isFocused, isEditable))
 		// renderCellCallback controls are no tab stops of their own (the grid is ONE tab stop)
 		untabCellWidgets(cell)
@@ -124,7 +125,7 @@ export function renderCell<T>(
 	if (rowNumberCell && !rowNumberCell.matches('.wg__row-number--locked, .wg__empty-row-indicator')) {
 		rowNumberCell.classList.toggle(
 			'wg__row-number--dirty',
-			ctx.engine.isDirtyIndicatorShown && ctx.engine.isRowDirty(rowIndex)
+			ctx[GRID_ENGINE].isDirtyIndicatorShown && ctx[GRID_ENGINE].isRowDirty(rowIndex)
 		)
 	}
 }
@@ -153,7 +154,7 @@ function focusEditorInCell<T>(
 		// Combobox/autocomplete default to selectAll (cursor positioning doesn't apply to filter inputs)
 		const isDropdownInput = editor.classList.contains('wg__combobox-input') || editor.classList.contains('wg__autocomplete-input')
 		const defaultSelection = isDropdownInput ? 'select-all' : undefined
-		const editStartSelection = column.editorOptions?.editStartSelection || defaultSelection || ctx.engine.editStartSelection
+		const editStartSelection = column.editorOptions?.editStartSelection || defaultSelection || ctx[GRID_ENGINE].editStartSelection
 
 		if (options.initialSearchQuery !== undefined) {
 			// Type-to-start: always cursor at end

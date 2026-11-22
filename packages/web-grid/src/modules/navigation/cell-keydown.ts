@@ -19,6 +19,7 @@
 import type { GridHost } from '../grid-context.js'
 import { handleRowShortcut, handleRangeShortcut, activateGridItem } from '../items/index.js'
 import { moveFocus, updateFocusVisual, clearEditingVisual, tryStartEdit } from './focus.js'
+import { GRID_ENGINE } from '../grid-context.js'
 
 /**
  * User shortcuts on a focused (non-editing) cell: range shortcuts when rows are
@@ -27,18 +28,18 @@ import { moveFocus, updateFocusVisual, clearEditingVisual, tryStartEdit } from '
  * Returns true when one ran (the key is consumed).
  */
 export function tryCellShortcuts<T>(ctx: GridHost<T>, e: KeyboardEvent, rowIndex: number, colIndex: number): boolean {
-	const selectedRowIndices = ctx.engine.selectedRowIndices
+	const selectedRowIndices = ctx[GRID_ENGINE].selectedRowIndices
 	if (selectedRowIndices.length > 0 && handleRangeShortcut(ctx, e, {
-		rows: ctx.engine.selectedRows,
+		rows: ctx[GRID_ENGINE].selectedRows,
 		rowIndices: selectedRowIndices
 	})) {
 		return true
 	}
-	const column = ctx.engine.columns[colIndex]
-	const row = ctx.engine.displayItems[rowIndex]
+	const column = ctx[GRID_ENGINE].columns[colIndex]
+	const row = ctx[GRID_ENGINE].displayItems[rowIndex]
 	if (!column || !row) return false
 	const field = String(column.field)
-	return handleRowShortcut(ctx, e, { row, rowIndex, column, colIndex, field, value: ctx.engine.getCellRawValue(row, rowIndex, field) })
+	return handleRowShortcut(ctx, e, { row, rowIndex, column, colIndex, field, value: ctx[GRID_ENGINE].getCellRawValue(row, rowIndex, field) })
 }
 
 /**
@@ -53,8 +54,8 @@ export function handleCellKeyDown<T>(
 	rowIndex: number,
 	colIndex: number
 ): void {
-	const columns = ctx.engine.columns
-	const displayItems = ctx.engine.displayItems
+	const columns = ctx[GRID_ENGINE].columns
+	const displayItems = ctx[GRID_ENGINE].displayItems
 
 	switch (e.key) {
 		case 'g':
@@ -68,12 +69,12 @@ export function handleCellKeyDown<T>(
 		case 'Enter': {
 			e.preventDefault()
 			const column = columns[colIndex]
-			if (ctx.engine.isEmptyRowIndex(rowIndex) && column && ctx.engine.isCellEditable(column)) {
+			if (ctx[GRID_ENGINE].isEmptyRowIndex(rowIndex) && column && ctx[GRID_ENGINE].isCellEditable(column)) {
 				// On empty row, Enter starts editing the cell (like F2)
 				tryStartEdit(ctx, rowIndex, colIndex)
 			} else if (rowIndex < displayItems.length - 1) {
-				const targetCol = ctx.engine.tabTraversalStartColIndex ?? colIndex
-				ctx.engine.tabTraversalStartColIndex = null
+				const targetCol = ctx[GRID_ENGINE].tabTraversalStartColIndex ?? colIndex
+				ctx[GRID_ENGINE].tabTraversalStartColIndex = null
 				moveFocus(ctx, rowIndex + 1, targetCol)
 			}
 			break
@@ -81,15 +82,15 @@ export function handleCellKeyDown<T>(
 
 		case 'Escape':
 			e.preventDefault()
-			if (ctx.engine.editingCell) {
+			if (ctx[GRID_ENGINE].editingCell) {
 				clearEditingVisual(ctx)
-				ctx.engine.cancelEdit()
-			} else if (ctx.engine.selectedRowIndices.length > 0) {
+				ctx[GRID_ENGINE].cancelEdit()
+			} else if (ctx[GRID_ENGINE].selectedRowIndices.length > 0) {
 				// Clear row selection first
-				ctx.engine.clearRowSelection()
+				ctx[GRID_ENGINE].clearRowSelection()
 			} else {
-				const oldFocus = ctx.engine.focusedCell
-				ctx.engine.clearFocusedCell()
+				const oldFocus = ctx[GRID_ENGINE].focusedCell
+				ctx[GRID_ENGINE].clearFocusedCell()
 				updateFocusVisual(ctx, oldFocus, null)
 				;(e.target as HTMLElement)?.blur()
 			}
@@ -101,7 +102,7 @@ export function handleCellKeyDown<T>(
 			if (e.ctrlKey || e.metaKey) {
 				e.preventDefault()
 				const row = displayItems[rowIndex]
-				if (row && !ctx.engine.isReadonly && !ctx.engine.isDisabled) {
+				if (row && !ctx[GRID_ENGINE].isReadonly && !ctx[GRID_ENGINE].isDisabled) {
 					void activateGridItem(ctx, { item: { action: 'delete' }, fields: { row, rowIndex }, source: 'keyboard', sourceEvent: e })
 				}
 			}

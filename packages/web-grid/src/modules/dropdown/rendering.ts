@@ -16,6 +16,7 @@ import { commitEditorValue } from '../editing/commit-on-transition.js'
 import { renderCell } from '../rendering/cell.js'
 import { buildSheetHeader, setSheetSemantics, startSheetSession } from '../sheet/index.js'
 import { wireDropdownAria, unwireDropdownAria } from './aria.js'
+import { GRID_ENGINE } from '../grid-context.js'
 
 /** The core popover of each open dropdown panel (closed in removeDropdown()). */
 const popovers = new WeakMap<Element, PopoverHandle>()
@@ -69,16 +70,16 @@ function onDropdownClose<T>(ctx: GridHost<T>, panel: HTMLElement, reason: Popove
 	resetDropdownState(ctx)
 	if (reason !== 'scroll' && reason !== 'overlay' && reason !== 'parent') return
 	// Only the edit this dropdown opened with (the grid may have moved on since)
-	const editing = ctx.engine.editingCell
+	const editing = ctx[GRID_ENGINE].editingCell
 	if (!edited || !editing || editing.rowIndex !== edited.rowIndex || editing.field !== edited.field) return
-	const colIndex = ctx.engine.columns.findIndex(c => String(c.field) === edited.field)
+	const colIndex = ctx[GRID_ENGINE].columns.findIndex(c => String(c.field) === edited.field)
 	const cell = colIndex >= 0
 		? ctx.shadow.querySelector(`td[data-row="${edited.rowIndex}"][data-col="${colIndex}"]`)
 		: null
 	const active = ctx.shadow.activeElement
 	const hadFocus = !!active && !!cell?.contains(active)
 	clearEditingVisual(ctx)
-	if (reason === 'scroll') ctx.engine.cancelEdit()
+	if (reason === 'scroll') ctx[GRID_ENGINE].cancelEdit()
 	else commitEditorValue(ctx)
 	// Re-render the edited cell to remove the editor HTML (toggle, etc.)
 	if (colIndex >= 0) renderCell(ctx, edited.rowIndex, colIndex)
@@ -127,7 +128,7 @@ export function renderDropdown<T>(
 	fillDropdown(ctx, dropdown, anchor, options, opts, null)
 
 	// The edited cell, captured at open (a scroll close cancels THIS edit)
-	const editing = ctx.engine.editingCell
+	const editing = ctx[GRID_ENGINE].editingCell
 	const edited: EditedCell = editing ? { rowIndex: editing.rowIndex, field: editing.field } : null
 	panelInfos.set(dropdown, { anchor, edited, opts })
 
@@ -211,10 +212,10 @@ function fillDropdown<T>(
 		const key = ctx.autocomplete.isSearching ? 'messages.searching' : isNoResults ? 'messages.noMatchingOptions' : 'messages.noOptions'
 		// Content: the message is markup (core labels.html — `shouldEscapeLabels` escapes it); a column's own labels too
 		const own = opts.labels?.[key]
-		const message = own != null ? labelTemplateHtml(own) : ctx.engine.labelHtml(key)
+		const message = own != null ? labelTemplateHtml(own) : ctx[GRID_ENGINE].labelHtml(key)
 		if (key === 'messages.searching') {
 			// Typed search in flight: the loader (core renderLoader, context 'search'; ariaLabels.searching) + the text
-			const ariaLabel = opts.labels?.['ariaLabels.searching'] ?? ctx.engine.labels['ariaLabels.searching']
+			const ariaLabel = opts.labels?.['ariaLabels.searching'] ?? ctx[GRID_ENGINE].labels['ariaLabels.searching']
 			put(`<div class="wg__dropdown-empty wg__dropdown-searching"><span class="wg__dropdown-searching-indicator"></span>${message ? `<span aria-hidden="true">${message}</span>` : ''}</div>`)
 			syncLoader(ctx, 'search-dropdown', dropdown.querySelector('.wg__dropdown-searching-indicator') as HTMLElement, ariaLabel)
 		} else {
@@ -222,9 +223,9 @@ function fillDropdown<T>(
 		}
 	} else {
 		// Get current value for isSelected check
-		const editingCell = ctx.engine.editingCell
+		const editingCell = ctx[GRID_ENGINE].editingCell
 		const currentValue = editingCell
-			? (ctx.engine.displayItems[editingCell.rowIndex] as Record<string, unknown>)?.[editingCell.field]
+			? (ctx[GRID_ENGINE].displayItems[editingCell.rowIndex] as Record<string, unknown>)?.[editingCell.field]
 			: undefined
 
 		// Get column alignment for dropdown options
@@ -329,14 +330,14 @@ function enterDropdownSheet<T>(ctx: GridHost<T>, panel: HTMLElement): void {
 	if (!info || !popover || sheets.has(panel)) return
 	const editor = cellEditorOf(info.anchor)
 	const field = info.edited?.field ?? editor?.dataset.field ?? ''
-	const column = ctx.engine.columns.find(c => String(c.field) === field)
+	const column = ctx[GRID_ENGINE].columns.find(c => String(c.field) === field)
 	const title = column?.title || field
 	const typed = editor instanceof HTMLInputElement ? editor : null
 	const header = buildSheetHeader({
 		title,
-		closeLabel: ctx.engine.labels['ariaLabels.closeSheet'],
+		closeLabel: ctx[GRID_ENGINE].labels['ariaLabels.closeSheet'],
 		onClose: () => closeDropdownSheet(ctx, panel),
-		search: typed ? { placeholder: ctx.engine.labels['placeholders.search'], value: typed.value } : undefined,
+		search: typed ? { placeholder: ctx[GRID_ENGINE].labels['placeholders.search'], value: typed.value } : undefined,
 	})
 	// The sheet's search types into the cell's own input: the grid filters / searches as before
 	const search = header.querySelector('.wg__sheet-search') as HTMLInputElement | null
@@ -399,7 +400,7 @@ function attachSheetKeys<T>(ctx: GridHost<T>, panel: HTMLElement): void {
 
 /** Focus the edited cell when it is rendered, else the grid. */
 function focusGridOrCell<T>(ctx: GridHost<T>, edited: EditedCell): void {
-	const colIndex = edited ? ctx.engine.columns.findIndex(c => String(c.field) === edited.field) : -1
+	const colIndex = edited ? ctx[GRID_ENGINE].columns.findIndex(c => String(c.field) === edited.field) : -1
 	if (edited && colIndex >= 0) returnFocusToCell(ctx, edited.rowIndex, colIndex)
 	else (ctx.shadow.querySelector('.wg') as HTMLElement | null)?.focus({ preventScroll: true })
 }
@@ -412,9 +413,9 @@ function closeDropdownSheet<T>(ctx: GridHost<T>, panel: HTMLElement): void {
 	const info = panelInfos.get(panel)
 	const edited = info?.edited ?? null
 	removeDropdown(ctx)
-	const editing = ctx.engine.editingCell
+	const editing = ctx[GRID_ENGINE].editingCell
 	if (edited && editing && editing.rowIndex === edited.rowIndex && editing.field === edited.field) {
-		const colIndex = ctx.engine.columns.findIndex(c => String(c.field) === edited.field)
+		const colIndex = ctx[GRID_ENGINE].columns.findIndex(c => String(c.field) === edited.field)
 		clearEditingVisual(ctx)
 		commitEditorValue(ctx)
 		if (colIndex >= 0) {
@@ -424,7 +425,7 @@ function closeDropdownSheet<T>(ctx: GridHost<T>, panel: HTMLElement): void {
 		return
 	}
 	// 'always' edit mode (no edit session) / the edit already ended: focus back to the cell
-	const focused = ctx.engine.focusedCell
+	const focused = ctx[GRID_ENGINE].focusedCell
 	if (focused) returnFocusToCell(ctx, focused.rowIndex, focused.colIndex)
 	else focusGridOrCell(ctx, edited)
 }

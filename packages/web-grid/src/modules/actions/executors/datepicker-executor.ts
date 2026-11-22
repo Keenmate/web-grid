@@ -8,6 +8,7 @@ import type { GridAction } from '../types.js'
 import { openCellDatePicker, typedDateError } from '../../datepicker/element-handlers.js'
 import { toISODateString } from '../../datepicker/formatting.js'
 import { renderCell } from '../../rendering/index.js'
+import { GRID_ENGINE } from '../../grid-context.js'
 
 /**
  * DatePicker executor - handles date picker open/close actions
@@ -35,11 +36,11 @@ export const datepickerExecutor: ActionExecutor = {
  */
 function executeOpenDatePicker(ctx: ExecutorContext): void {
 	// Get current cell - use focusedCell for 'always' mode
-	const focusedCell = ctx.engine.focusedCell
+	const focusedCell = ctx[GRID_ENGINE].focusedCell
 	if (!focusedCell) return
 
 	const { rowIndex, colIndex } = focusedCell
-	const column = ctx.engine.columns[colIndex]
+	const column = ctx[GRID_ENGINE].columns[colIndex]
 	if (!column || column.editor !== 'date') return
 
 	// Find the date editor elements in the DOM
@@ -79,9 +80,9 @@ function handleDateSelect(
 
 	// Convert to the format the column expects. Default 'iso' matches the
 	// legacy commitDateEditor behavior.
-	const column = ctx.engine.columns[colIndex]
+	const column = ctx[GRID_ENGINE].columns[colIndex]
 	const outputFormat = column?.editorOptions?.outputFormat ?? 'iso'
-	const parseError = date ? null : typedDateError(ctx, input) ?? ctx.engine.labels['errors.invalidDate']
+	const parseError = date ? null : typedDateError(ctx, input) ?? ctx[GRID_ENGINE].labels['errors.invalidDate']
 	let value: unknown = input.value
 	if (date) {
 		switch (outputFormat) {
@@ -99,7 +100,7 @@ function handleDateSelect(
 	}
 
 	// Commit the date value (clears editingCell state)
-	ctx.engine.commitEdit(rowIndex, field, value, false, 'edit', parseError)
+	ctx[GRID_ENGINE].commitEdit(rowIndex, field, value, false, 'edit', parseError)
 
 	// Re-render cell in display mode with the committed value
 	renderCell(ctx, rowIndex, colIndex)

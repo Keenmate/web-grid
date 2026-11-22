@@ -8,6 +8,7 @@ import type { GridAction, FocusCellAction, BlurCellAction } from '../types.js'
 import { updateFocusVisual, focusCellTd } from '../../navigation/index.js'
 import { updateFillHandle } from '../../fill-handle/index.js'
 import { fieldAt, prepareRowReveal, finishCellReveal } from '../../scroll/reveal.js'
+import { GRID_ENGINE } from '../../grid-context.js'
 
 /**
  * Focus executor - handles cell focus/blur actions
@@ -30,15 +31,15 @@ export const focusExecutor: ActionExecutor = {
  */
 function executeFocusCell(ctx: ExecutorContext, action: FocusCellAction): GridAction[] | void {
 	const { rowIndex, colIndex } = action.target
-	const column = ctx.engine.columns[colIndex]
+	const column = ctx[GRID_ENGINE].columns[colIndex]
 	if (!column) return
 
 	// Check if this cell uses 'always' editTrigger
-	const effectiveTrigger = column.editTrigger ?? ctx.engine.editTrigger
+	const effectiveTrigger = column.editTrigger ?? ctx[GRID_ENGINE].editTrigger
 	const isAlwaysEditMode = effectiveTrigger === 'always'
 
 	// Update grid state
-	const oldFocus = ctx.engine.focusedCell
+	const oldFocus = ctx[GRID_ENGINE].focusedCell
 
 	// Clear stale filterText when focusing a different cell.
 	// renderComboboxEditor sets ctx.dropdown.filterText to the input value as a side effect,
@@ -51,7 +52,7 @@ function executeFocusCell(ctx: ExecutorContext, action: FocusCellAction): GridAc
 		ctx.autocomplete.reset()
 	}
 
-	ctx.engine.setFocusedCell(rowIndex, colIndex)
+	ctx[GRID_ENGINE].setFocusedCell(rowIndex, colIndex)
 
 	// Update visual state (adds/removes focus classes)
 	updateFocusVisual(ctx, oldFocus, { rowIndex, colIndex })
@@ -63,9 +64,9 @@ function executeFocusCell(ctx: ExecutorContext, action: FocusCellAction): GridAc
 	// keeps focus-change tied to the focusCell action and fires regardless of
 	// keyboard/mouse input. shift+click extends a selection without
 	// dispatching focusCell, so row focus correctly stays put there.
-	const prevRowIndex = ctx.engine.focusedRowIndex
+	const prevRowIndex = ctx[GRID_ENGINE].focusedRowIndex
 	if (prevRowIndex !== rowIndex) {
-		ctx.engine.setFocusedRow(rowIndex)
+		ctx[GRID_ENGINE].setFocusedRow(rowIndex)
 		if (prevRowIndex !== null) {
 			const prevRow = ctx.shadow.querySelector(`tr[data-row-index="${prevRowIndex}"]`)
 			prevRow?.classList.remove('wg__row--focused')
@@ -120,14 +121,14 @@ function executeFocusCell(ctx: ExecutorContext, action: FocusCellAction): GridAc
 	const editorType = column.editor
 	const isDropdownEditor = editorType === 'select' || editorType === 'combobox' || editorType === 'autocomplete'
 	const isNavigateMode = effectiveTrigger === 'navigate'
-	if (isAlwaysEditMode && ctx.engine.shouldOpenDropdownOnFocus && !ctx.dropdown.justSelected) {
+	if (isAlwaysEditMode && ctx[GRID_ENGINE].shouldOpenDropdownOnFocus && !ctx.dropdown.justSelected) {
 		if (isDropdownEditor) {
 			return [{ type: 'openDropdown' }]
 		}
 	}
 	// Navigate mode: don't check justSelected - we're moving to a different cell,
 	// so the dropdown should open even after a Tab-select from the previous cell
-	if (isNavigateMode && ctx.engine.shouldOpenDropdownOnFocus) {
+	if (isNavigateMode && ctx[GRID_ENGINE].shouldOpenDropdownOnFocus) {
 		if (isDropdownEditor) {
 			return [
 				{ type: 'startEdit', target: { rowIndex, colIndex } },
@@ -141,7 +142,7 @@ function executeFocusCell(ctx: ExecutorContext, action: FocusCellAction): GridAc
  * Execute blurCell action
  */
 function executeBlurCell(ctx: ExecutorContext, _action: BlurCellAction): void {
-	const oldFocus = ctx.engine.focusedCell
-	ctx.engine.clearFocusedCell()
+	const oldFocus = ctx[GRID_ENGINE].focusedCell
+	ctx[GRID_ENGINE].clearFocusedCell()
 	updateFocusVisual(ctx, oldFocus, null)
 }

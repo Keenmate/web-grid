@@ -20,6 +20,7 @@ import { startModalSession, type ModalSession } from '@keenmate/web-components-c
 import type { GridHost } from '../grid-context.js'
 import { updateFocusVisual, moveFocus } from './focus.js'
 import { revealElement, scrollRowIntoView, fieldAt, JUMP_SCROLL } from '../scroll/reveal.js'
+import { GRID_ENGINE } from '../grid-context.js'
 
 /**
  * Render and open the Ctrl+G dialog. `colIndex` is the column the user was
@@ -27,7 +28,7 @@ import { revealElement, scrollRowIntoView, fieldAt, JUMP_SCROLL } from '../scrol
  * the target row.
  */
 export function openGoToRowDialog<T>(ctx: GridHost<T>, colIndex: number): void {
-	const displayItems = ctx.engine.displayItems
+	const displayItems = ctx[GRID_ENGINE].displayItems
 	if (displayItems.length === 0) return
 
 	// Create dialog overlay
@@ -35,11 +36,11 @@ export function openGoToRowDialog<T>(ctx: GridHost<T>, colIndex: number): void {
 	overlay.className = 'wg__goto-overlay'
 	overlay.innerHTML = `
 		<div class="wg__goto-dialog">
-			<label class="wg__goto-label">${ctx.engine.labelHtml('labels.goToRow', { max: displayItems.length })}</label>
+			<label class="wg__goto-label">${ctx[GRID_ENGINE].labelHtml('labels.goToRow', { max: displayItems.length })}</label>
 			<input type="number" class="wg__goto-input" min="1" max="${displayItems.length}" value="1" />
 			<div class="wg__goto-buttons">
-				<button type="button" class="wg__goto-btn wg__goto-btn--cancel">${ctx.engine.labelHtml('buttons.cancel')}</button>
-				<button type="button" class="wg__goto-btn wg__goto-btn--go">${ctx.engine.labelHtml('buttons.go')}</button>
+				<button type="button" class="wg__goto-btn wg__goto-btn--cancel">${ctx[GRID_ENGINE].labelHtml('buttons.cancel')}</button>
+				<button type="button" class="wg__goto-btn wg__goto-btn--go">${ctx[GRID_ENGINE].labelHtml('buttons.go')}</button>
 			</div>
 		</div>
 	`
@@ -49,7 +50,7 @@ export function openGoToRowDialog<T>(ctx: GridHost<T>, colIndex: number): void {
 	const cancelBtn = overlay.querySelector('.wg__goto-btn--cancel') as HTMLButtonElement
 
 	// The cell focused when the dialog opened — Cancel / Escape / a backdrop click return to it
-	const origin = ctx.engine.focusedCell
+	const origin = ctx[GRID_ENGINE].focusedCell
 
 	let session: ModalSession | null = null
 	const closeDialog = () => {
@@ -74,10 +75,10 @@ export function openGoToRowDialog<T>(ctx: GridHost<T>, colIndex: number): void {
 
 		// Convert 1-based to 0-based index
 		const targetRow = rowNum - 1
-		const oldFocus = ctx.engine.focusedCell
-		ctx.engine.setFocusedCell(targetRow, colIndex)
+		const oldFocus = ctx[GRID_ENGINE].focusedCell
+		ctx[GRID_ENGINE].setFocusedCell(targetRow, colIndex)
 
-		if (ctx.engine.shouldUseVirtualScroll()) {
+		if (ctx[GRID_ENGINE].shouldUseVirtualScroll()) {
 			// Virtual scroll: scroll to position (programmatic flag prevents redundant handleVirtualScroll)
 			void scrollRowIntoView(ctx, targetRow, 'go-to-row')
 			// After scroll settles, focus the cell

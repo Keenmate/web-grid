@@ -35,6 +35,7 @@ import type {
 } from '../../interaction.js'
 import { matchesShortcut } from '@keenmate/web-components-core/actions'
 import { applySort } from '../events/sort.js'
+import { GRID_ENGINE } from '../grid-context.js'
 
 const ROW_ACTIONS: readonly GridRowAction[] = ['add', 'delete', 'duplicate', 'move-up', 'move-down']
 const TREE_ACTIONS: readonly string[] = ['expand', 'collapse', 'expand-subtree', 'collapse-subtree', 'expand-all', 'collapse-all']
@@ -68,13 +69,13 @@ export function normalizeEntry<E>(entry: string | E): E {
  */
 export function rowActionDefaults<T>(host: GridHost<T>, action: string | undefined, ctx: { row?: T }): Partial<ResolvedActionItem<GridAction>> | undefined {
 	if (!isRowAction(action)) return undefined
-	const labels = host.engine.labels
-	const display = host.engine.displayItems
+	const labels = host[GRID_ENGINE].labels
+	const display = host[GRID_ENGINE].displayItems
 	const positions = rowTargets<T>(host, ctx.row).map(r => display.indexOf(r)).filter(p => p >= 0)
 	const top = positions.length ? Math.min(...positions) : -1
 	const bottom = positions.length ? Math.max(...positions) : -1
 	// A read-only grid changes no rows: every row built-in is disabled
-	const isLocked = host.engine.isReadonly || host.engine.isDisabled
+	const isLocked = host[GRID_ENGINE].isReadonly || host[GRID_ENGINE].isDisabled
 	switch (action) {
 		case 'add': return { text: labels['menuItems.addRow'], icon: ROW_ICONS.add, isDisabled: isLocked }
 		case 'delete': return { text: labels['menuItems.deleteRow'], icon: ROW_ICONS.delete, isDanger: true, isDisabled: isLocked }
@@ -90,7 +91,7 @@ export function cellMenuDefaults<T>(host: GridHost<T>, action: string | undefine
 		const d = rowActionDefaults(host, action, ctx)
 		return d && { ...d, icon: undefined }  // the toolbar SVGs don't suit a text menu
 	}
-	const engine = host.engine
+	const engine = host[GRID_ENGINE]
 	const labels = engine.labels
 	switch (action) {
 		// Per-row: the targets (the selection when the row is in it, else the row); leaves hide them.
@@ -190,7 +191,7 @@ export type ActivateOptions<T> = {
  * false when cancelled (or ignored while the same item is still busy).
  */
 export async function activateGridItem<T>(host: GridHost<T>, opts: ActivateOptions<T>): Promise<boolean> {
-	const engine = host.engine
+	const engine = host[GRID_ENGINE]
 	const { item } = opts
 	const action = (item.action ?? 'custom') as GridAction | 'custom'
 	const detail = engine.ctx({
@@ -225,7 +226,7 @@ async function runBuiltIn<T>(host: GridHost<T>, d: GridActionEventDetail<T>): Pr
  * `d.row` is in it, else `d.row`). The row selection follows its rows afterwards.
  */
 async function runRowBuiltIn<T>(host: GridHost<T>, d: GridActionEventDetail<T>): Promise<void> {
-	const engine = host.engine
+	const engine = host[GRID_ENGINE]
 	if (engine.isReadonly || engine.isDisabled) return  // a read-only grid changes no rows
 	const restoreSelection = engine.keepRowSelection()
 	try {
@@ -236,7 +237,7 @@ async function runRowBuiltIn<T>(host: GridHost<T>, d: GridActionEventDetail<T>):
 }
 
 async function runRowBuiltInOn<T>(host: GridHost<T>, d: GridActionEventDetail<T>): Promise<void> {
-	const engine = host.engine
+	const engine = host[GRID_ENGINE]
 	const row = d.row as T | undefined
 	const targets = rowTargets<T>(host, row, d.rows)
 	switch (d.action) {
@@ -295,13 +296,13 @@ function blankRow<T>(columns: Column<T>[]): T {
 function rowTargets<T>(host: GridHost<T>, row: unknown, rows?: unknown[]): T[] {
 	if (rows?.length) return rows as T[]
 	if (row === undefined) return []
-	const selected = host.engine.selectedRows
+	const selected = host[GRID_ENGINE].selectedRows
 	return selected.includes(row as T) ? selected : [row as T]
 }
 
 /** Tree paths a per-row tree action acts on: the `rowTargets` with children. */
 function treeTargetPaths<T>(host: GridHost<T>, row: unknown, rows?: unknown[]): string[] {
-	const engine = host.engine
+	const engine = host[GRID_ENGINE]
 	const paths: string[] = []
 	for (const r of rowTargets<T>(host, row, rows)) {
 		const info = engine.getRowTreeInfo(r as T)
@@ -311,7 +312,7 @@ function treeTargetPaths<T>(host: GridHost<T>, row: unknown, rows?: unknown[]): 
 }
 
 function runTreeBuiltIn<T>(host: GridHost<T>, d: GridActionEventDetail<T>): void {
-	const engine = host.engine
+	const engine = host[GRID_ENGINE]
 	switch (d.action) {
 		case 'expand': engine.expandRows(treeTargetPaths(host, d.row, d.rows)); return
 		case 'collapse': engine.collapseRows(treeTargetPaths(host, d.row, d.rows)); return
@@ -323,7 +324,7 @@ function runTreeBuiltIn<T>(host: GridHost<T>, d: GridActionEventDetail<T>): void
 }
 
 function runHeaderBuiltIn<T>(host: GridHost<T>, d: GridActionEventDetail<T>): void {
-	const engine = host.engine
+	const engine = host[GRID_ENGINE]
 	const field = (d.field as string | undefined) ?? ''
 	const colIndex = (d.colIndex as number | undefined) ?? -1
 	switch (d.action) {
@@ -404,8 +405,8 @@ export function handleRowShortcut<T>(
 	shouldStopPropagation = false,
 	after?: (detail: GridActionEventDetail<T>) => void
 ): boolean {
-	const ctx = host.engine.ctx(fields)
-	const shortcut = findShortcut(host, e, host.engine.rowShortcuts, ctx)
+	const ctx = host[GRID_ENGINE].ctx(fields)
+	const shortcut = findShortcut(host, e, host[GRID_ENGINE].rowShortcuts, ctx)
 	if (!shortcut) return false
 	e.preventDefault()
 	if (shouldStopPropagation) e.stopPropagation()
@@ -415,8 +416,8 @@ export function handleRowShortcut<T>(
 
 /** Run a matching range shortcut on the selection in `fields`; true when one ran. */
 export function handleRangeShortcut<T>(host: GridHost<T>, e: KeyboardEvent, fields: Omit<RangeContext<T>, 'controller' | 'element'>): boolean {
-	const ctx = host.engine.ctx(fields)
-	const shortcut = findShortcut(host, e, host.engine.rangeShortcuts, ctx)
+	const ctx = host[GRID_ENGINE].ctx(fields)
+	const shortcut = findShortcut(host, e, host[GRID_ENGINE].rangeShortcuts, ctx)
 	if (!shortcut) return false
 	e.preventDefault()
 	void activateGridItem(host, { item: shortcut, fields, source: 'keyboard', sourceEvent: e })
@@ -425,9 +426,9 @@ export function handleRangeShortcut<T>(host: GridHost<T>, e: KeyboardEvent, fiel
 
 /** Plain cell fields for a row's first column (shortcuts fired from the toolbar / hovered row). */
 export function rowCellFields<T>(host: GridHost<T>, row: T, rowIndex: number): Omit<CellContext<T>, 'controller' | 'element'> {
-	const column = host.engine.columns[0]
+	const column = host[GRID_ENGINE].columns[0]
 	const field = column ? String(column.field) : ''
-	return { row, rowIndex, column, colIndex: 0, field, value: column ? host.engine.getCellRawValue(row, rowIndex, field) : undefined }
+	return { row, rowIndex, column, colIndex: 0, field, value: column ? host[GRID_ENGINE].getCellRawValue(row, rowIndex, field) : undefined }
 }
 
 export type { GridCellAction }

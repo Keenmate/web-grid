@@ -39,6 +39,7 @@ import { renderCell } from '../rendering/index.js'
 import { handleCellMouseDown, removeRangeBorder } from '../cell-selection/index.js'
 import { openDatePicker } from '../datepicker/index.js'
 import { handleEditButtonMouseDown } from '../editing/edit-button.js'
+import { GRID_ENGINE } from '../grid-context.js'
 
 /**
  * Handle the table-level mousedown. Returns nothing (drives DOM side effects);
@@ -66,28 +67,28 @@ export function handleTableMouseDown<T>(ctx: GridHost<T>, e: Event): void {
 	// here because the cell's innerHTML gets re-rendered between clicks, so
 	// we route both "double-click toggles tree" and "double-click starts edit"
 	// through this single path.
-	if (mouseEvent.detail === 2 && mouseEvent.button === 0 && ctx.engine.isTreeMode) {
+	if (mouseEvent.detail === 2 && mouseEvent.button === 0 && ctx[GRID_ENGINE].isTreeMode) {
 		const cellEl = target.closest('.wg__cell') as HTMLElement
 		if (cellEl && !target.closest('.wg__tree-chevron')) {
 			const colIdx = parseInt(cellEl.dataset.col || '-1', 10)
 			const rowIdx = parseInt(cellEl.dataset.row || '-1', 10)
-			const col = colIdx >= 0 ? ctx.engine.columns[colIdx] : null
+			const col = colIdx >= 0 ? ctx[GRID_ENGINE].columns[colIdx] : null
 			if (col?.isTree && rowIdx >= 0) {
 				// Tree toggle takes priority over edit when enabled
-				if (ctx.engine.treeDoubleClickBehavior === 'toggle') {
-					const item = ctx.engine.displayItems[rowIdx]
-					const info = item ? ctx.engine.getRowTreeInfo(item) : null
+				if (ctx[GRID_ENGINE].treeDoubleClickBehavior === 'toggle') {
+					const item = ctx[GRID_ENGINE].displayItems[rowIdx]
+					const info = item ? ctx[GRID_ENGINE].getRowTreeInfo(item) : null
 					if (info?.hasChildren) {
 						uiLogger.debug('tree dblclick (mousedown.detail=2) toggle:', info.path)
 						e.preventDefault()
 						e.stopPropagation()
-						ctx.engine.toggleRowExpanded(info.path)
+						ctx[GRID_ENGINE].toggleRowExpanded(info.path)
 						return
 					}
 				}
 				// Otherwise, if the column is editable with dblclick/navigate trigger, start edit
-				const trigger = col.editTrigger || ctx.engine.editTrigger
-				if ((trigger === 'dblclick' || trigger === 'navigate') && ctx.engine.canEditCell(rowIdx, String(col.field))) {
+				const trigger = col.editTrigger || ctx[GRID_ENGINE].editTrigger
+				if ((trigger === 'dblclick' || trigger === 'navigate') && ctx[GRID_ENGINE].canEditCell(rowIdx, String(col.field))) {
 					const cursorPos = getCursorPositionFromClick(mouseEvent, cellEl)
 					uiLogger.debug('tree dblclick (mousedown.detail=2) start edit:', String(col.field), '| trigger:', trigger)
 					e.preventDefault()
@@ -111,10 +112,10 @@ export function handleTableMouseDown<T>(ctx: GridHost<T>, e: Event): void {
 	if (cell && !cell.classList.contains('wg__cell--editing') && !target.closest('.wg__row-number') && !isClickingToggle) {
 		const rowIndex = parseInt(cell.dataset.row || '0', 10)
 		const colIndex = parseInt(cell.dataset.col || '0', 10)
-		const column = ctx.engine.visualColumns.find(v => v.originalIndex === colIndex)?.column  // colIndex is data-col
+		const column = ctx[GRID_ENGINE].visualColumns.find(v => v.originalIndex === colIndex)?.column  // colIndex is data-col
 
 		if (column) {
-			const selectionMode = ctx.engine.cellSelectionMode
+			const selectionMode = ctx[GRID_ENGINE].cellSelectionMode
 			const isShiftClick = mouseEvent.shiftKey
 
 			// Check if we should handle cell range selection
@@ -126,9 +127,9 @@ export function handleTableMouseDown<T>(ctx: GridHost<T>, e: Event): void {
 
 			if (shouldSelectRange) {
 				// Commit (or cancel) any active edit before starting cell selection
-				if (ctx.engine.editingCell) {
-					const oldEditingCell = ctx.engine.editingCell
-					const oldColIndex = ctx.engine.columns.findIndex(c => String(c.field) === oldEditingCell.field)
+				if (ctx[GRID_ENGINE].editingCell) {
+					const oldEditingCell = ctx[GRID_ENGINE].editingCell
+					const oldColIndex = ctx[GRID_ENGINE].columns.findIndex(c => String(c.field) === oldEditingCell.field)
 					removeDropdown(ctx)
 					clearEditingVisual(ctx)
 					ctx.commitOrCancelEditOnTransition()
@@ -138,11 +139,11 @@ export function handleTableMouseDown<T>(ctx: GridHost<T>, e: Event): void {
 					}
 				}
 				// Clear row/column selection when starting cell selection
-				if (ctx.engine.selectedRowIndices.length > 0) {
-					ctx.engine.clearRowSelection()
+				if (ctx[GRID_ENGINE].selectedRowIndices.length > 0) {
+					ctx[GRID_ENGINE].clearRowSelection()
 				}
-				if (ctx.engine.selectedColumns.length > 0) {
-					ctx.engine.clearColumnSelection()
+				if (ctx[GRID_ENGINE].selectedColumns.length > 0) {
+					ctx[GRID_ENGINE].clearColumnSelection()
 				}
 				// Start cell selection
 				// Note: if editTrigger='click' + cellSelectionMode='click', selection takes priority
@@ -151,8 +152,8 @@ export function handleTableMouseDown<T>(ctx: GridHost<T>, e: Event): void {
 				return
 			} else {
 				// Not starting selection - clear any existing range
-				if (ctx.engine.selectedCellRange) {
-					ctx.engine.clearCellSelection()
+				if (ctx[GRID_ENGINE].selectedCellRange) {
+					ctx[GRID_ENGINE].clearCellSelection()
 					removeRangeBorder()
 				}
 			}
@@ -176,16 +177,16 @@ export function handleTableMouseDown<T>(ctx: GridHost<T>, e: Event): void {
 			// In read mode - start editing and open datepicker
 			const rowIndex = parseInt(displayContainer.dataset.row || '0', 10)
 			const field = displayContainer.dataset.field || ''
-			const colIndex = ctx.engine.columns.findIndex(c => String(c.field) === field)
+			const colIndex = ctx[GRID_ENGINE].columns.findIndex(c => String(c.field) === field)
 			if (colIndex >= 0) {
 				// Clear selections FIRST to avoid render during picker open
 				ctx.clearAllSelections()
 
 				ctx.isTransitioningCells = true
-				if (ctx.engine.editingCell) {
+				if (ctx[GRID_ENGINE].editingCell) {
 					// Save old cell info BEFORE commit/cancel clears it
-					const oldEditingCell = ctx.engine.editingCell
-					const oldColIndex = ctx.engine.columns.findIndex(c => String(c.field) === oldEditingCell.field)
+					const oldEditingCell = ctx[GRID_ENGINE].editingCell
+					const oldColIndex = ctx[GRID_ENGINE].columns.findIndex(c => String(c.field) === oldEditingCell.field)
 
 					removeDropdown(ctx)
 					clearEditingVisual(ctx)
@@ -193,7 +194,7 @@ export function handleTableMouseDown<T>(ctx: GridHost<T>, e: Event): void {
 
 					// Move focus to the new cell BEFORE re-rendering so the old cell
 					// renders without the focused class
-					ctx.engine.setFocusedCell(rowIndex, colIndex)
+					ctx[GRID_ENGINE].setFocusedCell(rowIndex, colIndex)
 
 					// Re-render old cell to remove editor HTML
 					if (oldColIndex >= 0) {
@@ -217,15 +218,15 @@ export function handleTableMouseDown<T>(ctx: GridHost<T>, e: Event): void {
 	}
 
 	// Handle click on any cell when dropdown is open
-	if (ctx.dropdown.isOpen || ctx.engine.editingCell) {
+	if (ctx.dropdown.isOpen || ctx[GRID_ENGINE].editingCell) {
 		const cellSwitch = target.closest('.wg__cell') as HTMLElement
 		if (cellSwitch && !target.closest('.wg__editor--select, .wg__editor--combobox, .wg__editor--autocomplete, .wg__editor--date')) {
 			const rowIndex = parseInt(cellSwitch.dataset.row || '0', 10)
 			const colIndex = parseInt(cellSwitch.dataset.col || '0', 10)
-			const editingCell = ctx.engine.editingCell
+			const editingCell = ctx[GRID_ENGINE].editingCell
 			const isToggleClick = target.matches('.wg__combobox-toggle, .wg__select-toggle, .wg__date-trigger')
 			if (editingCell && !isToggleClick) {
-				const editingColIndex = ctx.engine.columns.findIndex(c => String(c.field) === editingCell.field)
+				const editingColIndex = ctx[GRID_ENGINE].columns.findIndex(c => String(c.field) === editingCell.field)
 				if (rowIndex !== editingCell.rowIndex || colIndex !== editingColIndex) {
 					e.preventDefault()
 					ctx.isTransitioningCells = true
@@ -237,18 +238,18 @@ export function handleTableMouseDown<T>(ctx: GridHost<T>, e: Event): void {
 					ctx.commitOrCancelEditOnTransition()
 					// Move focus to the new cell BEFORE re-rendering so the old cell
 					// renders without the focused class
-					ctx.engine.setFocusedCell(rowIndex, colIndex)
+					ctx[GRID_ENGINE].setFocusedCell(rowIndex, colIndex)
 					// Re-render old cell AFTER commit/cancel so it renders in display mode
 					if (oldColIndex >= 0) {
 						renderCell(ctx, oldRowIndex, oldColIndex)
 					}
-					const newColumn = ctx.engine.columns[colIndex]
-					const trigger = newColumn?.editTrigger || ctx.engine.editTrigger
+					const newColumn = ctx[GRID_ENGINE].columns[colIndex]
+					const trigger = newColumn?.editTrigger || ctx[GRID_ENGINE].editTrigger
 					// Capture click position for cursor placement
 					const clickX = mouseEvent.clientX
 					requestAnimationFrame(() => {
 						ctx.isTransitioningCells = false
-						if (trigger === 'click' && newColumn && ctx.engine.isCellEditable(newColumn, ctx.engine.displayItems[rowIndex])) {
+						if (trigger === 'click' && newColumn && ctx[GRID_ENGINE].isCellEditable(newColumn, ctx[GRID_ENGINE].displayItems[rowIndex])) {
 							// For click trigger, immediately start editing the new cell
 							// Find the new cell and calculate cursor position
 							const newCell = ctx.shadow.querySelector(
@@ -277,13 +278,13 @@ export function handleTableMouseDown<T>(ctx: GridHost<T>, e: Event): void {
 		if (displayContainer) {
 			const rowIndex = parseInt(displayContainer.dataset.row || '0', 10)
 			const field = displayContainer.dataset.field || ''
-			const colIndex = ctx.engine.columns.findIndex(c => String(c.field) === field)
+			const colIndex = ctx[GRID_ENGINE].columns.findIndex(c => String(c.field) === field)
 			if (colIndex >= 0) {
 				ctx.isTransitioningCells = true
 				// Save old editing cell info before clearing
-				const oldEditingCell = ctx.engine.editingCell
+				const oldEditingCell = ctx[GRID_ENGINE].editingCell
 				const oldColIndex = oldEditingCell
-					? ctx.engine.columns.findIndex(c => String(c.field) === oldEditingCell.field)
+					? ctx[GRID_ENGINE].columns.findIndex(c => String(c.field) === oldEditingCell.field)
 					: -1
 				if (oldEditingCell) {
 					removeDropdown(ctx)
@@ -291,7 +292,7 @@ export function handleTableMouseDown<T>(ctx: GridHost<T>, e: Event): void {
 					ctx.commitOrCancelEditOnTransition()
 					// Move focus to the new cell BEFORE re-rendering so the old cell
 					// renders without the focused class
-					ctx.engine.setFocusedCell(rowIndex, colIndex)
+					ctx[GRID_ENGINE].setFocusedCell(rowIndex, colIndex)
 					// Re-render old cell AFTER commit/cancel so it renders in display mode
 					if (oldColIndex >= 0) {
 						renderCell(ctx, oldEditingCell.rowIndex, oldColIndex)

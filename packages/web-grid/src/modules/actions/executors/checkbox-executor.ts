@@ -6,6 +6,7 @@
 import type { ActionExecutor, ExecutorContext } from '../pipeline.js'
 import type { GridAction, ToggleCheckboxAction } from '../types.js'
 import { renderCell } from '../../rendering/index.js'
+import { GRID_ENGINE } from '../../grid-context.js'
 
 /**
  * Checkbox executor - handles checkbox toggle actions
@@ -31,13 +32,13 @@ export const checkboxExecutor: ActionExecutor = {
  */
 function executeToggleCheckbox(ctx: ExecutorContext, action: ToggleCheckboxAction): void {
 	const { rowIndex, colIndex } = action.target
-	const column = ctx.engine.columns[colIndex]
+	const column = ctx[GRID_ENGINE].columns[colIndex]
 	if (!column) return
 
-	const item = ctx.engine.displayItems[rowIndex]
+	const item = ctx[GRID_ENGINE].displayItems[rowIndex]
 	if (!item) return
 
-	if (!ctx.engine.isCellEditable(column, item)) return
+	if (!ctx[GRID_ENGINE].isCellEditable(column, item)) return
 
 	const field = String(column.field)
 
@@ -45,15 +46,15 @@ function executeToggleCheckbox(ctx: ExecutorContext, action: ToggleCheckboxActio
 	const trueValue = opts.trueValue ?? true
 	const falseValue = opts.falseValue ?? false
 	// Use getCellRawValue to get value from draft row if it exists
-	const currentValue = ctx.engine.getCellRawValue(item, rowIndex, field)
+	const currentValue = ctx[GRID_ENGINE].getCellRawValue(item, rowIndex, field)
 	const newValue = currentValue === trueValue ? falseValue : trueValue
 
 	// Mark the cell as being edited so navigation keys (Tab, Enter) will commit
 	// This integrates checkbox toggle with the standard editing flow
-	ctx.engine.startEdit(rowIndex, field)
+	ctx[GRID_ENGINE].startEdit(rowIndex, field)
 
 	// Update draft row with the new value
-	ctx.engine.updateDraftValue(rowIndex, field, newValue)
+	ctx[GRID_ENGINE].updateDraftValue(rowIndex, field, newValue)
 
 	// Re-render the cell to show new checkbox state AND focus the checkbox
 	// Without focusEditor: true, the checkbox HTML is replaced but focus is lost,

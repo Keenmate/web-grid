@@ -11,18 +11,19 @@ import type { GridHost } from '../grid-context.js'
 import type { Column } from '../../types.js'
 import { tryStartEdit } from '../navigation/index.js'
 import { openDropdownForCurrentEditor } from '../dropdown/index.js'
+import { GRID_ENGINE } from '../grid-context.js'
 
 /** Does this (editable) cell show the edit button? */
 export function hasEditButton<T>(ctx: GridHost<T>, column: Column<T>, isEditable: boolean): boolean {
 	if (!isEditable) return false
-	const trigger = column.editTrigger ?? ctx.engine.editTrigger
+	const trigger = column.editTrigger ?? ctx[GRID_ENGINE].editTrigger
 	return trigger === 'button' || column.isEditButtonShown === true
 }
 
 export function renderEditButton<T>(ctx: GridHost<T>, rowIndex: number, colIndex: number): string {
-	const label = escapeHtml(ctx.engine.labels['ariaLabels.editCell'])
-	const title = escapeHtml(ctx.engine.labels['tooltips.editCell'])
-	return `<button type="button" class="wg__edit-button" tabindex="-1" data-row="${rowIndex}" data-col="${colIndex}" aria-label="${label}" title="${title}">${renderIcon(ctx.engine.editButtonIcon, { prefix: 'wg', host: ctx.shadow.host })}</button>`
+	const label = escapeHtml(ctx[GRID_ENGINE].labels['ariaLabels.editCell'])
+	const title = escapeHtml(ctx[GRID_ENGINE].labels['tooltips.editCell'])
+	return `<button type="button" class="wg__edit-button" tabindex="-1" data-row="${rowIndex}" data-col="${colIndex}" aria-label="${label}" title="${title}">${renderIcon(ctx[GRID_ENGINE].editButtonIcon, { prefix: 'wg', host: ctx.shadow.host })}</button>`
 }
 
 /**
@@ -36,7 +37,7 @@ export function handleEditButtonMouseDown<T>(ctx: GridHost<T>, e: MouseEvent): b
 	e.stopPropagation()
 	const rowIndex = parseInt(btn.dataset.row || '-1', 10)
 	const colIndex = parseInt(btn.dataset.col || '-1', 10)
-	const column = ctx.engine.columns[colIndex]
+	const column = ctx[GRID_ENGINE].columns[colIndex]
 	if (!column || rowIndex < 0) return true
 	tryStartEdit(ctx, rowIndex, colIndex)
 	const editor = column.editor

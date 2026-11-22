@@ -6,6 +6,7 @@ import type { GridHost } from '../grid-context.js'
 import type { Column, EditorOption } from '../../types.js'
 import { runBeforeCallback } from '@keenmate/web-components-core'
 import { renderCell } from '../rendering/cell.js'
+import { GRID_ENGINE } from '../grid-context.js'
 
 /** Minimum distance (px) mouse must move before drag starts */
 const DRAG_THRESHOLD = 5
@@ -136,12 +137,12 @@ export function isFillPending(): boolean {
  * Create and position the fill handle on the focused cell
  */
 export function updateFillHandle<T>(ctx: GridHost<T>): void {
-	const focusedCell = ctx.engine.focusedCell
+	const focusedCell = ctx[GRID_ENGINE].focusedCell
 	const hostElement = ctx.shadow.host as HTMLElement
 
 	// Remove existing handle if no focused cell, in edit mode, or dropdown is open
 	// Only remove if this grid owns the handle (prevents one grid from removing another's)
-	if (!focusedCell || ctx.engine.editingCell || ctx.dropdown.isOpen) {
+	if (!focusedCell || ctx[GRID_ENGINE].editingCell || ctx.dropdown.isOpen) {
 		removeFillHandle(hostElement)
 		return
 	}
@@ -149,9 +150,9 @@ export function updateFillHandle<T>(ctx: GridHost<T>): void {
 	const { rowIndex, colIndex } = focusedCell  // colIndex = data-col (index into columns)
 
 	// Don't show fill handle if the focused cell's column is not editable
-	const column = ctx.engine.visualIndexOfColumn(colIndex) >= 0 ? ctx.engine.columns[colIndex] : undefined
-	const focusedRow = ctx.engine.displayItems[rowIndex]
-	if (!column || !ctx.engine.isCellEditable(column, focusedRow)) {
+	const column = ctx[GRID_ENGINE].visualIndexOfColumn(colIndex) >= 0 ? ctx[GRID_ENGINE].columns[colIndex] : undefined
+	const focusedRow = ctx[GRID_ENGINE].displayItems[rowIndex]
+	if (!column || !ctx[GRID_ENGINE].isCellEditable(column, focusedRow)) {
 		removeFillHandle(hostElement)
 		return
 	}
@@ -177,7 +178,7 @@ export function updateFillHandle<T>(ctx: GridHost<T>): void {
 	const handleSize = 8
 
 	// Check if on last row - if so, show handle at top-right so user can drag upward
-	const isLastRow = rowIndex === ctx.engine.displayItems.length - 1
+	const isLastRow = rowIndex === ctx[GRID_ENGINE].displayItems.length - 1
 	const x = cellRect.right - containerRect.left + scrollLeft - handleSize / 2
 	const y = isLastRow
 		? cellRect.top - containerRect.top + scrollTop - handleSize / 2  // Top-right
@@ -231,7 +232,7 @@ export function removeFillHandle(forHost?: HTMLElement): void {
 
 /** The cell element at (row, visual position). */
 function cellAt<T>(ctx: GridHost<T>, row: number, pos: number): HTMLElement | null {
-	const col = ctx.engine.visualColumns[pos]?.originalIndex
+	const col = ctx[GRID_ENGINE].visualColumns[pos]?.originalIndex
 	if (col === undefined) return null
 	return ctx.shadow.querySelector(`[data-row="${row}"][data-col="${col}"]`) as HTMLElement | null
 }
@@ -243,12 +244,12 @@ function handleFillStart<T>(ctx: GridHost<T>, e: MouseEvent): void {
 	e.preventDefault()
 	e.stopPropagation()
 
-	const focusedCell = ctx.engine.focusedCell
+	const focusedCell = ctx[GRID_ENGINE].focusedCell
 	if (!focusedCell) return
 
 	const { rowIndex, colIndex } = focusedCell
-	const pos = ctx.engine.visualIndexOfColumn(colIndex)
-	const column = ctx.engine.visualColumns[pos]?.column
+	const pos = ctx[GRID_ENGINE].visualIndexOfColumn(colIndex)
+	const column = ctx[GRID_ENGINE].visualColumns[pos]?.column
 	if (!column) return
 
 	// Set up pending state (column fields are visual positions)
@@ -296,7 +297,7 @@ function handleDocumentMouseMove(e: MouseEvent): void {
 
 	// Find which cell the mouse is over
 	const cellInfo = findCellAtPoint(activeContext, e.clientX, e.clientY)
-	const pos = cellInfo ? activeContext.engine.visualIndexOfColumn(cellInfo.colIndex) : -1
+	const pos = cellInfo ? activeContext[GRID_ENGINE].visualIndexOfColumn(cellInfo.colIndex) : -1
 	if (cellInfo && pos >= 0 && (cellInfo.rowIndex !== fillState.currentRowIndex || pos !== fillState.currentColIndex)) {
 		fillState.currentRowIndex = cellInfo.rowIndex
 		fillState.currentColIndex = pos
@@ -462,12 +463,12 @@ async function applyFill<T>(ctx: GridHost<T>): Promise<void> {
 	const { startRowIndex, startColIndex, currentRowIndex, currentColIndex, startField } = fillState
 
 	// Get the source cell value
-	const visualCols = ctx.engine.visualColumns
+	const visualCols = ctx[GRID_ENGINE].visualColumns
 	const sourceColumn = visualCols[startColIndex]?.column
 	if (!sourceColumn) return
 
 	// Use draft row if it exists (contains edited values), otherwise use display item
-	const sourceRow = ctx.engine.getRowDraft(startRowIndex) ?? ctx.engine.displayItems[startRowIndex]
+	const sourceRow = ctx[GRID_ENGINE].getRowDraft(startRowIndex) ?? ctx[GRID_ENGINE].displayItems[startRowIndex]
 	if (!sourceRow) return
 
 	const sourceValue = (sourceRow as Record<string, unknown>)[startField]
@@ -476,7 +477,7 @@ async function applyFill<T>(ctx: GridHost<T>): Promise<void> {
 	const direction = getDirection(startRowIndex, startColIndex, currentRowIndex, currentColIndex)
 
 	// Get effective fill direction (column-level override or grid-level)
-	const fillDirection = sourceColumn.fillDirection ?? ctx.engine.fillDirection
+	const fillDirection = sourceColumn.fillDirection ?? ctx[GRID_ENGINE].fillDirection
 
 	// Calculate target cells (excluding source cell)
 	const targetCells: Array<{ rowIndex: number; colIndex: number; field: string }> = []
@@ -500,7 +501,7 @@ async function applyFill<T>(ctx: GridHost<T>): Promise<void> {
 			const field = String(column.field)
 
 			// Check if cell is editable (column editability + row locking)
-			if (!ctx.engine.canEditCell(row, field)) continue
+			if (!ctx[GRID_ENGINE].canEditCell(row, field)) continue
 
 			// Check if source value is compatible with target column's editor type
 			if (!isValueCompatible(sourceValue, column)) continue
@@ -513,7 +514,7 @@ async function applyFill<T>(ctx: GridHost<T>): Promise<void> {
 	if (targetCells.length === 0) return
 
 	// ctx for beforeFillCallback
-	const detail = ctx.engine.ctx({
+	const detail = ctx[GRID_ENGINE].ctx({
 		sourceCell: {
 			rowIndex: startRowIndex,
 			colIndex: visualCols[startColIndex].originalIndex,
@@ -525,12 +526,12 @@ async function applyFill<T>(ctx: GridHost<T>): Promise<void> {
 	})
 
 	// beforeFillCallback: `false` cancels (async OK)
-	const gate = await runBeforeCallback(ctx.engine.beforeFillCallback, detail, 'beforeFillCallback')
+	const gate = await runBeforeCallback(ctx[GRID_ENGINE].beforeFillCallback, detail, 'beforeFillCallback')
 	if (gate.isRejected) return
 
 	// Apply the fill to each target cell
 	for (const target of targetCells) {
-		await ctx.engine.commitEdit(target.rowIndex, target.field, sourceValue)
+		await ctx[GRID_ENGINE].commitEdit(target.rowIndex, target.field, sourceValue)
 		// Re-render the cell to show the new value
 		renderCell(ctx, target.rowIndex, target.colIndex)
 	}

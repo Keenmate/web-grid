@@ -6,6 +6,7 @@
 import { escapeHtml } from '@keenmate/web-components-core'
 import type { Column } from '../../types.js'
 import type { GridHost } from '../grid-context.js'
+import { GRID_ENGINE } from '../grid-context.js'
 
 /**
  * Wrap cell content with tree indent + chevron when column is the tree column.
@@ -28,17 +29,17 @@ export function wrapTreeCell<T>(
 	item: T,
 	innerHtml: string
 ): string {
-	if (!column.isTree || !ctx.engine.isTreeMode) return innerHtml
-	const info = ctx.engine.getRowTreeInfo(item)
+	if (!column.isTree || !ctx[GRID_ENGINE].isTreeMode) return innerHtml
+	const info = ctx[GRID_ENGINE].getRowTreeInfo(item)
 	if (!info) return innerHtml
-	const isExpanded = ctx.engine.isPathExpanded(info.path)
+	const isExpanded = ctx[GRID_ENGINE].isPathExpanded(info.path)
 	const indentStyle = `padding-inline-start: calc(${info.level} * var(--wg-tree-indent))`
-	const chevronInner = ctx.engine.getTreeChevronHtml(item, isExpanded, info.hasChildren, info.level, info.path)
-	const shouldRotate = !ctx.engine.renderChevronCallback && ctx.engine.treeExpandedGlyph === ctx.engine.treeCollapsedGlyph
+	const chevronInner = ctx[GRID_ENGINE].getTreeChevronHtml(item, isExpanded, info.hasChildren, info.level, info.path)
+	const shouldRotate = !ctx[GRID_ENGINE].renderChevronCallback && ctx[GRID_ENGINE].treeExpandedGlyph === ctx[GRID_ENGINE].treeCollapsedGlyph
 	let chevron: string
 	if (info.hasChildren) {
 		const expandedClass = shouldRotate && isExpanded ? ' wg__tree-chevron--expanded' : ''
-		chevron = `<button type="button" class="wg__tree-chevron${expandedClass}" data-tree-toggle="${escapeHtml(info.path)}" tabindex="-1" aria-label="${escapeHtml(isExpanded ? ctx.engine.labels['ariaLabels.collapse'] : ctx.engine.labels['ariaLabels.expand'])}">${chevronInner}</button>`
+		chevron = `<button type="button" class="wg__tree-chevron${expandedClass}" data-tree-toggle="${escapeHtml(info.path)}" tabindex="-1" aria-label="${escapeHtml(isExpanded ? ctx[GRID_ENGINE].labels['ariaLabels.collapse'] : ctx[GRID_ENGINE].labels['ariaLabels.expand'])}">${chevronInner}</button>`
 	} else {
 		chevron = `<span class="wg__tree-leaf-spacer" aria-hidden="true">${chevronInner}</span>`
 	}

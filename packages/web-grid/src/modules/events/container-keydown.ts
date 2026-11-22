@@ -20,6 +20,7 @@ import type { GridHost } from '../grid-context.js'
 import { handleRangeShortcut } from '../items/index.js'
 import { removeRangeBorder, isRangeExtensionKey, extendCellRangeByKey } from '../cell-selection/index.js'
 import { prepareRowReveal, fieldAt } from '../scroll/reveal.js'
+import { GRID_ENGINE } from '../grid-context.js'
 
 /** Keys a focused cell answers that bring a focused row outside the virtual window back first. */
 const CELL_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'PageUp', 'PageDown', 'Enter', 'F2'])
@@ -32,13 +33,13 @@ const CELL_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'H
  * it. Returns true when the key was handled.
  */
 function handleOffWindowCellKey<T>(ctx: GridHost<T>, e: KeyboardEvent): boolean {
-	const focused = ctx.engine.focusedCell
-	if (!focused || ctx.engine.editingCell || !ctx.engine.shouldUseVirtualScroll()) return false
+	const focused = ctx[GRID_ENGINE].focusedCell
+	if (!focused || ctx[GRID_ENGINE].editingCell || !ctx[GRID_ENGINE].shouldUseVirtualScroll()) return false
 	const target = e.target as HTMLElement
 	if (!target.classList.contains('wg')) return false
 	if (ctx.shadow.querySelector(`td[data-row="${focused.rowIndex}"][data-col="${focused.colIndex}"]`)) return false
 
-	if (isRangeExtensionKey(e) && ctx.engine.cellSelectionMode !== 'none') {
+	if (isRangeExtensionKey(e) && ctx[GRID_ENGINE].cellSelectionMode !== 'none') {
 		e.preventDefault()
 		extendCellRangeByKey(ctx, e)
 		return true
@@ -101,9 +102,9 @@ export function handleContainerKeyDown<T>(ctx: GridHost<T>, e: KeyboardEvent): v
 	leaveGridOnContainerTab(e)
 	if (handleOffWindowCellKey(ctx, e)) return
 
-	const selectedRowIndices = ctx.engine.selectedRowIndices
-	const selectedColIndices = ctx.engine.selectedColumns
-	const hasCellRange = !!ctx.engine.selectedCellRange
+	const selectedRowIndices = ctx[GRID_ENGINE].selectedRowIndices
+	const selectedColIndices = ctx[GRID_ENGINE].selectedColumns
+	const hasCellRange = !!ctx[GRID_ENGINE].selectedCellRange
 	if (selectedRowIndices.length === 0 && selectedColIndices.length === 0 && !hasCellRange) return
 
 	// Skip if focus is in an input
@@ -115,13 +116,13 @@ export function handleContainerKeyDown<T>(ctx: GridHost<T>, e: KeyboardEvent): v
 	// Handle Escape to clear selection (cell range > column > row priority)
 	if (e.key === 'Escape') {
 		e.preventDefault()
-		if (ctx.engine.selectedCellRange) {
-			ctx.engine.clearCellSelection()
+		if (ctx[GRID_ENGINE].selectedCellRange) {
+			ctx[GRID_ENGINE].clearCellSelection()
 			removeRangeBorder()
 		} else if (selectedColIndices.length > 0) {
-			ctx.engine.clearColumnSelection()
+			ctx[GRID_ENGINE].clearColumnSelection()
 		} else {
-			ctx.engine.clearRowSelection()
+			ctx[GRID_ENGINE].clearRowSelection()
 		}
 		return
 	}
@@ -130,11 +131,11 @@ export function handleContainerKeyDown<T>(ctx: GridHost<T>, e: KeyboardEvent): v
 	if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
 		e.preventDefault()
 		if (hasCellRange) {
-			ctx.engine.copyCellSelectionToClipboard()
+			ctx[GRID_ENGINE].copyCellSelectionToClipboard()
 		} else if (selectedColIndices.length > 0) {
-			ctx.engine.copySelectedColumnsToClipboard()
+			ctx[GRID_ENGINE].copySelectedColumnsToClipboard()
 		} else if (selectedRowIndices.length > 0) {
-			ctx.engine.copySelectedRowsToClipboard()
+			ctx[GRID_ENGINE].copySelectedRowsToClipboard()
 		}
 		return
 	}
@@ -146,11 +147,11 @@ export function handleContainerKeyDown<T>(ctx: GridHost<T>, e: KeyboardEvent): v
 		// Cell range mode
 		rows: [],
 		rowIndices: [],
-		cellRange: ctx.engine.selectedCellRange!,
-		cells: ctx.engine.getSelectedCells()
+		cellRange: ctx[GRID_ENGINE].selectedCellRange!,
+		cells: ctx[GRID_ENGINE].getSelectedCells()
 	} : {
 		// Row selection mode
-		rows: ctx.engine.selectedRows,
+		rows: ctx[GRID_ENGINE].selectedRows,
 		rowIndices: selectedRowIndices
 	})
 }

@@ -24,6 +24,7 @@ import { removeRangeBorder } from '../cell-selection/index.js'
 import { removeRowSelectionBorders, removeColumnSelectionBorders } from '../selection-border/index.js'
 import { isReordering } from '../reorder/index.js'
 import { handleSortClick } from './sort.js'
+import { GRID_ENGINE } from '../grid-context.js'
 
 /**
  * outsideClick subscription body — tear-down on click outside the grid.
@@ -32,27 +33,27 @@ export function handleOutsideClick<T>(ctx: GridHost<T>): void {
 	let needsRender = false
 
 	// Clear focused cell state FIRST (before renderCell rebuilds it with focused class)
-	if (ctx.engine.focusedCell) {
-		const { rowIndex, colIndex } = ctx.engine.focusedCell
+	if (ctx[GRID_ENGINE].focusedCell) {
+		const { rowIndex, colIndex } = ctx[GRID_ENGINE].focusedCell
 		const cell = ctx.shadow.querySelector(
 			`.wg__cell[data-row="${rowIndex}"][data-col="${colIndex}"]`
 		)
 		cell?.classList.remove('wg__cell--focused', 'wg__cell--always-edit-focused')
-		ctx.engine.clearFocusedCell()
+		ctx[GRID_ENGINE].clearFocusedCell()
 	}
 
 	// Clear row focus
-	if (ctx.engine.focusedRowIndex !== null) {
-		ctx.engine.clearRowFocus()
+	if (ctx[GRID_ENGINE].focusedRowIndex !== null) {
+		ctx[GRID_ENGINE].clearRowFocus()
 		needsRender = true
 	}
 
 	// Close the dropdown and leave the edit — Excel: leaving a cell saves (the editor's value;
 	// a select without a pick changes nothing), unless shouldCommitOnClickAway is off
-	if (ctx.dropdown.isOpen || ctx.engine.editingCell) {
-		const oldEditingCell = ctx.engine.editingCell
+	if (ctx.dropdown.isOpen || ctx[GRID_ENGINE].editingCell) {
+		const oldEditingCell = ctx[GRID_ENGINE].editingCell
 		const oldColIndex = oldEditingCell
-			? ctx.engine.columns.findIndex(c => String(c.field) === oldEditingCell.field)
+			? ctx[GRID_ENGINE].columns.findIndex(c => String(c.field) === oldEditingCell.field)
 			: -1
 
 		removeDropdown(ctx)
@@ -65,17 +66,17 @@ export function handleOutsideClick<T>(ctx: GridHost<T>): void {
 		}
 	}
 
-	if (ctx.engine.selectedCellRange) {
-		ctx.engine.clearCellSelection()
+	if (ctx[GRID_ENGINE].selectedCellRange) {
+		ctx[GRID_ENGINE].clearCellSelection()
 		removeRangeBorder()
 		needsRender = true
 	}
-	if (ctx.engine.selectedRowIndices.length > 0) {
-		ctx.engine.clearRowSelection()
+	if (ctx[GRID_ENGINE].selectedRowIndices.length > 0) {
+		ctx[GRID_ENGINE].clearRowSelection()
 		needsRender = true
 	}
-	if (ctx.engine.selectedColumns.length > 0) {
-		ctx.engine.clearColumnSelection()
+	if (ctx[GRID_ENGINE].selectedColumns.length > 0) {
+		ctx[GRID_ENGINE].clearColumnSelection()
 		needsRender = true
 	}
 	if (needsRender) {
@@ -95,16 +96,16 @@ export function handleSortClickSubscription<T>(
 	// Skip if reordering was just performed (prevents sort on drop)
 	if (isReordering()) return
 	// Clear all selections when sorting
-	if (ctx.engine.selectedCellRange) {
-		ctx.engine.clearCellSelection()
+	if (ctx[GRID_ENGINE].selectedCellRange) {
+		ctx[GRID_ENGINE].clearCellSelection()
 		removeRangeBorder()
 	}
-	if (ctx.engine.selectedRowIndices.length > 0) {
-		ctx.engine.clearRowSelection()
+	if (ctx[GRID_ENGINE].selectedRowIndices.length > 0) {
+		ctx[GRID_ENGINE].clearRowSelection()
 		removeRowSelectionBorders()
 	}
-	if (ctx.engine.selectedColumns.length > 0) {
-		ctx.engine.clearColumnSelection()
+	if (ctx[GRID_ENGINE].selectedColumns.length > 0) {
+		ctx[GRID_ENGINE].clearColumnSelection()
 		removeColumnSelectionBorders()
 	}
 	// Pass field directly - subCtx.event.target is retargeted when crossing shadow DOM.

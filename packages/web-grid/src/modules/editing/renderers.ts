@@ -7,6 +7,7 @@ import { escapeHtml } from '@keenmate/web-components-core'
 import type { Column } from '../../types.js'
 import type { GridHost } from '../grid-context.js'
 import { getOptionDisplayValue, getOptionValue, withEmptyOption } from '../dropdown/index.js'
+import { GRID_ENGINE } from '../grid-context.js'
 
 /**
  * Render the appropriate editor for a cell. Every editor is `tabindex="-1"`: the grid is ONE
@@ -21,8 +22,8 @@ export function renderCellEditor<T>(
 	column: Column<T>
 ): string {
 	const field = String(column.field)
-	const item = ctx.engine.displayItems[rowIndex]
-	const currentValue = ctx.engine.getCellRawValue(item, rowIndex, field)
+	const item = ctx[GRID_ENGINE].displayItems[rowIndex]
+	const currentValue = ctx[GRID_ENGINE].getCellRawValue(item, rowIndex, field)
 	const editor = column.editor || 'text'
 
 	switch (editor) {
@@ -65,7 +66,7 @@ export function renderTextEditor<T>(
 	column: Column<T>
 ): string {
 	const opts = column.editorOptions || {}
-	const initialQuery = ctx.engine.editingCell?.initialSearchQuery
+	const initialQuery = ctx[GRID_ENGINE].editingCell?.initialSearchQuery
 	// If user typed a character to start editing, use that as initial value
 	const strValue = initialQuery !== undefined ? initialQuery : (value != null ? String(value) : '')
 	const vAlignClass = getVerticalAlignClass(column)
@@ -95,10 +96,10 @@ export function renderNumberEditor<T>(
 	column: Column<T>
 ): string {
 	const opts = column.editorOptions || {}
-	const initialQuery = ctx.engine.editingCell?.initialSearchQuery
+	const initialQuery = ctx[GRID_ENGINE].editingCell?.initialSearchQuery
 	// If user typed a digit to start editing, use that as initial value; else the value in the
 	// grid's locale without grouping (`1234,50` in `de` / `cs`) — parsed back the same way on commit
-	const numValue = initialQuery !== undefined ? initialQuery : (value != null ? ctx.engine.formatNumberValue(value, column, false) : '')
+	const numValue = initialQuery !== undefined ? initialQuery : (value != null ? ctx[GRID_ENGINE].formatNumberValue(value, column, false) : '')
 	const vAlignClass = getVerticalAlignClass(column)
 
 	// type="text" keeps caret control; min / max / step mirror the editorOptions for
@@ -133,7 +134,7 @@ export function renderDateEditor<T>(
 	column: Column<T>
 ): string {
 	const opts = column.editorOptions || {}
-	const initialQuery = ctx.engine.editingCell?.initialSearchQuery
+	const initialQuery = ctx[GRID_ENGINE].editingCell?.initialSearchQuery
 
 	// Convert value to display format
 	const dateValue = toDateInputValue(value)
@@ -261,8 +262,8 @@ export function renderSelectEditor<T>(
 ): string {
 	const opts = column.editorOptions || {}
 	const displayValue = getOptionDisplayValue(value, opts.options || [], opts)
-	const options = withEmptyOption(opts.options || [], opts, opts.labels?.['labels.emptyOption'] ?? ctx.engine.labels['labels.emptyOption'])
-	const initialQuery = ctx.engine.editingCell?.initialSearchQuery
+	const options = withEmptyOption(opts.options || [], opts, opts.labels?.['labels.emptyOption'] ?? ctx[GRID_ENGINE].labels['labels.emptyOption'])
+	const initialQuery = ctx[GRID_ENGINE].editingCell?.initialSearchQuery
 
 	// Initialize dropdown options for select
 	ctx.dropdown.setOptions(options)
@@ -301,8 +302,8 @@ export function renderComboboxEditor<T>(
 ): string {
 	const opts = column.editorOptions || {}
 	const displayValue = getOptionDisplayValue(value, opts.options || [], opts)
-	const initialQuery = ctx.engine.editingCell?.initialSearchQuery
-	const options = initialQuery ? (opts.options || []) : withEmptyOption(opts.options || [], opts, opts.labels?.['labels.emptyOption'] ?? ctx.engine.labels['labels.emptyOption'])
+	const initialQuery = ctx[GRID_ENGINE].editingCell?.initialSearchQuery
+	const options = initialQuery ? (opts.options || []) : withEmptyOption(opts.options || [], opts, opts.labels?.['labels.emptyOption'] ?? ctx[GRID_ENGINE].labels['labels.emptyOption'])
 
 	// If user typed a character to start editing, use that as initial value
 	const inputValue = initialQuery !== undefined ? initialQuery : displayValue
@@ -338,8 +339,8 @@ export function renderAutocompleteEditor<T>(
 ): string {
 	const opts = column.editorOptions || {}
 	const displayValue = getOptionDisplayValue(value, opts.initialOptions || opts.options || [], opts)
-	const initialQuery = ctx.engine.editingCell?.initialSearchQuery
-	const initialOptions = initialQuery ? (opts.initialOptions || opts.options || []) : withEmptyOption(opts.initialOptions || opts.options || [], opts, opts.labels?.['labels.emptyOption'] ?? ctx.engine.labels['labels.emptyOption'])
+	const initialQuery = ctx[GRID_ENGINE].editingCell?.initialSearchQuery
+	const initialOptions = initialQuery ? (opts.initialOptions || opts.options || []) : withEmptyOption(opts.initialOptions || opts.options || [], opts, opts.labels?.['labels.emptyOption'] ?? ctx[GRID_ENGINE].labels['labels.emptyOption'])
 
 	// If user typed a character to start editing, use that as initial value
 	const inputValue = initialQuery !== undefined ? initialQuery : displayValue
@@ -377,9 +378,9 @@ export function renderCustomEditor<T>(
 	column: Column<T>
 ): string {
 	// Format the display value
-	const row = ctx.engine.displayItems[rowIndex]
+	const row = ctx[GRID_ENGINE].displayItems[rowIndex]
 	const displayValue = column.getDisplayValueCallback && row !== undefined
-		? column.getDisplayValueCallback(Object.assign(ctx.engine.cellCtx(row, rowIndex, column), { value }))
+		? column.getDisplayValueCallback(Object.assign(ctx[GRID_ENGINE].cellCtx(row, rowIndex, column), { value }))
 		: (value != null ? String(value) : '')
 
 	return `

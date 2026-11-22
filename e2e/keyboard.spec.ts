@@ -14,7 +14,7 @@ import { test, expect, type Page, gridLocator, cell, onGrid, domEvents, clearEve
 const PAGE = '/test/keyboard.html'
 
 const focused = (page: Page) => onGrid(page, el => {
-	const f = el.engine.focusedCell
+	const f = el[Symbol.for('@keenmate/web-grid:engine')].focusedCell
 	return f ? [f.rowIndex, f.colIndex] : null
 })
 const gotoDialog = (page: Page) => gridLocator(page).locator('.wg__goto-dialog')

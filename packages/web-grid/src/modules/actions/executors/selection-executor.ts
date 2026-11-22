@@ -11,6 +11,7 @@ import { removeRowSelectionBorders, removeColumnSelectionBorders } from '../../s
 import { removeFillHandle } from '../../fill-handle/index.js'
 import { interactionLogger } from '../../../logger.js'
 import { syncSelectedAria } from '../../rendering/aria.js'
+import { GRID_ENGINE } from '../../grid-context.js'
 
 /**
  * Selection executor - handles selection actions
@@ -40,25 +41,25 @@ function executeSelectRow(ctx: ExecutorContext, action: SelectRowAction): void {
 	const { rowIndex, addToSelection, extendSelection } = action
 
 	// Clear other selection types
-	if (ctx.engine.selectedColumns.length > 0) {
-		ctx.engine.clearColumnSelection()
+	if (ctx[GRID_ENGINE].selectedColumns.length > 0) {
+		ctx[GRID_ENGINE].clearColumnSelection()
 	}
-	if (ctx.engine.selectedCellRange) {
-		ctx.engine.clearCellSelection()
+	if (ctx[GRID_ENGINE].selectedCellRange) {
+		ctx[GRID_ENGINE].clearCellSelection()
 		removeRangeBorder()
 		removeFillHandle()
 		updateCellRangeVisual(ctx)
 	}
 
-	if (extendSelection && ctx.engine.selectedRowIndices.length > 0) {
+	if (extendSelection && ctx[GRID_ENGINE].selectedRowIndices.length > 0) {
 		// Extend selection from last selected row to this row
-		ctx.engine.selectRow(rowIndex, 'range')
+		ctx[GRID_ENGINE].selectRow(rowIndex, 'range')
 	} else if (addToSelection) {
 		// Toggle this row in selection
-		ctx.engine.selectRow(rowIndex, 'toggle')
+		ctx[GRID_ENGINE].selectRow(rowIndex, 'toggle')
 	} else {
 		// Single row selection (replace existing)
-		ctx.engine.selectRow(rowIndex, 'replace')
+		ctx[GRID_ENGINE].selectRow(rowIndex, 'replace')
 	}
 
 	// Update visual
@@ -72,25 +73,25 @@ function executeSelectColumn(ctx: ExecutorContext, action: SelectColumnAction): 
 	const { colIndex, addToSelection, extendSelection } = action
 
 	// Clear other selection types
-	if (ctx.engine.selectedRowIndices.length > 0) {
-		ctx.engine.clearRowSelection()
+	if (ctx[GRID_ENGINE].selectedRowIndices.length > 0) {
+		ctx[GRID_ENGINE].clearRowSelection()
 	}
-	if (ctx.engine.selectedCellRange) {
-		ctx.engine.clearCellSelection()
+	if (ctx[GRID_ENGINE].selectedCellRange) {
+		ctx[GRID_ENGINE].clearCellSelection()
 		removeRangeBorder()
 		removeFillHandle()
 		updateCellRangeVisual(ctx)
 	}
 
-	if (extendSelection && ctx.engine.selectedColumns.length > 0) {
+	if (extendSelection && ctx[GRID_ENGINE].selectedColumns.length > 0) {
 		// Extend selection from last selected column to this column
-		ctx.engine.selectColumn(colIndex, 'range')
+		ctx[GRID_ENGINE].selectColumn(colIndex, 'range')
 	} else if (addToSelection) {
 		// Toggle this column in selection
-		ctx.engine.selectColumn(colIndex, 'toggle')
+		ctx[GRID_ENGINE].selectColumn(colIndex, 'toggle')
 	} else {
 		// Single column selection (replace existing)
-		ctx.engine.selectColumn(colIndex, 'replace')
+		ctx[GRID_ENGINE].selectColumn(colIndex, 'replace')
 	}
 
 	// Update visual
@@ -101,35 +102,35 @@ function executeSelectColumn(ctx: ExecutorContext, action: SelectColumnAction): 
  * Clear all selections
  */
 function executeClearSelection(ctx: ExecutorContext): void {
-	interactionLogger.debug('[clearSelection] rows:', ctx.engine.selectedRowIndices.length,
-		'cols:', ctx.engine.selectedColumns.length,
-		'cellRange:', !!ctx.engine.selectedCellRange)
+	interactionLogger.debug('[clearSelection] rows:', ctx[GRID_ENGINE].selectedRowIndices.length,
+		'cols:', ctx[GRID_ENGINE].selectedColumns.length,
+		'cellRange:', !!ctx[GRID_ENGINE].selectedCellRange)
 	// Use _noRender variants to prevent requestUpdate() from triggering a full re-render
 	// which would replace DOM elements and lose focus (we handle visuals surgically below)
 
 	// Clear row selection
-	if (ctx.engine.selectedRowIndices.length > 0) {
+	if (ctx[GRID_ENGINE].selectedRowIndices.length > 0) {
 		interactionLogger.debug('[clearSelection] clearing rows')
-		ctx.engine.clearRowSelection_noRender()
+		ctx[GRID_ENGINE].clearRowSelection_noRender()
 		removeRowSelectionBorders()
 		updateRowSelectionVisual(ctx)
 	}
 
 	// Clear column selection
-	if (ctx.engine.selectedColumns.length > 0) {
+	if (ctx[GRID_ENGINE].selectedColumns.length > 0) {
 		interactionLogger.debug('[clearSelection] clearing columns, removing visual classes')
-		ctx.engine.clearColumnSelection_noRender()
+		ctx[GRID_ENGINE].clearColumnSelection_noRender()
 		removeColumnSelectionBorders()
 		updateColumnSelectionVisual(ctx)
-		interactionLogger.debug('[clearSelection] after clear, selectedColumns:', ctx.engine.selectedColumns.length)
+		interactionLogger.debug('[clearSelection] after clear, selectedColumns:', ctx[GRID_ENGINE].selectedColumns.length)
 		// Verify DOM was updated
 		const remaining = ctx.shadow.querySelectorAll('.wg__header--selected')
 		interactionLogger.debug('[clearSelection] remaining header--selected elements:', remaining.length)
 	}
 
 	// Clear cell range selection
-	if (ctx.engine.selectedCellRange) {
-		ctx.engine.clearCellSelection_noRender()
+	if (ctx[GRID_ENGINE].selectedCellRange) {
+		ctx[GRID_ENGINE].clearCellSelection_noRender()
 		removeRangeBorder()
 		// Remove fill handle that was hidden by CSS while range border existed
 		// (without this, the old fill handle becomes visible at its stale position)
@@ -147,7 +148,7 @@ function updateRowSelectionVisual(ctx: ExecutorContext): void {
 	selectedRowIndices.forEach(row => row.classList.remove('wg__row--selected'))
 
 	// Add class to selected rows
-	for (const rowIndex of ctx.engine.selectedRowIndices) {
+	for (const rowIndex of ctx[GRID_ENGINE].selectedRowIndices) {
 		const row = ctx.shadow.querySelector(`tr[data-row-index="${rowIndex}"]`)
 		if (row) {
 			row.classList.add('wg__row--selected')
@@ -169,8 +170,8 @@ function updateColumnSelectionVisual(ctx: ExecutorContext): void {
 
 	// Add class to selected column cells and headers (selection = visual positions;
 	// cells are addressed by column index / data-col, headers by field)
-	const visualCols = ctx.engine.visualColumns
-	for (const pos of ctx.engine.selectedColumnPositions) {
+	const visualCols = ctx[GRID_ENGINE].visualColumns
+	for (const pos of ctx[GRID_ENGINE].selectedColumnPositions) {
 		const entry = visualCols[pos]
 		if (!entry) continue
 		const cells = ctx.shadow.querySelectorAll(`.wg__cell[data-col="${entry.originalIndex}"]`)
@@ -193,7 +194,7 @@ function updateCellRangeVisual(ctx: ExecutorContext): void {
 	inRangeCells.forEach(cell => cell.classList.remove('wg__cell--in-range'))
 
 	// Add class to cells in range
-	const range = ctx.engine.selectedCellRange
+	const range = ctx[GRID_ENGINE].selectedCellRange
 	if (!range) {
 		syncSelectedAria(ctx)
 		return
@@ -206,7 +207,7 @@ function updateCellRangeVisual(ctx: ExecutorContext): void {
 	const maxCol = Math.max(startColIndex, endColIndex)
 
 	// The range spans visual positions; cells are addressed by column index (data-col)
-	const visualCols = ctx.engine.visualColumns
+	const visualCols = ctx[GRID_ENGINE].visualColumns
 	for (let row = minRow; row <= maxRow; row++) {
 		for (let pos = minCol; pos <= maxCol; pos++) {
 			const col = visualCols[pos]?.originalIndex

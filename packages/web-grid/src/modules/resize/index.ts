@@ -4,6 +4,7 @@
 
 import { createPointerDrag, type PointerDrag } from '@keenmate/web-components-core'
 import type { GridHost } from '../grid-context.js'
+import { GRID_ENGINE } from '../grid-context.js'
 
 /** An active resize (the pointer drag's state). */
 interface ResizeState {
@@ -36,7 +37,7 @@ function previewWidth<T>(ctx: GridHost<T>, state: ResizeState, width: number): v
 	state.headerCell.style.width = `${width}px`
 	state.headerCell.style.maxWidth = `${width}px`
 	updateAllColumnCells(ctx, state.field, `${width}px`)
-	if (ctx.engine.frozenColumnCount > 0 || ctx.engine.isStickyRowNumbers) updateFrozenColumnOffsets(ctx)
+	if (ctx[GRID_ENGINE].frozenColumnCount > 0 || ctx[GRID_ENGINE].isStickyRowNumbers) updateFrozenColumnOffsets(ctx)
 }
 
 /** Drop the resizing classes. */
@@ -60,7 +61,7 @@ export function createColumnResize<T>(ctx: GridHost<T>, host: HTMLElement): Poin
 			const handle = (event.composedPath()[0] as Element | undefined)?.closest?.('.wg__resize-handle') as HTMLElement | null
 			const field = handle?.dataset.field
 			const headerCell = handle?.closest('.wg__header') as HTMLElement | null
-			const column = field ? ctx.engine.columns.find(c => String(c.field) === field) : undefined
+			const column = field ? ctx[GRID_ENGINE].columns.find(c => String(c.field) === field) : undefined
 			if (!handle || !field || !headerCell || !column || column.isResizable === false) return null
 			state = {
 				originX: event.clientX,
@@ -88,19 +89,19 @@ export function createColumnResize<T>(ctx: GridHost<T>, host: HTMLElement): Poin
 			const newWidthStr = `${widthAt(state, x)}px`
 			state = null
 			// Store the width in grid state (skip re-render since we already updated inline styles)
-			ctx.engine.setColumnWidth(field, newWidthStr, true)
+			ctx[GRID_ENGINE].setColumnWidth(field, newWidthStr, true)
 			// Update the <col> element in colgroup for table-layout: fixed
 			const col = ctx.shadow.querySelector(`col[data-field="${field}"]`) as HTMLElement | null
 			if (col) col.style.width = newWidthStr
 			endResizeVisuals(ctx)
-			ctx.engine.notify('column-resize', {
+			ctx[GRID_ENGINE].notify('column-resize', {
 				field,
 				oldWidth: `${startWidth}px`,
 				newWidth: newWidthStr,
-				allWidths: ctx.engine.getColumnWidthsState()
+				allWidths: ctx[GRID_ENGINE].getColumnWidthsState()
 			})
 			// Persisted UI state (storage-key + persist-column-widths; core state store)
-			if (ctx.engine.shouldPersistColumnWidths) ctx.engine.savePersistedState()
+			if (ctx[GRID_ENGINE].shouldPersistColumnWidths) ctx[GRID_ENGINE].savePersistedState()
 		},
 		onCancel: () => {
 			// Escape / a cancelled pointer: back to the width it had
@@ -131,12 +132,12 @@ const ROW_NUMBER_COLUMN_WIDTH = 40
  * Recalculates cumulative offsets based on current widths
  */
 function updateFrozenColumnOffsets<T>(ctx: GridHost<T>): void {
-	const frozenCount = ctx.engine.frozenColumnCount
-	const hasRowNumbers = ctx.engine.isRowNumbersShown && ctx.engine.isStickyRowNumbers
+	const frozenCount = ctx[GRID_ENGINE].frozenColumnCount
+	const hasRowNumbers = ctx[GRID_ENGINE].isRowNumbersShown && ctx[GRID_ENGINE].isStickyRowNumbers
 	let offset = hasRowNumbers ? ROW_NUMBER_COLUMN_WIDTH : 0
 
 	// Get visual columns (already sorted with frozen first)
-	const visualColumns = ctx.engine.visualColumns
+	const visualColumns = ctx[GRID_ENGINE].visualColumns
 
 	// Update each frozen column's left position
 	for (let i = 0; i < frozenCount && i < visualColumns.length; i++) {
@@ -167,9 +168,9 @@ export function applyStoredColumnWidths<T>(ctx: GridHost<T>): void {
 	const colgroup = ctx.shadow.querySelector('.wg__colgroup')
 	if (!colgroup) return
 
-	for (const column of ctx.engine.columns) {
+	for (const column of ctx[GRID_ENGINE].columns) {
 		const fieldStr = String(column.field)
-		const storedWidth = ctx.engine.getColumnWidth(fieldStr)
+		const storedWidth = ctx[GRID_ENGINE].getColumnWidth(fieldStr)
 		if (storedWidth) {
 			const col = colgroup.querySelector(`col[data-field="${fieldStr}"]`) as HTMLElement
 			if (col) {

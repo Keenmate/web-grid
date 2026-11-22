@@ -11,6 +11,7 @@ import { renderCellDisplay } from './display.js'
 import { wrapTreeCell } from './tree-render.js'
 import { dataRowAttrs, headerRowCount, headerSortAttr, isCellSelectable, isFilterRowVisible, leadColumnCount } from './aria.js'
 import { renderTriggerButton, getActiveToolbarRowIndex, maxToolbarRowLength, resolveToolbar, renderToolbarButton } from '../toolbar/index.js'
+import { GRID_ENGINE } from '../grid-context.js'
 
 // Default row number column width (must match CSS: 40px with box-sizing: border-box)
 const ROW_NUMBER_COLUMN_WIDTH = 40
@@ -42,15 +43,15 @@ function parseColumnWidth(width: string | undefined): number {
  */
 export function getContainerClasses<T>(ctx: GridHost<T>): string {
 	const classes = ['wg']
-	if (ctx.engine.isStriped) classes.push('wg--striped')
-	if (ctx.engine.isHoverable) classes.push('wg--hoverable')
-	if (ctx.engine.isEffectivelyEditable) classes.push('wg--editable')
-	if (ctx.engine.isReadonly) classes.push('wg--readonly')
-	if (ctx.engine.isDisabled) classes.push('wg--disabled')
-	if (ctx.engine.isNavigateMode) classes.push('wg--navigate-mode')
-	if (ctx.engine.isColumnReorderAllowed) classes.push('wg--reorderable')
-	if (ctx.engine.isScrollable) classes.push('wg--scrollable')
-	if (ctx.engine.isTableBorderOnly) classes.push('wg--table-border-only')
+	if (ctx[GRID_ENGINE].isStriped) classes.push('wg--striped')
+	if (ctx[GRID_ENGINE].isHoverable) classes.push('wg--hoverable')
+	if (ctx[GRID_ENGINE].isEffectivelyEditable) classes.push('wg--editable')
+	if (ctx[GRID_ENGINE].isReadonly) classes.push('wg--readonly')
+	if (ctx[GRID_ENGINE].isDisabled) classes.push('wg--disabled')
+	if (ctx[GRID_ENGINE].isNavigateMode) classes.push('wg--navigate-mode')
+	if (ctx[GRID_ENGINE].isColumnReorderAllowed) classes.push('wg--reorderable')
+	if (ctx[GRID_ENGINE].isScrollable) classes.push('wg--scrollable')
+	if (ctx[GRID_ENGINE].isTableBorderOnly) classes.push('wg--table-border-only')
 	return classes.join(' ')
 }
 
@@ -58,7 +59,7 @@ export function getContainerClasses<T>(ctx: GridHost<T>): string {
  * Render header row
  */
 export function renderHeaderRow<T>(ctx: GridHost<T>): string {
-	const visualColumns = ctx.engine.visualColumns
+	const visualColumns = ctx[GRID_ENGINE].visualColumns
 	if (visualColumns.length === 0) return ''
 
 	// Track cumulative offset for sticky positioning
@@ -68,8 +69,8 @@ export function renderHeaderRow<T>(ctx: GridHost<T>): string {
 	// column with `column.isFilterable` (v1: text). Built in the same pass so the
 	// frozen offsets and widths match the header.
 	const isFilterRowShown = isFilterRowVisible(ctx)
-	const filters = isFilterRowShown ? ctx.engine.filters : {}
-	const invalidFilterFields = isFilterRowShown ? ctx.engine.getInvalidFilterFields() : new Set<string>()
+	const filters = isFilterRowShown ? ctx[GRID_ENGINE].filters : {}
+	const invalidFilterFields = isFilterRowShown ? ctx[GRID_ENGINE].getInvalidFilterFields() : new Set<string>()
 	let filterLeadHtml = ''
 	const filterCells: string[] = []
 	// ARIA column position (1-based) of the lead columns; data columns follow them
@@ -78,8 +79,8 @@ export function renderHeaderRow<T>(ctx: GridHost<T>): string {
 
 	// Row number column (may be sticky)
 	let rowNumberColumnHtml = ''
-	if (ctx.engine.isRowNumbersShown) {
-		const isSticky = ctx.engine.isStickyRowNumbers
+	if (ctx[GRID_ENGINE].isRowNumbersShown) {
+		const isSticky = ctx[GRID_ENGINE].isStickyRowNumbers
 		const stickyStyle = isSticky
 			? `position: sticky; left: 0; z-index: 4;`
 			: ''
@@ -92,22 +93,22 @@ export function renderHeaderRow<T>(ctx: GridHost<T>): string {
 	}
 
 	// Inline actions column (toolbarPosition="inline")
-	const showInlineActions = ctx.engine.isRowToolbarShown && ctx.engine.toolbarPosition === 'inline'
+	const showInlineActions = ctx[GRID_ENGINE].isRowToolbarShown && ctx[GRID_ENGINE].toolbarPosition === 'inline'
 	let inlineActionsHeaderHtml = ''
 	if (showInlineActions) {
 		// Compute column width from max button count per toolbar row
 		// Each button is --wg-toolbar-btn-min-width (2.4rem), gap is 0.2rem, cell padding is ~spacing-sm each side
-		const maxBtns = Math.max(1, maxToolbarRowLength(ctx.engine.rowToolbar))
+		const maxBtns = Math.max(1, maxToolbarRowLength(ctx[GRID_ENGINE].rowToolbar))
 		// Width = buttons * btnWidth + (buttons-1) * gap + 2 * paddingSm
 		// Using calc with CSS vars so it respects theming
 		const colWidth = `calc(${maxBtns} * var(--wg-toolbar-btn-min-width) + ${Math.max(0, maxBtns - 1)} * var(--wg-inline-actions-gap) + 2 * var(--wg-spacing-sm))`
 		leadColIndex++
-		inlineActionsHeaderHtml = `<th class="wg__header wg__inline-actions-header" style="width: ${colWidth}" role="columnheader" aria-colindex="${leadColIndex}">${ctx.engine.labelHtml('columnHeaders.inlineActions')}</th>`
+		inlineActionsHeaderHtml = `<th class="wg__header wg__inline-actions-header" style="width: ${colWidth}" role="columnheader" aria-colindex="${leadColIndex}">${ctx[GRID_ENGINE].labelHtml('columnHeaders.inlineActions')}</th>`
 		filterLeadHtml += `<th class="wg__filter-cell" role="gridcell" aria-colindex="${leadColIndex}"></th>`
 	}
 
 	// Actions column for button trigger mode (floating toolbar trigger)
-	const showActionsColumn = ctx.engine.isRowToolbarShown && ctx.engine.toolbarTrigger === 'button' && ctx.engine.toolbarPosition !== 'inline'
+	const showActionsColumn = ctx[GRID_ENGINE].isRowToolbarShown && ctx[GRID_ENGINE].toolbarTrigger === 'button' && ctx[GRID_ENGINE].toolbarPosition !== 'inline'
 	if (showActionsColumn) leadColIndex++
 	const actionsColumnHtml = showActionsColumn
 		? `<th class="wg__header wg__actions-column" role="columnheader" aria-colindex="${leadColIndex}"></th>`
@@ -116,15 +117,15 @@ export function renderHeaderRow<T>(ctx: GridHost<T>): string {
 
 	const headerCells = visualColumns.map(({ column, originalIndex }, visualIndex) => {
 		const field = String(column.field)
-		const isSortable = column.isSortable !== false && ctx.engine.sortMode !== 'none'
-		const sortState = ctx.engine.getColumnSortState(field)
-		const sortPriority = ctx.engine.getColumnSortPriority(field)
+		const isSortable = column.isSortable !== false && ctx[GRID_ENGINE].sortMode !== 'none'
+		const sortState = ctx[GRID_ENGINE].getColumnSortState(field)
+		const sortPriority = ctx[GRID_ENGINE].getColumnSortPriority(field)
 		const isSorted = sortState !== undefined
-		const isFrozen = ctx.engine.isColumnFrozen(visualIndex)
-		const isLastFrozen = isFrozen && visualIndex === ctx.engine.totalFrozenColumns - 1
+		const isFrozen = ctx[GRID_ENGINE].isColumnFrozen(visualIndex)
+		const isLastFrozen = isFrozen && visualIndex === ctx[GRID_ENGINE].totalFrozenColumns - 1
 
 		// Check if column is selected
-		const isColumnSelected = ctx.engine.isColumnPositionSelected(visualIndex)
+		const isColumnSelected = ctx[GRID_ENGINE].isColumnPositionSelected(visualIndex)
 
 		const classes = ['wg__header']
 		if (isSortable) classes.push('wg__header--sortable')
@@ -135,7 +136,7 @@ export function renderHeaderRow<T>(ctx: GridHost<T>): string {
 
 		// Calculate column width for offset tracking
 		// Use runtime width override if set (from column resize), otherwise column definition
-		const runtimeWidth = ctx.engine.getColumnWidth(field)
+		const runtimeWidth = ctx[GRID_ENGINE].getColumnWidth(field)
 		const colWidth = runtimeWidth || column.width || column.maxWidth
 		const parsedWidth = parseColumnWidth(colWidth)
 
@@ -143,7 +144,7 @@ export function renderHeaderRow<T>(ctx: GridHost<T>): string {
 		// Only use explicit minWidth (allows resizing below original width)
 		// Fall back to grid-level columnMinWidth when column has no explicit minWidth
 		// Add max-width equal to width to enforce column width for text-overflow
-		const effectiveMinWidth = column.minWidth ?? ctx.engine.columnMinWidth
+		const effectiveMinWidth = column.minWidth ?? ctx[GRID_ENGINE].columnMinWidth
 		const hAlign = column.headerHorizontalAlign || column.horizontalAlign || 'left'
 		const vAlign = column.headerVerticalAlign || column.verticalAlign || 'middle'
 		const styleProps = [
@@ -169,7 +170,7 @@ export function renderHeaderRow<T>(ctx: GridHost<T>): string {
 			if (column.isFilterable) {
 				const isInvalid = invalidFilterFields.has(field)
 				const value = ctx.filterInputText(field) ?? filters[field] ?? ''
-				const label = ctx.engine.labelText('ariaLabels.filterColumn', { column: column.title ?? field })
+				const label = ctx[GRID_ENGINE].labelText('ariaLabels.filterColumn', { column: column.title ?? field })
 				filterCells.push(`<th class="wg__filter-cell${frozenClass}" style="${filterStyle}" data-field="${escapeHtml(field)}" role="gridcell" aria-colindex="${leadCount + visualIndex + 1}"><input type="text" class="wg__filter-input${isInvalid ? ' wg__filter-input--invalid' : ''}" data-field="${escapeHtml(field)}" value="${escapeHtml(value)}" aria-label="${escapeHtml(label)}"${isInvalid ? ' aria-invalid="true"' : ''} autocomplete="off" spellcheck="false"></th>`)
 			} else {
 				filterCells.push(`<th class="wg__filter-cell${frozenClass}" style="${filterStyle}" role="gridcell" aria-colindex="${leadCount + visualIndex + 1}"></th>`)
@@ -186,7 +187,7 @@ export function renderHeaderRow<T>(ctx: GridHost<T>): string {
 			if (isSorted) {
 				const arrow = sortState.direction === 'asc' ? '▲' : '▼'
 				// Show priority number for multi-column sort (only if more than one column is sorted)
-				const priorityLabel = ctx.engine.sort.length > 1 ? `<sup class="wg__sort-priority">${sortPriority}</sup>` : ''
+				const priorityLabel = ctx[GRID_ENGINE].sort.length > 1 ? `<sup class="wg__sort-priority">${sortPriority}</sup>` : ''
 				sortIndicator = `<span class="wg__sort-indicator">${arrow}${priorityLabel}</span>`
 			} else {
 				sortIndicator = `<span class="wg__sort-indicator wg__sort-placeholder">⬍</span>`
@@ -228,10 +229,10 @@ export function renderHeaderRow<T>(ctx: GridHost<T>): string {
  * rows exist (or a filter is active) but nothing matched, else `messages.noData`.
  */
 function renderEmptyRow<T>(ctx: GridHost<T>, colspan: number): string {
-	const hasActiveFilter = Object.values(ctx.engine.filters).some(v => !!v)
+	const hasActiveFilter = Object.values(ctx[GRID_ENGINE].filters).some(v => !!v)
 	// Content: the label is markup (core labels.html — `shouldEscapeLabels` escapes it)
-	const html = ctx.engine.labelHtml(ctx.engine.items.length > 0 || hasActiveFilter ? 'messages.noResults' : 'messages.noData')
-	const kind = ctx.engine.items.length > 0 || hasActiveFilter ? 'no-results' : 'no-data'
+	const html = ctx[GRID_ENGINE].labelHtml(ctx[GRID_ENGINE].items.length > 0 || hasActiveFilter ? 'messages.noResults' : 'messages.noData')
+	const kind = ctx[GRID_ENGINE].items.length > 0 || hasActiveFilter ? 'no-results' : 'no-data'
 	return `
 			<tr role="row" aria-rowindex="${headerRowCount(ctx) + 1}">
 				<td class="wg__empty" colspan="${colspan}" data-empty="${kind}" role="gridcell" aria-colindex="1">${html}</td>
@@ -247,8 +248,8 @@ function renderEmptyRow<T>(ctx: GridHost<T>, colspan: number): string {
  * aria-hidden.
  */
 export function renderLoadingMoreRow<T>(ctx: GridHost<T>): string {
-	if (!ctx.virtualScroll.isLoadingMore || !ctx.engine.labels['messages.loading']) return ''
-	return `<tr class="wg__loading-more-row" role="row"><td class="wg__loading-more" colspan="999" role="gridcell"><span class="wg__loading-more-indicator"></span><span class="wg__loading-more-text" aria-hidden="true">${ctx.engine.labelHtml('messages.loading')}</span></td></tr>`
+	if (!ctx.virtualScroll.isLoadingMore || !ctx[GRID_ENGINE].labels['messages.loading']) return ''
+	return `<tr class="wg__loading-more-row" role="row"><td class="wg__loading-more" colspan="999" role="gridcell"><span class="wg__loading-more-indicator"></span><span class="wg__loading-more-text" aria-hidden="true">${ctx[GRID_ENGINE].labelHtml('messages.loading')}</span></td></tr>`
 }
 
 /**
@@ -257,9 +258,9 @@ export function renderLoadingMoreRow<T>(ctx: GridHost<T>): string {
  */
 export function cellAriaAttrs<T>(ctx: GridHost<T>, rowIndex: number, visualIndex: number, isEditable: boolean): string {
 	let attrs = ''
-	if (ctx.engine.isEffectivelyEditable && !isEditable) attrs += 'aria-readonly="true" '
+	if (ctx[GRID_ENGINE].isEffectivelyEditable && !isEditable) attrs += 'aria-readonly="true" '
 	if (isCellSelectable(ctx)) {
-		const isSelected = ctx.engine.isCellInSelectedRange(rowIndex, visualIndex) || ctx.engine.isColumnPositionSelected(visualIndex)
+		const isSelected = ctx[GRID_ENGINE].isCellInSelectedRange(rowIndex, visualIndex) || ctx[GRID_ENGINE].isColumnPositionSelected(visualIndex)
 		attrs += `aria-selected="${isSelected}"`
 	}
 	return attrs
@@ -275,23 +276,23 @@ export function cellAriaAttrs<T>(ctx: GridHost<T>, rowIndex: number, visualIndex
  * navigation's syncTabStop() gives it to the first rendered cell.
  */
 function cellTabindexAttr<T>(ctx: GridHost<T>, rowIndex: number, colIndex: number): string {
-	const stop = ctx.engine.tabStopCell
+	const stop = ctx[GRID_ENGINE].tabStopCell
 	return stop && stop.rowIndex === rowIndex && stop.colIndex === colIndex ? 'tabindex="0"' : 'tabindex="-1"'
 }
 
 export function renderDataRows<T>(ctx: GridHost<T>): string {
-	const items = ctx.engine.displayItems
-	const visualColumns = ctx.engine.visualColumns
+	const items = ctx[GRID_ENGINE].displayItems
+	const visualColumns = ctx[GRID_ENGINE].visualColumns
 
 	// Row number column
-	const showRowNumbers = ctx.engine.isRowNumbersShown
-	const stickyRowNumbers = ctx.engine.isStickyRowNumbers
+	const showRowNumbers = ctx[GRID_ENGINE].isRowNumbersShown
+	const stickyRowNumbers = ctx[GRID_ENGINE].isStickyRowNumbers
 
 	// Inline actions column (toolbarPosition="inline")
-	const showInlineActions = ctx.engine.isRowToolbarShown && ctx.engine.toolbarPosition === 'inline'
+	const showInlineActions = ctx[GRID_ENGINE].isRowToolbarShown && ctx[GRID_ENGINE].toolbarPosition === 'inline'
 
 	// Actions column for button trigger mode (floating toolbar trigger)
-	const showActionsColumn = ctx.engine.isRowToolbarShown && ctx.engine.toolbarTrigger === 'button' && ctx.engine.toolbarPosition !== 'inline'
+	const showActionsColumn = ctx[GRID_ENGINE].isRowToolbarShown && ctx[GRID_ENGINE].toolbarTrigger === 'button' && ctx[GRID_ENGINE].toolbarPosition !== 'inline'
 	const colspanWithExtras = visualColumns.length + (showActionsColumn ? 1 : 0) + (showRowNumbers ? 1 : 0) + (showInlineActions ? 1 : 0)
 	const leadCount = leadColumnCount(ctx)
 
@@ -306,11 +307,11 @@ export function renderDataRows<T>(ctx: GridHost<T>): string {
 
 	return items.map((item, rowIndex) => {
 		// Check lock state
-		const lockInfo = ctx.engine.getRowLockInfo(item)
+		const lockInfo = ctx[GRID_ENGINE].getRowLockInfo(item)
 		const isLocked = lockInfo?.isLocked === true
 
 		// Check if this is the empty row
-		const isEmptyRow = ctx.engine.isEmptyRowIndex(rowIndex)
+		const isEmptyRow = ctx[GRID_ENGINE].isEmptyRowIndex(rowIndex)
 
 		// Track cumulative offset for sticky positioning
 		let cumulativeOffset = 0
@@ -324,12 +325,12 @@ export function renderDataRows<T>(ctx: GridHost<T>): string {
 			const frozenClass = stickyRowNumbers ? ' wg__cell--frozen' : ''
 
 			if (isLocked) {
-				const lockTooltip = ctx.engine.getLockTooltip(lockInfo)
+				const lockTooltip = ctx[GRID_ENGINE].getLockTooltip(lockInfo)
 				rowNumberCell = `<td class="wg__cell wg__row-number wg__row-number--locked${frozenClass}" style="${stickyStyle}" role="rowheader" aria-colindex="1" data-tooltip="${escapeHtml(lockTooltip)}" data-row-number="${rowIndex}">🔒</td>`
 			} else if (isEmptyRow) {
-				rowNumberCell = `<td class="wg__cell wg__row-number wg__empty-row-indicator${frozenClass}" style="${stickyStyle}" role="rowheader" aria-colindex="1" data-row-number="${rowIndex}">${ctx.engine.newRowIndicator}</td>`
+				rowNumberCell = `<td class="wg__cell wg__row-number wg__empty-row-indicator${frozenClass}" style="${stickyStyle}" role="rowheader" aria-colindex="1" data-row-number="${rowIndex}">${ctx[GRID_ENGINE].newRowIndicator}</td>`
 			} else {
-				const dirtyClass = ctx.engine.isDirtyIndicatorShown && ctx.engine.isRowDirty(rowIndex) ? ' wg__row-number--dirty' : ''
+				const dirtyClass = ctx[GRID_ENGINE].isDirtyIndicatorShown && ctx[GRID_ENGINE].isRowDirty(rowIndex) ? ' wg__row-number--dirty' : ''
 				rowNumberCell = `<td class="wg__cell wg__row-number${dirtyClass}${frozenClass}" style="${stickyStyle}" role="rowheader" aria-colindex="1" data-row-number="${rowIndex}">${rowIndex + 1}</td>`
 			}
 
@@ -348,29 +349,29 @@ export function renderDataRows<T>(ctx: GridHost<T>): string {
 			const isActive = activeToolbarRow === rowIndex
 			actionsCell = `
 				<td class="wg__cell wg__actions-column wg__widget-cell" role="gridcell" aria-colindex="${leadCount}" data-widget-row="${rowIndex}" tabindex="-1">
-					${renderTriggerButton(rowIndex, isActive, ctx.engine.labels['tooltips.rowActions'], ctx.engine.labels['ariaLabels.rowActions'])}
+					${renderTriggerButton(rowIndex, isActive, ctx[GRID_ENGINE].labels['tooltips.rowActions'], ctx[GRID_ENGINE].labels['ariaLabels.rowActions'])}
 				</td>
 			`
 		}
 
 		const cells = visualColumns.map(({ column, originalIndex }, visualIndex) => {
 			const field = String(column.field)
-			const value = ctx.engine.getCellValue(item, column, rowIndex)
+			const value = ctx[GRID_ENGINE].getCellValue(item, column, rowIndex)
 			const align = column.horizontalAlign || 'left'
 			const vAlign = column.verticalAlign || 'middle'
 			// Use canEditCell to check both column editability AND row locking
-			const isEditable = ctx.engine.canEditCell(rowIndex, field)
+			const isEditable = ctx[GRID_ENGINE].canEditCell(rowIndex, field)
 			// Use originalIndex for focus check (navigation uses original indices)
-			const isFocused = ctx.engine.isCellFocused(rowIndex, originalIndex)
-			const isFrozen = ctx.engine.isColumnFrozen(visualIndex)
-			const isLastFrozen = isFrozen && visualIndex === ctx.engine.totalFrozenColumns - 1
+			const isFocused = ctx[GRID_ENGINE].isCellFocused(rowIndex, originalIndex)
+			const isFrozen = ctx[GRID_ENGINE].isColumnFrozen(visualIndex)
+			const isLastFrozen = isFrozen && visualIndex === ctx[GRID_ENGINE].totalFrozenColumns - 1
 
 			// Determine if this is 'always' editTrigger mode
-			const effectiveTrigger = column.editTrigger ?? ctx.engine.editTrigger
+			const effectiveTrigger = column.editTrigger ?? ctx[GRID_ENGINE].editTrigger
 
 			const classes = ['wg__cell']
-			const shouldShowEditor = ctx.engine.shouldShowEditor(rowIndex, originalIndex)
-			const isActivelyEditing = ctx.engine.isEditing(rowIndex, field)  // Only the ONE tracked cell
+			const shouldShowEditor = ctx[GRID_ENGINE].shouldShowEditor(rowIndex, originalIndex)
+			const isActivelyEditing = ctx[GRID_ENGINE].isEditing(rowIndex, field)  // Only the ONE tracked cell
 			if (isEditable) classes.push('wg__cell--editable')
 			if (isFocused && !isActivelyEditing) classes.push('wg__cell--focused')
 			// In 'always' mode, add special focus class even when showing editor
@@ -378,30 +379,30 @@ export function renderDataRows<T>(ctx: GridHost<T>): string {
 			if (column.textOverflow !== 'wrap') classes.push('wg__cell--ellipsis')
 			if (column.maxLines) classes.push('wg__cell--line-clamp')
 			if (isActivelyEditing) classes.push('wg__cell--editing')
-			if (ctx.engine.isCellInvalid(rowIndex, field)) classes.push('wg__cell--invalid')
-			if (ctx.engine.isDirtyIndicatorShown && ctx.engine.isCellDirty(rowIndex, field)) {
+			if (ctx[GRID_ENGINE].isCellInvalid(rowIndex, field)) classes.push('wg__cell--invalid')
+			if (ctx[GRID_ENGINE].isDirtyIndicatorShown && ctx[GRID_ENGINE].isCellDirty(rowIndex, field)) {
 				classes.push('wg__cell--dirty')
 			}
-			if (ctx.engine.isCellInSelectedRange(rowIndex, visualIndex)) classes.push('wg__cell--in-range')
-			if (ctx.engine.isColumnPositionSelected(visualIndex)) classes.push('wg__cell--column-selected')
+			if (ctx[GRID_ENGINE].isCellInSelectedRange(rowIndex, visualIndex)) classes.push('wg__cell--in-range')
+			if (ctx[GRID_ENGINE].isColumnPositionSelected(visualIndex)) classes.push('wg__cell--column-selected')
 			if (isFrozen) classes.push('wg__cell--frozen')
 			if (isLastFrozen) classes.push('wg__cell--frozen-last')
 			if (column.cellClass) classes.push(column.cellClass)
 			if (column.getCellClassCallback) {
 				// ctx.value is the raw value (not formatted)
-				const dynamicClass = column.getCellClassCallback(ctx.engine.cellCtx(item, rowIndex, column))
+				const dynamicClass = column.getCellClassCallback(ctx[GRID_ENGINE].cellCtx(item, rowIndex, column))
 				if (dynamicClass) classes.push(dynamicClass)
 			}
 
 			// Build cell style with width properties and sticky positioning
 			// Use runtime width override if set (from column resize), otherwise column definition
-			const runtimeWidth = ctx.engine.getColumnWidth(field)
+			const runtimeWidth = ctx[GRID_ENGINE].getColumnWidth(field)
 			const cellWidth = runtimeWidth || column.width
 			// Mirror the header's min-width logic so HTML auto table-layout can't drag a
 			// body-cell-wide column past the header's caps (rc16 fix). Without this,
 			// nowrap + maxWidth columns wouldn't actually clamp because body widths
 			// determined the column's natural width.
-			const effectiveMinWidth = column.minWidth ?? ctx.engine.columnMinWidth
+			const effectiveMinWidth = column.minWidth ?? ctx[GRID_ENGINE].columnMinWidth
 			const cellStyleProps = [
 				isFrozen ? `position: sticky` : '',
 				isFrozen ? `left: ${cumulativeOffset}px` : '',
@@ -457,16 +458,16 @@ export function renderDataRows<T>(ctx: GridHost<T>): string {
 		const rowClasses = ['wg__row']
 		if (isLocked) rowClasses.push('wg__row--locked')
 		if (isEmptyRow) rowClasses.push('wg__row--empty-row')
-		if (ctx.engine.isRowSelected(rowIndex)) rowClasses.push('wg__row--selected')
-		if (ctx.engine.isRowFocused(rowIndex)) rowClasses.push('wg__row--focused')
-		if (ctx.engine.getRowClassCallback) {
-			const dynamicClass = ctx.engine.getRowClassCallback(ctx.engine.rowCtx(item, rowIndex))
+		if (ctx[GRID_ENGINE].isRowSelected(rowIndex)) rowClasses.push('wg__row--selected')
+		if (ctx[GRID_ENGINE].isRowFocused(rowIndex)) rowClasses.push('wg__row--focused')
+		if (ctx[GRID_ENGINE].getRowClassCallback) {
+			const dynamicClass = ctx[GRID_ENGINE].getRowClassCallback(ctx[GRID_ENGINE].rowCtx(item, rowIndex))
 			if (dynamicClass) rowClasses.push(dynamicClass)
 		}
 
 		// Row tooltip for locked rows (when no row numbers visible)
 		const rowTooltipAttr = isLocked && !showRowNumbers
-			? `data-tooltip="${escapeHtml(ctx.engine.getLockTooltip(lockInfo))}"`
+			? `data-tooltip="${escapeHtml(ctx[GRID_ENGINE].getLockTooltip(lockInfo))}"`
 			: ''
 
 		return `<tr class="${rowClasses.join(' ')}" data-row-index="${rowIndex}"${dataRowAttrs(ctx, item, rowIndex)} ${rowTooltipAttr}>${rowNumberCell}${inlineActionsCell}${actionsCell}${cells}<td class="wg__cell wg__filler" data-row="${rowIndex}" aria-hidden="true"></td></tr>`
@@ -479,7 +480,7 @@ export function renderDataRows<T>(ctx: GridHost<T>): string {
  * Supports multi-row layout via the `row` property on toolbar items
  */
 function renderInlineActionsCell<T>(ctx: GridHost<T>, row: T, rowIndex: number): string {
-	const buttons = resolveToolbar(ctx, ctx.engine.rowToolbar, ctx.engine.rowCtx(row, rowIndex))
+	const buttons = resolveToolbar(ctx, ctx[GRID_ENGINE].rowToolbar, ctx[GRID_ENGINE].rowCtx(row, rowIndex))
 
 	// Render each toolbar row of buttons (ascending)
 	const rowNums = [...new Set(buttons.map(b => b.row))].sort((a, b) => a - b)
@@ -493,7 +494,7 @@ function renderInlineActionsCell<T>(ctx: GridHost<T>, row: T, rowIndex: number):
 		return `<div class="wg__inline-actions-row">${html}</div>`
 	}).join('')
 
-	const colIndex = ctx.engine.isRowNumbersShown ? 2 : 1
+	const colIndex = ctx[GRID_ENGINE].isRowNumbersShown ? 2 : 1
 	// A widget cell (navigation/widget-cell.ts): reached by ArrowLeft from the row's first cell
 	return `<td class="wg__cell wg__inline-actions-cell wg__widget-cell" role="gridcell" aria-colindex="${colIndex}" data-widget-row="${rowIndex}" tabindex="-1"><div class="wg__inline-actions-wrap">${rowsHtml}</div></td>`
 }
@@ -513,19 +514,19 @@ export type VirtualScrollParams = {
  * Only renders visible rows + buffer, with spacer rows for correct scroll height
  */
 export function renderDataRowsVirtual<T>(ctx: GridHost<T>, params: VirtualScrollParams): string {
-	const items = ctx.engine.displayItems
-	const visualColumns = ctx.engine.visualColumns
+	const items = ctx[GRID_ENGINE].displayItems
+	const visualColumns = ctx[GRID_ENGINE].visualColumns
 	const { startIndex, endIndex, rowHeight, totalItems } = params
 
 	// Row number column
-	const showRowNumbers = ctx.engine.isRowNumbersShown
-	const stickyRowNumbers = ctx.engine.isStickyRowNumbers
+	const showRowNumbers = ctx[GRID_ENGINE].isRowNumbersShown
+	const stickyRowNumbers = ctx[GRID_ENGINE].isStickyRowNumbers
 
 	// Inline actions column (toolbarPosition="inline")
-	const showInlineActions = ctx.engine.isRowToolbarShown && ctx.engine.toolbarPosition === 'inline'
+	const showInlineActions = ctx[GRID_ENGINE].isRowToolbarShown && ctx[GRID_ENGINE].toolbarPosition === 'inline'
 
 	// Actions column for button trigger mode (floating toolbar trigger)
-	const showActionsColumn = ctx.engine.isRowToolbarShown && ctx.engine.toolbarTrigger === 'button' && ctx.engine.toolbarPosition !== 'inline'
+	const showActionsColumn = ctx[GRID_ENGINE].isRowToolbarShown && ctx[GRID_ENGINE].toolbarTrigger === 'button' && ctx[GRID_ENGINE].toolbarPosition !== 'inline'
 	const colspanWithExtras = visualColumns.length + (showActionsColumn ? 1 : 0) + (showRowNumbers ? 1 : 0) + (showInlineActions ? 1 : 0)
 	const leadCount = leadColumnCount(ctx)
 
@@ -554,11 +555,11 @@ export function renderDataRowsVirtual<T>(ctx: GridHost<T>, params: VirtualScroll
 		const rowIndex = i  // Absolute index in the data array
 
 		// Check lock state
-		const lockInfo = ctx.engine.getRowLockInfo(item)
+		const lockInfo = ctx[GRID_ENGINE].getRowLockInfo(item)
 		const isLocked = lockInfo?.isLocked === true
 
 		// Check if this is the empty row
-		const isEmptyRow = ctx.engine.isEmptyRowIndex(rowIndex)
+		const isEmptyRow = ctx[GRID_ENGINE].isEmptyRowIndex(rowIndex)
 
 		// Track cumulative offset for sticky positioning
 		let cumulativeOffset = 0
@@ -572,12 +573,12 @@ export function renderDataRowsVirtual<T>(ctx: GridHost<T>, params: VirtualScroll
 			const frozenClass = stickyRowNumbers ? ' wg__cell--frozen' : ''
 
 			if (isLocked) {
-				const lockTooltip = ctx.engine.getLockTooltip(lockInfo)
+				const lockTooltip = ctx[GRID_ENGINE].getLockTooltip(lockInfo)
 				rowNumberCell = `<td class="wg__cell wg__row-number wg__row-number--locked${frozenClass}" style="${stickyStyle}" role="rowheader" aria-colindex="1" data-tooltip="${escapeHtml(lockTooltip)}" data-row-number="${rowIndex}">🔒</td>`
 			} else if (isEmptyRow) {
-				rowNumberCell = `<td class="wg__cell wg__row-number wg__empty-row-indicator${frozenClass}" style="${stickyStyle}" role="rowheader" aria-colindex="1" data-row-number="${rowIndex}">${ctx.engine.newRowIndicator}</td>`
+				rowNumberCell = `<td class="wg__cell wg__row-number wg__empty-row-indicator${frozenClass}" style="${stickyStyle}" role="rowheader" aria-colindex="1" data-row-number="${rowIndex}">${ctx[GRID_ENGINE].newRowIndicator}</td>`
 			} else {
-				const dirtyClass = ctx.engine.isDirtyIndicatorShown && ctx.engine.isRowDirty(rowIndex) ? ' wg__row-number--dirty' : ''
+				const dirtyClass = ctx[GRID_ENGINE].isDirtyIndicatorShown && ctx[GRID_ENGINE].isRowDirty(rowIndex) ? ' wg__row-number--dirty' : ''
 				rowNumberCell = `<td class="wg__cell wg__row-number${dirtyClass}${frozenClass}" style="${stickyStyle}" role="rowheader" aria-colindex="1" data-row-number="${rowIndex}">${rowIndex + 1}</td>`
 			}
 
@@ -596,29 +597,29 @@ export function renderDataRowsVirtual<T>(ctx: GridHost<T>, params: VirtualScroll
 			const isActive = activeToolbarRow === rowIndex
 			actionsCell = `
 				<td class="wg__cell wg__actions-column wg__widget-cell" role="gridcell" aria-colindex="${leadCount}" data-widget-row="${rowIndex}" tabindex="-1">
-					${renderTriggerButton(rowIndex, isActive, ctx.engine.labels['tooltips.rowActions'], ctx.engine.labels['ariaLabels.rowActions'])}
+					${renderTriggerButton(rowIndex, isActive, ctx[GRID_ENGINE].labels['tooltips.rowActions'], ctx[GRID_ENGINE].labels['ariaLabels.rowActions'])}
 				</td>
 			`
 		}
 
 		const cells = visualColumns.map(({ column, originalIndex }, visualIndex) => {
 			const field = String(column.field)
-			const value = ctx.engine.getCellValue(item, column, rowIndex)
+			const value = ctx[GRID_ENGINE].getCellValue(item, column, rowIndex)
 			const align = column.horizontalAlign || 'left'
 			const vAlign = column.verticalAlign || 'middle'
 			// Use canEditCell to check both column editability AND row locking
-			const isEditable = ctx.engine.canEditCell(rowIndex, field)
+			const isEditable = ctx[GRID_ENGINE].canEditCell(rowIndex, field)
 			// Use originalIndex for focus check (navigation uses original indices)
-			const isFocused = ctx.engine.isCellFocused(rowIndex, originalIndex)
-			const isFrozen = ctx.engine.isColumnFrozen(visualIndex)
-			const isLastFrozen = isFrozen && visualIndex === ctx.engine.totalFrozenColumns - 1
+			const isFocused = ctx[GRID_ENGINE].isCellFocused(rowIndex, originalIndex)
+			const isFrozen = ctx[GRID_ENGINE].isColumnFrozen(visualIndex)
+			const isLastFrozen = isFrozen && visualIndex === ctx[GRID_ENGINE].totalFrozenColumns - 1
 
 			// Determine if this is 'always' editTrigger mode
-			const effectiveTrigger = column.editTrigger ?? ctx.engine.editTrigger
+			const effectiveTrigger = column.editTrigger ?? ctx[GRID_ENGINE].editTrigger
 
 			const classes = ['wg__cell']
-			const shouldShowEditor = ctx.engine.shouldShowEditor(rowIndex, originalIndex)
-			const isActivelyEditing = ctx.engine.isEditing(rowIndex, field)  // Only the ONE tracked cell
+			const shouldShowEditor = ctx[GRID_ENGINE].shouldShowEditor(rowIndex, originalIndex)
+			const isActivelyEditing = ctx[GRID_ENGINE].isEditing(rowIndex, field)  // Only the ONE tracked cell
 			if (isEditable) classes.push('wg__cell--editable')
 			if (isFocused && !isActivelyEditing) classes.push('wg__cell--focused')
 			// In 'always' mode, add special focus class even when showing editor
@@ -626,30 +627,30 @@ export function renderDataRowsVirtual<T>(ctx: GridHost<T>, params: VirtualScroll
 			if (column.textOverflow !== 'wrap') classes.push('wg__cell--ellipsis')
 			if (column.maxLines) classes.push('wg__cell--line-clamp')
 			if (isActivelyEditing) classes.push('wg__cell--editing')
-			if (ctx.engine.isCellInvalid(rowIndex, field)) classes.push('wg__cell--invalid')
-			if (ctx.engine.isDirtyIndicatorShown && ctx.engine.isCellDirty(rowIndex, field)) {
+			if (ctx[GRID_ENGINE].isCellInvalid(rowIndex, field)) classes.push('wg__cell--invalid')
+			if (ctx[GRID_ENGINE].isDirtyIndicatorShown && ctx[GRID_ENGINE].isCellDirty(rowIndex, field)) {
 				classes.push('wg__cell--dirty')
 			}
-			if (ctx.engine.isCellInSelectedRange(rowIndex, visualIndex)) classes.push('wg__cell--in-range')
-			if (ctx.engine.isColumnPositionSelected(visualIndex)) classes.push('wg__cell--column-selected')
+			if (ctx[GRID_ENGINE].isCellInSelectedRange(rowIndex, visualIndex)) classes.push('wg__cell--in-range')
+			if (ctx[GRID_ENGINE].isColumnPositionSelected(visualIndex)) classes.push('wg__cell--column-selected')
 			if (isFrozen) classes.push('wg__cell--frozen')
 			if (isLastFrozen) classes.push('wg__cell--frozen-last')
 			if (column.cellClass) classes.push(column.cellClass)
 			if (column.getCellClassCallback) {
 				// ctx.value is the raw value (not formatted)
-				const dynamicClass = column.getCellClassCallback(ctx.engine.cellCtx(item, rowIndex, column))
+				const dynamicClass = column.getCellClassCallback(ctx[GRID_ENGINE].cellCtx(item, rowIndex, column))
 				if (dynamicClass) classes.push(dynamicClass)
 			}
 
 			// Build cell style with width properties and sticky positioning
 			// Use runtime width override if set (from column resize), otherwise column definition
-			const runtimeWidth = ctx.engine.getColumnWidth(field)
+			const runtimeWidth = ctx[GRID_ENGINE].getColumnWidth(field)
 			const cellWidth = runtimeWidth || column.width
 			// Mirror the header's min-width logic so HTML auto table-layout can't drag a
 			// body-cell-wide column past the header's caps (rc16 fix). Without this,
 			// nowrap + maxWidth columns wouldn't actually clamp because body widths
 			// determined the column's natural width.
-			const effectiveMinWidth = column.minWidth ?? ctx.engine.columnMinWidth
+			const effectiveMinWidth = column.minWidth ?? ctx[GRID_ENGINE].columnMinWidth
 			const cellStyleProps = [
 				isFrozen ? `position: sticky` : '',
 				isFrozen ? `left: ${cumulativeOffset}px` : '',
@@ -705,16 +706,16 @@ export function renderDataRowsVirtual<T>(ctx: GridHost<T>, params: VirtualScroll
 		const rowClasses = ['wg__row']
 		if (isLocked) rowClasses.push('wg__row--locked')
 		if (isEmptyRow) rowClasses.push('wg__row--empty-row')
-		if (ctx.engine.isRowSelected(rowIndex)) rowClasses.push('wg__row--selected')
-		if (ctx.engine.isRowFocused(rowIndex)) rowClasses.push('wg__row--focused')
-		if (ctx.engine.getRowClassCallback) {
-			const dynamicClass = ctx.engine.getRowClassCallback(ctx.engine.rowCtx(item, rowIndex))
+		if (ctx[GRID_ENGINE].isRowSelected(rowIndex)) rowClasses.push('wg__row--selected')
+		if (ctx[GRID_ENGINE].isRowFocused(rowIndex)) rowClasses.push('wg__row--focused')
+		if (ctx[GRID_ENGINE].getRowClassCallback) {
+			const dynamicClass = ctx[GRID_ENGINE].getRowClassCallback(ctx[GRID_ENGINE].rowCtx(item, rowIndex))
 			if (dynamicClass) rowClasses.push(dynamicClass)
 		}
 
 		// Row tooltip for locked rows (when no row numbers visible)
 		const rowTooltipAttr = isLocked && !showRowNumbers
-			? `data-tooltip="${escapeHtml(ctx.engine.getLockTooltip(lockInfo))}"`
+			? `data-tooltip="${escapeHtml(ctx[GRID_ENGINE].getLockTooltip(lockInfo))}"`
 			: ''
 
 		visibleRows.push(`<tr class="${rowClasses.join(' ')}" data-row-index="${rowIndex}"${dataRowAttrs(ctx, item, rowIndex)} ${rowTooltipAttr}>${rowNumberCell}${inlineActionsCell}${actionsCell}${cells}<td class="wg__cell wg__filler" data-row="${rowIndex}" aria-hidden="true"></td></tr>`)
@@ -735,39 +736,39 @@ export function renderDataRowsVirtual<T>(ctx: GridHost<T>, params: VirtualScroll
  */
 export function renderPagination<T>(ctx: GridHost<T>, position: string = 'bottom-center'): string {
 	// Don't render if not pageable or isPaginationShown is false
-	const showPag = ctx.engine.isPaginationShown
-	if (!ctx.engine.isPagingEnabled || showPag === false) return ''
+	const showPag = ctx[GRID_ENGINE].isPaginationShown
+	if (!ctx[GRID_ENGINE].isPagingEnabled || showPag === false) return ''
 	// 'auto' mode: hide when only 1 page
-	if (showPag === 'auto' && ctx.engine.totalPages <= 1) return ''
+	if (showPag === 'auto' && ctx[GRID_ENGINE].totalPages <= 1) return ''
 
-	const currentPage = ctx.engine.currentPage
-	const totalPages = ctx.engine.totalPages
-	const currentPageSize = ctx.engine.pageSize
+	const currentPage = ctx[GRID_ENGINE].currentPage
+	const totalPages = ctx[GRID_ENGINE].totalPages
+	const currentPageSize = ctx[GRID_ENGINE].pageSize
 	// A pending beforePageChangeCallback disables the whole pager
-	const isPending = ctx.engine.isPageChangePending
-	const pageSizes = ctx.engine.pageSizes
+	const isPending = ctx[GRID_ENGINE].isPageChangePending
+	const pageSizes = ctx[GRID_ENGINE].pageSizes
 	// Use totalItems if provided (server-side), otherwise use local item count
-	const totalItems = ctx.engine.totalItems !== null
-		? ctx.engine.totalItems
-		: (ctx.engine as unknown as { sortedItems: T[] }).sortedItems.length
+	const totalItems = ctx[GRID_ENGINE].totalItems !== null
+		? ctx[GRID_ENGINE].totalItems
+		: (ctx[GRID_ENGINE] as unknown as { sortedItems: T[] }).sortedItems.length
 
 	// Build labels (grid.labels → getPaginationLabelsCallback → final). The texts are CONTENT:
 	// core labels.html() — template markup kept, `{…}` params escaped, all escaped with
 	// `shouldEscapeLabels`. A getPaginationLabelsCallback result is the app's own markup (as is).
-	const gridLabels = ctx.engine.labels
+	const gridLabels = ctx[GRID_ENGINE].labels
 	const defaultLabels = {
-		first: ctx.engine.labelHtml('buttons.firstPage'),
-		previous: ctx.engine.labelHtml('buttons.previousPage'),
-		next: ctx.engine.labelHtml('buttons.nextPage'),
-		last: ctx.engine.labelHtml('buttons.lastPage'),
-		pageInfo: ctx.engine.labelHtml('labels.pageInfo', { current: currentPage, total: totalPages }),
-		itemCount: ctx.engine.labelHtml('labels.itemCount', { count: totalItems }),
-		perPage: ctx.engine.labelHtml('labels.perPage')
+		first: ctx[GRID_ENGINE].labelHtml('buttons.firstPage'),
+		previous: ctx[GRID_ENGINE].labelHtml('buttons.previousPage'),
+		next: ctx[GRID_ENGINE].labelHtml('buttons.nextPage'),
+		last: ctx[GRID_ENGINE].labelHtml('buttons.lastPage'),
+		pageInfo: ctx[GRID_ENGINE].labelHtml('labels.pageInfo', { current: currentPage, total: totalPages }),
+		itemCount: ctx[GRID_ENGINE].labelHtml('labels.itemCount', { count: totalItems }),
+		perPage: ctx[GRID_ENGINE].labelHtml('labels.perPage')
 	}
 
-	const labelsCallback = ctx.engine.getPaginationLabelsCallback
+	const labelsCallback = ctx[GRID_ENGINE].getPaginationLabelsCallback
 	const customLabels = labelsCallback
-		? labelsCallback(ctx.engine.ctx({ currentPage, totalPages, totalItems, pageSize: currentPageSize }))
+		? labelsCallback(ctx[GRID_ENGINE].ctx({ currentPage, totalPages, totalItems, pageSize: currentPageSize }))
 		: {}
 	const labels = { ...defaultLabels, ...customLabels }
 
@@ -823,7 +824,7 @@ export function renderPagination<T>(ctx: GridHost<T>, position: string = 'bottom
 	}
 
 	// Parse layout and build content
-	const layout = ctx.engine.paginationLayout.split('|').map(s => s.trim())
+	const layout = ctx[GRID_ENGINE].paginationLayout.split('|').map(s => s.trim())
 	const content = layout.map(part => elements[part] || '').join('')
 
 	return `<div class="${classes.join(' ')}"${isPending ? ' aria-busy="true"' : ''}>${content}</div>`
@@ -835,7 +836,7 @@ export function renderPagination<T>(ctx: GridHost<T>, position: string = 'bottom
  * @param position Position string (e.g., "bottom-left", "top-right")
  */
 export function renderSummary<T>(ctx: GridHost<T>, position: string): string {
-	if (!ctx.engine.renderSummaryCallback) return ''
+	if (!ctx[GRID_ENGINE].renderSummaryCallback) return ''
 	const content = renderSummaryContent(ctx)
 
 	// Determine alignment class from position
@@ -852,25 +853,25 @@ export function renderSummary<T>(ctx: GridHost<T>, position: string): string {
 
 /** The `renderSummaryCallback` HTML for the current view ('' without a callback). */
 export function renderSummaryContent<T>(ctx: GridHost<T>): string {
-	const callback = ctx.engine.renderSummaryCallback
+	const callback = ctx[GRID_ENGINE].renderSummaryCallback
 	if (!callback) return ''
 
-	const currentPage = ctx.engine.currentPage
-	const pageSize = ctx.engine.pageSize
-	const allItems = (ctx.engine as unknown as { sortedItems: T[] }).sortedItems
-	const items = ctx.engine.displayItems
-	const totalItems = ctx.engine.totalItems !== null
-		? ctx.engine.totalItems
+	const currentPage = ctx[GRID_ENGINE].currentPage
+	const pageSize = ctx[GRID_ENGINE].pageSize
+	const allItems = (ctx[GRID_ENGINE] as unknown as { sortedItems: T[] }).sortedItems
+	const items = ctx[GRID_ENGINE].displayItems
+	const totalItems = ctx[GRID_ENGINE].totalItems !== null
+		? ctx[GRID_ENGINE].totalItems
 		: allItems.length
 
-	const content = callback(ctx.engine.ctx({
+	const content = callback(ctx[GRID_ENGINE].ctx({
 		items,
 		allItems,
 		totalItems,
 		currentPage,
 		pageSize,
-		metadata: ctx.engine.summaryMetadata,
-		drafts: ctx.engine.getDrafts()
+		metadata: ctx[GRID_ENGINE].summaryMetadata,
+		drafts: ctx[GRID_ENGINE].getDrafts()
 	}))
 	return renderSlotHtml(content).html
 }
@@ -889,19 +890,19 @@ export function getCellTooltip<T>(
 ): { attr: 'data-tooltip' | 'data-tooltip-html'; text: string } | null {
 	const textAttr = column.isTooltipHtml ? 'data-tooltip-html' : 'data-tooltip'
 	if (column.getTooltipCallback) {
-		const text = column.getTooltipCallback(ctx.engine.cellCtx(item, rowIndex, column))
+		const text = column.getTooltipCallback(ctx[GRID_ENGINE].cellCtx(item, rowIndex, column))
 		if (text) return { attr: textAttr, text }
 	} else if (column.tooltipMember) {
 		const text = (item as Record<string, unknown>)[column.tooltipMember]
 		if (text && typeof text === 'string') return { attr: textAttr, text }
 	}
 	const field = String(column.field)
-	if (!ctx.engine.isCellInvalid(rowIndex, field)) return null
-	const errorMsg = ctx.engine.getCellValidationError(rowIndex, field)
+	if (!ctx[GRID_ENGINE].isCellInvalid(rowIndex, field)) return null
+	const errorMsg = ctx[GRID_ENGINE].getCellValidationError(rowIndex, field)
 	if (!errorMsg) return null
-	const validationTooltipCb = column.getValidationTooltipCallback || ctx.engine.getValidationTooltipCallback
+	const validationTooltipCb = column.getValidationTooltipCallback || ctx[GRID_ENGINE].getValidationTooltipCallback
 	if (validationTooltipCb) {
-		const html = validationTooltipCb(Object.assign(ctx.engine.cellCtx(item, rowIndex, column), { error: errorMsg }))
+		const html = validationTooltipCb(Object.assign(ctx[GRID_ENGINE].cellCtx(item, rowIndex, column), { error: errorMsg }))
 		if (html) return { attr: 'data-tooltip-html', text: html }
 	}
 	return { attr: 'data-tooltip', text: errorMsg }

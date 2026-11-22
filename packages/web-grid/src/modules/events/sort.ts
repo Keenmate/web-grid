@@ -5,6 +5,7 @@
 import type { GridHost } from '../grid-context.js'
 import type { SortState } from '../../types.js'
 import { guardPageChange } from './page-change.js'
+import { GRID_ENGINE } from '../grid-context.js'
 
 /**
  * Handle header click for sorting.
@@ -21,11 +22,11 @@ export function handleSortClick<T>(ctx: GridHost<T>, e: MouseEvent, field?: stri
 		if (!field) return
 	}
 
-	const currentSort = [...ctx.engine.sort]
+	const currentSort = [...ctx[GRID_ENGINE].sort]
 	const existingIndex = currentSort.findIndex(s => s.column === field)
 	const isCtrlClick = e.ctrlKey || e.metaKey
 
-	if (isCtrlClick && ctx.engine.sortMode === 'multiple') {
+	if (isCtrlClick && ctx[GRID_ENGINE].sortMode === 'multiple') {
 		// Multi-column sort: Ctrl+Click adds/toggles/removes column
 		if (existingIndex >= 0) {
 			const existing = currentSort[existingIndex]
@@ -67,7 +68,7 @@ export function handleSortClick<T>(ctx: GridHost<T>, e: MouseEvent, field?: stri
  * `beforePageChangeCallback` first (trigger 'sort'; `false` keeps the old sort).
  */
 export function applySort<T>(ctx: GridHost<T>, nextSort: SortState[]): void {
-	const engine = ctx.engine
+	const engine = ctx[GRID_ENGINE]
 	const apply = (page: number) => {
 		engine.sort = nextSort
 		if (engine.isPagingEnabled) engine.currentPage = page

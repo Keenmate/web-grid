@@ -7,6 +7,7 @@
 import type { GridHost } from '../grid-context.js'
 import { removeRangeBorder } from '../cell-selection/index.js'
 import { cleanupEditState } from '../navigation/index.js'
+import { GRID_ENGINE } from '../grid-context.js'
 
 /** Minimum distance (px) mouse must move before drag starts */
 const DRAG_THRESHOLD = 5
@@ -84,19 +85,19 @@ export function handleHeaderMouseDown<T>(ctx: GridHost<T>, colIndex: number, eve
 	cleanupEditState(ctx)
 
 	// One selection-change notification per gesture (ends on mouseup, or below for Ctrl)
-	ctx.engine.beginSelectionGesture()
+	ctx[GRID_ENGINE].beginSelectionGesture()
 
 	// Clear cell range selection when selecting columns
-	if (ctx.engine.selectedCellRange) {
-		ctx.engine.clearCellSelection()
+	if (ctx[GRID_ENGINE].selectedCellRange) {
+		ctx[GRID_ENGINE].clearCellSelection()
 		removeRangeBorder()
 	}
 
 	// Determine selection mode based on modifier keys
 	if (event.ctrlKey || event.metaKey) {
 		// Ctrl+Click: Toggle selection
-		ctx.engine.selectColumnAt(colIndex, 'toggle')
-		ctx.engine.endSelectionGesture()
+		ctx[GRID_ENGINE].selectColumnAt(colIndex, 'toggle')
+		ctx[GRID_ENGINE].endSelectionGesture()
 		focusContainerForShortcuts(ctx)
 		return
 	}
@@ -115,10 +116,10 @@ export function handleHeaderMouseDown<T>(ctx: GridHost<T>, colIndex: number, eve
 
 	if (event.shiftKey) {
 		// Shift+Click: Range selection from last selected, but also allow drag to extend
-		ctx.engine.selectColumnAt(colIndex, 'range')
+		ctx[GRID_ENGINE].selectColumnAt(colIndex, 'range')
 	} else {
 		// Plain click: Select single column (replace mode)
-		ctx.engine.selectColumnAt(colIndex, 'replace')
+		ctx[GRID_ENGINE].selectColumnAt(colIndex, 'replace')
 	}
 
 	// Focus the container so keyboard shortcuts work
@@ -155,7 +156,7 @@ function handleDocumentMouseMove(e: MouseEvent): void {
 	if (colIndex !== null && colIndex !== selectionState.currentColIndex) {
 		selectionState.currentColIndex = colIndex
 		// Update selection range
-		activeContext.engine.selectColumnRangeAt(selectionState.startColIndex, colIndex)
+		activeContext[GRID_ENGINE].selectColumnRangeAt(selectionState.startColIndex, colIndex)
 	}
 }
 
@@ -180,7 +181,7 @@ function handleDocumentMouseUp(): void {
 	const ctx = activeContext
 
 	// The drag is over: notify the column selection once
-	ctx.engine.endSelectionGesture()
+	ctx[GRID_ENGINE].endSelectionGesture()
 
 	// Remove selecting class
 	const container = ctx.shadow.querySelector('.wg') as HTMLElement | null
@@ -215,7 +216,7 @@ function findColumnAtPoint<T>(ctx: GridHost<T>, x: number): number | null {
 		'.wg__header:not(.wg__row-number-header):not(.wg__inline-actions-header):not(.wg__actions-column):not(.wg__filler)'
 	)
 
-	const visualColumns = ctx.engine.visualColumns
+	const visualColumns = ctx[GRID_ENGINE].visualColumns
 
 	for (const header of headers) {
 		const rect = (header as HTMLElement).getBoundingClientRect()

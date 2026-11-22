@@ -18,6 +18,14 @@ import type { FilterRowService } from './filter-row/index.js'
 import type { ActionPipelineAdapter } from './actions/adapter.js'
 
 /**
+ * Key of the element's internal {@link GridEngine} on the module host. A symbol, so the engine is
+ * never a public member of `<web-grid>` (the element itself keeps it in `#engine`; not exported
+ * from the package). Registered (`Symbol.for`) ONLY so e2e fixtures can reach the engine —
+ * test-only, not API: `el[Symbol.for('@keenmate/web-grid:engine')]`.
+ */
+export const GRID_ENGINE: unique symbol = Symbol.for('@keenmate/web-grid:engine')
+
+/**
  * GridElement context interface for module functions
  * This is the subset of GridElement that modules need access to
  */
@@ -25,8 +33,8 @@ export interface GridHost<T = unknown> {
 	// Shadow DOM
 	readonly shadow: ShadowRoot
 
-	// Grid logic
-	readonly engine: GridEngine<T>
+	// Grid logic (the element's private engine, keyed by a symbol — see GRID_ENGINE)
+	readonly [GRID_ENGINE]: GridEngine<T>
 
 	/** Core: write inputs (`pageSize`, `frozenColumnCount`, …) through the property path and apply them now. */
 	setAttributes(values: Record<string, unknown>): void

@@ -17,6 +17,7 @@
 import { runBeforeCallbackEager } from '@keenmate/web-components-core'
 import type { GridHost } from '../grid-context.js'
 import type { BeforePageChangeContext, PageChangeTrigger } from '../../interaction.js'
+import { GRID_ENGINE } from '../grid-context.js'
 
 /** Disable / re-enable the rendered pager controls in place (no re-render). */
 function setPagerBusy<T>(ctx: GridHost<T>, isBusy: boolean): void {
@@ -38,7 +39,7 @@ export function guardPageChange<T>(
 	toPage: number,
 	apply: (page: number) => void
 ): boolean {
-	const engine = ctx.engine
+	const engine = ctx[GRID_ENGINE]
 	if (engine.isPageChangePending) return false
 	const hook = engine.beforePageChangeCallback
 	if (!hook) {

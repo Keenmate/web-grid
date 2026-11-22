@@ -7,7 +7,8 @@ import { test, expect, type Page } from './fixtures'
  *     in that batch win, whatever the order
  *   - property reads are synchronous; engine-derived getters / methods /
  *     `el.controller` flush pending writes, so derived state is current right
- *     after a write (the internal `el.engine` is fed on the flush)
+ *     after a write (the private engine is fed on the flush; specs read it through the
+ *     test-only `el[Symbol.for('@keenmate/web-grid:engine')]`)
  *   - invalid property values are rejected (warned, previous value kept)
  *   - UI-driven input changes (page-size selector) update the element property
  *
@@ -46,14 +47,14 @@ test.describe('preset (core getBatchValuesCallback)', () => {
 		await mount(page, 'preset="input-matrix" edit-trigger="click"')
 		expect(await read(page, el => [el.editTrigger, el.isEditingEnabled, el.cellSelectionMode, el.shouldOpenDropdownOnFocus]))
 			.toEqual(['click', true, 'shift', true])
-		expect(await read(page, el => [el.engine.editTrigger, el.engine.cellSelectionMode])).toEqual(['click', 'shift'])
+		expect(await read(page, el => [el[Symbol.for('@keenmate/web-grid:engine')].editTrigger, el[Symbol.for('@keenmate/web-grid:engine')].cellSelectionMode])).toEqual(['click', 'shift'])
 	})
 
 	test('markup: the same result with the attributes in reverse order', async ({ page }) => {
 		await mount(page, 'edit-trigger="click" preset="input-matrix"')
 		expect(await read(page, el => [el.editTrigger, el.isEditingEnabled, el.cellSelectionMode]))
 			.toEqual(['click', true, 'shift'])
-		expect(await read(page, el => [el.engine.editTrigger, el.engine.cellSelectionMode])).toEqual(['click', 'shift'])
+		expect(await read(page, el => [el[Symbol.for('@keenmate/web-grid:engine')].editTrigger, el[Symbol.for('@keenmate/web-grid:engine')].cellSelectionMode])).toEqual(['click', 'shift'])
 	})
 
 	test('property: the preset is readable synchronously, on the element and the engine', async ({ page }) => {
@@ -62,7 +63,7 @@ test.describe('preset (core getBatchValuesCallback)', () => {
 			el.preset = 'input-matrix'
 			const sync = [el.editTrigger, el.cellSelectionMode]
 			el.flush() // the engine (internal) is fed on the flush
-			return [...sync, el.engine.editTrigger, el.engine.cellSelectionMode]
+			return [...sync, el[Symbol.for('@keenmate/web-grid:engine')].editTrigger, el[Symbol.for('@keenmate/web-grid:engine')].cellSelectionMode]
 		})).toEqual(['always', 'shift', 'always', 'shift'])
 	})
 
@@ -72,7 +73,7 @@ test.describe('preset (core getBatchValuesCallback)', () => {
 			el.editTrigger = 'click'
 			el.preset = 'excel'
 			el.flush()
-			return [el.editTrigger, el.engine.editTrigger, el.engine.isEditingEnabled]
+			return [el.editTrigger, el[Symbol.for('@keenmate/web-grid:engine')].editTrigger, el[Symbol.for('@keenmate/web-grid:engine')].isEditingEnabled]
 		})).toEqual(['click', 'click', true])
 	})
 
@@ -81,7 +82,7 @@ test.describe('preset (core getBatchValuesCallback)', () => {
 		expect(await read(page, el => {
 			el.preset = 'excel'
 			el.flush()
-			return [el.editTrigger, el.engine.editTrigger]
+			return [el.editTrigger, el[Symbol.for('@keenmate/web-grid:engine')].editTrigger]
 		})).toEqual(['navigate', 'navigate'])
 	})
 })
@@ -104,7 +105,7 @@ test.describe('property path', () => {
 			el.pageSize = null
 			el.pageSize = 0
 			el.preset = 'bogus'
-			return [el.pageSize, el.totalPages, el.engine.pageSize, el.preset]
+			return [el.pageSize, el.totalPages, el[Symbol.for('@keenmate/web-grid:engine')].pageSize, el.preset]
 		})).toEqual([34, 3, 34, 'excel'])
 		expect(warnings.filter(w => w.includes('rejected invalid value'))).toHaveLength(3)
 	})
@@ -113,7 +114,7 @@ test.describe('property path', () => {
 		await mount(page, 'enable-paging page-size="10"')
 		const select = page.locator('web-grid#t .wg__pagination-select')
 		await select.selectOption('25')
-		expect(await read(page, el => [el.pageSize, el.engine.pageSize, el.totalPages])).toEqual([25, 25, 4])
+		expect(await read(page, el => [el.pageSize, el[Symbol.for('@keenmate/web-grid:engine')].pageSize, el.totalPages])).toEqual([25, 25, 4])
 	})
 })
 
@@ -304,7 +305,7 @@ test.describe('validated inputs (core rejection, previous value kept)', () => {
 
 	test('CSS lengths: a number means pixels, an invalid length is refused', async ({ page }) => {
 		await mount(page, 'scrollable column-min-width="80"')
-		expect(await read(page, el => [el.columnMinWidth, el.engine.columnMinWidth])).toEqual(['80px', '80px'])
+		expect(await read(page, el => [el.columnMinWidth, el[Symbol.for('@keenmate/web-grid:engine')].columnMinWidth])).toEqual(['80px', '80px'])
 		const r = await read(page, el => {
 			const keys: string[] = []
 			el.addEventListener('input-rejected', (e: any) => keys.push(e.detail.configKey))
@@ -381,10 +382,10 @@ test.describe('row identity / tree members + callbacks as input rows (rc25)', ()
 		await mount(page, 'id-member="key" path-member="path" tree-path-separator="/" expand-level="1" toolbar-btn-min-width="40" row-editable="false"')
 		expect(await read(page, el => [el.idMember, el.pathMember, el.treePathSeparator, el.expandLevel, el.toolbarBtnMinWidth, el.isRowEditable]))
 			.toEqual(['key', 'path', '/', 1, '40px', false])
-		expect(await read(page, el => [el.engine.idMember, el.engine.pathMember, el.engine.treePathSeparator, el.engine.expandLevel, el.engine.toolbarBtnMinWidth, el.engine.isRowEditable]))
+		expect(await read(page, el => [el[Symbol.for('@keenmate/web-grid:engine')].idMember, el[Symbol.for('@keenmate/web-grid:engine')].pathMember, el[Symbol.for('@keenmate/web-grid:engine')].treePathSeparator, el[Symbol.for('@keenmate/web-grid:engine')].expandLevel, el[Symbol.for('@keenmate/web-grid:engine')].toolbarBtnMinWidth, el[Symbol.for('@keenmate/web-grid:engine')].isRowEditable]))
 			.toEqual(['key', 'path', '/', 1, '40px', false])
 		// property path unchanged: '' = none (read back null), null clears, defaults as before
-		expect(await read(page, el => { el.idMember = ''; el.pathMember = ''; el.flush(); return [el.idMember, el.pathMember, el.engine.idMember] }))
+		expect(await read(page, el => { el.idMember = ''; el.pathMember = ''; el.flush(); return [el.idMember, el.pathMember, el[Symbol.for('@keenmate/web-grid:engine')].idMember] }))
 			.toEqual([null, null, null])
 		await mount(page, '')
 		expect(await read(page, el => [el.idMember, el.pathMember, el.expandLevel, el.isRowEditable, el.getIdCallback]))
@@ -403,7 +404,7 @@ test.describe('row identity / tree members + callbacks as input rows (rc25)', ()
 			el.toolbarBtnMinWidth = 'wide'
 			el.beforeActionCallback = 'not a function'
 			el.flush()
-			return [keys, el.expandLevel, el.engine.expandLevel, el.toolbarBtnMinWidth, el.beforeActionCallback]
+			return [keys, el.expandLevel, el[Symbol.for('@keenmate/web-grid:engine')].expandLevel, el.toolbarBtnMinWidth, el.beforeActionCallback]
 		})
 		expect(r).toEqual([['expandLevel', 'expandLevel', 'toolbarBtnMinWidth', 'beforeActionCallback'], 2, 2, undefined, undefined])
 		expect(warnings.some(w => w.includes('expandLevel') || w.includes('expand-level'))).toBe(true)

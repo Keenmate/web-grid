@@ -23,6 +23,7 @@ import { getActiveToolbarRowIndex, updateConnector, closeToolbarAndReset } from 
 import { updateFillHandle } from '../fill-handle/index.js'
 import { updateRangeBorder } from '../cell-selection/index.js'
 import { updateSelectionBorders } from '../selection-border/index.js'
+import { GRID_ENGINE } from '../grid-context.js'
 
 /**
  * Container scroll handler — runs on every scroll of the .wg / .wg__table-container.
@@ -37,18 +38,18 @@ export function handleContainerScroll<T>(
 	container.classList.toggle('wg--scrolled-horizontal', isScrolledHorizontally)
 
 	// Virtual scroll: recalculate visible range
-	if (ctx.engine.shouldUseVirtualScroll()) {
+	if (ctx[GRID_ENGINE].shouldUseVirtualScroll()) {
 		handleVirtualScroll(ctx, scrollContainer)
 	}
 
 	// Infinite scroll: detect when near bottom
-	if (ctx.engine.isInfiniteScrollEnabled && ctx.engine.hasMoreItems && !ctx.virtualScroll.isLoadingMore) {
+	if (ctx[GRID_ENGINE].isInfiniteScrollEnabled && ctx[GRID_ENGINE].hasMoreItems && !ctx.virtualScroll.isLoadingMore) {
 		handleInfiniteScroll(ctx, scrollContainer)
 	}
 
 	// Update connector position when scrolling (clips at container boundary)
 	if (getActiveToolbarRowIndex(ctx) !== null) {
-		updateConnector(ctx, ctx.engine.displayItems)
+		updateConnector(ctx, ctx[GRID_ENGINE].displayItems)
 		ctx.renderConnector()
 	}
 
@@ -56,7 +57,7 @@ export function handleContainerScroll<T>(
 	updateFillHandle(ctx)
 
 	// Update cell range border on scroll
-	if (ctx.engine.selectedCellRange) {
+	if (ctx[GRID_ENGINE].selectedCellRange) {
 		updateRangeBorder(ctx)
 	}
 

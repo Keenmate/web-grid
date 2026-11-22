@@ -31,6 +31,7 @@ import { tryCellShortcuts } from '../navigation/cell-keydown.js'
 import { handleEditorKeyDown } from '../editing/index.js'
 import { openCellMenuFromKeyboard } from '../contextmenu/index.js'
 import { handleWidgetCellKeyDown } from '../navigation/widget-cell.js'
+import { GRID_ENGINE } from '../grid-context.js'
 
 /**
  * Top-level keydown router on the table. Sits in front of the cell + editor
@@ -62,15 +63,15 @@ export function handleTableKeyDown<T>(ctx: GridHost<T>, e: Event): void {
 	// (regardless of editTrigger), which would swallow the modified arrow too.
 	// Direct grid-method calls — same as chevron click and dblclick paths.
 	if (
-		ctx.engine.isTreeMode &&
-		ctx.engine.focusedCell &&
-		!ctx.engine.editingCell &&
+		ctx[GRID_ENGINE].isTreeMode &&
+		ctx[GRID_ENGINE].focusedCell &&
+		!ctx[GRID_ENGINE].editingCell &&
 		(ke.ctrlKey || ke.metaKey) && !ke.shiftKey &&  // Ctrl+Shift+Arrow extends a cell range
 		(ke.key === 'ArrowLeft' || ke.key === 'ArrowRight')
 	) {
-		const { rowIndex, colIndex } = ctx.engine.focusedCell
-		const item = ctx.engine.displayItems[rowIndex]
-		const info = item ? ctx.engine.getRowTreeInfo(item) : null
+		const { rowIndex, colIndex } = ctx[GRID_ENGINE].focusedCell
+		const item = ctx[GRID_ENGINE].displayItems[rowIndex]
+		const info = item ? ctx[GRID_ENGINE].getRowTreeInfo(item) : null
 		if (info) {
 			e.preventDefault()
 			e.stopPropagation()
@@ -80,18 +81,18 @@ export function handleTableKeyDown<T>(ctx: GridHost<T>, e: Event): void {
 			// the ancestor (the focused row is about to be hidden).
 			let targetPath: string | null = null
 			if (ke.key === 'ArrowRight') {
-				if (info.hasChildren && !ctx.engine.isPathExpanded(info.path)) {
-					ctx.engine.toggleRowExpanded(info.path)
+				if (info.hasChildren && !ctx[GRID_ENGINE].isPathExpanded(info.path)) {
+					ctx[GRID_ENGINE].toggleRowExpanded(info.path)
 					targetPath = info.path
 				}
 			} else {
-				if (info.hasChildren && ctx.engine.isPathExpanded(info.path)) {
-					ctx.engine.toggleRowExpanded(info.path)
+				if (info.hasChildren && ctx[GRID_ENGINE].isPathExpanded(info.path)) {
+					ctx[GRID_ENGINE].toggleRowExpanded(info.path)
 					targetPath = info.path
 				} else {
-					const ancestor = ctx.engine.findNearestExpandedAncestor(info.path)
+					const ancestor = ctx[GRID_ENGINE].findNearestExpandedAncestor(info.path)
 					if (ancestor !== null) {
-						ctx.engine.toggleRowExpanded(ancestor)
+						ctx[GRID_ENGINE].toggleRowExpanded(ancestor)
 						targetPath = ancestor
 					}
 				}
@@ -102,8 +103,8 @@ export function handleTableKeyDown<T>(ctx: GridHost<T>, e: Event): void {
 			if (targetPath !== null) {
 				const path = targetPath
 				queueMicrotask(() => {
-					const idx = ctx.engine.displayItems
-						.findIndex(it => ctx.engine.getRowTreeInfo(it)?.path === path)
+					const idx = ctx[GRID_ENGINE].displayItems
+						.findIndex(it => ctx[GRID_ENGINE].getRowTreeInfo(it)?.path === path)
 					if (idx >= 0) {
 						moveFocus(ctx, idx, colIndex)
 					}
@@ -114,7 +115,7 @@ export function handleTableKeyDown<T>(ctx: GridHost<T>, e: Event): void {
 	}
 
 	// User shortcuts on a focused cell win over the pipeline's / grid's own keys
-	if (target.matches('.wg__cell[data-col]') && !ctx.engine.editingCell) {
+	if (target.matches('.wg__cell[data-col]') && !ctx[GRID_ENGINE].editingCell) {
 		const rowIndex = parseInt(target.dataset.row || '0', 10)
 		const colIndex = parseInt(target.dataset.col || '0', 10)
 		if (tryCellShortcuts(ctx, e as KeyboardEvent, rowIndex, colIndex)) return

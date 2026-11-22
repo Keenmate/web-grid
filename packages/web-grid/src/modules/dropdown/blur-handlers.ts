@@ -14,6 +14,7 @@ import { clearEditingVisual } from '../navigation/focus.js'
 import { renderCell } from '../rendering/cell.js'
 import { resolveComboboxValue } from '../editing/commit-on-transition.js'
 import { removeDropdown } from './rendering.js'
+import { GRID_ENGINE } from '../grid-context.js'
 
 /**
  * Select trigger blur — cancel the edit, remove the dropdown, restore the
@@ -32,14 +33,14 @@ export function handleSelectBlur<T>(
 	if (relatedTarget?.closest('.wg__dropdown')) return
 
 	// Capture cell info BEFORE cancelEdit clears it
-	const editingCell = ctx.engine.editingCell
+	const editingCell = ctx[GRID_ENGINE].editingCell
 	const colIndex = editingCell
-		? ctx.engine.columns.findIndex(c => String(c.field) === editingCell.field)
+		? ctx[GRID_ENGINE].columns.findIndex(c => String(c.field) === editingCell.field)
 		: -1
 
 	removeDropdown(ctx)
 	clearEditingVisual(ctx)
-	ctx.engine.cancelEdit()
+	ctx[GRID_ENGINE].cancelEdit()
 
 	// Re-render cell to restore display mode HTML
 	if (editingCell && colIndex >= 0) {
@@ -58,18 +59,18 @@ export function handleComboboxBlur<T>(
 ): void {
 	removeDropdown(ctx)
 
-	if (!ctx.engine.editingCell) return
+	if (!ctx[GRID_ENGINE].editingCell) return
 
 	// Capture cell info BEFORE commit clears it
-	const editingCell = ctx.engine.editingCell
-	const colIndex = ctx.engine.columns.findIndex(c => String(c.field) === editingCell.field)
+	const editingCell = ctx[GRID_ENGINE].editingCell
+	const colIndex = ctx[GRID_ENGINE].columns.findIndex(c => String(c.field) === editingCell.field)
 
 	if (!ctx.getCurrentEditingColumn()) return
 	const value = resolveComboboxValue(ctx, input)
 
 	// Clear visual and commit
 	clearEditingVisual(ctx)
-	ctx.engine.commitEdit(editingCell.rowIndex, editingCell.field, value)
+	ctx[GRID_ENGINE].commitEdit(editingCell.rowIndex, editingCell.field, value)
 
 	// Re-render cell to restore display mode
 	if (colIndex >= 0) {

@@ -6,6 +6,7 @@
 import type { GridHost } from '../grid-context.js'
 import { removeRangeBorder } from '../cell-selection/index.js'
 import { cleanupEditState } from '../navigation/index.js'
+import { GRID_ENGINE } from '../grid-context.js'
 
 /** Minimum distance (px) mouse must move before drag starts */
 const DRAG_THRESHOLD = 5
@@ -82,37 +83,37 @@ export function handleRowNumberMouseDown<T>(ctx: GridHost<T>, rowIndex: number, 
 	cleanupEditState(ctx)
 
 	// One selection-change notification per gesture (ends on mouseup, or below for Ctrl / Shift)
-	ctx.engine.beginSelectionGesture()
+	ctx[GRID_ENGINE].beginSelectionGesture()
 
 	// Clear cell range selection when selecting rows
-	if (ctx.engine.selectedCellRange) {
-		ctx.engine.clearCellSelection()
+	if (ctx[GRID_ENGINE].selectedCellRange) {
+		ctx[GRID_ENGINE].clearCellSelection()
 		removeRangeBorder()
 	}
 
 	// Clear focused cell when selecting rows
-	if (ctx.engine.focusedCell) {
-		const { rowIndex: focusedRow, colIndex: focusedCol } = ctx.engine.focusedCell
+	if (ctx[GRID_ENGINE].focusedCell) {
+		const { rowIndex: focusedRow, colIndex: focusedCol } = ctx[GRID_ENGINE].focusedCell
 		const focusedCellEl = ctx.shadow.querySelector(
 			`.wg__cell[data-row="${focusedRow}"][data-col="${focusedCol}"]`
 		)
 		focusedCellEl?.classList.remove('wg__cell--focused')
-		ctx.engine.clearFocusedCell()
+		ctx[GRID_ENGINE].clearFocusedCell()
 	}
 
 	// Determine selection mode based on modifier keys
 	if (event.ctrlKey || event.metaKey) {
 		// Ctrl+Click: Toggle selection
-		ctx.engine.selectRow(rowIndex, 'toggle')
-		ctx.engine.endSelectionGesture()
+		ctx[GRID_ENGINE].selectRow(rowIndex, 'toggle')
+		ctx[GRID_ENGINE].endSelectionGesture()
 		focusContainerForShortcuts(ctx)
 		return
 	}
 
 	if (event.shiftKey) {
 		// Shift+Click: Range selection from last selected
-		ctx.engine.selectRow(rowIndex, 'range')
-		ctx.engine.endSelectionGesture()
+		ctx[GRID_ENGINE].selectRow(rowIndex, 'range')
+		ctx[GRID_ENGINE].endSelectionGesture()
 		focusContainerForShortcuts(ctx)
 		return
 	}
@@ -130,7 +131,7 @@ export function handleRowNumberMouseDown<T>(ctx: GridHost<T>, rowIndex: number, 
 	activeContext = ctx as GridHost
 
 	// Select the row immediately (replace mode)
-	ctx.engine.selectRow(rowIndex, 'replace')
+	ctx[GRID_ENGINE].selectRow(rowIndex, 'replace')
 
 	// Focus the container so keyboard shortcuts work
 	focusContainerForShortcuts(ctx)
@@ -166,7 +167,7 @@ function handleDocumentMouseMove(e: MouseEvent): void {
 	if (rowIndex !== null && rowIndex !== selectionState.currentRowIndex) {
 		selectionState.currentRowIndex = rowIndex
 		// Update selection range
-		activeContext.engine.selectRowRange(selectionState.startRowIndex, rowIndex)
+		activeContext[GRID_ENGINE].selectRowRange(selectionState.startRowIndex, rowIndex)
 	}
 }
 
@@ -191,7 +192,7 @@ function handleDocumentMouseUp(): void {
 	const ctx = activeContext
 
 	// The drag is over: notify the row selection once
-	ctx.engine.endSelectionGesture()
+	ctx[GRID_ENGINE].endSelectionGesture()
 
 	// Remove selecting class
 	const container = ctx.shadow.querySelector('.wg') as HTMLElement | null
@@ -267,15 +268,15 @@ export function handleContainerClick<T>(ctx: GridHost<T>, event: MouseEvent): vo
 	}
 
 	// Clear selection
-	ctx.engine.clearRowSelection()
+	ctx[GRID_ENGINE].clearRowSelection()
 }
 
 /**
  * Handle Escape key to clear selection
  */
 export function handleEscapeKey<T>(ctx: GridHost<T>): boolean {
-	if (ctx.engine.selectedRowIndices.length > 0) {
-		ctx.engine.clearRowSelection()
+	if (ctx[GRID_ENGINE].selectedRowIndices.length > 0) {
+		ctx[GRID_ENGINE].clearRowSelection()
 		return true // Handled
 	}
 	return false // Not handled

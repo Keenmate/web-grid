@@ -252,6 +252,7 @@ import {
 } from './modules/actions/index.js'
 
 import type { GridHost } from './modules/grid-context.js'
+import { GRID_ENGINE } from './modules/grid-context.js'
 import { syncLoadingMoreLoader, removeAllLoaders } from './modules/rendering/loader.js'
 import { applyGridAria } from './modules/rendering/aria.js'
 
@@ -763,10 +764,10 @@ export interface GridElementConfig<T = unknown> {
 }
 
 /**
- * GridElement - Custom HTML Element for GridEngine
+ * GridElement - the `<web-grid>` custom element
  *
  * Extends {@link BlissElement} (SSR-safe base + §12.3 registry) and composes
- * GridEngine for business logic.
+ * a private internal engine for the grid state.
  *
  * Usage:
  * ```html
@@ -779,13 +780,13 @@ export interface GridElementConfig<T = unknown> {
  * grid.columns = [...];
  * ```
  */
-export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, GridController<T>> implements GridHost<T> {
+export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, GridController<T>> {
 	// ── Declarative attribute layer (core input table) ────────────────────────
 	// Every row here is a scalar/enum config flag exposed as a kebab HTML
 	// attribute AND a reactive property, or a property-only callback (core
 	// installs the accessor; GridElementConfig types it). `default` mirrors the GridEngine field initializer so a fresh
 	// element behaves identically. `on: 'update'` → each change is bridged into
-	// `this.engine` (see `update()`), whose setter re-renders. Structured config
+	// `this.#engine` (see `update()`), whose setter re-renders. Structured config
 	// (columns/items/menus/toolbars/shortcuts), self-mutated UI state (currentPage, sort,
 	// filters, focusedRowIndex, totalItems, expandedPaths, hasMoreItems)
 	// deliberately stay property-only.
@@ -998,7 +999,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		// Gate of every scroll the grid makes on its own (keyboard moves, scrollToRow, go-to-row; rulebook
 		// D-CA-5): `false` skips it, a partial `options` replaces the defaults. Element-local (not on the engine).
 		{ configKey: 'beforeScrollCallback', converter: toFunction<(ctx: GridBeforeScrollContext) => unknown>(), on: 'update', type: '((ctx: GridBeforeScrollContext) => false | Partial<GridScrollOptions> | void) | null', description: 'Runs before the grid scrolls a cell / row into view on its own (`ctx.source`: keyboard | scroll-to-row | go-to-row); `false` skips, a partial `options` replaces the defaults. Synchronous.' },
-		// Tooltip timing (element-local, not on the engine — the bridge's `in this.engine`
+		// Tooltip timing (element-local, not on the engine — the bridge's `in this.#engine`
 		// guard skips them; readers use the input's getter)
 		{ configKey: 'tooltipShowDelay', attribute: 'tooltip-show-delay', converter: toInt({ min: 0, default: 200 }), default: 200, on: 'update', description: 'Delay (ms) before a cell tooltip shows. Default: `200`.' },
 		{ configKey: 'tooltipHideDelay', attribute: 'tooltip-hide-delay', converter: toInt({ min: 0, default: 100 }), default: 100, on: 'update', description: 'Delay (ms) before a cell tooltip hides. Default: `100`.' },
@@ -1006,7 +1007,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		{ configKey: 'overlayGroup', attribute: 'overlay-group', converter: toText({ isNullable: true }), on: 'update', type: 'string | null', description: 'Scope the "one overlay open at a time" coordination to a named group. Overlays (the cell dropdown, the row toolbar with a click / button trigger, multiselects, datepickers, external popovers) sharing a group dismiss each other when one opens; different groups are independent. Unset = the default (ungrouped) group.' },
 		// Row identity & tree data (bridged into the engine like every row; its setters
 		// rebuild the tree state / expanded set and re-render). `''` = none on both paths.
-		{ configKey: 'idMember', attribute: 'id-member', converter: toText({ isNullable: true, isEmptyAllowed: true, default: 'id' }), default: 'id', on: 'update', type: 'string | null', getLiveValue: (el) => (el as GridElement).engine.idMember, description: "Field that uniquely identifies a row; `null` / `''` = none. The only row-id member: drafts, invalid-cell markers, `getRowId` / `getRowById` / `updateRowById` / `replaceRowById` / `lockRowById` use it (`getIdCallback` wins when set). Default: `id`." },
+		{ configKey: 'idMember', attribute: 'id-member', converter: toText({ isNullable: true, isEmptyAllowed: true, default: 'id' }), default: 'id', on: 'update', type: 'string | null', getLiveValue: (el) => (el as GridElement).#engine.idMember, description: "Field that uniquely identifies a row; `null` / `''` = none. The only row-id member: drafts, invalid-cell markers, `getRowId` / `getRowById` / `updateRowById` / `replaceRowById` / `lockRowById` use it (`getIdCallback` wins when set). Default: `id`." },
 		{ configKey: 'pathMember', attribute: 'path-member', converter: toText({ isNullable: true }), default: null, on: 'update', type: 'string | null', description: 'Tree data: the field holding a row’s path (`"1.2.3"`); setting it turns the grid into a tree. Unset = flat data.' },
 		{ configKey: 'levelMember', attribute: 'level-member', converter: toText({ isNullable: true }), default: null, on: 'update', type: 'string | null', description: 'Tree data: the field holding a row’s depth, when the data has levels instead of paths.' },
 		{ configKey: 'parentPathMember', attribute: 'parent-path-member', converter: toText({ isNullable: true }), default: null, on: 'update', type: 'string | null', description: 'Tree data: the field holding the parent row’s path.' },
@@ -1083,11 +1084,16 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	declare onAction: ((detail: GridEventMap<T>['action']) => void) | null
 
 	/**
-	 * The internal state engine (composition) — module plumbing. Not public API:
-	 * use the element's properties / methods or `el.controller`.
-	 * @internal
+	 * The internal state engine (composition). Truly private: the modules reach it through
+	 * the symbol-keyed `GRID_ENGINE` property (modules/grid-context.ts), never a public member.
 	 */
-	readonly engine: GridEngine<T>
+	readonly #engine: GridEngine<T>
+
+	/** This element as the module host (`GridHost`: the element + its engine under `GRID_ENGINE`). */
+	get #host(): GridHost<T> {
+		const host: Omit<GridHost<T>, typeof GRID_ENGINE> = this
+		return host as GridHost<T>
+	}
 
 	// Shadow DOM root
 	/** @internal */
@@ -1185,13 +1191,15 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		/** @internal */
 		this.shadow = this.attachShadow({ mode: 'open' })
 		/** @internal */
-		this.engine = new GridEngine<T>()
-		this.engine.setStateStore(this.#stateStore)
+		this.#engine = new GridEngine<T>()
+		// The modules' handle on the engine (symbol-keyed, non-enumerable — not a public member)
+		Object.defineProperty(this, GRID_ENGINE, { value: this.#engine })
+		this.#engine.setStateStore(this.#stateStore)
 		// Labels through core /locale: page-wide flat labels ('web-grid.<key>') + translateCallback, this element's logger
-		this.engine.setLabelHost(this)
+		this.#engine.setLabelHost(this)
 		// Every ctx / detail carries `controller` + `element`; the engine's
 		// notifications become events (emit → `on*` twin + DOM event).
-		this.engine.attachHost(this, () => this.controller, (name, detail) => {
+		this.#engine.attachHost(this, () => this.controller, (name, detail) => {
 			this.emit(name, detail as never)
 			// Commits update cells surgically (no full render) — refresh the summary too
 			if (name === 'row-change') this.scheduleSummaryRefresh()
@@ -1223,15 +1231,15 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		// Override requestUpdate to invalidate the data-pipeline cache and trigger DOM render.
 		// Every state-changing setter on GridEngine funnels through requestUpdate(), so this is
 		// the single canonical point to drop cached paginatedItems / displayItems.
-		// (A typed local, not `(this.engine as …).x = …`: the CEM analyzer would list those as element fields.)
-		const engineHooks = this.engine as unknown as {
+		// (A typed local, not `(this.#engine as …).x = …`: the CEM analyzer would list those as element fields.)
+		const engineHooks = this.#engine as unknown as {
 			requestUpdate: () => void
 			_onInteractionChange: ((type: string, detail: { prev: unknown, current: unknown }) => void) | null
 			_onCommitApplied: ((rowIndex: number, field: string) => void) | null
 		}
 		/** @internal */
 		engineHooks.requestUpdate = () => {
-			this.engine.invalidateDisplayCache()
+			this.#engine.invalidateDisplayCache()
 			this.requestUpdate()
 		}
 
@@ -1241,7 +1249,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 			if (type === 'editingCell' && detail.current === null) {
 				// The edit ended (saved / cancelled, any path) - close its dropdown / date picker
 				// ('api': whoever ended the edit already saved or cancelled it)
-				removeDropdown(this)
+				removeDropdown(this.#host)
 				if (this.datepicker) {
 					this.datepicker.close()
 					this.datepicker = null
@@ -1253,9 +1261,9 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		// transform, the invalid mark). A cell being edited again keeps its editor.
 		/** @internal */
 		engineHooks._onCommitApplied = (rowIndex, field) => {
-			if (this.engine.isEditing(rowIndex, field)) return
-			const colIndex = this.engine.columns.findIndex(c => String(c.field) === field)
-			if (colIndex >= 0) renderCell(this, rowIndex, colIndex)
+			if (this.#engine.isEditing(rowIndex, field)) return
+			const colIndex = this.#engine.columns.findIndex(c => String(c.field) === field)
+			if (colIndex >= 0) renderCell(this.#host, rowIndex, colIndex)
 		}
 	}
 
@@ -1278,7 +1286,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	 * values (core already resolved preset vs explicit) must land after it.
 	 * `isDisabled` is applied by `disabledChanged()` / `reinit()` (core SPEC §6.4). */
 	#applyConfig(cfg: Record<string, unknown>): void {
-		const target = this.engine as unknown as Record<string, unknown>
+		const target = this.#engine as unknown as Record<string, unknown>
 		if ('preset' in cfg) target.preset = cfg.preset
 		for (const key of Object.keys(cfg)) {
 			if (key !== 'preset' && key !== 'isDisabled' && key in target) target[key] = cfg[key]
@@ -1313,7 +1321,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	#customStylesOptions(): CustomStylesOptions {
 		return {
 			cssClass: 'wg-custom-styles',
-			getContext: () => this.engine.ctx({}),
+			getContext: () => this.#engine.ctx({}),
 			getInstanceStyles: () => ({ css: this.config.customStyles as string | null, callback: this.config.getCustomStylesCallback as GridElementConfig<T>['getCustomStylesCallback'] }),
 		}
 	}
@@ -1339,10 +1347,10 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	protected reinit(): void {
 		// First connect: seed the grid from the merged input config.
 		this.#applyConfig(this.config as Record<string, unknown>)
-		this.engine.isDisabled = this.isEffectivelyDisabled
+		this.#engine.isDisabled = this.isEffectivelyDisabled
 		this.#applyCustomStyles()
 		// Persisted column widths / order (async; waits for `columns` when there are none yet)
-		this.engine.loadPersistedState()
+		this.#engine.loadPersistedState()
 		this.#isBuilt = true
 	}
 
@@ -1356,13 +1364,13 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		const isPhoneSheet = resolvePresentation('auto', env) === 'fullscreen'
 		if (isPhoneSheet === this.isPhoneSheet) return
 		this.isPhoneSheet = isPhoneSheet
-		applyDropdownPresentation(this)
+		applyDropdownPresentation(this.#host)
 		this.datepicker?.setSheet(isPhoneSheet)
 	}
 
 	/** The page-wide `window.components.locale` changed: re-resolve the labels and re-render. */
 	protected override localeChanged(): void {
-		this.engine.refreshLabels()
+		this.#engine.refreshLabels()
 	}
 
 	/**
@@ -1375,16 +1383,16 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	}
 
 	#repaintIcons(): void {
-		this.engine.refreshIcons()
-		repaintOpenToolbarIcons(this)
-		repaintDropdownIcons(this)
+		this.#engine.refreshIcons()
+		repaintOpenToolbarIcons(this.#host)
+		repaintDropdownIcons(this.#host)
 	}
 
 	protected override disabledChanged(isDisabled: boolean): void {
-		this.engine.isDisabled = isDisabled
+		this.#engine.isDisabled = isDisabled
 		if (isDisabled) {
-			closeGridMenu(this)
-			closeToolbarAndReset(this)
+			closeGridMenu(this.#host)
+			closeToolbarAndReset(this.#host)
 		}
 	}
 
@@ -1393,15 +1401,15 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		this.#applyConfig(partial)
 		// A new key / persist flag / source: load its persisted column state
 		if ('storageKey' in partial || 'shouldPersistColumnWidths' in partial || 'shouldPersistColumnOrder' in partial || 'loadStateCallback' in partial) {
-			this.engine.loadPersistedState()
+			this.#engine.loadPersistedState()
 		}
 		if ('customStyles' in partial || 'getCustomStylesCallback' in partial) this.#customStyles?.refresh()
 		// Icons are rendered with the table / toolbar / dropdown markup: a new icon hook redraws them
 		if ('renderIconCallback' in partial) this.#repaintIcons()
 		// Labels are resolved into the engine's labels object: a new translate hook re-resolves + re-renders them
-		if ('translateCallback' in partial) this.engine.refreshLabels()
+		if ('translateCallback' in partial) this.#engine.refreshLabels()
 		// Core createTooltip reads its delays once: a new delay restarts the tooltips
-		if ('tooltipShowDelay' in partial || 'tooltipHideDelay' in partial) this.tooltip.start(this)
+		if ('tooltipShowDelay' in partial || 'tooltipHideDelay' in partial) this.tooltip.start(this.#host)
 	}
 
 	#columnResize: PointerDrag | null = null
@@ -1411,26 +1419,26 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	protected connect(): void {
 		initLogger.debug('connect — grid activated')
 		// Initialize action pipeline adapter for 'always' editTrigger mode
-		this.pipelineAdapter = createActionPipelineAdapter(this)
+		this.pipelineAdapter = createActionPipelineAdapter(this.#host)
 		this.render()
 		// Register paste handler for navigate mode
 		this.addEventListener('paste', this.handlePaste as EventListener)
 		// A mouse button released anywhere ends the table press (see attachEventListeners)
 		document.addEventListener('mouseup', this.#onDocumentMouseUp, true)
 		// Column resize: core pointer drag on the host (mouse + touch; survives the table re-render)
-		this.#columnResize = createColumnResize(this, this)
-		this.#columnReorder = createColumnReorder(this, this)
+		this.#columnResize = createColumnResize(this.#host, this)
+		this.#columnReorder = createColumnReorder(this.#host, this)
 		// Filter-row typing, IME-safe (delegated on the shadow root — survives the thead re-render)
-		this.#stopFilterText = watchFilterRowText(this, this.shadow)
+		this.#stopFilterText = watchFilterRowText(this.#host, this.shadow)
 		// Tooltips: core createTooltip delegated over the shadow root (hover + keyboard focus)
-		this.tooltip.start(this)
+		this.tooltip.start(this.#host)
 	}
 
 	protected override destroyCallback(): void {
 		// Loader render hooks may hold resources (their returned cleanup)
-		removeAllLoaders(this)
+		removeAllLoaders(this.#host)
 		// An open cell dropdown's popover (its document scroll listeners) goes too
-		removeDropdown(this)
+		removeDropdown(this.#host)
 		this.#customStyles?.destroy()
 		this.#customStyles = null
 	}
@@ -1458,11 +1466,11 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 			this.datepicker.destroy()
 			this.datepicker = null
 		}
-		closeGridMenu(this)
+		closeGridMenu(this.#host)
 		// Close any open toolbar
-		closeToolbarAndReset(this)
+		closeToolbarAndReset(this.#host)
 		// Cleanup inline shortcuts
-		removeInlineShortcuts(this)
+		removeInlineShortcuts(this.#host)
 		// Cleanup selection borders
 		removeAllSelectionBorders()
 	}
@@ -1472,161 +1480,161 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	// ==========================================================================
 
 	/** Row data. Reading returns the live rows: after `insertRow` / `removeRows` / `moveRow`, the row built-ins and a committed new row (cell edits stay in drafts — `getDrafts()`). */
-	get items(): T[] { return this.engine.items }
+	get items(): T[] { return this.#engine.items }
 	set items(value: T[]) {
 		// Reset infinite scroll loading flag (before the re-render, so the
 		// `messages.loading` row goes away with it)
 		this.virtualScroll.setIsLoadingMore(false)
 		this.shadow?.querySelector('.wg__loading-more-row')?.remove()
-		if (this.shadow) syncLoadingMoreLoader(this)
-		const wasEditing = !!this.engine.editingCell
+		if (this.shadow) syncLoadingMoreLoader(this.#host)
+		const wasEditing = !!this.#engine.editingCell
 		const hadFocus = !!this.shadow?.activeElement
-		this.engine.items = value
+		this.#engine.items = value
 		// The edited row is gone (the engine cancelled the edit): its editor goes with the
 		// render, so keyboard focus moves to the grid instead of falling to <body>
-		if (wasEditing && !this.engine.editingCell && hadFocus) this.#isEditedRowGone = true
+		if (wasEditing && !this.#engine.editingCell && hadFocus) this.#isEditedRowGone = true
 	}
 
 	/** Column definitions (`Column<T>[]`, at least a `field` each): title, width, alignment, editor, validation, tooltip, … */
-	get columns(): Column<T>[] { return this.engine.columns }
-	set columns(value: Column<T>[]) { this.engine.columns = value }
+	get columns(): Column<T>[] { return this.#engine.columns }
+	set columns(value: Column<T>[]) { this.#engine.columns = value }
 
 	/** Current filter text per field. Assigning is silent (no `filter-change`), like a native `input.value`; `setFilter()` fires it. */
-	get filters(): Record<string, string> { this.flush(); return this.engine.filters }
+	get filters(): Record<string, string> { this.flush(); return this.#engine.filters }
 	/** Assignment is silent (no `filter-change`), like a native `input.value`; use `setFilter()` to fire it. */
-	set filters(value: Record<string, string>) { this.engine.filters = value }
+	set filters(value: Record<string, string>) { this.#engine.filters = value }
 	/** Set (or clear, with `''`) one column filter; fires `filter-change` unless `{ isSilent: true }`. */
-	setFilter(field: string, value: string, options?: { isSilent?: boolean }): void { this.flush(); this.engine.setFilter(field, value, options) }
+	setFilter(field: string, value: string, options?: { isSilent?: boolean }): void { this.flush(); this.#engine.setFilter(field, value, options) }
 
 	/** Options of the pager’s rows-per-page selector, e.g. `[10, 25, 50, 100]`. */
-	get pageSizes(): number[] { return this.engine.pageSizes }
-	set pageSizes(value: number[]) { this.engine.pageSizes = value }
+	get pageSizes(): number[] { return this.#engine.pageSizes }
+	set pageSizes(value: number[]) { this.#engine.pageSizes = value }
 
 	/** Whether the cell has an unsaved change (a draft value). */
-	isCellDirty(rowIndex: number, field: string): boolean { this.flush(); return this.engine.isCellDirty(rowIndex, field) }
+	isCellDirty(rowIndex: number, field: string): boolean { this.flush(); return this.#engine.isCellDirty(rowIndex, field) }
 	/** Whether the row has any unsaved change (a draft). */
-	isRowDirty(rowIndex: number): boolean { this.flush(); return this.engine.isRowDirty(rowIndex) }
+	isRowDirty(rowIndex: number): boolean { this.flush(); return this.#engine.isRowDirty(rowIndex) }
 
 	/** External validation state: `{ rowIndex, field, error }[]` marks cells invalid (with the tooltip). */
-	get invalidCells(): CellValidationState[] { return this.engine.invalidCells }
-	set invalidCells(value: CellValidationState[]) { this.engine.invalidCells = value }
+	get invalidCells(): CellValidationState[] { return this.#engine.invalidCells }
+	set invalidCells(value: CellValidationState[]) { this.#engine.invalidCells = value }
 
 	/** Row toolbar entries — built-in names (`add`, `delete`, `duplicate`, `move-up`, …), action items, dividers. Default: `['add', 'delete', 'duplicate']`. */
-	get rowToolbar(): GridToolbarEntry<T>[] { return this.engine.rowToolbar }
-	set rowToolbar(value: GridToolbarEntry<T>[]) { this.engine.rowToolbar = value }
+	get rowToolbar(): GridToolbarEntry<T>[] { return this.#engine.rowToolbar }
+	set rowToolbar(value: GridToolbarEntry<T>[]) { this.#engine.rowToolbar = value }
 
 	/** The column (field or index) the row toolbar is pinned over in the `top` position. */
-	get toolbarColumn(): string | number | undefined { return this.engine.toolbarColumn }
-	set toolbarColumn(value: string | number | undefined) { this.engine.toolbarColumn = value }
+	get toolbarColumn(): string | number | undefined { return this.#engine.toolbarColumn }
+	set toolbarColumn(value: string | number | undefined) { this.#engine.toolbarColumn = value }
 
 	/** Cell-specific toolbar items, merged over `rowToolbar` by `id` / `action`: `(ctx: CellContext) => entries | null`. */
 	get getCellToolbarItemsCallback(): ((ctx: CellContext<T>) => GridToolbarEntry<T>[] | null | undefined) | undefined {
-		return this.engine.getCellToolbarItemsCallback
+		return this.#engine.getCellToolbarItemsCallback
 	}
 	set getCellToolbarItemsCallback(value: ((ctx: CellContext<T>) => GridToolbarEntry<T>[] | null | undefined) | undefined) {
-		this.engine.getCellToolbarItemsCallback = value
+		this.#engine.getCellToolbarItemsCallback = value
 	}
 
 
 	/** Cell / row context menu entries: built-in names, menu items, dividers. Unset = no grid menu. */
-	get contextMenu(): GridMenuEntry<T>[] | undefined { return this.engine.contextMenu }
-	set contextMenu(value: GridMenuEntry<T>[] | undefined) { this.engine.contextMenu = value }
+	get contextMenu(): GridMenuEntry<T>[] | undefined { return this.#engine.contextMenu }
+	set contextMenu(value: GridMenuEntry<T>[] | undefined) { this.#engine.contextMenu = value }
 
 	// Header context menu
 	/** Header context menu entries: built-in names (column visibility, sort, …), menu items, dividers. */
-	get headerContextMenu(): GridHeaderMenuEntry<T>[] | undefined { return this.engine.headerContextMenu }
-	set headerContextMenu(value: GridHeaderMenuEntry<T>[] | undefined) { this.engine.headerContextMenu = value }
+	get headerContextMenu(): GridHeaderMenuEntry<T>[] | undefined { return this.#engine.headerContextMenu }
+	set headerContextMenu(value: GridHeaderMenuEntry<T>[] | undefined) { this.#engine.headerContextMenu = value }
 
 	// Row keyboard shortcuts
 	/** Action items bound to a key on the focused / hovered row. */
-	get rowShortcuts(): GridShortcut<T>[] | undefined { return this.engine.rowShortcuts }
-	set rowShortcuts(value: GridShortcut<T>[] | undefined) { this.engine.rowShortcuts = value }
+	get rowShortcuts(): GridShortcut<T>[] | undefined { return this.#engine.rowShortcuts }
+	set rowShortcuts(value: GridShortcut<T>[] | undefined) { this.#engine.rowShortcuts = value }
 
 	// Range shortcuts (selected rows / cell range)
 	/** Action items bound to a key on the selected rows / cell range. */
-	get rangeShortcuts(): GridRangeShortcut<T>[] { return this.engine.rangeShortcuts }
-	set rangeShortcuts(value: GridRangeShortcut<T>[]) { this.engine.rangeShortcuts = value }
+	get rangeShortcuts(): GridRangeShortcut<T>[] { return this.#engine.rangeShortcuts }
+	set rangeShortcuts(value: GridRangeShortcut<T>[]) { this.#engine.rangeShortcuts = value }
 
 	// Row selection
 	/** The selected row objects, in display order. */
-	get selectedRows(): T[] { this.flush(); return this.engine.selectedRows }
+	get selectedRows(): T[] { this.flush(); return this.#engine.selectedRows }
 	/** Display indices of the selected rows, ascending. */
-	get selectedRowIndices(): number[] { this.flush(); return this.engine.selectedRowIndices }
+	get selectedRowIndices(): number[] { this.flush(); return this.#engine.selectedRowIndices }
 	/** Select a row by display index: `replace` (default) the selection, `toggle` it in / out, or extend a `range` from the anchor. Fires `row-selection-change` on a real change. */
-	selectRow(rowIndex: number, mode: 'replace' | 'toggle' | 'range' = 'replace'): void { this.flush(); this.engine.selectRow(rowIndex, mode) }
+	selectRow(rowIndex: number, mode: 'replace' | 'toggle' | 'range' = 'replace'): void { this.flush(); this.#engine.selectRow(rowIndex, mode) }
 	/** Select the rows between two display indices (inclusive). Fires `row-selection-change` on a real change. */
-	selectRowRange(fromIndex: number, toIndex: number): void { this.flush(); this.engine.selectRowRange(fromIndex, toIndex) }
+	selectRowRange(fromIndex: number, toIndex: number): void { this.flush(); this.#engine.selectRowRange(fromIndex, toIndex) }
 	/** Clear every selection kind: rows, the cell range and columns. */
-	clearSelection(): void { this.flush(); this.engine.clearSelection() }
+	clearSelection(): void { this.flush(); this.#engine.clearSelection() }
 	/** Clear only the row selection. */
-	clearRowSelection(): void { this.flush(); this.engine.clearRowSelection() }
+	clearRowSelection(): void { this.flush(); this.#engine.clearRowSelection() }
 	/** Whether the row at this display index is selected. */
-	isRowSelected(rowIndex: number): boolean { this.flush(); return this.engine.isRowSelected(rowIndex) }
+	isRowSelected(rowIndex: number): boolean { this.flush(); return this.#engine.isRowSelected(rowIndex) }
 	/** Copy the selected rows (tab-separated) to the clipboard; resolves `false` when nothing was copied. */
-	copySelectedRowsToClipboard(): Promise<boolean> { this.flush(); return this.engine.copySelectedRowsToClipboard() }
+	copySelectedRowsToClipboard(): Promise<boolean> { this.flush(); return this.#engine.copySelectedRowsToClipboard() }
 
 	// Cell range selection
 
 	/** The selected cell range (`startRowIndex` / `endRowIndex`, on-screen `startColIndex` / `endColIndex`, `startField` / `endField`) or `null`. */
-	get selectedCellRange() { return this.engine.selectedCellRange }
+	get selectedCellRange() { return this.#engine.selectedCellRange }
 	/** Select a cell range (`{ startRowIndex, endRowIndex, startColIndex, endColIndex }`). Fires `cell-selection-change` on a real change. */
-	selectCellRange(range: any): void { this.flush(); this.engine.selectCellRange(range) }
+	selectCellRange(range: any): void { this.flush(); this.#engine.selectCellRange(range) }
 	/** Clear only the cell range selection. */
-	clearCellSelection(): void { this.flush(); this.engine.clearCellSelection() }
+	clearCellSelection(): void { this.flush(); this.#engine.clearCellSelection() }
 	/** The cells of the selected range, as cell contexts (`row`, `rowIndex`, `column`, `field`, `value`, …). */
-	getSelectedCells() { this.flush(); return this.engine.getSelectedCells() }
+	getSelectedCells() { this.flush(); return this.#engine.getSelectedCells() }
 	/** Copy the selected cell range (tab-separated, headers with `shouldCopyWithHeaders`) to the clipboard; resolves `false` when nothing was copied. */
-	copyCellSelectionToClipboard(): Promise<boolean> { this.flush(); return this.engine.copyCellSelectionToClipboard() }
+	copyCellSelectionToClipboard(): Promise<boolean> { this.flush(); return this.#engine.copyCellSelectionToClipboard() }
 
 	// New empty row (inline data entry) — EXPERIMENTAL: API may change
 
 	// Tree / hierarchy
 
 	/** The expanded tree paths (a copy). Assigning replaces the expanded state (no events); `null` → the `expandLevel` default. */
-	get expandedPaths(): string[] { return this.engine.expandedPaths }
-	set expandedPaths(value: string[] | null | undefined) { this.engine.expandedPaths = value }
+	get expandedPaths(): string[] { return this.#engine.expandedPaths }
+	set expandedPaths(value: string[] | null | undefined) { this.#engine.expandedPaths = value }
 
 	/** Whether the tree row with this path is expanded. */
-	isPathExpanded(path: string): boolean { this.flush(); return this.engine.isPathExpanded(path) }
+	isPathExpanded(path: string): boolean { this.flush(); return this.#engine.isPathExpanded(path) }
 	/** Expand / collapse one tree row (`row-expand` / `row-collapse` + `expanded-change`). */
-	toggleRowExpanded(path: string, options?: ExpandOptions): void { this.flush(); this.engine.toggleRowExpanded(path, options) }
+	toggleRowExpanded(path: string, options?: ExpandOptions): void { this.flush(); this.#engine.toggleRowExpanded(path, options) }
 	/** Expand the given tree rows one level, ancestors opening too (`row-expand` per row + `expanded-change`). */
-	expandRows(paths: string | string[], options?: ExpandOptions): void { this.flush(); this.engine.expandRows(paths, options) }
+	expandRows(paths: string | string[], options?: ExpandOptions): void { this.flush(); this.#engine.expandRows(paths, options) }
 	/** Collapse the given tree rows (`row-collapse` per row + `expanded-change`). */
-	collapseRows(paths: string | string[], options?: ExpandOptions): void { this.flush(); this.engine.collapseRows(paths, options) }
+	collapseRows(paths: string | string[], options?: ExpandOptions): void { this.flush(); this.#engine.collapseRows(paths, options) }
 	/** Expand the whole tree (`null`) — or the given rows and everything under them (`expanded-change` only). */
-	expandAll(paths?: string | string[] | null, options?: ExpandOptions): void { this.flush(); this.engine.expandAll(paths, options) }
+	expandAll(paths?: string | string[] | null, options?: ExpandOptions): void { this.flush(); this.#engine.expandAll(paths, options) }
 	/** Collapse the whole tree (`null`) — or the given rows and everything under them (`expanded-change` only). */
-	collapseAll(paths?: string | string[] | null, options?: ExpandOptions): void { this.flush(); this.engine.collapseAll(paths, options) }
+	collapseAll(paths?: string | string[] | null, options?: ExpandOptions): void { this.flush(); this.#engine.collapseAll(paths, options) }
 
 	/** The focused row (display index) or `null`. Assigning is silent (no `focus-change`), like a native `input.value`. */
-	get focusedRowIndex(): number | null { return this.engine.focusedRowIndex }
+	get focusedRowIndex(): number | null { return this.#engine.focusedRowIndex }
 	/** Assignment is silent (no `focus-change`), like a native `input.value`. */
-	set focusedRowIndex(value: number | null) { this.engine.focusedRowIndex = value }
+	set focusedRowIndex(value: number | null) { this.#engine.focusedRowIndex = value }
 
 	// Sorting & Pagination
 	/** Current sort state (`{ column, direction }[]`) — set it for an initial / server-side sort. */
-	get sort(): SortState[] { return this.engine.sort }
-	set sort(value: SortState[]) { this.engine.sort = value }
+	get sort(): SortState[] { return this.#engine.sort }
+	set sort(value: SortState[]) { this.#engine.sort = value }
 
 	/** Current page (1-based). A filter change resets it to 1; a shorter `items` clamps it. */
-	get currentPage(): number { return this.engine.currentPage }
-	set currentPage(value: number) { this.engine.currentPage = value }
+	get currentPage(): number { return this.#engine.currentPage }
+	set currentPage(value: number) { this.#engine.currentPage = value }
 
 	/** Total row count for server-side paging. `null` = `items.length`. */
-	get totalItems(): number | null { return this.engine.totalItems }
-	set totalItems(value: number | null) { this.engine.totalItems = value }
+	get totalItems(): number | null { return this.#engine.totalItems }
+	set totalItems(value: number | null) { this.#engine.totalItems = value }
 
 	/** Server-provided data passed to `renderSummaryCallback` as `ctx.metadata`. */
-	get summaryMetadata(): unknown { return this.engine.summaryMetadata }
-	set summaryMetadata(value: unknown) { this.engine.summaryMetadata = value }
+	get summaryMetadata(): unknown { return this.#engine.summaryMetadata }
+	set summaryMetadata(value: unknown) { this.#engine.summaryMetadata = value }
 
 	// Row identification (`idMember` above; this is its computed twin)
 
 	// Row locking
 	/** Row locking options (`isLockedMember`, `lockInfoMember`, `getIsLockedCallback`, `lockedEditBehavior`, …). */
-	get rowLocking(): RowLockingOptions<T> | undefined { return this.engine.rowLocking }
-	set rowLocking(value: RowLockingOptions<T> | undefined) { this.engine.rowLocking = value }
+	get rowLocking(): RowLockingOptions<T> | undefined { return this.#engine.rowLocking }
+	set rowLocking(value: RowLockingOptions<T> | undefined) { this.#engine.rowLocking = value }
 
 
 	// Fill handle: `false` cancels the fill (async OK)
@@ -1638,13 +1646,13 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	// Infinite scroll
 
 	/** Infinite scroll: set `false` when the server has no more rows. Default: `true`. */
-	get hasMoreItems(): boolean { return this.engine.hasMoreItems }
+	get hasMoreItems(): boolean { return this.#engine.hasMoreItems }
 	set hasMoreItems(value: boolean) {
-		this.engine.hasMoreItems = value
+		this.#engine.hasMoreItems = value
 		if (!value) {
 			this.virtualScroll.setIsLoadingMore(false)
 			this.shadow?.querySelector('.wg__loading-more-row')?.remove()
-			if (this.shadow) syncLoadingMoreLoader(this)
+			if (this.shadow) syncLoadingMoreLoader(this.#host)
 		}
 	}
 
@@ -1652,81 +1660,81 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 
 	// Computed properties
 	/** The rows currently displayed (filtered, sorted, paged), read-only. */
-	get displayItems(): T[] { this.flush(); return this.engine.displayItems }
+	get displayItems(): T[] { this.flush(); return this.#engine.displayItems }
 	/** Page count of the current rows, read-only. */
-	get totalPages(): number { this.flush(); return this.engine.totalPages }
+	get totalPages(): number { this.flush(); return this.#engine.totalPages }
 	/** Whether the grid is in the Excel-like `navigate` editing mode, read-only. */
-	get isNavigateMode(): boolean { this.flush(); return this.engine.isNavigateMode }
+	get isNavigateMode(): boolean { this.flush(); return this.#engine.isNavigateMode }
 
 	// Draft row methods
 	/** The draft (unsaved copy) of the row at this display index, or `undefined`. */
-	getRowDraft(rowIndex: number): T | undefined { this.flush(); return this.engine.getRowDraft(rowIndex) }
+	getRowDraft(rowIndex: number): T | undefined { this.flush(); return this.#engine.getRowDraft(rowIndex) }
 	/** Whether the row at this display index has a draft. */
-	hasRowDraft(rowIndex: number): boolean { this.flush(); return this.engine.hasRowDraft(rowIndex) }
+	hasRowDraft(rowIndex: number): boolean { this.flush(); return this.#engine.hasRowDraft(rowIndex) }
 	/** Display indices of every displayed row with a draft. */
-	getDraftRowIndices(): number[] { this.flush(); return this.engine.getDraftRowIndices() }
+	getDraftRowIndices(): number[] { this.flush(); return this.#engine.getDraftRowIndices() }
 	/**
 	 * Every unsaved draft `{ row, draftRow, changedFields, isValid }` — incl. rows on other
 	 * pages, filtered out, or not in the current `items` (drafts are never pruned; they
 	 * leave via `replaceRowById`, `discardDraft`, `discardAllDrafts`).
 	 */
-	getDrafts(): DraftInfo<T>[] { this.flush(); return this.engine.getDrafts() }
+	getDrafts(): DraftInfo<T>[] { this.flush(); return this.#engine.getDrafts() }
 	/** Drop the draft (and invalid-cell markers) of `row` — the row object, its id-equal copy, or the draft. */
-	discardDraft(row: T): void { this.flush(); this.engine.discardDraft(row) }
+	discardDraft(row: T): void { this.flush(); this.#engine.discardDraft(row) }
 	/** Drop every draft and invalid-cell marker. */
-	discardAllDrafts(): void { this.flush(); this.engine.discardAllDrafts() }
+	discardAllDrafts(): void { this.flush(); this.#engine.discardAllDrafts() }
 
 	// Validation methods
 	/** Whether the cell is marked invalid (validation or `invalidCells`). */
-	isCellInvalid(rowIndex: number, field: string): boolean { this.flush(); return this.engine.isCellInvalid(rowIndex, field) }
+	isCellInvalid(rowIndex: number, field: string): boolean { this.flush(); return this.#engine.isCellInvalid(rowIndex, field) }
 	/** The validation error of the cell, or `null`. */
-	getCellValidationError(rowIndex: number, field: string): string | null { this.flush(); return this.engine.getCellValidationError(rowIndex, field) }
+	getCellValidationError(rowIndex: number, field: string): string | null { this.flush(); return this.#engine.getCellValidationError(rowIndex, field) }
 
 	// Row identification methods
 	/** The row’s id (`getIdCallback`, else `idMember`), or `undefined`. */
-	getRowId(row: T): unknown | undefined { this.flush(); return this.engine.getRowId(row) }
+	getRowId(row: T): unknown | undefined { this.flush(); return this.#engine.getRowId(row) }
 	/** The row with this ID (`idMember` / `getIdCallback`), or null. */
-	getRowById(id: unknown): T | null { this.flush(); return this.engine.getRowById(id) }
+	getRowById(id: unknown): T | null { this.flush(); return this.#engine.getRowById(id) }
 	/** The row's display index (the `rowIndex` of every ctx / event), or -1 when it isn't displayed. */
-	getRowIndex(row: T): number { this.flush(); return this.engine.getRowIndex(row) }
+	getRowIndex(row: T): number { this.flush(); return this.#engine.getRowIndex(row) }
 
 	// Row locking methods
 	/** Whether the row (object or id) is locked. */
-	isRowLocked(rowOrId: T | unknown): boolean { this.flush(); return this.engine.isRowLocked(rowOrId) }
+	isRowLocked(rowOrId: T | unknown): boolean { this.flush(); return this.#engine.isRowLocked(rowOrId) }
 	/** The lock info (`RowLock`) of the row (object or id), or `null`. */
-	getRowLockInfo(rowOrId: T | unknown): RowLock | null { this.flush(); return this.engine.getRowLockInfo(rowOrId) }
+	getRowLockInfo(rowOrId: T | unknown): RowLock | null { this.flush(); return this.#engine.getRowLockInfo(rowOrId) }
 	/** Lock a row by id from outside (e.g. another user edits it); fires `row-lock-change`. Returns `false` when no row has the id. */
-	lockRowById(id: unknown, lockerInfo?: Partial<RowLock>): boolean { this.flush(); return this.engine.lockRowById(id, lockerInfo) }
+	lockRowById(id: unknown, lockerInfo?: Partial<RowLock>): boolean { this.flush(); return this.#engine.lockRowById(id, lockerInfo) }
 	/** Remove an external lock; fires `row-lock-change`. Returns `false` when the row was not locked externally. */
-	unlockRowById(id: unknown): boolean { this.flush(); return this.engine.unlockRowById(id) }
+	unlockRowById(id: unknown): boolean { this.flush(); return this.#engine.unlockRowById(id) }
 	/** Every external lock (`lockRowById`), id → `RowLock`. */
-	getExternalLocks(): Map<unknown, RowLock> { this.flush(); return this.engine.getExternalLocks() }
+	getExternalLocks(): Map<unknown, RowLock> { this.flush(); return this.#engine.getExternalLocks() }
 	/** Remove every external lock. */
-	clearExternalLocks(): void { this.flush(); this.engine.clearExternalLocks() }
+	clearExternalLocks(): void { this.flush(); this.#engine.clearExternalLocks() }
 
 	// Row update methods (for WebSocket/external updates)
 	/** Merge `newData` into the row with this id (e.g. a WebSocket update). Returns `false` when no row has the id. */
-	updateRowById(id: unknown, newData: Partial<T>): boolean { this.flush(); return this.engine.updateRowById(id, newData) }
+	updateRowById(id: unknown, newData: Partial<T>): boolean { this.flush(); return this.#engine.updateRowById(id, newData) }
 	/** Replace the row with this id by `newRow` (drops its draft). Returns `false` when no row has the id. */
-	replaceRowById(id: unknown, newRow: T): boolean { this.flush(); return this.engine.replaceRowById(id, newRow) }
+	replaceRowById(id: unknown, newRow: T): boolean { this.flush(); return this.#engine.replaceRowById(id, newRow) }
 
 	// Edit permission check
 	/** Whether the cell is editable now (grid, column, row, lock and read-only rules). */
-	canEditCell(rowIndex: number, field: string): boolean { this.flush(); return this.engine.canEditCell(rowIndex, field) }
+	canEditCell(rowIndex: number, field: string): boolean { this.flush(); return this.#engine.canEditCell(rowIndex, field) }
 
 	// Column width methods
 	/** Set one column’s width (CSS length). */
-	setColumnWidth(field: string, width: string): void { this.flush(); this.engine.setColumnWidth(field, width) }
+	setColumnWidth(field: string, width: string): void { this.flush(); this.#engine.setColumnWidth(field, width) }
 	/** Set several column widths (`{ field, width }[]` — the `getColumnWidthsState()` format). */
-	setColumnWidths(widths: ColumnWidthState[]): void { this.flush(); this.engine.setColumnWidths(widths) }
+	setColumnWidths(widths: ColumnWidthState[]): void { this.flush(); this.#engine.setColumnWidths(widths) }
 	/** The current column widths, `{ field, width }[]` — save it, restore with `setColumnWidths()`. */
-	getColumnWidthsState(): ColumnWidthState[] { this.flush(); return this.engine.getColumnWidthsState() }
+	getColumnWidthsState(): ColumnWidthState[] { this.flush(); return this.#engine.getColumnWidthsState() }
 
 	// Column order methods
 	/** Set the column order (`{ field, order }[]` — the `getColumnOrderState()` format). */
-	setColumnOrder(order: ColumnOrderState[]): void { this.flush(); this.engine.setColumnOrder(order) }
+	setColumnOrder(order: ColumnOrderState[]): void { this.flush(); this.#engine.setColumnOrder(order) }
 	/** The current column order, `{ field, order }[]` — save it, restore with `setColumnOrder()`. */
-	getColumnOrderState(): ColumnOrderState[] { this.flush(); return this.engine.getColumnOrderState() }
+	getColumnOrderState(): ColumnOrderState[] { this.flush(); return this.#engine.getColumnOrderState() }
 
 	// Public methods for focus and editing
 	/**
@@ -1735,17 +1743,17 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	 */
 	focusCell(rowIndex: number, colIndex: number): void {
 		this.flush()
-		const columns = this.engine.columns
-		const displayItems = this.engine.displayItems
+		const columns = this.#engine.columns
+		const displayItems = this.#engine.displayItems
 		if (rowIndex < 0 || rowIndex >= displayItems.length) return
 		if (colIndex < 0 || colIndex >= columns.length) return
 
 		// Update state immediately so any pending render uses the correct position
-		this.engine.setFocusedCell(rowIndex, colIndex)
+		this.#engine.setFocusedCell(rowIndex, colIndex)
 
 		// Schedule DOM focus for after any pending render completes
 		requestAnimationFrame(() => {
-			moveFocus(this, rowIndex, colIndex)
+			moveFocus(this.#host, rowIndex, colIndex)
 		})
 	}
 
@@ -1757,17 +1765,17 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	 */
 	startEditing(rowIndex: number, colIndex: number): void {
 		this.flush()
-		const columns = this.engine.columns
+		const columns = this.#engine.columns
 		if (colIndex < 0 || colIndex >= columns.length) return
 
 		const column = columns[colIndex]
 		const field = String(column.field)
 
 		let shouldFocusEditor = false
-		const old = this.engine.editingCell
+		const old = this.#engine.editingCell
 		const oldColIndex = old ? columns.findIndex(c => String(c.field) === old.field) : -1
 		if (old && (old.rowIndex !== rowIndex || oldColIndex !== colIndex)) {
-			if (!this.engine.canEditCell(rowIndex, field)) return
+			if (!this.#engine.canEditCell(rowIndex, field)) return
 			const oldCell = oldColIndex >= 0
 				? this.shadow.querySelector(`td[data-row="${old.rowIndex}"][data-col="${oldColIndex}"]`)
 				: null
@@ -1777,17 +1785,17 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 			// cell (like Tab / Enter), it isn't a click-away discard.
 			// The old editor goes away below: keep the blur handlers out of it
 			this.isTransitioningCells = true
-			removeDropdown(this)
-			clearEditingVisual(this)
-			commitEditorValue(this)
-			if (oldColIndex >= 0) renderCell(this, old.rowIndex, oldColIndex)
+			removeDropdown(this.#host)
+			clearEditingVisual(this.#host)
+			commitEditorValue(this.#host)
+			if (oldColIndex >= 0) renderCell(this.#host, old.rowIndex, oldColIndex)
 			requestAnimationFrame(() => { this.isTransitioningCells = false })
 		}
 
 		// Update state (no longer triggers requestUpdate)
-		this.engine.startEdit(rowIndex, field)
+		this.#engine.startEdit(rowIndex, field)
 		// The engine refuses read-only / locked cells — render an editor only when it started
-		const editing = this.engine.editingCell
+		const editing = this.#engine.editingCell
 		if (!editing || editing.rowIndex !== rowIndex || editing.field !== field) return
 
 		// Surgical DOM update
@@ -1797,7 +1805,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		if (cell) {
 			cell.classList.remove('wg__cell--focused')
 			cell.classList.add('wg__cell--editing')
-			cell.innerHTML = renderCellEditor(this, rowIndex, colIndex, column)
+			cell.innerHTML = renderCellEditor(this.#host, rowIndex, colIndex, column)
 			if (shouldFocusEditor) {
 				const editor = (cell.querySelector('.wg__combobox-input, .wg__autocomplete-input, .wg__date-input, .wg__select-trigger')
 					?? cell.querySelector('.wg__editor')) as HTMLElement | null
@@ -1812,9 +1820,9 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 
 	/** @internal */
 	getCurrentEditingColumn(): Column<T> | null {
-		const editingCell = this.engine.editingCell
+		const editingCell = this.#engine.editingCell
 		if (!editingCell) return null
-		return this.engine.columns.find(c => String(c.field) === editingCell.field) || null
+		return this.#engine.columns.find(c => String(c.field) === editingCell.field) || null
 	}
 
 	/** @internal */
@@ -1826,7 +1834,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	// Delegate to module function - needed for lifecycle module
 	/** @internal */
 	moveFocusAfterCommit(rowIndex: number, field: string, direction: 'down' | 'up' | 'next' | 'prev'): void {
-		moveFocusAfterCommit(this, rowIndex, field, direction)
+		moveFocusAfterCommit(this.#host, rowIndex, field, direction)
 	}
 
 	// ==========================================================================
@@ -1837,14 +1845,14 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 
 	/** Re-render the summary blocks (once per microtask burst) without a full render. */
 	private scheduleSummaryRefresh(): void {
-		if (!this.engine.renderSummaryCallback || this.isSummaryRefreshPending) return
+		if (!this.#engine.renderSummaryCallback || this.isSummaryRefreshPending) return
 		this.isSummaryRefreshPending = true
 		queueMicrotask(() => {
 			this.isSummaryRefreshPending = false
 			if (this.updatePending) return  // a full render is queued — it renders the summary
 			const blocks = this.shadow.querySelectorAll('.wg__summary')
 			if (blocks.length === 0) return
-			const content = renderSummaryContent(this)
+			const content = renderSummaryContent(this.#host)
 			blocks.forEach(block => { block.innerHTML = content })
 		})
 	}
@@ -1890,11 +1898,11 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 
 		// Focus — capture-phase, drives handleCellFocus + always-edit-mode swap + focus-change (keyboard only)
 		// Extracted to modules/events/table-focus.ts
-		table.addEventListener('focus', (e: Event) => handleTableFocus(this, e), true)
+		table.addEventListener('focus', (e: Event) => handleTableFocus(this.#host, e), true)
 
 		// Keydown — tree shortcuts + pipeline + datepicker passthrough + editor/cell dispatch
 		// Extracted to modules/events/table-keydown.ts
-		table.addEventListener('keydown', (e: Event) => handleTableKeyDown(this, e))
+		table.addEventListener('keydown', (e: Event) => handleTableKeyDown(this.#host, e))
 
 		// Initialize focus event manager on table
 		this.focusEvents.init(table as HTMLElement)
@@ -1902,7 +1910,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		// Focus out - subscribe to focusout events
 		this.focusEvents.subscribe('focusout', (_target, relatedTarget) => {
 			if (!relatedTarget || !table.contains(relatedTarget)) {
-				handleTableFocusOut(this, { relatedTarget } as unknown as FocusEvent)
+				handleTableFocusOut(this.#host, { relatedTarget } as unknown as FocusEvent)
 			}
 		})
 
@@ -1912,40 +1920,40 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		// <td> between clicks and the browser drops the native dblclick when
 		// the two click targets differ.
 		// Extracted to modules/events/table-clicks.ts
-		table.addEventListener('dblclick', (e: Event) => handleTableDblClick(this, e))
+		table.addEventListener('dblclick', (e: Event) => handleTableDblClick(this.#host, e))
 
 		// Single click — tree chevron + pipeline + click editTrigger
 		// Extracted to modules/events/table-clicks.ts
-		table.addEventListener('click', (e: Event) => handleCellClickToEdit(this, e))
+		table.addEventListener('click', (e: Event) => handleCellClickToEdit(this.#host, e))
 
 		// Mousedown - tree dblclick / cell range selection / date trigger / dropdown switch
 		// Extracted to modules/events/table-mousedown.ts
-		table.addEventListener('mousedown', (e: Event) => handleTableMouseDown(this, e))
+		table.addEventListener('mousedown', (e: Event) => handleTableMouseDown(this.#host, e))
 
 		// Legacy click on .wg__select-trigger / .wg__select-value — toggles dropdown.
 		// Skipped in 'always' mode (pipeline owns dropdown open there).
 		// Extracted to modules/events/table-clicks.ts
-		table.addEventListener('click', (e: Event) => handleSelectTriggerClick(this, e))
+		table.addEventListener('click', (e: Event) => handleSelectTriggerClick(this.#host, e))
 
 		// Mousedown — column resize / reorder / column-select / row-select / clear-on-empty
 		// Extracted to modules/events/header-mousedown.ts
-		table.addEventListener('mousedown', (e: Event) => handleHeaderRowMouseDown(this, e))
+		table.addEventListener('mousedown', (e: Event) => handleHeaderRowMouseDown(this.#host, e))
 
 		// Header click → column selection (replace/range/toggle). Only fires when
 		// isColumnReorderAllowed is on; otherwise mousedown handler does it.
 		// Extracted to modules/events/table-clicks.ts
-		table.addEventListener('click', (e: Event) => handleHeaderColumnSelectClick(this, e))
+		table.addEventListener('click', (e: Event) => handleHeaderColumnSelectClick(this.#host, e))
 
 		// Context menu (right-click)
 		table.addEventListener('contextmenu', (e: Event) => {
-			handleContextMenu(this, e as MouseEvent)
+			handleContextMenu(this.#host, e as MouseEvent)
 		})
 
 		// Change events (checkbox)
 		table.addEventListener('change', (e: Event) => {
 			const target = e.target as HTMLElement
 			if (target.matches('.wg__editor--checkbox')) {
-				handleCheckboxChange(this, target as HTMLInputElement)
+				handleCheckboxChange(this.#host, target as HTMLInputElement)
 			}
 		})
 
@@ -1953,9 +1961,9 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		table.addEventListener('input', (e: Event) => {
 			const target = e.target as HTMLElement
 			if (target.matches('.wg__combobox-input')) {
-				handleComboboxInput(this, e)
+				handleComboboxInput(this.#host, e)
 			} else if (target.matches('.wg__autocomplete-input')) {
-				handleAutocompleteInput(this, e)
+				handleAutocompleteInput(this.#host, e)
 			}
 		})
 
@@ -1969,7 +1977,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 				if (isLeavingGrid) return
 				// Into the cell's own phone sheet (dropdown / date editor): the edit goes on there
 				if (relatedTarget.closest('.wg__dropdown, .wg-datepicker-container')) return
-				handleInternalBlur(this, target, relatedTarget)
+				handleInternalBlur(this.#host, target, relatedTarget)
 			})
 			this.focusEventsSubscribed = true
 		}
@@ -1977,7 +1985,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		// Scroll events - close dropdown + virtual scroll + infinite scroll + connector update
 		const container = this.shadow.querySelector('.wg') as HTMLElement
 		// When isTableBorderOnly is enabled, scroll container is .wg__table-container
-		const scrollContainer = this.engine.isTableBorderOnly
+		const scrollContainer = this.#engine.isTableBorderOnly
 			? (this.shadow.querySelector('.wg__table-container') as HTMLElement) || container
 			: container
 		if (container) {
@@ -1986,15 +1994,15 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 
 			// Range shortcuts + Escape + Ctrl+C for active selections
 			// Extracted to modules/events/container-keydown.ts
-			container.addEventListener('keydown', (e: KeyboardEvent) => handleContainerKeyDown(this, e))
+			container.addEventListener('keydown', (e: KeyboardEvent) => handleContainerKeyDown(this.#host, e))
 
 			// Initialize scroll event manager and subscribe to scroll events
 			this.scrollEvents.init(scrollContainer)
 
 			// Container + window scroll subscriptions
 			// Extracted to modules/events/scroll-handlers.ts
-			this.scrollEvents.subscribe('container', () => handleContainerScroll(this, container, scrollContainer))
-			this.scrollEvents.subscribe('window', () => handleWindowScroll(this))
+			this.scrollEvents.subscribe('container', () => handleContainerScroll(this.#host, container, scrollContainer))
+			this.scrollEvents.subscribe('window', () => handleWindowScroll(this.#host))
 
 			// Initialize click event manager for outside-click detection
 			// Only subscribe once (attachEventListeners is called on every render)
@@ -2013,22 +2021,22 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 
 				// Outside-click + sort-click subscriptions
 				// Extracted to modules/events/click-subscriptions.ts
-				this.clickEvents.subscribe('outsideClick', () => handleOutsideClick(this))
-				this.clickEvents.subscribe('sortClick', (subCtx) => handleSortClickSubscription(this, subCtx))
+				this.clickEvents.subscribe('outsideClick', () => handleOutsideClick(this.#host))
+				this.clickEvents.subscribe('sortClick', (subCtx) => handleSortClickSubscription(this.#host, subCtx))
 
 				this.clickEventsSubscribed = true
 			}
 		}
 
 		// Row toolbar events — trigger / inline / hover / mousemove / click / outside click
-		attachToolbarListeners(this, table)
+		attachToolbarListeners(this.#host, table)
 
 		// Pagination events (delegated on .wg container — see attachPaginationListeners)
 		const wgContainer = this.shadow.querySelector('.wg') as HTMLElement | null
 		if (wgContainer) {
-			attachPaginationListeners(this, wgContainer)
+			attachPaginationListeners(this.#host, wgContainer)
 			// Filter row (delegated too — the thead is rebuilt on every render)
-			attachFilterRowListeners(this, wgContainer)
+			attachFilterRowListeners(this.#host, wgContainer)
 		}
 	}
 
@@ -2043,7 +2051,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	 */
 	scrollToRow(rowIndex: number): Promise<boolean> {
 		this.flush()
-		return scrollRowIntoView(this, rowIndex, 'scroll-to-row')
+		return scrollRowIntoView(this.#host, rowIndex, 'scroll-to-row')
 	}
 
 	// ==========================================================================
@@ -2052,39 +2060,39 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 
 	/** Shortcuts help icon + overlay — see modules/rendering/shortcuts-help.ts */
 	private renderShortcutsHelpIcon(): string {
-		return renderShortcutsHelpIconModule(this)
+		return renderShortcutsHelpIconModule(this.#host)
 	}
 
 	/** @internal */
 	render(): void {
 		// Drop any stale data-pipeline cache. Normally requestUpdate() has already
 		// done this, but render() is also called directly in a few places.
-		this.engine.invalidateDisplayCache()
+		this.#engine.invalidateDisplayCache()
 		gridPerf.clear()
 		gridPerf.start('render() body')
-		uiLogger.debug('render:', this.engine.displayItems.length, 'rows,', this.engine.visualColumns.length, 'columns')
+		uiLogger.debug('render:', this.#engine.displayItems.length, 'rows,', this.#engine.visualColumns.length, 'columns')
 		// Preserve scroll position before re-render
 		// When isTableBorderOnly is enabled, scroll container is .wg__table-container
 		const oldContainer = this.shadow.querySelector('.wg') as HTMLElement
 		// A focused filter-row input (+ caret) is restored after the thead is rebuilt
-		const filterFocus = captureFilterFocus(this)
+		const filterFocus = captureFilterFocus(this.#host)
 		// The open editor's typed text (+ caret): the edit goes on through the re-render
-		const editorText = captureEditorText(this)
-		const oldScrollContainer = this.engine.isTableBorderOnly
+		const editorText = captureEditorText(this.#host)
+		const oldScrollContainer = this.#engine.isTableBorderOnly
 			? (this.shadow.querySelector('.wg__table-container') as HTMLElement) || oldContainer
 			: oldContainer
 		const scrollTop = oldScrollContainer?.scrollTop || 0
 		const scrollLeft = oldScrollContainer?.scrollLeft || 0
 
 		// Preserve focused cell position (for restoring after re-render)
-		const focusedCell = this.engine.focusedCell
+		const focusedCell = this.#engine.focusedCell
 
 		// Parse pagination positions (e.g., "bottom-center" or "top-right|bottom-right")
-		const paginationPositions = this.engine.paginationPosition.split('|').map(p => p.trim())
+		const paginationPositions = this.#engine.paginationPosition.split('|').map(p => p.trim())
 
 		// Parse summary positions (if set)
-		const summaryPositions = this.engine.summaryPosition
-			? this.engine.summaryPosition.split('|').map(p => p.trim())
+		const summaryPositions = this.#engine.summaryPosition
+			? this.#engine.summaryPosition.split('|').map(p => p.trim())
 			: []
 
 		// Helper to render content for a position area (top or bottom)
@@ -2103,11 +2111,11 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 			if (!areaHasPagination && !areaHasSummary) return ''
 
 			// If both exist in this area and summaryInline is true, combine into single footer
-			if (areaHasSummary && areaHasPagination && this.engine.isSummaryInline) {
+			if (areaHasSummary && areaHasPagination && this.#engine.isSummaryInline) {
 				const topClass = isTop ? ' wg__footer--top' : ''
 				return `<div class="wg__footer${topClass}">
-					${renderSummary(this, areaSummaryPositions[0])}
-					${renderPagination(this, areaPaginationPositions[0])}
+					${renderSummary(this.#host, areaSummaryPositions[0])}
+					${renderPagination(this.#host, areaPaginationPositions[0])}
 				</div>`
 			}
 
@@ -2121,13 +2129,13 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 					// Both at exact same position: wrap in footer
 					const topClass = isTop ? ' wg__footer--top' : ''
 					return `<div class="wg__footer${topClass}">
-						${renderSummary(this, pos)}
-						${renderPagination(this, pos)}
+						${renderSummary(this.#host, pos)}
+						${renderPagination(this.#host, pos)}
 					</div>`
 				} else if (hasSummary) {
-					return renderSummary(this, pos)
+					return renderSummary(this.#host, pos)
 				} else {
-					return renderPagination(this, pos)
+					return renderPagination(this.#host, pos)
 				}
 			}).join('')
 		}
@@ -2137,16 +2145,16 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		const bottomContent = renderPositionArea(paginationPositions, false)
 
 		// Determine if we should use virtual scrolling
-		const useVirtualScroll = this.engine.shouldUseVirtualScroll()
+		const useVirtualScroll = this.#engine.shouldUseVirtualScroll()
 
 		// Get data rows HTML (virtual or normal)
 		let dataRowsHtml: string
 		if (useVirtualScroll) {
 			// The window for the stored scroll position (scrollTop from the old container)
-			const items = this.engine.displayItems
-			const rowHeight = this.engine.virtualScrollItemHeight
+			const items = this.#engine.displayItems
+			const rowHeight = this.#engine.virtualScrollItemHeight
 			const viewportHeight = oldContainer?.clientHeight || 400  // Default height if not available
-			const { startIndex, endIndex } = visibleRowRange(this, scrollTop, viewportHeight)
+			const { startIndex, endIndex } = visibleRowRange(this.#host, scrollTop, viewportHeight)
 
 			// Store for later comparison
 			this.virtualScroll.setRange(startIndex, endIndex)
@@ -2157,15 +2165,15 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 				rowHeight,
 				totalItems: items.length
 			}
-			dataRowsHtml = renderDataRowsVirtual(this, params)
+			dataRowsHtml = renderDataRowsVirtual(this.#host, params)
 		} else {
-			dataRowsHtml = renderDataRows(this)
+			dataRowsHtml = renderDataRows(this.#host)
 		}
 
 		// Render shortcuts help icon if enabled
 		const shortcutsHelpHtml = this.renderShortcutsHelpIcon()
 
-		const headerRowHtml = renderHeaderRow(this)
+		const headerRowHtml = renderHeaderRow(this.#host)
 
 		// Decide between surgical update (keep container, table, and listeners
 		// alive — replace only the slot contents) and full rebuild. Surgical path
@@ -2178,7 +2186,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		const existingTopArea = oldContainer?.querySelector(':scope > .wg__top-area') as HTMLElement | null
 		const existingBottomArea = oldContainer?.querySelector(':scope > .wg__bottom-area') as HTMLElement | null
 		const currentlyHasTableContainer = !!oldContainer?.querySelector(':scope > .wg__table-container')
-		const wantsTableContainer = !!this.engine.isTableBorderOnly
+		const wantsTableContainer = !!this.#engine.isTableBorderOnly
 		const canSurgicalUpdate = !!oldContainer
 			&& !!existingTable
 			&& !!existingThead
@@ -2192,12 +2200,12 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		if (canSurgicalUpdate) {
 			// Surgical path: container, table, and listeners survive untouched.
 			container = oldContainer!
-			container.className = getContainerClasses(this)
+			container.className = getContainerClasses(this.#host)
 			if (useVirtualScroll) container.classList.add('wg--virtual-scroll')
-			container.toggleAttribute('inert', this.engine.isDisabled)
+			container.toggleAttribute('inert', this.#engine.isDisabled)
 
-			if (this.engine.isScrollable && this.engine.scrollMaxHeight !== '100vh') {
-				container.style.setProperty('--wg-scroll-max-height', this.engine.scrollMaxHeight)
+			if (this.#engine.isScrollable && this.#engine.scrollMaxHeight !== '100vh') {
+				container.style.setProperty('--wg-scroll-max-height', this.#engine.scrollMaxHeight)
 			} else {
 				container.style.removeProperty('--wg-scroll-max-height')
 			}
@@ -2209,10 +2217,10 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 
 			// Virtual scroll may have changed visible window — clamp scrollTop if it's now out of range
 			if (useVirtualScroll) {
-				const sc = this.engine.isTableBorderOnly
+				const sc = this.#engine.isTableBorderOnly
 					? (container.querySelector('.wg__table-container') as HTMLElement) || container
 					: container
-				const maxScrollTop = Math.max(0, this.engine.displayItems.length * this.engine.virtualScrollItemHeight - sc.clientHeight)
+				const maxScrollTop = Math.max(0, this.#engine.displayItems.length * this.#engine.virtualScrollItemHeight - sc.clientHeight)
 				if (sc.scrollTop > maxScrollTop) sc.scrollTop = maxScrollTop
 			}
 		} else {
@@ -2220,12 +2228,12 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 			if (oldContainer) oldContainer.remove()
 
 			container = document.createElement('div')
-			container.className = getContainerClasses(this)
+			container.className = getContainerClasses(this.#host)
 			if (useVirtualScroll) container.classList.add('wg--virtual-scroll')
-			container.toggleAttribute('inert', this.engine.isDisabled)
+			container.toggleAttribute('inert', this.#engine.isDisabled)
 
-			if (this.engine.isScrollable && this.engine.scrollMaxHeight !== '100vh') {
-				container.style.setProperty('--wg-scroll-max-height', this.engine.scrollMaxHeight)
+			if (this.#engine.isScrollable && this.#engine.scrollMaxHeight !== '100vh') {
+				container.style.setProperty('--wg-scroll-max-height', this.#engine.scrollMaxHeight)
 			}
 
 			const tableCore = `
@@ -2234,7 +2242,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 					<tbody>${dataRowsHtml}</tbody>
 				</table>
 			`
-			const tableWithContainer = this.engine.isTableBorderOnly
+			const tableWithContainer = this.#engine.isTableBorderOnly
 				? `<div class="wg__table-container">${tableCore}</div>`
 				: tableCore
 
@@ -2247,12 +2255,12 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 			this.shadow.appendChild(container)
 
 			// Restore scroll position (only needed when container was replaced)
-			const scrollContainer = this.engine.isTableBorderOnly
+			const scrollContainer = this.#engine.isTableBorderOnly
 				? (container.querySelector('.wg__table-container') as HTMLElement) || container
 				: container
 
 			if (useVirtualScroll) {
-				const maxScrollTop = Math.max(0, this.engine.displayItems.length * this.engine.virtualScrollItemHeight - scrollContainer.clientHeight)
+				const maxScrollTop = Math.max(0, this.#engine.displayItems.length * this.#engine.virtualScrollItemHeight - scrollContainer.clientHeight)
 				scrollContainer.scrollTop = Math.min(scrollTop, maxScrollTop)
 			} else {
 				scrollContainer.scrollTop = scrollTop
@@ -2265,21 +2273,21 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 
 		// role="grid" / "treegrid" + row / column counts (the surgical path keeps the <table>)
 		const table = container.querySelector('.wg__table') as HTMLTableElement | null
-		if (table) applyGridAria(this, table)
+		if (table) applyGridAria(this.#host, table)
 
 		// Post-render focus restore (editor focus + selection / focused-cell restore)
 		// Extracted to modules/navigation/post-render-focus.ts
 		// (a focused filter-row input keeps the focus — the cell isn't re-focused)
-		restoreFocusAfterRender(this, container, filterFocus ? null : focusedCell, editorText)
+		restoreFocusAfterRender(this.#host, container, filterFocus ? null : focusedCell, editorText)
 		// Exactly one body cell is the tab stop (roving tabindex); controls inside cells are none
 		untabCellWidgets(container.querySelector('.wg__table > tbody'))
-		syncTabStop(this)
-		restoreFilterFocus(this, filterFocus)
+		syncTabStop(this.#host)
+		restoreFilterFocus(this.#host, filterFocus)
 		if (this.#isEditedRowGone) {
 			this.#isEditedRowGone = false
 			if (!this.shadow.activeElement) (this.shadow.querySelector('.wg') as HTMLElement | null)?.focus({ preventScroll: true })
 		}
-		positionFilterRow(this)
+		positionFilterRow(this.#host)
 
 		// Fix wheel scroll after DOM replacement - force browser to recalculate element under cursor
 		// Without this, user has to move mouse for scroll to work after re-render
@@ -2297,50 +2305,50 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		this.renderConnector()
 
 		// Update fill handle after render
-		updateFillHandle(this)
+		updateFillHandle(this.#host)
 
 		// Update cell range border after render
-		if (this.engine.selectedCellRange) {
-			updateRangeBorder(this)
+		if (this.#engine.selectedCellRange) {
+			updateRangeBorder(this.#host)
 		}
 
 		// Update row selection borders after render
-		if (this.engine.selectedRowIndices.length > 0) {
-			createRowSelectionBorders(this)
+		if (this.#engine.selectedRowIndices.length > 0) {
+			createRowSelectionBorders(this.#host)
 		} else {
 			removeRowSelectionBorders()
 		}
 
 		// Update column selection borders after render
-		if (this.engine.selectedColumns.length > 0) {
-			createColumnSelectionBorders(this)
+		if (this.#engine.selectedColumns.length > 0) {
+			createColumnSelectionBorders(this.#host)
 		} else {
 			removeColumnSelectionBorders()
 		}
 
 		// The infinite-scroll row's loader (core renderLoader) — redrawn into the new row
-		syncLoadingMoreLoader(this)
+		syncLoadingMoreLoader(this.#host)
 
-		gridPerf.end('render() body', this.engine.displayItems.length)
+		gridPerf.end('render() body', this.#engine.displayItems.length)
 		gridPerf.summary('render()')
 	}
 
 	/** SVG connector arrow for toolbar row tracking — see modules/toolbar/connector-renderer.ts */
 	/** @internal */
 	renderConnector(): void {
-		renderConnectorModule(this)
+		renderConnectorModule(this.#host)
 	}
 
 	/** Surgical clear-all-selections (no render) — see modules/selection-border/clear-all.ts */
 	/** @internal */
 	clearAllSelections(): void {
-		clearAllSelectionsModule(this)
+		clearAllSelectionsModule(this.#host)
 	}
 
 	/** Excel-like commit-on-click-away — see modules/editing/commit-on-transition.ts */
 	/** @internal */
 	commitOrCancelEditOnTransition(): void {
-		commitOrCancelEditOnTransitionModule(this)
+		commitOrCancelEditOnTransitionModule(this.#host)
 	}
 
 	/**
@@ -2364,16 +2372,16 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	/** "Go to row" dialog (Ctrl+G) — see modules/navigation/go-to-row-dialog.ts */
 	/** @internal */
 	openGoToRowDialog(colIndex: number): void {
-		openGoToRowDialogModule(this, colIndex)
+		openGoToRowDialogModule(this.#host, colIndex)
 	}
 
 	/** Custom editor lifecycle — see modules/editing/custom-editor.ts */
 	openCustomEditor(rowIndex: number, colIndex: number): void {
-		openCustomEditorModule(this, rowIndex, colIndex)
+		openCustomEditorModule(this.#host, rowIndex, colIndex)
 	}
 
 	/** Paste event handler — see modules/paste/handlePasteEvent */
-	private handlePaste = (e: ClipboardEvent): Promise<void> => handlePasteEvent(this, e)
+	private handlePaste = (e: ClipboardEvent): Promise<void> => handlePasteEvent(this.#host, e)
 
 	/**
 	 * The public facade (`el.controller`, and `controller` on every callback ctx and

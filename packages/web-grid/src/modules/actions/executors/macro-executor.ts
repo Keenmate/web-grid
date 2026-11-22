@@ -5,6 +5,7 @@
 
 import type { ActionExecutor, ExecutorContext } from '../pipeline.js'
 import type { GridAction, ResetStateAction } from '../types.js'
+import { GRID_ENGINE } from '../../grid-context.js'
 
 /**
  * Macro executor - expands macro actions into primitive sub-actions
@@ -43,22 +44,22 @@ function executeResetState(ctx: ExecutorContext, action: ResetStateAction): Grid
 	}
 
 	// 2. Cancel active edit (cancelEdit already handles closing dropdown + clearing editing visual)
-	if (edit && ctx.engine.editingCell) {
+	if (edit && ctx[GRID_ENGINE].editingCell) {
 		actions.push({ type: 'cancelEdit' })
 	}
 
 	// 3. Clear selections
 	if (selections) {
-		const hasSelections = ctx.engine.selectedRowIndices.length > 0 ||
-			ctx.engine.selectedColumns.length > 0 ||
-			ctx.engine.selectedCellRange
+		const hasSelections = ctx[GRID_ENGINE].selectedRowIndices.length > 0 ||
+			ctx[GRID_ENGINE].selectedColumns.length > 0 ||
+			ctx[GRID_ENGINE].selectedCellRange
 		if (hasSelections) {
 			actions.push({ type: 'clearSelection' })
 		}
 	}
 
 	// 4. Clear focus (opt-in)
-	if (focus && ctx.engine.focusedCell) {
+	if (focus && ctx[GRID_ENGINE].focusedCell) {
 		actions.push({ type: 'blurCell' })
 	}
 

@@ -30,6 +30,7 @@ import {
 	buildToolbarTooltipHtml,
 	type ToolbarButton
 } from './index.js'
+import { GRID_ENGINE } from '../grid-context.js'
 
 /**
  * Install / refresh the document-level keydown listener that drives
@@ -44,7 +45,7 @@ export function setupToolbarShortcuts<T>(ctx: GridHost<T>): void {
 		document.removeEventListener('keydown', existing)
 	}
 
-	const shortcuts = ctx.engine.rowShortcuts
+	const shortcuts = ctx[GRID_ENGINE].rowShortcuts
 	if (!shortcuts?.length) {
 		ctx.toolbar.setShortcutHandler(null)
 		return
@@ -60,7 +61,7 @@ export function setupToolbarShortcuts<T>(ctx: GridHost<T>): void {
 
 		// The toolbar's row at its CURRENT position (a move keeps the toolbar open on it)
 		const row = getActiveToolbarRowItem<T>(ctx)
-		const rowIndex = row === null ? -1 : ctx.engine.displayItems.indexOf(row)
+		const rowIndex = row === null ? -1 : ctx[GRID_ENGINE].displayItems.indexOf(row)
 		if (row === null || rowIndex === -1) return
 
 		const cell = toolbarCells.get(ctx)
@@ -72,14 +73,14 @@ export function setupToolbarShortcuts<T>(ctx: GridHost<T>): void {
 			// Same follow-up as a toolbar click: close when the row is gone, else refresh
 			// the open toolbar's button states (and the connector after a move)
 			if (getActiveToolbarRowItem<T>(ctx) !== row) return
-			if (d.action === 'delete' || ctx.engine.displayItems.indexOf(row) === -1) {
+			if (d.action === 'delete' || ctx[GRID_ENGINE].displayItems.indexOf(row) === -1) {
 				closeToolbarAndReset(ctx)
 				return
 			}
 			ctx.render()
-			refreshOpenToolbar(ctx, row, ctx.engine.displayItems.indexOf(row))
+			refreshOpenToolbar(ctx, row, ctx[GRID_ENGINE].displayItems.indexOf(row))
 			if (isMove(d.action)) {
-				updateConnector(ctx, ctx.engine.displayItems)
+				updateConnector(ctx, ctx[GRID_ENGINE].displayItems)
 				ctx.renderConnector()
 			}
 		})
@@ -96,8 +97,8 @@ export function setupToolbarShortcuts<T>(ctx: GridHost<T>): void {
 export function setupInlineShortcuts<T>(ctx: GridHost<T>): void {
 	removeInlineShortcuts(ctx)
 
-	const shortcuts = ctx.engine.rowShortcuts
-	if (!shortcuts?.length || ctx.engine.hoveredRowIndex === null) return
+	const shortcuts = ctx[GRID_ENGINE].rowShortcuts
+	if (!shortcuts?.length || ctx[GRID_ENGINE].hoveredRowIndex === null) return
 
 	const handler: (e: KeyboardEvent) => void = (e: KeyboardEvent) => {
 		// Skip when the focused cell's own keydown already ran a shortcut, or focus is in a text field /
@@ -105,10 +106,10 @@ export function setupInlineShortcuts<T>(ctx: GridHost<T>): void {
 		// matchesShortcut (handleRowShortcut).
 		if (e.defaultPrevented || isTypingTarget(e)) return
 
-		const rowIndex = ctx.engine.hoveredRowIndex
+		const rowIndex = ctx[GRID_ENGINE].hoveredRowIndex
 		if (rowIndex === null) return
 
-		const row = ctx.engine.displayItems[rowIndex]
+		const row = ctx[GRID_ENGINE].displayItems[rowIndex]
 		if (!row) return
 
 		handleRowShortcut(ctx, e, rowCellFields(ctx, row, rowIndex), true)
@@ -145,7 +146,7 @@ export function setupToolbarTooltips<T>(ctx: GridHost<T>, buttons: ToolbarButton
 		const entry = buttons[Number(button.dataset.wgIndex)]
 		if (!entry) continue
 		const key = entry.item.id ?? entry.item.action
-		const matchingShortcut = ctx.engine.rowShortcuts?.find(s => (s.id ?? s.action) === key)
+		const matchingShortcut = ctx[GRID_ENGINE].rowShortcuts?.find(s => (s.id ?? s.action) === key)
 
 		ctx.tooltip.setToolbarContent(button, buildToolbarTooltipHtml(entry, matchingShortcut?.shortcut))
 	}
@@ -165,19 +166,19 @@ export function showToolbarForRow<T>(
 	cursorX?: number
 ): void {
 	// Skip floating toolbar in inline mode (buttons rendered directly in cells)
-	if (ctx.engine.toolbarPosition === 'inline') {
+	if (ctx[GRID_ENGINE].toolbarPosition === 'inline') {
 		return
 	}
 
-	if (!ctx.engine.isRowToolbarShown || !ctx.engine.rowToolbar.length) {
+	if (!ctx[GRID_ENGINE].isRowToolbarShown || !ctx[GRID_ENGINE].rowToolbar.length) {
 		return
 	}
 
-	const row = ctx.engine.displayItems[rowIndex]
+	const row = ctx[GRID_ENGINE].displayItems[rowIndex]
 	if (!row) {
 		return
 	}
-	const buttons = resolveToolbar(ctx, ctx.engine.rowToolbar, ctx.engine.rowCtx(row, rowIndex))
+	const buttons = resolveToolbar(ctx, ctx[GRID_ENGINE].rowToolbar, ctx[GRID_ENGINE].rowCtx(row, rowIndex))
 
 	// Clear any pending hide timeout when opening new toolbar
 	ctx.toolbar.clearHideTimeout()
@@ -215,7 +216,7 @@ export function showToolbarForRow<T>(
 	setupToolbarTooltips(ctx, buttons)
 
 	// Add hover tracking to toolbar container (hover mode only)
-	if (ctx.engine.toolbarTrigger === 'hover') {
+	if (ctx[GRID_ENGINE].toolbarTrigger === 'hover') {
 		const toolbarContainer = ctx.shadow.querySelector('.wg__toolbar-container')
 		if (toolbarContainer) {
 			toolbarContainer.addEventListener('mouseenter', () => {
@@ -274,7 +275,7 @@ export function showToolbarForRow<T>(
  * toolbar, or (click / button) when no cell edit is open — an edit's Escape is the editor's.
  */
 function joinOverlayTree<T>(ctx: GridHost<T>, rowElement: HTMLElement, rowIndex: number): void {
-	const trigger = ctx.engine.toolbarTrigger
+	const trigger = ctx[GRID_ENGINE].toolbarTrigger
 	const isHover = trigger === 'hover'
 	const host = (ctx.shadow as ShadowRoot).host
 	const overlay = registerOverlay(
@@ -286,7 +287,7 @@ function joinOverlayTree<T>(ctx: GridHost<T>, rowElement: HTMLElement, rowIndex:
 			getInsideElements: () => trigger === 'button'
 				? [...ctx.shadow.querySelectorAll('.wg__toolbar-trigger')]
 				: [host],
-			shouldCloseOnEscape: () => isFocusInToolbar(ctx) || (!isHover && ctx.engine.editingCell === null)
+			shouldCloseOnEscape: () => isFocusInToolbar(ctx) || (!isHover && ctx[GRID_ENGINE].editingCell === null)
 		}
 	)
 	setActiveToolbarOverlay(ctx, overlay)
@@ -317,19 +318,19 @@ function onToolbarDismiss<T>(ctx: GridHost<T>, reason: OverlayDismissReason): vo
 	const row = getActiveToolbarRowItem<T>(ctx)
 	closeToolbarAndReset(ctx)
 	if (!hadFocus || row === null) return
-	const rowIndex = ctx.engine.displayItems.indexOf(row)
+	const rowIndex = ctx[GRID_ENGINE].displayItems.indexOf(row)
 	if (rowIndex === -1) {
 		(ctx.shadow.querySelector('.wg') as HTMLElement | null)?.focus({ preventScroll: true })
 		return
 	}
-	if (ctx.engine.toolbarTrigger === 'button') {
+	if (ctx[GRID_ENGINE].toolbarTrigger === 'button') {
 		const triggerBtn = ctx.shadow.querySelector(`[data-toolbar-trigger="${rowIndex}"]`) as HTMLElement | null
 		if (triggerBtn) {
 			triggerBtn.focus({ preventScroll: true })
 			return
 		}
 	}
-	const focused = ctx.engine.focusedCell
+	const focused = ctx[GRID_ENGINE].focusedCell
 	const firstCell = ctx.shadow.querySelector(`td.wg__cell[data-row="${rowIndex}"][data-col]`) as HTMLElement | null
 	const colIndex = focused?.rowIndex === rowIndex ? focused.colIndex : Number(firstCell?.dataset.col ?? 0)
 	returnFocusToCell(ctx, rowIndex, colIndex)
@@ -369,19 +370,19 @@ export function updateToolbarWithCellItems<T>(
 	const cellKeys = new Set(cellEntries.map(toolbarEntryKey).filter((k): k is string => k !== null))
 	const merged = [
 		...cellEntries,
-		...ctx.engine.rowToolbar.filter(e => {
+		...ctx[GRID_ENGINE].rowToolbar.filter(e => {
 			const key = toolbarEntryKey(e)
 			return key === null || !cellKeys.has(key)
 		})
 	]
-	const buttons = resolveToolbar(ctx, merged, ctx.engine.ctx(cell))
+	const buttons = resolveToolbar(ctx, merged, ctx[GRID_ENGINE].ctx(cell))
 		.sort((a, b) => a.row - b.row)
 
 	const activeToolbar = getActiveToolbar(ctx)
 	if (!activeToolbar) return
 
 	const temp = document.createElement('div')
-	temp.innerHTML = renderToolbarHTML(buttons, ctx.engine.toolbarVerticalAlign !== 'top', ctx.shadow.host)
+	temp.innerHTML = renderToolbarHTML(buttons, ctx[GRID_ENGINE].toolbarVerticalAlign !== 'top', ctx.shadow.host)
 	const newToolbarContent = temp.querySelector('.wg__toolbar')
 	if (newToolbarContent) {
 		// Keep position styles
@@ -442,10 +443,10 @@ function refreshOpenToolbar<T>(ctx: GridHost<T>, row: T, rowIndex: number): void
 	if (!active || !previous) return
 	const cell = toolbarCells.get(ctx)
 	const isCell = !!cell && cell.row === row
-	const entries = (isCell ? toolbarEntries.get(ctx) : undefined) ?? ctx.engine.rowToolbar
+	const entries = (isCell ? toolbarEntries.get(ctx) : undefined) ?? ctx[GRID_ENGINE].rowToolbar
 	let buttons = resolveToolbar(ctx, entries, isCell
-		? ctx.engine.ctx({ ...cell!, rowIndex })
-		: ctx.engine.rowCtx(row, rowIndex))
+		? ctx[GRID_ENGINE].ctx({ ...cell!, rowIndex })
+		: ctx[GRID_ENGINE].rowCtx(row, rowIndex))
 	if (isCell) {
 		buttons = buttons.sort((a, b) => a.row - b.row)
 		toolbarCells.set(ctx, { ...cell!, rowIndex })
@@ -456,7 +457,7 @@ function refreshOpenToolbar<T>(ctx: GridHost<T>, row: T, rowIndex: number): void
 	if (!isSameLayout) {
 		hideToolbarTooltip(ctx)
 		const temp = document.createElement('div')
-		temp.innerHTML = renderToolbarHTML(buttons, ctx.engine.toolbarVerticalAlign !== 'top', ctx.shadow.host)
+		temp.innerHTML = renderToolbarHTML(buttons, ctx[GRID_ENGINE].toolbarVerticalAlign !== 'top', ctx.shadow.host)
 		active.toolbar.innerHTML = temp.querySelector('.wg__toolbar')?.innerHTML ?? ''
 		setActiveToolbarButtons(ctx, buttons)
 		setupToolbarTooltips(ctx, buttons)
@@ -495,10 +496,10 @@ export function handleToolbarItemClick<T>(
 ): void {
 	// Clear any active selections through the pipeline — unless the row is in the row
 	// selection: then the row built-ins act on the whole selection (and keep it)
-	if (!ctx.engine.selectedRows.includes(row)) ctx.pipelineAdapter?.clearSelection()
+	if (!ctx[GRID_ENGINE].selectedRows.includes(row)) ctx.pipelineAdapter?.clearSelection()
 
 	// Find CURRENT index of the row item (it may have moved)
-	const currentIndex = ctx.engine.displayItems.findIndex(i => i === row)
+	const currentIndex = ctx[GRID_ENGINE].displayItems.findIndex(i => i === row)
 	if (currentIndex === -1) {
 		closeToolbarAndReset(ctx)
 		return
@@ -521,16 +522,16 @@ export function handleToolbarItemClick<T>(
 		sourceEvent: event,
 		triggerElement,
 		after: (d) => {
-			if (d.action === 'delete' || ctx.engine.displayItems.indexOf(row) === -1) {
+			if (d.action === 'delete' || ctx[GRID_ENGINE].displayItems.indexOf(row) === -1) {
 				closeToolbarAndReset(ctx)
 				return
 			}
 			ctx.render()
-			const rowIndex = ctx.engine.displayItems.indexOf(row)
+			const rowIndex = ctx[GRID_ENGINE].displayItems.indexOf(row)
 			refreshOpenToolbar(ctx, row, rowIndex)
 			if (isMoveAction) {
 				// Show where the row moved to
-				updateConnector(ctx, ctx.engine.displayItems)
+				updateConnector(ctx, ctx[GRID_ENGINE].displayItems)
 				ctx.renderConnector()
 			}
 		}
@@ -551,11 +552,11 @@ export function handleInlineActionClick<T>(
 ): void {
 	// Clear any active selections through the pipeline — unless the row is in the row
 	// selection: then the row built-ins act on the whole selection (and keep it)
-	const row = ctx.engine.displayItems[rowIndex]
-	if (!ctx.engine.selectedRows.includes(row)) ctx.pipelineAdapter?.clearSelection()
+	const row = ctx[GRID_ENGINE].displayItems[rowIndex]
+	if (!ctx[GRID_ENGINE].selectedRows.includes(row)) ctx.pipelineAdapter?.clearSelection()
 
 	if (!row) return
-	const button = resolveToolbar(ctx, ctx.engine.rowToolbar, ctx.engine.rowCtx(row, rowIndex))[buttonIndex]
+	const button = resolveToolbar(ctx, ctx[GRID_ENGINE].rowToolbar, ctx[GRID_ENGINE].rowCtx(row, rowIndex))[buttonIndex]
 	if (!button || button.resolved.isDisabled) return
 
 	void activateGridItem(ctx, {

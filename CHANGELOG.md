@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Removed — BREAKING: `el.engine` (2026-11-22)
+- The element's internal engine is truly private (was a `readonly engine: GridEngine<T>` member marked
+  `@internal`, visible in the emitted `.d.ts` and at runtime). `el.engine` is now `undefined`; use the element's
+  properties / methods or `el.controller`. The `.d.ts` of `<web-grid>` no longer names the engine, and the
+  element no longer declares `implements GridHost` (module plumbing).
+
 ### Changed — the grid is ONE tab stop (2026-11-22)
 - **Visible: Tab now leaves the grid.** Navigate mode (`editTrigger: 'navigate'`, `mode: 'excel'`) follows the ARIA
   grid pattern (roving tabindex), like Excel: only the active cell has `tabindex="0"` (the first cell before any

@@ -79,7 +79,10 @@ export class ActionPipeline<T = unknown> {
 					if (prop === 'dispatch') {
 						return (childAction: GridAction) => this.dispatch(childAction)
 					}
-					return target[prop as keyof typeof target]
+					const value = Reflect.get(target, prop, target)
+					// A method runs on the element itself (it may read the element's #private state,
+					// which the proxy as `this` can't); getters / callback inputs come back as they are.
+					return typeof value === 'function' && isMethodOf(target, prop) ? value.bind(target) : value
 				},
 				set: (target, prop, value) => {
 					// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -96,6 +99,15 @@ export class ActionPipeline<T = unknown> {
 			}
 		}
 	}
+}
+
+/** Whether `prop` is a method (a function-valued data property on the prototype chain, not an accessor). */
+function isMethodOf(target: object, prop: PropertyKey): boolean {
+	for (let o: object | null = target; o; o = Object.getPrototypeOf(o)) {
+		const d = Object.getOwnPropertyDescriptor(o, prop)
+		if (d) return o !== target && 'value' in d && typeof d.value === 'function'
+	}
+	return false
 }
 
 /**

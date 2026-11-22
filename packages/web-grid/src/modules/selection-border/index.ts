@@ -5,6 +5,7 @@
 // Handles contiguous segments (separate borders for non-adjacent selections).
 
 import type { GridHost } from '../grid-context.js'
+import { GRID_ENGINE } from '../grid-context.js'
 
 // Store references to border elements for cleanup
 let rowBorders: HTMLElement[] = []
@@ -70,14 +71,14 @@ export function createRowSelectionBorders<T>(ctx: GridHost<T>): void {
 	// Remove existing borders first
 	removeRowSelectionBorders()
 
-	const selectedRowIndices = ctx.engine.selectedRowIndices
+	const selectedRowIndices = ctx[GRID_ENGINE].selectedRowIndices
 	if (selectedRowIndices.length === 0) return
 
 	const container = ctx.shadow.querySelector('.wg') as HTMLElement
 	if (!container) return
 
 	const segments = findContiguousSegments(selectedRowIndices)
-	const visualColumns = ctx.engine.visualColumns
+	const visualColumns = ctx[GRID_ENGINE].visualColumns
 
 	if (visualColumns.length === 0) return
 
@@ -120,15 +121,15 @@ export function createColumnSelectionBorders<T>(ctx: GridHost<T>): void {
 	// Remove existing borders first
 	removeColumnSelectionBorders()
 
-	const selectedColumns = ctx.engine.selectedColumnPositions  // visual positions
+	const selectedColumns = ctx[GRID_ENGINE].selectedColumnPositions  // visual positions
 	if (selectedColumns.length === 0) return
 
 	const container = ctx.shadow.querySelector('.wg') as HTMLElement
 	if (!container) return
 
 	const segments = findContiguousSegments(selectedColumns)
-	const displayItems = ctx.engine.displayItems
-	const visualColumns = ctx.engine.visualColumns
+	const displayItems = ctx[GRID_ENGINE].displayItems
+	const visualColumns = ctx[GRID_ENGINE].visualColumns
 
 	if (displayItems.length === 0 || visualColumns.length === 0) return
 

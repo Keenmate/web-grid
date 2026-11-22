@@ -27,7 +27,7 @@ async function snap(page: Page, row: number): Promise<State> {
 		const focus = td
 			? `${td.dataset.row}:${td.dataset.col}${a === td ? '' : '/editor'}`
 			: a?.classList.contains('wg') ? 'grid' : `${a?.tagName.toLowerCase()}${a?.id ? '#' + a.id : ''}`
-		const pending = (g as unknown as { engine: { editingCell: { rowIndex: number; field: string } | null } }).engine.editingCell
+		const pending = (g as unknown as Record<symbol, { editingCell: { rowIndex: number; field: string } | null }>)[Symbol.for('@keenmate/web-grid:engine')].editingCell
 		const editingTds = [...root.querySelectorAll<HTMLElement>('.wg__cell--editing')].map((c) => `${c.dataset.row}:${c.dataset.col}`)
 		const editingTd = root.querySelector<HTMLElement>('.wg__cell--editing')
 		const editing = editingTds.concat(

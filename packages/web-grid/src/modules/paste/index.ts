@@ -12,6 +12,7 @@ import type {
 import type { BeforePasteContext } from '../../interaction.js'
 import { runBeforeCallback, readPasteText } from '@keenmate/web-components-core'
 import { typePastedText } from '../editing/value-parse.js'
+import { GRID_ENGINE } from '../grid-context.js'
 
 /**
  * Parse TSV/CSV clipboard text into 2D array
@@ -134,7 +135,7 @@ export async function executePaste<T>(
 	targetRowIndex: number,
 	targetColIndex: number
 ): Promise<PasteDetail<T>> {
-	const grid = ctx.engine
+	const grid = ctx[GRID_ENGINE]
 	const parsedRows = parseTSV(clipboardText)
 
 	// Empty result for empty clipboard
@@ -537,11 +538,11 @@ export async function executePaste<T>(
  */
 export async function handlePasteEvent<T>(ctx: GridHost<T>, e: ClipboardEvent): Promise<void> {
 	// Only in navigate mode with focused cell, not while editing
-	if (!ctx.engine.isNavigateMode || ctx.engine.editingCell || !ctx.engine.focusedCell) return
+	if (!ctx[GRID_ENGINE].isNavigateMode || ctx[GRID_ENGINE].editingCell || !ctx[GRID_ENGINE].focusedCell) return
 	// A read-only / disabled grid takes no paste
-	if (ctx.engine.isReadonly || ctx.engine.isDisabled) return
+	if (ctx[GRID_ENGINE].isReadonly || ctx[GRID_ENGINE].isDisabled) return
 
-	const { rowIndex, colIndex } = ctx.engine.focusedCell
+	const { rowIndex, colIndex } = ctx[GRID_ENGINE].focusedCell
 	const text = readPasteText(e)
 	if (!text) return
 
@@ -555,26 +556,26 @@ export async function handlePasteEvent<T>(ctx: GridHost<T>, e: ClipboardEvent): 
 		ctx.render()
 	} else {
 		// Single cell paste - original behavior
-		const column = ctx.engine.columns[colIndex]
-		const row = ctx.engine.displayItems[rowIndex]
+		const column = ctx[GRID_ENGINE].columns[colIndex]
+		const row = ctx[GRID_ENGINE].displayItems[rowIndex]
 		if (!column || !row) return
 
 		// Check if cell is editable
-		if (!ctx.engine.isCellEditable(column, row)) return
+		if (!ctx[GRID_ENGINE].isCellEditable(column, row)) return
 
 		e.preventDefault()
 
-		const typed = typePastedText(column, text, ctx.engine.labels, ctx.engine.labelFormat, ctx.engine.numberParseOptions)
+		const typed = typePastedText(column, text, ctx[GRID_ENGINE].labels, ctx[GRID_ENGINE].labelFormat, ctx[GRID_ENGINE].numberParseOptions)
 		let processedText: unknown = typed.value
 		let parseError: string | null = typed.error
 		if (column.getPasteValueCallback) {
-			processedText = column.getPasteValueCallback(Object.assign(ctx.engine.cellCtx(row, rowIndex, column, colIndex), { text }))
+			processedText = column.getPasteValueCallback(Object.assign(ctx[GRID_ENGINE].cellCtx(row, rowIndex, column, colIndex), { text }))
 			parseError = null
 		}
 
 		// Commit the pasted value
 		const field = String(column.field)
-		await ctx.engine.commitEdit(rowIndex, field, processedText, false, 'paste', parseError)
+		await ctx[GRID_ENGINE].commitEdit(rowIndex, field, processedText, false, 'paste', parseError)
 		ctx.render()
 	}
 }

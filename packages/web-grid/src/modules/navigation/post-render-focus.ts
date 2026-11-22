@@ -22,6 +22,7 @@ import type { GridHost } from '../grid-context.js'
 import type { FocusedCell } from '../../types.js'
 import { focusCellTd, isFocusInGrid } from './focus.js'
 import { deepActiveElement } from '@keenmate/web-components-core'
+import { GRID_ENGINE } from '../grid-context.js'
 
 /** The open editor's text (+ caret) before a render replaced it — see captureEditorText(). */
 export type EditorText = {
@@ -40,7 +41,7 @@ export type EditorText = {
  * The date input is left to the date picker's own reopen (it copies the text itself).
  */
 export function captureEditorText<T>(ctx: GridHost<T>): EditorText | null {
-	const editing = ctx.engine.editingCell
+	const editing = ctx[GRID_ENGINE].editingCell
 	if (!editing) return null
 	const input = ctx.shadow.querySelector(
 		`input.wg__editor--text[data-row="${editing.rowIndex}"][data-field="${editing.field}"],
@@ -71,8 +72,8 @@ export function restoreFocusAfterRender<T>(
 	editorText: EditorText | null = null
 ): void {
 	// Auto-focus editor if in edit mode
-	if (ctx.engine.editingCell) {
-		const { rowIndex, field } = ctx.engine.editingCell
+	if (ctx[GRID_ENGINE].editingCell) {
+		const { rowIndex, field } = ctx[GRID_ENGINE].editingCell
 		// Use specific selectors to avoid finding stale editor elements
 		let editor = ctx.shadow.querySelector(
 			`.wg__combobox-input[data-row="${rowIndex}"][data-field="${field}"],
@@ -101,11 +102,11 @@ export function restoreFocusAfterRender<T>(
 		} else if (editor) {
 			editor.focus()
 			if (editor instanceof HTMLInputElement && editor.type === 'text') {
-				const cursorPos = ctx.engine.editingCell.cursorPosition
+				const cursorPos = ctx[GRID_ENGINE].editingCell.cursorPosition
 				const column = ctx.getCurrentEditingColumn()
-				const editStartSelection = column?.editorOptions?.editStartSelection || ctx.engine.editStartSelection
+				const editStartSelection = column?.editorOptions?.editStartSelection || ctx[GRID_ENGINE].editStartSelection
 
-				if (ctx.engine.editingCell.initialSearchQuery !== undefined) {
+				if (ctx[GRID_ENGINE].editingCell.initialSearchQuery !== undefined) {
 					// Type-to-start: always cursor at end
 					const len = editor.value.length
 					editor.setSelectionRange(len, len)
@@ -135,7 +136,7 @@ export function restoreFocusAfterRender<T>(
 				}
 			}
 		}
-	} else if (focusedCell && !ctx.engine.editingCell) {
+	} else if (focusedCell && !ctx[GRID_ENGINE].editingCell) {
 		// Restore focus to the previously focused cell (if not editing)
 		const cell = container.querySelector(
 			`td[data-row="${focusedCell.rowIndex}"][data-col="${focusedCell.colIndex}"]`
@@ -153,7 +154,7 @@ export function restoreFocusAfterRender<T>(
 			// by one). The new cell is in the DOM already. (focusCellTd: outside navigate mode the
 			// re-rendered cell has no tabindex of its own.)
 			if (ctx.shadow.activeElement !== cell && !isFocusElsewhere) focusCellTd(cell)
-		} else if (ctx.engine.shouldUseVirtualScroll() && !ctx.shadow.activeElement && !isFocusElsewhere) {
+		} else if (ctx[GRID_ENGINE].shouldUseVirtualScroll() && !ctx.shadow.activeElement && !isFocusElsewhere) {
 			// Virtual scroll: the focused row is outside the rendered window (a Shift+Arrow range
 			// scrolled its anchor away) — the keyboard stays in the grid on the container, the
 			// focused cell is kept; the next key brings its row back (container-keydown)

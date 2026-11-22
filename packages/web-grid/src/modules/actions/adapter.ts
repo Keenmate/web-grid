@@ -26,6 +26,7 @@ import { mapKeyDownToAction, isPipelineKey, mapMouseDownToActions } from './even
 import { getCursorPositionFromClick, focusCellTd } from '../navigation/focus.js'
 import type { CellCoordinates } from './types.js'
 import { extendCellRangeTo, extendCellRangeByKey, isRangeExtensionKey } from '../cell-selection/index.js'
+import { GRID_ENGINE } from '../grid-context.js'
 
 /**
  * Adapter that bridges GridElement event handlers with the action pipeline.
@@ -62,9 +63,9 @@ export class ActionPipelineAdapter<T = unknown> {
 	 * Get the effective editTrigger for a column
 	 */
 	private getEditTrigger(colIndex: number): 'always' | 'navigate' | 'click' | 'dblclick' {
-		const column = this.ctx.engine.columns[colIndex]
+		const column = this.ctx[GRID_ENGINE].columns[colIndex]
 		if (!column) return 'navigate'
-		return (column.editTrigger ?? this.ctx.engine.editTrigger) as 'always' | 'navigate' | 'click' | 'dblclick'
+		return (column.editTrigger ?? this.ctx[GRID_ENGINE].editTrigger) as 'always' | 'navigate' | 'click' | 'dblclick'
 	}
 
 	/**
@@ -72,7 +73,7 @@ export class ActionPipelineAdapter<T = unknown> {
 	 */
 	private isAlwaysMode(colIndex: number): boolean {
 		// Not "always" mode if grid isn't editable
-		if (!this.ctx.engine.isEffectivelyEditable) {
+		if (!this.ctx[GRID_ENGINE].isEffectivelyEditable) {
 			return false
 		}
 		return this.getEditTrigger(colIndex) === 'always'
@@ -82,9 +83,9 @@ export class ActionPipelineAdapter<T = unknown> {
 	 * Check if a specific cell is currently being edited
 	 */
 	private isEditingCell(rowIndex: number, colIndex: number): boolean {
-		const editingCell = this.ctx.engine.editingCell
+		const editingCell = this.ctx[GRID_ENGINE].editingCell
 		if (!editingCell) return false
-		const column = this.ctx.engine.columns[colIndex]
+		const column = this.ctx[GRID_ENGINE].columns[colIndex]
 		if (!column) return false
 		return editingCell.rowIndex === rowIndex && editingCell.field === String(column.field)
 	}
@@ -93,7 +94,7 @@ export class ActionPipelineAdapter<T = unknown> {
 	 * Check if a column has a dropdown editor (select, combobox, autocomplete)
 	 */
 	private isDropdownEditor(colIndex: number): boolean {
-		const column = this.ctx.engine.columns[colIndex]
+		const column = this.ctx[GRID_ENGINE].columns[colIndex]
 		if (!column) return false
 		const editor = column.editor
 		return editor === 'select' || editor === 'combobox' || editor === 'autocomplete'
@@ -103,7 +104,7 @@ export class ActionPipelineAdapter<T = unknown> {
 	 * Check if a column has a checkbox editor
 	 */
 	private isCheckboxEditor(colIndex: number): boolean {
-		const column = this.ctx.engine.columns[colIndex]
+		const column = this.ctx[GRID_ENGINE].columns[colIndex]
 		if (!column) return false
 		return column.editor === 'checkbox'
 	}
@@ -112,7 +113,7 @@ export class ActionPipelineAdapter<T = unknown> {
 	 * Check if a column has a date editor
 	 */
 	private isDateEditor(colIndex: number): boolean {
-		const column = this.ctx.engine.columns[colIndex]
+		const column = this.ctx[GRID_ENGINE].columns[colIndex]
 		if (!column) return false
 		return column.editor === 'date'
 	}
@@ -121,7 +122,7 @@ export class ActionPipelineAdapter<T = unknown> {
 	 * Check if a column has a custom editor
 	 */
 	private isCustomEditor(colIndex: number): boolean {
-		const column = this.ctx.engine.columns[colIndex]
+		const column = this.ctx[GRID_ENGINE].columns[colIndex]
 		if (!column) return false
 		return column.editor === 'custom'
 	}
@@ -130,7 +131,7 @@ export class ActionPipelineAdapter<T = unknown> {
 	 * Get the dropdown editor type for a column
 	 */
 	private getDropdownEditorType(colIndex: number): 'select' | 'combobox' | 'autocomplete' | undefined {
-		const column = this.ctx.engine.columns[colIndex]
+		const column = this.ctx[GRID_ENGINE].columns[colIndex]
 		if (!column) return undefined
 		const editor = column.editor
 		if (editor === 'select' || editor === 'combobox' || editor === 'autocomplete') {
@@ -304,7 +305,7 @@ export class ActionPipelineAdapter<T = unknown> {
 
 		// Not editing: Shift+Arrow / Shift+Home/End / Ctrl+Shift+Arrow grow or shrink the
 		// cell range from the focused cell (the anchor keeps focus)
-		if (isRangeExtensionKey(e) && this.ctx.engine.cellSelectionMode !== 'none') {
+		if (isRangeExtensionKey(e) && this.ctx[GRID_ENGINE].cellSelectionMode !== 'none') {
 			e.preventDefault()
 			e.stopPropagation()
 			extendCellRangeByKey(this.ctx, e)
@@ -366,8 +367,8 @@ export class ActionPipelineAdapter<T = unknown> {
 			}
 			// Checkbox: Enter navigates down (Space toggles), so fall through
 			if (isDropdown) {
-				const column = this.ctx.engine.columns[cell.colIndex]
-				if (column && this.ctx.engine.getEffectiveShouldOpenDropdownOnEnter(column)) {
+				const column = this.ctx[GRID_ENGINE].columns[cell.colIndex]
+				if (column && this.ctx[GRID_ENGINE].getEffectiveShouldOpenDropdownOnEnter(column)) {
 					e.preventDefault()
 					e.stopPropagation()
 					this.pipeline.dispatch({ type: 'startEdit', target: cell })
@@ -428,7 +429,7 @@ export class ActionPipelineAdapter<T = unknown> {
 			}
 
 			// Number columns: only a digit / minus / decimal point starts editing
-			if (this.ctx.engine.columns[cell.colIndex]?.editor === 'number' && !/[\d.\-]/.test(e.key)) {
+			if (this.ctx[GRID_ENGINE].columns[cell.colIndex]?.editor === 'number' && !/[\d.\-]/.test(e.key)) {
 				return true  // consumed: a letter on a number cell does nothing
 			}
 
@@ -455,7 +456,7 @@ export class ActionPipelineAdapter<T = unknown> {
 
 	/** True when the pointer is over an enabled (isCheckboxAlwaysEditable) display checkbox. */
 	private isClickOnEnabledDisplayCheckbox(e: MouseEvent, target: HTMLElement): boolean {
-		if (!this.ctx.engine.isCheckboxAlwaysEditable) return false
+		if (!this.ctx[GRID_ENGINE].isCheckboxAlwaysEditable) return false
 		const checkbox = target.closest('.wg__cell')?.querySelector('.wg__checkbox-display') as HTMLInputElement | null
 		if (!checkbox || checkbox.disabled) return false
 		const r = checkbox.getBoundingClientRect()
@@ -487,7 +488,7 @@ export class ActionPipelineAdapter<T = unknown> {
 		}
 
 		// Update focus state if cell changed
-		const currentFocus = this.ctx.engine.focusedCell
+		const currentFocus = this.ctx[GRID_ENGINE].focusedCell
 		if (!currentFocus || currentFocus.rowIndex !== cell.rowIndex || currentFocus.colIndex !== cell.colIndex) {
 			this.pipeline.dispatch({
 				type: 'focusCell',
@@ -506,10 +507,10 @@ export class ActionPipelineAdapter<T = unknown> {
 	 * the focus the caller dispatches next; `endCellTransition()` clears it.
 	 */
 	private leaveEditForCellClick(): void {
-		if (!this.ctx.engine.editingCell) return
+		if (!this.ctx[GRID_ENGINE].editingCell) return
 		this.ctx.isTransitioningCells = true
 		this.pipeline.dispatch({
-			type: this.ctx.engine.shouldCommitOnClickAway ? 'commitEdit' : 'cancelEdit'
+			type: this.ctx[GRID_ENGINE].shouldCommitOnClickAway ? 'commitEdit' : 'cancelEdit'
 		})
 	}
 
@@ -549,7 +550,7 @@ export class ActionPipelineAdapter<T = unknown> {
 			if (container) {
 				const rowIndex = parseInt(container.dataset.row || '', 10)
 				const field = container.dataset.field || ''
-				const colIndex = this.ctx.engine.columns.findIndex(c => String(c.field) === field)
+				const colIndex = this.ctx[GRID_ENGINE].columns.findIndex(c => String(c.field) === field)
 				if (!isNaN(rowIndex) && colIndex >= 0) {
 					cell = { rowIndex, colIndex }
 				}
@@ -560,7 +561,7 @@ export class ActionPipelineAdapter<T = unknown> {
 			if (container) {
 				const rowIndex = parseInt(container.dataset.row || '', 10)
 				const field = container.dataset.field || ''
-				const colIndex = this.ctx.engine.columns.findIndex(c => String(c.field) === field)
+				const colIndex = this.ctx[GRID_ENGINE].columns.findIndex(c => String(c.field) === field)
 				if (!isNaN(rowIndex) && colIndex >= 0) {
 					cell = { rowIndex, colIndex }
 				}
@@ -572,7 +573,7 @@ export class ActionPipelineAdapter<T = unknown> {
 		if (!cell) return false
 
 		// Clear tab traversal tracking on mouse click
-		this.ctx.engine.tabTraversalStartColIndex = null
+		this.ctx[GRID_ENGINE].tabTraversalStartColIndex = null
 
 		const isAlways = this.isAlwaysMode(cell.colIndex)
 		const isEditing = this.isEditingCell(cell.rowIndex, cell.colIndex)
@@ -584,7 +585,7 @@ export class ActionPipelineAdapter<T = unknown> {
 
 		// Check for shift+click cell selection BEFORE 'always' mode handling
 		// In 'shift' selection mode, shift+click should select cells, not edit
-		const selectionMode = this.ctx.engine.cellSelectionMode
+		const selectionMode = this.ctx[GRID_ENGINE].cellSelectionMode
 		const isShiftClick = e.shiftKey
 		if (selectionMode === 'shift' && isShiftClick && isCellClick) {
 			this.pipeline.dispatch({
@@ -601,7 +602,7 @@ export class ActionPipelineAdapter<T = unknown> {
 
 		// 'click' mode: Shift+click extends the range from the focused cell (the anchor
 		// keeps focus — no default mousedown focus move, no edit start)
-		if (selectionMode === 'click' && isShiftClick && isCellClick && !isAlways && !isEditing && this.ctx.engine.focusedCell) {
+		if (selectionMode === 'click' && isShiftClick && isCellClick && !isAlways && !isEditing && this.ctx[GRID_ENGINE].focusedCell) {
 			e.preventDefault()
 			e.stopPropagation()
 			extendCellRangeTo(this.ctx, cell.rowIndex, cell.colIndex)
@@ -628,7 +629,7 @@ export class ActionPipelineAdapter<T = unknown> {
 			const isComboboxInput = target.matches('.wg__combobox-input, .wg__autocomplete-input')
 
 			// Check if clicking on already-focused cell (for cursor repositioning)
-			const currentFocus = this.ctx.engine.focusedCell
+			const currentFocus = this.ctx[GRID_ENGINE].focusedCell
 			const isAlreadyFocused = currentFocus &&
 				currentFocus.rowIndex === cell.rowIndex &&
 				currentFocus.colIndex === cell.colIndex
@@ -640,11 +641,11 @@ export class ActionPipelineAdapter<T = unknown> {
 
 			// Clear any active selections when clicking on a cell (shift+click is handled above)
 			// Set transitioning flag to prevent focusout handler from clearing focus
-			const hadCellRangeSelection = isCellClick && this.ctx.engine.selectedCellRange
+			const hadCellRangeSelection = isCellClick && this.ctx[GRID_ENGINE].selectedCellRange
 			const hadAnySelection = isCellClick && (
 				hadCellRangeSelection ||
-				this.ctx.engine.selectedRowIndices.length > 0 ||
-				this.ctx.engine.selectedColumns.length > 0
+				this.ctx[GRID_ENGINE].selectedRowIndices.length > 0 ||
+				this.ctx[GRID_ENGINE].selectedColumns.length > 0
 			)
 			if (hadAnySelection) {
 				if (hadCellRangeSelection) {
@@ -755,9 +756,9 @@ export class ActionPipelineAdapter<T = unknown> {
 			this.leaveEditForCellClick()
 
 			// Clear row/column/cell selections when clicking on a cell
-			if (this.ctx.engine.selectedRowIndices.length > 0 ||
-				this.ctx.engine.selectedColumns.length > 0 ||
-				this.ctx.engine.selectedCellRange) {
+			if (this.ctx[GRID_ENGINE].selectedRowIndices.length > 0 ||
+				this.ctx[GRID_ENGINE].selectedColumns.length > 0 ||
+				this.ctx[GRID_ENGINE].selectedCellRange) {
 				this.pipeline.dispatch({ type: 'clearSelection' })
 			}
 
@@ -769,7 +770,7 @@ export class ActionPipelineAdapter<T = unknown> {
 			})
 
 			// Start cell selection tracking (for drag-to-select)
-			const selectionMode = this.ctx.engine.cellSelectionMode
+			const selectionMode = this.ctx[GRID_ENGINE].cellSelectionMode
 			const isShiftClick = e.shiftKey
 			const shouldSelectRange =
 				selectionMode !== 'none' && (

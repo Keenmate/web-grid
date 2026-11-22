@@ -7,6 +7,7 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import './index.js'
+import { GRID_ENGINE } from './modules/grid-context.js'
 
 const columns = () => [
 	{ field: 'name', title: 'Name' },
@@ -39,18 +40,18 @@ describe('web-grid persisted column state', () => {
 
 	it('setColumnWidths saves to localStorage km-state:web-grid:<key>; a new grid loads it', async () => {
 		await mount({ 'storage-key': 'g2', 'persist-column-widths': '' }, { columns: columns() })
-		el.engine.setColumnWidths([{ field: 'name', width: '210px' }])
+		el[GRID_ENGINE].setColumnWidths([{ field: 'name', width: '210px' }])
 		await tick()
 		const saved = JSON.parse(localStorage.getItem('km-state:web-grid:g2')!)
 		expect(saved.columnWidths).toContainEqual({ field: 'name', width: '210px' })
 		el.remove()
 		await mount({ 'storage-key': 'g2', 'persist-column-widths': '' }, { columns: columns() })
-		expect(el.engine._columnWidths.get('name')).toBe('210px')
+		expect(el[GRID_ENGINE]._columnWidths.get('name')).toBe('210px')
 	})
 
 	it('no storage-key: nothing is stored', async () => {
 		await mount({ 'persist-column-widths': '' }, { columns: columns() })
-		el.engine.setColumnWidths([{ field: 'name', width: '210px' }])
+		el[GRID_ENGINE].setColumnWidths([{ field: 'name', width: '210px' }])
 		await tick()
 		expect(localStorage.length).toBe(0)
 	})
@@ -65,8 +66,8 @@ describe('web-grid persisted column state', () => {
 		})
 		expect(loads[0].key).toBe('cb')
 		expect(loads[0].element).toBe(el)
-		expect(el.engine._columnWidths.get('qty')).toBe('90px')
-		el.engine.setColumnWidths([{ field: 'name', width: '120px' }])
+		expect(el[GRID_ENGINE]._columnWidths.get('qty')).toBe('90px')
+		el[GRID_ENGINE].setColumnWidths([{ field: 'name', width: '120px' }])
 		await tick()
 		const last = saves.at(-1)
 		expect(last.key).toBe('cb')
@@ -82,7 +83,7 @@ describe('web-grid persisted column state', () => {
 		expect(JSON.parse(localStorage.getItem('km-state:web-grid:orph')!).columnWidths).toHaveLength(2)
 		el.columns = columns()
 		await tick()
-		expect(el.engine._columnWidths.get('name')).toBe('150px')
+		expect(el[GRID_ENGINE]._columnWidths.get('name')).toBe('150px')
 		expect(JSON.parse(localStorage.getItem('km-state:web-grid:orph')!).columnWidths).toEqual([{ field: 'name', width: '150px' }])
 	})
 })

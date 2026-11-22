@@ -10,6 +10,7 @@ import { createPointerDrag, type PointerDrag } from '@keenmate/web-components-co
 import type { Layer } from '@keenmate/web-components-core/positioning'
 import type { GridHost } from '../grid-context.js'
 import { openGridLayer } from '../layers/index.js'
+import { GRID_ENGINE } from '../grid-context.js'
 
 /** An active (or armed) reorder of one grid. */
 interface ReorderState {
@@ -42,14 +43,14 @@ export function isReordering(): boolean {
 
 /** The header a press on `target` would drag, or `null` (frozen, not reorderable, a resize handle, …). */
 function reorderableHeader<T>(ctx: GridHost<T>, target: Element | undefined, event: PointerEvent): { headerCell: HTMLElement; field: string; fromIndex: number } | null {
-	if (!ctx.engine.isColumnReorderAllowed || event.ctrlKey || event.metaKey || event.shiftKey) return null
+	if (!ctx[GRID_ENGINE].isColumnReorderAllowed || event.ctrlKey || event.metaKey || event.shiftKey) return null
 	if (!target?.closest || target.closest('.wg__resize-handle')) return null
 	const headerCell = target.closest('.wg__header') as HTMLElement | null
 	if (!headerCell || headerCell.classList.contains('wg__header--frozen') || headerCell.classList.contains('wg__row-number-header')) return null
 	const field = headerCell.dataset.field
 	if (!field) return null
-	const visualCols = ctx.engine.visualColumns
-	const frozenCount = ctx.engine.totalFrozenColumns
+	const visualCols = ctx[GRID_ENGINE].visualColumns
+	const frozenCount = ctx[GRID_ENGINE].totalFrozenColumns
 	const visualIndex = visualCols.findIndex(vc => String(vc.column.field) === field)
 	if (visualIndex < frozenCount) return null  // a frozen column
 	if (visualCols[visualIndex]?.column.isReorderable === false) return null
@@ -120,15 +121,15 @@ export function createColumnReorder<T>(ctx: GridHost<T>, host: HTMLElement): Poi
 			if (fromIndex !== toIndex && toIndex !== fromIndex + 1) {
 				// Adjust toIndex if moving right (since we remove from original position first)
 				const adjustedToIndex = toIndex > fromIndex ? toIndex - 1 : toIndex
-				ctx.engine.moveColumn(field, adjustedToIndex)
-				ctx.engine.notify('column-reorder', {
+				ctx[GRID_ENGINE].moveColumn(field, adjustedToIndex)
+				ctx[GRID_ENGINE].notify('column-reorder', {
 					field,
 					fromIndex,
 					toIndex: adjustedToIndex,
-					allOrder: ctx.engine.getColumnOrderState()
+					allOrder: ctx[GRID_ENGINE].getColumnOrderState()
 				})
 				// Persisted UI state (storage-key + persist-column-order; core state store)
-				if (ctx.engine.shouldPersistColumnOrder) ctx.engine.savePersistedState()
+				if (ctx[GRID_ENGINE].shouldPersistColumnOrder) ctx[GRID_ENGINE].savePersistedState()
 			}
 			// Block the click that ends the drag from sorting (cleared after this frame)
 			dragJustCompleted = true
@@ -145,8 +146,8 @@ export function createColumnReorder<T>(ctx: GridHost<T>, host: HTMLElement): Poi
  * Dropping before a non-movable column would shift it, so we must drop after all non-movable columns.
  */
 function getMinDropIndex<T>(ctx: GridHost<T>): number {
-	const visualCols = ctx.engine.visualColumns
-	const frozenCount = ctx.engine.totalFrozenColumns
+	const visualCols = ctx[GRID_ENGINE].visualColumns
+	const frozenCount = ctx[GRID_ENGINE].totalFrozenColumns
 	const nonFrozenCols = visualCols.slice(frozenCount)
 
 	// Find the highest index of any non-movable column
@@ -164,8 +165,8 @@ function getMinDropIndex<T>(ctx: GridHost<T>): number {
  * Returns index relative to non-frozen columns (0 = first position after frozen columns)
  */
 function findDropIndex<T>(ctx: GridHost<T>, mouseX: number): number {
-	const visualCols = ctx.engine.visualColumns
-	const frozenCount = ctx.engine.totalFrozenColumns
+	const visualCols = ctx[GRID_ENGINE].visualColumns
+	const frozenCount = ctx[GRID_ENGINE].totalFrozenColumns
 	const nonFrozenCols = visualCols.slice(frozenCount)
 
 	if (nonFrozenCols.length === 0) return 0
@@ -208,8 +209,8 @@ function findDropIndex<T>(ctx: GridHost<T>, mouseX: number): number {
  */
 function updateDropIndicator<T>(ctx: GridHost<T>, indicator: HTMLElement, dropIndex: number): void {
 
-	const visualCols = ctx.engine.visualColumns
-	const frozenCount = ctx.engine.totalFrozenColumns
+	const visualCols = ctx[GRID_ENGINE].visualColumns
+	const frozenCount = ctx[GRID_ENGINE].totalFrozenColumns
 	const nonFrozenCols = visualCols.slice(frozenCount)
 	const container = ctx.shadow.querySelector('.wg') as HTMLElement
 	const containerRect = container?.getBoundingClientRect()

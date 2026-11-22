@@ -13,6 +13,7 @@
 
 import { renderLoader } from '@keenmate/web-components-core'
 import type { GridHost } from '../grid-context.js'
+import { GRID_ENGINE } from '../grid-context.js'
 
 /** The grid's loading states (= the `context` the render hooks receive, except the slot suffix). */
 export type GridLoaderSlot = 'row' | 'search-editor' | 'search-dropdown'
@@ -67,7 +68,7 @@ export function pruneDetachedLoaders<T>(ctx: GridHost<T>): void {
 export function syncLoadingMoreLoader<T>(ctx: GridHost<T>): void {
 	pruneDetachedLoaders(ctx)
 	const container = ctx.shadow.querySelector('.wg__loading-more-indicator') as HTMLElement | null
-	syncLoader(ctx, 'row', container, ctx.engine.labels['ariaLabels.loading'])
+	syncLoader(ctx, 'row', container, ctx[GRID_ENGINE].labels['ariaLabels.loading'])
 }
 
 /** Remove every loader of this grid (destroy). */

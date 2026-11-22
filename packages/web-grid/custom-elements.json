@@ -547,7 +547,7 @@
       "declarations": [
         {
           "kind": "class",
-          "description": "GridElement - Custom HTML Element for GridEngine\n\nExtends BlissElement (SSR-safe base + §12.3 registry) and composes\nGridEngine for business logic.\n\nUsage:\n```html\n<web-grid></web-grid>\n```\n\n```js\nconst grid = document.querySelector('web-grid');\ngrid.items = [...];\ngrid.columns = [...];\n```",
+          "description": "GridElement - the `<web-grid>` custom element\n\nExtends BlissElement (SSR-safe base + §12.3 registry) and composes\na private internal engine for the grid state.\n\nUsage:\n```html\n<web-grid></web-grid>\n```\n\n```js\nconst grid = document.querySelector('web-grid');\ngrid.items = [...];\ngrid.columns = [...];\n```",
           "name": "GridElement",
           "members": [
             {

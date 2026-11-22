@@ -21,6 +21,7 @@
 import { createTooltip, type TooltipHandle } from '@keenmate/web-components-core/positioning'
 import type { GridHost } from '../grid-context.js'
 import { getCellTooltip } from '../rendering/table.js'
+import { GRID_ENGINE } from '../grid-context.js'
 
 const BODY_CELL_SELECTOR = 'td.wg__cell[data-row][data-col]'
 const CELL_TOOLTIP_SELECTOR = `[data-tooltip], [data-tooltip-html], ${BODY_CELL_SELECTOR}[data-wg-tooltip]`
@@ -39,8 +40,8 @@ function contentElement(text: string, isHtml: boolean): HTMLElement {
 function resolveTooltip<T>(ctx: GridHost<T>, target: HTMLElement): HTMLElement | null {
 	if (target.matches(BODY_CELL_SELECTOR)) {
 		const rowIndex = Number(target.dataset.row)
-		const column = ctx.engine.columns[Number(target.dataset.col)]
-		const item = ctx.engine.displayItems[rowIndex]
+		const column = ctx[GRID_ENGINE].columns[Number(target.dataset.col)]
+		const item = ctx[GRID_ENGINE].displayItems[rowIndex]
 		if (column && item) {
 			const tooltip = getCellTooltip(ctx, item, rowIndex, column)
 			return tooltip ? contentElement(tooltip.text, tooltip.attr === 'data-tooltip-html') : null

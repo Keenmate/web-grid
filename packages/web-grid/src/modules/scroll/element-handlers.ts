@@ -13,6 +13,7 @@ import { untabCellWidgets } from '../rendering/cell-widgets.js'
 import { renderDataRowsVirtual, renderLoadingMoreRow, type VirtualScrollParams } from '../rendering/table.js'
 import { syncLoadingMoreLoader } from '../rendering/loader.js'
 import { visibleRowRange, shouldTriggerInfiniteScroll } from './calculations.js'
+import { GRID_ENGINE } from '../grid-context.js'
 
 /**
  * On every scroll tick, recompute the visible row window and re-render the
@@ -23,7 +24,7 @@ export function handleVirtualScroll<T>(ctx: GridHost<T>, container: HTMLElement)
 	// Skip during programmatic scroll (keyboard nav already handles row visibility)
 	if (ctx.virtualScroll.isProgrammatic) return
 
-	const { startIndex, endIndex } = visibleRowRange(ctx, container.scrollTop, container.clientHeight, [ctx.engine.editingCell?.rowIndex])
+	const { startIndex, endIndex } = visibleRowRange(ctx, container.scrollTop, container.clientHeight, [ctx[GRID_ENGINE].editingCell?.rowIndex])
 
 	// Only re-render if range changed
 	if (ctx.virtualScroll.setRange(startIndex, endIndex)) {
@@ -40,16 +41,16 @@ export function renderVirtualRows<T>(ctx: GridHost<T>, container: HTMLElement): 
 	const tbody = container.querySelector('tbody')
 	if (!tbody) return
 
-	const items = ctx.engine.displayItems
+	const items = ctx[GRID_ENGINE].displayItems
 	const params: VirtualScrollParams = {
 		startIndex: ctx.virtualScroll.start,
 		endIndex: ctx.virtualScroll.end,
-		rowHeight: ctx.engine.virtualScrollItemHeight,
+		rowHeight: ctx[GRID_ENGINE].virtualScrollItemHeight,
 		totalItems: items.length
 	}
 
 	// Save focusedCell BEFORE innerHTML — the blur from destroyed cell will clear it
-	const focusedCell = ctx.engine.focusedCell
+	const focusedCell = ctx[GRID_ENGINE].focusedCell
 	// Was the keyboard focus on a body row (a cell / its editor) the swap is about to destroy?
 	const active = ctx.shadow.activeElement
 	const hadBodyFocus = !!active && tbody.contains(active)
@@ -62,7 +63,7 @@ export function renderVirtualRows<T>(ctx: GridHost<T>, container: HTMLElement): 
 	// Use the saved value since blur event may have cleared it.
 	if (focusedCell) {
 		// Restore focusedCell state (blur may have cleared it)
-		ctx.engine.setFocusedCell(focusedCell.rowIndex, focusedCell.colIndex)
+		ctx[GRID_ENGINE].setFocusedCell(focusedCell.rowIndex, focusedCell.colIndex)
 
 		const cell = tbody.querySelector(
 			`td[data-row="${focusedCell.rowIndex}"][data-col="${focusedCell.colIndex}"]`
@@ -91,7 +92,7 @@ export function handleInfiniteScroll<T>(ctx: GridHost<T>, container: HTMLElement
 		container.scrollTop,
 		container.scrollHeight,
 		container.clientHeight,
-		ctx.engine.infiniteScrollThreshold
+		ctx[GRID_ENGINE].infiniteScrollThreshold
 	)
 
 	if (shouldLoad) {
@@ -102,7 +103,7 @@ export function handleInfiniteScroll<T>(ctx: GridHost<T>, container: HTMLElement
 		syncLoadingMoreLoader(ctx)
 
 		// Fire data request with loadMore trigger
-		ctx.engine.fireDataRequest('load-more')
+		ctx[GRID_ENGINE].fireDataRequest('load-more')
 
 		// The consumer is responsible for:
 		// 1. Fetching more data

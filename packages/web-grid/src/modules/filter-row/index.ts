@@ -21,6 +21,7 @@
 import type { GridHost } from '../grid-context.js'
 import { guardPageChange } from '../events/page-change.js'
 import { createDebounce, isImeEnter, onTextInput, type Debounce } from '@keenmate/web-components-core'
+import { GRID_ENGINE } from '../grid-context.js'
 
 export const FILTER_DEBOUNCE_MS = 300
 
@@ -51,7 +52,7 @@ export function applyFilterInput<T>(ctx: GridHost<T>, field: string, text: strin
 	const svc = ctx.filterRow
 	svc.clearTimer(field)
 	svc.pendingText.delete(field)
-	const engine = ctx.engine
+	const engine = ctx[GRID_ENGINE]
 	if ((engine.filters[field] ?? '') === text) return
 
 	if (engine.paginationMode === 'server') {

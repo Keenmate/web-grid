@@ -16,6 +16,7 @@
 import { openMenu, type MenuPoint } from '@keenmate/web-components-core/menu'
 import type { MenuEntry, MenuItem, ResolvedActionItem } from '@keenmate/web-components-core/actions'
 import type { GridHost } from '../grid-context.js'
+import { GRID_ENGINE } from '../grid-context.js'
 
 /** Which grid menu — its scoping class on every menu level (root and submenus). */
 export type GridMenuKind = 'cell' | 'header'
@@ -59,7 +60,7 @@ export function openGridMenu<T, Ctx>(host: GridHost<T>, spec: GridMenuSpec<Ctx>)
 		host: host.shadow,
 		// menu-presentation / menu-side (core menuPresentationInputs(), rulebook C-RO-16)
 		...host.getMenuPresentationOptions(),
-		labels: { back: host.engine.labels['menuItems.back'], close: host.engine.labels['ariaLabels.closeSheet'] },
+		labels: { back: host[GRID_ENGINE].labels['menuItems.back'], close: host[GRID_ENGINE].labels['ariaLabels.closeSheet'] },
 		cssClass: MENU_CLASS[spec.kind],
 		offset: spec.offset ? { mainAxis: spec.offset.y, alignmentAxis: spec.offset.x } : undefined,
 		defaults: spec.defaults,

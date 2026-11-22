@@ -9,6 +9,7 @@ import type { GridHost } from '../grid-context.js'
 import { getOptionDisplayValue } from '../dropdown/options.js'
 import { gridPerf } from '../../perf.js'
 import { hasEditButton, renderEditButton } from '../editing/edit-button.js'
+import { GRID_ENGINE } from '../grid-context.js'
 
 /**
  * Render a cell in display mode (not editing)
@@ -48,15 +49,15 @@ function renderCellDisplayContent<T>(
 		}
 		// Default: render checkbox
 		gridPerf.count('cellDisplayItemsLookup')
-		const item = ctx.engine.displayItems[rowIndex]
-		const rawValue = item ? ctx.engine.getCellRawValue(item, rowIndex, field) : false
+		const item = ctx[GRID_ENGINE].displayItems[rowIndex]
+		const rawValue = item ? ctx[GRID_ENGINE].getCellRawValue(item, rowIndex, field) : false
 		const opts = column.editorOptions || {}
 		const trueValue = opts.trueValue !== undefined ? opts.trueValue : true
 		const isChecked = rawValue === trueValue
 		// Display-mode checkbox: disabled (click on cell handles toggling), unless
 		// isCheckboxAlwaysEditable makes it interactive — one click toggles it.
 		// Non-editable cells get additional visual styling via CSS
-		const isInteractive = isEditable && ctx.engine.isCheckboxAlwaysEditable
+		const isInteractive = isEditable && ctx[GRID_ENGINE].isCheckboxAlwaysEditable
 		return `
 			<input
 				type="checkbox"
@@ -73,14 +74,14 @@ function renderCellDisplayContent<T>(
 	if (isDropdown) {
 		// Get display value using proper fallback chain (getDisplayCallback -> displayMember -> label -> raw value)
 		gridPerf.count('cellDisplayItemsLookup')
-		const item = ctx.engine.displayItems[rowIndex]
-		const rawValue = item ? ctx.engine.getCellRawValue(item, rowIndex, field) : undefined
+		const item = ctx[GRID_ENGINE].displayItems[rowIndex]
+		const rawValue = item ? ctx[GRID_ENGINE].getCellRawValue(item, rowIndex, field) : undefined
 		const opts = column.editorOptions || {}
 		const options = opts.initialOptions || opts.options || []
 		const displayValue = getOptionDisplayValue(rawValue, options, opts)
 
 		// Add modifier class for on-focus visibility (CSS handles hover/focus show)
-		const visibility = ctx.engine.getEffectiveToggleVisibility(column)
+		const visibility = ctx[GRID_ENGINE].getEffectiveToggleVisibility(column)
 		const toggleClass = visibility === 'on-focus' ? 'wg__cell-dropdown-display--toggle-on-focus' : ''
 		// Only render toggle if cell is editable
 		const toggleHtml = isEditable ? '<span class="wg__select-toggle">▼</span>' : ''
@@ -94,7 +95,7 @@ function renderCellDisplayContent<T>(
 
 	if (isDate) {
 		// Same pattern as dropdown - calendar button visible only if editable
-		const visibility = ctx.engine.getEffectiveToggleVisibility(column)
+		const visibility = ctx[GRID_ENGINE].getEffectiveToggleVisibility(column)
 		const toggleClass = visibility === 'on-focus' ? 'wg__cell-date-display--toggle-on-focus' : ''
 		// Only render toggle if cell is editable
 		const toggleHtml = isEditable

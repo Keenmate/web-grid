@@ -4,6 +4,7 @@
 
 import type { GridHost } from '../grid-context.js'
 import { guardPageChange } from './page-change.js'
+import { GRID_ENGINE } from '../grid-context.js'
 
 /**
  * Handle pagination button click (first, prev, next, last) — through
@@ -16,7 +17,7 @@ export function handlePaginationClick<T>(ctx: GridHost<T>, e: Event): boolean {
 	if (!btn || btn.hasAttribute('disabled')) return false
 
 	const action = btn.dataset.action
-	const engine = ctx.engine
+	const engine = ctx[GRID_ENGINE]
 	const current = engine.currentPage
 	let toPage = current
 
@@ -39,11 +40,11 @@ export function handlePaginationClick<T>(ctx: GridHost<T>, e: Event): boolean {
  */
 export function handlePageSizeChange<T>(ctx: GridHost<T>, select: HTMLSelectElement): boolean {
 	const newPageSize = parseInt(select.value, 10)
-	if (newPageSize === ctx.engine.pageSize) return false
+	if (newPageSize === ctx[GRID_ENGINE].pageSize) return false
 	return guardPageChange(ctx, 'page-size', 1, page => {
 		ctx.setAttributes({ pageSize: newPageSize })
-		ctx.engine.currentPage = page
-		ctx.engine.fireDataRequest('page-size')
+		ctx[GRID_ENGINE].currentPage = page
+		ctx[GRID_ENGINE].fireDataRequest('page-size')
 	})
 }
 

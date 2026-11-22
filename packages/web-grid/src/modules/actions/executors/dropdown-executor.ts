@@ -15,6 +15,7 @@ import {
 	getOptionValue
 } from '../../dropdown/index.js'
 import { renderCell } from '../../rendering/index.js'
+import { GRID_ENGINE } from '../../grid-context.js'
 
 /**
  * Dropdown executor - handles dropdown open/close/toggle/navigate/select actions
@@ -144,12 +145,12 @@ function executeDropdownSelect(ctx: ExecutorContext, action: DropdownSelectActio
 	if (!option) return
 
 	// Get cell info - prefer editingCell, fall back to focusedCell for 'always' mode
-	const editingCell = ctx.engine.editingCell
-	const focusedCell = ctx.engine.focusedCell
+	const editingCell = ctx[GRID_ENGINE].editingCell
+	const focusedCell = ctx[GRID_ENGINE].focusedCell
 	const cellInfo = editingCell
-		? { rowIndex: editingCell.rowIndex, field: editingCell.field, colIndex: ctx.engine.columns.findIndex(c => String(c.field) === editingCell.field) }
+		? { rowIndex: editingCell.rowIndex, field: editingCell.field, colIndex: ctx[GRID_ENGINE].columns.findIndex(c => String(c.field) === editingCell.field) }
 		: focusedCell
-			? { rowIndex: focusedCell.rowIndex, field: String(ctx.engine.columns[focusedCell.colIndex]?.field), colIndex: focusedCell.colIndex }
+			? { rowIndex: focusedCell.rowIndex, field: String(ctx[GRID_ENGINE].columns[focusedCell.colIndex]?.field), colIndex: focusedCell.colIndex }
 			: null
 
 	if (!cellInfo) return
@@ -157,23 +158,23 @@ function executeDropdownSelect(ctx: ExecutorContext, action: DropdownSelectActio
 	const { rowIndex, field, colIndex } = cellInfo
 
 	// Get column for editorOptions
-	const column = ctx.engine.columns[colIndex]
+	const column = ctx[GRID_ENGINE].columns[colIndex]
 	const opts = column?.editorOptions || {}
 
 	if (isOptionDisabled(option, opts)) return
 
 	const value = getOptionValue(option, opts)
-	const row = ctx.engine.displayItems[rowIndex]
+	const row = ctx[GRID_ENGINE].displayItems[rowIndex]
 
 	// Notify editorOptions.onSelect
 	if (opts.onSelect && row && column) {
-		opts.onSelect({ ...ctx.engine.cellCtx(row, rowIndex, column, colIndex), option })
+		opts.onSelect({ ...ctx[GRID_ENGINE].cellCtx(row, rowIndex, column, colIndex), option })
 	}
 
 	ctx.dropdown.setJustSelected(true)
 	ctx.isCommittingFromKeyboard = true
 	removeDropdown(ctx)
-	ctx.engine.commitEdit(rowIndex, field, value, action.commitEmptyRow ?? false)
+	ctx[GRID_ENGINE].commitEdit(rowIndex, field, value, action.commitEmptyRow ?? false)
 
 	// If thenNavigate is specified (Tab key), navigate after select
 	if (action.thenNavigate) {

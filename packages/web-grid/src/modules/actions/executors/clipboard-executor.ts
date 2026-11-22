@@ -5,6 +5,7 @@
 
 import type { ActionExecutor, ExecutorContext } from '../pipeline.js'
 import type { GridAction } from '../types.js'
+import { GRID_ENGINE } from '../../grid-context.js'
 
 /**
  * Clipboard executor - handles copy and paste actions
@@ -33,7 +34,7 @@ export const clipboardExecutor: ActionExecutor = {
  * clipboard rejection resolves false instead of surfacing as unhandled).
  */
 async function executeCopy(ctx: ExecutorContext): Promise<void> {
-	const engine = ctx.engine
+	const engine = ctx[GRID_ENGINE]
 	if (engine.selectedCellRange) {
 		await engine.copyCellSelectionToClipboard()
 	} else if (engine.selectedColumns.length > 0) {

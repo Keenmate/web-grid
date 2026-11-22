@@ -24,6 +24,7 @@ import { renderCell } from '../rendering/cell.js'
 import { DatePicker, isTypedDateInvalid, setTypedDateInvalid } from './datepicker.js'
 import type { DatePickerCloseReason } from './types.js'
 import { parseFormat, formatDate, toISODateString, parseDateInput } from './formatting.js'
+import { GRID_ENGINE } from '../grid-context.js'
 
 export { parseDateInput }
 
@@ -85,7 +86,7 @@ function onDatePickerClose<T>(ctx: GridHost<T>, picker: DatePicker, reason: Date
 		if (reason === 'close') returnFocusToCell(ctx, at.rowIndex, at.colIndex)
 		return
 	}
-	const editing = ctx.engine.editingCell
+	const editing = ctx[GRID_ENGINE].editingCell
 	if (!editing || editing.rowIndex !== at.rowIndex || editing.field !== at.field) return
 	const cell = ctx.shadow.querySelector(`td[data-row="${at.rowIndex}"][data-col="${at.colIndex}"]`)
 	const active = ctx.shadow.activeElement
@@ -93,7 +94,7 @@ function onDatePickerClose<T>(ctx: GridHost<T>, picker: DatePicker, reason: Date
 	const isCancel = reason === 'escape' || reason === 'dismiss' || reason === 'scroll'
 	const isSheetClose = reason === 'close'
 	clearEditingVisual(ctx)
-	if (isCancel) ctx.engine.cancelEdit()
+	if (isCancel) ctx[GRID_ENGINE].cancelEdit()
 	else commitEditorValue(ctx)
 	// Re-render the cell to restore display mode content
 	renderCell(ctx, at.rowIndex, at.colIndex)
@@ -111,7 +112,7 @@ function onDatePickerClose<T>(ctx: GridHost<T>, picker: DatePicker, reason: Date
  */
 function reopenOnRerenderedCell<T>(ctx: GridHost<T>, at: PickerCell): void {
 	if (!at.isAlwaysMode) {
-		const editing = ctx.engine.editingCell
+		const editing = ctx[GRID_ENGINE].editingCell
 		if (!editing || editing.rowIndex !== at.rowIndex || editing.field !== at.field) return
 	}
 	const cell = ctx.shadow.querySelector(`td[data-row="${at.rowIndex}"][data-col="${at.colIndex}"]`)
@@ -149,12 +150,12 @@ export function openCellDatePicker<T>(
 		ctx.datepicker = null
 	}
 
-	const column = ctx.engine.columns[colIndex]
+	const column = ctx[GRID_ENGINE].columns[colIndex]
 	const at: PickerCell = {
 		rowIndex,
 		colIndex,
 		field: String(column?.field ?? input.dataset.field ?? ''),
-		isAlwaysMode: (column?.editTrigger ?? ctx.engine.editTrigger) === 'always',
+		isAlwaysMode: (column?.editTrigger ?? ctx[GRID_ENGINE].editTrigger) === 'always',
 		input,
 		onSelect,
 	}
@@ -172,9 +173,9 @@ export function openCellDatePicker<T>(
 		// On a phone: the edge-to-edge sheet (core resolvePresentation(); see modules/sheet)
 		isSheet: ctx.isPhoneSheet,
 		sheetTitle: column?.title || at.field,
-		sheetCloseLabel: ctx.engine.labels['ariaLabels.closeSheet'],
+		sheetCloseLabel: ctx[GRID_ENGINE].labels['ariaLabels.closeSheet'],
 		// Month / weekday names: the grid's `locale` input (unset = page-wide → browser)
-		locale: ctx.engine.locale ?? undefined,
+		locale: ctx[GRID_ENGINE].locale ?? undefined,
 		onSelect: (date, direction) => onSelect(date, direction, input),
 		onClose: (reason) => onDatePickerClose(ctx, picker, reason, at),
 	})
@@ -194,7 +195,7 @@ export function openDatePicker<T>(
 ): void {
 	const rowIndex = parseInt(input.dataset.row || '0', 10)
 	const field = input.dataset.field || ''
-	const colIndex = ctx.engine.columns.findIndex(c => String(c.field) === field)
+	const colIndex = ctx[GRID_ENGINE].columns.findIndex(c => String(c.field) === field)
 	openCellDatePicker(ctx, input, anchor, rowIndex, colIndex, (date, direction, at) => {
 		handleDatePickerSelect(ctx, at, date, direction)
 	})
@@ -239,7 +240,7 @@ export function handleDatePickerSelect<T>(
  * marked invalid, `validation-error` fires, the edit ends.
  */
 export function typedDateError<T>(ctx: GridHost<T>, input: HTMLInputElement): string | null {
-	return isTypedDateInvalid(input) && input.value.trim() !== '' ? ctx.engine.labels['errors.invalidDate'] : null
+	return isTypedDateInvalid(input) && input.value.trim() !== '' ? ctx[GRID_ENGINE].labels['errors.invalidDate'] : null
 }
 
 /**
@@ -255,7 +256,7 @@ export async function commitDateEditor<T>(
 	input: HTMLInputElement,
 	commitEmptyRow: boolean = false
 ): Promise<void> {
-	if (!ctx.engine.editingCell) return
+	if (!ctx[GRID_ENGINE].editingCell) return
 
 	const rowIndex = parseInt(input.dataset.row || '0', 10)
 	const field = input.dataset.field || ''
@@ -267,9 +268,9 @@ export async function commitDateEditor<T>(
 	const dateValue = input.value ? parseDateInput(input.value, formatInfo) : null
 
 	// Not a date (marked while typing, or no parse): saved as typed, marked invalid
-	const parseError = typedDateError(ctx, input) ?? (input.value.trim() !== '' && !dateValue ? ctx.engine.labels['errors.invalidDate'] : null)
+	const parseError = typedDateError(ctx, input) ?? (input.value.trim() !== '' && !dateValue ? ctx[GRID_ENGINE].labels['errors.invalidDate'] : null)
 	if (parseError) {
-		await ctx.engine.commitEdit(rowIndex, field, input.value, commitEmptyRow, 'edit', parseError)
+		await ctx[GRID_ENGINE].commitEdit(rowIndex, field, input.value, commitEmptyRow, 'edit', parseError)
 		return
 	}
 
@@ -290,5 +291,5 @@ export async function commitDateEditor<T>(
 		}
 	}
 
-	await ctx.engine.commitEdit(rowIndex, field, value, commitEmptyRow)
+	await ctx[GRID_ENGINE].commitEdit(rowIndex, field, value, commitEmptyRow)
 }

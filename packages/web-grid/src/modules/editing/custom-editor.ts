@@ -20,6 +20,7 @@ import type { GridHost } from '../grid-context.js'
 import type { EditorContext } from '../../interaction.js'
 import { clearEditingVisual, moveFocus } from '../navigation/index.js'
 import { renderCell } from '../rendering/index.js'
+import { GRID_ENGINE } from '../grid-context.js'
 
 /**
  * Build the EditorContext and invoke the column's renderEditorCallback.
@@ -30,17 +31,17 @@ export function openCustomEditor<T>(
 	rowIndex: number,
 	colIndex: number
 ): void {
-	const column = ctx.engine.columns[colIndex]
+	const column = ctx[GRID_ENGINE].columns[colIndex]
 	if (!column || column.editor !== 'custom' || !column.renderEditorCallback) {
 		return
 	}
 
 	const field = String(column.field)
-	const item = ctx.engine.displayItems[rowIndex]
+	const item = ctx[GRID_ENGINE].displayItems[rowIndex]
 	if (!item) return
 
 	// Context: the cell + commit/cancel
-	const context: EditorContext<T> = Object.assign(ctx.engine.cellCtx(item, rowIndex, column, colIndex), {
+	const context: EditorContext<T> = Object.assign(ctx[GRID_ENGINE].cellCtx(item, rowIndex, column, colIndex), {
 		commit: async (newValue: unknown) => {
 			// Same order as the canonical edit-executor commit path:
 			//   1. clearEditingVisual BEFORE commitEdit (so editingCell is still
@@ -49,7 +50,7 @@ export function openCustomEditor<T>(
 			//      result re-renders the cell when it arrives
 			//   3. renderCell so the cell picks up the committed draft value
 			clearEditingVisual(ctx)
-			const committed = ctx.engine.commitEdit(rowIndex, field, newValue)
+			const committed = ctx[GRID_ENGINE].commitEdit(rowIndex, field, newValue)
 			renderCell(ctx, rowIndex, colIndex)
 			requestAnimationFrame(() => {
 				moveFocus(ctx, rowIndex, colIndex)
@@ -59,7 +60,7 @@ export function openCustomEditor<T>(
 		cancel: () => {
 			// Cancel edit mode without saving
 			clearEditingVisual(ctx)
-			ctx.engine.cancelEdit()
+			ctx[GRID_ENGINE].cancelEdit()
 			renderCell(ctx, rowIndex, colIndex)
 			// Return focus to the cell
 			requestAnimationFrame(() => {

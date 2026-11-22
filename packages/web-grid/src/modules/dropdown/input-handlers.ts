@@ -10,6 +10,7 @@ import { getOptionLabel, withEmptyOption } from './options.js'
 import { dataLogger } from '../../logger.js'
 import { renderDropdown } from './rendering.js'
 import { updateDropdownHighlight, updateLoadingIndicator, attachDropdownListeners } from './interaction.js'
+import { GRID_ENGINE } from '../grid-context.js'
 
 /**
  * Handle combobox input (filtering)
@@ -24,7 +25,7 @@ export function handleComboboxInput<T>(ctx: GridHost<T>, e: Event): void {
 	if (!column) {
 		const field = input.dataset.field
 		if (field) {
-			column = ctx.engine.columns.find(c => String(c.field) === field) || null
+			column = ctx[GRID_ENGINE].columns.find(c => String(c.field) === field) || null
 		}
 	}
 	if (!column) return
@@ -40,7 +41,7 @@ export function handleComboboxInput<T>(ctx: GridHost<T>, e: Event): void {
 			return isMatch(label)
 		}))
 	} else {
-		ctx.dropdown.setOptions(withEmptyOption(allOptions, opts, opts.labels?.['labels.emptyOption'] ?? ctx.engine.labels['labels.emptyOption']))
+		ctx.dropdown.setOptions(withEmptyOption(allOptions, opts, opts.labels?.['labels.emptyOption'] ?? ctx[GRID_ENGINE].labels['labels.emptyOption']))
 	}
 
 	ctx.dropdown.setHighlightedIndex(ctx.dropdown.options.length > 0 ? 0 : -1)
@@ -74,7 +75,7 @@ export function handleAutocompleteInput<T>(ctx: GridHost<T>, e: Event): void {
 	if (!column) {
 		const field = input.dataset.field
 		if (field) {
-			column = ctx.engine.columns.find(c => String(c.field) === field) || null
+			column = ctx[GRID_ENGINE].columns.find(c => String(c.field) === field) || null
 		}
 	}
 	if (!column) return
@@ -86,7 +87,7 @@ export function handleAutocompleteInput<T>(ctx: GridHost<T>, e: Event): void {
 	// Show dropdown immediately with initial options
 	const wrapper = input.closest('.wg__editor--autocomplete') as HTMLElement
 	if (!ctx.dropdown.isOpen && wrapper) {
-		ctx.dropdown.setOptions(query ? (opts.initialOptions || []) : withEmptyOption(opts.initialOptions || [], opts, opts.labels?.['labels.emptyOption'] ?? ctx.engine.labels['labels.emptyOption']))
+		ctx.dropdown.setOptions(query ? (opts.initialOptions || []) : withEmptyOption(opts.initialOptions || [], opts, opts.labels?.['labels.emptyOption'] ?? ctx[GRID_ENGINE].labels['labels.emptyOption']))
 		const dropdown = renderDropdown(ctx, wrapper, ctx.dropdown.options, opts)
 		attachDropdownListeners(ctx, dropdown)
 		ctx.dropdown.setHighlightedIndex(ctx.dropdown.options.length > 0 ? 0 : -1)
@@ -98,7 +99,7 @@ export function handleAutocompleteInput<T>(ctx: GridHost<T>, e: Event): void {
 	// Check minimum length — too short: drop the pending / running search
 	if (query.length < minLength) {
 		ctx.autocomplete.reset()
-		ctx.dropdown.setOptions(query ? (opts.initialOptions || []) : withEmptyOption(opts.initialOptions || [], opts, opts.labels?.['labels.emptyOption'] ?? ctx.engine.labels['labels.emptyOption']))
+		ctx.dropdown.setOptions(query ? (opts.initialOptions || []) : withEmptyOption(opts.initialOptions || [], opts, opts.labels?.['labels.emptyOption'] ?? ctx[GRID_ENGINE].labels['labels.emptyOption']))
 		if (wrapper) {
 			const dropdown = renderDropdown(ctx, wrapper, ctx.dropdown.options, opts)
 			attachDropdownListeners(ctx, dropdown)
@@ -114,7 +115,7 @@ export function handleAutocompleteInput<T>(ctx: GridHost<T>, e: Event): void {
 
 /** Re-render the open autocomplete dropdown of the cell being edited with the current options. */
 function rerenderAutocomplete<T>(ctx: GridHost<T>, opts: Column<T>['editorOptions'] & object, highlightIndex?: number): void {
-	const editingCell = ctx.engine.editingCell
+	const editingCell = ctx[GRID_ENGINE].editingCell
 	if (!editingCell) return
 	const { rowIndex, field } = editingCell
 	// Specific selector: a stale editor of another cell may still be in the DOM
@@ -146,12 +147,12 @@ export function startAutocompleteSearch<T>(
 			const isMatch = createTextMatcher(query)
 			return (opts.initialOptions || opts.options || []).filter(opt => isMatch(getOptionLabel(opt, opts)))
 		}
-		const cell = ctx.engine.editingCell
+		const cell = ctx[GRID_ENGINE].editingCell
 		if (!cell) return null
-		const item = ctx.engine.displayItems[cell.rowIndex]
-		const col = ctx.engine.columns.find(c => String(c.field) === cell.field)
+		const item = ctx[GRID_ENGINE].displayItems[cell.rowIndex]
+		const col = ctx[GRID_ENGINE].columns.find(c => String(c.field) === cell.field)
 		if (!col) return null
-		return searchCallback(Object.assign(ctx.engine.cellCtx(item, cell.rowIndex, col), { term: query, signal }))
+		return searchCallback(Object.assign(ctx[GRID_ENGINE].cellCtx(item, cell.rowIndex, col), { term: query, signal }))
 	}
 
 	ctx.autocomplete.search(debounceMs, task, (results) => {
@@ -161,7 +162,7 @@ export function startAutocompleteSearch<T>(
 		rerenderAutocomplete(ctx, opts, searchCallback ? (results.length > 0 ? 0 : -1) : undefined)
 	}, {
 		// The runner turns the state off BEFORE onResult, so the dropdown renders the right message.
-		onLoadingChange: (isLoading) => updateLoadingIndicator(ctx, isLoading, isLoading ? (opts.labels?.['ariaLabels.searching'] ?? ctx.engine.labels['ariaLabels.searching']) : ''),
+		onLoadingChange: (isLoading) => updateLoadingIndicator(ctx, isLoading, isLoading ? (opts.labels?.['ariaLabels.searching'] ?? ctx[GRID_ENGINE].labels['ariaLabels.searching']) : ''),
 		onError: (error) => {
 			dataLogger.error('Autocomplete search failed:', error)
 			ctx.dropdown.setOptions([])

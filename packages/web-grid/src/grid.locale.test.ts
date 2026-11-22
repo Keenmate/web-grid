@@ -7,6 +7,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import './index.js'
 import { renderNumberEditor } from './modules/editing/renderers.js'
+import { GRID_ENGINE } from './modules/grid-context.js'
 
 const items = Array.from({ length: 1234 }, (_, i) => ({ id: i, name: `Row ${i}` }))
 const columns = [{ field: 'name', title: 'Name' }]
@@ -44,7 +45,7 @@ describe('web-grid locale input', () => {
 	it('locale="de" formats the numbers in labels (1234 → 1.234)', async () => {
 		await mount({ locale: 'de' })
 		expect(countText()).toBe('1.234 items')
-		expect(el.engine.labelText('errors.numberMax', { max: 5000 })).toBe('Must be at most 5.000')
+		expect(el[GRID_ENGINE].labelText('errors.numberMax', { max: 5000 })).toBe('Must be at most 5.000')
 	})
 
 	it('a locale change re-renders the pager (update path)', async () => {
@@ -94,11 +95,11 @@ describe('web-grid number columns by locale', () => {
 	}
 	const cellText = () => el.shadowRoot.querySelector('td[data-field="amount"]')?.textContent?.trim()
 	/** The draft-aware value (a commit lands in the row's draft, `el.items` stays untouched). */
-	const amount = () => el.engine.getCellRawValue(el.engine.displayItems[0], 0, 'amount')
-	const copyText = () => el.engine.clipboardCellText(el.engine.displayItems[0], 0, el.engine.columns[0])
+	const amount = () => el[GRID_ENGINE].getCellRawValue(el[GRID_ENGINE].displayItems[0], 0, 'amount')
+	const copyText = () => el[GRID_ENGINE].clipboardCellText(el[GRID_ENGINE].displayItems[0], 0, el[GRID_ENGINE].columns[0])
 	const editorText = async () => {
 		const box = document.createElement('div')
-		box.innerHTML = renderNumberEditor(el, 0, 'amount', el.items[0].amount, el.engine.columns[0])
+		box.innerHTML = renderNumberEditor(el, 0, 'amount', el.items[0].amount, el[GRID_ENGINE].columns[0])
 		return (box.querySelector('input') as HTMLInputElement).value
 	}
 
@@ -119,18 +120,18 @@ describe('web-grid number columns by locale', () => {
 		['cs', '9 876,5'],
 	])('%s: typed text commits as a number (%s → 9876.5)', async (locale, typed) => {
 		await mountNumbers({ locale })
-		el.engine.startEdit(0, 'amount')
-		await el.engine.commitEdit(0, 'amount', typed)
+		el[GRID_ENGINE].startEdit(0, 'amount')
+		await el[GRID_ENGINE].commitEdit(0, 'amount', typed)
 		await el.whenSettled()
 		expect(amount()).toBe(9876.5)
 	})
 
 	it('invalid text stays strict (12abc → invalid, kept as typed)', async () => {
 		await mountNumbers({ locale: 'de' })
-		el.engine.startEdit(0, 'amount')
-		await el.engine.commitEdit(0, 'amount', '12abc')
+		el[GRID_ENGINE].startEdit(0, 'amount')
+		await el[GRID_ENGINE].commitEdit(0, 'amount', '12abc')
 		await el.whenSettled()
-		expect(el.engine.isCellInvalid(0, 'amount')).toBe(true)
+		expect(el[GRID_ENGINE].isCellInvalid(0, 'amount')).toBe(true)
 		expect(el.items[0].amount).toBe(1234.5)
 	})
 
@@ -167,10 +168,10 @@ describe('web-grid number columns by locale', () => {
 
 	it("'1.5' typed in a de grid is an invalid number (never a silent 15)", async () => {
 		await mountNumbers({ locale: 'de' })
-		el.engine.startEdit(0, 'amount')
-		await el.engine.commitEdit(0, 'amount', '1.5')
+		el[GRID_ENGINE].startEdit(0, 'amount')
+		await el[GRID_ENGINE].commitEdit(0, 'amount', '1.5')
 		await el.whenSettled()
-		expect(el.engine.isCellInvalid(0, 'amount')).toBe(true)
+		expect(el[GRID_ENGINE].isCellInvalid(0, 'amount')).toBe(true)
 		expect(el.items[0].amount).toBe(1234.5)
 	})
 
@@ -180,28 +181,28 @@ describe('web-grid number columns by locale', () => {
 		await mountNumbers({ locale: 'de' })
 		el.parseNumberCallback = (ctx: any) => { seen.push(ctx); return ctx.text === 'seven' ? 7 : undefined }
 		await el.whenSettled()
-		el.engine.startEdit(0, 'amount')
-		await el.engine.commitEdit(0, 'amount', 'seven')
+		el[GRID_ENGINE].startEdit(0, 'amount')
+		await el[GRID_ENGINE].commitEdit(0, 'amount', 'seven')
 		await el.whenSettled()
 		expect(amount()).toBe(7)
 		expect(seen[0]).toMatchObject({ text: 'seven', locale: 'de', decimalSeparator: ',' })
 		// The element's callback answers undefined → the page-wide one decides
-		el.engine.startEdit(0, 'amount')
-		await el.engine.commitEdit(0, 'amount', 'other')
+		el[GRID_ENGINE].startEdit(0, 'amount')
+		await el[GRID_ENGINE].commitEdit(0, 'amount', 'other')
 		await el.whenSettled()
 		expect(amount()).toBe(2)
 		// Pasted text goes through the same chain
-		expect(el.engine.numberParseOptions.source).toBe(el)
+		expect(el[GRID_ENGINE].numberParseOptions.source).toBe(el)
 	})
 
 	it('parseNumberCallback returning null marks the cell invalid', async () => {
 		await mountNumbers({ locale: 'en-US' })
 		el.parseNumberCallback = () => null
 		await el.whenSettled()
-		el.engine.startEdit(0, 'amount')
-		await el.engine.commitEdit(0, 'amount', '5')
+		el[GRID_ENGINE].startEdit(0, 'amount')
+		await el[GRID_ENGINE].commitEdit(0, 'amount', '5')
 		await el.whenSettled()
-		expect(el.engine.isCellInvalid(0, 'amount')).toBe(true)
+		expect(el[GRID_ENGINE].isCellInvalid(0, 'amount')).toBe(true)
 	})
 
 	it('copy = what the cell shows: getDisplayValueCallback text, single-cell and range copy', async () => {
@@ -210,8 +211,8 @@ describe('web-grid number columns by locale', () => {
 		try {
 			await mountNumbers({ locale: 'de' }, { getDisplayValueCallback: ({ value }: any) => `${value} EUR` })
 			expect(copyText()).toBe('1234.5 EUR')
-			el.engine.selectCellRange({ startRowIndex: 0, startColIndex: 0, endRowIndex: 0, endColIndex: 0 })
-			expect(await el.engine.copyCellSelectionToClipboard()).toBe(true)
+			el[GRID_ENGINE].selectCellRange({ startRowIndex: 0, startColIndex: 0, endRowIndex: 0, endColIndex: 0 })
+			expect(await el[GRID_ENGINE].copyCellSelectionToClipboard()).toBe(true)
 			expect(writeText).toHaveBeenLastCalledWith('1234.5 EUR')
 		} finally {
 			delete (navigator as any).clipboard
@@ -224,8 +225,8 @@ describe('web-grid number columns by locale', () => {
 		try {
 			await mountNumbers({ locale: 'de' }, { getDisplayValueCallback: () => 'shown', getCopyValueCallback: ({ value }: any) => `raw:${value}` })
 			expect(copyText()).toBe('raw:1234.5')
-			el.engine.selectCellRange({ startRowIndex: 0, startColIndex: 0, endRowIndex: 0, endColIndex: 0 })
-			await el.engine.copyCellSelectionToClipboard()
+			el[GRID_ENGINE].selectCellRange({ startRowIndex: 0, startColIndex: 0, endRowIndex: 0, endColIndex: 0 })
+			await el[GRID_ENGINE].copyCellSelectionToClipboard()
 			expect(writeText).toHaveBeenLastCalledWith('raw:1234.5')
 		} finally {
 			delete (navigator as any).clipboard

@@ -13,21 +13,22 @@
 // =============================================================================
 
 import type { GridHost } from '../grid-context.js'
+import { GRID_ENGINE } from '../grid-context.js'
 
 /** Whether the filter row renders under the header (it is an ARIA row of its own). */
 export function isFilterRowVisible<T>(ctx: GridHost<T>): boolean {
-	return ctx.engine.isFilteringEnabled && ctx.engine.visualColumns.some(({ column }) => column.isFilterable)
+	return ctx[GRID_ENGINE].isFilteringEnabled && ctx[GRID_ENGINE].visualColumns.some(({ column }) => column.isFilterable)
 }
 
 /** Rows above the first data row: the header row, + the filter row when shown. */
 export function headerRowCount<T>(ctx: GridHost<T>): number {
-	if (ctx.engine.visualColumns.length === 0) return 0
+	if (ctx[GRID_ENGINE].visualColumns.length === 0) return 0
 	return isFilterRowVisible(ctx) ? 2 : 1
 }
 
 /** Columns before the first data column: row numbers, inline actions, the actions column. */
 export function leadColumnCount<T>(ctx: GridHost<T>): number {
-	const e = ctx.engine
+	const e = ctx[GRID_ENGINE]
 	const isInline = e.isRowToolbarShown && e.toolbarPosition === 'inline'
 	const isActionsColumn = e.isRowToolbarShown && e.toolbarTrigger === 'button' && e.toolbarPosition !== 'inline'
 	return (e.isRowNumbersShown ? 1 : 0) + (isInline ? 1 : 0) + (isActionsColumn ? 1 : 0)
@@ -43,7 +44,7 @@ export function dataRowAriaIndex<T>(ctx: GridHost<T>, rowIndex: number): number 
  * surgical render path keeps the table element, so these can't live in markup).
  */
 export function applyGridAria<T>(ctx: GridHost<T>, table: HTMLTableElement): void {
-	const e = ctx.engine
+	const e = ctx[GRID_ENGINE]
 	table.setAttribute('role', e.isTreeMode ? 'treegrid' : 'grid')
 	// An empty grid still renders one message row
 	const dataRows = Math.max(1, e.displayItems.length)
@@ -58,14 +59,14 @@ export function applyGridAria<T>(ctx: GridHost<T>, table: HTMLTableElement): voi
 
 /** `aria-sort` for a header cell: only the primary sort column carries it (ARIA: one at a time). */
 export function headerSortAttr<T>(ctx: GridHost<T>, field: string): string {
-	const primary = ctx.engine.sort[0]
+	const primary = ctx[GRID_ENGINE].sort[0]
 	if (!primary || primary.column !== field) return ''
 	return ` aria-sort="${primary.direction === 'desc' ? 'descending' : 'ascending'}"`
 }
 
 /** The row-level ARIA attributes of a data row. */
 export function dataRowAttrs<T>(ctx: GridHost<T>, item: T, rowIndex: number): string {
-	const e = ctx.engine
+	const e = ctx[GRID_ENGINE]
 	let attrs = ` role="row" aria-rowindex="${dataRowAriaIndex(ctx, rowIndex)}" aria-selected="${e.isRowSelected(rowIndex)}"`
 	const info = e.getRowTreeInfo(item)
 	if (info) {
@@ -77,18 +78,18 @@ export function dataRowAttrs<T>(ctx: GridHost<T>, item: T, rowIndex: number): st
 
 /** Whether body cells carry `aria-selected` (a cell range / column can be selected). */
 export function isCellSelectable<T>(ctx: GridHost<T>): boolean {
-	return ctx.engine.cellSelectionMode !== 'none'
+	return ctx[GRID_ENGINE].cellSelectionMode !== 'none'
 }
 
 /**
  * Mirror the selection classes onto `aria-selected` after a surgical selection
  * update (one that toggles the classes without re-rendering the rows).
  */
-export function syncSelectedAria(ctx: { shadow: ParentNode, engine: { cellSelectionMode: string } }): void {
+export function syncSelectedAria(ctx: { shadow: ParentNode, [GRID_ENGINE]: { cellSelectionMode: string } }): void {
 	ctx.shadow.querySelectorAll<HTMLElement>('tbody tr.wg__row').forEach(row => {
 		row.setAttribute('aria-selected', String(row.classList.contains('wg__row--selected')))
 	})
-	if (ctx.engine.cellSelectionMode === 'none') return
+	if (ctx[GRID_ENGINE].cellSelectionMode === 'none') return
 	ctx.shadow.querySelectorAll<HTMLElement>('tbody td.wg__cell[data-col]').forEach(cell => {
 		const isSelected = cell.classList.contains('wg__cell--in-range') || cell.classList.contains('wg__cell--column-selected')
 		cell.setAttribute('aria-selected', String(isSelected))

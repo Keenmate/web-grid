@@ -11,6 +11,7 @@ import { anchor as anchorTo, type AnchorHandle, type Placement } from '@keenmate
 import { formatShortcut, isMenuDivider, resolveActionItem, type ResolvedActionItem } from '@keenmate/web-components-core/actions'
 import { normalizeEntry, rowActionDefaults } from '../items/index.js'
 import { removeConnector } from './connector-renderer.js'
+import { GRID_ENGINE } from '../grid-context.js'
 
 // =============================================================================
 // Offset Helpers
@@ -207,21 +208,21 @@ export function openToolbar<T>(
 	// CSS uses column-reverse, so Row 1 in HTML ends up at BOTTOM visually
 	// For 'bottom' (toolbar top at row level), we need Row 1 at TOP → reverse
 	// For 'top' (toolbar bottom at row level), Row 1 at BOTTOM is correct → no reverse
-	const reverseRows = ctx.engine.toolbarVerticalAlign !== 'top'
+	const reverseRows = ctx[GRID_ENGINE].toolbarVerticalAlign !== 'top'
 	const html = renderToolbarHTML(buttons, reverseRows, ctx.shadow.host)
 
 	// Create container - append to shadow root to stay in same DOM context as rowElement
 	const container = document.createElement('div')
 	container.className = 'wg__toolbar-container'
-	if (ctx.engine.toolbarBtnMinWidth) {
-		container.style.setProperty('--wg-toolbar-btn-min-width', ctx.engine.toolbarBtnMinWidth)
+	if (ctx[GRID_ENGINE].toolbarBtnMinWidth) {
+		container.style.setProperty('--wg-toolbar-btn-min-width', ctx[GRID_ENGINE].toolbarBtnMinWidth)
 	}
 	container.innerHTML = html
 	ctx.shadow.appendChild(container)
 
 	const toolbar = container.querySelector('.wg__toolbar') as HTMLElement
 	// Initialize position based on preferred position (updated by anchor() if it flips)
-	const preferredPos = ctx.engine.toolbarPosition
+	const preferredPos = ctx[GRID_ENGINE].toolbarPosition
 	let toolbarPosition: 'left' | 'right' | 'top' =
 		preferredPos === 'top' ? 'top' :
 		preferredPos === 'right' ? 'right' : 'left'
@@ -242,9 +243,9 @@ export function openToolbar<T>(
 		}
 
 		// Determine placement based on toolbarPosition preference
-		const preferredPosition = ctx.engine.toolbarPosition
-		const verticalAlign = ctx.engine.toolbarVerticalAlign
-		const horizontalAlign = ctx.engine.toolbarHorizontalAlign
+		const preferredPosition = ctx[GRID_ENGINE].toolbarPosition
+		const verticalAlign = ctx[GRID_ENGINE].toolbarVerticalAlign
+		const horizontalAlign = ctx[GRID_ENGINE].toolbarHorizontalAlign
 
 		// Build placement string for floating-ui
 		// For left/right: suffix determines vertical alignment
@@ -290,7 +291,7 @@ export function openToolbar<T>(
 		// Handle column-based or cursor-based positioning for top position
 		// Only apply these anchor modes when toolbarPosition is explicitly 'top'
 		let anchor: Element | { getBoundingClientRect: () => DOMRect } = freshRow
-		const toolbarColumn = ctx.engine.toolbarColumn
+		const toolbarColumn = ctx[GRID_ENGINE].toolbarColumn
 
 		if (preferredPosition === 'top') {
 			// Priority 1: toolbarColumn - position over a specific column
@@ -361,12 +362,12 @@ export function openToolbar<T>(
 				// When followsCursor or a cell toolbar is active with top placement,
 				// compute cell-based X position to avoid flash on row boundaries.
 				// Skip when toolbarColumn is set — anchor() already computed correct X from the column anchor.
-				if ((ctx.engine.shouldToolbarFollowCursor || ctx.engine.getCellToolbarItemsCallback) && finalPlacement.startsWith('top') && cursorX !== undefined && ctx.engine.toolbarColumn === undefined) {
+				if ((ctx[GRID_ENGINE].shouldToolbarFollowCursor || ctx[GRID_ENGINE].getCellToolbarItemsCallback) && finalPlacement.startsWith('top') && cursorX !== undefined && ctx[GRID_ENGINE].toolbarColumn === undefined) {
 					const cells = freshRow.querySelectorAll('.wg__cell:not(.wg__row-number):not(.wg__inline-actions-cell)')
 					for (const cell of cells) {
 						const cellRect = cell.getBoundingClientRect()
 						if (cursorX >= cellRect.left && cursorX <= cellRect.right) {
-							initialX = resolveToolbarOffset(cellRect, ctx.engine.cellToolbarOffset)
+							initialX = resolveToolbarOffset(cellRect, ctx[GRID_ENGINE].cellToolbarOffset)
 							break
 						}
 					}

@@ -25,6 +25,7 @@ import { openDropdownForCurrentEditor, toggleDropdown } from '../dropdown/index.
 import { tryStartEdit, getCursorPositionFromClick } from '../navigation/index.js'
 import { removeRangeBorder } from '../cell-selection/index.js'
 import { isReordering } from '../reorder/index.js'
+import { GRID_ENGINE } from '../grid-context.js'
 
 /**
  * Pipeline-first dblclick handler. The pipeline owns `always` editTrigger
@@ -44,9 +45,9 @@ export function handleTableDblClick<T>(ctx: GridHost<T>, e: Event): void {
 	if (cell) {
 		const rowIndex = parseInt(cell.dataset.row || '0', 10)
 		const colIndex = parseInt(cell.dataset.col || '0', 10)
-		const column = ctx.engine.columns[colIndex]
+		const column = ctx[GRID_ENGINE].columns[colIndex]
 		if (column) {
-			const trigger = column.editTrigger || ctx.engine.editTrigger
+			const trigger = column.editTrigger || ctx[GRID_ENGINE].editTrigger
 			if (trigger === 'dblclick' || trigger === 'navigate') {
 				const cursorPos = getCursorPositionFromClick(e as MouseEvent, cell)
 				tryStartEdit(ctx, rowIndex, colIndex, { cursorPosition: cursorPos ?? undefined })
@@ -82,13 +83,13 @@ export function handleCellClickToEdit<T>(ctx: GridHost<T>, e: Event): void {
 		const path = chevron.getAttribute('data-tree-toggle')
 		uiLogger.debug('chevron click:', path, '| target:', target.tagName, target.className)
 		if (path !== null) {
-			ctx.engine.toggleRowExpanded(path)
+			ctx[GRID_ENGINE].toggleRowExpanded(path)
 		}
 		return
 	}
 
 	// 'click' selection mode: Shift+click extends the cell range — never starts an edit
-	if ((e as MouseEvent).shiftKey && ctx.engine.cellSelectionMode === 'click') return
+	if ((e as MouseEvent).shiftKey && ctx[GRID_ENGINE].cellSelectionMode === 'click') return
 
 	// Try pipeline first
 	if (ctx.pipelineAdapter?.tryHandleClick(e as MouseEvent)) {
@@ -99,9 +100,9 @@ export function handleCellClickToEdit<T>(ctx: GridHost<T>, e: Event): void {
 	if (cell && !cell.classList.contains('wg__cell--editing')) {
 		const rowIndex = parseInt(cell.dataset.row || '0', 10)
 		const colIndex = parseInt(cell.dataset.col || '0', 10)
-		const column = ctx.engine.columns[colIndex]
+		const column = ctx[GRID_ENGINE].columns[colIndex]
 		if (column) {
-			const trigger = column.editTrigger || ctx.engine.editTrigger
+			const trigger = column.editTrigger || ctx[GRID_ENGINE].editTrigger
 			if (trigger === 'click') {
 				e.preventDefault()
 				const cursorPos = getCursorPositionFromClick(e as MouseEvent, cell)
@@ -136,8 +137,8 @@ export function handleSelectTriggerClick<T>(ctx: GridHost<T>, e: Event): void {
 		const cell = target.closest('.wg__cell') as HTMLElement
 		if (cell) {
 			const colIndex = parseInt(cell.dataset.col || '', 10)
-			const column = ctx.engine.columns[colIndex]
-			const trigger = column?.editTrigger ?? ctx.engine.editTrigger
+			const column = ctx[GRID_ENGINE].columns[colIndex]
+			const trigger = column?.editTrigger ?? ctx[GRID_ENGINE].editTrigger
 			if (trigger === 'always') return
 		}
 		e.preventDefault()
@@ -162,7 +163,7 @@ export function handleHeaderColumnSelectClick<T>(ctx: GridHost<T>, e: Event): vo
 	// Skip if reordering was just performed (prevents accidental selection on drop)
 	if (isReordering()) return
 	// Skip if column reorder is disabled (mousedown handler handles column selection)
-	if (!ctx.engine.isColumnReorderAllowed) return
+	if (!ctx[GRID_ENGINE].isColumnReorderAllowed) return
 
 	// Click on header = column selection
 	const header = target.closest('.wg__header:not(.wg__row-number-header):not(.wg__inline-actions-header):not(.wg__actions-column):not(.wg__filler)') as HTMLElement
@@ -172,7 +173,7 @@ export function handleHeaderColumnSelectClick<T>(ctx: GridHost<T>, e: Event): vo
 		if (!field) return
 
 		// Visual position of the clicked column (column selection works in visual positions)
-		const pos = ctx.engine.visualColumns.findIndex(vc => String(vc.column.field) === field)
+		const pos = ctx[GRID_ENGINE].visualColumns.findIndex(vc => String(vc.column.field) === field)
 		if (pos === -1) return
 
 		// Remove any existing cell range border (column selection doesn't use border)
@@ -180,11 +181,11 @@ export function handleHeaderColumnSelectClick<T>(ctx: GridHost<T>, e: Event): vo
 
 		// Ctrl = toggle individual column, Shift = range, plain = replace
 		if (mouseEvent.ctrlKey || mouseEvent.metaKey) {
-			ctx.engine.selectColumnAt(pos, 'toggle')
+			ctx[GRID_ENGINE].selectColumnAt(pos, 'toggle')
 		} else if (mouseEvent.shiftKey) {
-			ctx.engine.selectColumnAt(pos, 'range')
+			ctx[GRID_ENGINE].selectColumnAt(pos, 'range')
 		} else {
-			ctx.engine.selectColumnAt(pos, 'replace')
+			ctx[GRID_ENGINE].selectColumnAt(pos, 'replace')
 		}
 
 		ctx.render()

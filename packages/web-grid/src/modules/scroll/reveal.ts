@@ -15,6 +15,7 @@ import type { GridHost } from '../grid-context.js'
 import { visibleRowRange } from './calculations.js'
 import { renderVirtualRows } from './element-handlers.js'
 import type { GridBeforeScrollContext, GridScrollOptions, GridScrollSource } from '../../interaction.js'
+import { GRID_ENGINE } from '../grid-context.js'
 
 /** Keyboard moves scroll only as far as needed; jumps center the row and bring the grid on screen. */
 export const KEYBOARD_SCROLL: GridScrollOptions = { block: 'nearest', inline: 'nearest', behavior: 'auto', shouldRevealContainer: false }
@@ -40,8 +41,8 @@ export function gateScroll<T>(
 ): GridScrollOptions | null {
 	const callback = ctx.beforeScrollCallback
 	if (typeof callback !== 'function') return defaults
-	const row = (ctx.engine.displayItems[target.rowIndex] ?? null) as T | null
-	const callbackCtx: GridBeforeScrollContext<T> = ctx.engine.ctx({
+	const row = (ctx[GRID_ENGINE].displayItems[target.rowIndex] ?? null) as T | null
+	const callbackCtx: GridBeforeScrollContext<T> = ctx[GRID_ENGINE].ctx({
 		row,
 		rowIndex: target.rowIndex,
 		field: target.field,
@@ -88,7 +89,7 @@ export function revealElement<T>(
  * header: rows start at the tbody's top); the sticky header is the top inset.
  */
 export function virtualRowScrollTop<T>(ctx: GridHost<T>, container: HTMLElement, rowIndex: number, block: ScrollLogicalPosition): number | null {
-	const rowHeight = ctx.engine.virtualScrollItemHeight
+	const rowHeight = ctx[GRID_ENGINE].virtualScrollItemHeight
 	const tbody = container.querySelector('tbody')
 	const bodyTop = tbody
 		? tbody.getBoundingClientRect().top - container.getBoundingClientRect().top - container.clientTop + container.scrollTop
@@ -100,7 +101,7 @@ export function virtualRowScrollTop<T>(ctx: GridHost<T>, container: HTMLElement,
 /** The element that scrolls the body (`.wg`, or `.wg__table-container` with `isTableBorderOnly`). */
 export function bodyScroller<T>(ctx: GridHost<T>): HTMLElement | null {
 	const wg = ctx.shadow.querySelector('.wg') as HTMLElement | null
-	if (!ctx.engine.isTableBorderOnly) return wg
+	if (!ctx[GRID_ENGINE].isTableBorderOnly) return wg
 	return (ctx.shadow.querySelector('.wg__table-container') as HTMLElement | null) ?? wg
 }
 
@@ -125,9 +126,9 @@ export type RowRevealState = GridScrollOptions | null | undefined
  * No-op (`undefined`) outside virtual scroll or when the row is already fully in view.
  */
 export function prepareRowReveal<T>(ctx: GridHost<T>, target: RevealTarget, source: GridScrollSource, defaults: GridScrollOptions = KEYBOARD_SCROLL): RowRevealState {
-	if (!ctx.engine.shouldUseVirtualScroll()) return undefined
+	if (!ctx[GRID_ENGINE].shouldUseVirtualScroll()) return undefined
 	const { rowIndex } = target
-	if (!Number.isInteger(rowIndex) || rowIndex < 0 || rowIndex >= ctx.engine.displayItems.length) return undefined
+	if (!Number.isInteger(rowIndex) || rowIndex < 0 || rowIndex >= ctx[GRID_ENGINE].displayItems.length) return undefined
 	const container = bodyScroller(ctx)
 	if (!container) return undefined
 	const isRendered = !!container.querySelector(`tbody tr[data-row-index="${rowIndex}"]`)
@@ -138,7 +139,7 @@ export function prepareRowReveal<T>(ctx: GridHost<T>, target: RevealTarget, sour
 		? virtualRowScrollTop(ctx, container, rowIndex, options.block) ?? container.scrollTop
 		: container.scrollTop
 	// The window for that scrollTop, stretched to hold the target row (and the edited row)
-	const range = visibleRowRange(ctx, scrollTop, container.clientHeight, [rowIndex, ctx.engine.editingCell?.rowIndex])
+	const range = visibleRowRange(ctx, scrollTop, container.clientHeight, [rowIndex, ctx[GRID_ENGINE].editingCell?.rowIndex])
 	if (ctx.virtualScroll.setRange(range.startIndex, range.endIndex)) renderVirtualRows(ctx, container)
 	if (!options) return null
 	if (scrollTop !== container.scrollTop) {
@@ -180,16 +181,16 @@ export function finishCellReveal<T>(ctx: GridHost<T>, cell: HTMLElement, target:
  * from the rendered one (what the scroll handler would do on the next frame). No-op otherwise.
  */
 export function syncVirtualWindow<T>(ctx: GridHost<T>): void {
-	if (!ctx.engine.shouldUseVirtualScroll()) return
+	if (!ctx[GRID_ENGINE].shouldUseVirtualScroll()) return
 	const container = bodyScroller(ctx)
 	if (!container) return
-	const { startIndex, endIndex } = visibleRowRange(ctx, container.scrollTop, container.clientHeight, [ctx.engine.editingCell?.rowIndex])
+	const { startIndex, endIndex } = visibleRowRange(ctx, container.scrollTop, container.clientHeight, [ctx[GRID_ENGINE].editingCell?.rowIndex])
 	if (ctx.virtualScroll.setRange(startIndex, endIndex)) renderVirtualRows(ctx, container)
 }
 
 /** The field of the column at `colIndex` (an index into `columns`), or `null`. */
 export function fieldAt<T>(ctx: GridHost<T>, colIndex: number): string | null {
-	const column = ctx.engine.columns[colIndex]
+	const column = ctx[GRID_ENGINE].columns[colIndex]
 	return column ? String(column.field) : null
 }
 
@@ -201,12 +202,12 @@ export function fieldAt<T>(ctx: GridHost<T>, colIndex: number): string | null {
  * handler from rendering again).
  */
 export function scrollRowIntoView<T>(ctx: GridHost<T>, rowIndex: number, source: GridScrollSource): Promise<boolean> {
-	if (!Number.isInteger(rowIndex) || rowIndex < 0 || rowIndex >= ctx.engine.displayItems.length) return Promise.resolve(false)
+	if (!Number.isInteger(rowIndex) || rowIndex < 0 || rowIndex >= ctx[GRID_ENGINE].displayItems.length) return Promise.resolve(false)
 	const container = ctx.shadow.querySelector('.wg') as HTMLElement | null
 	if (!container) return Promise.resolve(false)
 	const nextFrame = () => new Promise<boolean>(resolve => requestAnimationFrame(() => resolve(true)))
 
-	if (!ctx.engine.shouldUseVirtualScroll()) {
+	if (!ctx[GRID_ENGINE].shouldUseVirtualScroll()) {
 		const tr = ctx.shadow.querySelector(`tr[data-row-index="${rowIndex}"]`) as HTMLElement | null
 		if (!tr) return Promise.resolve(false)
 		if (!revealElement(ctx, tr, { rowIndex, field: null }, source, JUMP_SCROLL)) return Promise.resolve(false)

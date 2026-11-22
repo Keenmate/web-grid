@@ -29,6 +29,7 @@ import {
 	isCellSelectionPending,
 	isCellSelecting
 } from '../cell-selection/index.js'
+import { GRID_ENGINE } from '../grid-context.js'
 
 /**
  * Handle the second-pass mousedown — resize / reorder / column-select /
@@ -51,7 +52,7 @@ export function handleHeaderRowMouseDown<T>(ctx: GridHost<T>, e: Event): void {
 
 	// Column reorder: start drag when clicking on a non-frozen header (if enabled)
 	// Skip reorder if Ctrl/Shift held - let click handler do column selection instead
-	if (ctx.engine.isColumnReorderAllowed) {
+	if (ctx[GRID_ENGINE].isColumnReorderAllowed) {
 		const mouseEvent = e as MouseEvent
 		if (!mouseEvent.ctrlKey && !mouseEvent.metaKey && !mouseEvent.shiftKey) {
 			const header = target.closest('.wg__header') as HTMLElement
@@ -66,12 +67,12 @@ export function handleHeaderRowMouseDown<T>(ctx: GridHost<T>, e: Event): void {
 
 	// Column selection drag: when reorder is disabled, OR when Shift is held (even with reorder enabled)
 	// Only on left-click (button 0), not right-click (button 2) which opens context menu
-	if ((!ctx.engine.isColumnReorderAllowed || (e as MouseEvent).shiftKey) && (e as MouseEvent).button === 0) {
+	if ((!ctx[GRID_ENGINE].isColumnReorderAllowed || (e as MouseEvent).shiftKey) && (e as MouseEvent).button === 0) {
 		const header = target.closest('.wg__header:not(.wg__row-number-header):not(.wg__inline-actions-header):not(.wg__actions-column):not(.wg__filler)') as HTMLElement
 		if (header && !target.closest('.wg__resize-handle') && !target.closest('.wg__sort-indicator')) {
 			const field = header.dataset.field
 			if (field) {
-				const colIndex = ctx.engine.visualColumns.findIndex(vc => String(vc.column.field) === field)
+				const colIndex = ctx[GRID_ENGINE].visualColumns.findIndex(vc => String(vc.column.field) === field)
 				if (colIndex >= 0) {
 					handleHeaderMouseDown(ctx, colIndex, e as MouseEvent)
 				}
@@ -94,9 +95,9 @@ export function handleHeaderRowMouseDown<T>(ctx: GridHost<T>, e: Event): void {
 	const rowNumberHeader = target.closest('.wg__row-number-header') as HTMLElement
 	if (rowNumberHeader && (e as MouseEvent).button === 0) {
 		e.preventDefault()
-		ctx.engine.selectAll()
+		ctx[GRID_ENGINE].selectAll()
 		// Update the range border visual
-		if (ctx.engine.selectedCellRange) {
+		if (ctx[GRID_ENGINE].selectedCellRange) {
 			createRangeBorder(ctx)
 		}
 		ctx.render()
@@ -113,8 +114,8 @@ export function handleHeaderRowMouseDown<T>(ctx: GridHost<T>, e: Event): void {
 	if (clickedCell && !target.closest('.wg__header') && !isCellSelectionPending() && !isCellSelecting()) {
 		const cellRowIndex = parseInt(clickedCell.dataset.row || '-1', 10)
 		if (cellRowIndex >= 0) {
-			const prevFocusedRow = ctx.engine.focusedRowIndex
-			ctx.engine.setFocusedRow(cellRowIndex)
+			const prevFocusedRow = ctx[GRID_ENGINE].focusedRowIndex
+			ctx[GRID_ENGINE].setFocusedRow(cellRowIndex)
 			ctx.updateRowFocusVisual(prevFocusedRow, cellRowIndex)
 		}
 	}
@@ -123,12 +124,12 @@ export function handleHeaderRowMouseDown<T>(ctx: GridHost<T>, e: Event): void {
 	// But NOT if cell selection is pending (would interfere with shift+drag)
 	if (target.closest('.wg__cell') && !target.closest('.wg__row-number, .wg__header') && !isCellSelectionPending()) {
 		let needsRender = false
-		if (ctx.engine.selectedRowIndices.length > 0) {
-			ctx.engine.clearRowSelection()
+		if (ctx[GRID_ENGINE].selectedRowIndices.length > 0) {
+			ctx[GRID_ENGINE].clearRowSelection()
 			needsRender = true
 		}
-		if (ctx.engine.selectedColumns.length > 0) {
-			ctx.engine.clearColumnSelection()
+		if (ctx[GRID_ENGINE].selectedColumns.length > 0) {
+			ctx[GRID_ENGINE].clearColumnSelection()
 			needsRender = true
 		}
 		if (needsRender) {
@@ -139,17 +140,17 @@ export function handleHeaderRowMouseDown<T>(ctx: GridHost<T>, e: Event): void {
 	// Clear all selections if clicking outside interactive elements (empty areas)
 	if (!target.closest('.wg__cell, .wg__row-number, .wg__header, .wg__toolbar, button, input, select, textarea')) {
 		let needsRender = false
-		if (ctx.engine.selectedCellRange) {
-			ctx.engine.clearCellSelection()
+		if (ctx[GRID_ENGINE].selectedCellRange) {
+			ctx[GRID_ENGINE].clearCellSelection()
 			removeRangeBorder()
 			needsRender = true
 		}
-		if (ctx.engine.selectedRowIndices.length > 0) {
-			ctx.engine.clearRowSelection()
+		if (ctx[GRID_ENGINE].selectedRowIndices.length > 0) {
+			ctx[GRID_ENGINE].clearRowSelection()
 			needsRender = true
 		}
-		if (ctx.engine.selectedColumns.length > 0) {
-			ctx.engine.clearColumnSelection()
+		if (ctx[GRID_ENGINE].selectedColumns.length > 0) {
+			ctx[GRID_ENGINE].clearColumnSelection()
 			needsRender = true
 		}
 		if (needsRender) {

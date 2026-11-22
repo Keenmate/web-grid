@@ -8,6 +8,7 @@
 
 import { computeVirtualRange } from '@keenmate/web-components-core'
 import type { GridHost } from '../grid-context.js'
+import { GRID_ENGINE } from '../grid-context.js'
 
 export interface VisibleRange {
 	startIndex: number
@@ -25,13 +26,13 @@ export function visibleRowRange<T>(
 	viewport: number,
 	keep: readonly (number | undefined)[] = []
 ): VisibleRange {
-	const count = ctx.engine.displayItems.length
+	const count = ctx[GRID_ENGINE].displayItems.length
 	const { start, end } = computeVirtualRange({
 		scrollTop,
 		viewport,
 		count,
-		rowHeight: ctx.engine.virtualScrollItemHeight,
-		overscan: ctx.engine.virtualScrollOverscan
+		rowHeight: ctx[GRID_ENGINE].virtualScrollItemHeight,
+		overscan: ctx[GRID_ENGINE].virtualScrollOverscan
 	})
 	let startIndex = start
 	let endIndex = end

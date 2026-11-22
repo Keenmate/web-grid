@@ -7,6 +7,7 @@ import type { GridHost } from '../grid-context.js'
 import type { DateOutputFormat } from '../../types.js'
 import { moveFocus, tryStartEdit } from '../navigation/index.js'
 import { renderCell } from '../rendering/index.js'
+import { GRID_ENGINE } from '../grid-context.js'
 
 /**
  * Convert date input value (YYYY-MM-DD) to the specified output format
@@ -74,7 +75,7 @@ export async function commitCurrentEditor<T>(
 		value = editor.value
 	}
 
-	await ctx.engine.commitEdit(rowIndex, field, value, commitEmptyRow)
+	await ctx[GRID_ENGINE].commitEdit(rowIndex, field, value, commitEmptyRow)
 }
 
 /**
@@ -95,11 +96,11 @@ export function toggleCheckboxAndMove<T>(
 	rowIndex: number,
 	colIndex: number
 ): void {
-	const column = ctx.engine.columns[colIndex]
+	const column = ctx[GRID_ENGINE].columns[colIndex]
 	if (!column) return
 
 	const field = String(column.field)
-	const item = ctx.engine.displayItems[rowIndex]
+	const item = ctx[GRID_ENGINE].displayItems[rowIndex]
 	if (!item) return
 
 	const opts = column.editorOptions || {}
@@ -109,13 +110,13 @@ export function toggleCheckboxAndMove<T>(
 	const newValue = currentValue === trueValue ? falseValue : trueValue
 
 	// Commit the toggle
-	ctx.engine.commitEdit(rowIndex, field, newValue)
+	ctx[GRID_ENGINE].commitEdit(rowIndex, field, newValue)
 
 	// Re-render the cell to show new checkbox state
 	renderCell(ctx, rowIndex, colIndex)
 
 	// Move to next row
-	const displayItems = ctx.engine.displayItems
+	const displayItems = ctx[GRID_ENGINE].displayItems
 	if (rowIndex < displayItems.length - 1) {
 		requestAnimationFrame(() => {
 			moveFocus(ctx, rowIndex + 1, colIndex)
@@ -135,11 +136,11 @@ export async function handleEditorBlur<T>(
 		return
 	}
 	// Only commit if we're still in edit mode (not already cancelled)
-	if (ctx.engine.editingCell) {
+	if (ctx[GRID_ENGINE].editingCell) {
 		// Get row/col before committing (editingCell will be cleared)
 		const rowIndex = parseInt(input.dataset.row || '0', 10)
 		const field = input.dataset.field || ''
-		const colIndex = ctx.engine.columns.findIndex(c => String(c.field) === field)
+		const colIndex = ctx[GRID_ENGINE].columns.findIndex(c => String(c.field) === field)
 
 		await commitCurrentEditor(ctx, input)
 
@@ -159,19 +160,19 @@ export function moveFocusAfterCommit<T>(
 	field: string,
 	direction: 'down' | 'up' | 'next' | 'prev'
 ): void {
-	const columns = ctx.engine.columns
+	const columns = ctx[GRID_ENGINE].columns
 	const colIndex = columns.findIndex(c => String(c.field) === field)
-	const displayItems = ctx.engine.displayItems
+	const displayItems = ctx[GRID_ENGINE].displayItems
 
 	let targetRow = rowIndex
 	let targetCol = colIndex
 
 	if (direction === 'down') {
 		// Excel-like: Enter after Tab returns to the column where Tab started
-		const tabStartCol = ctx.engine.tabTraversalStartColIndex
+		const tabStartCol = ctx[GRID_ENGINE].tabTraversalStartColIndex
 		if (tabStartCol !== null) {
 			targetCol = tabStartCol
-			ctx.engine.tabTraversalStartColIndex = null
+			ctx[GRID_ENGINE].tabTraversalStartColIndex = null
 		}
 		targetRow = Math.min(rowIndex + 1, displayItems.length - 1)
 	} else if (direction === 'up') {
@@ -179,20 +180,20 @@ export function moveFocusAfterCommit<T>(
 		targetRow = Math.max(rowIndex - 1, 0)
 	} else {
 		// Track tab traversal start for Excel-like Enter behavior
-		if (ctx.engine.tabTraversalStartColIndex === null) {
-			ctx.engine.tabTraversalStartColIndex = colIndex
+		if (ctx[GRID_ENGINE].tabTraversalStartColIndex === null) {
+			ctx[GRID_ENGINE].tabTraversalStartColIndex = colIndex
 		}
 		// Use existing Tab navigation logic — recomputed per row so heterogeneous trees
 		// (some rows entirely read-only) skip those rows correctly.
 		const currentRowForLifecycle = displayItems[rowIndex]
-		const editableCols = ctx.engine.getEditableColumns(currentRowForLifecycle)
+		const editableCols = ctx[GRID_ENGINE].getEditableColumns(currentRowForLifecycle)
 		const currentEditableIndex = editableCols.findIndex(ec => ec.index === colIndex)
 
 		const walkDir: 'forward' | 'backward' = direction === 'next' ? 'forward' : 'backward'
 		const fromIdx = currentEditableIndex === -1
 			? (walkDir === 'forward' ? -1 : editableCols.length)
 			: currentEditableIndex
-		const next = ctx.engine.findNextEditableCell(rowIndex, fromIdx, walkDir)
+		const next = ctx[GRID_ENGINE].findNextEditableCell(rowIndex, fromIdx, walkDir)
 		if (next) {
 			targetRow = next.rowIndex
 			targetCol = next.colIndex
@@ -212,11 +213,11 @@ export function moveFocusAfterCommit<T>(
 	const isNextOrPrev = direction === 'next' || direction === 'prev'
 	const movedCells = targetRow !== rowIndex || targetCol !== colIndex
 	if (isNextOrPrev && movedCells) {
-		const targetColumn = ctx.engine.columns[targetCol]
-		const effectiveTrigger = targetColumn?.editTrigger ?? ctx.engine.editTrigger
+		const targetColumn = ctx[GRID_ENGINE].columns[targetCol]
+		const effectiveTrigger = targetColumn?.editTrigger ?? ctx[GRID_ENGINE].editTrigger
 		if (effectiveTrigger === 'dblclick' || effectiveTrigger === 'click' || effectiveTrigger === 'button') {
 			requestAnimationFrame(() => {
-				if (ctx.engine.canEditCell(targetRow, String(targetColumn.field))) {
+				if (ctx[GRID_ENGINE].canEditCell(targetRow, String(targetColumn.field))) {
 					tryStartEdit(ctx, targetRow, targetCol)
 				}
 				ctx.isCommittingFromKeyboard = false
@@ -236,7 +237,7 @@ export function focusCellAfterCancel<T>(
 	rowIndex: number,
 	field: string
 ): void {
-	const columns = ctx.engine.columns
+	const columns = ctx[GRID_ENGINE].columns
 	const colIndex = columns.findIndex(c => String(c.field) === field)
 	if (colIndex >= 0) {
 		// Surgical update: restore cell to display mode

@@ -25,6 +25,7 @@ import {
 	normalizeEntry,
 	withHeaderBuiltInChildren
 } from '../items/index.js'
+import { GRID_ENGINE } from '../grid-context.js'
 
 /**
  * Top-level right-click dispatcher: routes to header / filler / cell handlers
@@ -67,8 +68,8 @@ export function handleContextMenu<T>(ctx: GridHost<T>, e: MouseEvent): void {
  * it, with the first item focused. Returns `false` when there is no menu to open.
  */
 export function openCellMenuFromKeyboard<T>(ctx: GridHost<T>): boolean {
-	const focused = ctx.engine.focusedCell
-	if (!focused || ctx.engine.editingCell) return false
+	const focused = ctx[GRID_ENGINE].focusedCell
+	if (!focused || ctx[GRID_ENGINE].editingCell) return false
 	const cell = ctx.shadow.querySelector(
 		`.wg__cell[data-row="${focused.rowIndex}"][data-col="${focused.colIndex}"]`
 	) as HTMLElement | null
@@ -78,7 +79,7 @@ export function openCellMenuFromKeyboard<T>(ctx: GridHost<T>): boolean {
 
 /** Open the cell menu for `cell` at `at` (the pointer, or the cell itself from the keyboard). */
 function openCellMenu<T>(ctx: GridHost<T>, cell: HTMLElement, at: { x: number; y: number } | HTMLElement, isFromKeyboard: boolean): boolean {
-	const engine = ctx.engine
+	const engine = ctx[GRID_ENGINE]
 	if (!engine.contextMenu?.length && !engine.beforeContextMenuOpenCallback) {
 		return false // No context menu defined, use browser default
 	}
@@ -132,7 +133,7 @@ function openHeaderMenu<T>(
 	fields: Omit<HeaderMenuContext<T>, 'controller' | 'element'>,
 	baseEntries: readonly GridHeaderMenuEntry<T>[]
 ): void {
-	const engine = ctx.engine
+	const engine = ctx[GRID_ENGINE]
 	const menuCtx: HeaderMenuContext<T> = engine.ctx(fields)
 
 	// beforeHeaderMenuOpenCallback: false → no grid menu; entries → shown instead
@@ -167,7 +168,7 @@ export function handleHeaderContextMenu<T>(
 	e: MouseEvent,
 	header: HTMLElement
 ): void {
-	const engine = ctx.engine
+	const engine = ctx[GRID_ENGINE]
 	if (!engine.headerContextMenu?.length && !engine.beforeHeaderMenuOpenCallback) {
 		return // No header context menu defined, use browser default
 	}
@@ -195,7 +196,7 @@ export function handleHeaderContextMenu<T>(
  * dynamic text / icon (those likely read the column) — since there's no column.
  */
 export function handleFillerContextMenu<T>(ctx: GridHost<T>, e: MouseEvent): void {
-	const engine = ctx.engine
+	const engine = ctx[GRID_ENGINE]
 	if (!engine.headerContextMenu?.length && !engine.beforeHeaderMenuOpenCallback) {
 		return // No header context menu defined, use browser default
 	}

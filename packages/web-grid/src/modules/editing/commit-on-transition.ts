@@ -33,6 +33,7 @@ import type { GridHost } from '../grid-context.js'
 import type { EditorOptions } from '../../types.js'
 import { getOptionLabel, getOptionValue } from '../dropdown/options.js'
 import { typedDateError } from '../datepicker/element-handlers.js'
+import { GRID_ENGINE } from '../grid-context.js'
 
 /**
  * Read the in-progress editor's value and fire grid.commitEdit; fall back
@@ -40,9 +41,9 @@ import { typedDateError } from '../datepicker/element-handlers.js'
  * disabled. Must run BEFORE renderCell wipes the editor element.
  */
 export function commitOrCancelEditOnTransition<T>(ctx: GridHost<T>): void {
-	if (!ctx.engine.editingCell) return
-	if (!ctx.engine.shouldCommitOnClickAway) {
-		ctx.engine.cancelEdit()
+	if (!ctx[GRID_ENGINE].editingCell) return
+	if (!ctx[GRID_ENGINE].shouldCommitOnClickAway) {
+		ctx[GRID_ENGINE].cancelEdit()
 		return
 	}
 	commitEditorValue(ctx)
@@ -74,12 +75,12 @@ export function resolveComboboxValue<T>(
  * Must run BEFORE renderCell wipes the editor element.
  */
 export function commitEditorValue<T>(ctx: GridHost<T>): void {
-	const editingCell = ctx.engine.editingCell
+	const editingCell = ctx[GRID_ENGINE].editingCell
 	if (!editingCell) return
 	const { rowIndex, field } = editingCell
-	const colIndex = ctx.engine.columns.findIndex(c => String(c.field) === field)
+	const colIndex = ctx[GRID_ENGINE].columns.findIndex(c => String(c.field) === field)
 	if (colIndex < 0) {
-		ctx.engine.cancelEdit()
+		ctx[GRID_ENGINE].cancelEdit()
 		return
 	}
 	const cell = ctx.shadow.querySelector(
@@ -90,7 +91,7 @@ export function commitEditorValue<T>(ctx: GridHost<T>): void {
 	) as HTMLElement | null
 	if (!editor) editor = cell?.querySelector('.wg__editor') as HTMLElement | null
 	if (!editor || editor.classList.contains('wg__select-trigger')) {
-		ctx.engine.cancelEdit()
+		ctx[GRID_ENGINE].cancelEdit()
 		return
 	}
 	let value: unknown
@@ -99,8 +100,8 @@ export function commitEditorValue<T>(ctx: GridHost<T>): void {
 		value = resolveComboboxValue(ctx, editor as HTMLInputElement)
 	} else if (editor instanceof HTMLInputElement) {
 		if (editor.type === 'checkbox') {
-			const item = ctx.engine.displayItems[rowIndex]
-			value = ctx.engine.getCellRawValue(item, rowIndex, field)
+			const item = ctx[GRID_ENGINE].displayItems[rowIndex]
+			value = ctx[GRID_ENGINE].getCellRawValue(item, rowIndex, field)
 		} else if (editor.classList.contains('wg__date-input')) {
 			parseError = typedDateError(ctx, editor)
 			value = parseError ? editor.value : editor.dataset.dateValue || editor.value
@@ -117,5 +118,5 @@ export function commitEditorValue<T>(ctx: GridHost<T>): void {
 	// Fire and forget — grid.commitEdit handles async validation and clears
 	// editingCell when complete. The surrounding caller already handles
 	// post-transition rendering and focus.
-	void ctx.engine.commitEdit(rowIndex, field, value, false, 'edit', parseError)
+	void ctx[GRID_ENGINE].commitEdit(rowIndex, field, value, false, 'edit', parseError)
 }

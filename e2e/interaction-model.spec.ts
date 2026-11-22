@@ -336,6 +336,17 @@ test.describe('contexts, twins, controller', () => {
 		}))
 		expect(r).toEqual({ isFrozen: true, hasEngineInternals: false, keys: 73, itemsLive: true })
 	})
+
+	test('the engine is private: no `el.engine`, no string-keyed member holds it', async ({ page }) => {
+		const r = await grid(page).evaluate((el: any) => {
+			const engine = el[Symbol.for('@keenmate/web-grid:engine')]  // test-only handle
+			const stringKeys = new Set<string>()
+			for (let o = el; o && o !== HTMLElement.prototype; o = Object.getPrototypeOf(o)) Object.getOwnPropertyNames(o).forEach(k => stringKeys.add(k))
+			const holders = [...stringKeys].filter(k => { try { return el[k] === engine } catch { return false } })
+			return { hasEngine: 'engine' in el, isEngineReachable: !!engine, holders }
+		})
+		expect(r).toEqual({ hasEngine: false, isEngineReachable: true, holders: [] })
+	})
 })
 
 // Open gaps listed in core docs/interaction-model-plan.md ("grid (from phase 5)").
@@ -351,7 +362,7 @@ test.describe('open gaps (interaction-model-plan follow-ups)', () => {
 		await page.keyboard.press('Alt+ArrowDown')
 		await expect.poll(() => names(page)).toEqual(['Alpha', 'Gamma', 'Beta', 'Delta'])
 		await expect(cell(page, 2, 1)).toBeFocused({ timeout: 1500 })
-		expect(await grid(page).evaluate((el: any) => el.engine.focusedCell)).toMatchObject({ rowIndex: 2, colIndex: 1 })
+		expect(await grid(page).evaluate((el: any) => el[Symbol.for('@keenmate/web-grid:engine')].focusedCell)).toMatchObject({ rowIndex: 2, colIndex: 1 })
 		// repeated: the same row keeps moving
 		await page.keyboard.press('Alt+ArrowDown')
 		await expect.poll(() => names(page)).toEqual(['Alpha', 'Gamma', 'Delta', 'Beta'])

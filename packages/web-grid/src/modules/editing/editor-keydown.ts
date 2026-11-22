@@ -12,6 +12,7 @@
 
 import type { GridHost } from '../grid-context.js'
 import { updateSelectFilter } from '../dropdown/index.js'
+import { GRID_ENGINE } from '../grid-context.js'
 
 /**
  * Handle the residual keydowns on a focused editor input (see the file header).
@@ -22,7 +23,7 @@ export function handleEditorKeyDown<T>(
 	editor: HTMLElement
 ): void {
 	const field = editor.dataset.field || ''
-	const column = ctx.engine.columns.find(c => c.field === field)
+	const column = ctx[GRID_ENGINE].columns.find(c => c.field === field)
 	if (column?.editor !== 'select') return
 
 	if (e.key === 'Backspace') {
