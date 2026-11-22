@@ -183,6 +183,19 @@ A major: the callback, event and item API below is breaking, so
   `translateCallback`, accessible-name follow, locale + formatting, `shouldEscapeLabels`); linked from the index.
   `e2e/examples.spec.ts` smoke-tests it.
 
+### Removed — BREAKING: 1.x type exports replaced by the v2 ctx / item / event types (2026-10-24 … 2026-11-20)
+- The package no longer exports these 1.x types (no aliases); the nearest v2 export is in parentheses:
+  `EditorType` (`Editor`), `RowLockInfo` (`RowLock`), `PredefinedToolbarItemType` / `RowActionType`
+  (`GridRowAction`, `GridAction`), `RowToolbarItem` / `RowToolbarConfig` / `NormalizedToolbarItem` /
+  `ToolbarTooltip` / `ToolbarRowGroup` (`GridToolbarItem`, `GridToolbarEntry`), `ToolbarClickDetail` /
+  `RowActionClickDetail` (`GridActionEventDetail`), `ContextMenuItem` (`GridMenuItem`, `GridMenuEntry`),
+  `ContextMenuContext` (`CellContext`), `RangeShortcut` / `RangeShortcutContext` (`GridRangeShortcut`,
+  `RangeContext`), `BeforeCommitContext` / `BeforeCommitResult` (`ValidateContext`, `ValidateResult`),
+  `BeforePasteDetail` (`BeforePasteContext`), `FillDragDetail` (`FillContext`), `CustomEditorContext`
+  (`EditorContext`), `RowFocusDetail` (`FocusChangeDetail`), `TreeChevronContext` / `TreeChevronCallback`
+  (`ChevronContext`, `ChevronCallback`); `CellRenderCallback` and `OptionsLoadTrigger` are gone (never called /
+  never used). Every ctx, item and event-detail type of `interaction.ts` is exported.
+
 ### Removed — BREAKING: `GridEngine` export (2026-11-20)
 - `GridEngine` (the 1.x `WebGrid` export, renamed in this cycle) is no longer exported: it only drew the same UI without the custom element. Use `<web-grid>`
   (`el.controller` for the programmatic API). The config / context / event types stay exported.
