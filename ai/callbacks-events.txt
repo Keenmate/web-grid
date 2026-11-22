@@ -313,7 +313,9 @@ getDisplayValueCallback
 
 renderCellCallback
   Signature: (ctx: CellContext<T>) => string
-  Returns HTML string for custom cell content (wins over getDisplayValueCallback).
+  Returns HTML string for custom cell content (wins over getDisplayValueCallback),
+  in every column type incl. dropdown / date / checkbox. Copy takes
+  getCopyValueCallback > getDisplayValueCallback > the built-in text (never the HTML).
 
 getTooltipCallback
   Signature: (ctx: CellContext<T>) => string | null

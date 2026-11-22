@@ -106,7 +106,11 @@ getDisplayValueCallback ((ctx: CellContext<T>) => string)
 renderCellCallback ((ctx: CellContext<T>) => string)
     Returns raw HTML to render in the cell. NOT HTML-escaped -- you can
     include tags, images, links, etc. ctx has the full row as well as
-    the field value. Takes priority over getDisplayValueCallback.
+    the field value. Takes priority over getDisplayValueCallback, in every
+    column type (text, number, date, dropdown, checkbox -- it replaces the
+    option label / formatted date / checkbox). null / undefined = the built-in
+    display, false = empty. Copy never scrapes the HTML: getCopyValueCallback >
+    getDisplayValueCallback > the built-in text.
 
     Example:
       renderCellCallback: ({ row }) =>

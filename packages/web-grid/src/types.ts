@@ -189,7 +189,7 @@ export type Column<T> = {
 	cellClass?: string  // Custom CSS class(es) applied to all cells in this column
 	getCellClassCallback?: (ctx: CellContext<T>) => string | null  // Dynamic CSS class based on value/row
 	getDisplayValueCallback?: (ctx: CellContext<T>) => string  // Display text for the cell (escaped)
-	renderCellCallback?: (ctx: CellContext<T>) => RenderResult  // Cell HTML (wins over getDisplayValueCallback); null / undefined = the built-in display, false = empty
+	renderCellCallback?: (ctx: CellContext<T>) => RenderResult  // Cell HTML in every column type (wins over getDisplayValueCallback); null / undefined = the built-in display, false = empty; copy never takes the HTML
 	// Editing props
 	// Static editability for the column. `getIsEditableCallback` decides per row instead
 	// (e.g. column is editable only on employee rows in a teams + employees tree) and, when it

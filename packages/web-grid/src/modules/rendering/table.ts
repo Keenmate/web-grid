@@ -356,7 +356,7 @@ export function renderDataRows<T>(ctx: GridHost<T>): string {
 
 		const cells = visualColumns.map(({ column, originalIndex }, visualIndex) => {
 			const field = String(column.field)
-			const value = ctx[GRID_ENGINE].getCellValue(item, column, rowIndex)
+			const display = ctx[GRID_ENGINE].getCellDisplayHtml(item, column, rowIndex)
 			const align = column.horizontalAlign || 'left'
 			const vAlign = column.verticalAlign || 'middle'
 			// Use canEditCell to check both column editability AND row locking
@@ -433,7 +433,7 @@ export function renderDataRows<T>(ctx: GridHost<T>): string {
 
 			const innerHtml = shouldShowEditor
 				? renderCellEditor(ctx, rowIndex, originalIndex, column)
-				: renderCellDisplay(ctx, rowIndex, originalIndex, column, value, isFocused, isEditable)
+				: renderCellDisplay(ctx, rowIndex, originalIndex, column, display, isFocused, isEditable)
 			const cellInner = wrapTreeCell(ctx, column, item, innerHtml)
 
 			return `
@@ -604,7 +604,7 @@ export function renderDataRowsVirtual<T>(ctx: GridHost<T>, params: VirtualScroll
 
 		const cells = visualColumns.map(({ column, originalIndex }, visualIndex) => {
 			const field = String(column.field)
-			const value = ctx[GRID_ENGINE].getCellValue(item, column, rowIndex)
+			const display = ctx[GRID_ENGINE].getCellDisplayHtml(item, column, rowIndex)
 			const align = column.horizontalAlign || 'left'
 			const vAlign = column.verticalAlign || 'middle'
 			// Use canEditCell to check both column editability AND row locking
@@ -681,7 +681,7 @@ export function renderDataRowsVirtual<T>(ctx: GridHost<T>, params: VirtualScroll
 
 			const innerHtml = shouldShowEditor
 				? renderCellEditor(ctx, rowIndex, originalIndex, column)
-				: renderCellDisplay(ctx, rowIndex, originalIndex, column, value, isFocused, isEditable)
+				: renderCellDisplay(ctx, rowIndex, originalIndex, column, display, isFocused, isEditable)
 			const cellInner = wrapTreeCell(ctx, column, item, innerHtml)
 
 			return `

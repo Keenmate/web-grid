@@ -92,7 +92,7 @@ const isThenable = (v: unknown): v is PromiseLike<unknown> =>
 	!!v && (typeof v === 'object' || typeof v === 'function') && typeof (v as { then?: unknown }).then === 'function'
 
 import type { StateStore } from '@keenmate/web-components-core'
-import { copyText, createSelection, escapeHtml, renderSlotHtml, type Selection } from '@keenmate/web-components-core'
+import { copyText, createSelection, escapeHtml, renderSlotHtml, type Selection, type SlotHtml } from '@keenmate/web-components-core'
 // Date formatting utilities for auto-formatting date columns
 import { parseFormat, formatDate } from './modules/datepicker/index.js'
 import { bindOptionContext, getOptionDisplayValue } from './modules/dropdown/options.js'
@@ -3105,18 +3105,38 @@ export class GridEngine<T = unknown> {
 	 * `null` / `undefined` = the built-in text, escaped, `false` = empty), else the display TEXT.
 	 */
 	getCellValue(item: T, column: Column<T>, rowIndex: number): string {
-		const render = column.renderCellCallback
-		if (render) {
-			return renderSlotHtml(() => render(this.cellCtx(item, rowIndex, column)), () => escapeHtml(this.getCellDisplayText(item, column, rowIndex))).html
-		}
-		return this.getCellDisplayText(item, column, rowIndex)
+		return column.renderCellCallback
+			? this.getCellDisplayHtml(item, column, rowIndex).html
+			: this.getCellDisplayText(item, column, rowIndex)
 	}
 
-	/** The built-in display text of a cell (`getDisplayValueCallback`, date format, number locale, the raw value). */
+	/**
+	 * The cell's display as HTML, for every column type (the order the README documents):
+	 * `renderCellCallback` (kind `custom`, or `hidden` for `false`) > the built-in text escaped
+	 * (kind `default`: `getDisplayValueCallback` > option label / date format / number locale > raw).
+	 * A `default` checkbox cell draws its checkbox instead (modules/rendering/display.ts).
+	 * @internal
+	 */
+	getCellDisplayHtml(item: T, column: Column<T>, rowIndex: number): SlotHtml {
+		const render = column.renderCellCallback
+		const text = () => escapeHtml(this.getCellDisplayText(item, column, rowIndex))
+		return render ? renderSlotHtml(() => render(this.cellCtx(item, rowIndex, column)), text) : { html: text(), kind: 'default' }
+	}
+
+	/**
+	 * The built-in display text of a cell (`getDisplayValueCallback`, a dropdown's option label,
+	 * date format, number locale, the raw value).
+	 */
 	protected getCellDisplayText(item: T, column: Column<T>, rowIndex: number): string {
 		const value = this.getCellRawValue(item, rowIndex, String(column.field))
 		if (column.getDisplayValueCallback) {
 			return column.getDisplayValueCallback(this.cellCtx(item, rowIndex, column))
+		}
+
+		// Dropdown columns: the option's display (editorOptions.getDisplayValueCallback -> displayMember -> label -> raw)
+		if (column.editor === 'select' || column.editor === 'combobox' || column.editor === 'autocomplete') {
+			const opts = column.editorOptions || {}
+			return getOptionDisplayValue(value, opts.initialOptions || opts.options || [], opts)
 		}
 
 		// Auto-format date columns using editorOptions.dateFormat when no getDisplayValueCallback.

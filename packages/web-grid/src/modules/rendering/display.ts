@@ -3,28 +3,29 @@
 // Render cells in display (non-editing) mode
 // =============================================================================
 
-import { escapeHtml } from '@keenmate/web-components-core'
+import type { SlotHtml } from '@keenmate/web-components-core'
 import type { Column } from '../../types.js'
 import type { GridHost } from '../grid-context.js'
-import { getOptionDisplayValue } from '../dropdown/options.js'
 import { gridPerf } from '../../perf.js'
 import { hasEditButton, renderEditButton } from '../editing/edit-button.js'
 import { GRID_ENGINE } from '../grid-context.js'
 
 /**
- * Render a cell in display mode (not editing)
- * For dropdown cells, renders toggle only if cell is editable - CSS controls visibility via hover/focus
+ * Render a cell in display mode (not editing). `display` is the engine's `getCellDisplayHtml()` —
+ * already HTML (renderCellCallback > getDisplayValueCallback > the built-in text, escaped), so every
+ * column type shows it the same way; only a checkbox with neither callback draws its checkbox.
+ * For dropdown / date cells, renders the toggle only if the cell is editable - CSS controls visibility via hover/focus
  */
 export function renderCellDisplay<T>(
 	ctx: GridHost<T>,
 	rowIndex: number,
 	colIndex: number,
 	column: Column<T>,
-	value: string,
+	display: SlotHtml,
 	isFocused: boolean,
 	isEditable: boolean = true
 ): string {
-	const html = renderCellDisplayContent(ctx, rowIndex, colIndex, column, value, isFocused, isEditable)
+	const html = renderCellDisplayContent(ctx, rowIndex, colIndex, column, display, isFocused, isEditable)
 	return hasEditButton(ctx, column, isEditable) ? html + renderEditButton(ctx, rowIndex, colIndex) : html
 }
 
@@ -33,7 +34,7 @@ function renderCellDisplayContent<T>(
 	rowIndex: number,
 	colIndex: number,
 	column: Column<T>,
-	value: string,
+	display: SlotHtml,
 	isFocused: boolean,
 	isEditable: boolean
 ): string {
@@ -41,11 +42,12 @@ function renderCellDisplayContent<T>(
 	const isDate = column.editor === 'date'
 	const isCheckbox = column.editor === 'checkbox'
 	const field = String(column.field)
+	const html = display.html
 
 	if (isCheckbox) {
-		// If getDisplayValueCallback is provided, use its output instead of default checkbox
-		if (column.getDisplayValueCallback) {
-			return `<span class="wg__cell-text">${escapeHtml(value)}</span>`
+		// renderCellCallback (when it rendered) / getDisplayValueCallback replace the default checkbox
+		if (display.kind !== 'default' || column.getDisplayValueCallback) {
+			return `<span class="wg__cell-text">${html}</span>`
 		}
 		// Default: render checkbox
 		gridPerf.count('cellDisplayItemsLookup')
@@ -72,21 +74,8 @@ function renderCellDisplayContent<T>(
 	}
 
 	if (isDropdown) {
-		// The column's getDisplayValueCallback wins (as in every other cell, and as copy does); else the option's
-		// display via the fallback chain (editorOptions.getDisplayValueCallback -> displayMember -> label -> raw value)
-		gridPerf.count('cellDisplayItemsLookup')
-		const engine = ctx[GRID_ENGINE]
-		const item = engine.displayItems[rowIndex]
-		let displayValue: string
-		if (column.getDisplayValueCallback) {
-			displayValue = item ? String(column.getDisplayValueCallback(engine.cellCtx(item, rowIndex, column)) ?? '') : ''
-		} else {
-			const rawValue = item ? engine.getCellRawValue(item, rowIndex, field) : undefined
-			const opts = column.editorOptions || {}
-			const options = opts.initialOptions || opts.options || []
-			displayValue = getOptionDisplayValue(rawValue, options, opts)
-		}
-
+		// The shown text: renderCellCallback > the column's getDisplayValueCallback > the option's display
+		// (editorOptions.getDisplayValueCallback -> displayMember -> label -> raw value) — as copy does
 		// Add modifier class for on-focus visibility (CSS handles hover/focus show)
 		const visibility = ctx[GRID_ENGINE].getEffectiveToggleVisibility(column)
 		const toggleClass = visibility === 'on-focus' ? 'wg__cell-dropdown-display--toggle-on-focus' : ''
@@ -94,7 +83,7 @@ function renderCellDisplayContent<T>(
 		const toggleHtml = isEditable ? '<span class="wg__select-toggle">▼</span>' : ''
 		return `
 			<div class="wg__cell-dropdown-display ${toggleClass}" data-row="${rowIndex}" data-field="${field}">
-				<span class="wg__select-value">${escapeHtml(displayValue)}</span>
+				<span class="wg__select-value">${html}</span>
 				${toggleHtml}
 			</div>
 		`
@@ -112,7 +101,7 @@ function renderCellDisplayContent<T>(
 			: ''
 		return `
 			<div class="wg__cell-date-display ${toggleClass}" data-row="${rowIndex}" data-field="${field}">
-				<span class="wg__date-value">${escapeHtml(value)}</span>
+				<span class="wg__date-value">${html}</span>
 				${toggleHtml}
 			</div>
 		`
@@ -121,10 +110,5 @@ function renderCellDisplayContent<T>(
 	// Line clamp style if maxLines is set
 	const lineClampStyle = column.maxLines ? `style="-webkit-line-clamp: ${column.maxLines}"` : ''
 
-	// renderCellCallback returns raw HTML - don't escape it
-	if (column.renderCellCallback) {
-		return `<span class="wg__cell-text" ${lineClampStyle}>${value}</span>`
-	}
-
-	return `<span class="wg__cell-text" ${lineClampStyle}>${escapeHtml(value)}</span>`
+	return `<span class="wg__cell-text" ${lineClampStyle}>${html}</span>`
 }

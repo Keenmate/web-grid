@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — renderCellCallback in every column type</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>renderCellCallback fixture</h1>
+	<p>Targeted by <code>e2e/render-cell.spec.ts</code>. A column's <code>renderCellCallback</code> wins over its
+	<code>getDisplayValueCallback</code>, which wins over the built-in text (option label / formatted date / locale
+	number / checkbox) — in every column type. Copy never takes the HTML: <code>getCopyValueCallback</code> &gt;
+	<code>getDisplayValueCallback</code> &gt; the built-in text.</p>
+
+	<web-grid id="grid" enable-editing edit-trigger="navigate" locale="en-US" open-dropdown-on-focus="false" style="max-width: 900px;"></web-grid>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+		/*
+		 * #grid — cols:
+		 *  0=id (read-only)
+		 *  1=status (select a→Active / p→Paused, render → <b class="r">R:<label></b>, + getDisplayValueCallback "D:<value>")
+		 *  2=tier   (select g→Gold / s→Silver, render → null on row 1 (built-in = option label), <i class="r">T:<value></i> row 0)
+		 *  3=due    (date DD.MM.YYYY, render → <u class="r">due <value></u>)
+		 *  4=done   (checkbox, render → <span class="r">✓ / ✗</span>, false on row 1 → empty)
+		 *  5=qty    (number, render → <em class="r">n=<value></em>, getCopyValueCallback "copy:<value>")
+		 *  6=size   (combobox, NO callbacks — the option label, escaped)
+		 * rows: 0 = { a, g, 2026-03-05, true, 1500, s }, 1 = { p, s, 2026-11-01, false, 2, l }
+		 */
+		const statuses = [{ value: 'a', label: 'Active' }, { value: 'p', label: 'Paused' }]
+		const tiers = [{ value: 'g', label: 'Gold' }, { value: 's', label: 'Silver' }]
+		const sizes = [{ value: 's', label: '<Small>' }, { value: 'l', label: 'Large' }]
+		const label = (list, v) => list.find(o => o.value === v)?.label ?? v
+		const grid = document.getElementById('grid')
+		grid.columns = [
+			{ field: 'id', title: 'ID', width: '50px', isEditable: false },
+			{ field: 'status', title: 'Status', width: '120px', editor: 'select', editorOptions: { options: statuses },
+				getDisplayValueCallback: ({ value }) => `D:${value}`,
+				renderCellCallback: ({ value }) => `<b class="r">R:${label(statuses, value)}</b>` },
+			{ field: 'tier', title: 'Tier', width: '110px', editor: 'select', editorOptions: { options: tiers },
+				renderCellCallback: ({ value, rowIndex }) => rowIndex === 1 ? null : `<i class="r">T:${value}</i>` },
+			{ field: 'due', title: 'Due', width: '130px', editor: 'date', editorOptions: { dateFormat: 'DD.MM.YYYY' },
+				renderCellCallback: ({ value }) => `<u class="r">due ${value}</u>` },
+			{ field: 'done', title: 'Done', width: '80px', editor: 'checkbox',
+				renderCellCallback: ({ value, rowIndex }) => rowIndex === 1 ? false : `<span class="r">${value ? '✓' : '✗'}</span>` },
+			{ field: 'qty', title: 'Qty', width: '100px', editor: 'number',
+				renderCellCallback: ({ value }) => `<em class="r">n=${value}</em>`,
+				getCopyValueCallback: ({ value }) => `copy:${value}` },
+			{ field: 'size', title: 'Size', width: '100px', editor: 'combobox', editorOptions: { options: sizes } }
+		]
+		grid.items = [
+			{ id: 1, status: 'a', tier: 'g', due: '2026-03-05', done: true, qty: 1500, size: 's' },
+			{ id: 2, status: 'p', tier: 's', due: '2026-11-01', done: false, qty: 2, size: 'l' }
+		]
+	</script>
+</body>
+</html>

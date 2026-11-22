@@ -10,6 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Changed — `renderCellCallback` wins in every column type (2026-11-22)
+- The documented order (`renderCellCallback` > `getDisplayValueCallback` > the built-in text) held only for text
+  and number cells: a dropdown (`select` / `combobox` / `autocomplete`) cell ignored `renderCellCallback`, a
+  checkbox cell drew its checkbox anyway, and a date cell showed the callback's HTML as escaped text. Every column
+  type now shows the rendered HTML (inside its own display wrapper, so a dropdown / date cell keeps its toggle);
+  `null` / `undefined` = the built-in display (option label, formatted date, checkbox), `false` = empty. Copy is
+  unchanged and never scrapes the HTML: `getCopyValueCallback` > `getDisplayValueCallback` > the built-in text.
+
 ### Fixed — Enter on the last row commits an `always` editor (2026-11-22)
 - In `editTrigger: 'always'`, Enter (or any navigation key with no cell to move to — Tab on the last cell) in an
   editor of the LAST row dropped the typed text: the always-on editor isn't a tracked edit, and only a move to

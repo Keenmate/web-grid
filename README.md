@@ -674,7 +674,7 @@ Every column callback takes one `ctx`. The cell ctx (`CellContext<T>`) is `{ row
 | Field | Type | Description |
 |-------|------|-------------|
 | `getDisplayValueCallback` | `(ctx: CellContext<T>) => string` | Display text for the cell (escaped); in dropdown / date / number cells too (wins over the option label / formatted date / locale number) — copy takes the same text |
-| `renderCellCallback` | `(ctx: CellContext<T>) => string` | Custom cell HTML (wins over `getDisplayValueCallback`) |
+| `renderCellCallback` | `(ctx: CellContext<T>) => string` | Custom cell HTML, in every column type (text, number, date, dropdown, checkbox) — wins over `getDisplayValueCallback`, which wins over the built-in text (option label / formatted date / locale number / the checkbox); `null` / `undefined` = the built-in display, `false` = empty. Copy never scrapes the HTML: it takes `getCopyValueCallback`, else `getDisplayValueCallback`, else the built-in text |
 
 ### Filtering
 

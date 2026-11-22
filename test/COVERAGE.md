@@ -118,6 +118,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Copy = the shown text for date / dropdown cells (single / range / row / column; callback precedence); a pasted option label maps back to its value | ✓ | `copy.spec.ts` | `copy.html` #shown |
 | Typing starts editing + Ctrl+V pastes on a focused cell in every editTrigger mode (an `always` cell after Escape; a read-only `always` cell takes focus on click); read-only / disabled grids take neither | ✓ | `type-paste.spec.ts` | `type-paste.html` |
 | Enter in the editor of the LAST row commits and stays on the cell in every editTrigger mode (1 and 2 rows; text + number columns) | ✓ | `last-row-enter.spec.ts` | `type-paste.html` |
+| `renderCellCallback` wins in every column type (dropdown / date / checkbox / number; `null` = built-in, `false` = empty); copy never takes the HTML (getCopyValueCallback > getDisplayValueCallback > built-in text) | ✓ | `render-cell.spec.ts` | `render-cell.html` |
 | An open dropdown re-anchors to its cell's new editor after a full table / virtual window re-render (position + combobox ARIA) | ✓ | `dropdown-close.spec.ts` | `dropdown-close.html` |
 | `copySelectedRowsToClipboard`, `copyCellSelectionToClipboard`, failure → false | ✓ | `copy.spec.ts` | `copy.html` |
 | `rowShortcuts`, Ctrl+U move, disabled callback, help overlay | ✓ | `shortcuts.spec.ts` | `shortcuts.html` |

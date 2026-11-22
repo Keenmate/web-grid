@@ -115,8 +115,8 @@ export function renderCell<T>(
 			focusEditorInCell(ctx, cell, column, options)
 		}
 	} else {
-		const value = ctx[GRID_ENGINE].getCellValue(item, column, rowIndex)
-		cell.innerHTML = wrapTreeCell(ctx, column, item, renderCellDisplay(ctx, rowIndex, colIndex, column, value, isFocused, isEditable))
+		const display = ctx[GRID_ENGINE].getCellDisplayHtml(item, column, rowIndex)
+		cell.innerHTML = wrapTreeCell(ctx, column, item, renderCellDisplay(ctx, rowIndex, colIndex, column, display, isFocused, isEditable))
 		// renderCellCallback controls are no tab stops of their own (the grid is ONE tab stop)
 		untabCellWidgets(cell)
 	}
