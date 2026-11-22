@@ -44,12 +44,15 @@ function executeNavigate(ctx: ExecutorContext, action: NavigateAction): GridActi
 		}
 	}
 
-	// If no target (e.g., Enter on last row, Tab on last cell), still commit if editing
+	// If no target (e.g., Enter on last row, Tab on last cell), still commit if editing —
+	// Excel: the typed text is committed and the cell stays. An 'always' cell's editor
+	// isn't tracked in editingCell, so it commits by coordinates (as a transition does).
 	if (!target) {
-		if (isEditing) {
+		const isAlwaysEditMode = (fromColumn?.editTrigger ?? ctx[GRID_ENGINE].editTrigger) === 'always'
+		if (isEditing || isAlwaysEditMode) {
 			// Commit, re-render, and keep focus on current cell
 			return [
-				{ type: 'commitEdit' },
+				isEditing ? { type: 'commitEdit' } : { type: 'commitEdit', target: from },
 				{ type: 'renderCell', target: from },
 				{ type: 'focusCell', target: from, selectText: false }
 			]

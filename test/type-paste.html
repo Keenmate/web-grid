@@ -48,8 +48,7 @@
 		}
 		/*
 		 * [data-numbers] grids (locale cs / de / en-US): col 0 = id (read-only), 1 = qty (number)
-		 *  row 0 | 1 | 10
-		 *  row 1 | 2 | 3   (two rows: in 'always' mode Enter commits by moving down)
+		 *  row 0 | 1 | 10   (one row: Enter on the last row commits and stays)
 		 */
 		for (const el of document.querySelectorAll('web-grid[data-numbers]')) {
 			el.isEditingEnabled = true
@@ -57,7 +56,7 @@
 				{ field: 'id', title: 'ID', width: '60px', isEditable: false },
 				{ field: 'qty', title: 'Qty', width: '120px', editor: 'number' }
 			]
-			el.items = [{ id: 1, qty: 10 }, { id: 2, qty: 3 }]
+			el.items = [{ id: 1, qty: 10 }]
 			el.addEventListener('cell-edit-start', e => window.__edits.push(`${el.id}:${e.detail.rowIndex}.${e.detail.field}`))
 		}
 	</script>

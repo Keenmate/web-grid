@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Fixed — Enter on the last row commits an `always` editor (2026-11-22)
+- In `editTrigger: 'always'`, Enter (or any navigation key with no cell to move to — Tab on the last cell) in an
+  editor of the LAST row dropped the typed text: the always-on editor isn't a tracked edit, and only a move to
+  another cell committed it. It now commits and stays on the cell (Excel), text and number columns alike — the
+  other edit modes already did.
+
 ### Changed — type-to-edit on a number cell follows the locale (2026-11-22)
 - A number cell started an edit only on a digit, `-` or `.`, so `,5` couldn't be typed in a `cs` / `de` grid. The
   starting key now follows the grid's number settings (the effective `locale`, page-wide separators — the same ones
