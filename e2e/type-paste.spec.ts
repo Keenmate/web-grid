@@ -118,6 +118,64 @@ test.describe("'always' mode", () => {
 	})
 })
 
+// The key that starts an edit on a number cell follows the grid's locale (the same settings the typed text
+// is parsed with): its decimal separator, a digit, a minus; `.` only where it isn't the group separator.
+test.describe('number cells: the locale decimal separator starts an edit', () => {
+	test("cs: ',' starts editing; ',5' commits 0.5", async ({ page }) => {
+		await focusCell(page, 'csNumbers', 0, 1)
+		await page.keyboard.press(',')
+		const editor = cell(page, 'csNumbers', 0, 1).locator('input.wg__editor')
+		await expect(editor).toBeFocused()
+		await expect(editor).toHaveValue(',')
+		await page.keyboard.type('5')
+		await page.keyboard.press('Enter')
+		expect(await value(page, 'csNumbers', 0, 'qty')).toBe(0.5)
+	})
+
+	test("de: ',' starts editing; '.' (the group separator) and a letter do nothing", async ({ page }) => {
+		await focusCell(page, 'deNumbers', 0, 1)
+		await page.keyboard.press('.')
+		await page.keyboard.press('x')
+		await expect(cell(page, 'deNumbers', 0, 1)).toBeFocused()
+		expect(await page.evaluate(() => (window as any).__edits)).toEqual([])
+		await page.keyboard.press(',')
+		await expect(cell(page, 'deNumbers', 0, 1).locator('input.wg__editor')).toHaveValue(',')
+		expect(await page.evaluate(() => (window as any).__edits)).toEqual(['deNumbers:0.qty'])
+	})
+
+	test("en-US: '.' starts editing, ',' (the group separator) does nothing; '-' starts editing", async ({ page }) => {
+		await focusCell(page, 'enNumbers', 0, 1)
+		await page.keyboard.press(',')
+		await expect(cell(page, 'enNumbers', 0, 1)).toBeFocused()
+		expect(await page.evaluate(() => (window as any).__edits)).toEqual([])
+		await page.keyboard.press('.')
+		const editor = cell(page, 'enNumbers', 0, 1).locator('input.wg__editor')
+		await expect(editor).toHaveValue('.')
+		await page.keyboard.press('Escape')
+		await expect(cell(page, 'enNumbers', 0, 1)).toBeFocused()
+		await page.keyboard.press('-')
+		await expect(editor).toHaveValue('-')
+	})
+
+	test("'always' + de: after Escape, ',' goes back into the editor", async ({ page }) => {
+		await cell(page, 'deAlways', 0, 0).click()
+		await page.keyboard.press('ArrowRight')
+		const editor = cell(page, 'deAlways', 0, 1).locator('.wg__editor')
+		await expect(editor).toBeFocused()
+		await page.keyboard.press('Escape')
+		await expect(cell(page, 'deAlways', 0, 1)).toBeFocused()
+		await page.keyboard.press('.')
+		await expect(cell(page, 'deAlways', 0, 1)).toBeFocused()  // the group separator: nothing
+		await page.keyboard.press(',')
+		await expect(editor).toBeFocused()
+		await expect(editor).toHaveValue(',')
+		await page.keyboard.type('25')
+		await expect(editor).toHaveValue(',25')
+		await page.keyboard.press('Enter')
+		await expect.poll(() => value(page, 'deAlways', 0, 'qty')).toBe(0.25)
+	})
+})
+
 test.describe('read-only / disabled grids', () => {
 	test('a read-only grid: typing and paste change nothing', async ({ page }) => {
 		await cell(page, 'readonlyGrid', 0, 1).click()

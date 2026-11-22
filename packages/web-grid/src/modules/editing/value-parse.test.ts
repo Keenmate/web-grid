@@ -3,7 +3,7 @@
 // =============================================================================
 
 import { describe, it, expect } from 'vitest'
-import { parseNumberText, typeNumberValue, typeCheckboxText, typeDateText, typePastedText } from './value-parse.js'
+import { parseNumberText, typeNumberValue, typeCheckboxText, typeDateText, typePastedText, isNumberStartKey } from './value-parse.js'
 import '@keenmate/web-components-core/locale' // publishes window.components.locale
 
 const labels = {
@@ -114,5 +114,21 @@ describe('typePastedText — dropdown columns (copy = the label, paste maps it b
 	it('displayMember / valueMember are honoured', () => {
 		const col = { field: 'c', editor: 'combobox', editorOptions: { valueMember: 'id', displayMember: 'name', options: [{ id: 7, name: 'Seven' }] } } as any
 		expect(typePastedText(col, 'Seven', labels).value).toBe(7)
+	})
+})
+
+describe('isNumberStartKey (type-to-edit on a number cell)', () => {
+	const cs = { decimalSeparator: ',', thousandsSeparator: ' ' }
+	const de = { decimalSeparator: ',', thousandsSeparator: '.' }
+	const en = { decimalSeparator: '.', thousandsSeparator: ',' }
+	it('a digit / minus always; the locale decimal separator; `.` unless it is the group separator', () => {
+		for (const s of [cs, de, en]) for (const k of ['0', '7', '-', '−']) expect(isNumberStartKey(k, s)).toBe(true)
+		expect(isNumberStartKey(',', cs)).toBe(true)
+		expect(isNumberStartKey('.', cs)).toBe(true)  // core parseNumber reads .5 in cs
+		expect(isNumberStartKey(',', de)).toBe(true)
+		expect(isNumberStartKey('.', de)).toBe(false)
+		expect(isNumberStartKey('.', en)).toBe(true)
+		expect(isNumberStartKey(',', en)).toBe(false)
+		for (const k of ['x', ' ', ' ', 'e', '+']) expect(isNumberStartKey(k, cs)).toBe(false)
 	})
 })

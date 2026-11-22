@@ -5,6 +5,7 @@
 // =============================================================================
 
 import type { GridHost } from '../grid-context.js'
+import { isNumberStartKey } from '../editing/value-parse.js'
 import { ActionPipeline, createActionPipeline, ActionExecutor } from './pipeline.js'
 import { focusExecutor } from './executors/focus-executor.js'
 import { navigateExecutor } from './executors/navigate-executor.js'
@@ -208,12 +209,12 @@ export class ActionPipelineAdapter<T = unknown> {
 					return true
 				}
 				// A printable key on the cell starts editing with that key (Excel): back into the
-				// editor, its text replaced by the key (a number cell: only a digit / minus / point)
+				// editor, its text replaced by the key (a number cell: only a digit / minus / decimal separator)
 				if (e.key.length === 1 && !hasModifier && editor && !e.isComposing) {
 					const isNumber = this.ctx[GRID_ENGINE].columns[cell.colIndex]?.editor === 'number'
 					e.preventDefault()
 					e.stopPropagation()
-					if (isNumber && !/[\d.\-]/.test(e.key)) return true  // consumed: a letter on a number cell does nothing
+					if (isNumber && !isNumberStartKey(e.key, this.ctx[GRID_ENGINE].numberSettings)) return true  // consumed: a letter on a number cell does nothing
 					editor.focus({ preventScroll: true })
 					if (editor instanceof HTMLInputElement) {
 						editor.value = e.key
@@ -446,8 +447,9 @@ export class ActionPipelineAdapter<T = unknown> {
 				return false  // Already editing, let native input handle it
 			}
 
-			// Number columns: only a digit / minus / decimal point starts editing
-			if (this.ctx[GRID_ENGINE].columns[cell.colIndex]?.editor === 'number' && !/[\d.\-]/.test(e.key)) {
+			// Number columns: only a digit / minus / the locale's decimal separator starts editing
+			const engine = this.ctx[GRID_ENGINE]
+			if (engine.columns[cell.colIndex]?.editor === 'number' && !isNumberStartKey(e.key, engine.numberSettings)) {
 				return true  // consumed: a letter on a number cell does nothing
 			}
 

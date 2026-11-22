@@ -10,6 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target: **2.0.0-rc01** — a major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Changed — type-to-edit on a number cell follows the locale (2026-11-22)
+- A number cell started an edit only on a digit, `-` or `.`, so `,5` couldn't be typed in a `cs` / `de` grid. The
+  starting key now follows the grid's number settings (the effective `locale`, page-wide separators — the same ones
+  typed text is parsed with): a digit, a minus, the locale's decimal separator, and `.` only where it isn't the group
+  separator (in `de` a leading `.` does nothing). Both paths: a focused cell in any edit mode and an `always` cell
+  after Escape.
+
 ### Changed — a column `getDisplayValueCallback` is shown in dropdown cells too (2026-11-22)
 - A `select` / `combobox` / `autocomplete` cell showed its option label even when the column has a
   `getDisplayValueCallback`, while copy took the callback's text. The app's display callback now wins everywhere:

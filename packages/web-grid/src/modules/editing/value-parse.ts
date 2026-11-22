@@ -26,6 +26,18 @@ export interface NumberParseOptions extends ParseNumberOptions {
 	source?: unknown
 }
 
+/**
+ * Can `key` START typing a number into a number cell (type-to-edit)? A digit, a minus, the locale's decimal
+ * separator (`engine.numberSettings` — the same settings the typed text is parsed with: `,` in `cs` / `de`), or
+ * `.` where it isn't the group separator (core `parseNumber` reads `.5` in `cs`, not in `de`). A group separator
+ * can't start a number; any other key does nothing on a number cell.
+ */
+export function isNumberStartKey(key: string, settings: { decimalSeparator?: string; thousandsSeparator?: string }): boolean {
+	if (/^[\d\-−]$/.test(key)) return true
+	if (key === settings.decimalSeparator) return true
+	return key === '.' && settings.thousandsSeparator !== '.'
+}
+
 export interface TypedValue {
 	/** The typed value — or, when `error` is set, what to keep in the draft (the typed text / number). */
 	value: unknown

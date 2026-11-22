@@ -19,6 +19,12 @@
 	<web-grid id="readonlyGrid" edit-trigger="dblclick" readonly style="max-width: 480px;"></web-grid>
 	<web-grid id="disabledGrid" edit-trigger="dblclick" disabled style="max-width: 480px;"></web-grid>
 
+	<!-- Number cells: the key that starts an edit follows the grid's locale (decimal separator) -->
+	<web-grid id="csNumbers" data-numbers edit-trigger="navigate" locale="cs" style="max-width: 480px;"></web-grid>
+	<web-grid id="deNumbers" data-numbers edit-trigger="navigate" locale="de" style="max-width: 480px;"></web-grid>
+	<web-grid id="enNumbers" data-numbers edit-trigger="navigate" locale="en-US" style="max-width: 480px;"></web-grid>
+	<web-grid id="deAlways" data-numbers edit-trigger="always" locale="de" style="max-width: 480px;"></web-grid>
+
 	<script type="module">
 		import '@keenmate/web-grid'
 		/*
@@ -28,7 +34,7 @@
 		 * Cell edits in window.__edits (cell-edit-start: '<grid>:<row>.<field>').
 		 */
 		window.__edits = []
-		for (const el of document.querySelectorAll('web-grid')) {
+		for (const el of document.querySelectorAll('web-grid:not([data-numbers])')) {
 			el.isEditingEnabled = true
 			el.shouldOpenDropdownOnFocus = false
 			el.columns = [
@@ -38,6 +44,20 @@
 					editorOptions: { options: [{ value: 'a', label: 'Active' }, { value: 'p', label: 'Paused' }] } }
 			]
 			el.items = [{ id: 1, name: 'Alice', status: 'a' }, { id: 2, name: 'Bob', status: 'p' }]
+			el.addEventListener('cell-edit-start', e => window.__edits.push(`${el.id}:${e.detail.rowIndex}.${e.detail.field}`))
+		}
+		/*
+		 * [data-numbers] grids (locale cs / de / en-US): col 0 = id (read-only), 1 = qty (number)
+		 *  row 0 | 1 | 10
+		 *  row 1 | 2 | 3   (two rows: in 'always' mode Enter commits by moving down)
+		 */
+		for (const el of document.querySelectorAll('web-grid[data-numbers]')) {
+			el.isEditingEnabled = true
+			el.columns = [
+				{ field: 'id', title: 'ID', width: '60px', isEditable: false },
+				{ field: 'qty', title: 'Qty', width: '120px', editor: 'number' }
+			]
+			el.items = [{ id: 1, qty: 10 }, { id: 2, qty: 3 }]
 			el.addEventListener('cell-edit-start', e => window.__edits.push(`${el.id}:${e.detail.rowIndex}.${e.detail.field}`))
 		}
 	</script>
