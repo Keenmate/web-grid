@@ -26,19 +26,19 @@ test.describe('examples-localization.html', () => {
 		await expectToggleChanges(page, 'lo01-short', 'lo01-readout')
 		await expect(readout(page, 'lo01-readout')).toContainText('rows per page')
 		await expectToggleChanges(page, 'lo01-full', 'lo01-readout')
-		await expect(readout(page, 'lo01-readout')).toContainText('23 records')
+		await expect(readout(page, 'lo01-readout')).toContainText('Records: 23')
 
 		// LO02 · page-wide dictionary — both grids
 		await expectToggleChanges(page, 'lo02-dictionary', 'lo02-readout')
 		await expect(readout(page, 'lo02-readout')).toContainText('Strana 1 z 4')
-		await expect(readout(page, 'lo02-readout')).toContainText('položek')
+		await expect(readout(page, 'lo02-readout')).toContainText('Položky:')
 		await page.locator('#lo02-dictionary').click()
 
 		// LO03 · own callback first, page callback for the rest, instance labels win
 		await expect(readout(page, 'lo03-readout')).toContainText('Seite 1 von 9')
 		await expectToggleChanges(page, 'lo03-page', 'lo03-readout')
 		await expect(readout(page, 'lo03-readout')).toContainText('Seite 1 von 9')
-		await expect(readout(page, 'lo03-readout')).toContainText('42 položek')
+		await expect(readout(page, 'lo03-readout')).toContainText('Položky: 42')
 		await expect(readout(page, 'lo03-readout')).toContainText('/ page (instance labels)')
 		await expectToggleChanges(page, 'lo03-own', 'lo03-readout')
 		await expect(readout(page, 'lo03-readout')).toContainText('Strana 1 z 9')
@@ -53,7 +53,7 @@ test.describe('examples-localization.html', () => {
 
 		// LO05 · page locale → pager count + number column + Intl column; the text / pattern cells stay
 		await page.locator('input[name="lo05-locale"][value="en-US"]').check()
-		await expect(readout(page, 'lo05-readout')).toContainText('1,234 items')
+		await expect(readout(page, 'lo05-readout')).toContainText('Items: 1,234')
 		await expect(readout(page, 'lo05-readout')).toContainText('1,234,567.89 · 1234567.891')
 		const enText = await readout(page, 'lo05-readout').textContent()
 		await page.locator('input[name="lo05-locale"][value="cs-CZ"]').check()
@@ -63,7 +63,7 @@ test.describe('examples-localization.html', () => {
 		// the grid's own `locale` input wins over the page locale
 		await page.locator('input[name="lo05-grid-locale"][value="de"]').check()
 		await expect(readout(page, 'lo05-readout')).toContainText('grid.locale      de')
-		await expect(readout(page, 'lo05-readout')).toContainText('1.234 items')
+		await expect(readout(page, 'lo05-readout')).toContainText('Items: 1.234')
 		await expect(readout(page, 'lo05-readout')).toContainText('1.234.567,89 · 1234567.891')
 		await page.locator('input[name="lo05-grid-locale"][value=""]').check()
 		await expect(readout(page, 'lo05-readout')).toContainText('grid.locale      null (page)')

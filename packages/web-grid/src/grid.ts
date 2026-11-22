@@ -59,7 +59,8 @@ import type {
 	GridEventMap,
 	GridEventName,
 	Draft,
-	BeforePageChangeContext
+	BeforePageChangeContext,
+	RowLockLabelContext
 } from './interaction.js'
 
 // Internal tree index — built from items when pathMember is set
@@ -952,7 +953,7 @@ export class GridEngine<T = unknown> {
 	/** Tooltip text for a locked row (`tooltips.rowLockedBy` / `tooltips.rowLocked`). */
 	getLockTooltip(lockInfo: RowLock | null | undefined): string {
 		return lockInfo?.lockedBy
-			? this.labelText('tooltips.rowLockedBy', { lockedBy: String(lockInfo.lockedBy) })
+			? this.labelText('tooltips.rowLockedBy', { ctx: { lockedBy: String(lockInfo.lockedBy), lockInfo } satisfies RowLockLabelContext })
 			: this._labels['tooltips.rowLocked']
 	}
 
@@ -963,7 +964,7 @@ export class GridEngine<T = unknown> {
 		this.requestUpdate()
 	}
 
-	/** One label with its `{name}` params, formatted (the page's `translateCallback` when the grid has a host). */
+	/** One label with its `{ ctx }` params (`{ctx.*}` placeholders), formatted (the page's `translateCallback` when the grid has a host). */
 	labelText(key: GridLabelKey, params?: LabelParams): string {
 		return this._labelsResolver.text(key, params)
 	}
@@ -990,7 +991,7 @@ export class GridEngine<T = unknown> {
 	}
 
 	/**
-	 * BCP-47 locale for the numbers in labels (`{count}` items, page info, …), number columns
+	 * BCP-47 locale for the numbers in labels (`{ctx.count}` items, page info, …), number columns
 	 * (`numberSettings`) and the date picker's month / weekday names; `null` = the page-wide `window.components.locale`, else the browser (core `resolveLocale`).
 	 */
 	get locale(): string | null { return this._locale }

@@ -1,6 +1,6 @@
 // =============================================================================
 // The `locale` input (rulebook C-CA-38): BCP-47 locale for the numbers in labels
-// (`{count}` items, page info, …) and the date picker's month / weekday names;
+// (`{ctx.count}` items, page info, …) and the date picker's month / weekday names;
 // unset = the page-wide `window.components.locale`, else the browser.
 // =============================================================================
 
@@ -45,31 +45,52 @@ describe('web-grid locale input', () => {
 
 	it('locale="de" formats the numbers in labels (1234 → 1.234)', async () => {
 		await mount({ locale: 'de' })
-		expect(countText()).toBe('1.234 items')
-		expect(engineOf(el)!.labelText('errors.numberMax', { max: 5000 })).toBe('Must be at most 5.000')
+		expect(countText()).toBe('Items: 1.234')
+		expect(engineOf(el)!.labelText('errors.numberMax', { ctx: { value: 5000, min: null, max: 5000 } })).toBe('Must be at most 5.000')
 	})
 
 	it('a locale change re-renders the pager (update path)', async () => {
 		await mount({ locale: 'en' })
-		expect(countText()).toBe('1,234 items')
+		expect(countText()).toBe('Items: 1,234')
 		el.locale = 'de'
 		await el.whenSettled()
-		expect(countText()).toBe('1.234 items')
+		expect(countText()).toBe('Items: 1.234')
 	})
 
 	it('unset follows window.components.locale.locale; the instance wins', async () => {
 		;(window as any).components.locale = { locale: 'de' }
 		await mount()
-		expect(countText()).toBe('1.234 items')
+		expect(countText()).toBe('Items: 1.234')
 		el.locale = 'en'
 		await el.whenSettled()
-		expect(countText()).toBe('1,234 items')
+		expect(countText()).toBe('Items: 1,234')
 	})
 
 	it("'auto' = unset (core resolveLocale)", async () => {
 		;(window as any).components.locale = { locale: 'de' }
 		await mount({ locale: 'auto' })
-		expect(countText()).toBe('1.234 items')
+		expect(countText()).toBe('Items: 1.234')
+	})
+
+	it('pager labels read the spot context ({ctx.*}); translateCallback gets it as params.ctx', async () => {
+		const seen: any[] = []
+		el = document.createElement('web-grid')
+		el.setAttribute('enable-paging', '')
+		el.setAttribute('page-size', '10')
+		el.columns = columns
+		el.items = items
+		el.labels = { 'labels.pageInfo': '{ctx.currentPage}/{ctx.totalPages} ({ctx.pageSize})' }
+		el.translateCallback = ({ key, params }: any) => {
+			if (key !== 'web-grid.labels.itemCount') return null
+			seen.push(params.ctx)
+			return `n=${params.ctx.count}`
+		}
+		document.body.appendChild(el)
+		await el.whenReady()
+		await el.whenSettled()
+		expect(el.shadowRoot.querySelector('.wg__pagination-info')?.textContent?.replace(/\s+/g, ' ').trim()).toContain('1/124 (10)')
+		expect(countText()).toBe('n=1234')
+		expect(seen.at(-1)).toMatchObject({ currentPage: 1, totalPages: 124, totalItems: 1234, pageSize: 10, count: 1234 })
 	})
 })
 

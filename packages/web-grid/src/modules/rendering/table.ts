@@ -6,6 +6,7 @@
 import { escapeHtml, renderSlotHtml } from '@keenmate/web-components-core'
 import type { GridHost } from '../grid-context.js'
 import type { Column } from '../../types.js'
+import type { FilterColumnLabelContext, PaginationLabelsContext } from '../../interaction.js'
 import { renderCellEditor } from '../editing/index.js'
 import { renderCellDisplay } from './display.js'
 import { wrapTreeCell } from './tree-render.js'
@@ -170,7 +171,7 @@ export function renderHeaderRow<T>(ctx: GridHost<T>): string {
 			if (column.isFilterable) {
 				const isInvalid = invalidFilterFields.has(field)
 				const value = ctx.filterInputText(field) ?? filters[field] ?? ''
-				const label = ctx[GRID_ENGINE].labelText('ariaLabels.filterColumn', { column: column.title ?? field })
+				const label = ctx[GRID_ENGINE].labelText('ariaLabels.filterColumn', { ctx: { title: column.title ?? field, field } satisfies FilterColumnLabelContext })
 				filterCells.push(`<th class="wg__filter-cell${frozenClass}" style="${filterStyle}" data-field="${escapeHtml(field)}" role="gridcell" aria-colindex="${leadCount + visualIndex + 1}"><input type="text" class="wg__filter-input${isInvalid ? ' wg__filter-input--invalid' : ''}" data-field="${escapeHtml(field)}" value="${escapeHtml(value)}" aria-label="${escapeHtml(label)}"${isInvalid ? ' aria-invalid="true"' : ''} autocomplete="off" spellcheck="false"></th>`)
 			} else {
 				filterCells.push(`<th class="wg__filter-cell${frozenClass}" style="${filterStyle}" role="gridcell" aria-colindex="${leadCount + visualIndex + 1}"></th>`)
@@ -756,19 +757,21 @@ export function renderPagination<T>(ctx: GridHost<T>, position: string = 'bottom
 	// core labels.html() — template markup kept, `{…}` params escaped, all escaped with
 	// `shouldEscapeLabels`. A getPaginationLabelsCallback result is the app's own markup (as is).
 	const gridLabels = ctx[GRID_ENGINE].labels
+	// ONE context: the callback's ctx is the labels' `{ ctx }` too ({ctx.currentPage}, {ctx.count}, …)
+	const pagerCtx: PaginationLabelsContext<T> = ctx[GRID_ENGINE].ctx({ currentPage, totalPages, totalItems, pageSize: currentPageSize, count: totalItems })
 	const defaultLabels = {
 		first: ctx[GRID_ENGINE].labelHtml('buttons.firstPage'),
 		previous: ctx[GRID_ENGINE].labelHtml('buttons.previousPage'),
 		next: ctx[GRID_ENGINE].labelHtml('buttons.nextPage'),
 		last: ctx[GRID_ENGINE].labelHtml('buttons.lastPage'),
-		pageInfo: ctx[GRID_ENGINE].labelHtml('labels.pageInfo', { current: currentPage, total: totalPages }),
-		itemCount: ctx[GRID_ENGINE].labelHtml('labels.itemCount', { count: totalItems }),
+		pageInfo: ctx[GRID_ENGINE].labelHtml('labels.pageInfo', { ctx: pagerCtx }),
+		itemCount: ctx[GRID_ENGINE].labelHtml('labels.itemCount', { ctx: pagerCtx }),
 		perPage: ctx[GRID_ENGINE].labelHtml('labels.perPage')
 	}
 
 	const labelsCallback = ctx[GRID_ENGINE].getPaginationLabelsCallback
 	const customLabels = labelsCallback
-		? labelsCallback(ctx[GRID_ENGINE].ctx({ currentPage, totalPages, totalItems, pageSize: currentPageSize }))
+		? labelsCallback(pagerCtx)
 		: {}
 	const labels = { ...defaultLabels, ...customLabels }
 

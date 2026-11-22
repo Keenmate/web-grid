@@ -6,8 +6,11 @@
 // SPEC §12.24): the instance `labels` (property + JSON attribute; short keys or full
 // `web-grid.*` keys) → the page-wide flat `window.components.locale.labels['web-grid.<key>']`
 // → the English defaults below. A key set to `''` renders nothing (deliberately empty);
-// a non-string falls through. `{name}` placeholders and the page's `translateCallback`
-// (ICU / i18next) are applied by core when a label is read through the resolver.
+// a non-string falls through. A dynamic label gets its spot's context as `{ ctx }` — templates read
+// `{ctx.count}`, `{ctx.currentPage}`, … (rulebook D-NC-24; numbers formatted in the grid's locale;
+// `ctx.count` = the number the text's noun agrees with, so an app's `translateCallback` pluralizes).
+// The `{ctx.*}` display and the `translateCallback`s (ICU / i18next) are applied by core when a
+// label is read through the resolver.
 // Escaping follows the core split (SPEC §12.24) by WHERE the label is written:
 // - CONTENT (innerHTML: pager, empty / loading message, headers, dialog texts) → `html(key, params)`
 //   (engine `labelHtml()`): the template is markup (`<b>` renders), `{…}` param values are escaped;
@@ -41,8 +44,8 @@ export const DEFAULT_LABELS: GridLabels = {
 	'ariaLabels.previousPage': 'Previous page',
 	'ariaLabels.nextPage': 'Next page',
 	'ariaLabels.lastPage': 'Last page',
-	'labels.pageInfo': 'Page {current} of {total}',
-	'labels.itemCount': '{count} items',
+	'labels.pageInfo': 'Page {ctx.currentPage} of {ctx.totalPages}',
+	'labels.itemCount': 'Items: {ctx.count}',
 	'labels.perPage': 'per page',
 
 	// Empty table / loading
@@ -67,10 +70,10 @@ export const DEFAULT_LABELS: GridLabels = {
 
 	// Row locking
 	'tooltips.rowLocked': 'This row is locked',
-	'tooltips.rowLockedBy': 'Locked by {lockedBy}',
+	'tooltips.rowLockedBy': 'Locked by {ctx.lockedBy}',
 
 	// Go-to-row dialog
-	'labels.goToRow': 'Go to row (1-{max}):',
+	'labels.goToRow': 'Go to row (1-{ctx.max}):',
 	'buttons.go': 'Go',
 	'buttons.cancel': 'Cancel',
 
@@ -79,7 +82,7 @@ export const DEFAULT_LABELS: GridLabels = {
 	'ariaLabels.collapse': 'Collapse',
 
 	// Filter row
-	'ariaLabels.filterColumn': 'Filter {column}',
+	'ariaLabels.filterColumn': 'Filter {ctx.title}',
 
 	// Edit button (editTrigger: 'button')
 	'ariaLabels.editCell': 'Edit',
@@ -87,8 +90,8 @@ export const DEFAULT_LABELS: GridLabels = {
 
 	// Built-in value checks
 	'errors.invalidNumber': 'Not a number',
-	'errors.numberMin': 'Must be at least {min}',
-	'errors.numberMax': 'Must be at most {max}',
+	'errors.numberMin': 'Must be at least {ctx.min}',
+	'errors.numberMax': 'Must be at most {ctx.max}',
 	'errors.numberNegative': 'Must not be negative',
 	'errors.invalidBoolean': 'Not a yes / no value',
 	'errors.invalidDate': 'Not a valid date',
@@ -122,19 +125,19 @@ export type GridLabelKey = keyof GridLabels & string
 
 const TAG = 'web-grid'
 const KEYS = Object.keys(DEFAULT_LABELS) as GridLabelKey[]
-/** Keys whose default carries `{name}` placeholders — read with params at the render site. */
-const PARAM_KEYS = new Set(KEYS.filter(key => /\{\w+\}/.test(DEFAULT_LABELS[key])))
+/** Keys whose default carries `{ctx.*}` placeholders — read with params at the render site. */
+const PARAM_KEYS = new Set(KEYS.filter(key => /\{[\w.]+\}/.test(DEFAULT_LABELS[key])))
 
 /** A label formatter: `key` + its resolved template + params → the text. */
 export type LabelFormat = (key: GridLabelKey, template: string, params: LabelParams) => string
-/** Default `{name}` replacement (no page `translateCallback`). */
+/** Default `{ctx.*}` replacement (no page `translateCallback`). */
 export const defaultLabelFormat: LabelFormat = (_key, template, params) => formatTemplate(template, params)
 
 /**
  * The grid's labels for one instance: `resolve()` → the resolved `GridLabels` object the renderers read
  * (a key with placeholders holds its template), `text(key, params)` → one formatted text. With a `host`
  * (the element) core `createLabels` formats — page `translateCallback` included; without one (the
- * engine on its own, unit tests) the default `{name}` replacement.
+ * engine on its own, unit tests) the default `{ctx.*}` replacement.
  */
 export class GridLabelsResolver {
 	#input: GridLabelsInput | null | undefined = null
@@ -163,9 +166,7 @@ export class GridLabelsResolver {
 	html(key: GridLabelKey, params?: LabelParams): string {
 		if (this.#handle) return this.#handle.html(key, params)
 		const shouldEscapeAll = getPageSecurity()?.shouldEscapeLabels === true
-		const values = params && !shouldEscapeAll
-			? Object.fromEntries(Object.entries(params).map(([name, v]) => [name, typeof v === 'string' ? escapeHtml(v) : v]))
-			: params
+		const values = params && !shouldEscapeAll ? escapeParams(params) : params
 		const out = formatTemplate(resolveLabel(TAG, DEFAULT_LABELS, this.#input, key), values)
 		return shouldEscapeAll ? escapeHtml(out) : out
 	}
@@ -188,6 +189,19 @@ export class GridLabelsResolver {
 		}
 		return out as GridLabels
 	}
+}
+
+/** Params for an HTML label: every string escaped, at any depth of plain objects / arrays (core's rule). */
+function escapeParams(params: LabelParams): LabelParams {
+	const visit = (value: unknown): unknown => {
+		if (typeof value === 'string') return escapeHtml(value)
+		if (Array.isArray(value)) return value.map(visit)
+		if (value === null || typeof value !== 'object') return value
+		const proto = Object.getPrototypeOf(value)
+		if (proto !== Object.prototype && proto !== null) return value
+		return Object.fromEntries(Object.entries(value).map(([name, item]) => [name, visit(item)]))
+	}
+	return visit(params) as LabelParams
 }
 
 /**

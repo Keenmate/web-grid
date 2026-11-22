@@ -192,7 +192,7 @@ getCellToolbarItemsCallback
 
 getPaginationLabelsCallback
   Signature: (ctx: PaginationLabelsContext<T>) => Partial<PaginationLabels>
-  ctx: { currentPage, totalPages, totalItems, pageSize }
+  ctx: { currentPage, totalPages, totalItems, pageSize, count }
   Returns translated/customized pagination text labels.
 
 renderSummaryCallback

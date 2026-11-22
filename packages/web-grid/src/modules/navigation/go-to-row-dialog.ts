@@ -18,6 +18,7 @@
 
 import { startModalSession, type ModalSession } from '@keenmate/web-components-core'
 import type { GridHost } from '../grid-context.js'
+import type { GoToRowLabelContext } from '../../interaction.js'
 import { updateFocusVisual, moveFocus } from './focus.js'
 import { revealElement, scrollRowIntoView, fieldAt, JUMP_SCROLL } from '../scroll/reveal.js'
 import { GRID_ENGINE } from '../grid-context.js'
@@ -36,7 +37,7 @@ export function openGoToRowDialog<T>(ctx: GridHost<T>, colIndex: number): void {
 	overlay.className = 'wg__goto-overlay'
 	overlay.innerHTML = `
 		<div class="wg__goto-dialog">
-			<label class="wg__goto-label">${ctx[GRID_ENGINE].labelHtml('labels.goToRow', { max: displayItems.length })}</label>
+			<label class="wg__goto-label">${ctx[GRID_ENGINE].labelHtml('labels.goToRow', { ctx: { max: displayItems.length, count: displayItems.length } satisfies GoToRowLabelContext })}</label>
 			<input type="number" class="wg__goto-input" min="1" max="${displayItems.length}" value="1" />
 			<div class="wg__goto-buttons">
 				<button type="button" class="wg__goto-btn wg__goto-btn--cancel">${ctx[GRID_ENGINE].labelHtml('buttons.cancel')}</button>

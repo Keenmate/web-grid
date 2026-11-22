@@ -10,6 +10,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 A major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Changed — BREAKING: label templates read the spot's context, `{ctx.*}` (2026-11-23)
+- Every dynamic label gets its spot's context as `{ ctx }` (core rc25 dotted paths, rulebook D-NC-24); templates
+  read `{ctx.<field>}` (numbers formatted in the grid's locale) and a `translateCallback` gets the same object as
+  `params.ctx`. `ctx.count` = the number the text's noun agrees with, so an app's i18n pluralizes (the grid never
+  does). No aliases: `{count}` → `{ctx.count}`, `{current}` / `{total}` → `{ctx.currentPage}` / `{ctx.totalPages}`,
+  `{lockedBy}` → `{ctx.lockedBy}`, `{max}` / `{min}` → `{ctx.max}` / `{ctx.min}`, `{column}` → `{ctx.title}`.
+- `labels.pageInfo` / `labels.itemCount` read the `getPaginationLabelsCallback` ctx (`PaginationLabelsContext`,
+  new `count` = `totalItems`); new exported plain-data contexts `RowLockLabelContext` (`tooltips.rowLockedBy`),
+  `GoToRowLabelContext` (`labels.goToRow`), `FilterColumnLabelContext` (`ariaLabels.filterColumn`: `title`,
+  `field`) and `NumberRangeLabelContext` (`errors.numberMin` / `numberMax`: `value`, `min`, `max`).
+- English default `labels.itemCount` is `Items: {ctx.count}` (was `{count} items` — no plural noun after a number).
+
 ### Changed — `renderCellCallback` wins in every column type (2026-11-22)
 - The documented order (`renderCellCallback` > `getDisplayValueCallback` > the built-in text) held only for text
   and number cells: a dropdown (`select` / `combobox` / `autocomplete`) cell ignored `renderCellCallback`, a
@@ -164,7 +176,7 @@ A major: the callback, event and item API below is breaking, so
   `examples-localization.html` LO05 shows a number column switching with the locale toggles.
 
 ### Added — `locale` input (2026-11-21)
-- `locale` input (attribute + property): BCP-47 locale for the numbers in labels (`{count}` items, page info, the
+- `locale` input (attribute + property): BCP-47 locale for the numbers in labels (`{ctx.count}` items, page info, the
   number-range errors — core `createLabels` `getLocale`) and the date editor's month / weekday names; unset (or
   `'auto'`) follows the page-wide `window.components.locale.locale`, else the browser (rulebook C-CA-38). A change
   re-renders the texts. Other cell values stay unformatted (`getDisplayValueCallback` with `resolveLocale(grid.locale)`);
@@ -241,7 +253,7 @@ A major: the callback, event and item API below is breaking, so
   only — the grid's own group resolution is removed. The instance `labels` takes short keys (`messages.noData`) or
   full keys (`web-grid.messages.noData`).
 - Page-wide `window.components.locale.labels` is ONE flat dictionary of full keys
-  (`'web-grid.labels.pageInfo': 'Strana {current} z {total}'`); the nested `labels: { 'web-grid': { … } }` shape is
+  (`'web-grid.labels.pageInfo': 'Strana {ctx.currentPage} z {ctx.totalPages}'`); the nested `labels: { 'web-grid': { … } }` shape is
   ignored. `formatLabelCallback` is replaced by core's `translateCallback({ component, key, template, params, locale })`
   — `key` is the full key (`web-grid.labels.pageInfo`).
 - A text that fed both `aria-label` and `title` (or visible text + a loader name) is split into two keys with the

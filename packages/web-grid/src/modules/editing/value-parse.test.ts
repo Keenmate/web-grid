@@ -7,7 +7,7 @@ import { parseNumberText, typeNumberValue, typeCheckboxText, typeDateText, typeP
 import '@keenmate/web-components-core/locale' // publishes window.components.locale
 
 const labels = {
-	'errors.invalidNumber': 'NaN', 'errors.numberMin': 'min {min}', 'errors.numberMax': 'max {max}', 'errors.numberNegative': 'neg',
+	'errors.invalidNumber': 'NaN', 'errors.numberMin': 'min {ctx.min}', 'errors.numberMax': 'max {ctx.max}', 'errors.numberNegative': 'neg',
 	'errors.invalidBoolean': 'bool', 'errors.invalidDate': 'date'
 }
 

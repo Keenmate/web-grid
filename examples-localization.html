@@ -18,7 +18,7 @@
         <div class="output mt-1"><pre id="lo01-readout"></pre></div>
         <div class="code-block" data-kmwc-snippet data-language="js"><pre><code>grid.labels = {
   'labels.perPage': 'rows per page',              // short key
-  'web-grid.labels.itemCount': '{count} records'  // full key — same effect
+  'web-grid.labels.itemCount': 'Records: {ctx.count}'  // full key — same effect
 }
 // or in HTML: &lt;web-grid labels='{"labels.perPage":"rows per page"}'&gt;
 grid.labels = null   // back to page-wide / English</code></pre></div>
@@ -44,8 +44,8 @@ grid.labels = null   // back to page-wide / English</code></pre></div>
         <div class="code-block" data-kmwc-snippet data-language="js"><pre><code>const cs = await (await fetch('/i18n/cs.json')).json()
 // cs.json:
 // {
-//   "web-grid.labels.pageInfo": "Strana {current} z {total}",
-//   "web-grid.labels.itemCount": "{count} položek",
+//   "web-grid.labels.pageInfo": "Strana {ctx.currentPage} z {ctx.totalPages}",
+//   "web-grid.labels.itemCount": "Položky: {ctx.count}",
 //   "web-grid.labels.perPage": "na stránku",
 //   "web-grid.messages.noData": "Žádné položky",
 //   "web-grid.menuItems.sortAsc": "Seřadit vzestupně",
@@ -75,14 +75,14 @@ window.components.locale = null   // back to English</code></pre></div>
         </div>
         <web-grid id="lo03-grid" enable-paging page-size="5" labels='{"labels.perPage":"/ page (instance labels)"}' style="max-height: 320px;"></web-grid>
         <div class="output mt-1"><pre id="lo03-readout"></pre></div>
-        <div class="code-block" data-kmwc-snippet data-language="js"><pre><code>// an i18next-like lookup: resources + t(key, params) with {{name}} interpolation
+        <div class="code-block" data-kmwc-snippet data-language="js"><pre><code>// an i18next-like lookup: resources + t(key, params) with {{ctx.name}} interpolation (params = { ctx })
 const i18n = {
   resources: {
-    cs: { 'web-grid.labels.pageInfo': 'Strana {{current}} z {{total}}', 'web-grid.labels.itemCount': '{{count}} položek', 'web-grid.labels.perPage': 'na stránku' },
-    de: { 'web-grid.labels.pageInfo': 'Seite {{current}} von {{total}}' }
+    cs: { 'web-grid.labels.pageInfo': 'Strana {{ctx.currentPage}} z {{ctx.totalPages}}', 'web-grid.labels.itemCount': 'Položky: {{ctx.count}}', 'web-grid.labels.perPage': 'na stránku' },
+    de: { 'web-grid.labels.pageInfo': 'Seite {{ctx.currentPage}} von {{ctx.totalPages}}' }
   },
   exists: (lng, key) =&gt; key in i18n.resources[lng],
-  t: (lng, key, params) =&gt; i18n.resources[lng][key].replace(/\{\{(\w+)\}\}/g, (_, name) =&gt; params?.[name] ?? '')
+  t: (lng, key, params) =&gt; i18n.resources[lng][key].replace(/\{\{([\w.]+)\}\}/g, (_, path) =&gt; path.split('.').reduce((v, k) =&gt; v?.[k], params) ?? '')
 }
 // this grid only — asked first; null = not mine
 grid.translateCallback = ({ key, params }) =&gt; (i18n.exists('de', key) ? i18n.t('de', key, params) : null)
@@ -124,7 +124,7 @@ button.getAttribute('aria-label')   // read from the shadow root's pager buttons
         <p>
             The grid's own <code>locale</code> input (attribute + property, BCP-47) wins; unset, it follows the page locale
             (<code>window.components.locale.locale</code>), else the browser (<code>'auto'</code> = unset). What follows it:
-            number values inside labels (the pager's <code>{count}</code>: "1,234 items" / "1.234 items" / "1 234 items",
+            number values inside labels (the pager's <code>{ctx.count}</code>: "Items: 1,234" / "Items: 1.234" / "Items: 1 234",
             the number-range errors), the date editor's month / weekday names (double-click a <em>Due (editor)</em> cell)
             and <code>editor: 'number'</code> columns, Excel-style: the cell shows the locale's separators + grouping
             (<code>decimalPlaces</code> digits), the editor opens with the locale decimal separator and no grouping
@@ -150,8 +150,8 @@ button.getAttribute('aria-label')   // read from the shadow root's pager buttons
         <div class="code-block" data-kmwc-snippet data-language="js"><pre><code>import { resolveLocale } from '@keenmate/web-components-core/locale'
 
 grid.isEditingEnabled = true
-window.components.locale = { locale: 'cs-CZ' }   // page-wide: pager count "1 234 items", Czech calendar
-grid.locale = 'de'                                // this grid wins: "1.234 items", German calendar (null = page)
+window.components.locale = { locale: 'cs-CZ' }   // page-wide: pager count "Items: 1 234", Czech calendar
+grid.locale = 'de'                                // this grid wins: "Items: 1.234", German calendar (null = page)
 grid.columns = [
   { field: 'amount', title: 'Amount (number)', isEditable: true,                   // 1,234,567.89 / 1.234.567,89 / 1 234 567,89
     editor: 'number', editorOptions: { decimalPlaces: 2 } },
@@ -166,7 +166,7 @@ grid.columns = [
         <h2>LO06 · <code>shouldEscapeLabels</code></h2>
         <p>
             Below, both labels carry markup: <code>messages.noData</code> = <code>Nothing &lt;b&gt;here&lt;/b&gt; yet</code>
-            and <code>labels.pageInfo</code> = <code>Page &lt;b&gt;{current}&lt;/b&gt; of {total}</code>.
+            and <code>labels.pageInfo</code> = <code>Page &lt;b&gt;{ctx.currentPage}&lt;/b&gt; of {ctx.totalPages}</code>.
             The rule (core <code>/locale</code>): a label's template may be markup, its <code>{name}</code> values are DATA and are
             escaped (a user name like <code>&lt;i&gt;Ann&lt;/i&gt;</code> shows its tags as text);
             <code>window.components.security.shouldEscapeLabels</code> escapes the whole label. web-grid writes a label
@@ -186,7 +186,7 @@ grid.columns = [
         <div class="output mt-1"><pre id="lo06-readout"></pre></div>
         <div class="code-block" data-kmwc-snippet data-language="js"><pre><code>grid.labels = {
   'messages.noData': 'Nothing &lt;b&gt;here&lt;/b&gt; yet',          // content: the template is markup
-  'labels.pageInfo': 'Page &lt;b&gt;{current}&lt;/b&gt; of {total}'    // {current} / {total} values are escaped
+  'labels.pageInfo': 'Page &lt;b&gt;{ctx.currentPage}&lt;/b&gt; of {ctx.totalPages}'    // {ctx.*} values are escaped
 }
 window.components.security = { shouldEscapeLabels: true }   // escapes the whole label (template too)</code></pre></div>
     </div>
@@ -224,8 +224,8 @@ window.components.security = { shouldEscapeLabels: true }   // escapes the whole
 
     // ── the page-wide object, composed from LO02 / LO03 / LO05 ──────────────
     const CZECH = {
-        'web-grid.labels.pageInfo': 'Strana {current} z {total}',
-        'web-grid.labels.itemCount': '{count} položek',
+        'web-grid.labels.pageInfo': 'Strana {ctx.currentPage} z {ctx.totalPages}',
+        'web-grid.labels.itemCount': 'Položky: {ctx.count}',
         'web-grid.labels.perPage': 'na stránku',
         'web-grid.messages.noData': 'Žádné položky',
         'web-grid.menuItems.sortAsc': 'Seřadit vzestupně',
@@ -235,11 +235,11 @@ window.components.security = { shouldEscapeLabels: true }   // escapes the whole
     }
     const i18n = {
         resources: {
-            cs: { 'web-grid.labels.pageInfo': 'Strana {{current}} z {{total}}', 'web-grid.labels.itemCount': '{{count}} položek', 'web-grid.labels.perPage': 'na stránku' },
-            de: { 'web-grid.labels.pageInfo': 'Seite {{current}} von {{total}}' }
+            cs: { 'web-grid.labels.pageInfo': 'Strana {{ctx.currentPage}} z {{ctx.totalPages}}', 'web-grid.labels.itemCount': 'Položky: {{ctx.count}}', 'web-grid.labels.perPage': 'na stránku' },
+            de: { 'web-grid.labels.pageInfo': 'Seite {{ctx.currentPage}} von {{ctx.totalPages}}' }
         },
         exists: (lng, key) => key in i18n.resources[lng],
-        t: (lng, key, params) => i18n.resources[lng][key].replace(/\{\{(\w+)\}\}/g, (_, name) => params?.[name] ?? '')
+        t: (lng, key, params) => i18n.resources[lng][key].replace(/\{\{([\w.]+)\}\}/g, (_, path) => path.split('.').reduce((v, k) => v?.[k], params) ?? '')
     }
     const pageTranslate = ({ key, params }) => (i18n.exists('cs', key) ? i18n.t('cs', key, params) : null)
     const ownTranslate = ({ key, params }) => (i18n.exists('de', key) ? i18n.t('de', key, params) : null)
@@ -269,7 +269,7 @@ window.components.security = { shouldEscapeLabels: true }   // escapes the whole
     function lo01Apply() {
         const labels = {}
         if ($('lo01-short').checked) labels['labels.perPage'] = 'rows per page'
-        if ($('lo01-full').checked) labels['web-grid.labels.itemCount'] = '{count} records'
+        if ($('lo01-full').checked) labels['web-grid.labels.itemCount'] = 'Records: {ctx.count}'
         lo01.labels = Object.keys(labels).length ? labels : null
         later(lo01Read)
     }
@@ -359,7 +359,7 @@ window.components.security = { shouldEscapeLabels: true }   // escapes the whole
     // ── LO06 · shouldEscapeLabels ────────────────────────────────────────────
     const lo06Empty = $('lo06-empty')
     const lo06Paged = $('lo06-paged')
-    const markupLabels = { 'messages.noData': 'Nothing <b>here</b> yet', 'labels.pageInfo': 'Page <b>{current}</b> of {total}' }
+    const markupLabels = { 'messages.noData': 'Nothing <b>here</b> yet', 'labels.pageInfo': 'Page <b>{ctx.currentPage}</b> of {ctx.totalPages}' }
     lo06Empty.columns = simpleColumns()
     lo06Empty.items = []
     lo06Empty.labels = markupLabels

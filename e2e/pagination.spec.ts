@@ -27,7 +27,7 @@ test.beforeEach(async ({ page }) => {
 test.describe('client pagination', () => {
 	test('next / prev buttons page through, disabled at the ends; data-request {trigger: page}', async ({ page }) => {
 		await expect(info(page)).toContainText('Page 1 of 5')
-		await expect(info(page)).toContainText('23 items')
+		await expect(info(page)).toContainText('Items: 23')
 		await expect(btn(page, 'prev')).toBeDisabled()
 		await btn(page, 'next').click()
 		await expect(info(page)).toContainText('Page 2 of 5')
@@ -135,7 +135,7 @@ test.describe('labels', () => {
 	})
 
 	test('grid labels (labels.pageInfo / labels.itemCount templates) apply', async ({ page }) => {
-		await onGrid(page, el => { el.labels = { 'labels.pageInfo': '{current}/{total}', 'labels.itemCount': 'n={count}', 'buttons.nextPage': 'NEXT' } })
+		await onGrid(page, el => { el.labels = { 'labels.pageInfo': '{ctx.currentPage}/{ctx.totalPages}', 'labels.itemCount': 'n={ctx.count}', 'buttons.nextPage': 'NEXT' } })
 		await expect(info(page)).toContainText('1/5')
 		await expect(info(page)).toContainText('n=23')
 		await expect(btn(page, 'next')).toHaveText('NEXT')
@@ -147,7 +147,7 @@ test.describe("paginationMode 'server'", () => {
 	test('the grid does not slice items; totalItems drives the page count', async ({ page }) => {
 		await expect(rows(page, 'server')).toHaveCount(10)
 		await expect(info(page, 'server')).toContainText('Page 1 of 5')
-		await expect(info(page, 'server')).toContainText('47 items')
+		await expect(info(page, 'server')).toContainText('Items: 47')
 	})
 
 	test('next fires data-request {page, pageSize, skip}; the consumer swaps items', async ({ page }) => {

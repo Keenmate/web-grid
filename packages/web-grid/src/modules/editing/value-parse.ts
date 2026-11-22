@@ -13,6 +13,7 @@
 // `parseNumberText` is the single number-parsing function (typed + pasted text).
 
 import type { Column, EditorOptions, GridLabels } from '../../types.js'
+import type { NumberRangeLabelContext } from '../../interaction.js'
 import { parseFormat, parseDateInput, toISODateString } from '../datepicker/formatting.js'
 import { findOptionValueByText } from '../dropdown/options.js'
 import { defaultLabelFormat, type LabelFormat } from '../../labels.js'
@@ -66,12 +67,17 @@ function roundTo(n: number, decimalPlaces: number): number {
 	return Math.round((n + Math.sign(n) * Number.EPSILON) * factor) / factor
 }
 
+/** The `{ ctx }` of `errors.numberMin` / `errors.numberMax`. */
+function rangeCtx(value: number, opts: EditorOptions<any>): NumberRangeLabelContext {
+	return { value, min: opts.min ?? null, max: opts.max ?? null }
+}
+
 /** Apply `decimalPlaces` (round) and check `allowNegative` / `min` / `max` (no clamping). */
 export function checkNumber(n: number, opts: EditorOptions<any>, labels: ValueLabels, format: LabelFormat = defaultLabelFormat): TypedValue {
 	const value = opts.decimalPlaces != null && opts.decimalPlaces >= 0 ? roundTo(n, opts.decimalPlaces) : n
 	if (opts.allowNegative === false && value < 0) return { value, error: labels['errors.numberNegative'] }
-	if (opts.min != null && value < opts.min) return { value, error: format('errors.numberMin', labels['errors.numberMin'], { min: opts.min }) }
-	if (opts.max != null && value > opts.max) return { value, error: format('errors.numberMax', labels['errors.numberMax'], { max: opts.max }) }
+	if (opts.min != null && value < opts.min) return { value, error: format('errors.numberMin', labels['errors.numberMin'], { ctx: rangeCtx(value, opts) }) }
+	if (opts.max != null && value > opts.max) return { value, error: format('errors.numberMax', labels['errors.numberMax'], { ctx: rangeCtx(value, opts) }) }
 	return { value, error: null }
 }
 

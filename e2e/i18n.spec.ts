@@ -15,8 +15,8 @@ const CS = {
 	'tooltips.keyboardShortcuts': 'Klávesové zkratky',
 	'headers.keyboardShortcuts': 'Klávesové zkratky',
 	'buttons.nextPage': 'Další',
-	'labels.pageInfo': 'Strana {current} z {total}',
-	'labels.itemCount': '{count} položek',
+	'labels.pageInfo': 'Strana {ctx.currentPage} z {ctx.totalPages}',
+	'labels.itemCount': 'Položky: {ctx.count}',
 	'labels.perPage': 'na stránku',
 	'messages.noMatchingOptions': 'Žádné možnosti',
 	'menuItems.addRow': 'Přidat řádek', 'menuItems.deleteRow': 'Smazat řádek', 'menuItems.duplicateRow': 'Duplikovat řádek',
@@ -68,7 +68,7 @@ test('a full labels object translates toolbar, header menu, pagination, shortcut
 	await page.evaluate((cs) => { (document.getElementById('grid') as any).labels = cs }, CS)
 
 	await expect(pag(page).locator('.wg__pagination-info')).toContainText('Strana 1 z 2')
-	await expect(pag(page).locator('.wg__pagination-info')).toContainText('3 položek')
+	await expect(pag(page).locator('.wg__pagination-info')).toContainText('Položky: 3')
 	await expect(pag(page).locator('[data-action="next"]')).toHaveText('Další')
 	await expect(pag(page).locator('.wg__pagination-label')).toHaveText('na stránku')
 
@@ -96,7 +96,7 @@ test('header-menu ctx.labels is a frozen { text, html } view (never the grid\'s 
 				keys: Object.keys(ctx.labels).sort(),
 				isFrozen: Object.isFrozen(ctx.labels),
 				text: ctx.labels.text('menuItems.sortAsc'),
-				html: ctx.labels.html('labels.pageInfo', { current: '<b>', total: 2 }),
+				html: ctx.labels.html('labels.pageInfo', { ctx: { currentPage: '<b>', totalPages: 2 } }),
 				raw: ctx.labels['menuItems.sortAsc'] ?? null
 			}
 		}
@@ -203,7 +203,7 @@ test.describe('page-wide labels (core /locale: window.components.locale)', () =>
 	test("the flat page dictionary ('web-grid.<key>') re-renders a live grid; an instance label still wins", async ({ page }) => {
 		await onGrid(page, el => { el.labels = { 'labels.perPage': 'per page (mine)' } })
 		await page.evaluate(() => {
-			(window as any).components.locale = { labels: { 'web-grid.labels.pageInfo': 'Strana {current} z {total}', 'web-grid.labels.perPage': 'na stránku', 'web-grid.menuItems.deleteRow': 'Smazat' } }
+			(window as any).components.locale = { labels: { 'web-grid.labels.pageInfo': 'Strana {ctx.currentPage} z {ctx.totalPages}', 'web-grid.labels.perPage': 'na stránku', 'web-grid.menuItems.deleteRow': 'Smazat' } }
 		})
 		await expect(pag(page).locator('.wg__pagination-info')).toContainText('Strana 1 z 2')
 		await expect(pag(page).locator('.wg__pagination-label')).toHaveText('per page (mine)')
@@ -216,12 +216,12 @@ test.describe('page-wide labels (core /locale: window.components.locale)', () =>
 		await page.evaluate(() => {
 			(window as any).components.locale = {
 				translateCallback: ({ component, key, params }: { component: string; key: string; params: Record<string, unknown> }) =>
-					key === 'web-grid.labels.pageInfo' ? `${component}:${params.current}/${params.total}` : key === 'web-grid.labels.perPage' ? `[${key}]` : undefined
+					key === 'web-grid.labels.pageInfo' ? `${component}:${params.ctx.currentPage}/${params.ctx.totalPages}` : key === 'web-grid.labels.perPage' ? `[${key}]` : undefined
 			}
 		})
 		await expect(pag(page).locator('.wg__pagination-info')).toContainText('web-grid:1/2')
 		await expect(pag(page).locator('.wg__pagination-label')).toHaveText('[web-grid.labels.perPage]')
-		await expect(pag(page).locator('.wg__pagination-info')).toContainText('3 items') // undefined → the default formatting
+		await expect(pag(page).locator('.wg__pagination-info')).toContainText('Items: 3') // undefined → the default formatting
 	})
 
 	test("the grid's own translateCallback beats the page one; null → the page's; instance labels beat both", async ({ page }) => {
@@ -234,7 +234,7 @@ test.describe('page-wide labels (core /locale: window.components.locale)', () =>
 		await onGrid(page, el => {
 			el.labels = { 'buttons.nextPage': 'NEXT (mine)' }
 			el.translateCallback = ({ component, key, params }: { component: string; key: string; params: Record<string, unknown> }) =>
-				key === 'web-grid.labels.pageInfo' ? `element:${component}:${params.current}/${params.total}`
+				key === 'web-grid.labels.pageInfo' ? `element:${component}:${params.ctx.currentPage}/${params.ctx.totalPages}`
 					: key === 'web-grid.buttons.nextPage' ? 'element:next'
 						: null
 		})
@@ -271,7 +271,7 @@ test.describe('escaping (core /locale split: content → labels.html, attributes
 	})
 
 	test('a pager label template is markup: <b> renders bold', async ({ page }) => {
-		await onGrid(page, el => { el.labels = { 'labels.pageInfo': 'Page <b>{current}</b> of {total}', 'buttons.nextPage': '<b>Next</b>' } })
+		await onGrid(page, el => { el.labels = { 'labels.pageInfo': 'Page <b>{ctx.currentPage}</b> of {ctx.totalPages}', 'buttons.nextPage': '<b>Next</b>' } })
 		await expect(pag(page).locator('.wg__pagination-info b')).toHaveText('1')
 		await expect(pag(page).locator('.wg__pagination-info')).toContainText('Page 1 of 2')
 		await expect(pag(page).locator('[data-action="next"] b')).toHaveText('Next')
@@ -279,15 +279,15 @@ test.describe('escaping (core /locale split: content → labels.html, attributes
 
 	test('a {param} value with markup is escaped (it is data)', async ({ page }) => {
 		const html = await onGrid(page, el => {
-			el.labels = { 'labels.pageInfo': '<b>{current}</b> / {total}' }
+			el.labels = { 'labels.pageInfo': '<b>{ctx.currentPage}</b> / {ctx.totalPages}' }
 			el.flush()
-			return (window as any).__wgEngineOf(el).labelHtml('labels.pageInfo', { current: '<img src=x>', total: 2 })
+			return (window as any).__wgEngineOf(el).labelHtml('labels.pageInfo', { ctx: { currentPage: '<img src=x>', totalPages: 2 } })
 		})
 		expect(html).toBe('<b>&lt;img src=x&gt;</b> / 2')
 	})
 
 	test('shouldEscapeLabels: true escapes the template too (pager + empty message)', async ({ page }) => {
-		await onGrid(page, el => { el.labels = { 'labels.pageInfo': 'Page <b>{current}</b> of {total}' } })
+		await onGrid(page, el => { el.labels = { 'labels.pageInfo': 'Page <b>{ctx.currentPage}</b> of {ctx.totalPages}' } })
 		await expect(pag(page).locator('.wg__pagination-info b')).toHaveCount(1)
 		// Flipping the page-wide switch alone re-renders the live grid (localeChanged)
 		await page.evaluate(() => { (window as any).components.security = { shouldEscapeLabels: true } })

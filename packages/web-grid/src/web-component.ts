@@ -645,9 +645,9 @@ export interface GridElementConfig<T = unknown> {
 	 * - `all` — also fills across columns
 	 */
 	fillDirection: FillDirection
-	/** UI strings (i18n) — a partial object (JSON attribute `labels`) of flat `<elementType>.<name>` keys (`messages.noData`, `buttons.nextPage`, `menuItems.deleteRow`, …; or full `web-grid.*` keys) merged per key over the page-wide `window.components.locale.labels` and the English defaults. Reads back what was assigned. */
+	/** UI strings (i18n) — a partial object (JSON attribute `labels`) of flat `<elementType>.<name>` keys (`messages.noData`, `buttons.nextPage`, `menuItems.deleteRow`, …; or full `web-grid.*` keys) merged per key over the page-wide `window.components.locale.labels` and the English defaults; a dynamic label reads the context of its spot: `{ctx.count}`, `{ctx.currentPage}`, … Reads back what was assigned. */
 	labels: GridLabelsInput | undefined
-	/** BCP-47 locale for the numbers in labels (`{count}` items, page info, number-range errors), `editor: 'number'` columns (display, editor text, typed / pasted parse, copy) and the date picker's month / weekday names, or unset (the page-wide `window.components.locale`, else the browser language). UI strings are `labels`. */
+	/** BCP-47 locale for the numbers in labels (`{ctx.count}` items, page info, number-range errors), `editor: 'number'` columns (display, editor text, typed / pasted parse, copy) and the date picker's month / weekday names, or unset (the page-wide `window.components.locale`, else the browser language). UI strings are `labels`. */
 	locale: string | null
 	/**
 	 * This grid's own number reader (core `parseNumber`, SPEC §12.24) for `editor: 'number'` columns — typed and pasted
@@ -673,7 +673,7 @@ export interface GridElementConfig<T = unknown> {
 	 * This grid's translation hook (core `createLabels`, SPEC §12.24): `({ component, key, template, params, locale })
 	 * => string | null` for every label key this grid's own `labels` did not set (`key` is the full
 	 * `web-grid.<elementType>.<name>`). Asked before the page-wide `window.components.locale.translateCallback`;
-	 * `null` / `undefined` = not mine (the page hook, then the default `{name}` formatting). A change re-renders the texts.
+	 * `null` / `undefined` = not mine (the page hook, then the default `{ctx.*}` formatting). A change re-renders the texts.
 	 */
 	translateCallback: TranslateCallback | null
 	/** Runs before the grid scrolls a cell / row into view on its own: `false` skips, a partial `options` replaces the defaults (synchronous). */
@@ -717,7 +717,7 @@ export interface GridElementConfig<T = unknown> {
 	getRowClassCallback: ((ctx: RowContext<T>) => string | null) | null | undefined
 	/** Custom HTML of the validation-error tooltip (grid-level default; a column’s own wins): `(ctx: CellContext & { error }) => string | null`. */
 	getValidationTooltipCallback: ((ctx: ValidationTooltipContext<T>) => string | null) | null | undefined
-	/** Customize / translate the pager texts: `(ctx: { currentPage, totalPages, totalItems, pageSize }) => Partial<PaginationLabels>`. */
+	/** Customize / translate the pager texts: `(ctx: { currentPage, totalPages, totalItems, pageSize, count }) => Partial<PaginationLabels>`. */
 	getPaginationLabelsCallback: PaginationLabelsCallback<T> | null | undefined
 	/** The summary bar HTML (`summaryPosition`): `(ctx: { items, allItems, totalItems, currentPage, pageSize, metadata, drafts }) => string`. */
 	renderSummaryCallback: SummaryCallback<T> | null | undefined
@@ -981,8 +981,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 - \`all\` — also fills across columns` },
 		// UI strings (i18n): a partial object (also a JSON attribute) merged per key over the
 		// English defaults — flat `<elementType>.<name>` keys: `messages.noData`, `buttons.nextPage`, `menuItems.*`, … (see labels.ts)
-		{ configKey: 'labels', attribute: 'labels', converter: toObject(), on: 'update', type: 'GridLabelsInput', description: 'UI strings (i18n) — a partial object (JSON attribute `labels`) of flat `<elementType>.<name>` keys (`messages.noData`, `buttons.nextPage`, `menuItems.deleteRow`, …; or full `web-grid.*` keys) merged per key over the page-wide `window.components.locale.labels` and the English defaults. Reads back what was assigned.' },
-		{ configKey: 'locale', attribute: 'locale', converter: toText({ isNullable: true }), on: 'update', description: "BCP-47 locale for the numbers in labels (`{count}` items, page info, number-range errors), `editor: 'number'` columns (display, editor text, typed / pasted parse, copy) and the date picker's month / weekday names, or unset (the page-wide `window.components.locale`, else the browser language). UI strings are `labels`." },
+		{ configKey: 'labels', attribute: 'labels', converter: toObject(), on: 'update', type: 'GridLabelsInput', description: 'UI strings (i18n) — a partial object (JSON attribute `labels`) of flat `<elementType>.<name>` keys (`messages.noData`, `buttons.nextPage`, `menuItems.deleteRow`, …; or full `web-grid.*` keys) merged per key over the page-wide `window.components.locale.labels` and the English defaults; a dynamic label reads the context of its spot: `{ctx.count}`, `{ctx.currentPage}`, … Reads back what was assigned.' },
+		{ configKey: 'locale', attribute: 'locale', converter: toText({ isNullable: true }), on: 'update', description: "BCP-47 locale for the numbers in labels (`{ctx.count}` items, page info, number-range errors), `editor: 'number'` columns (display, editor text, typed / pasted parse, copy) and the date picker's month / weekday names, or unset (the page-wide `window.components.locale`, else the browser language). UI strings are `labels`." },
 		{ configKey: 'parseNumberCallback', converter: toFunction<ParseNumberCallback>(), default: null, on: 'update', type: 'ParseNumberCallback | null', description: "This grid's own number reader for `editor: 'number'` columns (typed + pasted text): `({ text, locale, decimalSeparator, thousandsSeparator, parseDefault }) => number | null | undefined`; `null` = not a number (the cell turns invalid), `undefined` = not mine (the page-wide `window.components.locale.parseNumberCallback`, then core's strict parse — `'1.5'` in `de` is invalid)." },
 		// Custom CSS for the shadow root (core createCustomStyles(), rulebook C-CA-15): applied after the
 		// page-wide `window.components['web-grid'].customStyles`; the callback wins over the string.
@@ -997,7 +997,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		{ configKey: 'renderIconCallback', converter: toFunction<RenderIconCallback>(), default: null, on: 'update', type: 'RenderIconCallback | null', description: "This grid's icon hook: `(name, ctx) => markup | null` for the toolbar / row-action / edit-button / dropdown-option icons. Asked after the built-in names (never sent to it) and before the page-wide `window.components.renderIconCallback`; `null` / `undefined` = not mine (the next rule decides), `''` = no icon. `ctx`: `{ component, element, prefix }` + `item` (toolbar / row action) or `option` (dropdown option)." },
 		// Labels (core createLabels, SPEC §12.24): core reads `host.translateCallback` — the element's own hook, asked
 		// for every key the instance `labels` did not set, before `window.components.locale.translateCallback`. A change re-renders.
-		{ configKey: 'translateCallback', converter: toFunction<TranslateCallback>(), default: null, on: 'update', type: 'TranslateCallback | null', description: "This grid's translation hook: `({ component, key, template, params, locale }) => string | null`, asked for every label key this grid's own `labels` did not set (`key` = the full `web-grid.<elementType>.<name>`), before the page-wide `window.components.locale.translateCallback`; `null` / `undefined` = not mine (the page hook, then the default `{name}` formatting). A change re-renders the texts." },
+		{ configKey: 'translateCallback', converter: toFunction<TranslateCallback>(), default: null, on: 'update', type: 'TranslateCallback | null', description: "This grid's translation hook: `({ component, key, template, params, locale }) => string | null`, asked for every label key this grid's own `labels` did not set (`key` = the full `web-grid.<elementType>.<name>`), before the page-wide `window.components.locale.translateCallback`; `null` / `undefined` = not mine (the page hook, then the default `{ctx.*}` formatting). A change re-renders the texts." },
 		// Gate of every scroll the grid makes on its own (keyboard moves, scrollToRow, go-to-row; rulebook
 		// D-CA-5): `false` skips it, a partial `options` replaces the defaults. Element-local (not on the engine).
 		{ configKey: 'beforeScrollCallback', converter: toFunction<(ctx: GridBeforeScrollContext) => unknown>(), on: 'update', type: '((ctx: GridBeforeScrollContext) => false | Partial<GridScrollOptions> | void) | null', description: 'Runs before the grid scrolls a cell / row into view on its own (`ctx.source`: keyboard | scroll-to-row | go-to-row); `false` skips, a partial `options` replaces the defaults. Synchronous.' },
@@ -1024,7 +1024,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		{ configKey: 'getIdCallback', converter: toFunction<(ctx: RowDataContext) => unknown>(), on: 'update', type: '((ctx: RowDataContext<T>) => unknown) | null', description: 'The row’s id when `idMember` can’t express it (`{ row }` → id). Wins over `idMember`.' },
 		{ configKey: 'getRowClassCallback', converter: toFunction<(ctx: RowContext) => string | null>(), on: 'update', type: '((ctx: RowContext<T>) => string | null) | null', description: 'Dynamic CSS class of a row: `(ctx: { row, rowIndex }) => string | null`.' },
 		{ configKey: 'getValidationTooltipCallback', converter: toFunction<(ctx: ValidationTooltipContext) => string | null>(), on: 'update', type: '((ctx: ValidationTooltipContext<T>) => string | null) | null', description: 'Custom HTML of the validation-error tooltip (grid-level default; a column’s own wins): `(ctx: CellContext & { error }) => string | null`.' },
-		{ configKey: 'getPaginationLabelsCallback', converter: toFunction<PaginationLabelsCallback>(), on: 'update', type: 'PaginationLabelsCallback<T> | null', description: 'Customize / translate the pager texts: `(ctx: { currentPage, totalPages, totalItems, pageSize }) => Partial<PaginationLabels>`.' },
+		{ configKey: 'getPaginationLabelsCallback', converter: toFunction<PaginationLabelsCallback>(), on: 'update', type: 'PaginationLabelsCallback<T> | null', description: 'Customize / translate the pager texts: `(ctx: { currentPage, totalPages, totalItems, pageSize, count }) => Partial<PaginationLabels>`.' },
 		{ configKey: 'renderSummaryCallback', converter: toFunction<SummaryCallback>(), on: 'update', type: 'SummaryCallback<T> | null', description: 'The summary bar HTML (`summaryPosition`): `(ctx: { items, allItems, totalItems, currentPage, pageSize, metadata, drafts }) => string`.' },
 		{ configKey: 'renderChevronCallback', converter: toFunction<ChevronCallback>(), on: 'update', type: 'ChevronCallback<T> | null', description: 'Custom HTML of a tree row’s chevron: `(ctx) => string`.' },
 		{ configKey: 'renderShortcutsHelpCallback', converter: toFunction<(ctx: GridCallbackContext) => RenderResult>(), on: 'update', type: '((ctx: GridContext<T>) => RenderResult) | null', description: 'Custom HTML shown alongside the keyboard-shortcuts list: `(ctx) => string`.' },

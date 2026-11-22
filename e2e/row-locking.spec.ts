@@ -84,7 +84,7 @@ test.describe('lock sources', () => {
 	})
 
 	test('the lock tooltip text is translatable through labels', async ({ page }) => {
-		await onGrid(page, el => { el.labels = { 'tooltips.rowLocked': 'Řádek je zamčen', 'tooltips.rowLockedBy': 'Zamkl(a) {lockedBy}' } })
+		await onGrid(page, el => { el.labels = { 'tooltips.rowLocked': 'Řádek je zamčen', 'tooltips.rowLockedBy': 'Zamkl(a) {ctx.lockedBy}' } })
 		await expect(rowNumber(page, 1)).toHaveAttribute('data-tooltip', 'Zamkl(a) Carol', { timeout: 2000 })
 	})
 })

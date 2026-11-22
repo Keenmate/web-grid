@@ -185,7 +185,7 @@ Grid properties:
                       Type: (ctx: PaginationLabelsContext) => Partial<PaginationLabels>
 
                       PaginationLabelsContext:
-                        { currentPage, totalPages, totalItems, pageSize }
+                        { currentPage, totalPages, totalItems, pageSize, count }
 
                       PaginationLabels fields:
                         first, previous, next, last, pageInfo, itemCount,
@@ -219,8 +219,8 @@ Static labels can also be set via the labels property:
     'buttons.previousPage': 'Previous',
     'buttons.nextPage': 'Next',
     'buttons.lastPage': 'Last',
-    'labels.pageInfo': 'Page {current} of {total}',
-    'labels.itemCount': '{count} items',
+    'labels.pageInfo': 'Page {ctx.currentPage} of {ctx.totalPages}',
+    'labels.itemCount': 'Items: {ctx.count}',
     'labels.perPage': 'per page'
   }
 

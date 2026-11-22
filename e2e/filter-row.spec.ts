@@ -45,7 +45,7 @@ test.describe('rendering', () => {
 	})
 
 	test('the input label follows ariaLabels.filterColumn', async ({ page }) => {
-		await onGrid(page, el => { el.labels = { 'ariaLabels.filterColumn': 'Filtrovat {column}' } })
+		await onGrid(page, el => { el.labels = { 'ariaLabels.filterColumn': 'Filtrovat {ctx.title}' } })
 		await expect(input(page, 'city')).toHaveAttribute('aria-label', 'Filtrovat City')
 	})
 })
@@ -157,7 +157,7 @@ test.describe('filterCallback', () => {
 		await page.keyboard.press('Enter')
 		await expect(input(page, 'salary')).toHaveClass(/wg__filter-input--invalid/)
 		await expect(input(page, 'salary')).toHaveAttribute('aria-invalid', 'true')
-		await expect(pageInfo(page)).toContainText('13 items')
+		await expect(pageInfo(page)).toContainText('Items: 13')
 		const color = await input(page, 'salary').evaluate(el => getComputedStyle(el).borderTopColor)
 		const danger = await gridLocator(page).locator('.wg').evaluate(el => {
 			const probe = document.createElement('span')
@@ -171,7 +171,7 @@ test.describe('filterCallback', () => {
 		await input(page, 'salary').fill('>90000')
 		await page.keyboard.press('Enter')
 		await expect(input(page, 'salary')).not.toHaveClass(/wg__filter-input--invalid/)
-		await expect(pageInfo(page)).toContainText('2 items')
+		await expect(pageInfo(page)).toContainText('Items: 2')
 	})
 })
 
@@ -197,7 +197,7 @@ test.describe('server pagination', () => {
 		expect(await page.evaluate(() => (window as any).lastPageChange)).toEqual({ trigger: 'filter', fromPage: 2, toPage: 1 })
 		expect(await domEvents(page, 'data-request', 'server')).toEqual([expect.objectContaining({ trigger: 'filter', page: 1 })])
 		await expect(pageInfo(page, 'server')).toContainText('Page 1 of 2')
-		await expect(pageInfo(page, 'server')).toContainText('5 items')
+		await expect(pageInfo(page, 'server')).toContainText('Items: 5')
 	})
 
 	test('beforePageChangeCallback false → the filter is not applied, the input reverts', async ({ page }) => {

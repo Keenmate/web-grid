@@ -362,12 +362,51 @@ export interface CreateRowContext<T = any> extends GridContext<T> {
 	rowIndex: number
 }
 
-/** ctx of `getPaginationLabelsCallback`. */
+/**
+ * ctx of `getPaginationLabelsCallback` — and the `{ ctx }` of the pager's labels (`labels.pageInfo`,
+ * `labels.itemCount`): `{ctx.currentPage}`, `{ctx.totalPages}`, `{ctx.count}`, … (rulebook D-NC-24).
+ */
 export interface PaginationLabelsContext<T = any> extends GridContext<T> {
 	currentPage: number
 	totalPages: number
 	totalItems: number
 	pageSize: number
+	/** The number the item noun agrees with (= `totalItems`) — a `translateCallback` pluralizes by it. */
+	count: number
+}
+
+/** The `{ ctx }` of `tooltips.rowLockedBy` (`{ctx.lockedBy}`). Plain data. */
+export interface RowLockLabelContext {
+	/** Who locked the row (`lockInfo.lockedBy` as text). */
+	lockedBy: string
+	/** The whole lock info (`{ctx.lockInfo.reason}`, …). */
+	lockInfo: RowLock
+}
+
+/** The `{ ctx }` of `labels.goToRow` (`{ctx.max}`). Plain data. */
+export interface GoToRowLabelContext {
+	/** The last row number one can go to (the displayed rows). */
+	max: number
+	/** The number the row noun agrees with (= `max`). */
+	count: number
+}
+
+/** The `{ ctx }` of `ariaLabels.filterColumn` (`{ctx.title}`). Plain data. */
+export interface FilterColumnLabelContext {
+	/** The column's `title` (its `field` when it has none). */
+	title: string
+	/** The column's `field`. */
+	field: string
+}
+
+/** The `{ ctx }` of `errors.numberMin` / `errors.numberMax` (`{ctx.min}` / `{ctx.max}`). Plain data. */
+export interface NumberRangeLabelContext {
+	/** The rejected number. */
+	value: number
+	/** The column's `editorOptions.min` (`null` = none). */
+	min: number | null
+	/** The column's `editorOptions.max` (`null` = none). */
+	max: number | null
 }
 
 /** What swapped the rows — `beforePageChangeCallback` ctx `trigger`. */

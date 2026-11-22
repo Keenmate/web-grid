@@ -606,8 +606,8 @@ export type GridLabels = {
 	'ariaLabels.previousPage': string        // "Previous page"
 	'ariaLabels.nextPage': string            // "Next page"
 	'ariaLabels.lastPage': string            // "Last page"
-	'labels.pageInfo': string                // "Page {current} of {total}"
-	'labels.itemCount': string               // "{count} items"
+	'labels.pageInfo': string                // "Page {ctx.currentPage} of {ctx.totalPages}" — ctx = PaginationLabelsContext
+	'labels.itemCount': string               // "Items: {ctx.count}" — ctx = PaginationLabelsContext (count = totalItems)
 	'labels.perPage': string                 // "per page"
 
 	// Empty table / loading
@@ -632,10 +632,10 @@ export type GridLabels = {
 
 	// Row locking (row-number / row tooltip)
 	'tooltips.rowLocked': string             // "This row is locked" — no lockedBy known
-	'tooltips.rowLockedBy': string           // "Locked by {lockedBy}"
+	'tooltips.rowLockedBy': string           // "Locked by {ctx.lockedBy}" — ctx = RowLockLabelContext
 
 	// Go-to-row dialog (Ctrl/Cmd+G)
-	'labels.goToRow': string                 // "Go to row (1-{max}):"
+	'labels.goToRow': string                 // "Go to row (1-{ctx.max}):" — ctx = GoToRowLabelContext
 	'buttons.go': string                     // "Go"
 	'buttons.cancel': string                 // "Cancel"
 
@@ -644,7 +644,7 @@ export type GridLabels = {
 	'ariaLabels.collapse': string            // "Collapse"
 
 	// Filter row
-	'ariaLabels.filterColumn': string        // "Filter {column}" — aria-label of a filter-row input
+	'ariaLabels.filterColumn': string        // "Filter {ctx.title}" — ctx = FilterColumnLabelContext; aria-label of a filter-row input
 
 	// Edit button (editTrigger: 'button')
 	'ariaLabels.editCell': string            // "Edit" — its accessible name
@@ -652,8 +652,8 @@ export type GridLabels = {
 
 	// Built-in value checks (number editor, paste typing) — the cell's validation error
 	'errors.invalidNumber': string           // "Not a number"
-	'errors.numberMin': string               // "Must be at least {min}"
-	'errors.numberMax': string               // "Must be at most {max}"
+	'errors.numberMin': string               // "Must be at least {ctx.min}" — ctx = NumberRangeLabelContext
+	'errors.numberMax': string               // "Must be at most {ctx.max}" — ctx = NumberRangeLabelContext
 	'errors.numberNegative': string          // "Must not be negative"
 	'errors.invalidBoolean': string          // "Not a yes / no value" (pasted into a checkbox column)
 	'errors.invalidDate': string             // "Not a valid date" (pasted / typed into a date column)

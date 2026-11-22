@@ -156,8 +156,13 @@ All extend GridContext<T> (controller + element, non-enumerable).
                          targetRowIndex, targetColIndex, newRowsCount, skipCells }
                                                   beforePasteCallback (false cancels)
   CreateRowContext<T>  { data, rowIndex }         createRowCallback
-  PaginationLabelsContext<T>  { currentPage, totalPages, totalItems, pageSize }
-                                                  getPaginationLabelsCallback
+  PaginationLabelsContext<T>  { currentPage, totalPages, totalItems, pageSize, count }
+                                                  getPaginationLabelsCallback + the { ctx } of
+                                                  labels.pageInfo / labels.itemCount
+  RowLockLabelContext  { lockedBy, lockInfo }     { ctx } of tooltips.rowLockedBy
+  GoToRowLabelContext  { max, count }             { ctx } of labels.goToRow
+  FilterColumnLabelContext { title, field }       { ctx } of ariaLabels.filterColumn
+  NumberRangeLabelContext { value, min, max }     { ctx } of errors.numberMin / errors.numberMax
   SummaryContext<T>    { items, allItems, totalItems, currentPage, pageSize, metadata }
                                                   renderSummaryCallback
   ChevronContext<T>    { row, isExpanded, hasChildren, level, path }
@@ -550,14 +555,15 @@ GRIDLABELS
 ----------------------------------------------------------------------
 
   type GridLabels = {             flat <elementType>.<name> keys; `labels` (GridLabelsInput) takes
-                                 any subset, short keys or full 'web-grid.<key>' keys
+                                 any subset, short keys or full 'web-grid.<key>' keys; dynamic labels
+                                 read their spot's context: {ctx.count}, {ctx.currentPage}, …
     'tooltips.rowActions': string            "Row actions" (toolbar trigger title)
     'columnHeaders.inlineActions': string    "Actions"
     'tooltips.keyboardShortcuts' / 'headers.keyboardShortcuts': string   help icon title / overlay title
     'headers.rangeShortcuts': string         "Selection shortcuts"
     'buttons.firstPage' / 'buttons.previousPage' / 'buttons.nextPage' / 'buttons.lastPage': string
-    'labels.pageInfo': string                "Page {current} of {total}"
-    'labels.itemCount': string               "{count} items"
+    'labels.pageInfo': string                "Page {ctx.currentPage} of {ctx.totalPages}" (ctx = PaginationLabelsContext)
+    'labels.itemCount': string               "Items: {ctx.count}" (ctx.count = totalItems)
     'labels.perPage': string                 "per page"
     'messages.noData': string                empty-table text, no rows at all ("No items to display")
     'messages.noResults': string             rows exist, the filter matched nothing ("No matching items")
@@ -569,13 +575,13 @@ GRIDLABELS
     'ariaLabels.closeSheet': string          "Close" — the phone sheet's close button (leaves the cell: saves)
     'placeholders.search': string            "Search…" — the phone sheet's search field
     'menuItems.back': string                 "Back" — a menu sheet's back row
-    'tooltips.rowLocked' / 'tooltips.rowLockedBy': string   "This row is locked" / "Locked by {lockedBy}"
-    'labels.goToRow' / 'buttons.go' / 'buttons.cancel': string   go-to-row dialog
+    'tooltips.rowLocked' / 'tooltips.rowLockedBy': string   "This row is locked" / "Locked by {ctx.lockedBy}" (ctx = RowLockLabelContext)
+    'labels.goToRow' / 'buttons.go' / 'buttons.cancel': string   go-to-row dialog ("Go to row (1-{ctx.max}):")
     'ariaLabels.expand' / 'ariaLabels.collapse': string     tree chevron
     'ariaLabels.editCell' / 'tooltips.editCell': string     "Edit" (edit button aria-label / title)
-    'ariaLabels.filterColumn': string        "Filter {column}" (filter-row input aria-label)
+    'ariaLabels.filterColumn': string        "Filter {ctx.title}" (filter-row input aria-label; ctx = FilterColumnLabelContext)
     'errors.invalidNumber': string           "Not a number" (number editor / paste)
-    'errors.numberMin' / 'errors.numberMax': string   "Must be at least {min}" / "Must be at most {max}"
+    'errors.numberMin' / 'errors.numberMax': string   "Must be at least {ctx.min}" / "Must be at most {ctx.max}" (ctx = NumberRangeLabelContext)
     'errors.numberNegative': string          "Must not be negative"
     'errors.invalidBoolean': string          "Not a yes / no value" (paste into a checkbox column)
     'errors.invalidDate': string             "Not a valid date" (paste / typed into a date column)

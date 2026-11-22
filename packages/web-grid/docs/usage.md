@@ -136,7 +136,7 @@ The `QuickGridProps<T>` type defined in `src/types.ts` is the canonical source o
 | `totalItems` | `number \| null` | `null` | Total item count for server-side pagination |
 | `isPaginationShown` | `boolean \| 'auto'` | `'auto'` | `'auto'` hides the pager when there is ≤ 1 page |
 | `paginationPosition` | `string` | `'bottom-center'` | Position(s): e.g. `'top-right\|bottom-right'` for multiple |
-| `getPaginationLabelsCallback` | `(ctx: { currentPage, totalPages, totalItems, pageSize }) => Partial<PaginationLabels>` | — | Customize/translate pagination text |
+| `getPaginationLabelsCallback` | `(ctx: { currentPage, totalPages, totalItems, pageSize, count }) => Partial<PaginationLabels>` | — | Customize/translate pagination text |
 | `paginationLayout` | `string` | — | Element order: `'pageSize\|previous\|pageInfo\|next'` or `'first\|previous\|pageInfo\|next\|last'` |
 
 ### Row toolbar
@@ -440,7 +440,7 @@ For full-height mode, also set `isTableBorderOnly = true`.
 | `getCustomStylesCallback` | `(ctx: GridContext) => string \| null` | `null` | Computes the instance CSS; wins over `customStyles` |
 | `getRowClassCallback` | `(ctx: { row, rowIndex }) => string \| null` | — | Dynamic CSS class for rows |
 | `labels` | `GridLabelsInput` (partial `GridLabels`: flat `<elementType>.<name>` keys, or full `web-grid.*` keys) | — | Override UI labels for i18n (see [Labels / i18n](#labels--i18n)) |
-| `locale` | `string \| null` | `null` | BCP-47 locale for the numbers in labels (`{count}` items, page info, number-range errors), `editor: 'number'` columns (display, editor text, typed / pasted parse, copy) and the date editor's month / weekday names; unset (or `'auto'`) = the page-wide `window.components.locale.locale`, else the browser language. UI strings are `labels`; other cell values are not formatted (use `getDisplayValueCallback`). Attribute `locale` |
+| `locale` | `string \| null` | `null` | BCP-47 locale for the numbers in labels (`{ctx.count}` items, page info, number-range errors), `editor: 'number'` columns (display, editor text, typed / pasted parse, copy) and the date editor's month / weekday names; unset (or `'auto'`) = the page-wide `window.components.locale.locale`, else the browser language. UI strings are `labels`; other cell values are not formatted (use `getDisplayValueCallback`). Attribute `locale` |
 | `parseNumberCallback` | `(ctx: { text, locale, decimalSeparator, thousandsSeparator, parseDefault }) => number \| null \| undefined` | `null` | This grid's number reader for `editor: 'number'` columns (typed + pasted text); `null` = not a number (invalid cell), `undefined` = not mine (the page-wide `window.components.locale.parseNumberCallback`, then core's strict parse). Property only |
 | `translateCallback` | `(ctx: { component, key, template, params, locale }) => string \| null \| undefined` | `null` | This grid's label hook — asked for every key `labels` didn't set, before the page-wide `window.components.locale.translateCallback`; `null` = not mine. Property only |
 | `getValidationTooltipCallback` | `(ctx: CellContext<T> & { error }) => string \| null` | — | Custom HTML for the validation error tooltip (grid-level default) |
@@ -749,7 +749,7 @@ Every grid-level callback is a property-only input (no attribute): assigning any
 | `getRowClassCallback` | `{ row, rowIndex }` | CSS class for the row, or `null` |
 | `getCustomStylesCallback` | `{}` | CSS injected into the shadow DOM (wins over `customStyles`) |
 | `beforeScrollCallback` | `{ row, rowIndex, field, source, container, options }` | `false` skips the grid's own scroll; a partial `options` replaces the defaults (sync) |
-| `getPaginationLabelsCallback` | `{ currentPage, totalPages, totalItems, pageSize }` | `Partial<PaginationLabels>` |
+| `getPaginationLabelsCallback` | `{ currentPage, totalPages, totalItems, pageSize, count }` | `Partial<PaginationLabels>` |
 | `renderSummaryCallback` | `{ items, allItems, totalItems, currentPage, pageSize, metadata, drafts }` | Summary HTML |
 | `renderShortcutsHelpCallback` | `{}` | HTML shown with the shortcuts list |
 | `getValidationTooltipCallback` | cell ctx + `error` | Validation tooltip HTML (column-level wins) |
@@ -973,8 +973,8 @@ grid.labels = {
   'ariaLabels.previousPage': 'Previous page',    //  a customized buttons.* text names them while these are unset)
   'ariaLabels.nextPage': 'Next page',
   'ariaLabels.lastPage': 'Last page',
-  'labels.pageInfo': 'Page {current} of {total}',
-  'labels.itemCount': '{count} items',
+  'labels.pageInfo': 'Page {ctx.currentPage} of {ctx.totalPages}',
+  'labels.itemCount': 'Items: {ctx.count}',
   'labels.perPage': 'per page',
   // Empty table / loading
   'messages.noData': 'No items to display',      // the grid has no rows
@@ -993,9 +993,9 @@ grid.labels = {
   'menuItems.back': 'Back',                      // a submenu level's back row
   // Row locking
   'tooltips.rowLocked': 'This row is locked',
-  'tooltips.rowLockedBy': 'Locked by {lockedBy}',
+  'tooltips.rowLockedBy': 'Locked by {ctx.lockedBy}',
   // Go-to-row dialog (Ctrl/Cmd+G)
-  'labels.goToRow': 'Go to row (1-{max}):',
+  'labels.goToRow': 'Go to row (1-{ctx.max}):',
   'buttons.go': 'Go',
   'buttons.cancel': 'Cancel',
   // Cells
@@ -1003,11 +1003,11 @@ grid.labels = {
   'tooltips.editCell': 'Edit',
   'ariaLabels.expand': 'Expand',                 // tree chevron
   'ariaLabels.collapse': 'Collapse',
-  'ariaLabels.filterColumn': 'Filter {column}',  // a filter-row input
+  'ariaLabels.filterColumn': 'Filter {ctx.title}',  // a filter-row input
   // Built-in value checks (number editor, paste)
   'errors.invalidNumber': 'Not a number',
-  'errors.numberMin': 'Must be at least {min}',
-  'errors.numberMax': 'Must be at most {max}',
+  'errors.numberMin': 'Must be at least {ctx.min}',
+  'errors.numberMax': 'Must be at most {ctx.max}',
   'errors.numberNegative': 'Must not be negative',
   'errors.invalidBoolean': 'Not a yes / no value',  // text pasted into a checkbox column
   'errors.invalidDate': 'Not a valid date',         // text pasted / typed into a date column
@@ -1035,23 +1035,40 @@ grid.labels = {
 }
 ```
 
+A dynamic label reads the context of its spot as `{ ctx }` (rulebook D-NC-24): the template uses `{ctx.<field>}`
+(dotted paths, numbers formatted in the grid's locale), and a `translateCallback` gets the same object as
+`params.ctx`. `ctx.count` is the number the text's noun agrees with — an app's i18n pluralizes by it (the grid never
+does plurals; the English defaults avoid a plural noun right after a number, e.g. `Items: {ctx.count}`).
+
+| Key | `ctx` | Fields |
+|-----|-------|--------|
+| `labels.pageInfo`, `labels.itemCount` | `PaginationLabelsContext` (the same object `getPaginationLabelsCallback` gets) | `currentPage`, `totalPages`, `totalItems`, `pageSize`, `count` (= `totalItems`) |
+| `tooltips.rowLockedBy` | `RowLockLabelContext` | `lockedBy`, `lockInfo` (the whole `RowLock`) |
+| `labels.goToRow` | `GoToRowLabelContext` | `max`, `count` (= `max`, the displayed rows) |
+| `ariaLabels.filterColumn` | `FilterColumnLabelContext` | `title` (the column title, else its field), `field` |
+| `errors.numberMin`, `errors.numberMax` | `NumberRangeLabelContext` | `value` (the rejected number), `min`, `max` |
+
 Every grid on the page can be translated at once through core's page-wide locale (`@keenmate/web-components-core`
 `/locale`): per key the instance `labels` wins, then the page-wide flat dictionary
 `window.components.locale.labels['web-grid.<key>']`, then English. Assigning it re-renders every live grid.
 `translateCallback` (ICU / i18next / the app's own lookup) gets the full key (`web-grid.labels.pageInfo`), the
-resolved template and the params of every label the instance didn't set; `null` / `undefined` = "not mine" (the
-default `{name}` replacement).
+resolved template and the params (`{ ctx }`) of every label the instance didn't set; `null` / `undefined` = "not mine" (the
+default `{ctx.*}` replacement).
 
 ```javascript
 window.components.locale = {
   locale: 'cs-CZ',                       // also the date editor's month / weekday names
   labels: { 'web-grid.messages.noData': 'Žádné položky', 'web-grid.menuItems.deleteRow': 'Smazat řádek' },
-  translateCallback: ({ key, params }) => i18next.exists(key) ? i18next.t(key, params) : null,
+  // i18next: its plural forms (`_one` / `_few` / `_other`) pick by `count`
+  translateCallback: ({ key, params }) => {
+    const options = { ...params, count: params.ctx?.count }
+    return i18next.exists(key, options) ? i18next.t(key, options) : null
+  },
 }
 ```
 
 One grid can use another locale than the page: its `locale` input (attribute `locale="de"` or `grid.locale = 'de'`)
-wins over `window.components.locale.locale` for this grid's label numbers ("1.234 items"), its number columns
+wins over `window.components.locale.locale` for this grid's label numbers ("Items: 1.234"), its number columns
 ("1.234,50") and its date editor; unset
 (`null`, or `'auto'`) follows the page, else the browser. A change re-renders the texts.
 

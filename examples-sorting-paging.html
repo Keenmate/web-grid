@@ -182,7 +182,7 @@ grid.onFilterChange = ({ filters }) =&gt; { /* … */ }
 // Page-wide labels (SP07): every grid / component on the page
 window.components.locale = {
     locale: 'cs-CZ',
-    labels: { 'web-grid.labels.itemCount': '{count} položek' }   // ONE flat dictionary of full keys
+    labels: { 'web-grid.labels.itemCount': 'Položky: {ctx.count}' }   // ONE flat dictionary of full keys
 }
 window.components.locale = null       // back to English
 // Per key: instance grid.labels → page-wide → English</code></pre>
@@ -550,11 +550,11 @@ window.components.locale = null       // back to English
         window.components.locale = {
             locale: 'cs-CZ',
             labels: {
-                'web-grid.labels.pageInfo': 'Strana {current} z {total}',
-                'web-grid.labels.itemCount': '{count} položek',
+                'web-grid.labels.pageInfo': 'Strana {ctx.currentPage} z {ctx.totalPages}',
+                'web-grid.labels.itemCount': 'Položky: {ctx.count}',
                 'web-grid.labels.perPage': 'na stránku',
                 'web-grid.messages.noResults': 'Nic nenalezeno',
-                'web-grid.ariaLabels.filterColumn': 'Filtrovat {column}',
+                'web-grid.ariaLabels.filterColumn': 'Filtrovat {ctx.title}',
                 'web-grid.menuItems.sortAsc': 'Seřadit vzestupně',
                 'web-grid.menuItems.sortDesc': 'Seřadit sestupně',
                 'web-grid.menuItems.clearSort': 'Zrušit řazení'
