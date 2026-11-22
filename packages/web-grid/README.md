@@ -107,7 +107,7 @@ VS Code data — add `"html.customData": ["./node_modules/@keenmate/web-grid/vsc
 </script>
 ```
 
-That's it — the grid reads its configuration from properties on the element (not attributes). See [docs/usage.md](./docs/usage.md) for the full API and [docs/examples.md](./docs/examples.md) for sortable / editable / themed / tree / virtual-scroll patterns.
+That's it — scalar options are both properties and attributes (`sort-mode="multiple"`, `enable-paging`, `page-size="25"`); `items`, `columns` and callbacks are properties only. See [docs/usage.md](./docs/usage.md) for the full API and [docs/examples.md](./docs/examples.md) for sortable / editable / themed / tree / virtual-scroll patterns.
 
 ## Browser support
 

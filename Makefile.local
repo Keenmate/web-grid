@@ -4,7 +4,7 @@
 #
 # web-grid is an npm-workspaces monorepo: the root is private and builds only the
 # examples site; packages/web-grid publishes with its OWN short README (packages/web-grid/README.md,
-# tracked; the root README.md is the long repo README). The root ai/ is canonical — the
+# tracked; the root README.md is the short monorepo landing page). The root ai/ is canonical — the
 # package's `prepack` script (and `make prepare-package`) copies it into the package
 # (gitignored there) before every pack / publish. Release gates per publish-command.md:
 # `kmwc check-release` for the package, then the e2e suite.
