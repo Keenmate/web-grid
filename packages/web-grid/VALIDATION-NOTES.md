@@ -155,31 +155,3 @@ it the auto-script flags the file every run. The verdict should be
 ✅ Pass with this note as the citation: D-NC-9 was answered "No"
 intentionally; the grid's config surface is JavaScript properties,
 not HTML attributes.
-
-## C-CST-8 / C-NC-11 — `@deprecated` *Type / *Info aliases retained for one release
-
-The closed-set TS suffix rule (no `Type`, `Info`, `Data`, `Object`,
-`Model`) was honored in this release: every canonical type was
-renamed to drop the forbidden suffix. The originals were retained as
-`@deprecated` type aliases so consumers can migrate at their own
-pace, and dropped in the next major.
-
-| Old name (`@deprecated`) | New canonical name |
-|---|---|
-| `EditorType` | `Editor` |
-| `PredefinedToolbarItemType` | `PredefinedToolbarItem` |
-| `RowActionType` | `RowAction` |
-| `PredefinedContextMenuItemType` | `PredefinedContextMenuItem` |
-| `PredefinedHeaderMenuItemType` | `PredefinedHeaderMenuItem` |
-| `RowLockInfo` | `RowLock` |
-| `ClickEventType` | `ClickEventKind` |
-| `FocusEventType` | `FocusEventKind` |
-| `FormatInfo` | `FormatSpec` |
-
-Each `@deprecated` alias is a single one-liner — `export type
-EditorType = Editor` — placed immediately after the canonical
-declaration. The auto-script `^export\s+(type|interface)\s+\w+(Type|Info|…)`
-regex matches these aliases and reports 9 violations every run; the
-verdict for those 9 should be ✅ Pass with this note as the
-citation. After the next major drops the aliases, the script will
-read clean unaided and this section can be removed.

@@ -1322,7 +1322,7 @@
               "name": "getDrafts",
               "return": {
                 "type": {
-                  "text": "DraftInfo<T>[]"
+                  "text": "Draft<T>[]"
                 }
               },
               "description": "Every unsaved draft `{ row, draftRow, changedFields, isValid }` — incl. rows on other\npages, filtered out, or not in the current `items` (drafts are never pruned; they\nleave via `replaceRowById`, `discardDraft`, `discardAllDrafts`)."

@@ -50,7 +50,7 @@ import type {
 	GridRangeShortcut,
 	GridActionEventDetail,
 	GridEventMap,
-	DraftInfo,
+	Draft,
 	BeforePageChangeContext,
 	GridBeforeScrollContext,
 	GridScrollOptions
@@ -1659,7 +1659,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	 * pages, filtered out, or not in the current `items` (drafts are never pruned; they
 	 * leave via `replaceRowById`, `discardDraft`, `discardAllDrafts`).
 	 */
-	getDrafts(): DraftInfo<T>[] { this.flush(); return this.#engine.getDrafts() }
+	getDrafts(): Draft<T>[] { this.flush(); return this.#engine.getDrafts() }
 	/** Drop the draft (and invalid-cell markers) of `row` — the row object, its id-equal copy, or the draft. */
 	discardDraft(row: T): void { this.flush(); this.#engine.discardDraft(row) }
 	/** Drop every draft and invalid-cell marker. */

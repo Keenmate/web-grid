@@ -6,8 +6,6 @@
 
 export type FocusEventKind = 'blur' | 'focusout'
 
-/** @deprecated use `FocusEventKind` */
-export type FocusEventType = FocusEventKind
 export type FocusHandler = (target: HTMLElement, relatedTarget: HTMLElement | null) => void
 
 export interface FocusSubscription {

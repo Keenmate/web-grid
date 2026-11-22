@@ -88,9 +88,6 @@ export interface FormatSpec {
 	maxLength: number
 }
 
-/** @deprecated use `FormatSpec` */
-export type FormatInfo = FormatSpec
-
 /**
  * Locale strings for UI
  */

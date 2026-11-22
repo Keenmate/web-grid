@@ -353,7 +353,7 @@ Grid properties:
                           currentPage: number
                           pageSize: number
                           metadata: unknown   // From summaryMetadata property
-                          drafts: DraftInfo<T>[]  // Every unsaved draft (also other pages):
+                          drafts: Draft<T>[]  // Every unsaved draft (also other pages):
                                               // { row, draftRow, changedFields, isValid }
                         }
 

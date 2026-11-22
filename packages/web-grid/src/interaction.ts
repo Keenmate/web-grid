@@ -83,7 +83,7 @@ export interface GridController<T = any> {
 	/** Display indices of the currently displayed rows that have a draft (drafts follow their row, see `idMember`). */
 	getDraftRowIndices(): number[]
 	/** Every draft — incl. rows on other pages / filtered out / not in `items` (drafts are never pruned). */
-	getDrafts(): DraftInfo<T>[]
+	getDrafts(): Draft<T>[]
 	/** Drop the draft (and invalid markers) of one row — the row object, its id-equal copy, or the draft. */
 	discardDraft(row: T): void
 	discardAllDrafts(): void
@@ -385,11 +385,11 @@ export interface BeforePageChangeContext<T = any> extends GridContext<T> {
 	/** The page the action leads to (1 for page-size / sort / filter changes). */
 	toPage: number
 	/** Every unsaved draft (`getDrafts()`) — e.g. force "save before leaving the page". */
-	drafts: DraftInfo<T>[]
+	drafts: Draft<T>[]
 }
 
 /** One unsaved draft — `getDrafts()`, `ctx.drafts` of the summary / `beforePageChangeCallback`. */
-export interface DraftInfo<T = any> {
+export interface Draft<T = any> {
 	/** The row: the current `items` row with that identity, else the row the draft was made from. */
 	row: T
 	/** The draft copy (what the user sees). */
@@ -415,7 +415,7 @@ export interface SummaryContext<T = any> extends GridContext<T> {
 	 * Every unsaved draft (`getDrafts()`) — incl. rows on other pages / filtered out /
 	 * not in `items`. Adjust server aggregates (`metadata`) by the draft deltas.
 	 */
-	drafts: DraftInfo<T>[]
+	drafts: Draft<T>[]
 }
 
 /** ctx of `renderChevronCallback`. */

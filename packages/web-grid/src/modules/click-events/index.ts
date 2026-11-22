@@ -12,9 +12,6 @@ export type ClickEventKind =
 	| 'sortClick'         // Click on sort indicator in column header
 	| 'emptyAreaClick'    // Click in grid but not on interactive element
 
-/** @deprecated use `ClickEventKind` */
-export type ClickEventType = ClickEventKind
-
 export interface ClickContext {
 	target: HTMLElement
 	event: MouseEvent

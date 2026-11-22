@@ -58,7 +58,7 @@ import type {
 	GridActionEventDetail,
 	GridEventMap,
 	GridEventName,
-	DraftInfo,
+	Draft,
 	BeforePageChangeContext
 } from './interaction.js'
 
@@ -2938,14 +2938,14 @@ export class GridEngine<T = unknown> {
 	 * else the row the draft was made from. `changedFields` lists the fields whose
 	 * draft value differs from `row`; `isValid` is false while a cell of it is invalid.
 	 */
-	getDrafts(): DraftInfo<T>[] {
+	getDrafts(): Draft<T>[] {
 		if (this._draftRows.size === 0) return []
 		const current = new Map<unknown, T>()
 		for (const item of this._items) {
 			const key = this.draftKey(item)
 			if (this._draftRows.has(key)) current.set(key, item)
 		}
-		const out: DraftInfo<T>[] = []
+		const out: Draft<T>[] = []
 		for (const [key, draftRow] of this._draftRows) {
 			const row = current.get(key) ?? this._draftOrigins.get(key) ?? (key as T)
 			const draft = draftRow as Record<string, unknown>

@@ -200,6 +200,11 @@ A major: the callback, event and item API below is breaking, so
   (`ChevronContext`, `ChevronCallback`); `CellRenderCallback` and `OptionsLoadTrigger` are gone (never called /
   never used). Every ctx, item and event-detail type of `interaction.ts` is exported.
 
+### Removed — BREAKING: the last `@deprecated` type aliases (2026-11-22)
+- The 1.x module types `ClickEventType`, `FocusEventType` and `FormatInfo` (deep imports from `dist/modules/…`,
+  never on the package entry) kept a `@deprecated` alias after their rename; the aliases are gone. Use
+  `ClickEventKind`, `FocusEventKind`, `FormatSpec`.
+
 ### Removed — BREAKING: `GridEngine` export (2026-11-20)
 - `GridEngine` (the 1.x `WebGrid` export, renamed in this cycle) is no longer exported: it only drew the same UI without the custom element. Use `<web-grid>`
   (`el.controller` for the programmatic API). The config / context / event types stay exported.
@@ -1584,7 +1589,7 @@ The cell and column-header menus are the shared KeenMate menu, core `openMenu()`
 
   Dead field `toolbarMousemoveHandler` (declared but never assigned/used) dropped. `tooltipShowDelay` / `tooltipHideDelay` remain as accessors on GridContext — they're configuration, not runtime state. `isCommittingFromKeyboard` and `isTransitioningCells` remain on `GridElement` — they're editing-state-machine flags, distinct from dropdown state.
 
-- **Nine TypeScript types renamed to drop the forbidden `Type` / `Info` suffix.** Old names retained as `@deprecated` type aliases for one release; both names refer to the same shape. Drop the aliases in the next major. Migration is a flat find/replace.
+- **Nine TypeScript types renamed to drop the forbidden `Type` / `Info` suffix.** Old names were kept as `@deprecated` type aliases until 2.0.0, which removes them (no aliases). Migration is a flat find/replace.
 
   | Old name | New name |
   |---|---|
