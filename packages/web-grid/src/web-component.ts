@@ -1894,17 +1894,9 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		scrollEvents.subscribe('container', () => handleContainerScroll(this.#host, container, scrollContainer))
 		scrollEvents.subscribe('window', () => handleWindowScroll(this.#host))
 
-		// Outside-click detection. Treat clicks inside our popovers (the datepicker,
-		// outside the table) as inside the grid — otherwise outsideClick fires while
-		// the user is interacting with the picker/menu and tears down editing.
-		const isPathInOwnedScope = (path: EventTarget[]): boolean => {
-			const dpEl = this.#host.datepicker?.getElement() ?? null
-			for (const node of path) {
-				if (dpEl && dpEl === node) return true
-			}
-			return false
-		}
-		this.#clickEvents.init(container, this, isPathInOwnedScope)
+		// Outside-click detection: a click whose composed path misses the host. The grid's overlays
+		// (dropdown, date picker, menus, sheets) live in its shadow root, so they count as inside.
+		this.#clickEvents.init(container, this)
 		this.#clickEvents.subscribe('outsideClick', () => handleOutsideClick(this.#host))
 		this.#clickEvents.subscribe('sortClick', (subCtx) => handleSortClickSubscription(this.#host, subCtx))
 	}
@@ -2330,7 +2322,7 @@ export type GridInputKey = (typeof GridElement.inputs)[number]['configKey']
  */
 export type GridResponsiveConfig = GridElementConfig
 
-/** Partial grid configs per `device` class / width `breakpoint` (`{ device?, breakpoint? }`) — `el.responsive`, `window.components['web-grid'].responsive`. */
+/** Partial grid configs per `device` class / width `breakpoint` / the grid's own `container` width (`{ device?, breakpoint?, container? }`, core ResponsiveMap) — `el.responsive`, `window.components['web-grid'].responsive`. */
 export type GridResponsiveMap = ResponsiveMap<GridResponsiveConfig>
 
 /** Computed responsive rule — `el.responsiveCallback`, `window.components['web-grid'].responsiveCallback`. */

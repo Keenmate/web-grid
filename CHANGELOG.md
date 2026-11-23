@@ -10,6 +10,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 A major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Changed — leftovers removed now that core covers them (2026-11-24)
+- The engine on its own (no element) resolves its labels through core `createLabels(null, …, { tag: 'web-grid' })`
+  instead of a private copy of core's `{ctx.*}` / HTML-param escaping — same chain as with the element, so a page-wide
+  `translateCallback` now applies host-less too.
+- The click-away manager's "popover hosted outside the grid" predicate (`isPathInOwnedScope`, the date picker) is
+  gone: every grid overlay lives in the grid's shadow root, so the host is in its clicks' composed path.
+- The cell / header menus (core `openMenu`) join the grid's `overlay-group` like its dropdown / date picker / toolbar
+  (**Fixed:** with a group set, a same-group overlay now closes the menu, another group's leaves it open), and a lazy
+  submenu's loading row shows the grid's `messages.loading` label (was core's `…`).
+- Docs: the responsive map type lists the `container` axis; stale "focus restored on a timeout" comments.
+
 ### Added — render callbacks get `ctx.labels` / `isReadonly` / `isDisabled` and re-run in place (2026-11-24)
 - Every callback ctx the grid builds (cell render / display / class / tooltip / validation-tooltip / copy / paste,
   `renderOptionCallback` + the option `get*Callback`s, pager labels, summary, tree chevron, shortcuts help, custom

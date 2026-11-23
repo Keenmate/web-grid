@@ -10,8 +10,8 @@
 //     editStartSelection (mousePosition / cursorAtStart / cursorAtEnd /
 //     selectAll). Type-to-start (initialSearchQuery present) always puts the
 //     cursor at the end so the typed character isn't replaced.
-//  2. No edit, but a cell was previously focused: re-focus that <td> via
-//     setTimeout to allow the browser to settle into the new DOM.
+//  2. No edit, but a cell was previously focused: re-focus that <td> right
+//     away (synchronously — the new cell is in the DOM already).
 //
 // `container` is the freshly built (or surgically updated) `.wg` container
 // — passed in so the cell-restore branch queries the right subtree.

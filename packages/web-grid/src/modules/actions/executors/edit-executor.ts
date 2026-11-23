@@ -154,8 +154,8 @@ async function executeCommitEdit(
 
 	if (focusEmptyRowColIndex !== undefined) {
 		await committed
-		// An empty-row commit re-renders the grid, and the render restores focus to
-		// the pre-render cell on a timeout — focus the fresh empty row after that,
+		// An empty-row commit re-renders the grid (a microtask render that restores
+		// focus to the pre-render cell) — focus the fresh empty row after that render,
 		// so the next row can be typed straight away.
 		setTimeout(() => {
 			const engine = ctx[GRID_ENGINE]

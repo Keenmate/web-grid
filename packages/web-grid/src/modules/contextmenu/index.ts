@@ -61,7 +61,10 @@ export function openGridMenu<T, Ctx>(host: GridHost<T>, spec: GridMenuSpec<Ctx>)
 		host: host.shadow,
 		// menu-presentation / menu-side (core createMenuPresentationInputs(), rulebook C-RO-16)
 		...host.getMenuPresentationOptions(),
-		labels: { back: host[GRID_ENGINE].labels['menuItems.back'], close: host[GRID_ENGINE].labels['ariaLabels.closeSheet'] },
+		// The grid's texts for every core menu string (a lazy submenu's loading row too)
+		labels: { back: host[GRID_ENGINE].labels['menuItems.back'], close: host[GRID_ENGINE].labels['ariaLabels.closeSheet'], loading: host[GRID_ENGINE].labels['messages.loading'] },
+		// "One overlay open at a time" in the grid's `overlay-group` (like its dropdown / date picker / toolbar)
+		overlayGroup: host.overlayGroup || undefined,
 		cssClass: MENU_CLASS[spec.kind],
 		offset: spec.offset ? { mainAxis: spec.offset.y, alignmentAxis: spec.offset.x } : undefined,
 		defaults: spec.defaults,

@@ -10,7 +10,7 @@
 	<h1>overlay-group fixture</h1>
 	<p>
 		Targeted by <code>e2e/overlay-group.spec.ts</code> — the <code>overlay-group</code> input scopes the
-		cell dropdown's and the date editor's "one overlay open at a time" coordination (core overlay tree). Reload resets all state.
+		cell dropdown's, the date editor's and the cell menu's "one overlay open at a time" coordination (core overlay tree). Reload resets all state.
 	</p>
 
 	<h2>#ga — overlay-group="a"</h2>
@@ -51,7 +51,14 @@
 			]
 			g.isEditingEnabled = true
 			g.editTrigger = 'navigate'
+			// Cell menu (core openMenu): joins the grid's group too; "More" is a lazy submenu that never
+			// resolves — its loading row shows the grid's `messages.loading` label
+			g.contextMenu = [
+				{ id: 'one', text: 'One' },
+				{ id: 'more', text: 'More', getChildrenCallback: () => new Promise(() => {}) }
+			]
 		}
+		document.getElementById('ga').labels = { 'messages.loading': 'Načítám…' }
 
 		// window.__pop.<a|b|default>.open() / .isOpen — closes only through the overlay tree
 		const anchor = document.getElementById('anchor')

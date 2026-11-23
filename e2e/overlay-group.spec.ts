@@ -118,4 +118,31 @@ test.describe('overlay-group', () => {
 		await expect(gridLocator(page, 'gb').locator('.wg-datepicker')).toBeVisible()
 		expect(await isPopOpen(page, 'b')).toBe(false)
 	})
+
+	test('the cell menu joins the group: a same-group overlay closes it, another group leaves it open', async ({ page }) => {
+		await load(page)
+		await cell(page, 'ga', 0, 0).click({ button: 'right' })
+		const menu = gridLocator(page, 'ga').locator('.km-menu:not(.km-menu--submenu)')
+		await expect(menu).toBeVisible()
+		await page.waitForTimeout(100)
+		await openPop(page, 'b')
+		await openPop(page, 'default')
+		await page.waitForTimeout(100)
+		await expect(menu).toBeVisible()
+		await openPop(page, 'a')
+		await expect(menu).toHaveCount(0)
+	})
+
+	test('the cell menu lazy-submenu loading row shows the grid messages.loading label', async ({ page }) => {
+		await load(page)
+		await cell(page, 'ga', 0, 0).click({ button: 'right' })
+		await gridLocator(page, 'ga').locator('.km-menu [role="menuitem"]', { hasText: 'More' }).hover()
+		await expect(gridLocator(page, 'ga').locator('.km-menu__loading')).toHaveText('Načítám…')
+		// the English default elsewhere
+		await page.keyboard.press('Escape')
+		await page.keyboard.press('Escape')
+		await cell(page, 'gb', 0, 0).click({ button: 'right' })
+		await gridLocator(page, 'gb').locator('.km-menu [role="menuitem"]', { hasText: 'More' }).hover()
+		await expect(gridLocator(page, 'gb').locator('.km-menu__loading')).toHaveText('Loading…')
+	})
 })

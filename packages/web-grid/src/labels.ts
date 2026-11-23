@@ -135,14 +135,15 @@ export const defaultLabelFormat: LabelFormat = (_key, template, params) => forma
 
 /**
  * The grid's labels for one instance: `resolve()` → the resolved `GridLabels` object the renderers read
- * (a key with placeholders holds its template), `text(key, params)` → one formatted text. With a `host`
- * (the element) core `createLabels` formats — page `translateCallback` included; without one (the
- * engine on its own, unit tests) the default `{ctx.*}` replacement.
+ * (a key with placeholders holds its template), `text(key, params)` → one formatted text. Core
+ * `createLabels` formats — with the element as `host` (its `translateCallback`, page-wide labels /
+ * locale / logger), or host-less (`null`, the engine on its own / unit tests: tag `web-grid`, no own
+ * `translateCallback`) — the same chain and escaping either way.
  */
 export class GridLabelsResolver {
 	#input: GridLabelsInput | null | undefined = null
-	#handle: Labels<GridLabels> | null = null
 	#locale: string | null = null
+	#handle: Labels<GridLabels> = this.#create(null)
 
 	/** The grid's own `locale` input (numbers in labels, `translateCallback`'s `ctx.locale`); `null` = page → browser. */
 	setLocale(locale: string | null | undefined): void {
@@ -154,21 +155,20 @@ export class GridLabelsResolver {
 	}
 
 	setHost(host: Element | null): void {
-		this.#handle = host ? createLabels<GridLabels>(host, DEFAULT_LABELS, () => this.#input, { tag: TAG, getLocale: () => this.#locale }) : null
+		this.#handle = this.#create(host)
+	}
+
+	#create(host: Element | null): Labels<GridLabels> {
+		return createLabels<GridLabels>(host, DEFAULT_LABELS, () => this.#input, { tag: TAG, getLocale: () => this.#locale })
 	}
 
 	text(key: GridLabelKey, params?: LabelParams): string {
-		if (this.#handle) return this.#handle.text(key, params)
-		return formatTemplate(resolveLabel(TAG, DEFAULT_LABELS, this.#input, key), params)
+		return this.#handle.text(key, params)
 	}
 
 	/** One label for innerHTML: template markup kept, `{…}` params escaped (all escaped with `shouldEscapeLabels`). */
 	html(key: GridLabelKey, params?: LabelParams): string {
-		if (this.#handle) return this.#handle.html(key, params)
-		const shouldEscapeAll = getPageSecurity()?.shouldEscapeLabels === true
-		const values = params && !shouldEscapeAll ? escapeParams(params) : params
-		const out = formatTemplate(resolveLabel(TAG, DEFAULT_LABELS, this.#input, key), values)
-		return shouldEscapeAll ? escapeHtml(out) : out
+		return this.#handle.html(key, params)
 	}
 
 	readonly format: LabelFormat = (key, _template, params) => this.text(key, params)
@@ -189,19 +189,6 @@ export class GridLabelsResolver {
 		}
 		return out as GridLabels
 	}
-}
-
-/** Params for an HTML label: every string escaped, at any depth of plain objects / arrays (core's rule). */
-function escapeParams(params: LabelParams): LabelParams {
-	const visit = (value: unknown): unknown => {
-		if (typeof value === 'string') return escapeHtml(value)
-		if (Array.isArray(value)) return value.map(visit)
-		if (value === null || typeof value !== 'object') return value
-		const proto = Object.getPrototypeOf(value)
-		if (proto !== Object.prototype && proto !== null) return value
-		return Object.fromEntries(Object.entries(value).map(([name, item]) => [name, visit(item)]))
-	}
-	return visit(params) as LabelParams
 }
 
 /**
