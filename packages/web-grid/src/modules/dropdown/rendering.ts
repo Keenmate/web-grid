@@ -161,7 +161,7 @@ export function renderDropdown<T>(
 		// and so does the overlay the grid lives in ('parent'); both save the edit. Escape / outside
 		// clicks stay the grid's own.
 		overlayGroup: ctx.overlayGroup || undefined,
-		onClose: (reason) => onDropdownClose(ctx, dropdown, reason, edited),
+		closeCallback: (reason) => onDropdownClose(ctx, dropdown, reason, edited),
 	})
 	popovers.set(dropdown, popover)
 	popover.open()
@@ -362,7 +362,7 @@ function enterDropdownSheet<T>(ctx: GridHost<T>, panel: HTMLElement): void {
 	const header = buildSheetHeader({
 		title,
 		closeLabel: ctx[GRID_ENGINE].labels['ariaLabels.closeSheet'],
-		onClose: () => closeDropdownSheet(ctx, panel),
+		closeCallback: () => closeDropdownSheet(ctx, panel),
 		search: typed ? { placeholder: ctx[GRID_ENGINE].labels['placeholders.search'], value: typed.value } : undefined,
 	})
 	// The sheet's search types into the cell's own input: the grid filters / searches as before

@@ -93,7 +93,7 @@ const isThenable = (v: unknown): v is PromiseLike<unknown> =>
 	!!v && (typeof v === 'object' || typeof v === 'function') && typeof (v as { then?: unknown }).then === 'function'
 
 import type { StateStore } from '@keenmate/web-components-core'
-import { copyText, createSelection, escapeHtml, renderSlotHtml, type Selection, type SlotHtml } from '@keenmate/web-components-core'
+import { copyText, createSelection, escapeHtml, renderSlotHtml, type KeySelection, type SlotHtml } from '@keenmate/web-components-core'
 // Date formatting utilities for auto-formatting date columns
 import { parseFormat, formatDate } from './modules/datepicker/index.js'
 import { bindOptionContext, getOptionDisplayValue } from './modules/dropdown/options.js'
@@ -102,7 +102,7 @@ import { bindOptionContext, getOptionDisplayValue } from './modules/dropdown/opt
 import { initLogger, dataLogger, interactionLogger, perfLogger } from './logger.js'
 import { typeNumberValue, type NumberParseOptions } from './modules/editing/value-parse.js'
 import { GridLabelsResolver, type GridLabelKey, type LabelFormat } from './labels.js'
-import { formatNumber, getLocaleSettings, getPageLocale, type LabelParams, type LabelsView, type LocaleSettings, type ParseNumberCallback } from '@keenmate/web-components-core/locale'
+import { formatNumber, resolveLocaleSettings, getPageLocale, type LabelParams, type LabelsView, type LocaleSettings, type ParseNumberCallback } from '@keenmate/web-components-core/locale'
 
 // Perf instrumentation (temporary — investigating tree-toggle slowness)
 import { perfNow, perfCount } from './perf.js'
@@ -315,7 +315,7 @@ export class GridEngine<T = unknown> {
 	// Row selection state
 	// Row selection by display index: core createSelection (SPEC §12.27) — the set + the anchor
 	// (Shift+click range start); the grid notifies through trackSelection(), not onChange.
-	protected _rowSelection: Selection<number> = createSelection<number>({
+	protected _rowSelection: KeySelection<number> = createSelection<number>({
 		getOrderedKeys: () => this.displayItems.map((_, i) => i)
 	})
 	protected _rangeShortcuts: GridRangeShortcut<T>[] = []
@@ -330,7 +330,7 @@ export class GridEngine<T = unknown> {
 	// positions (indices into `visualColumns`), like a CellRange; the public API
 	// takes / returns column indices (index into `columns`) and converts.
 	// Column selection by VISUAL position: core createSelection — the set + the range anchor
-	protected _columnSelection: Selection<number> = createSelection<number>({
+	protected _columnSelection: KeySelection<number> = createSelection<number>({
 		getOrderedKeys: () => this.visualColumns.map((_, i) => i)
 	})
 
@@ -1023,14 +1023,14 @@ export class GridEngine<T = unknown> {
 	/**
 	 * The locale settings number columns use (display, editor text, typed / pasted parse, copy): the
 	 * `locale` input → page-wide `window.components.locale` → browser, with the page-wide
-	 * `decimalSeparator` / `thousandsSeparator` overrides (core `getLocaleSettings`). Resolved once
+	 * `decimalSeparator` / `thousandsSeparator` overrides (core `resolveLocaleSettings`). Resolved once
 	 * per locale state.
 	 */
 	get numberSettings(): LocaleSettings {
 		const page = getPageLocale()
 		const cache = this._numberSettingsCache
 		if (cache && cache.locale === this._locale && cache.page === page) return cache.settings
-		const { locale, decimalSeparator, thousandsSeparator } = getLocaleSettings({ locale: this._locale })
+		const { locale, decimalSeparator, thousandsSeparator } = resolveLocaleSettings({ locale: this._locale })
 		const settings = Object.freeze({ locale, decimalSeparator, thousandsSeparator })
 		this._numberSettingsCache = { locale: this._locale, page, settings }
 		return settings

@@ -329,7 +329,7 @@ test.describe('phone: the cell menu is a bottom sheet', () => {
 })
 
 // =============================================================================
-// Menu host inputs — menu-presentation / menu-side (core menuPresentationInputs()) + labels
+// Menu host inputs — menu-presentation / menu-side (core createMenuPresentationInputs()) + labels
 // =============================================================================
 
 test.describe('menu-presentation / menu-side', () => {

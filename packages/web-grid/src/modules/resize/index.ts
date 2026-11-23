@@ -73,17 +73,17 @@ export function createColumnResize<T>(ctx: GridHost<T>, host: HTMLElement): Poin
 			}
 			return handle
 		},
-		onStart: ({ source }) => {
+		beforeStartCallback: ({ source }) => {
 			if (!state) return false
 			// The header may shrink below its initial width down to the column's own minimum
 			state.headerCell.style.minWidth = `${state.minWidth}px`
 			ctx.shadow.querySelector('.wg')?.classList.add('wg--resizing')
 			source.classList.add('wg__resize-handle--active')
 		},
-		onMove: ({ x }) => {
+		moveCallback: ({ x }) => {
 			if (state) previewWidth(ctx, state, widthAt(state, x))
 		},
-		onDrop: ({ x }) => {
+		dropCallback: ({ x }) => {
 			if (!state) return
 			const { field, startWidth } = state
 			const newWidthStr = `${widthAt(state, x)}px`
@@ -103,7 +103,7 @@ export function createColumnResize<T>(ctx: GridHost<T>, host: HTMLElement): Poin
 			// Persisted UI state (storage-key + persist-column-widths; core state store)
 			if (ctx[GRID_ENGINE].shouldPersistColumnWidths) ctx[GRID_ENGINE].savePersistedState()
 		},
-		onCancel: () => {
+		cancelCallback: () => {
 			// Escape / a cancelled pointer: back to the width it had
 			if (state) previewWidth(ctx, state, state.startWidth)
 			state = null

@@ -8,7 +8,7 @@
 // This module holds what both share: the sheet header — core's sheet chrome (createSheetHeader +
 // SHEET_CHROME_CSS: `.km-sheet-header` / `-title` / `-close`, rulebook C-RO-17) with the grid's
 // own `wg__sheet-*` classes kept for the layout around it (sticky, the search row) — and the session around an open sheet — page scroll locked (core
-// lockBodyScroll), the panel kept above the soft keyboard (core observeKeyboardInset)
+// lockBodyScroll), the panel kept above the soft keyboard (core fitToVisibleViewport)
 // and the phone Back gesture / button closing the sheet instead of leaving the page
 // (core claimBackEntry — one history entry page-wide; rulebook C-RO-15).
 //
@@ -21,7 +21,7 @@ import {
 	claimBackEntry,
 	createSheetHeader,
 	lockBodyScroll,
-	observeKeyboardInset,
+	fitToVisibleViewport,
 } from '@keenmate/web-components-core'
 
 export interface SheetHeaderOptions {
@@ -30,7 +30,7 @@ export interface SheetHeaderOptions {
 	/** Accessible name of the close button (`ariaLabels.closeSheet`). */
 	closeLabel: string
 	/** Close button pressed: leave the cell (save). */
-	onClose: () => void
+	closeCallback: () => void
 	/** A search field (combobox / autocomplete): its placeholder + initial text. */
 	search?: { placeholder: string; value: string }
 }
@@ -45,7 +45,7 @@ export function buildSheetHeader(options: SheetHeaderOptions): HTMLElement {
 	const { header, title, close } = createSheetHeader({
 		title: options.title,
 		closeLabel: options.closeLabel,
-		onClose: options.onClose,
+		closeCallback: options.closeCallback,
 	})
 	header.classList.add('wg__sheet-header')
 	title?.classList.add('wg__sheet-title')
@@ -89,7 +89,7 @@ export function startSheetSession(panel: HTMLElement, back: () => void): () => v
 	const root = panel.getRootNode()
 	if (root instanceof ShadowRoot || root instanceof Document) adoptStyles(root, SHEET_CHROME_CSS)
 	const unlock = lockBodyScroll()
-	const unobserve = observeKeyboardInset(panel)
+	const unobserve = fitToVisibleViewport(panel)
 	// A sheet opening right after (the dropdown re-rendered for another cell, a reopened
 	// date picker) adopts the entry; the page keeps its scroll position on close
 	const releaseBack = claimBackEntry(back)

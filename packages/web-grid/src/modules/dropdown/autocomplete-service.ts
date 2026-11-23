@@ -10,8 +10,8 @@ import { createAsyncRunner, type AsyncRunner } from '@keenmate/web-components-co
 
 /** Per-search hooks: what the dropdown does when the searching state changes / the search fails. */
 export interface AutocompleteHooks {
-	onLoadingChange(isLoading: boolean): void
-	onError(error: unknown): void
+	loadingChangeCallback(isLoading: boolean): void
+	errorCallback(error: unknown): void
 }
 
 export class AutocompleteService {
@@ -19,8 +19,8 @@ export class AutocompleteService {
 	#hooks: AutocompleteHooks | null = null
 	readonly #runner: AsyncRunner = createAsyncRunner({
 		debounceMs: () => this.#debounceMs,
-		onLoadingChange: (isLoading) => this.#hooks?.onLoadingChange(isLoading),
-		onError: (error) => this.#hooks?.onError(error)
+		loadingChangeCallback: (isLoading) => this.#hooks?.loadingChangeCallback(isLoading),
+		errorCallback: (error) => this.#hooks?.errorCallback(error)
 	})
 
 	/** True while an async search is running — the dropdown shows "Searching…". */

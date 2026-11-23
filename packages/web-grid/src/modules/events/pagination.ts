@@ -42,7 +42,7 @@ export function handlePageSizeChange<T>(ctx: GridHost<T>, select: HTMLSelectElem
 	const newPageSize = parseInt(select.value, 10)
 	if (newPageSize === ctx[GRID_ENGINE].pageSize) return false
 	return guardPageChange(ctx, 'page-size', 1, page => {
-		ctx.setAttributes({ pageSize: newPageSize })
+		ctx.setProperties({ pageSize: newPageSize })
 		ctx[GRID_ENGINE].currentPage = page
 		ctx[GRID_ENGINE].fireDataRequest('page-size')
 	})

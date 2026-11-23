@@ -27,7 +27,7 @@ export const GRID_ENGINE: unique symbol = Symbol('@keenmate/web-grid:engine')
 /**
  * The module host: a private object of the element (`GridElement#host`), never the element itself and
  * never a public member. It holds the grid's runtime services / UI state and delegates the element calls
- * the modules need (render, scrollToRow, dispatchEvent, setAttributes, …). The element is `shadow.host`.
+ * the modules need (render, scrollToRow, dispatchEvent, setProperties, …). The element is `shadow.host`.
  */
 export interface GridHost<T = unknown> {
 	// Shadow DOM
@@ -37,7 +37,7 @@ export interface GridHost<T = unknown> {
 	readonly [GRID_ENGINE]: GridEngine<T>
 
 	/** Core: write inputs (`pageSize`, `frozenColumnCount`, …) through the property path and apply them now. */
-	setAttributes(values: Record<string, unknown>): void
+	setProperties(values: Record<string, unknown>): void
 
 	// Dropdown runtime state — owned by DropdownService (open flag, options, highlight,
 	// filter text, race-condition flags). The `isCommittingFromKeyboard` and
@@ -49,7 +49,7 @@ export interface GridHost<T = unknown> {
 
 	// The open cell / header menu (core openMenu(), in the shadow root) — one at a time
 	menu: MenuHandle | null
-	/** Core openMenu() presentation + drawer side (inputs menu-presentation / menu-side; core menuPresentationOptions()). */
+	/** Core openMenu() presentation + drawer side (inputs menu-presentation / menu-side; core getMenuPresentationOptions()). */
 	getMenuPresentationOptions(): { presentation: MenuPresentation; side: MenuDrawerSide }
 
 	// Datepicker state

@@ -162,8 +162,8 @@ export function startAutocompleteSearch<T>(
 		rerenderAutocomplete(ctx, opts, searchCallback ? (results.length > 0 ? 0 : -1) : undefined)
 	}, {
 		// The runner turns the state off BEFORE onResult, so the dropdown renders the right message.
-		onLoadingChange: (isLoading) => updateLoadingIndicator(ctx, isLoading, isLoading ? (opts.labels?.['ariaLabels.searching'] ?? ctx[GRID_ENGINE].labels['ariaLabels.searching']) : ''),
-		onError: (error) => {
+		loadingChangeCallback: (isLoading) => updateLoadingIndicator(ctx, isLoading, isLoading ? (opts.labels?.['ariaLabels.searching'] ?? ctx[GRID_ENGINE].labels['ariaLabels.searching']) : ''),
+		errorCallback: (error) => {
 			dataLogger.error('Autocomplete search failed:', error)
 			ctx.dropdown.setOptions([])
 			rerenderAutocomplete(ctx, opts)

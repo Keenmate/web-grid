@@ -190,6 +190,10 @@ for (const id of MODES) {
 		test('Escape with focus on a toolbar button (keyboard focus)', async ({ page }) => {
 			await load(page, id)
 			await button(page, id, 'ping').focus()
+			// keyboard focus showed the button's tooltip: the first Escape only hides it (core rc26, WCAG 1.4.13)
+			await page.keyboard.press('Escape')
+			await page.waitForTimeout(100)
+			expect(await snap(page, id)).toMatchObject({ toolbar: 1, focus: `${id} toolbar:ping` })
 			await page.keyboard.press('Escape')
 			await page.waitForTimeout(100)
 			expect(await snap(page, id)).toMatchObject(EXPECT.escapeInToolbar[id])
@@ -390,6 +394,9 @@ test.describe('toolbar close paths — nested overlays (Escape topmost-first)', 
 			expect((await snap(page, id)).toolbar).toBe(1)
 			// ... focus went back to its reference, the toolbar button → the next Escape closes the toolbar
 			expect((await snap(page, id)).focus).toBe(`${id} toolbar:ping`)
+			// the returned focus shows the button's tooltip: one Escape hides it (core rc26), the next closes the toolbar
+			await page.keyboard.press('Escape')
+			expect((await snap(page, id)).toolbar).toBe(1)
 			await page.keyboard.press('Escape')
 			expect((await snap(page, id)).toolbar).toBe(0)
 		})

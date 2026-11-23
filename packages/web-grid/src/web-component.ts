@@ -286,14 +286,14 @@ import {
 	type SaveStateCallback,
 	type InputDef,
 	type EventDef,
-	type RenderLoaderCallback,
+	type RenderLoadingCallback,
 	type RenderIconCallback,
 	type ResponsiveMap,
 	type ResponsiveCallback,
 	type EnvironmentSnapshot,
 	resolvePresentation,
 } from '@keenmate/web-components-core'
-import { menuPresentationInputs, menuPresentationOptions } from '@keenmate/web-components-core/menu'
+import { createMenuPresentationInputs, getMenuPresentationOptions } from '@keenmate/web-components-core/menu'
 import type { MenuDrawerSide, MenuHandle, MenuPresentation } from '@keenmate/web-components-core/menu'
 import { createLayer, type Layer, type LayerOptions } from '@keenmate/web-components-core/positioning'
 import type { ParseNumberCallback, TranslateCallback } from '@keenmate/web-components-core/locale'
@@ -661,7 +661,7 @@ export interface GridElementConfig<T = unknown> {
 	/** Computes the instance CSS from the grid context; wins over `customStyles`. */
 	getCustomStylesCallback: ((ctx: GridCallbackContext<T>) => string | null | undefined) | null
 	/** Custom render for the grid's loading states (`ctx.context`: 'row' | 'search'); beats `window.components.renderLoadingCallback`. */
-	renderLoadingCallback: RenderLoaderCallback | null
+	renderLoadingCallback: RenderLoadingCallback | null
 	/**
 	 * This grid's icon hook (core `renderIcon`, SPEC §12.33): `(name, ctx) => markup | null` for the toolbar / row-action
 	 * / edit-button / dropdown-option icons. Asked after the built-in names (`check`, `close`, … never reach it) and
@@ -749,7 +749,7 @@ export interface GridElementConfig<T = unknown> {
 	createEmptyRowCallback: ((ctx: GridCallbackContext<T>) => T | Promise<T>) | null | undefined
 	/** The copy the `duplicate` built-in inserts (default: shallow copy, `idMember` cleared). */
 	createDuplicateRowCallback: ((ctx: RowContext<T>) => T) | null | undefined
-	// Menus (core menuPresentationInputs(), SPEC §12.13 — the same inputs on every menu host)
+	// Menus (core createMenuPresentationInputs(), SPEC §12.13 — the same inputs on every menu host)
 	/**
 	 * How the cell and column-header menus open: `auto` (default — a bottom sheet on a phone,
 	 * the floating menu elsewhere), `floating`, `sheet` (bottom sheet) or `drawer` (full-height
@@ -991,7 +991,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		// Loading states (core SPEC §12.14): draws every grid loader — `ctx.context` is 'row'
 		// (infinite-scroll load-more row) or 'search' (async dropdown search). Beats the page-wide
 		// `window.components.renderLoadingCallback`; may return a cleanup function.
-		{ configKey: 'renderLoadingCallback', converter: toFunction<RenderLoaderCallback>(), default: null, on: 'update', type: 'RenderLoaderCallback | null', description: "Custom render for the grid's loading states (`ctx.context`: 'row' | 'search'); fills `ctx.containerElement`, may return a cleanup." },
+		{ configKey: 'renderLoadingCallback', converter: toFunction<RenderLoadingCallback>(), default: null, on: 'update', type: 'RenderLoadingCallback | null', description: "Custom render for the grid's loading states (`ctx.context`: 'row' | 'search'); fills `ctx.containerElement`, may return a cleanup." },
 		// Icons (core renderIcon, SPEC §12.33): core reads `host.renderIconCallback` — the element's own hook, asked
 		// after the built-in names and before the page-wide `window.components.renderIconCallback`. A change re-renders.
 		{ configKey: 'renderIconCallback', converter: toFunction<RenderIconCallback>(), default: null, on: 'update', type: 'RenderIconCallback | null', description: "This grid's icon hook: `(name, ctx) => markup | null` for the toolbar / row-action / edit-button / dropdown-option icons. Asked after the built-in names (never sent to it) and before the page-wide `window.components.renderIconCallback`; `null` / `undefined` = not mine (the next rule decides), `''` = no icon. `ctx`: `{ component, element, prefix }` + `item` (toolbar / row action) or `option` (dropdown option)." },
@@ -1038,7 +1038,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		{ configKey: 'createEmptyRowCallback', converter: toFunction<(ctx: GridCallbackContext) => unknown>(), on: 'update', type: '((ctx: GridContext<T>) => T | Promise<T>) | null', description: 'The row the `add` built-in (and the experimental new row) inserts: `(ctx) => T | Promise<T>`. Default: a blank row.' },
 		{ configKey: 'createDuplicateRowCallback', converter: toFunction<(ctx: RowContext) => unknown>(), on: 'update', type: '((ctx: RowContext<T>) => T) | null', description: 'The copy the `duplicate` built-in inserts (default: shallow copy, `idMember` cleared).' },
 		// Menus: menu-presentation / menu-side — core's standard menu-host rows (read at every open: on 'none')
-		...menuPresentationInputs(),
+		...createMenuPresentationInputs(),
 	] as const satisfies readonly InputDef[]
 
 	/** The core event table (read by BlissElement for the `on<Name>` twins). @ignore */
@@ -1184,13 +1184,13 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		const host: GridHost<T> = {
 			[GRID_ENGINE]: engine,
 			shadow: this.#shadow,
-			setAttributes: (values) => el.setAttributes(values),
+			setProperties: (values) => el.setProperties(values),
 			dispatchEvent: (event) => el.dispatchEvent(event),
 			dropdown: new DropdownService(),
 			isCommittingFromKeyboard: false,
 			isTransitioningCells: false,
 			menu: null,
-			getMenuPresentationOptions: () => menuPresentationOptions(el.config),
+			getMenuPresentationOptions: () => getMenuPresentationOptions(el.config),
 			datepicker: null,
 			isPhoneSheet: false,
 			autocomplete: new AutocompleteService(),
@@ -1274,9 +1274,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	 * arranged, under `storage-key`. The engine applies / collects the state; this store does the I/O.
 	 */
 	readonly #stateStore = createStateStore<GridPersistenceState>(this, {
-		getKey: () => this.config.storageKey as string | null,
-		getLoadCallback: () => this.config.loadStateCallback as LoadStateCallback<GridPersistenceState> | null,
-		getSaveCallback: () => this.config.saveStateCallback as SaveStateCallback<GridPersistenceState> | null,
+		getConfig: () => this.config,
 		toContext: (data) => this.withContext(data),
 	})
 

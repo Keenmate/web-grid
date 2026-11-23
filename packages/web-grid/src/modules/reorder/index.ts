@@ -88,7 +88,7 @@ export function createColumnReorder<T>(ctx: GridHost<T>, host: HTMLElement): Poi
 			state = { ...found, ghost: null, dropIndicator: null, currentDropIndex: found.fromIndex }
 			return found.headerCell
 		},
-		onStart: ({ x, y }) => {
+		beforeStartCallback: ({ x, y }) => {
 			if (!state) return false
 			isActive = true
 			activeDrags++
@@ -104,7 +104,7 @@ export function createColumnReorder<T>(ctx: GridHost<T>, host: HTMLElement): Poi
 			ctx.shadow.querySelector('.wg')?.appendChild(indicator)
 			state.dropIndicator = indicator
 		},
-		onMove: ({ x, y }) => {
+		moveCallback: ({ x, y }) => {
 			if (!state) return
 			placeGhost(x, y)
 			const dropIndex = findDropIndex(ctx, x)
@@ -113,7 +113,7 @@ export function createColumnReorder<T>(ctx: GridHost<T>, host: HTMLElement): Poi
 				updateDropIndicator(ctx, state.dropIndicator, dropIndex)
 			}
 		},
-		onDrop: () => {
+		dropCallback: () => {
 			if (!state) return
 			const { field, fromIndex, currentDropIndex: toIndex } = state
 			cleanup()
@@ -137,7 +137,7 @@ export function createColumnReorder<T>(ctx: GridHost<T>, host: HTMLElement): Poi
 				dragJustCompleted = false
 			})
 		},
-		onCancel: () => cleanup()
+		cancelCallback: () => cleanup()
 	})
 }
 

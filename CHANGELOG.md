@@ -10,6 +10,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 A major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Changed — built on core 1.0.0-rc26 (2026-11-23)
+- `@keenmate/web-components-core` `^1.0.0-rc26` (core's naming release). Consumer-visible, forced by core:
+  the inherited batch-write method is `el.setProperties(props)` (was `setAttributes`), and the re-exported
+  loader type is `RenderLoadingCallback` (was `RenderLoaderCallback`).
+- Internal adoption of the core renames: `resolveLocaleSettings`, `createMenuPresentationInputs` /
+  `getMenuPresentationOptions`, `fitToVisibleViewport`, `observeTextInput`, `KeySelection`, the
+  `*Callback` option fields (`closeCallback`, `dismissCallback`, `computedCallback`, `loadingChangeCallback` /
+  `errorCallback`, `beforeStartCallback` / `moveCallback` / `dropCallback` / `cancelCallback`) and the state
+  store's single `getConfig()`.
+- Through core: the first Escape on a toolbar button whose tooltip keyboard focus showed now only hides the tooltip;
+  the next Escape closes the toolbar (WCAG 1.4.13). `e2e/toolbar-close.spec.ts` follows.
+
 ### Fixed — the delete / move row built-ins never touch a locked row (2026-11-23)
 - `delete`, `move-up` and `move-down` ignored row locks (`rowLocking` / `lockRowById`): only a read-only /
   disabled grid turned them off, so the row toolbar, the cell menu and a row shortcut (e.g. `Ctrl+Delete`)

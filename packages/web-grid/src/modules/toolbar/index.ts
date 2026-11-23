@@ -356,7 +356,7 @@ export function openToolbar<T>(
 			fallbackPlacements: fallbacks,
 			shift: 8,  // Keep within viewport
 			shouldAutoUpdate: false,
-			onComputed: ({ x, y, placement: finalPlacement }) => {
+			computedCallback: ({ x, y, placement: finalPlacement }) => {
 				let initialX = x
 
 				// When followsCursor or a cell toolbar is active with top placement,

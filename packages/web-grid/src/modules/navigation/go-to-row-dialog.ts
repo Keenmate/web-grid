@@ -120,7 +120,7 @@ export function openGoToRowDialog<T>(ctx: GridHost<T>, colIndex: number): void {
 		backdrop: overlay, // the grid's own full-viewport overlay (it centres the dialog)
 		initialFocus: input,
 		returnFocusTo: null,
-		onDismiss: cancelDialog,
+		dismissCallback: cancelDialog,
 		logSource: ctx.shadow.host
 	})
 	input.select()

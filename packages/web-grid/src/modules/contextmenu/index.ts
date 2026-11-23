@@ -58,7 +58,7 @@ export function openGridMenu<T, Ctx>(host: GridHost<T>, spec: GridMenuSpec<Ctx>)
 	const menu = openMenu(spec.entries, spec.ctx, {
 		at: spec.at,
 		host: host.shadow,
-		// menu-presentation / menu-side (core menuPresentationInputs(), rulebook C-RO-16)
+		// menu-presentation / menu-side (core createMenuPresentationInputs(), rulebook C-RO-16)
 		...host.getMenuPresentationOptions(),
 		labels: { back: host[GRID_ENGINE].labels['menuItems.back'], close: host[GRID_ENGINE].labels['ariaLabels.closeSheet'] },
 		cssClass: MENU_CLASS[spec.kind],
@@ -69,7 +69,7 @@ export function openGridMenu<T, Ctx>(host: GridHost<T>, spec: GridMenuSpec<Ctx>)
 		returnFocusTo: spec.returnFocusTo ?? null,
 		shouldFocusFirst: spec.shouldFocusFirst,
 		title: spec.title,
-		onClose: () => {
+		closeCallback: () => {
 			if (host.menu === menu) host.menu = null
 		}
 	})

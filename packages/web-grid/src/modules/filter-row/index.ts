@@ -7,7 +7,7 @@
 //
 //   - typing → debounced (FILTER_DEBOUNCE_MS) → `setFilter(field, text)` → page 1;
 //     Enter applies at once, Escape clears the input (and applies);
-//   - IME-safe (core onTextInput, delegated on the shadow root): a composition filters once, on
+//   - IME-safe (core observeTextInput, delegated on the shadow root): a composition filters once, on
 //     commit; the Enter that confirms a candidate (isImeEnter) doesn't apply;
 //   - matching is core /search "contains", case- and accent-insensitive (grid.ts filteredItems);
 //   - server pagination: the change runs through `beforePageChangeCallback`
@@ -20,7 +20,7 @@
 
 import type { GridHost } from '../grid-context.js'
 import { guardPageChange } from '../events/page-change.js'
-import { createDebounce, isImeEnter, onTextInput, type Debounce } from '@keenmate/web-components-core'
+import { createDebounce, isImeEnter, observeTextInput, type Debounce } from '@keenmate/web-components-core'
 import { GRID_ENGINE } from '../grid-context.js'
 
 export const FILTER_DEBOUNCE_MS = 300
@@ -105,11 +105,11 @@ export function positionFilterRow<T>(ctx: GridHost<T>): void {
 }
 
 /**
- * Typed filter text — core `onTextInput`, delegated on the shadow root (one subscription covers the
+ * Typed filter text — core `observeTextInput`, delegated on the shadow root (one subscription covers the
  * inputs every render rebuilds; an IME composition reports once, on commit). Returns the unsubscribe.
  */
 export function watchFilterRowText<T>(ctx: GridHost<T>, root: ShadowRoot): () => void {
-	return onTextInput(root, (text, _event, input) => {
+	return observeTextInput(root, (text, _event, input) => {
 		const field = (input as HTMLInputElement).dataset.field ?? ''
 		const svc = ctx.filterRow
 		svc.pendingText.set(field, text)

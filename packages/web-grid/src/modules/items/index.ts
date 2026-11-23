@@ -360,10 +360,10 @@ function runHeaderBuiltIn<T>(host: GridHost<T>, d: GridActionEventDetail<T>): vo
 			return
 		}
 		case 'freeze-column':
-			host.setAttributes({ frozenColumnCount: colIndex + 1 })
+			host.setProperties({ frozenColumnCount: colIndex + 1 })
 			return
 		case 'unfreeze-column':
-			host.setAttributes({ frozenColumnCount: Math.max(0, colIndex) })
+			host.setProperties({ frozenColumnCount: Math.max(0, colIndex) })
 			return
 		case 'show-all-columns':
 			engine.columns.forEach(col => { col.isHidden = false })

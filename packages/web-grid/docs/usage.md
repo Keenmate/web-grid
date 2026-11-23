@@ -232,7 +232,7 @@ grid.rowToolbar = [
 | `headerContextMenu` | `GridHeaderMenuEntry<T>[]` | — | Header context menu: built-in names, menu items, dividers |
 | `beforeContextMenuOpenCallback` | `(ctx: CellContext<T>) => false \| GridMenuEntry<T>[] \| void` | — | Runs (sync) before the cell menu opens: `false` → no grid menu (the browser's shows); an entries array → shown instead of `contextMenu` |
 | `beforeHeaderMenuOpenCallback` | `(ctx: HeaderMenuContext<T>) => false \| GridHeaderMenuEntry<T>[] \| void` | — | Same for the header menu |
-| `menuPresentation` (`menu-presentation`) | `'auto' \| 'floating' \| 'sheet' \| 'drawer'` | `'auto'` | How both menus open: `auto` — a bottom sheet on a phone, the floating menu elsewhere; `sheet` — always the bottom sheet; `drawer` — a full-height side panel; `floating` — always the floating menu. Read at every open; per device / width through the responsive rules (core `menuPresentationInputs()`, the same input on every Keenmate menu host) |
+| `menuPresentation` (`menu-presentation`) | `'auto' \| 'floating' \| 'sheet' \| 'drawer'` | `'auto'` | How both menus open: `auto` — a bottom sheet on a phone, the floating menu elsewhere; `sheet` — always the bottom sheet; `drawer` — a full-height side panel; `floating` — always the floating menu. Read at every open; per device / width through the responsive rules (core `createMenuPresentationInputs()`, the same input on every Keenmate menu host) |
 | `menuSide` (`menu-side`) | `'start' \| 'end'` | `'start'` | The edge a `drawer` menu slides in from (`start` = left in LTR) |
 
 #### Built-in header menu items

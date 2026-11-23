@@ -513,7 +513,7 @@ export class DatePicker {
 			},
 			shouldCloseOnResize: false,
 			overlayGroup: this.options.overlayGroup,
-			onClose: (reason) => this.handlePopoverClose(popover, reason),
+			closeCallback: (reason) => this.handlePopoverClose(popover, reason),
 		})
 		this.popover = popover
 		popover.open()
@@ -584,7 +584,7 @@ export class DatePicker {
 		const header = buildSheetHeader({
 			title,
 			closeLabel: this.options.sheetCloseLabel ?? 'Close',
-			onClose: () => this.closeAs('close'),
+			closeCallback: () => this.closeAs('close'),
 		})
 		const panel = this.element
 		// Un-anchored first (core puts back the inline position it found), then the anchored

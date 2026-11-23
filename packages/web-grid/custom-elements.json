@@ -73,9 +73,9 @@
         },
         {
           "kind": "js",
-          "name": "RenderLoaderCallback",
+          "name": "RenderLoadingCallback",
           "declaration": {
-            "name": "RenderLoaderCallback",
+            "name": "RenderLoadingCallback",
             "package": "@keenmate/web-components-core"
           }
         },
@@ -2597,7 +2597,7 @@
               "name": "renderLoadingCallback",
               "privacy": "public",
               "type": {
-                "text": "RenderLoaderCallback | null"
+                "text": "RenderLoadingCallback | null"
               },
               "default": "null",
               "description": "Custom render for the grid's loading states (`ctx.context`: 'row' | 'search'); fills `ctx.containerElement`, may return a cleanup."
@@ -3016,7 +3016,7 @@
             },
             {
               "kind": "method",
-              "name": "setAttributes",
+              "name": "setProperties",
               "privacy": "public",
               "parameters": [
                 {
@@ -3136,6 +3136,58 @@
                 }
               },
               "description": "Clear this element's own log level: it follows its component type / the page again."
+            },
+            {
+              "kind": "field",
+              "name": "isLoggingEnabled",
+              "privacy": "public",
+              "readonly": true,
+              "type": {
+                "text": "boolean"
+              },
+              "description": "This element has its own log level that prints something (set by `enableLogging()`, not `silent`)."
+            },
+            {
+              "kind": "field",
+              "name": "controller",
+              "privacy": "public",
+              "readonly": true,
+              "type": {
+                "text": "unknown"
+              },
+              "description": "The component's public facade (SPEC §12.34) — the same object every event detail and callback `ctx` carries as `controller`; `undefined` for a component without one."
+            },
+            {
+              "kind": "method",
+              "name": "on",
+              "privacy": "public",
+              "parameters": [
+                {
+                  "name": "name",
+                  "type": {
+                    "text": "string"
+                  }
+                },
+                {
+                  "name": "handler",
+                  "type": {
+                    "text": "(event: CustomEvent) => void"
+                  }
+                },
+                {
+                  "name": "options",
+                  "type": {
+                    "text": "AddEventListenerOptions"
+                  },
+                  "optional": true
+                }
+              ],
+              "return": {
+                "type": {
+                  "text": "() => void"
+                }
+              },
+              "description": "Typed `addEventListener` for a declared event; returns an unsubscribe function (SPEC §12.5)."
             },
             {
               "kind": "field",
@@ -4055,7 +4107,7 @@
             },
             {
               "name": "input-rejected",
-              "description": "Fired when a written value is refused (core, SPEC §6): an invalid attribute or property value, or an unknown `setAttributes()` key. The element warns and keeps its previous value. Detail `{ configKey, attribute?, value, reason?, kept, source }`. Twin callback `onInputRejected`."
+              "description": "Fired when a written value is refused (core, SPEC §6): an invalid attribute or property value, or an unknown `setProperties()` key. The element warns and keeps its previous value. Detail `{ configKey, attribute?, value, reason?, kept, source }`. Twin callback `onInputRejected`."
             }
           ],
           "customElement": true,
