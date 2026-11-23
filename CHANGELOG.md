@@ -10,6 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 A major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Changed — the toolbar row's shortcuts listen through core `bindShortcuts` (2026-11-24)
+- The two document-level listeners for row shortcuts (the floating toolbar's row, the hovered row in inline mode)
+  are core `bindShortcuts` bindings with `isEnabled: (e) => !isTypingTarget(e)` — no shortcuts at all while a cell
+  editor or text field has focus (Excel). The row / lock / permission gates stay on the action item
+  (`getIsDisabledCallback(ctx)`, the built-in delete / move defaults on a locked row): a disabled shortcut leaves
+  the key unconsumed. Behaviour unchanged; the focused-cell path keeps its in-order dispatch (it runs before the
+  built-in keys, inside the grid's own keydown).
+
 ### Changed — the phone sheets are modal, on core's full-screen frame (2026-11-23)
 - The cell dropdown and the date editor's phone sheet run through core `startModalSession` (rulebook C-CA-19):
   the page behind is inert and Tab never reaches it — they already announced `aria-modal="true"` without

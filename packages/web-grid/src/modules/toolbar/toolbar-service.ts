@@ -13,7 +13,8 @@ export type ToolbarHoveredCell = {
 	field: string
 }
 
-export type ToolbarShortcutHandler = (e: KeyboardEvent) => void
+/** The unbind returned by core `bindShortcuts` for a document-level shortcut listener. */
+export type ToolbarShortcutHandler = () => void
 
 export class ToolbarService {
 	private _hideTimeout: ReturnType<typeof setTimeout> | null = null
@@ -56,19 +57,19 @@ export class ToolbarService {
 	get currentCellItemsJson(): string | null { return this._currentCellItemsJson }
 	setCurrentCellItemsJson(json: string | null): void { this._currentCellItemsJson = json }
 
-	/** The keydown handler registered on document while the floating toolbar is open. */
+	/** Unbinds the document shortcut listener installed while the floating toolbar is open. */
 	get shortcutHandler(): ToolbarShortcutHandler | null { return this._shortcutHandler }
 	setShortcutHandler(handler: ToolbarShortcutHandler | null): void { this._shortcutHandler = handler }
 
-	/** The keydown handler registered on document for inline-mode shortcuts (hover-driven). */
+	/** Unbinds the document shortcut listener for inline-mode shortcuts (hover-driven). */
 	get inlineShortcutHandler(): ToolbarShortcutHandler | null { return this._inlineShortcutHandler }
 	setInlineShortcutHandler(handler: ToolbarShortcutHandler | null): void { this._inlineShortcutHandler = handler }
 
 	/**
 	 * Reset hover / move-in-progress flags, clear the hovered-cell cache, drop the
 	 * cell-items JSON snapshot, and cancel any pending hide-timeout. The shortcut
-	 * handler is left in place — the caller is responsible for unregistering it
-	 * from `document` and then calling `setShortcutHandler(null)`.
+	 * unbind is left in place — the caller is responsible for calling it and then
+	 * `setShortcutHandler(null)`.
 	 */
 	reset(): void {
 		this.clearHideTimeout()

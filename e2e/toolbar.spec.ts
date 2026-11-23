@@ -1,4 +1,4 @@
-import { test, expect, Page, Locator, gridLocator, openToolbarOn } from './fixtures'
+import { test, expect, Page, Locator, gridLocator, openToolbarOn, editorIn } from './fixtures'
 
 /**
  * E2E coverage for the row-toolbar fixture (test/toolbar.html). The page
@@ -241,5 +241,93 @@ test.describe('cell-aware toolbar — #grid4', () => {
 			els => els.map(el => (el as HTMLElement).dataset.id ?? (el as HTMLElement).dataset.action)
 		)
 		expect(ids).toEqual(['add', 'delete', 'duplicate'])
+	})
+})
+
+// =============================================================================
+// Document-level row shortcuts (core bindShortcuts) — floating toolbar's row / inline hovered row
+// =============================================================================
+
+// Q10: the toolbar's row shortcuts listen on document through core bindShortcuts with
+// isEnabled = not typing (Excel: no shortcuts while a cell editor has focus); the row / lock gates
+// stay on the action item, so a disabled shortcut leaves the key unconsumed.
+test.describe('row shortcuts on the toolbar row (document listener)', () => {
+	async function setup(page: Page, gridId: string) {
+		await gridLocator(page, gridId).evaluate((el: any) => {
+			const w = window as any
+			w.__probe = []
+			w.__keys = []
+			// The page's own listener after the grid's: did the key reach it, consumed or not?
+			window.addEventListener('keydown', (e) => { if (e.ctrlKey && !['Control', 'Shift'].includes(e.key)) w.__keys.push({ key: e.key, isPrevented: e.defaultPrevented }) })
+			el.idMember = 'id'
+			el.isEditingEnabled = true
+			el.rowShortcuts = [
+				{ shortcut: 'Ctrl+Delete', action: 'delete' },
+				{ id: 'probe', shortcut: 'Ctrl+Shift+P', onClick: (ctx: any) => w.__probe.push(ctx.rowIndex) },
+			]
+		})
+	}
+	const probe = (page: Page) => page.evaluate(() => (window as any).__probe)
+	const keys = (page: Page) => page.evaluate(() => (window as any).__keys)
+	const count = (page: Page, gridId: string) => gridLocator(page, gridId).evaluate((el: any) => el.items.length)
+
+	test('a shortcut runs on the open toolbar row with focus outside the grid, consuming the key', async ({ page }) => {
+		await setup(page, 'grid')
+		await openToolbarOn(page, row(page, 'grid', 2))
+		await expect(activeToolbar(page, 'grid')).toBeVisible()
+		await page.keyboard.press('Control+Shift+P')
+		await expect.poll(() => probe(page)).toEqual([2])
+		// the document listener stops the consumed key there: the window listener never sees it
+		expect(await keys(page)).toEqual([])
+	})
+
+	test('no shortcut while a cell editor has focus (Excel)', async ({ page }) => {
+		await setup(page, 'grid')
+		const before = await count(page, 'grid')
+		const target = cellOnRow(page, 'grid', 1, 'title')
+		await target.click()
+		await page.keyboard.press('F2')
+		await expect(editorIn(target)).toBeFocused()
+		await openToolbarOn(page, row(page, 'grid', 1))
+		await expect(activeToolbar(page, 'grid')).toBeVisible()
+		await page.keyboard.press('Control+Shift+P')
+		await page.keyboard.press('Control+Delete')
+		await page.waitForTimeout(100)
+		expect(await probe(page)).toEqual([])
+		expect(await count(page, 'grid')).toBe(before)
+		await expect(editorIn(target)).toBeFocused()
+		// both keys fell through unconsumed
+		expect(await keys(page)).toEqual([{ key: 'P', isPrevented: false }, { key: 'Delete', isPrevented: false }])
+	})
+
+	test("a locked row's Ctrl+Delete does nothing and falls through; an unlocked row deletes", async ({ page }) => {
+		await setup(page, 'grid')
+		const grid = gridLocator(page, 'grid')
+		const lockedId = await grid.evaluate((el: any) => { el.lockRowById(el.items[1].id); return el.items[1].id })
+		const before = await count(page, 'grid')
+		await openToolbarOn(page, row(page, 'grid', 1))
+		await expect(activeToolbar(page, 'grid')).toBeVisible()
+		await page.keyboard.press('Control+Delete')
+		await page.waitForTimeout(100)
+		expect(await count(page, 'grid')).toBe(before)
+		expect(await grid.evaluate((el: any, id) => el.items.some((r: any) => r.id === id), lockedId)).toBe(true)
+		expect(await keys(page)).toEqual([{ key: 'Delete', isPrevented: false }])
+
+		await openToolbarOn(page, row(page, 'grid', 2))
+		await expect(activeToolbar(page, 'grid')).toBeVisible()
+		await page.keyboard.press('Control+Delete')
+		await expect.poll(() => count(page, 'grid')).toBe(before - 1)
+	})
+
+	test('inline mode: a shortcut runs on the hovered row, not while typing in a field', async ({ page }) => {
+		await setup(page, 'grid3')
+		await page.evaluate(() => { const i = document.createElement('input'); i.id = 'outside-field'; document.body.append(i) })
+		await openToolbarOn(page, row(page, 'grid3', 1))
+		await page.keyboard.press('Control+Shift+P')
+		await expect.poll(() => probe(page)).toEqual([1])
+		await page.locator('#outside-field').focus()
+		await page.keyboard.press('Control+Shift+P')
+		await page.waitForTimeout(100)
+		expect(await probe(page)).toEqual([1])
 	})
 })

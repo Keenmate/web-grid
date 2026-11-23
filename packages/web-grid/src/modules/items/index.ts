@@ -33,7 +33,7 @@ import type {
 	GridRangeShortcut,
 	RangeContext
 } from '../../interaction.js'
-import { matchesShortcut } from '@keenmate/web-components-core/actions'
+import { isTypingTarget, matchesShortcut, parseShortcut, type ShortcutBinding } from '@keenmate/web-components-core/actions'
 import { applySort } from '../events/sort.js'
 import { GRID_ENGINE } from '../grid-context.js'
 
@@ -394,26 +394,64 @@ export function findShortcut<T, S extends GridShortcut<T> | GridRangeShortcut<T>
 	if (!shortcuts?.length) return null
 	for (const shortcut of shortcuts) {
 		if (!shortcut?.shortcut || !matchesShortcut(e, shortcut.shortcut)) continue
-		const resolved = resolveActionItem(shortcut as ActionItem<any, any>, ctx, rowActionDefaults(host, shortcut.action, ctx as RowContext<T>))
-		if (resolved.isVisible && !resolved.isDisabled) return shortcut
+		if (isShortcutActive(host, shortcut, ctx)) return shortcut
 	}
 	return null
 }
 
-/** Run a matching row shortcut on the cell / row in `fields`; true when one ran (the key was consumed). */
+/**
+ * Is the shortcut's action item visible and enabled in `ctx`? The row / lock / permission gates live here, on the
+ * item (`getIsDisabledCallback(ctx)` + the built-in row defaults, e.g. delete / move on a locked row) — an inactive
+ * shortcut does not consume its key.
+ */
+function isShortcutActive<T>(host: GridHost<T>, shortcut: GridShortcut<T> | GridRangeShortcut<T>, ctx: object): boolean {
+	const resolved = resolveActionItem(shortcut as ActionItem<any, any>, ctx, rowActionDefaults(host, shortcut.action, ctx as RowContext<T>))
+	return resolved.isVisible && !resolved.isDisabled
+}
+
+/**
+ * The row shortcuts as core `bindShortcuts` bindings for a document-level listener (the floating toolbar's row /
+ * the hovered row in inline mode). `getFields` names the row the keys act on (`null` = none, the key falls
+ * through). Each binding is gated twice, in layers: `isEnabled(event)` = the key-press gate (no shortcuts while a
+ * cell editor / text field has focus — Excel) + the action item's own gates (`isShortcutActive`); a gated
+ * binding leaves the key unconsumed. Single chords only, like the focused-cell path (`matchesShortcut`).
+ */
+export function rowShortcutBindings<T>(
+	host: GridHost<T>,
+	getFields: () => Omit<CellContext<T>, 'controller' | 'element'> | null,
+	after?: (detail: GridActionEventDetail<T>, fields: Omit<CellContext<T>, 'controller' | 'element'>) => void
+): () => ShortcutBinding[] {
+	return () => (host[GRID_ENGINE].rowShortcuts ?? []).map((shortcut): ShortcutBinding => {
+		let fields: Omit<CellContext<T>, 'controller' | 'element'> | null = null
+		return {
+			shortcut: shortcut?.shortcut && parseShortcut(shortcut.shortcut).length === 1 ? shortcut.shortcut : undefined,
+			isEnabled: (e) => {
+				if (isTypingTarget(e)) return false
+				fields = getFields()
+				return fields !== null && isShortcutActive(host, shortcut, host[GRID_ENGINE].ctx(fields))
+			},
+			run: (e) => {
+				const f = fields
+				if (!f) return false
+				// The document listener is the last stop in the page: keep the consumed key from window listeners
+				e.stopPropagation()
+				void activateGridItem(host, { item: shortcut, fields: f, source: 'keyboard', sourceEvent: e, after: after && ((d) => after(d, f)) })
+			}
+		}
+	})
+}
+
+/** Run a matching row shortcut on the focused cell's row in `fields`; true when one ran (the key was consumed). */
 export function handleRowShortcut<T>(
 	host: GridHost<T>,
 	e: KeyboardEvent,
-	fields: Omit<CellContext<T>, 'controller' | 'element'>,
-	shouldStopPropagation = false,
-	after?: (detail: GridActionEventDetail<T>) => void
+	fields: Omit<CellContext<T>, 'controller' | 'element'>
 ): boolean {
 	const ctx = host[GRID_ENGINE].ctx(fields)
 	const shortcut = findShortcut(host, e, host[GRID_ENGINE].rowShortcuts, ctx)
 	if (!shortcut) return false
 	e.preventDefault()
-	if (shouldStopPropagation) e.stopPropagation()
-	void activateGridItem(host, { item: shortcut, fields, source: 'keyboard', sourceEvent: e, after })
+	void activateGridItem(host, { item: shortcut, fields, source: 'keyboard', sourceEvent: e })
 	return true
 }
 

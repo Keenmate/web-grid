@@ -9,10 +9,10 @@
 
 import type { GridHost } from '../grid-context.js'
 import type { CellContext, GridToolbarEntry } from '../../interaction.js'
-import { activateGridItem, handleRowShortcut, rowCellFields } from '../items/index.js'
+import { activateGridItem, rowCellFields, rowShortcutBindings } from '../items/index.js'
 import { returnFocusToCell } from '../navigation/focus.js'
 import { deepActiveElement, registerOverlay, type OverlayDismissReason } from '@keenmate/web-components-core'
-import { isTypingTarget } from '@keenmate/web-components-core/actions'
+import { bindShortcuts } from '@keenmate/web-components-core/actions'
 import {
 	getActiveToolbar,
 	getActiveToolbarButtons,
@@ -33,90 +33,59 @@ import {
 import { GRID_ENGINE } from '../grid-context.js'
 
 /**
- * Install / refresh the document-level keydown listener that drives
+ * Install / refresh the document-level shortcut listener (core `bindShortcuts`) that drives
  * row-shortcut actions for whichever row currently owns the floating toolbar.
- * Replaces any previously-installed handler. Cleared by
- * `closeToolbarAndReset` when the toolbar closes.
+ * Replaces any previously-installed one. Cleared by `closeToolbarAndReset` when the toolbar closes.
  */
 export function setupToolbarShortcuts<T>(ctx: GridHost<T>): void {
-	// Remove any existing listener first
-	const existing = ctx.toolbar.shortcutHandler
-	if (existing) {
-		document.removeEventListener('keydown', existing)
-	}
+	ctx.toolbar.shortcutHandler?.()
+	ctx.toolbar.setShortcutHandler(null)
 
-	const shortcuts = ctx[GRID_ENGINE].rowShortcuts
-	if (!shortcuts?.length) {
-		ctx.toolbar.setShortcutHandler(null)
-		return
-	}
+	if (!ctx[GRID_ENGINE].rowShortcuts?.length) return
 
-	const handler: (e: KeyboardEvent) => void = (e: KeyboardEvent) => {
-		// Skip when the focused cell's own keydown already ran a shortcut, or focus is in a text field /
-		// editor (core isTypingTarget: the real target, inside shadow roots too). Matching is core
-		// matchesShortcut (handleRowShortcut).
-		if (e.defaultPrevented || isTypingTarget(e)) return
-
-		if (getActiveToolbarRowIndex(ctx) === null) return
-
+	const isMove = (a: string) => a === 'move-up' || a === 'move-down'
+	const bindings = rowShortcutBindings(ctx, () => {
+		if (getActiveToolbarRowIndex(ctx) === null) return null
 		// The toolbar's row at its CURRENT position (a move keeps the toolbar open on it)
 		const row = getActiveToolbarRowItem<T>(ctx)
 		const rowIndex = row === null ? -1 : ctx[GRID_ENGINE].displayItems.indexOf(row)
-		if (row === null || rowIndex === -1) return
-
+		if (row === null || rowIndex === -1) return null
 		const cell = toolbarCells.get(ctx)
-		const fields = cell && cell.row === row
-			? { ...cell, rowIndex }
-			: rowCellFields(ctx, row, rowIndex)
-		const isMove = (a: string) => a === 'move-up' || a === 'move-down'
-		handleRowShortcut(ctx, e, fields, true, (d) => {
-			// Same follow-up as a toolbar click: close when the row is gone, else refresh
-			// the open toolbar's button states (and the connector after a move)
-			if (getActiveToolbarRowItem<T>(ctx) !== row) return
-			if (d.action === 'delete' || ctx[GRID_ENGINE].displayItems.indexOf(row) === -1) {
-				closeToolbarAndReset(ctx)
-				return
-			}
-			ctx.render()
-			refreshOpenToolbar(ctx, row, ctx[GRID_ENGINE].displayItems.indexOf(row))
-			if (isMove(d.action)) {
-				updateConnector(ctx, ctx[GRID_ENGINE].displayItems)
-				ctx.renderConnector()
-			}
-		})
-	}
-
-	ctx.toolbar.setShortcutHandler(handler)
-	document.addEventListener('keydown', handler)
+		return cell && cell.row === row ? { ...cell, rowIndex } : rowCellFields(ctx, row, rowIndex)
+	}, (d, { row }) => {
+		// Same follow-up as a toolbar click: close when the row is gone, else refresh
+		// the open toolbar's button states (and the connector after a move)
+		if (getActiveToolbarRowItem<T>(ctx) !== row) return
+		if (d.action === 'delete' || ctx[GRID_ENGINE].displayItems.indexOf(row) === -1) {
+			closeToolbarAndReset(ctx)
+			return
+		}
+		ctx.render()
+		refreshOpenToolbar(ctx, row, ctx[GRID_ENGINE].displayItems.indexOf(row))
+		if (isMove(d.action)) {
+			updateConnector(ctx, ctx[GRID_ENGINE].displayItems)
+			ctx.renderConnector()
+		}
+	})
+	ctx.toolbar.setShortcutHandler(bindShortcuts(document, bindings))
 }
 
 /**
  * Inline-mode keyboard shortcuts driven by `grid.hoveredRowIndex` rather than
- * the floating toolbar's row. Replaces any previously-installed handler.
+ * the floating toolbar's row (core `bindShortcuts` on document). Replaces any previously-installed one.
  */
 export function setupInlineShortcuts<T>(ctx: GridHost<T>): void {
 	removeInlineShortcuts(ctx)
 
-	const shortcuts = ctx[GRID_ENGINE].rowShortcuts
-	if (!shortcuts?.length || ctx[GRID_ENGINE].hoveredRowIndex === null) return
+	if (!ctx[GRID_ENGINE].rowShortcuts?.length || ctx[GRID_ENGINE].hoveredRowIndex === null) return
 
-	const handler: (e: KeyboardEvent) => void = (e: KeyboardEvent) => {
-		// Skip when the focused cell's own keydown already ran a shortcut, or focus is in a text field /
-		// editor (core isTypingTarget: the real target, inside shadow roots too). Matching is core
-		// matchesShortcut (handleRowShortcut).
-		if (e.defaultPrevented || isTypingTarget(e)) return
-
+	const bindings = rowShortcutBindings(ctx, () => {
 		const rowIndex = ctx[GRID_ENGINE].hoveredRowIndex
-		if (rowIndex === null) return
-
+		if (rowIndex === null) return null
 		const row = ctx[GRID_ENGINE].displayItems[rowIndex]
-		if (!row) return
-
-		handleRowShortcut(ctx, e, rowCellFields(ctx, row, rowIndex), true)
-	}
-
-	ctx.toolbar.setInlineShortcutHandler(handler)
-	document.addEventListener('keydown', handler)
+		return row ? rowCellFields(ctx, row, rowIndex) : null
+	})
+	ctx.toolbar.setInlineShortcutHandler(bindShortcuts(document, bindings))
 }
 
 /**
@@ -124,11 +93,8 @@ export function setupInlineShortcuts<T>(ctx: GridHost<T>): void {
  * call when nothing is registered.
  */
 export function removeInlineShortcuts<T>(ctx: GridHost<T>): void {
-	const handler = ctx.toolbar.inlineShortcutHandler
-	if (handler) {
-		document.removeEventListener('keydown', handler)
-		ctx.toolbar.setInlineShortcutHandler(null)
-	}
+	ctx.toolbar.inlineShortcutHandler?.()
+	ctx.toolbar.setInlineShortcutHandler(null)
 }
 
 /**
@@ -342,12 +308,9 @@ function onToolbarDismiss<T>(ctx: GridHost<T>, reason: OverlayDismissReason): vo
  * Removes the document-level shortcut listener and dismisses any tooltip.
  */
 export function closeToolbarAndReset<T>(ctx: GridHost<T>): void {
-	// Remove document shortcut listener before clearing the handler reference
-	const shortcutHandler = ctx.toolbar.shortcutHandler
-	if (shortcutHandler) {
-		document.removeEventListener('keydown', shortcutHandler)
-		ctx.toolbar.setShortcutHandler(null)
-	}
+	// Unbind the document shortcut listener
+	ctx.toolbar.shortcutHandler?.()
+	ctx.toolbar.setShortcutHandler(null)
 	ctx.toolbar.reset()
 	toolbarCells.delete(ctx)
 	toolbarEntries.delete(ctx)
