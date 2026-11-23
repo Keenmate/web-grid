@@ -5,8 +5,8 @@
 // so the grid's (or a scroll parent's) `overflow` can't clip them, with their own shadow root
 // holding css/layers.css. The `--wg-*` tokens that sheet reads are copied from the host
 // (`cssVars`), so an instance override on the host reaches the layer; core copies the host's
-// font, colour and writing direction. `GridHost.openLayer()` also writes the grid's custom CSS
-// (page-wide + `customStyles`) into the layer root.
+// font, colour and writing direction. `GridHost.openLayer()` also has core write the grid's custom CSS
+// (page-wide + `customStyles`) into the layer root and follow its changes while open (`customStylesOptions`).
 
 import type { Layer } from '@keenmate/web-components-core/positioning'
 import layerCss from '../../css/layers.css?inline'

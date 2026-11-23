@@ -1315,19 +1315,11 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 
 	/**
 	 * A core createLayer() layer (the reorder ghost, the toolbar connector — modules/layers/index.ts) with the
-	 * grid's custom CSS (page-wide + instance) written into its root by a second, unshared
-	 * createCustomStyles handle; both go on `destroy()`.
+	 * grid's custom CSS (page-wide + instance): core writes it into the layer's root and follows later
+	 * instance / page changes while the layer is open (`customStylesOptions`, core G2).
 	 */
 	#openLayer(options: LayerOptions): Layer {
-		const layer = createLayer(this, options)
-		const styles = createCustomStyles(this, layer.layer.shadowRoot!, { ...this.#customStylesOptions(), shouldShareLayers: false })
-		return {
-			...layer,
-			destroy: () => {
-				styles.destroy()
-				layer.destroy()
-			},
-		}
+		return createLayer(this, { ...options, customStylesOptions: this.#customStylesOptions() })
 	}
 
 	protected reinit(): void {

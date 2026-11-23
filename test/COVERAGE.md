@@ -161,7 +161,7 @@ any uncaught page error; shared helpers live in `e2e/helpers.ts`.
 | Feature | Status | Spec | Fixture |
 | --- | :-: | --- | --- |
 | Resize, persistence, `isResizable` opt-out | ✓ | `resize-reorder.spec.ts` | `resize-reorder.html` |
-| Reorder, `isReorderable` opt-out | ✓ | `resize-reorder.spec.ts` | `resize-reorder.html` |
+| Reorder, `isReorderable` opt-out; the ghost is a core layer with host tokens + customStyles, followed while open (G2) | ✓ | `resize-reorder.spec.ts` | `resize-reorder.html` |
 | `storage-key` + `persist-column-order` (save to `km-state:web-grid:<key>`, restore, orphan cleanup, no key = nothing stored), `loadStateCallback` / `saveStateCallback` (whole state, reload), `setColumnOrder`, `isColumnReorderAllowed` off | ✓ | `column-order.spec.ts` | `column-order.html` |
 | Persisted state with storage-key set before columns (#29 fixed), `setColumnOrder` persisted (#30 fixed) | ✓ | `column-order.spec.ts` | `column-order.html` |
 

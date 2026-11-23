@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 A major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Changed — layers take the grid's custom CSS from core `createLayer` (2026-11-24)
+- The reorder ghost and the toolbar connector (core `createLayer` layers) get the grid's custom CSS through core's
+  `createLayer(host, { customStylesOptions })` (core G2) instead of the grid's own second `createCustomStyles`
+  handle + destroy wrapper. **Fixed:** an open layer now follows a later instance `customStyles` /
+  `getCustomStylesCallback` change (page-wide changes already did).
+
 ### Added — the grid's icons by name + the `icons` map (2026-11-24)
 - Every icon the grid draws itself is a NAME rendered through core `renderIcon` with the grid's own icon table as
   `defaults` (menus: core `openMenu` `iconDefaults`) — the row built-ins (`add`, `delete`, `duplicate`, `move-up`,

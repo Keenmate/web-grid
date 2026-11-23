@@ -423,7 +423,7 @@ test.describe('column reorder — core createPointerDrag (#gridReorder)', () => 
 })
 
 test.describe('column reorder — the ghost is a core layer (#gridReorder)', () => {
-	test('outside the grid, at the pointer, see-through, with host tokens + customStyles', async ({ page }) => {
+	test('outside the grid, at the pointer, see-through, with host tokens + customStyles (followed while open)', async ({ page }) => {
 		await page.locator('#gridReorder').evaluate((el) => {
 			(el as HTMLElement).style.setProperty('--wg-accent-color', 'rgb(255, 0, 0)')
 			;(el as unknown as { customStyles: string }).customStyles = '.wg__reorder-ghost { outline: 3px solid rgb(0, 128, 0) }'
@@ -443,6 +443,11 @@ test.describe('column reorder — the ghost is a core layer (#gridReorder)', () 
 		const box = (await ghost.boundingBox())!
 		expect(Math.abs(box.x - (sbox.x + 60 + 10))).toBeLessThan(2)
 		expect(Math.abs(box.y - (y - 10))).toBeLessThan(2)
+		// an instance customStyles change while the layer is open reaches it (core createLayer customStylesOptions, G2)
+		await page.locator('#gridReorder').evaluate((el) => {
+			(el as unknown as { customStyles: string }).customStyles = '.wg__reorder-ghost { outline: 3px solid rgb(0, 0, 255) }'
+		})
+		await expect(ghost).toHaveCSS('outline-color', 'rgb(0, 0, 255)')
 		await page.mouse.up()
 		await expect(page.locator('.km-layer')).toHaveCount(0)
 	})
