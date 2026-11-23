@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 A major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Changed — text sort follows the grid's locale (core `getCollator`) (2026-11-24)
+- Client-side sort (flat and tree) compares text with core `getCollator(locale, { numeric: true })` — the grid's
+  `locale` input, unset = the page-wide `window.components.locale`, else the browser — instead of a bare
+  `localeCompare()` (the browser's locale, not numeric). Visible: `'item 2'` now sorts before `'item 10'`, and a
+  `cs` grid puts `ch` after `h` (`hrad` before `chata`).
+
 ### Changed — layers take the grid's custom CSS from core `createLayer` (2026-11-24)
 - The reorder ghost and the toolbar connector (core `createLayer` layers) get the grid's custom CSS through core's
   `createLayer(host, { customStylesOptions })` (core G2) instead of the grid's own second `createCustomStyles`

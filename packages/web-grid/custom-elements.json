@@ -2577,7 +2577,7 @@
                 "text": "string | null"
               },
               "attribute": "locale",
-              "description": "BCP-47 locale for the numbers in labels (`{ctx.count}` items, page info, number-range errors), `editor: 'number'` columns (display, editor text, typed / pasted parse, copy) and the date picker's month / weekday names, or unset (the page-wide `window.components.locale`, else the browser language). UI strings are `labels`."
+              "description": "BCP-47 locale for the numbers in labels (`{ctx.count}` items, page info, number-range errors), `editor: 'number'` columns (display, editor text, typed / pasted parse, copy) the date picker's month / weekday names and the text sort order (`cs` puts `ch` after `h`), or unset (the page-wide `window.components.locale`, else the browser language). UI strings are `labels`."
             },
             {
               "kind": "field",
@@ -3890,7 +3890,7 @@
               "type": {
                 "text": "string | null"
               },
-              "description": "BCP-47 locale for the numbers in labels (`{ctx.count}` items, page info, number-range errors), `editor: 'number'` columns (display, editor text, typed / pasted parse, copy) and the date picker's month / weekday names, or unset (the page-wide `window.components.locale`, else the browser language). UI strings are `labels`."
+              "description": "BCP-47 locale for the numbers in labels (`{ctx.count}` items, page info, number-range errors), `editor: 'number'` columns (display, editor text, typed / pasted parse, copy) the date picker's month / weekday names and the text sort order (`cs` puts `ch` after `h`), or unset (the page-wide `window.components.locale`, else the browser language). UI strings are `labels`."
             },
             {
               "name": "custom-styles",

@@ -102,7 +102,7 @@ import { bindOptionContext, getOptionDisplayValue } from './modules/dropdown/opt
 import { initLogger, dataLogger, interactionLogger, perfLogger } from './logger.js'
 import { typeNumberValue, type NumberParseOptions } from './modules/editing/value-parse.js'
 import { GridLabelsResolver, type GridLabelKey, type LabelFormat } from './labels.js'
-import { formatNumber, resolveLocaleSettings, getPageLocale, type LabelParams, type LabelsView, type LocaleSettings, type ParseNumberCallback } from '@keenmate/web-components-core/locale'
+import { formatNumber, getCollator, resolveLocaleSettings, getPageLocale, type LabelParams, type LabelsView, type LocaleSettings, type ParseNumberCallback } from '@keenmate/web-components-core/locale'
 
 // Perf instrumentation (temporary — investigating tree-toggle slowness)
 import { perfNow, perfCount } from './perf.js'
@@ -2018,8 +2018,16 @@ export class GridEngine<T = unknown> {
 		this._expandedPaths = set
 	}
 
+	/**
+	 * The text comparer for sorting (core getCollator, SPEC §12.24): the grid's `locale` (unset = page-wide →
+	 * browser), numeric (`'item 2'` before `'item 10'`), so Czech puts `ch` after `h`. Get it once per sort.
+	 */
+	protected textCollator(): Intl.Collator {
+		return getCollator(this._locale, { numeric: true }, this._hostElement ?? undefined)
+	}
+
 	/** Compare two tree nodes using current sort state, falling back to path */
-	protected compareTreeNodes(a: TreeNode, b: TreeNode): number {
+	protected compareTreeNodes(a: TreeNode, b: TreeNode, collator: Intl.Collator = this.textCollator()): number {
 		const ra = this._items[a.rowIndex] as Record<string, unknown>
 		const rb = this._items[b.rowIndex] as Record<string, unknown>
 		for (const sortState of this._sort) {
@@ -2027,9 +2035,9 @@ export class GridEngine<T = unknown> {
 			const bVal = rb[sortState.column]
 			if (aVal === bVal) continue
 			let cmp = 0
-			if (typeof aVal === 'string' && typeof bVal === 'string') cmp = aVal.localeCompare(bVal)
+			if (typeof aVal === 'string' && typeof bVal === 'string') cmp = collator.compare(aVal, bVal)
 			else if (typeof aVal === 'number' && typeof bVal === 'number') cmp = aVal - bVal
-			else cmp = String(aVal ?? '').localeCompare(String(bVal ?? ''))
+			else cmp = collator.compare(String(aVal ?? ''), String(bVal ?? ''))
 			return sortState.direction === 'asc' ? cmp : -cmp
 		}
 		return a.path.localeCompare(b.path)
@@ -2102,7 +2110,8 @@ export class GridEngine<T = unknown> {
 			const filtered = allowed
 				? paths.filter(p => allowed.has(p))
 				: [...paths]
-			filtered.sort((a, b) => this.compareTreeNodes(idx.nodes.get(a)!, idx.nodes.get(b)!))
+			const collator = this.textCollator()
+			filtered.sort((a, b) => this.compareTreeNodes(idx.nodes.get(a)!, idx.nodes.get(b)!, collator))
 			for (const p of filtered) {
 				const node = idx.nodes.get(p)!
 				result.push(this._items[node.rowIndex])
@@ -2555,6 +2564,7 @@ export class GridEngine<T = unknown> {
 		// No sort columns = return filtered items as-is
 		if (this._sort.length === 0) return this.filteredItems
 
+		const collator = this.textCollator()
 		return [...this.filteredItems].sort((a, b) => {
 			// Multi-column sort: compare each column in order
 			for (const sortState of this._sort) {
@@ -2565,11 +2575,11 @@ export class GridEngine<T = unknown> {
 
 				let comparison = 0
 				if (typeof aVal === "string" && typeof bVal === "string") {
-					comparison = aVal.localeCompare(bVal)
+					comparison = collator.compare(aVal, bVal)
 				} else if (typeof aVal === "number" && typeof bVal === "number") {
 					comparison = aVal - bVal
 				} else {
-					comparison = String(aVal ?? "").localeCompare(String(bVal ?? ""))
+					comparison = collator.compare(String(aVal ?? ""), String(bVal ?? ""))
 				}
 
 				return sortState.direction === "asc" ? comparison : -comparison

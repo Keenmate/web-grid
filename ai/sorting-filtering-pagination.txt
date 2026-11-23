@@ -36,8 +36,10 @@ currentPage to 1 and fires the data-request event (twin: onDataRequest)
 with trigger='sort'.
 
 Client-side sorting (default): the grid sorts items automatically using
-localeCompare for strings, numeric comparison for numbers, and string
-coercion as fallback. Multi-column sort compares columns in priority order.
+the locale's collation for strings (core getCollator: the grid's locale, unset =
+window.components.locale, else the browser; numeric, so 'item 2' < 'item 10' and
+Czech puts 'ch' after 'h'), numeric comparison for numbers, and string
+coercion (same collation) as fallback. Multi-column sort compares columns in priority order.
 
 Server-side sorting: listen to data-request (or set onDataRequest) to fetch
 data from your server. The detail.sort array tells you the requested sort state.
@@ -409,7 +411,7 @@ When using client-side mode, the grid processes items in this order:
 
 1. filteredItems: applies column filters (case- and accent-insensitive "contains" or
    column.filterCallback; skipped when filterMode is 'server')
-2. sortedItems: applies multi-column sort using localeCompare / numeric compare
+2. sortedItems: applies multi-column sort using the locale collator (getCollator) / numeric compare
 3. paginatedItems: slices by currentPage and pageSize (client mode only;
    server mode skips slicing)
 4. displayItems: adds empty row if isNewRowEnabled

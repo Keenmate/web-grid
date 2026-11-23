@@ -255,3 +255,35 @@ describe('web-grid number columns by locale', () => {
 		}
 	})
 })
+
+// Text sort through core getCollator (G33): the grid's `locale` (unset = page-wide → browser), numeric.
+describe('web-grid text sort (core getCollator)', () => {
+	const sortedNames = async (attrs: Record<string, string>, names: string[]) => {
+		el = document.createElement('web-grid')
+		for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+		el.columns = columns
+		el.items = names.map((name, id) => ({ id, name }))
+		document.body.appendChild(el)
+		await el.whenReady()
+		const engine = engineOf(el)!
+		engine.sort = [{ column: 'name', direction: 'asc' }]
+		return (engine.sortedItems as Array<{ name: string }>).map(r => r.name)
+	}
+
+	it('Czech: "ch" sorts after "h"', async () => {
+		expect(await sortedNames({ locale: 'cs-CZ' }, ['chata', 'hrad', 'auto'])).toEqual(['auto', 'hrad', 'chata'])
+	})
+
+	it('English: "ch" stays among the c words', async () => {
+		expect(await sortedNames({ locale: 'en-US' }, ['chata', 'hrad', 'auto'])).toEqual(['auto', 'chata', 'hrad'])
+	})
+
+	it('numeric: "item 2" before "item 10"', async () => {
+		expect(await sortedNames({ locale: 'en-US' }, ['item 10', 'item 2', 'item 1'])).toEqual(['item 1', 'item 2', 'item 10'])
+	})
+
+	it('unset locale follows the page-wide window.components.locale', async () => {
+		;(window as any).components.locale = { locale: 'cs-CZ' }
+		expect(await sortedNames({}, ['chata', 'hrad'])).toEqual(['hrad', 'chata'])
+	})
+})
