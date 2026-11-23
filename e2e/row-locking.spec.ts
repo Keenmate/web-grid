@@ -1,4 +1,4 @@
-import { test, expect, type Page, gridLocator, cell, onGrid, domEvents, eventsOf, clearEvents, waitForRows, editorIn } from './fixtures'
+import { test, expect, type Page, gridLocator, cell, onGrid, domEvents, eventsOf, clearEvents, waitForRows, editorIn, openContextMenu, menuRoot, clickMenuItem } from './fixtures'
 
 /**
  * Row locking — `rowLocking` sources (`getLockInfoCallback`, `getIsLockedCallback`,
@@ -203,5 +203,67 @@ test.describe('editing a locked row', () => {
 	test("'callback' without a callback blocks", async ({ page }) => {
 		await onGrid(page, el => { el.rowLocking = { ...el.rowLocking, lockedEditBehavior: 'callback' } })
 		expect(await onGrid(page, el => el.canEditCell(1, 'name'))).toBe(false)
+	})
+})
+
+// BG3: the delete / move built-ins never touch a locked row (disabled in the menu, refused on a
+// shortcut and in the engine); duplicate only reads the row, so it stays allowed.
+test.describe('row built-ins on a locked row', () => {
+	const names = (page: Page) => onGrid(page, el => el.items.map((r: any) => r.name))
+
+	async function withRowActions(page: Page) {
+		await onGrid(page, el => {
+			el.contextMenu = ['delete', 'duplicate', 'move-down']
+			el.rowShortcuts = [
+				{ shortcut: 'Ctrl+Delete', action: 'delete' },
+				{ shortcut: 'Ctrl+Shift+D', action: 'duplicate' },
+				{ shortcut: 'Alt+ArrowDown', action: 'move-down' }
+			]
+		})
+	}
+
+	test('the cell menu disables delete / move on a locked row; duplicate stays enabled', async ({ page }) => {
+		await withRowActions(page)
+		await openContextMenu(page, cell(page, 1, NAME))
+		const item = (label: string) => menuRoot(page).locator('.km-menu__item', { hasText: label }).first()
+		await expect(item('Delete')).toHaveClass(/km-menu__item--disabled/)
+		await expect(item('Move down')).toHaveClass(/km-menu__item--disabled/)
+		await expect(item('Duplicate')).not.toHaveClass(/km-menu__item--disabled/)
+		await item('Delete').evaluate((el: HTMLElement) => el.click())
+		expect(await names(page)).toEqual(['Alpha', 'Beta', 'Gamma', 'Delta'])
+		expect(await domEvents(page, 'row-delete')).toEqual([])
+	})
+
+	test('Ctrl+Delete / Alt+ArrowDown on a locked row do nothing; duplicate copies it', async ({ page }) => {
+		await withRowActions(page)
+		await cell(page, 1, NAME).click()
+		await page.keyboard.press('Control+Delete')
+		await page.keyboard.press('Alt+ArrowDown')
+		await page.waitForTimeout(100)
+		expect(await names(page)).toEqual(['Alpha', 'Beta', 'Gamma', 'Delta'])
+		// a disabled shortcut doesn't consume the key: Alt+ArrowDown fell through to navigation
+		await cell(page, 1, NAME).click()
+		await page.keyboard.press('Control+Shift+D')
+		await expect.poll(() => names(page)).toEqual(['Alpha', 'Beta', 'Beta', 'Gamma', 'Delta'])
+	})
+
+	test('an unlocked row still deletes through the shortcut and the menu', async ({ page }) => {
+		await withRowActions(page)
+		await cell(page, 2, NAME).click()
+		await page.keyboard.press('Control+Delete')
+		await expect.poll(() => names(page)).toEqual(['Alpha', 'Beta', 'Delta'])
+		await openContextMenu(page, cell(page, 0, NAME))
+		await clickMenuItem(page, 'Delete')
+		await expect.poll(() => names(page)).toEqual(['Beta', 'Delta'])
+	})
+
+	test('an externally locked row (lockRowById) is refused by removeRows / moveRow too', async ({ page }) => {
+		const result = await onGrid(page, el => {
+			el.lockRowById(3)
+			const removed = el.controller.removeRows([el.items[0], el.items[2]])
+			el.controller.moveRow(el.items[1], 1)  // Gamma, now at index 1
+			return { removed: removed.map((r: any) => r.name), names: el.items.map((r: any) => r.name) }
+		})
+		expect(result).toEqual({ removed: ['Alpha'], names: ['Beta', 'Gamma', 'Delta'] })
 	})
 })

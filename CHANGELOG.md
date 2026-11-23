@@ -10,6 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 A major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Fixed — the delete / move row built-ins never touch a locked row (2026-11-23)
+- `delete`, `move-up` and `move-down` ignored row locks (`rowLocking` / `lockRowById`): only a read-only /
+  disabled grid turned them off, so the row toolbar, the cell menu and a row shortcut (e.g. `Ctrl+Delete`)
+  removed or moved a locked row. They are now disabled when any target row is locked (toolbar button, menu
+  item; a matching shortcut no longer fires, so the key falls through), and the engine refuses too:
+  `controller.removeRows()` / `removeRow()` skip locked rows with a `GRID:DATA` warning, and
+  `controller.moveRow()` leaves a locked row in place — an explicit programmatic call respects locks the
+  same way paste already did. `removeRows()` now returns the rows it actually removed (was `void`);
+  `row-delete` reports only those. `duplicate` stays allowed on a locked row (it only reads it).
+
 ### Fixed — a moved grid keeps scrolling, blurring and closing on outside clicks (2026-11-23)
 - Re-parenting / reordering a `<web-grid>` ran `disconnect()` (which destroys the scroll / focus / click event
   managers) and `connect()`, but the move keeps the shadow table, so the render took the surgical path and the

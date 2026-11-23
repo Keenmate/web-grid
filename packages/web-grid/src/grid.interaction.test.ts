@@ -150,4 +150,32 @@ describe('row operations (the row built-ins)', () => {
 		g.grid.moveRow(g.grid.items[2], 1)
 		expect(g.grid.items.map(r => r.id)).toEqual([2, 1, 3])
 	})
+
+	// BG3: a locked row is never removed or moved, even by an explicit call
+	it('removeRows refuses a locked row (it stays) and returns only the removed rows', () => {
+		g.grid.rowLocking = { getIsLockedCallback: ({ row }) => row.id === 2 }
+		const removed = g.grid.removeRows([g.grid.items[0], g.grid.items[1]])
+		expect(removed.map(r => r.id)).toEqual([1])
+		expect(g.grid.items.map(r => r.id)).toEqual([2, 3])
+		g.grid.removeRow(g.grid.items[0])
+		expect(g.grid.items.map(r => r.id)).toEqual([2, 3])
+	})
+
+	it('removeRows / moveRow refuse an externally locked row (lockRowById)', () => {
+		g.grid.lockRowById(3)
+		expect(g.grid.removeRows([g.grid.items[2]])).toEqual([])
+		g.grid.moveRow(g.grid.items[2], -1)
+		expect(g.grid.items.map(r => r.id)).toEqual([1, 2, 3])
+		g.grid.unlockRowById(3)
+		g.grid.moveRow(g.grid.items[2], -1)
+		expect(g.grid.items.map(r => r.id)).toEqual([1, 3, 2])
+	})
+
+	it('moveRow refuses a locked row; duplicateRow still copies it', () => {
+		g.grid.rowLocking = { getIsLockedCallback: ({ row }) => row.id === 2 }
+		g.grid.moveRow(g.grid.items[1], 1)
+		expect(g.grid.items.map(r => r.id)).toEqual([1, 2, 3])
+		g.grid.duplicateRow(g.grid.items[1])
+		expect(g.grid.items.map(r => r.name)).toEqual(['a', 'b', 'b', 'c'])
+	})
 })

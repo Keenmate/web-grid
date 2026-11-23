@@ -4095,16 +4095,23 @@ export class GridEngine<T = unknown> {
 		this.items = next
 	}
 
-	/** Remove `row` from `items`. */
+	/** Remove `row` from `items` (a locked row stays — see `removeRows`). */
 	removeRow(row: T): void {
 		this.removeRows([row])
 	}
 
-	/** Remove the given rows from `items`. */
-	removeRows(rows: T[]): void {
-		if (!rows.length) return
-		const drop = new Set<T>(rows)
+	/**
+	 * Remove the given rows from `items`; returns the rows actually removed.
+	 * A locked row (`isRowLocked`) is refused: it stays, with a warning.
+	 */
+	removeRows(rows: T[]): T[] {
+		if (!rows.length) return []
+		const locked = rows.filter(r => this.isRowLocked(r))
+		if (locked.length) dataLogger.warn(`removeRows: ${locked.length} locked row(s) refused — a locked row is never removed`, locked)
+		const drop = new Set<T>(rows.filter(r => !locked.includes(r)))
+		if (!drop.size) return []
 		this.items = this._items.filter(r => !drop.has(r))
+		return [...drop]
 	}
 
 	/**
@@ -4124,8 +4131,15 @@ export class GridEngine<T = unknown> {
 		return copy
 	}
 
-	/** Move `row` one displayed position up (`-1`) or down (`1`) — swaps it with that neighbour in `items`. */
+	/**
+	 * Move `row` one displayed position up (`-1`) or down (`1`) — swaps it with that neighbour in `items`.
+	 * A locked row (`isRowLocked`) is refused: it stays, with a warning.
+	 */
 	moveRow(row: T, delta: -1 | 1): void {
+		if (this.isRowLocked(row)) {
+			dataLogger.warn('moveRow: the row is locked — a locked row is never moved', row)
+			return
+		}
 		const display = this.displayItems
 		const pos = display.indexOf(row)
 		const neighbour = pos === -1 ? undefined : display[pos + delta]

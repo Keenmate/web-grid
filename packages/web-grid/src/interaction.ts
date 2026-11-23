@@ -62,13 +62,13 @@ export interface GridController<T = any> {
 	insertRow(row: T, afterRow?: T | null): void
 	/** Insert `rows` (in order) after `afterRow` (in `items` order), or at the end. */
 	insertRows(rows: T[], afterRow?: T | null): void
-	/** Remove `row` from `items` (programmatic: no `row-delete`). */
+	/** Remove `row` from `items` (programmatic: no `row-delete`); a locked row stays (warns). */
 	removeRow(row: T): void
-	/** Remove the given rows from `items` (programmatic: no `row-delete`). */
-	removeRows(rows: T[]): void
+	/** Remove the given rows from `items` (programmatic: no `row-delete`); returns the removed rows — locked rows stay (warns). */
+	removeRows(rows: T[]): T[]
 	/** Insert a copy of `row` after it (`createDuplicateRowCallback`, else a shallow copy with `idMember` cleared); returns it. */
 	duplicateRow(row: T): T
-	/** Move `row` one displayed position up (`-1`) or down (`1`). */
+	/** Move `row` one displayed position up (`-1`) or down (`1`); a locked row stays (warns). */
 	moveRow(row: T, delta: -1 | 1): void
 	getRowId(row: T): unknown | undefined
 	/** The row with this ID (`idMember` / `getIdCallback`), or null. */

@@ -76,12 +76,14 @@ export function rowActionDefaults<T>(host: GridHost<T>, action: string | undefin
 	const bottom = positions.length ? Math.max(...positions) : -1
 	// A read-only grid changes no rows: every row built-in is disabled
 	const isLocked = host[GRID_ENGINE].isReadonly || host[GRID_ENGINE].isDisabled
+	// A locked row (rowLocking / lockRowById) is never deleted or moved; duplicate only reads it
+	const hasLockedRow = rowTargets<T>(host, ctx.row, (ctx as { rows?: unknown[] }).rows).some(r => host[GRID_ENGINE].isRowLocked(r))
 	switch (action) {
 		case 'add': return { text: labels['menuItems.addRow'], icon: ROW_ICONS.add, isDisabled: isLocked }
-		case 'delete': return { text: labels['menuItems.deleteRow'], icon: ROW_ICONS.delete, isDanger: true, isDisabled: isLocked }
+		case 'delete': return { text: labels['menuItems.deleteRow'], icon: ROW_ICONS.delete, isDanger: true, isDisabled: isLocked || hasLockedRow }
 		case 'duplicate': return { text: labels['menuItems.duplicateRow'], icon: ROW_ICONS.duplicate, isDisabled: isLocked }
-		case 'move-up': return { text: labels['menuItems.moveUp'], icon: ROW_ICONS['move-up'], isDisabled: isLocked || top <= 0 }
-		case 'move-down': return { text: labels['menuItems.moveDown'], icon: ROW_ICONS['move-down'], isDisabled: isLocked || bottom === -1 || bottom >= display.length - 1 }
+		case 'move-up': return { text: labels['menuItems.moveUp'], icon: ROW_ICONS['move-up'], isDisabled: isLocked || hasLockedRow || top <= 0 }
+		case 'move-down': return { text: labels['menuItems.moveDown'], icon: ROW_ICONS['move-down'], isDisabled: isLocked || hasLockedRow || bottom === -1 || bottom >= display.length - 1 }
 	}
 }
 
@@ -252,9 +254,9 @@ async function runRowBuiltInOn<T>(host: GridHost<T>, d: GridActionEventDetail<T>
 			const rows = targets
 			if (rows.length === 0) return
 			const display = engine.displayItems
-			const rowIndices = rows.map(r => display.indexOf(r))
-			engine.removeRows(rows)
-			engine.notify('row-delete', { rows, rowIndices })
+			const removed = engine.removeRows(rows)  // locked rows are refused (stay)
+			if (removed.length === 0) return
+			engine.notify('row-delete', { rows: removed, rowIndices: removed.map(r => display.indexOf(r)) })
 			return
 		}
 		case 'duplicate':
@@ -269,6 +271,7 @@ async function runRowBuiltInOn<T>(host: GridHost<T>, d: GridActionEventDetail<T>
 				.sort((a, b) => (display.indexOf(a) - display.indexOf(b)) * -delta)  // the leading edge first
 			const edge = ordered.length ? display.indexOf(ordered[0]) : -1
 			if (edge === -1 || edge + delta < 0 || edge + delta >= display.length) return
+			if (ordered.some(r => engine.isRowLocked(r))) return  // the block moves whole or not at all
 			// The focused cell follows its row (the moved one, or the neighbour it swapped
 			// with), so e.g. a repeated Alt+ArrowDown keeps moving the same row.
 			const focused = engine.focusedCell
