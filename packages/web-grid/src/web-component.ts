@@ -1105,12 +1105,6 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	// Update batching
 	#updatePending = false
 
-	// Flag to track if clickEvents subscriptions have been added (only subscribe once)
-	#clickEventsSubscribed = false
-
-	// Flag to track if focusEvents subscriptions have been added (only subscribe once)
-	#focusEventsSubscribed = false
-
 	// Click event manager (pub/sub for click inside/outside events) — element-only
 	readonly #clickEvents: ClickEventManager
 
@@ -1402,6 +1396,9 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		// Initialize action pipeline adapter for 'always' editTrigger mode
 		this.#host.pipelineAdapter = createActionPipelineAdapter(this.#host)
 		this.#render()
+		// Scroll / focus / click managers — disconnect() destroyed them, and a DOM move
+		// keeps the shadow table (surgical render), so they're restarted on every connect
+		this.#wireEventManagers()
 		// Register paste handler for navigate mode
 		this.addEventListener('paste', this.#handlePaste as EventListener)
 		// A mouse button released anywhere ends the table press (see attachEventListeners)
@@ -1430,8 +1427,6 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		this.#host.scrollEvents.destroy()
 		this.#host.focusEvents.destroy()
 		this.#clickEvents.destroy()
-		this.#clickEventsSubscribed = false
-		this.#focusEventsSubscribed = false
 
 		// Cleanup event listeners, observers, etc.
 		this.removeEventListener('paste', this.#handlePaste as EventListener)
@@ -1843,6 +1838,67 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	/** One listener per element, added in connect() / removed in disconnect() — not one per rebuild. */
 	#onDocumentMouseUp = (): void => { this.#host.isMouseDown = false }
 
+	/**
+	 * (Re)wires the scroll / focus / click event managers to the current DOM:
+	 * virtual + infinite scroll, window-scroll repositioning, focusout + internal
+	 * blur, outside click + sort click. disconnect() destroys the managers (their
+	 * window / document listeners must not outlive the element), so this runs on
+	 * every connect() — a DOM move keeps the shadow table (surgical render) and
+	 * never reaches attachEventListeners() — and after every full rebuild (new
+	 * table / container). Idempotent: tears down the previous wiring first.
+	 */
+	#wireEventManagers(): void {
+		const { scrollEvents, focusEvents } = this.#host
+		scrollEvents.destroy()
+		focusEvents.destroy()
+		this.#clickEvents.destroy()
+
+		const table = this.#shadow.querySelector('.wg__table') as HTMLElement | null
+		const container = this.#shadow.querySelector('.wg') as HTMLElement | null
+		if (!table || !container) return
+
+		focusEvents.init(table)
+		// Focus out of the table
+		focusEvents.subscribe('focusout', (_target, relatedTarget) => {
+			if (!relatedTarget || !table.contains(relatedTarget)) {
+				handleTableFocusOut(this.#host, { relatedTarget } as unknown as FocusEvent)
+			}
+		})
+		// Blur events — internal focus change dispatch. Capture phase + skip guard
+		// handled by focusEvents; outsideClick owns leaving-grid cleanup.
+		focusEvents.subscribe('blur', (target, relatedTarget) => {
+			if (focusEvents.shouldSkipBlur()) return
+			const isLeavingGrid = !relatedTarget || !this.#shadow.contains(relatedTarget)
+			if (isLeavingGrid) return
+			// Into the cell's own phone sheet (dropdown / date editor): the edit goes on there
+			if (relatedTarget.closest('.wg__dropdown, .wg-datepicker-container')) return
+			handleInternalBlur(this.#host, target, relatedTarget)
+		})
+
+		// Scroll — close dropdown + virtual scroll + infinite scroll + connector update.
+		// When isTableBorderOnly is enabled, the scroll container is .wg__table-container
+		const scrollContainer = this.#engine.isTableBorderOnly
+			? (this.#shadow.querySelector('.wg__table-container') as HTMLElement) || container
+			: container
+		scrollEvents.init(scrollContainer)
+		scrollEvents.subscribe('container', () => handleContainerScroll(this.#host, container, scrollContainer))
+		scrollEvents.subscribe('window', () => handleWindowScroll(this.#host))
+
+		// Outside-click detection. Treat clicks inside our popovers (the datepicker,
+		// outside the table) as inside the grid — otherwise outsideClick fires while
+		// the user is interacting with the picker/menu and tears down editing.
+		const isPathInOwnedScope = (path: EventTarget[]): boolean => {
+			const dpEl = this.#host.datepicker?.getElement() ?? null
+			for (const node of path) {
+				if (dpEl && dpEl === node) return true
+			}
+			return false
+		}
+		this.#clickEvents.init(container, this, isPathInOwnedScope)
+		this.#clickEvents.subscribe('outsideClick', () => handleOutsideClick(this.#host))
+		this.#clickEvents.subscribe('sortClick', (subCtx) => handleSortClickSubscription(this.#host, subCtx))
+	}
+
 	#attachEventListeners(): void {
 		const table = this.#shadow.querySelector('.wg__table')
 		if (!table) return
@@ -1858,16 +1914,6 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		// Keydown — tree shortcuts + pipeline + datepicker passthrough + editor/cell dispatch
 		// Extracted to modules/events/table-keydown.ts
 		table.addEventListener('keydown', (e: Event) => handleTableKeyDown(this.#host, e))
-
-		// Initialize focus event manager on table
-		this.#host.focusEvents.init(table as HTMLElement)
-
-		// Focus out - subscribe to focusout events
-		this.#host.focusEvents.subscribe('focusout', (_target, relatedTarget) => {
-			if (!relatedTarget || !table.contains(relatedTarget)) {
-				handleTableFocusOut(this.#host, { relatedTarget } as unknown as FocusEvent)
-			}
-		})
 
 		// Double-click — pipeline + dblclick / navigate editTrigger paths.
 		// Tree-column dblclick-to-toggle is handled in table-mousedown via
@@ -1922,27 +1968,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 			}
 		})
 
-		// Blur events — internal focus change dispatch. Capture phase + skip guard
-		// handled by focusEvents; outsideClick owns leaving-grid cleanup.
-		// Extracted to modules/events/blur-subscription.ts
-		if (!this.#focusEventsSubscribed) {
-			this.#host.focusEvents.subscribe('blur', (target, relatedTarget) => {
-				if (this.#host.focusEvents.shouldSkipBlur()) return
-				const isLeavingGrid = !relatedTarget || !this.#shadow.contains(relatedTarget)
-				if (isLeavingGrid) return
-				// Into the cell's own phone sheet (dropdown / date editor): the edit goes on there
-				if (relatedTarget.closest('.wg__dropdown, .wg-datepicker-container')) return
-				handleInternalBlur(this.#host, target, relatedTarget)
-			})
-			this.#focusEventsSubscribed = true
-		}
-
-		// Scroll events - close dropdown + virtual scroll + infinite scroll + connector update
+		// (scroll / focusout / blur / outside click: #wireEventManagers)
 		const container = this.#shadow.querySelector('.wg') as HTMLElement
-		// When isTableBorderOnly is enabled, scroll container is .wg__table-container
-		const scrollContainer = this.#engine.isTableBorderOnly
-			? (this.#shadow.querySelector('.wg__table-container') as HTMLElement) || container
-			: container
 		if (container) {
 			// Make container focusable for keyboard events when rows are selected
 			container.setAttribute('tabindex', '-1')
@@ -1950,37 +1977,6 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 			// Range shortcuts + Escape + Ctrl+C for active selections
 			// Extracted to modules/events/container-keydown.ts
 			container.addEventListener('keydown', (e: KeyboardEvent) => handleContainerKeyDown(this.#host, e))
-
-			// Initialize scroll event manager and subscribe to scroll events
-			this.#host.scrollEvents.init(scrollContainer)
-
-			// Container + window scroll subscriptions
-			// Extracted to modules/events/scroll-handlers.ts
-			this.#host.scrollEvents.subscribe('container', () => handleContainerScroll(this.#host, container, scrollContainer))
-			this.#host.scrollEvents.subscribe('window', () => handleWindowScroll(this.#host))
-
-			// Initialize click event manager for outside-click detection
-			// Only subscribe once (attachEventListeners is called on every render)
-			if (!this.#clickEventsSubscribed) {
-				// Treat clicks inside our popovers (the datepicker, outside the table) as
-				// inside the grid — otherwise outsideClick fires while the user
-				// is interacting with the picker/menu and tears down editing.
-				const isPathInOwnedScope = (path: EventTarget[]): boolean => {
-					const dpEl = this.#host.datepicker?.getElement() ?? null
-					for (const node of path) {
-						if (dpEl && dpEl === node) return true
-					}
-					return false
-				}
-				this.#clickEvents.init(container, this, isPathInOwnedScope)
-
-				// Outside-click + sort-click subscriptions
-				// Extracted to modules/events/click-subscriptions.ts
-				this.#clickEvents.subscribe('outsideClick', () => handleOutsideClick(this.#host))
-				this.#clickEvents.subscribe('sortClick', (subCtx) => handleSortClickSubscription(this.#host, subCtx))
-
-				this.#clickEventsSubscribed = true
-			}
 		}
 
 		// Row toolbar events — trigger / inline / hover / mousemove / click / outside click
@@ -2223,6 +2219,8 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 
 			// Wire up event listeners (only on full rebuild — surgical path keeps them alive)
 			this.#attachEventListeners()
+			// The managers follow the new table / container (connect() wires them while detached → active)
+			if (this.isConnected) this.#wireEventManagers()
 		}
 
 		// role="grid" / "treegrid" + row / column counts (the surgical path keeps the <table>)

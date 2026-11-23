@@ -10,6 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 A major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Fixed — a moved grid keeps scrolling, blurring and closing on outside clicks (2026-11-23)
+- Re-parenting / reordering a `<web-grid>` ran `disconnect()` (which destroys the scroll / focus / click event
+  managers) and `connect()`, but the move keeps the shadow table, so the render took the surgical path and the
+  managers were never wired again: virtual scroll stopped swapping rows, infinite scroll stopped loading, internal
+  blur / focusout and outside click / sort-indicator click went dead. `connect()` now re-wires the managers on every
+  activation (and a full rebuild re-wires them to the new table), so `connect()` / `disconnect()` stay balanced.
+  A full rebuild (`isTableBorderOnly` toggled) no longer stacks duplicate scroll / focusout subscriptions either.
+
 ### Changed — BREAKING: label templates read the spot's context, `{ctx.*}` (2026-11-23)
 - Every dynamic label gets its spot's context as `{ ctx }` (core rc25 dotted paths, rulebook D-NC-24); templates
   read `{ctx.<field>}` (numbers formatted in the grid's locale) and a `translateCallback` gets the same object as

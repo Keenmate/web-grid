@@ -127,3 +127,40 @@ test.describe('keyboard moves', () => {
 		expect(await onGrid(page, (el: any) => el.shadowRoot.querySelector('.wg').scrollTop)).toBe(0)
 	})
 })
+
+/** Re-parents a grid (disconnect → connect, no rebuild — the shadow table survives) and waits a frame. */
+async function moveGrid(page: Page, gridId: string): Promise<void> {
+	await gridLocator(page, gridId).evaluate(async (el: any) => {
+		const box = document.createElement('div')
+		box.className = 'moved-box'
+		document.body.prepend(box)
+		box.appendChild(el)
+		await el.whenSettled()
+		await new Promise(r => requestAnimationFrame(() => r(null)))
+	})
+}
+
+test.describe('after a DOM move (BG1)', () => {
+	test('virtual scroll keeps re-rendering the row window', async ({ page }) => {
+		await moveGrid(page, 'virtual')
+		await onGrid(page, (el: any) => { el.shadowRoot.querySelector('.wg').scrollTop = 1200 }, 'virtual')
+		// rows from the bottom of the list are rendered, the first ones are gone
+		await expect(gridLocator(page, 'virtual').locator('tr[data-row-index="40"]')).toHaveCount(1)
+		await expect(gridLocator(page, 'virtual').locator('tr[data-row-index="0"]')).toHaveCount(0)
+	})
+
+	test('an outside click still clears the row selection', async ({ page }) => {
+		await moveGrid(page, 'grid')
+		await onGrid(page, (el: any) => el.selectRow(2))
+		expect(await onGrid(page, (el: any) => [...el.selectedRowIndices])).toEqual([2])
+		await page.locator('h1').click()
+		await expect.poll(() => onGrid(page, (el: any) => [...el.selectedRowIndices])).toEqual([])
+	})
+
+	test('a second move still works (connect / disconnect stay balanced)', async ({ page }) => {
+		await moveGrid(page, 'virtual')
+		await moveGrid(page, 'virtual')
+		await onGrid(page, (el: any) => { el.shadowRoot.querySelector('.wg').scrollTop = 1200 }, 'virtual')
+		await expect(gridLocator(page, 'virtual').locator('tr[data-row-index="40"]')).toHaveCount(1)
+	})
+})
