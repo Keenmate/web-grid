@@ -49,15 +49,8 @@ export function handleContextMenu<T>(ctx: GridHost<T>, e: MouseEvent): void {
 		return
 	}
 
-	// The browser's keyboard-initiated `contextmenu` (Shift+F10 / ContextMenu key,
-	// not a right button) after ours already opened from the keydown: don't show
-	// the native one too. A pointer press closes our menu before a right-click's
-	// `contextmenu` arrives.
-	if (ctx.menu?.isOpen && e.button !== 2) {
-		e.preventDefault()
-		return
-	}
-
+	// The browser's keyboard-initiated `contextmenu` (Shift+F10 / ContextMenu key) after our
+	// menu opened from the keydown never gets here: core openMenu swallows it while open.
 	const cell = target.closest('.wg__cell') as HTMLElement
 	if (!cell) return // Right-click not on a cell
 	if (openCellMenu(ctx, cell, { x: e.clientX, y: e.clientY }, false)) e.preventDefault()

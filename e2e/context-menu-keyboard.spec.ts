@@ -69,6 +69,44 @@ test.describe('cell menu — keyboard (contextmenu.html #grid)', () => {
 		})
 	}
 
+	// G21: the browser raises its own `contextmenu` for the keyboard (Chromium: the ContextMenu key on keyup,
+	// Shift+F10 unless its keydown was prevented; `button` -1). Core openMenu swallows it while the menu it
+	// belongs to is open — no native menu on top, no re-open. A real right-click still opens the grid's menu.
+	test('Shift+F10 / ContextMenu key: no native menu on top of the grid menu; a right-click still works (G21)', async ({ page }) => {
+		await page.evaluate(() => {
+			const w = window as any
+			w.__nativeMenus = []
+			// window capture runs before core's document capture listener; read defaultPrevented after dispatch
+			window.addEventListener('contextmenu', (e) => { w.__nativeMenus.push(e) }, true)
+		})
+		const nativeMenus = () => page.evaluate(() => (window as any).__nativeMenus.map((e: MouseEvent) => ({ button: e.button, isPrevented: e.defaultPrevented })))
+		const openLog = page.locator('[data-testid="cell-menu-open-log"]')
+
+		for (const key of ['Shift+F10', 'ContextMenu']) {
+			await page.evaluate(() => { (window as any).__nativeMenus = [] })
+			await focusCellByClick(page, 'grid', 0, COL_NAME)
+			await page.keyboard.press(key)
+			await expect(menuRoot(page)).toBeVisible()
+			await expect.poll(() => focusedItem(page, 'grid')).toBe('view')
+			await page.waitForTimeout(100)
+			const events = await nativeMenus()
+			if (key === 'ContextMenu') expect(events.length).toBeGreaterThan(0)  // Chromium fires it on keyup
+			expect(events.every((e: { button: number; isPrevented: boolean }) => e.button !== 2 && e.isPrevented)).toBe(true)
+			await expect(menuRoot(page)).toHaveCount(1)
+			await page.keyboard.press('Escape')
+			await expect(menuRoot(page)).toHaveCount(0)
+		}
+
+		// a real right-click (pointerdown button 2 → contextmenu button 2) opens the grid's menu
+		await page.keyboard.press('Shift+F10')
+		await expect(menuRoot(page)).toBeVisible()
+		await cell(page, 'grid', 2, COL_NAME).click({ button: 'right' })
+		await expect(openLog).toContainText('row=2')
+		await expect(menuRoot(page)).toBeVisible()
+		const last = (await nativeMenus()).at(-1)
+		expect(last).toEqual({ button: 2, isPrevented: true })
+	})
+
 	test('arrows move between enabled items (the disabled Delete is skipped, wrap-around); Home / End', async ({ page }) => {
 		await focusCellByClick(page, 'grid', 0, COL_NAME)
 		await page.keyboard.press('Shift+F10')

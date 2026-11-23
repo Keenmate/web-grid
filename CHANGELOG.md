@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 A major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Changed — core swallows the keyboard-initiated native context menu (2026-11-24)
+- The grid's own guard against the browser's `contextmenu` that follows Shift+F10 / the ContextMenu key (raised
+  after the grid's menu already opened from the keydown) is removed: core `openMenu` swallows that event while its
+  menu is open (core G21). No behaviour change — no native menu on top, a right-click still opens the grid's menu;
+  `e2e/context-menu-keyboard.spec.ts` asserts both.
+
 ### Changed — the toolbar row's shortcuts listen through core `bindShortcuts` (2026-11-24)
 - The two document-level listeners for row shortcuts (the floating toolbar's row, the hovered row in inline mode)
   are core `bindShortcuts` bindings with `isEnabled: (e) => !isTypingTarget(e)` — no shortcuts at all while a cell
