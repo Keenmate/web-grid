@@ -1167,7 +1167,7 @@
               {
                 "name": "getCustomStylesCallback",
                 "description": "Computes the instance CSS from the grid context; wins over `customStyles`.",
-                "type": "((ctx: GridContext) => string | null) | null"
+                "type": "((ctx: GridRenderContext) => string | null) | null"
               },
               {
                 "name": "renderLoadingCallback",
@@ -1287,7 +1287,7 @@
               {
                 "name": "renderShortcutsHelpCallback",
                 "description": "Custom HTML shown alongside the keyboard-shortcuts list: `(ctx) => string`.",
-                "type": "((ctx: GridContext<T>) => RenderResult) | null"
+                "type": "((ctx: GridRenderContext<T>) => RenderResult) | null"
               },
               {
                 "name": "beforeContextMenuOpenCallback",
@@ -1327,7 +1327,7 @@
               {
                 "name": "createEmptyRowCallback",
                 "description": "The row the `add` built-in (and the experimental new row) inserts: `(ctx) => T | Promise<T>`. Default: a blank row.",
-                "type": "((ctx: GridContext<T>) => T | Promise<T>) | null"
+                "type": "((ctx: GridRenderContext<T>) => T | Promise<T>) | null"
               },
               {
                 "name": "createDuplicateRowCallback",

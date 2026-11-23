@@ -10,6 +10,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 A major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Added — render callbacks get `ctx.labels` / `isReadonly` / `isDisabled` and re-run in place (2026-11-24)
+- Every callback ctx the grid builds (cell render / display / class / tooltip / validation-tooltip / copy / paste,
+  `renderOptionCallback` + the option `get*Callback`s, pager labels, summary, tree chevron, shortcuts help, custom
+  styles, menus, row / cell callbacks) carries the grid's render values (new type `GridRenderContext`, the base of
+  every ctx type): `labels` (core `LabelsView` — `ctx.labels.text(key, params)` / `.html(…)`), `isReadonly` and
+  `isDisabled` — inherited getters, read live (the web-treeview / web-multiselect model). Event details don't.
+- A change of `labels` / `locale` / `translateCallback` / the page-wide locale / `isReadonly` / `isDisabled` re-runs the
+  rendered callbacks in place: same table element, selection, active cell, editor and scroll kept. **Fixed:** the
+  cached `renderChevronCallback` results are dropped then (they kept the old values), and an open dropdown re-fills
+  its options (`renderOptionCallback`, its empty / no-results texts) on a labels / locale change.
+- `OptionRenderContext.isDisabled` (the option's own flag) is now **`isOptionDisabled`**; `ctx.isDisabled` is the
+  grid's state, like every Keenmate render ctx (2.0-only type, no 1.x consumer affected).
+- `HeaderMenuContext.labels` is the inherited one now (same value). `editorOptions.onSelect` gets the full cell ctx
+  (`controller` / `element` were lost to a spread).
+- Example card LO08 (localization), e2e `render-ctx.spec.ts`.
+
 ### Changed — text sort follows the grid's locale (core `getCollator`) (2026-11-24)
 - Client-side sort (flat and tree) compares text with core `getCollator(locale, { numeric: true })` — the grid's
   `locale` input, unset = the page-wide `window.components.locale`, else the browser — instead of a bare

@@ -169,8 +169,25 @@ export interface GridController<T = any> {
 /** Base of every callback ctx and event detail. */
 export type GridContext<T = any> = ComponentContext<GridController<T>>
 
+/**
+ * The grid-wide render values every callback ctx the grid builds carries (render / format / get / tooltip /
+ * option / summary / pager / chevron / menu callbacks; not event details) — inherited getters, read live when
+ * the callback runs (a `{ ...ctx }` spread drops them, like `controller` / `element`). A change of any of them
+ * (`labels` / `locale` / `translateCallback` / the page-wide locale, `isReadonly`, `isDisabled`)
+ * re-runs the rendered callbacks in place — same table, selection, active cell, editor and scroll kept.
+ */
+export interface GridRenderContext<T = any> extends GridContext<T> {
+	/** The grid's UI strings (core `LabelsView`, frozen): `ctx.labels.text(key, params?)` / `ctx.labels.html(key, params?)` —
+	 *  instance `labels` → own / page-wide `translateCallback` → page-wide labels → English, `{ctx.count}` locale-formatted. */
+	labels: LabelsView<GridLabels>
+	/** Read-only (`isReadonly`): the user can't change the data. */
+	isReadonly: boolean
+	/** The grid's disabled state (`isDisabled`). */
+	isDisabled: boolean
+}
+
 /** A row without a position — `getIdCallback`, `getIsRowEditableCallback`, `column.getIsEditableCallback`. */
-export interface RowDataContext<T = any> extends GridContext<T> {
+export interface RowDataContext<T = any> extends GridRenderContext<T> {
 	row: T
 }
 
@@ -210,7 +227,7 @@ export interface GridScrollOptions {
  * on its own. Return `false` to skip the scroll, or a partial `options` to replace the defaults.
  * Synchronous. With virtual scroll a jump scrolls by row index, so only `false` applies there.
  */
-export interface GridBeforeScrollContext<T = any> extends GridContext<T> {
+export interface GridBeforeScrollContext<T = any> extends GridRenderContext<T> {
 	/** The displayed row (`null` when the index is outside the displayed rows). */
 	row: T | null
 	/** Displayed index. */
@@ -234,7 +251,7 @@ export interface SelectedColumn<T = any> {
 }
 
 /** ctx of `column.filterCallback`. Runs before sorting / pagination, so there is no row index. */
-export interface FilterContext<T = any> extends GridContext<T> {
+export interface FilterContext<T = any> extends GridRenderContext<T> {
 	row: T
 	column: Column<T>
 	field: string
@@ -276,7 +293,7 @@ export interface RowLockContext<T = any> extends RowContext<T> {
 }
 
 /** ctx of the editor-option callbacks (`editorOptions.getValueCallback`, …). */
-export interface OptionContext<T = any> extends GridContext<T> {
+export interface OptionContext<T = any> extends GridRenderContext<T> {
 	option: EditorOption
 }
 
@@ -287,7 +304,8 @@ export interface OptionRenderContext<T = any> extends OptionContext<T> {
 	/** The keyboard / mouse cursor is on this option. */
 	isFocused: boolean
 	isSelected: boolean
-	isDisabled: boolean
+	/** This option is disabled (`disabledMember` / `getIsDisabledCallback`). `ctx.isDisabled` is the grid's state. */
+	isOptionDisabled: boolean
 }
 
 /** ctx of `editorOptions.searchCallback` (autocomplete). */
@@ -304,7 +322,7 @@ export interface OptionSelectContext<T = any> extends CellContext<T> {
 }
 
 /** The selected rows / cell range a range shortcut acts on. */
-export interface RangeContext<T = any> extends GridContext<T> {
+export interface RangeContext<T = any> extends GridRenderContext<T> {
 	/** Selected rows, in display order. */
 	rows: T[]
 	/** Selected row indices, ascending. */
@@ -315,7 +333,7 @@ export interface RangeContext<T = any> extends GridContext<T> {
 }
 
 /** ctx of the header context menu (`headerContextMenu` items, `beforeHeaderMenuOpenCallback`). */
-export interface HeaderMenuContext<T = any> extends GridContext<T> {
+export interface HeaderMenuContext<T = any> extends GridRenderContext<T> {
 	/** The column; `null` on the filler area right of the last column. */
 	column: Column<T> | null
 	/** `''` on the filler. */
@@ -328,19 +346,17 @@ export interface HeaderMenuContext<T = any> extends GridContext<T> {
 	isTreeMode: boolean
 	/** All columns, hidden ones included. */
 	allColumns: Column<T>[]
-	/** The grid's texts: `labels.text(key, params?)` / `labels.html(key, params?)` (core `LabelsView`, frozen). */
-	labels: LabelsView<GridLabels>
 }
 
 /** ctx of `beforeFillCallback` (fill handle). */
-export interface FillContext<T = any> extends GridContext<T> {
+export interface FillContext<T = any> extends GridRenderContext<T> {
 	sourceCell: { rowIndex: number; colIndex: number; field: string; value: unknown }
 	targetCells: Array<{ rowIndex: number; colIndex: number; field: string }>
 	direction: 'up' | 'down' | 'left' | 'right'
 }
 
 /** ctx of `beforePasteCallback` (multi-cell paste). Return `false` to cancel the paste. */
-export interface BeforePasteContext<T = any> extends GridContext<T> {
+export interface BeforePasteContext<T = any> extends GridRenderContext<T> {
 	rawText: string
 	/** TSV parsed into a 2D array. */
 	parsedRows: string[][]
@@ -355,7 +371,7 @@ export interface BeforePasteContext<T = any> extends GridContext<T> {
 }
 
 /** ctx of `createRowCallback` (a paste needs a new row). */
-export interface CreateRowContext<T = any> extends GridContext<T> {
+export interface CreateRowContext<T = any> extends GridRenderContext<T> {
 	/** The pasted values by field. */
 	data: Record<string, unknown>
 	/** Index the new row will take in `items`. */
@@ -366,7 +382,7 @@ export interface CreateRowContext<T = any> extends GridContext<T> {
  * ctx of `getPaginationLabelsCallback` — and the `{ ctx }` of the pager's labels (`labels.pageInfo`,
  * `labels.itemCount`): `{ctx.currentPage}`, `{ctx.totalPages}`, `{ctx.count}`, … (rulebook D-NC-24).
  */
-export interface PaginationLabelsContext<T = any> extends GridContext<T> {
+export interface PaginationLabelsContext<T = any> extends GridRenderContext<T> {
 	currentPage: number
 	totalPages: number
 	totalItems: number
@@ -418,7 +434,7 @@ export type PageChangeTrigger = 'page' | 'page-size' | 'sort' | 'filter'
  * Return `false` to stay, a page number to go there instead; may be async (the pager is
  * disabled while it is pending).
  */
-export interface BeforePageChangeContext<T = any> extends GridContext<T> {
+export interface BeforePageChangeContext<T = any> extends GridRenderContext<T> {
 	trigger: PageChangeTrigger
 	fromPage: number
 	/** The page the action leads to (1 for page-size / sort / filter changes). */
@@ -440,7 +456,7 @@ export interface Draft<T = any> {
 }
 
 /** ctx of `renderSummaryCallback`. */
-export interface SummaryContext<T = any> extends GridContext<T> {
+export interface SummaryContext<T = any> extends GridRenderContext<T> {
 	/** Displayed (paginated) rows. */
 	items: T[]
 	/** All rows, before pagination. */
@@ -458,7 +474,7 @@ export interface SummaryContext<T = any> extends GridContext<T> {
 }
 
 /** ctx of `renderChevronCallback`. */
-export interface ChevronContext<T = any> extends GridContext<T> {
+export interface ChevronContext<T = any> extends GridRenderContext<T> {
 	row: T
 	isExpanded: boolean
 	/** False on a leaf. */

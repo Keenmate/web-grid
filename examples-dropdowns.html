@@ -46,7 +46,7 @@
         const classes = ['wg__dropdown-option']
         if (ctx.isFocused) classes.push('wg__dropdown-option--highlighted')
         if (ctx.isSelected) classes.push('wg__dropdown-option--selected')
-        if (ctx.isDisabled) classes.push('wg__dropdown-option--disabled')
+        if (ctx.isOptionDisabled) classes.push('wg__dropdown-option--disabled')
         return `&lt;div class="${classes.join(' ')}" data-index="${ctx.optionIndex}"&gt;
             &lt;span style="background: ${opt.color}; ..."&gt;&lt;/span&gt;
             ${opt.label}
@@ -63,7 +63,7 @@
                 <li><code>optionIndex</code> - Option index in the list</li>
                 <li><code>isFocused</code> - The keyboard / mouse cursor is on it</li>
                 <li><code>isSelected</code> - Currently selected value</li>
-                <li><code>isDisabled</code> - Option is disabled</li>
+                <li><code>isOptionDisabled</code> - Option is disabled (<code>ctx.isDisabled</code> is the grid’s state, with <code>ctx.isReadonly</code> and <code>ctx.labels</code>)</li>
             </ul>
         </div>
     </div>
@@ -159,8 +159,8 @@ grid.getCustomStylesCallback = () =&gt; `
                     const classes = ['wg__dropdown-option']
                     if (ctx.isFocused) classes.push('wg__dropdown-option--highlighted')
                     if (ctx.isSelected) classes.push('wg__dropdown-option--selected')
-                    if (ctx.isDisabled) classes.push('wg__dropdown-option--disabled')
-                    return `<div class="${classes.join(' ')}" data-index="${ctx.optionIndex}" ${ctx.isDisabled ? 'data-disabled="true"' : ''}>
+                    if (ctx.isOptionDisabled) classes.push('wg__dropdown-option--disabled')
+                    return `<div class="${classes.join(' ')}" data-index="${ctx.optionIndex}" ${ctx.isOptionDisabled ? 'data-disabled="true"' : ''}>
                         <span data-kmwc-fixed-colors style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: ${opt.color}; margin-right: 8px;"></span>
                         ${opt.label}
                     </div>`

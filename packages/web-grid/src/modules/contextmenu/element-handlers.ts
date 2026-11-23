@@ -15,7 +15,8 @@ import type {
 	GridHeaderAction,
 	GridHeaderMenuEntry,
 	GridMenuEntry,
-	HeaderMenuContext
+	HeaderMenuContext,
+	GridRenderContext
 } from '../../interaction.js'
 import { openGridMenu } from './index.js'
 import {
@@ -123,7 +124,7 @@ function openCellMenu<T>(ctx: GridHost<T>, cell: HTMLElement, at: { x: number; y
 function openHeaderMenu<T>(
 	ctx: GridHost<T>,
 	e: MouseEvent,
-	fields: Omit<HeaderMenuContext<T>, 'controller' | 'element'>,
+	fields: Omit<HeaderMenuContext<T>, keyof GridRenderContext<T>>,
 	baseEntries: readonly GridHeaderMenuEntry<T>[]
 ): void {
 	const engine = ctx[GRID_ENGINE]
@@ -178,8 +179,7 @@ export function handleHeaderContextMenu<T>(
 		sortDirection: engine.sort.find(s => s.column === field)?.direction ?? null,
 		isFrozen: colIndex < engine.frozenColumnCount,
 		isTreeMode: engine.isTreeMode,
-		allColumns: engine.columns,  // All columns (hidden included) for the visibility submenu
-		labels: engine.labelsView
+		allColumns: engine.columns  // All columns (hidden included) for the visibility submenu
 	}, engine.headerContextMenu ?? [])
 }
 
@@ -209,7 +209,6 @@ export function handleFillerContextMenu<T>(ctx: GridHost<T>, e: MouseEvent): voi
 		sortDirection: null,
 		isFrozen: false,
 		isTreeMode: engine.isTreeMode,
-		allColumns: engine.columns,
-		labels: engine.labelsView
+		allColumns: engine.columns
 	}, fillerEntries)
 }

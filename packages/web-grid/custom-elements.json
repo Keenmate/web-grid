@@ -2604,7 +2604,7 @@
               "name": "getCustomStylesCallback",
               "privacy": "public",
               "type": {
-                "text": "((ctx: GridContext) => string | null) | null"
+                "text": "((ctx: GridRenderContext) => string | null) | null"
               },
               "description": "Computes the instance CSS from the grid context; wins over `customStyles`."
             },
@@ -2844,7 +2844,7 @@
               "name": "renderShortcutsHelpCallback",
               "privacy": "public",
               "type": {
-                "text": "((ctx: GridContext<T>) => RenderResult) | null"
+                "text": "((ctx: GridRenderContext<T>) => RenderResult) | null"
               },
               "description": "Custom HTML shown alongside the keyboard-shortcuts list: `(ctx) => string`."
             },
@@ -2916,7 +2916,7 @@
               "name": "createEmptyRowCallback",
               "privacy": "public",
               "type": {
-                "text": "((ctx: GridContext<T>) => T | Promise<T>) | null"
+                "text": "((ctx: GridRenderContext<T>) => T | Promise<T>) | null"
               },
               "description": "The row the `add` built-in (and the experimental new row) inserts: `(ctx) => T | Promise<T>`. Default: a blank row."
             },

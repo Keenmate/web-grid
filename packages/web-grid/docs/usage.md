@@ -280,7 +280,7 @@ grid.contextMenu = [
 ]
 ```
 
-Cell menu items get the cell ctx `{ row, rowIndex, column, colIndex, field, value }`; header items get `HeaderMenuContext` `{ column, field, colIndex, sortDirection, isFrozen, isTreeMode, allColumns, labels }` (`column` is `null` and `colIndex` `-1` on the filler right of the last column). Both menus support `children` (static) or `getChildrenCallback(ctx)` (dynamic) submenus; every child activates like a top-level item.
+Cell menu items get the cell ctx `{ row, rowIndex, column, colIndex, field, value }`; header items get `HeaderMenuContext` `{ column, field, colIndex, sortDirection, isFrozen, isTreeMode, allColumns }` (+ `labels`, `isReadonly`, `isDisabled`, like every callback ctx) (`column` is `null` and `colIndex` `-1` on the filler right of the last column). Both menus support `children` (static) or `getChildrenCallback(ctx)` (dynamic) submenus; every child activates like a top-level item.
 
 #### Menu keyboard, markup and theming
 
@@ -723,7 +723,7 @@ Used by `select`, `combobox`, and `autocomplete`.
 
 | Option | Type | Description |
 |---|---|---|
-| `renderOptionCallback` | `(ctx: { option, optionIndex, isFocused, isSelected, isDisabled }) => RenderResult` | Custom HTML per option; `null` = the built-in option |
+| `renderOptionCallback` | `(ctx: { option, optionIndex, isFocused, isSelected, isOptionDisabled }) => RenderResult` | Custom HTML per option; `null` = the built-in option |
 | `onSelect` | `(ctx: { option, row, rowIndex, column, field, … }) => void` | Notification when an option is selected |
 | `isEmptyAllowed` | `boolean` | An empty first item (`labels.emptyOption`, "—") that sets the value to `null` (default `false`) |
 | `labels` | `{ 'messages.noOptions'?, 'messages.noMatchingOptions'?, 'messages.searching'?, 'ariaLabels.searching'?, 'labels.emptyOption'? }` | This column's dropdown texts, per key over the grid `labels` |
@@ -763,6 +763,7 @@ The grid follows the shared Keenmate interaction model (`@keenmate/web-component
 - **`*Callback` properties** return a value that affects behavior (`get*Callback`, `render*Callback`, `create*Callback`; a `before*Callback` returning `false` cancels). **Every callback takes one `ctx` object.**
 - **Events** are real DOM events (bubble, not composed), each with a camelCase `on*` property twin that is called with the same detail first.
 - Every ctx and every event detail carries `controller` (the public `GridController`, also `el.controller`) and `element` (the `<web-grid>` host) — both non-enumerable, so `JSON.stringify` / logs see only the data.
+- Every callback ctx (render / format / `get*` / tooltip / option / summary / pager / chevron / menu — not event details) also carries the grid's render values (`GridRenderContext`, inherited, read live): `labels` (core `LabelsView`: `ctx.labels.text(key, params)` / `.html(…)`), `isReadonly` and `isDisabled`. A change of `labels` / `locale` / `translateCallback` / the page-wide locale / `isReadonly` / disabled re-runs the rendered callbacks **in place** (cells, tooltips, summary, pager labels, shortcuts help, chevrons, an open dropdown's options) — selection, active cell, editor and scroll are kept. An option's own flag is `ctx.isOptionDisabled`.
 
 ```javascript
 grid.addEventListener('row-change', (e) => save(e.detail.draftRow))

@@ -197,10 +197,12 @@ export function reanchorOpenDropdown<T>(ctx: GridHost<T>): void {
 }
 
 /**
- * The page-wide icon hook changed (the element's `iconsChanged()`): re-fill the open dropdown's
- * options in place — same panel / popover / sheet header, highlight, filter and scroll kept.
+ * Something the options render from changed — the icons (the element's `iconsChanged()`) or a value of the
+ * render ctx (`labels` / `locale` / `translateCallback` / the page-wide locale: `renderOptionCallback`'s
+ * `ctx.labels`, the empty / no-results texts): re-fill the open dropdown's options in place — same panel /
+ * popover / sheet header, highlight, filter and scroll kept.
  */
-export function repaintDropdownIcons<T>(ctx: GridHost<T>): void {
+export function repaintOpenDropdown<T>(ctx: GridHost<T>): void {
 	const open = ctx.shadow.querySelector('.wg__dropdown') as HTMLElement | null
 	const info = open ? panelInfos.get(open) : undefined
 	if (!open || !info) return
@@ -291,7 +293,7 @@ function fillDropdown<T>(
 			// Custom render callback (core renderSlotHtml: null / undefined = the built-in option, false = none)
 			const render = opts.renderOptionCallback
 			if (render && !isEmpty) {
-				return renderSlotHtml(() => render(optionCtx(opts, { option: opt, optionIndex: i, isFocused: isHighlighted, isSelected, isDisabled: disabled })), defaultOptionHtml).html
+				return renderSlotHtml(() => render(optionCtx(opts, { option: opt, optionIndex: i, isFocused: isHighlighted, isSelected, isOptionDisabled: disabled })), defaultOptionHtml).html
 			}
 			return defaultOptionHtml()
 		}).join(''))

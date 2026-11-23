@@ -4,7 +4,7 @@
 
 import type { LoadStateCallback, SaveStateCallback } from '@keenmate/web-components-core'
 import type {
-	GridContext,
+	GridRenderContext,
 	HeaderMenuContext,
 	RowContext,
 	RowDataContext,
@@ -346,7 +346,7 @@ export type QuickGridProps<T> = {
 	class?: string
 	style?: string
 	customStyles?: string | null  // CSS for the shadow root (after the page-wide window.components['web-grid'].customStyles)
-	getCustomStylesCallback?: ((ctx: GridContext<T>) => string | null | undefined) | null  // Computes the instance CSS; wins over customStyles
+	getCustomStylesCallback?: ((ctx: GridRenderContext<T>) => string | null | undefined) | null  // Computes the instance CSS; wins over customStyles
 	getRowClassCallback?: (ctx: RowContext<T>) => string | null  // Dynamic CSS class for rows
 	// Field on each row uniquely identifying it (default: 'id'; `null` = none). The only row-id
 	// member: getRowId / getRowById / updateRowById / replaceRowById / lockRowById read it
@@ -423,7 +423,7 @@ export type QuickGridProps<T> = {
 	rangeShortcuts?: GridRangeShortcut<T>[]
 	isShortcutsHelpShown?: boolean              // Show info icon (default: false)
 	shortcutsHelpPosition?: 'top-right' | 'top-left'  // Icon position (default: 'top-right')
-	renderShortcutsHelpCallback?: (ctx: GridContext<T>) => RenderResult   // Custom HTML shown with the shortcuts list
+	renderShortcutsHelpCallback?: (ctx: GridRenderContext<T>) => RenderResult   // Custom HTML shown with the shortcuts list
 	// Scroll behavior
 	isScrollable?: boolean               // Enable scroll container with max-height: 100vh (default: false)
 	scrollMaxHeight?: string             // Custom max-height when isScrollable is true (default: '100vh')
@@ -509,7 +509,7 @@ export type QuickGridProps<T> = {
 	isNewRowEnabled?: boolean                          // [Experimental] Enable always-visible empty row for data entry (default: false)
 	newRowPosition?: NewRowPosition                    // [Experimental] Position of empty row: 'top' or 'bottom' (default: 'bottom')
 	newRowIndicator?: string                           // [Experimental] Indicator shown in row number column (default: '+')
-	createEmptyRowCallback?: (ctx: GridContext<T>) => T | Promise<T>  // [Experimental] New empty row (can be async); also the `add` built-in's row
+	createEmptyRowCallback?: (ctx: GridRenderContext<T>) => T | Promise<T>  // [Experimental] New empty row (can be async); also the `add` built-in's row
 	createDuplicateRowCallback?: (ctx: RowContext<T>) => T  // The copy the `duplicate` built-in inserts (default: shallow copy, idMember cleared)
 }
 

@@ -54,7 +54,7 @@ export function selectDropdownOption<T>(
 
 	// Notify editorOptions.onSelect
 	if (opts.onSelect && row && column) {
-		opts.onSelect({ ...ctx[GRID_ENGINE].cellCtx(row, rowIndex, column, colIndex), option })
+		opts.onSelect(Object.assign(ctx[GRID_ENGINE].cellCtx(row, rowIndex, column, colIndex), { option }))
 	}
 
 	ctx.dropdown.setJustSelected(true)

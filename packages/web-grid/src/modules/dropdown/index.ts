@@ -21,7 +21,7 @@ export {
 	renderDropdown,
 	removeDropdown,
 	applyDropdownPresentation,
-	repaintDropdownIcons,
+	repaintOpenDropdown,
 	reanchorOpenDropdown,
 	isDropdownSheet
 } from './rendering.js'

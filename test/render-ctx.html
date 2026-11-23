@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Test — render callbacks: ctx.labels / isReadonly / isDisabled, re-run in place</title>
+	<link rel="stylesheet" href="test-fixtures.css">
+</head>
+<body>
+	<h1>Render-callback ctx fixture</h1>
+	<p>Targeted by <code>e2e/render-ctx.spec.ts</code>. Every callback ctx carries <code>labels</code>,
+	<code>isReadonly</code>, <code>isDisabled</code>; a change of labels / locale / translateCallback /
+	the page-wide locale / readonly / disabled re-runs the rendered callbacks in place.</p>
+
+	<web-grid id="grid" enable-editing edit-trigger="navigate" enable-paging page-size="3" summary-position="bottom-right"
+		open-dropdown-on-focus="false" style="max-width: 800px;"></web-grid>
+
+	<web-grid id="tree" style="max-width: 600px;"></web-grid>
+
+	<script type="module">
+		import '@keenmate/web-grid'
+		/*
+		 * #grid — cols:
+		 *  0=name   (text; renderCellCallback → <span class="r">L|ro=..|dis=..</span>, getTooltipCallback → "T:L|ro=..|dis=..")
+		 *  1=status (select a / p / x(disabled); renderOptionCallback → <div class="wg__dropdown-option" data-index>
+		 *            "L:<label>:opt=<isOptionDisabled>|dis=<isDisabled>"</div>)
+		 *  L = ctx.labels.text('menuItems.deleteRow') ('Delete row' in English)
+		 * Pager: getPaginationLabelsCallback → perPage "P:L|ro=..". Summary: <span class="s">S:L|ro=..|dis=..</span>.
+		 * 5 rows, page size 3. window.renderCalls counts the renderCellCallback runs.
+		 *
+		 * #tree — pathMember 'path', all expanded; renderChevronCallback → <b class="c">ro=..:<menuItems.expand></b> on a parent.
+		 */
+		window.renderCalls = 0
+		const state = (c) => `${c.labels.text('menuItems.deleteRow')}|ro=${c.isReadonly}|dis=${c.isDisabled}`
+		const statuses = [{ value: 'a', label: 'Active' }, { value: 'p', label: 'Paused' }, { value: 'x', label: 'Gone', disabled: true }]
+		const grid = document.getElementById('grid')
+		grid.columns = [
+			{ field: 'name', title: 'Name', width: '260px',
+				renderCellCallback: (c) => { window.renderCalls++; return `<span class="r">${state(c)}</span>` },
+				getTooltipCallback: (c) => `T:${state(c)}` },
+			{ field: 'status', title: 'Status', width: '200px', editor: 'select',
+				editorOptions: {
+					options: statuses,
+					disabledMember: 'disabled',
+					renderOptionCallback: ({ option, optionIndex, isOptionDisabled, labels, isDisabled }) =>
+						`<div class="wg__dropdown-option" data-index="${optionIndex}">${labels.text('menuItems.deleteRow')}:${option.label}:opt=${isOptionDisabled}|dis=${isDisabled}</div>`
+				} }
+		]
+		grid.getPaginationLabelsCallback = (c) => ({ perPage: `P:${c.labels.text('menuItems.deleteRow')}|ro=${c.isReadonly}` })
+		grid.renderSummaryCallback = (c) => `<span class="s">S:${state(c)}</span>`
+		grid.items = ['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon'].map((name, i) => ({ id: i + 1, name, status: i % 2 ? 'p' : 'a' }))
+
+		const tree = document.getElementById('tree')
+		tree.pathMember = 'path'
+		tree.expandLevel = 99
+		tree.columns = [{ field: 'name', title: 'Name', isTree: true }]
+		tree.renderChevronCallback = ({ hasChildren, labels, isReadonly }) =>
+			hasChildren ? `<b class="c">ro=${isReadonly}:${labels.text('menuItems.expand')}</b>` : ''
+		tree.items = [
+			{ path: '1', name: 'Root' },
+			{ path: '1.1', name: 'Child' }
+		]
+	</script>
+</body>
+</html>

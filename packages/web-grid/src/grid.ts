@@ -42,6 +42,7 @@ import type {
 import type {
 	GridController,
 	GridContext,
+	GridRenderContext,
 	RowContext,
 	RowDataContext,
 	CellContext,
@@ -186,7 +187,7 @@ export class GridEngine<T = unknown> {
 	protected _rowShortcuts: GridShortcut<T>[] | undefined = undefined
 	protected _isShortcutsHelpShown: boolean = false
 	protected _shortcutsHelpPosition: 'top-right' | 'top-left' = 'top-right'
-	protected _renderShortcutsHelpCallback: ((ctx: GridContext<T>) => RenderResult) | undefined = undefined
+	protected _renderShortcutsHelpCallback: ((ctx: GridRenderContext<T>) => RenderResult) | undefined = undefined
 
 	// Row identification (the member is `_idMember`, below)
 	protected _getIdCallback: ((ctx: RowDataContext<T>) => unknown) | undefined = undefined
@@ -344,7 +345,7 @@ export class GridEngine<T = unknown> {
 	protected _isNewRowEnabled: boolean = false
 	protected _newRowPosition: NewRowPosition = 'bottom'
 	protected _newRowIndicator: string = '+'
-	protected _createEmptyRowCallback: ((ctx: GridContext<T>) => T | Promise<T>) | undefined = undefined
+	protected _createEmptyRowCallback: ((ctx: GridRenderContext<T>) => T | Promise<T>) | undefined = undefined
 	protected _createDuplicateRowCallback: ((ctx: RowContext<T>) => T) | undefined = undefined
 	protected _emptyRowDraft: T | null = null  // Tracks edits to empty row before commit
 
@@ -382,8 +383,10 @@ export class GridEngine<T = unknown> {
 
 	// Prototype of every ctx / detail the engine builds: `controller` and `element`
 	// as getters, so they are inherited (non-enumerable — JSON / logs see only the
-	// data) and an object costs one allocation on the per-cell hot paths.
-	protected _ctxProto: object = {}
+	// data) and an object costs one allocation on the per-cell hot paths. The render
+	// values (GridRenderContext: `labels`, `isReadonly`, `isDisabled`) are getters on
+	// it too — read live when the callback runs.
+	protected _ctxProto: object = this.createCtxProto({})
 	protected _notifier: (<K extends GridEventName>(name: K, detail: object) => void) | null = null
 	/** The element (`attachHost`) — core's `source` for number parsing (page settings, logger); `null` standalone. */
 	protected _hostElement: HTMLElement | null = null
@@ -394,7 +397,7 @@ export class GridEngine<T = unknown> {
 	 * standalone engine runs without it (no events, ctx without the context).
 	 */
 	attachHost(element: HTMLElement, getController: () => GridController<T>, notify: <K extends GridEventName>(name: K, detail: object) => void): void {
-		this._ctxProto = Object.create(null, {
+		this._ctxProto = this.createCtxProto({
 			controller: { get: getController, enumerable: false },
 			element: { value: element, enumerable: false }
 		})
@@ -402,8 +405,20 @@ export class GridEngine<T = unknown> {
 		this._hostElement = element
 	}
 
+	/** The ctx prototype: `extra` (the component context) + the render values every grid ctx carries (GridRenderContext). */
+	private createCtxProto(extra: PropertyDescriptorMap): object {
+		// eslint-disable-next-line @typescript-eslint/no-this-alias
+		const engine = this
+		return Object.create(null, {
+			...extra,
+			labels: { get() { return engine.labelsView }, enumerable: false },
+			isReadonly: { get() { return engine._isReadonly }, enumerable: false },
+			isDisabled: { get() { return engine._isDisabled }, enumerable: false }
+		})
+	}
+
 	/** A callback ctx: `fields` + the component context. */
-	ctx<F extends object>(fields: F): F & GridContext<T> {
+	ctx<F extends object>(fields: F): F & GridRenderContext<T> {
 		return Object.assign(Object.create(this._ctxProto), fields)
 	}
 
@@ -535,17 +550,21 @@ export class GridEngine<T = unknown> {
 	/** Values can't change (no editing, paste, fill, row add / delete / move); still focusable, selectable, copyable. */
 	get isReadonly(): boolean { return this._isReadonly }
 	set isReadonly(value: boolean) {
+		const isChanged = this._isReadonly !== !!value
 		this._isReadonly = !!value
 		if (this._isReadonly) this.cancelEdit()
-		this.requestUpdate()
+		if (isChanged) this.renderContextChanged()
+		else this.requestUpdate()
 	}
 
 	/** No interaction at all (not focusable). */
 	get isDisabled(): boolean { return this._isDisabled }
 	set isDisabled(value: boolean) {
+		const isChanged = this._isDisabled !== !!value
 		this._isDisabled = !!value
 		if (this._isDisabled) this.cancelEdit()
-		this.requestUpdate()
+		if (isChanged) this.renderContextChanged()
+		else this.requestUpdate()
 	}
 
 	/** Grid-level editing is on and neither `isReadonly` nor `isDisabled` blocks it. */
@@ -861,8 +880,8 @@ export class GridEngine<T = unknown> {
 		this.requestUpdate()
 	}
 
-	get renderShortcutsHelpCallback(): ((ctx: GridContext<T>) => RenderResult) | undefined { return this._renderShortcutsHelpCallback }
-	set renderShortcutsHelpCallback(value: ((ctx: GridContext<T>) => RenderResult) | undefined) {
+	get renderShortcutsHelpCallback(): ((ctx: GridRenderContext<T>) => RenderResult) | undefined { return this._renderShortcutsHelpCallback }
+	set renderShortcutsHelpCallback(value: ((ctx: GridRenderContext<T>) => RenderResult) | undefined) {
 		this._renderShortcutsHelpCallback = value
 		this.requestUpdate()
 	}
@@ -961,7 +980,7 @@ export class GridEngine<T = unknown> {
 		// Per key: instance → page-wide window.components.locale → English — see labels.ts
 		this._labelsResolver.setInput(value)
 		this._labels = this._labelsResolver.resolve()
-		this.requestUpdate()
+		this.renderContextChanged()
 	}
 
 	/** One label with its `{ ctx }` params (`{ctx.*}` placeholders), formatted (the page's `translateCallback` when the grid has a host). */
@@ -1017,6 +1036,18 @@ export class GridEngine<T = unknown> {
 	refreshLabels(): void {
 		this._numberSettingsCache = null
 		this._labels = this._labelsResolver.resolve()
+		this.renderContextChanged()
+	}
+
+	/**
+	 * A value every render ctx carries changed (GridRenderContext: `labels` — incl. `locale`,
+	 * `translateCallback`, the page-wide locale — `isReadonly`, `isDisabled`): the
+	 * render callbacks re-run IN PLACE with the next render — cells, tooltips, summary, pager,
+	 * shortcuts help and the cached chevrons (dropped here); selection, active cell, editor and
+	 * scroll are kept. The element re-fills an open dropdown (`renderOptionCallback`).
+	 */
+	renderContextChanged(): void {
+		this._treeChevronCache = new WeakMap()
 		this.requestUpdate()
 	}
 
@@ -1538,8 +1569,8 @@ export class GridEngine<T = unknown> {
 		this.requestUpdate()
 	}
 
-	get createEmptyRowCallback(): ((ctx: GridContext<T>) => T | Promise<T>) | undefined { return this._createEmptyRowCallback }
-	set createEmptyRowCallback(value: ((ctx: GridContext<T>) => T | Promise<T>) | undefined) {
+	get createEmptyRowCallback(): ((ctx: GridRenderContext<T>) => T | Promise<T>) | undefined { return this._createEmptyRowCallback }
+	set createEmptyRowCallback(value: ((ctx: GridRenderContext<T>) => T | Promise<T>) | undefined) {
 		this._createEmptyRowCallback = value
 	}
 

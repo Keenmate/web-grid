@@ -31,7 +31,8 @@ import type {
 	CellContext,
 	GridShortcut,
 	GridRangeShortcut,
-	RangeContext
+	RangeContext,
+	GridRenderContext,
 } from '../../interaction.js'
 import { isTypingTarget, matchesShortcut, parseShortcut, type ShortcutBinding } from '@keenmate/web-components-core/actions'
 import { applySort } from '../events/sort.js'
@@ -407,11 +408,11 @@ function isShortcutActive<T>(host: GridHost<T>, shortcut: GridShortcut<T> | Grid
  */
 export function rowShortcutBindings<T>(
 	host: GridHost<T>,
-	getFields: () => Omit<CellContext<T>, 'controller' | 'element'> | null,
-	after?: (detail: GridActionEventDetail<T>, fields: Omit<CellContext<T>, 'controller' | 'element'>) => void
+	getFields: () => Omit<CellContext<T>, keyof GridRenderContext> | null,
+	after?: (detail: GridActionEventDetail<T>, fields: Omit<CellContext<T>, keyof GridRenderContext>) => void
 ): () => ShortcutBinding[] {
 	return () => (host[GRID_ENGINE].rowShortcuts ?? []).map((shortcut): ShortcutBinding => {
-		let fields: Omit<CellContext<T>, 'controller' | 'element'> | null = null
+		let fields: Omit<CellContext<T>, keyof GridRenderContext> | null = null
 		return {
 			shortcut: shortcut?.shortcut && parseShortcut(shortcut.shortcut).length === 1 ? shortcut.shortcut : undefined,
 			isEnabled: (e) => {
@@ -434,7 +435,7 @@ export function rowShortcutBindings<T>(
 export function handleRowShortcut<T>(
 	host: GridHost<T>,
 	e: KeyboardEvent,
-	fields: Omit<CellContext<T>, 'controller' | 'element'>
+	fields: Omit<CellContext<T>, keyof GridRenderContext>
 ): boolean {
 	const ctx = host[GRID_ENGINE].ctx(fields)
 	const shortcut = findShortcut(host, e, host[GRID_ENGINE].rowShortcuts, ctx)
@@ -445,7 +446,7 @@ export function handleRowShortcut<T>(
 }
 
 /** Run a matching range shortcut on the selection in `fields`; true when one ran. */
-export function handleRangeShortcut<T>(host: GridHost<T>, e: KeyboardEvent, fields: Omit<RangeContext<T>, 'controller' | 'element'>): boolean {
+export function handleRangeShortcut<T>(host: GridHost<T>, e: KeyboardEvent, fields: Omit<RangeContext<T>, keyof GridRenderContext>): boolean {
 	const ctx = host[GRID_ENGINE].ctx(fields)
 	const shortcut = findShortcut(host, e, host[GRID_ENGINE].rangeShortcuts, ctx)
 	if (!shortcut) return false
@@ -455,7 +456,7 @@ export function handleRangeShortcut<T>(host: GridHost<T>, e: KeyboardEvent, fiel
 }
 
 /** Plain cell fields for a row's first column (shortcuts fired from the toolbar / hovered row). */
-export function rowCellFields<T>(host: GridHost<T>, row: T, rowIndex: number): Omit<CellContext<T>, 'controller' | 'element'> {
+export function rowCellFields<T>(host: GridHost<T>, row: T, rowIndex: number): Omit<CellContext<T>, keyof GridRenderContext> {
 	const column = host[GRID_ENGINE].columns[0]
 	const field = column ? String(column.field) : ''
 	return { row, rowIndex, column, colIndex: 0, field, value: column ? host[GRID_ENGINE].getCellRawValue(row, rowIndex, field) : undefined }

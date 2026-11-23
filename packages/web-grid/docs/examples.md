@@ -36,7 +36,7 @@ make dev
 | [`examples-height-modes.html`](../../../examples-height-modes.html) | Capped container vs. full-page height vs. `isTableBorderOnly` |
 | [`examples-theming.html`](../../../examples-theming.html) | `--base-*` overrides, custom palette, dark-mode toggling |
 | [`examples-custom-styling.html`](../../../examples-custom-styling.html) | `getCustomStylesCallback`, `getRowClassCallback`, `getCellClassCallback` |
-| [`examples-localization.html`](../../../examples-localization.html) | `labels`, page-wide dictionary, `translateCallback` + i18next bridge (LO03), `locale`, Czech plural forms via `ctx.count` (LO07) |
+| [`examples-localization.html`](../../../examples-localization.html) | `labels`, page-wide dictionary, `translateCallback` + i18next bridge (LO03), `locale`, Czech plural forms via `ctx.count` (LO07), render callbacks reading `ctx.labels` / `isReadonly` / `isDisabled` (LO08) |
 
 ## Cookbook
 

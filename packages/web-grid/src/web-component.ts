@@ -36,7 +36,7 @@ import type {
 } from './types.js'
 import type {
 	GridController,
-	GridContext as GridCallbackContext,
+	GridRenderContext as GridCallbackContext,
 	RowContext,
 	RowDataContext,
 	CellContext,
@@ -76,7 +76,7 @@ import {
 	renderDropdown,
 	removeDropdown,
 	applyDropdownPresentation,
-	repaintDropdownIcons,
+	repaintOpenDropdown,
 	selectDropdownOption,
 	updateDropdownHighlight,
 	scrollHighlightedIntoView,
@@ -997,7 +997,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		// Custom CSS for the shadow root (core createCustomStyles(), rulebook C-CA-15): applied after the
 		// page-wide `window.components['web-grid'].customStyles`; the callback wins over the string.
 		{ configKey: 'customStyles', attribute: 'custom-styles', converter: toText({ isNullable: true }), on: 'update', type: 'string | null', description: "CSS injected into the grid's shadow root (after the page-wide `window.components['web-grid'].customStyles`); an `@import`ed font is also linked in the document head." },
-		{ configKey: 'getCustomStylesCallback', converter: toFunction<(ctx: GridCallbackContext) => string | null | undefined>(), on: 'update', type: '((ctx: GridContext) => string | null) | null', description: 'Computes the instance CSS from the grid context; wins over `customStyles`.' },
+		{ configKey: 'getCustomStylesCallback', converter: toFunction<(ctx: GridCallbackContext) => string | null | undefined>(), on: 'update', type: '((ctx: GridRenderContext) => string | null) | null', description: 'Computes the instance CSS from the grid context; wins over `customStyles`.' },
 		// Loading states (core SPEC §12.14): draws every grid loader — `ctx.context` is 'row'
 		// (infinite-scroll load-more row) or 'search' (async dropdown search). Beats the page-wide
 		// `window.components.renderLoadingCallback`; may return a cleanup function.
@@ -1040,7 +1040,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		{ configKey: 'getPaginationLabelsCallback', converter: toFunction<PaginationLabelsCallback>(), on: 'update', type: 'PaginationLabelsCallback<T> | null', description: 'Customize / translate the pager texts: `(ctx: { currentPage, totalPages, totalItems, pageSize, count }) => Partial<PaginationLabels>`.' },
 		{ configKey: 'renderSummaryCallback', converter: toFunction<SummaryCallback>(), on: 'update', type: 'SummaryCallback<T> | null', description: 'The summary bar HTML (`summaryPosition`): `(ctx: { items, allItems, totalItems, currentPage, pageSize, metadata, drafts }) => string`.' },
 		{ configKey: 'renderChevronCallback', converter: toFunction<ChevronCallback>(), on: 'update', type: 'ChevronCallback<T> | null', description: 'Custom HTML of a tree row’s chevron: `(ctx) => string`.' },
-		{ configKey: 'renderShortcutsHelpCallback', converter: toFunction<(ctx: GridCallbackContext) => RenderResult>(), on: 'update', type: '((ctx: GridContext<T>) => RenderResult) | null', description: 'Custom HTML shown alongside the keyboard-shortcuts list: `(ctx) => string`.' },
+		{ configKey: 'renderShortcutsHelpCallback', converter: toFunction<(ctx: GridCallbackContext) => RenderResult>(), on: 'update', type: '((ctx: GridRenderContext<T>) => RenderResult) | null', description: 'Custom HTML shown alongside the keyboard-shortcuts list: `(ctx) => string`.' },
 		{ configKey: 'beforeContextMenuOpenCallback', converter: toFunction<(ctx: CellContext) => false | GridMenuEntry[] | void>(), on: 'update', type: '((ctx: CellContext<T>) => false | GridMenuEntry<T>[] | void) | null', description: 'Before the cell menu opens (sync): `false` → no grid menu; an entries array → shown instead.' },
 		{ configKey: 'beforeHeaderMenuOpenCallback', converter: toFunction<(ctx: HeaderMenuContext) => false | GridHeaderMenuEntry[] | void>(), on: 'update', type: '((ctx: HeaderMenuContext<T>) => false | GridHeaderMenuEntry<T>[] | void) | null', description: 'Before the header menu opens (sync): `false` → no grid menu; an entries array → shown instead.' },
 		{ configKey: 'beforeActionCallback', converter: toFunction<(detail: GridActionEventDetail) => unknown>(), on: 'update', type: '((detail: GridActionEventDetail<T>) => unknown) | null', description: 'Before any toolbar / menu / shortcut item activates: `false` cancels (async OK).' },
@@ -1048,7 +1048,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		{ configKey: 'beforeFillCallback', converter: toFunction<(ctx: FillContext) => boolean | void | Promise<boolean | void>>(), on: 'update', type: '((ctx: FillContext<T>) => boolean | void | Promise<boolean | void>) | null', description: 'Runs before a fill-handle drag applies: `(ctx: { sourceCell, targetCells, direction }) => boolean | void | Promise<…>`; `false` cancels (async OK).' },
 		{ configKey: 'beforePasteCallback', converter: toFunction<(ctx: BeforePasteContext) => boolean | void | Promise<boolean | void>>(), on: 'update', type: '((ctx: BeforePasteContext<T>) => boolean | void | Promise<boolean | void>) | null', description: 'Before a multi-cell paste: `false` cancels; add "row-col" keys to `ctx.skipCells` to skip cells (async OK).' },
 		{ configKey: 'createRowCallback', converter: toFunction<CreateRowCallback>(), on: 'update', type: 'CreateRowCallback<T> | null', description: 'New row for pasted data past the last row.' },
-		{ configKey: 'createEmptyRowCallback', converter: toFunction<(ctx: GridCallbackContext) => unknown>(), on: 'update', type: '((ctx: GridContext<T>) => T | Promise<T>) | null', description: 'The row the `add` built-in (and the experimental new row) inserts: `(ctx) => T | Promise<T>`. Default: a blank row.' },
+		{ configKey: 'createEmptyRowCallback', converter: toFunction<(ctx: GridCallbackContext) => unknown>(), on: 'update', type: '((ctx: GridRenderContext<T>) => T | Promise<T>) | null', description: 'The row the `add` built-in (and the experimental new row) inserts: `(ctx) => T | Promise<T>`. Default: a blank row.' },
 		{ configKey: 'createDuplicateRowCallback', converter: toFunction<(ctx: RowContext) => unknown>(), on: 'update', type: '((ctx: RowContext<T>) => T) | null', description: 'The copy the `duplicate` built-in inserts (default: shallow copy, `idMember` cleared).' },
 		// Menus: menu-presentation / menu-side — core's standard menu-host rows (read at every open: on 'none')
 		...createMenuPresentationInputs(),
@@ -1346,9 +1346,10 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		this.#host.datepicker?.setSheet(isPhoneSheet)
 	}
 
-	/** The page-wide `window.components.locale` changed: re-resolve the labels and re-render. */
+	/** The page-wide `window.components.locale` changed: re-resolve the labels and re-run the render callbacks in place (`ctx.labels`). */
 	protected override localeChanged(): void {
 		this.#engine.refreshLabels()
+		repaintOpenDropdown(this.#host)
 	}
 
 	/**
@@ -1365,7 +1366,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	#repaintIcons(): void {
 		this.#engine.refreshIcons()
 		repaintOpenToolbarIcons(this.#host)
-		repaintDropdownIcons(this.#host)
+		repaintOpenDropdown(this.#host)
 		this.#host.datepicker?.repaintIcons()
 	}
 
@@ -1389,6 +1390,9 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		if ('renderIconCallback' in partial) this.#repaintIcons()
 		// Labels are resolved into the engine's labels object: a new translate hook re-resolves + re-renders them
 		if ('translateCallback' in partial) this.#engine.refreshLabels()
+		// `ctx.labels` of the render callbacks changed: the table re-runs them with the next render (engine
+		// renderContextChanged); an open dropdown's options re-fill in place (renderOptionCallback, its texts)
+		if ('labels' in partial || 'locale' in partial || 'translateCallback' in partial) repaintOpenDropdown(this.#host)
 		// Core createTooltip reads its delays once: a new delay restarts the tooltips
 		if ('tooltipShowDelay' in partial || 'tooltipHideDelay' in partial) this.#host.tooltip.start(this.#host)
 	}

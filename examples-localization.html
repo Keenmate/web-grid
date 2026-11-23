@@ -237,6 +237,35 @@ grid.items = rows;   // 1 → "1 položka", 3 → "3 položky", 5 → "5 polože
 // with i18next: the one generic bridge of LO03 (labels.itemCount_one / _few / _other in the app's JSON)</code></pre></div>
     </div>
 
+    <div class="card">
+        <h2>LO08 · Render callbacks read <code>ctx.labels</code> / <code>isReadonly</code> / <code>isDisabled</code></h2>
+        <p>
+            Every callback ctx the grid builds (<code>renderCellCallback</code>, <code>getDisplayValueCallback</code>,
+            <code>getTooltipCallback</code>, <code>renderSummaryCallback</code>, <code>renderOptionCallback</code>, …) carries the
+            grid's UI strings <code>ctx.labels</code> (<code>.text(key)</code> / <code>.html(key)</code>), <code>ctx.isReadonly</code>
+            and <code>ctx.isDisabled</code>. Here the
+            Action column draws a button from <code>labels.text('menuItems.deleteRow')</code>, greyed out while the grid is
+            read-only or disabled. Toggle the state or the labels: the callbacks re-run in place — the table, the selected cell
+            and the scroll stay.
+        </p>
+        <div class="controls">
+            <label><input type="checkbox" id="lo08-readonly"> <code>isReadonly</code></label>
+            <label><input type="checkbox" id="lo08-disabled"> <code>isDisabled</code></label>
+            <label><input type="checkbox" id="lo08-czech"> Czech <code>labels</code></label>
+        </div>
+        <web-grid id="lo08-grid" style="max-height: 260px;"></web-grid>
+        <div class="output mt-1"><pre id="lo08-readout"></pre></div>
+        <div class="code-block" data-kmwc-snippet data-language="js"><pre><code>{
+  field: 'action', title: 'Action',
+  renderCellCallback: ({ labels, isReadonly, isDisabled }) =&gt; {
+    const isOff = isReadonly || isDisabled
+    return `&lt;button type="button" ${isOff ? 'disabled' : ''}&gt;${labels.html('menuItems.deleteRow')}&lt;/button&gt;`
+  }
+}
+grid.isReadonly = true                               // the cells re-render: button disabled
+grid.labels = { 'menuItems.deleteRow': 'Smazat' }   // the cells re-render: new text</code></pre></div>
+    </div>
+
 <script type="module">
     import { resolveLocale } from '@keenmate/web-components-core/locale'
 
@@ -451,6 +480,29 @@ grid.items = rows;   // 1 → "1 položka", 3 → "3 položky", 5 → "5 polože
         })
     }
     readouts.push(lo07Read)
+
+    // ── LO08 · render callbacks read ctx.labels / isReadonly / isDisabled ───
+    const lo08 = $('lo08-grid')
+    lo08.columns = [
+        ...simpleColumns(),
+        {
+            field: 'action', title: 'Action', width: '140px', isEditable: false,
+            renderCellCallback: ({ labels, isReadonly, isDisabled }) => {
+                const isOff = isReadonly || isDisabled
+                return `<button type="button" ${isOff ? 'disabled' : ''}>${labels.html('menuItems.deleteRow')}</button>`
+            }
+        }
+    ]
+    lo08.items = rows(3)
+    const lo08Read = () => {
+        const button = shadowOf(lo08).querySelector('tbody button')
+        $('lo08-readout').textContent = `isReadonly ${lo08.isReadonly} · isDisabled ${lo08.isDisabled}
+row 1 button "${button ? button.textContent : '(none)'}"${button?.disabled ? ' (disabled)' : ''}`
+    }
+    $('lo08-readonly').addEventListener('change', (e) => { lo08.isReadonly = e.target.checked; later(lo08Read) })
+    $('lo08-disabled').addEventListener('change', (e) => { lo08.isDisabled = e.target.checked; later(lo08Read) })
+    $('lo08-czech').addEventListener('change', (e) => { lo08.labels = e.target.checked ? { 'menuItems.deleteRow': 'Smazat' } : null; later(lo08Read) })
+    readouts.push(lo08Read)
 
     later(() => readouts.forEach((fn) => fn()))
 </script>

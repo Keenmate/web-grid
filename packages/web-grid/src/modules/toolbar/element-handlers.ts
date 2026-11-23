@@ -8,7 +8,7 @@
 // `ctx.renderConnector()` so the Element layer no longer holds this code.
 
 import type { GridHost } from '../grid-context.js'
-import type { CellContext, GridToolbarEntry } from '../../interaction.js'
+import type { CellContext, GridRenderContext, GridToolbarEntry } from '../../interaction.js'
 import { activateGridItem, rowCellFields, rowShortcutBindings } from '../items/index.js'
 import { returnFocusToCell } from '../navigation/focus.js'
 import { deepActiveElement, registerOverlay, type OverlayDismissReason } from '@keenmate/web-components-core'
@@ -327,7 +327,7 @@ export function closeToolbarAndReset<T>(ctx: GridHost<T>): void {
  */
 export function updateToolbarWithCellItems<T>(
 	ctx: GridHost<T>,
-	cell: Omit<CellContext<T>, 'controller' | 'element'>,
+	cell: Omit<CellContext<T>, keyof GridRenderContext>,
 	cellEntries: GridToolbarEntry<T>[]
 ): void {
 	const cellKeys = new Set(cellEntries.map(toolbarEntryKey).filter((k): k is string => k !== null))
@@ -365,8 +365,8 @@ export function updateToolbarWithCellItems<T>(
 }
 
 // The hovered cell of an open cell toolbar — its clicks carry the cell fields.
-const toolbarCells = new WeakMap<object, Omit<CellContext<any>, 'controller' | 'element'>>()
-function setActiveToolbarCell<T>(ctx: GridHost<T>, cell: Omit<CellContext<T>, 'controller' | 'element'>): void {
+const toolbarCells = new WeakMap<object, Omit<CellContext<any>, keyof GridRenderContext>>()
+function setActiveToolbarCell<T>(ctx: GridHost<T>, cell: Omit<CellContext<T>, keyof GridRenderContext>): void {
 	toolbarCells.set(ctx, cell)
 }
 // The entries of an open cell toolbar (base rowToolbar merged with the cell's); absent = rowToolbar.
