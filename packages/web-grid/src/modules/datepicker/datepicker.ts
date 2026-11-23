@@ -324,7 +324,8 @@ import {
 	updateHeaderHtml,
 	toggleRollingSelector,
 	updateRollingSelectorSelection,
-	scrollRollingSelectorToSelection
+	scrollRollingSelectorToSelection,
+	repaintNavIcons
 } from './rendering.js'
 import { goToPrevMonth, goToNextMonth, goToMonth, goToYear, handleKeyDown, initializeFocus } from './navigation.js'
 import {
@@ -544,6 +545,11 @@ export class DatePicker {
 		} finally {
 			this.closingAs = null
 		}
+	}
+
+	/** Redraw the nav icons in place (the grid's icon maps / hooks changed); the picker stays open. */
+	repaintIcons(): void {
+		if (this.element) repaintNavIcons(this.element, this.options.iconHost ?? null)
 	}
 
 	/**

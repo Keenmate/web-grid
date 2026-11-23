@@ -77,7 +77,7 @@
 }
 
 /* SVG icon styling */
-.wg__toolbar-btn svg {
+.wg__toolbar-btn :is(svg, .km-icon) {
 	width: var(--wg-toolbar-icon-size);
 	height: var(--wg-toolbar-icon-size);
 	flex-shrink: 0;
@@ -229,7 +229,7 @@
 }
 
 /* SVG icon styling for inline actions */
-.wg__inline-action-btn svg {
+.wg__inline-action-btn :is(svg, .km-icon) {
 	width: var(--wg-toolbar-icon-size);
 	height: var(--wg-toolbar-icon-size);
 	flex-shrink: 0;

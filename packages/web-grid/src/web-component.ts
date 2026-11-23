@@ -23,6 +23,7 @@ import type {
 	ToolbarPosition,
 	GridLabels,
 	GridLabelsInput,
+	GridIcons,
 	RowLock,
 	RowLockingOptions,
 	ColumnWidthState,
@@ -278,6 +279,7 @@ import {
 	createStateStore,
 	adoptStyles,
 	ICON_CSS,
+	isIconMap,
 	keepScrollAcrossMove,
 	type PointerDrag,
 	type CustomStylesHandle,
@@ -670,6 +672,14 @@ export interface GridElementConfig<T = unknown> {
 	 */
 	renderIconCallback: RenderIconCallback | null
 	/**
+	 * Icon overrides by name (core `renderIcon`, SPEC §12.33) — like `labels`, for icons. The grid's own names
+	 * ({@link GridIconName}): `add`, `delete`, `duplicate`, `move-up`, `move-down`, `expand`, `collapse`,
+	 * `expand-subtree`, `collapse-subtree`, `expand-all`, `collapse-all`, `sort-asc`, `sort-desc`, `clear-sort`,
+	 * `hide-column`, `freeze-column`, `unfreeze-column`, `column-visibility`, `calendar`, `prev-month`, `next-month`,
+	 * `shortcuts-help`, `header-info`. Asked before `window.components.icons` and the built-in names; a change repaints in place.
+	 */
+	icons: GridIcons | undefined
+	/**
 	 * This grid's translation hook (core `createLabels`, SPEC §12.24): `({ component, key, template, params, locale })
 	 * => string | null` for every label key this grid's own `labels` did not set (`key` is the full
 	 * `web-grid.<elementType>.<name>`). Asked before the page-wide `window.components.locale.translateCallback`;
@@ -994,6 +1004,9 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		{ configKey: 'renderLoadingCallback', converter: toFunction<RenderLoadingCallback>(), default: null, on: 'update', type: 'RenderLoadingCallback | null', description: "Custom render for the grid's loading states (`ctx.context`: 'row' | 'search'); fills `ctx.containerElement`, may return a cleanup." },
 		// Icons (core renderIcon, SPEC §12.33): core reads `host.renderIconCallback` — the element's own hook, asked
 		// after the built-in names and before the page-wide `window.components.renderIconCallback`. A change re-renders.
+		// Icon overrides by name (core renderIcon maps, SPEC §12.33, C-CA-42): like `labels`, for icons. Core reads
+		// `host.icons` and calls iconsChanged() after a batch that changed it.
+		{ configKey: 'icons', attribute: 'icons', converter: toObject({ validate: isIconMap }), on: 'update', type: 'GridIcons', description: "Icon overrides by name (core `renderIcon`, SPEC §12.33) — like `labels`, for icons. The grid's own icon names: row built-ins `add`, `delete`, `duplicate`, `move-up`, `move-down` (row toolbar / inline row actions); cell-menu tree items `expand`, `collapse`, `expand-subtree`, `collapse-subtree`, `expand-all`, `collapse-all`; header-menu items `sort-asc`, `sort-desc`, `clear-sort`, `hide-column`, `freeze-column`, `unfreeze-column`, `column-visibility`; chrome `calendar` (date cell trigger), `prev-month` / `next-month` (date picker), `shortcuts-help`, `header-info`. A value is an icon string: markup, a built-in name (`close`), icon-font classes (`fa-solid fa-trash`) or text; the map also applies to icon names in `rowToolbar` / menu items / dropdown options. Order: markup → this map → page-wide `window.components.icons` (`web-grid.<name>` before `<name>`) → built-in name → `renderIconCallback` → the page hook → the grid's own icons. `add` / `delete` / `expand` / `collapse` are built-in names: they draw the theme's `--base-icon-*` glyph unless a map replaces them. Partial; property (object) or JSON attribute (`icons='{\"delete\":\"fa-solid fa-trash\"}'`). A change repaints the icons in place." },
 		{ configKey: 'renderIconCallback', converter: toFunction<RenderIconCallback>(), default: null, on: 'update', type: 'RenderIconCallback | null', description: "This grid's icon hook: `(name, ctx) => markup | null` for the toolbar / row-action / edit-button / dropdown-option icons. Asked after the built-in names (never sent to it) and before the page-wide `window.components.renderIconCallback`; `null` / `undefined` = not mine (the next rule decides), `''` = no icon. `ctx`: `{ component, element, prefix }` + `item` (toolbar / row action) or `option` (dropdown option)." },
 		// Labels (core createLabels, SPEC §12.24): core reads `host.translateCallback` — the element's own hook, asked
 		// for every key the instance `labels` did not set, before `window.components.locale.translateCallback`. A change re-renders.
@@ -1347,9 +1360,11 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	}
 
 	/**
-	 * The page-wide `window.components.renderIconCallback` changed (core C-CA-40): repaint the icons
-	 * in place — the table (edit buttons, inline row actions, chevrons, cell renders), the open row
-	 * toolbar and the open dropdown's options; nothing closes, nothing rebuilds.
+	 * The icons changed — the page-wide `window.components.renderIconCallback` / `window.components.icons`
+	 * (core C-CA-40) or this grid's `icons` map (core calls this after the batch): repaint the icons in
+	 * place — the table (edit buttons, inline row actions, chevrons, cell renders, date triggers, header
+	 * info, shortcuts help), the open row toolbar, the open dropdown's options and the open date picker's
+	 * nav; nothing closes, nothing rebuilds. An open cell / header menu keeps its icons until reopened.
 	 */
 	protected override iconsChanged(): void {
 		this.#repaintIcons()
@@ -1359,6 +1374,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		this.#engine.refreshIcons()
 		repaintOpenToolbarIcons(this.#host)
 		repaintDropdownIcons(this.#host)
+		this.#host.datepicker?.repaintIcons()
 	}
 
 	protected override disabledChanged(isDisabled: boolean): void {

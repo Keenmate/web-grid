@@ -3,7 +3,8 @@
 // Calendar grid, header, rolling selector rendering
 // =============================================================================
 
-import { scrollIntoContainer } from '@keenmate/web-components-core'
+import { renderIcon, scrollIntoContainer } from '@keenmate/web-components-core'
+import { GRID_ICONS } from '../../icons.js'
 import type { DatePickerOptions, DatePickerState, LocaleStrings, FormatSpec } from './types.js'
 import { DEFAULT_LOCALE_STRINGS } from './types.js'
 import { toISODateString, isSameDay, isToday, getDaysInMonth, getFirstDayOfMonth, normalizeDate } from './formatting.js'
@@ -34,7 +35,7 @@ export function renderDatePicker(
 	options: DatePickerOptions,
 	localeStrings: LocaleStrings = DEFAULT_LOCALE_STRINGS
 ): string {
-	const headerHtml = renderHeader(state, localeStrings)
+	const headerHtml = renderHeader(state, localeStrings, options.iconHost ?? null)
 	const rollingSelectorHtml = renderRollingSelector(state, options, localeStrings)
 	const calendarHtml = renderCalendarGrid(state, options, localeStrings)
 	const footerHtml = options.showTodayButton !== false ? renderFooter(localeStrings) : ''
@@ -60,19 +61,20 @@ export function renderDatePicker(
  */
 export function renderHeader(
 	state: DatePickerState,
-	localeStrings: LocaleStrings
+	localeStrings: LocaleStrings,
+	iconHost: Element | null = null
 ): string {
 	const monthName = localeStrings.monthNames[state.viewMonth]
 
 	return `
 		<button type="button" class="wg-datepicker__nav wg-datepicker__nav--prev" data-action="prev-month">
-			<svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+			${renderNavIcon('prev-month', iconHost)}
 		</button>
 		<button type="button" class="wg-datepicker__month-year" data-action="toggle-rolling">
 			${monthName} ${state.viewYear}
 		</button>
 		<button type="button" class="wg-datepicker__nav wg-datepicker__nav--next" data-action="next-month">
-			<svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/></svg>
+			${renderNavIcon('next-month', iconHost)}
 		</button>
 	`
 }
@@ -276,6 +278,19 @@ export function updateDaysHtml(
 	if (daysContainer) {
 		daysContainer.innerHTML = renderDays(state, options)
 	}
+}
+
+/** A month-navigation icon by name (the grid's icon maps / hooks first, then GRID_ICONS). */
+export function renderNavIcon(name: 'prev-month' | 'next-month', iconHost: Element | null): string {
+	return renderIcon(name, { prefix: 'wg', host: iconHost, defaults: GRID_ICONS })
+}
+
+/** Redraw the open picker's nav icons in place (the grid's `iconsChanged()`). */
+export function repaintNavIcons(container: HTMLElement, iconHost: Element | null): void {
+	const prev = container.querySelector('.wg-datepicker__nav--prev')
+	const next = container.querySelector('.wg-datepicker__nav--next')
+	if (prev) prev.innerHTML = renderNavIcon('prev-month', iconHost)
+	if (next) next.innerHTML = renderNavIcon('next-month', iconHost)
 }
 
 /**

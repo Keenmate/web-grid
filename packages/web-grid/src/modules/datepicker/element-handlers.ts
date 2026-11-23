@@ -174,6 +174,7 @@ export function openCellDatePicker<T>(
 		isSheet: ctx.isPhoneSheet,
 		sheetTitle: column?.title || at.field,
 		sheetCloseLabel: ctx[GRID_ENGINE].labels['ariaLabels.closeSheet'],
+		iconHost: ctx.shadow.host,
 		// Month / weekday names: the grid's `locale` input (unset = page-wide → browser)
 		locale: ctx[GRID_ENGINE].locale ?? undefined,
 		onSelect: (date, direction) => onSelect(date, direction, input),

@@ -141,6 +141,7 @@ test.describe('every input (table-driven)', () => {
 				treeExpandedGlyph: ['-', '-'],
 				treeCollapsedGlyph: ['+', '+'],
 				labels: ['{"messages.noData":"Nic"}', { 'messages.noData': 'Nic' }],
+				icons: ['{"delete":"fa-solid fa-trash"}', { delete: 'fa-solid fa-trash' }],
 				customStyles: ['.wg { outline: 1px solid red; }', '.wg { outline: 1px solid red; }'],
 				locale: ['de', 'de'],
 				storageKey: ['inputs-spec', 'inputs-spec'],

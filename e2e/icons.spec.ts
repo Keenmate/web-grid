@@ -1,4 +1,4 @@
-import { test, expect, type Page, gridLocator, cell, waitForRows, openToolbarOn } from './fixtures'
+import { test, expect, type Page, gridLocator, cell, waitForRows, openToolbarOn, openContextMenu, menuRoot } from './fixtures'
 
 /**
  * Icons through core renderIcon (SPEC §12.33) with the grid as host: the element's own
@@ -158,5 +158,100 @@ test.describe('page-wide icon hook changed later → repaint in place', () => {
 		await setPageHook(page, ['chev'])
 		await expect(tree.locator('.plain-chev')).toHaveCount(0)
 		await expect(tree.locator('b[data-test-icon]').first()).toBeVisible()
+	})
+})
+
+/**
+ * The grid's own icons by NAME (Q12, C-CA-42): the row built-ins, menu items and chrome render through
+ * core renderIcon with the grid's `defaults` table — `el.icons` (property or JSON attribute) and the
+ * page-wide `window.components.icons` ('web-grid.<name>' before '<name>') replace any of them; `add` /
+ * `delete` are core built-in names (the theme glyph); a change repaints in place.
+ */
+test.describe('icons map — the grid\'s own icon names', () => {
+	const toolbar = (page: Page) => gridLocator(page).locator('.wg__toolbar-container .wg__toolbar')
+	const btn = (page: Page, action: string) => toolbar(page).locator(`.wg__toolbar-btn[data-action="${action}"]`)
+
+	const openRowToolbar = async (page: Page) => {
+		await page.evaluate(() => {
+			const grid = document.querySelector('web-grid') as unknown as { rowToolbar: unknown; isHoverable: boolean; isRowToolbarShown: boolean; renderIconCallback: unknown }
+			grid.renderIconCallback = null
+			grid.isHoverable = true
+			grid.isRowToolbarShown = true
+			grid.rowToolbar = ['add', 'delete', 'duplicate', 'move-up']
+		})
+		await openToolbarOn(page, gridLocator(page).locator('tr[data-row-index="1"]'))
+		await expect(toolbar(page)).toBeVisible()
+	}
+
+	test('defaults: own glyphs by name; add / delete are the built-in masked icons', async ({ page }) => {
+		await openRowToolbar(page)
+		await expect(btn(page, 'duplicate').locator('svg')).toHaveCount(1)
+		await expect(btn(page, 'move-up').locator('svg')).toHaveCount(1)
+		await expect(btn(page, 'add').locator('.km-icon.wg__icon--add')).toHaveCount(1)
+		await expect(btn(page, 'delete').locator('.km-icon.wg__icon--delete')).toHaveCount(1)
+	})
+
+	test('el.icons overrides a row-toolbar icon (built-in and own name) — repainted while open', async ({ page }) => {
+		await openRowToolbar(page)
+		await page.evaluate(() => {
+			(document.querySelector('web-grid') as unknown as { icons: unknown }).icons = {
+				delete: '<b class="from-map">X</b>', duplicate: 'fa-solid fa-copy'
+			}
+		})
+		await expect(btn(page, 'delete').locator('b.from-map')).toHaveText('X')
+		await expect(btn(page, 'duplicate').locator('i.wg__icon.fa-solid.fa-copy')).toHaveCount(1)
+		await expect(btn(page, 'move-up').locator('svg')).toHaveCount(1)
+		await expect(toolbar(page)).toBeVisible()
+	})
+
+	test('the JSON attribute works; an invalid map is refused (previous kept)', async ({ page }) => {
+		await openRowToolbar(page)
+		await page.evaluate(() => document.querySelector('web-grid')!.setAttribute('icons', '{"move-up":"<b class=\\"attr\\">U</b>"}'))
+		await expect(btn(page, 'move-up').locator('b.attr')).toHaveText('U')
+		const kept = await page.evaluate(() => {
+			const grid = document.querySelector('web-grid') as unknown as { icons: unknown }
+			const before = grid.icons
+			grid.icons = { 'move-up': 42 }
+			return grid.icons === before
+		})
+		expect(kept).toBe(true)
+	})
+
+	test('page map: window.components.icons — "web-grid.<name>" beats "<name>"; el.icons beats both', async ({ page }) => {
+		await openRowToolbar(page)
+		await page.evaluate(() => {
+			(window.components as unknown as { icons: unknown }).icons = {
+				'duplicate': '<b class="page-plain">p</b>',
+				'move-up': '<b class="page-plain">p</b>',
+				'web-grid.move-up': '<b class="page-tag">t</b>'
+			}
+		})
+		await expect(btn(page, 'duplicate').locator('b.page-plain')).toHaveCount(1)
+		await expect(btn(page, 'move-up').locator('b.page-tag')).toHaveCount(1)
+		await page.evaluate(() => {
+			(document.querySelector('web-grid') as unknown as { icons: unknown }).icons = { duplicate: '<b class="mine">m</b>' }
+		})
+		await expect(btn(page, 'duplicate').locator('b.mine')).toHaveCount(1)
+	})
+
+	test('header menu items: own glyph by name (openMenu iconDefaults); el.icons replaces one', async ({ page }) => {
+		await page.evaluate(() => {
+			const grid = document.querySelector('web-grid') as unknown as { headerContextMenu: unknown; icons: unknown }
+			grid.headerContextMenu = ['sort-asc', 'sort-desc']
+			grid.icons = { 'sort-desc': '<b class="from-map">D</b>' }
+		})
+		await openContextMenu(page, gridLocator(page).locator('thead th.wg__header[data-field="name"]'))
+		const item = (text: string) => menuRoot(page).locator('.km-menu__item', { hasText: text }).locator('.km-menu__icon')
+		await expect(item('Sort Ascending')).toHaveText('↑')
+		await expect(item('Sort Descending').locator('b.from-map')).toHaveText('D')
+	})
+
+	test('chrome icons: the header-info marker by name', async ({ page }) => {
+		await page.evaluate(() => {
+			const grid = document.querySelector('web-grid') as unknown as { columns: Array<Record<string, unknown>>; icons: unknown }
+			grid.icons = { 'header-info': '<b class="info-map">i</b>' }
+			grid.columns = grid.columns.map((c, i) => i === 0 ? { ...c, headerInfo: 'About names' } : c)
+		})
+		await expect(gridLocator(page).locator('.wg__header-info b.info-map')).toHaveText('i')
 	})
 })

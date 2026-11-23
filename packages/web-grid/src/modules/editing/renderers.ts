@@ -3,7 +3,8 @@
 // Render HTML for each editor type
 // =============================================================================
 
-import { escapeHtml } from '@keenmate/web-components-core'
+import { escapeHtml, renderIcon } from '@keenmate/web-components-core'
+import { GRID_ICONS } from '../../icons.js'
 import type { Column } from '../../types.js'
 import type { GridHost } from '../grid-context.js'
 import { getOptionDisplayValue, getOptionValue, withEmptyOption } from '../dropdown/index.js'
@@ -157,7 +158,7 @@ export function renderDateEditor<T>(
 				placeholder="${escapeHtml(opts.dateFormat || 'YYYY-MM-DD')}"
 			/>
 			<button type="button" class="wg__date-trigger" tabindex="-1">
-				<svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM9 10H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm-8 4H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2z"/></svg>
+				${renderIcon('calendar', { prefix: 'wg', host: ctx.shadow.host, defaults: GRID_ICONS })}
 			</button>
 		</div>
 	`

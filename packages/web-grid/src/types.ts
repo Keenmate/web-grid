@@ -686,6 +686,27 @@ export type GridLabels = {
  * (`web-grid.buttons.nextPage`) — everything not given keeps its page-wide / default text. */
 export type GridLabelsInput = Partial<GridLabels> & { readonly [fullKey: `web-grid.${string}`]: string | undefined }
 
+/**
+ * The grid's own icon names (core `renderIcon`, SPEC §12.33) — keys of the `icons` map and of
+ * `window.components.icons` (`'web-grid.<name>'` before `'<name>'`):
+ * - row built-ins (row toolbar / inline row actions): `add`, `delete`, `duplicate`, `move-up`, `move-down`
+ * - cell menu tree items: `expand`, `collapse`, `expand-subtree`, `collapse-subtree`, `expand-all`, `collapse-all`
+ * - header menu items: `sort-asc`, `sort-desc`, `clear-sort`, `hide-column`, `freeze-column`, `unfreeze-column`, `column-visibility`
+ * - chrome: `calendar` (date cell trigger), `prev-month` / `next-month` (date picker), `shortcuts-help` (the shortcuts
+ *   help button), `header-info` (a column's `headerInfo` marker)
+ *
+ * `add` / `delete` / `expand` / `collapse` are core built-in names: they draw the theme's `--base-icon-*` glyph unless a map replaces them.
+ */
+export type GridIconName =
+	| 'add' | 'delete' | 'duplicate' | 'move-up' | 'move-down'
+	| 'expand' | 'collapse' | 'expand-subtree' | 'collapse-subtree' | 'expand-all' | 'collapse-all'
+	| 'sort-asc' | 'sort-desc' | 'clear-sort' | 'hide-column' | 'freeze-column' | 'unfreeze-column' | 'column-visibility'
+	| 'calendar' | 'prev-month' | 'next-month' | 'shortcuts-help' | 'header-info'
+
+/** What `icons` accepts: name → icon string (markup, a built-in name, icon-font classes or text). Item icons named in
+ * `rowToolbar` / menus / dropdown options are looked up in the same map. */
+export type GridIcons = Partial<Record<GridIconName, string>> & { readonly [name: string]: string | undefined }
+
 // Summary content callback (returns HTML)
 /**
  * What a `render*Callback` returns (core `renderSlotHtml`, SPEC §12.35): a string is HTML, a node is serialized

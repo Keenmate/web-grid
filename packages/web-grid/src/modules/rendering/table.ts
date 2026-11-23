@@ -3,7 +3,8 @@
 // Render header row, data rows, pagination
 // =============================================================================
 
-import { escapeHtml, renderSlotHtml } from '@keenmate/web-components-core'
+import { escapeHtml, renderIcon, renderSlotHtml } from '@keenmate/web-components-core'
+import { GRID_ICONS } from '../../icons.js'
 import type { GridHost } from '../grid-context.js'
 import type { Column } from '../../types.js'
 import type { FilterColumnLabelContext, PaginationLabelsContext } from '../../interaction.js'
@@ -197,7 +198,7 @@ export function renderHeaderRow<T>(ctx: GridHost<T>): string {
 
 		let headerInfo = ''
 		if (column.headerInfo) {
-			headerInfo = `<span class="wg__header-info" data-tooltip="${escapeHtml(column.headerInfo)}"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span>`
+			headerInfo = `<span class="wg__header-info" data-tooltip="${escapeHtml(column.headerInfo)}">${renderIcon('header-info', { prefix: 'wg', host: ctx.shadow.host, defaults: GRID_ICONS })}</span>`
 		}
 
 		// Resize handle (always rendered, but disabled class for non-resizable columns)

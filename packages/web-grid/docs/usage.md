@@ -448,22 +448,49 @@ For full-height mode, also set `isTableBorderOnly = true`.
 
 ### Icons
 
-Every icon the grid draws — toolbar / row-action items (`icon` / `getIconCallback`), the edit button (`editButtonIcon`)
-and the dropdown options (`iconMember` / `getIconCallback`) — goes through core `renderIcon` (SPEC §12.33), first match wins:
+Every icon the grid draws — toolbar / row-action items (`icon` / `getIconCallback`), the cell / header menu items, the
+edit button (`editButtonIcon`), the dropdown options (`iconMember` / `getIconCallback`) and the grid's own chrome —
+goes through core `renderIcon` (SPEC §12.33), first match wins:
 
 1. markup (starts with `<`: `'<svg …>'`, `'<i class="fa fa-pen"></i>'`) → as is;
-2. a built-in name (`add`, `check`, `close`, `delete`, `edit`, `settings`, … the `--base-icon-*` glyphs) → a masked
-   `<span class="km-icon wg__icon wg__icon--<name>">` in `currentColor` — reserved, no hook sees it;
-3. this grid's `renderIconCallback(name, ctx)`, then the page-wide `window.components.renderIconCallback(name, ctx)`
+2. this grid's `icons` map, then the page-wide `window.components.icons` (`'web-grid.<name>'` before `'<name>'`) → the
+   mapped icon string, resolved by these same rules;
+3. a built-in name (`add`, `check`, `close`, `delete`, `edit`, `expand`, `collapse`, `settings`, … the `--base-icon-*`
+   glyphs) → a masked `<span class="km-icon wg__icon wg__icon--<name>">` in `currentColor` — no hook sees it;
+4. this grid's `renderIconCallback(name, ctx)`, then the page-wide `window.components.renderIconCallback(name, ctx)`
    → markup (`''` = no icon); `null` / `undefined` = not mine, the next rule decides;
-4. icon-font classes (`'fa-solid fa-folder'`, `'bi-gear'`) → `<i class="wg__icon fa-solid fa-folder" aria-hidden="true">`;
-5. anything else (an emoji) → escaped text.
+5. the grid's own icons (below);
+6. icon-font classes (`'fa-solid fa-folder'`, `'bi-gear'`) → `<i class="wg__icon fa-solid fa-folder" aria-hidden="true">`;
+7. anything else (an emoji) → escaped text.
 
 `ctx`: `{ component: 'web-grid', element, prefix: 'wg' }` + `item` (toolbar / row action) or `option` (dropdown option).
 
+**The grid's own icon names** (type `GridIconName`) — keys for `icons` / `window.components.icons`:
+
+| Name | Where | Grid's own icon |
+|---|---|---|
+| `add`, `delete` | row toolbar / inline row actions | built-in names → the theme's `--base-icon-add` / `--base-icon-delete` (+ / trash can) |
+| `duplicate`, `move-up`, `move-down` | row toolbar / inline row actions | SVG |
+| `expand`, `collapse` | cell menu (tree) | built-in names → `--base-icon-expand` / `--base-icon-collapse` |
+| `expand-subtree`, `collapse-subtree`, `expand-all`, `collapse-all` | cell menu (tree) | `⇊` `⇈` `⤓` `⤒` |
+| `sort-asc`, `sort-desc`, `clear-sort`, `hide-column`, `freeze-column`, `unfreeze-column`, `column-visibility` | header menu | `↑` `↓` `✕` `👁` `❄` `☀` `👁` |
+| `calendar` | date cell trigger | SVG |
+| `prev-month`, `next-month` | date picker navigation | SVG |
+| `shortcuts-help` | the keyboard-shortcuts help button | SVG |
+| `header-info` | a column's `headerInfo` marker | SVG |
+
+The built-in names draw from the theme's `--base-icon-*` tokens (`@keenmate/base-css-variables`); without them on the
+page they draw nothing — map them (`icons`) or load the tokens.
+
 | Property | Type | Default | Description |
 |---|---|---|---|
-| `renderIconCallback` | `(name: string, ctx: IconRenderContext) => string \| null \| undefined` | `null` | This grid's icon hook: asked after the built-in names, before the page-wide `window.components.renderIconCallback`; `null` = not mine. Property only |
+| `icons` | `GridIcons` | — | Icon overrides by name (like `labels`, for icons): the names above, or any name used in `rowToolbar` / menus / dropdown options. Partial; property or JSON attribute `icons`. A change repaints in place |
+| `renderIconCallback` | `(name: string, ctx: IconRenderContext) => string \| null \| undefined` | `null` | This grid's icon hook: asked after the maps and built-in names, before the page-wide `window.components.renderIconCallback`; `null` = not mine. Property only |
+
+```js
+grid.icons = { delete: 'fa-solid fa-trash', 'sort-asc': 'fa-solid fa-arrow-up' }       // this grid
+window.components.icons = { 'web-grid.duplicate': 'fa-regular fa-copy' }             // every grid on the page
+```
 
 ```js
 grid.renderIconCallback = (name) => name.startsWith('lucide-') ? `<svg class="${name}"><use href="#${name}"/></svg>` : null

@@ -48,6 +48,9 @@ export interface DatePickerOptions {
 	sheetTitle?: string
 	sheetCloseLabel?: string
 
+	// The element whose icon maps / hooks draw the nav icons (core renderIcon host: `prev-month` / `next-month`)
+	iconHost?: Element | null
+
 	// Callbacks
 	onSelect?: (date: Date | null, direction?: 'down' | 'next' | 'prev') => void
 	/** The picker closed — every close, with its reason (a pick reports 'api' after onSelect). */

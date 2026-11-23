@@ -4,6 +4,7 @@
 // =============================================================================
 
 import { escapeHtml, isRtl, renderIcon } from '@keenmate/web-components-core'
+import { GRID_ICONS } from '../../icons.js'
 import type { GridHost } from '../grid-context.js'
 import type { GridAction, GridToolbarEntry, GridToolbarItem } from '../../interaction.js'
 import type { OverlayHandle } from '@keenmate/web-components-core'
@@ -134,7 +135,7 @@ export function renderToolbarButton<T>(button: ToolbarButton<T>, index: number, 
 	const labelHtml = showText && r.text ? `<span class="wg__toolbar-label">${text}</span>` : ''
 	const idAttr = r.id !== undefined ? ` data-id="${escapeHtml(r.id)}"` : ''
 	const pressed = r.isToggled ? ' aria-pressed="true"' : ''
-	return `<button type="button" class="${classes}" data-action="${escapeHtml(r.action)}"${idAttr} data-wg-index="${index}" title="${text}" aria-label="${text}"${pressed}${r.isDisabled ? ' disabled' : ''}>${renderIcon(r.icon, { prefix: 'wg', host, context: { item: button.item } })}${labelHtml}</button>`
+	return `<button type="button" class="${classes}" data-action="${escapeHtml(r.action)}"${idAttr} data-wg-index="${index}" title="${text}" aria-label="${text}"${pressed}${r.isDisabled ? ' disabled' : ''}>${renderIcon(r.icon, { prefix: 'wg', host, defaults: GRID_ICONS, context: { item: button.item } })}${labelHtml}</button>`
 }
 
 /**

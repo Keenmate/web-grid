@@ -45,15 +45,6 @@ export const isRowAction = (a: unknown): a is GridRowAction => ROW_ACTIONS.inclu
 export const isTreeAction = (a: unknown): boolean => TREE_ACTIONS.includes(a as string)
 export const isHeaderAction = (a: unknown): a is GridHeaderAction => HEADER_ACTIONS.includes(a as string)
 
-// SVG icons for the row built-ins (16x16 viewBox, stroke-based)
-const ROW_ICONS: Record<GridRowAction, string> = {
-	'add': '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>',
-	'delete': '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3l10 10M13 3L3 13"/></svg>',
-	'duplicate': '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="8" height="8" rx="1"/><path d="M3 11V4a1 1 0 011-1h7"/></svg>',
-	'move-up': '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V3M4 7l4-4 4 4"/></svg>',
-	'move-down': '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v10M4 9l4 4 4-4"/></svg>'
-}
-
 /** Expand the string shorthand (`'delete'` → `{ action: 'delete' }`); dividers / objects pass through. */
 export function normalizeEntry<E>(entry: string | E): E {
 	return (typeof entry === 'string' ? { action: entry } : entry) as E
@@ -79,11 +70,11 @@ export function rowActionDefaults<T>(host: GridHost<T>, action: string | undefin
 	// A locked row (rowLocking / lockRowById) is never deleted or moved; duplicate only reads it
 	const hasLockedRow = rowTargets<T>(host, ctx.row, (ctx as { rows?: unknown[] }).rows).some(r => host[GRID_ENGINE].isRowLocked(r))
 	switch (action) {
-		case 'add': return { text: labels['menuItems.addRow'], icon: ROW_ICONS.add, isDisabled: isLocked }
-		case 'delete': return { text: labels['menuItems.deleteRow'], icon: ROW_ICONS.delete, isDanger: true, isDisabled: isLocked || hasLockedRow }
-		case 'duplicate': return { text: labels['menuItems.duplicateRow'], icon: ROW_ICONS.duplicate, isDisabled: isLocked }
-		case 'move-up': return { text: labels['menuItems.moveUp'], icon: ROW_ICONS['move-up'], isDisabled: isLocked || hasLockedRow || top <= 0 }
-		case 'move-down': return { text: labels['menuItems.moveDown'], icon: ROW_ICONS['move-down'], isDisabled: isLocked || hasLockedRow || bottom === -1 || bottom >= display.length - 1 }
+		case 'add': return { text: labels['menuItems.addRow'], icon: 'add', isDisabled: isLocked }
+		case 'delete': return { text: labels['menuItems.deleteRow'], icon: 'delete', isDanger: true, isDisabled: isLocked || hasLockedRow }
+		case 'duplicate': return { text: labels['menuItems.duplicateRow'], icon: 'duplicate', isDisabled: isLocked }
+		case 'move-up': return { text: labels['menuItems.moveUp'], icon: 'move-up', isDisabled: isLocked || hasLockedRow || top <= 0 }
+		case 'move-down': return { text: labels['menuItems.moveDown'], icon: 'move-down', isDisabled: isLocked || hasLockedRow || bottom === -1 || bottom >= display.length - 1 }
 	}
 }
 
@@ -100,31 +91,29 @@ export function cellMenuDefaults<T>(host: GridHost<T>, action: string | undefine
 		// expand / collapse = one level; *-subtree = the row and everything under it.
 		case 'expand': {
 			const targets = treeTargetPaths(host, ctx.row)
-			return { text: labels['menuItems.expand'], icon: '▾', isVisible: targets.length > 0, isDisabled: targets.every(p => engine.isPathExpanded(p)) }
+			return { text: labels['menuItems.expand'], icon: 'expand', isVisible: targets.length > 0, isDisabled: targets.every(p => engine.isPathExpanded(p)) }
 		}
 		case 'collapse': {
 			const targets = treeTargetPaths(host, ctx.row)
-			return { text: labels['menuItems.collapse'], icon: '▸', isVisible: targets.length > 0, isDisabled: !targets.some(p => engine.isPathExpanded(p)) }
+			return { text: labels['menuItems.collapse'], icon: 'collapse', isVisible: targets.length > 0, isDisabled: !targets.some(p => engine.isPathExpanded(p)) }
 		}
-		case 'expand-subtree': return { text: labels['menuItems.expandSubtree'], icon: '⇊', isVisible: treeTargetPaths(host, ctx.row).length > 0 }
-		case 'collapse-subtree': return { text: labels['menuItems.collapseSubtree'], icon: '⇈', isVisible: treeTargetPaths(host, ctx.row).length > 0 }
+		case 'expand-subtree': return { text: labels['menuItems.expandSubtree'], icon: 'expand-subtree', isVisible: treeTargetPaths(host, ctx.row).length > 0 }
+		case 'collapse-subtree': return { text: labels['menuItems.collapseSubtree'], icon: 'collapse-subtree', isVisible: treeTargetPaths(host, ctx.row).length > 0 }
 		// The whole tree
-		case 'expand-all': return { text: labels['menuItems.expandAll'], icon: '⤓', isVisible: engine.isTreeMode }
-		case 'collapse-all': return { text: labels['menuItems.collapseAll'], icon: '⤒', isVisible: engine.isTreeMode && engine.expandedPathCount > 0 }
+		case 'expand-all': return { text: labels['menuItems.expandAll'], icon: 'expand-all', isVisible: engine.isTreeMode }
+		case 'collapse-all': return { text: labels['menuItems.collapseAll'], icon: 'collapse-all', isVisible: engine.isTreeMode && engine.expandedPathCount > 0 }
 	}
 	return undefined
 }
 
-const HEADER_ICONS: Partial<Record<GridHeaderAction, string>> = {
-	'sort-asc': '↑', 'sort-desc': '↓', 'clear-sort': '✕', 'hide-column': '👁',
-	'freeze-column': '❄', 'unfreeze-column': '☀', 'column-visibility': '👁'
-}
+// Header built-ins with an icon: the icon NAME (= the action; drawn from GRID_ICONS / the icon maps)
+const HEADER_ICONS: ReadonlySet<string> = new Set(['sort-asc', 'sort-desc', 'clear-sort', 'hide-column', 'freeze-column', 'unfreeze-column', 'column-visibility'])
 
 /** Defaults of a header-menu built-in for the column in `ctx`. */
 export function headerMenuDefaults<T>(action: string | undefined, ctx: HeaderMenuContext<T>): Partial<ResolvedActionItem<GridAction>> | undefined {
 	if (!isHeaderAction(action)) return undefined
 	const l = ctx.labels
-	const icon = HEADER_ICONS[action]
+	const icon = HEADER_ICONS.has(action) ? action : undefined
 	switch (action) {
 		case 'sort-asc': return { text: l.text('menuItems.sortAsc'), icon, isVisible: !!ctx.column && ctx.column.isSortable !== false }
 		case 'sort-desc': return { text: l.text('menuItems.sortDesc'), icon, isVisible: !!ctx.column && ctx.column.isSortable !== false }

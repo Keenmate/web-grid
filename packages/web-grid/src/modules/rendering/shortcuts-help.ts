@@ -10,7 +10,8 @@
 // list when provided, so consumers can add prose / images above the
 // generated keymap.
 
-import { escapeHtml, renderSlotHtml } from '@keenmate/web-components-core'
+import { escapeHtml, renderIcon, renderSlotHtml } from '@keenmate/web-components-core'
+import { GRID_ICONS } from '../../icons.js'
 import type { GridHost } from '../grid-context.js'
 import type { GridLabels } from '../../types.js'
 import { formatShortcut } from '@keenmate/web-components-core/actions'
@@ -61,11 +62,7 @@ export function renderShortcutsHelpIcon<T>(ctx: GridHost<T>): string {
 	return `
 		<div class="wg__shortcuts-help ${positionClass}">
 			<button class="wg__shortcuts-help-icon" type="button" title="${escapeHtml(labels['tooltips.keyboardShortcuts'])}">
-				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-					<circle cx="12" cy="12" r="10"></circle>
-					<path d="M12 16v-4"></path>
-					<path d="M12 8h.01"></path>
-				</svg>
+				${renderIcon('shortcuts-help', { prefix: 'wg', host: ctx.shadow.host, defaults: GRID_ICONS })}
 			</button>
 			<div class="wg__shortcuts-help-overlay">
 				${customContent ? `<div class="wg__shortcuts-help-custom">${customContent}</div>` : ''}

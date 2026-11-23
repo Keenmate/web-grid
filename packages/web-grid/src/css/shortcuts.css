@@ -36,7 +36,7 @@
 	background: var(--wg-elevated-bg);
 }
 
-.wg__shortcuts-help-icon svg {
+.wg__shortcuts-help-icon :is(svg, .km-icon) {
 	width: var(--wg-toolbar-icon-size);
 	height: var(--wg-toolbar-icon-size);
 }

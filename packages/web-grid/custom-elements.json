@@ -281,6 +281,22 @@
         },
         {
           "kind": "js",
+          "name": "GridIconName",
+          "declaration": {
+            "name": "GridIconName",
+            "module": "./types.js"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "GridIcons",
+          "declaration": {
+            "name": "GridIcons",
+            "module": "./types.js"
+          }
+        },
+        {
+          "kind": "js",
           "name": "RowLock",
           "declaration": {
             "name": "RowLock",
@@ -2604,6 +2620,16 @@
             },
             {
               "kind": "field",
+              "name": "icons",
+              "privacy": "public",
+              "type": {
+                "text": "GridIcons"
+              },
+              "attribute": "icons",
+              "description": "Icon overrides by name (core `renderIcon`, SPEC §12.33) — like `labels`, for icons. The grid's own icon names: row built-ins `add`, `delete`, `duplicate`, `move-up`, `move-down` (row toolbar / inline row actions); cell-menu tree items `expand`, `collapse`, `expand-subtree`, `collapse-subtree`, `expand-all`, `collapse-all`; header-menu items `sort-asc`, `sort-desc`, `clear-sort`, `hide-column`, `freeze-column`, `unfreeze-column`, `column-visibility`; chrome `calendar` (date cell trigger), `prev-month` / `next-month` (date picker), `shortcuts-help`, `header-info`. A value is an icon string: markup, a built-in name (`close`), icon-font classes (`fa-solid fa-trash`) or text; the map also applies to icon names in `rowToolbar` / menu items / dropdown options. Order: markup → this map → page-wide `window.components.icons` (`web-grid.<name>` before `<name>`) → built-in name → `renderIconCallback` → the page hook → the grid's own icons. `add` / `delete` / `expand` / `collapse` are built-in names: they draw the theme's `--base-icon-*` glyph unless a map replaces them. Partial; property (object) or JSON attribute (`icons='{\"delete\":\"fa-solid fa-trash\"}'`). A change repaints the icons in place."
+            },
+            {
+              "kind": "field",
               "name": "renderIconCallback",
               "privacy": "public",
               "type": {
@@ -3873,6 +3899,14 @@
                 "text": "string | null"
               },
               "description": "CSS injected into the grid's shadow root (after the page-wide `window.components['web-grid'].customStyles`); an `@import`ed font is also linked in the document head."
+            },
+            {
+              "name": "icons",
+              "fieldName": "icons",
+              "type": {
+                "text": "GridIcons"
+              },
+              "description": "Icon overrides by name (core `renderIcon`, SPEC §12.33) — like `labels`, for icons. The grid's own icon names: row built-ins `add`, `delete`, `duplicate`, `move-up`, `move-down` (row toolbar / inline row actions); cell-menu tree items `expand`, `collapse`, `expand-subtree`, `collapse-subtree`, `expand-all`, `collapse-all`; header-menu items `sort-asc`, `sort-desc`, `clear-sort`, `hide-column`, `freeze-column`, `unfreeze-column`, `column-visibility`; chrome `calendar` (date cell trigger), `prev-month` / `next-month` (date picker), `shortcuts-help`, `header-info`. A value is an icon string: markup, a built-in name (`close`), icon-font classes (`fa-solid fa-trash`) or text; the map also applies to icon names in `rowToolbar` / menu items / dropdown options. Order: markup → this map → page-wide `window.components.icons` (`web-grid.<name>` before `<name>`) → built-in name → `renderIconCallback` → the page hook → the grid's own icons. `add` / `delete` / `expand` / `collapse` are built-in names: they draw the theme's `--base-icon-*` glyph unless a map replaces them. Partial; property (object) or JSON attribute (`icons='{\"delete\":\"fa-solid fa-trash\"}'`). A change repaints the icons in place."
             },
             {
               "name": "tooltip-show-delay",

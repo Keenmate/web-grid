@@ -223,15 +223,28 @@ translateCallback
 renderIconCallback
   Signature: (name: string, ctx: IconRenderContext) => string | null | undefined
   ctx: { component: 'web-grid', element, prefix: 'wg' } + item (toolbar / row action) or option (dropdown)
-  This grid's icon hook for every grid icon (toolbar / row actions, editButtonIcon, dropdown
-  option icons), core renderIcon order: markup (<svg ...>) as is -> a built-in name (add, check,
-  close, delete, edit, settings, ... --base-icon-*; never sent to a hook) -> renderIconCallback ->
-  window.components.renderIconCallback -> icon-font classes ('fa-solid fa-star' ->
+  This grid's icon hook for every grid icon (toolbar / row actions, menu items, editButtonIcon,
+  dropdown option icons, the grid's chrome), core renderIcon order: markup (<svg ...>) as is ->
+  the icons map (el.icons) -> window.components.icons ('web-grid.<name>' then '<name>') -> a
+  built-in name (add, check, close, delete, edit, expand, collapse, settings, ... --base-icon-*;
+  never sent to a hook) -> renderIconCallback -> window.components.renderIconCallback -> the
+  grid's own icons (GRID_ICONS by name) -> icon-font classes ('fa-solid fa-star' ->
   <i class="wg__icon fa-solid fa-star">) -> anything else (emoji) as text. Returns markup, '' = no
   icon, null / undefined = not mine (the next rule decides). Property only; a change re-renders.
   Changing window.components.renderIconCallback later repaints the icons too (in place: active
   cell, selection, open editor / dropdown / row toolbar, scroll kept). Icon-font CSS must reach the
   shadow root: customStyles / window.components['web-grid'].customStyles (page CSS alone doesn't).
+
+icons
+  Type: GridIcons (partial name -> icon string; property or JSON attribute icons='{"delete":"fa-solid fa-trash"}')
+  Icon overrides by name, like labels for icons; asked before window.components.icons and the
+  built-in names. The grid's own names: add, delete, duplicate, move-up, move-down (row toolbar /
+  inline row actions); expand, collapse, expand-subtree, collapse-subtree, expand-all, collapse-all
+  (cell menu, tree); sort-asc, sort-desc, clear-sort, hide-column, freeze-column, unfreeze-column,
+  column-visibility (header menu); calendar (date cell trigger), prev-month, next-month (date
+  picker), shortcuts-help, header-info. add / delete / expand / collapse are core built-in names:
+  they draw the theme's --base-icon-* glyph (nothing without the tokens) unless a map replaces
+  them. A change repaints in place.
 
 getCustomStylesCallback
   Signature: (ctx: GridContext<T>) => string | null

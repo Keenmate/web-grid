@@ -10,6 +10,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 A major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Added — the grid's icons by name + the `icons` map (2026-11-24)
+- Every icon the grid draws itself is a NAME rendered through core `renderIcon` with the grid's own icon table as
+  `defaults` (menus: core `openMenu` `iconDefaults`) — the row built-ins (`add`, `delete`, `duplicate`, `move-up`,
+  `move-down`), the cell-menu tree items (`expand`, `collapse`, `expand-subtree`, `collapse-subtree`, `expand-all`,
+  `collapse-all`), the header-menu items (`sort-asc`, `sort-desc`, `clear-sort`, `hide-column`, `freeze-column`,
+  `unfreeze-column`, `column-visibility`) and the chrome (`calendar`, `prev-month`, `next-month`, `shortcuts-help`,
+  `header-info`). New `icons` input (property or JSON attribute, type `GridIcons`; rulebook C-CA-42) and the page-wide
+  `window.components.icons` (`'web-grid.<name>'` before `'<name>'`) replace any of them; `renderIconCallback` / the page
+  hook are now asked for these names too. A change repaints in place (table, open row toolbar, open dropdown, open
+  date picker's navigation); an open cell / header menu shows the new icons when reopened.
+- **Visible change:** `add`, `delete`, `expand` and `collapse` are core built-in icon names, so they draw the theme's
+  `--base-icon-*` glyph instead of the grid's own: the row toolbar's delete is the theme's trash can (was an ✕), add
+  the theme's +, the tree menu's Expand / Collapse a + / − (were ▾ / ▸). Without the `@keenmate/base-css-variables`
+  tokens on the page these four draw nothing — map them (`icons` / `window.components.icons`) or load the tokens.
+- The toolbar / inline-action / shortcuts-help icon size rules also size a masked built-in icon (`.km-icon`).
+
 ### Changed — core swallows the keyboard-initiated native context menu (2026-11-24)
 - The grid's own guard against the browser's `contextmenu` that follows Shift+F10 / the ContextMenu key (raised
   after the grid's menu already opened from the keydown) is removed: core `openMenu` swallows that event while its

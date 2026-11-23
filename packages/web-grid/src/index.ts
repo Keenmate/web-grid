@@ -55,6 +55,10 @@ export type {
 	GridLabels,
 	GridLabelsInput,
 
+	// Icons
+	GridIconName,
+	GridIcons,
+
 	// Row locking types
 	RowLock,
 	RowLockingOptions,
