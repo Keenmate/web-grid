@@ -10,6 +10,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 A major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Changed — the phone sheets are modal, on core's full-screen frame (2026-11-23)
+- The cell dropdown and the date editor's phone sheet run through core `startModalSession` (rulebook C-CA-19):
+  the page behind is inert and Tab never reaches it — they already announced `aria-modal="true"` without
+  either (fixed: screen readers were told the background was inert when it wasn't). Scroll lock, the
+  soft-keyboard fit and the Back gesture come from the same session, so the grid's private copy of core's
+  sheet session is gone. Escape stays the grid's (Excel: cancel; the session never closes on it); the close
+  button / Back still save. Opening a sheet now closes the page's open overlays (core).
+- The sheet panel is core's full-screen frame `.km-sheet` (SHEET_CHROME_CSS): the header, then the options /
+  calendar in a `.km-sheet-body` that scrolls under it — the grid's own 100dvw × 100dvh frame CSS (×2) and its
+  override of core's header (`.wg__sheet-header.km-sheet-header`: sticky, safe-area top, background) are removed.
+  `--wg-dropdown-bg` / `--wg-dp-background` and `--wg-z-sheet` map onto core's `--_km-sheet-bg` / `-z-index`
+  (page-wide `--km-sheet-*` apply when unset); `--wg-sheet-*` header variables unchanged. With `--wg-sheet-header-bg`
+  unset the header is transparent over the sheet (was the sheet's own colour on the sticky header — same look).
+  The sheet slides in with core's motion tokens.
+
 ### Changed — built on core 1.0.0-rc26 (2026-11-23)
 - `@keenmate/web-components-core` `^1.0.0-rc26` (core's naming release). Consumer-visible, forced by core:
   the inherited batch-write method is `el.setProperties(props)` (was `setAttributes`), and the re-exported

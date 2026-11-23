@@ -639,8 +639,10 @@ Edit semantics are the same as in the cell (the Excel rule):
 | Escape | **Cancels** (a combobox / autocomplete with typed text: the first Escape restores the text, the second cancels — as in the cell) |
 | Arrow keys / Enter / Tab | The editor's own keys (highlight / pick / leave) |
 
-Focus moves into the sheet and returns to the cell when it closes. While it is open the page behind
-does not scroll and the sheet sits above the soft keyboard. Texts: `ariaLabels.closeSheet` ("Close"),
+The sheet is **modal** (core `startModalSession`): while it is open the page behind is inert (no
+taps, no focus, screen readers stay in the sheet), Tab never reaches it, the page does not scroll and the
+sheet sits above the soft keyboard; overlays open on the page (menus, popovers) close when it opens.
+Focus moves into the sheet and returns to the cell when it closes. Texts: `ariaLabels.closeSheet` ("Close"),
 `placeholders.search` ("Search…"); tap size `--wg-touch-target-min` (→ `--base-touch-target-min`, 44px).
 
 A **sheet** is a panel that covers the page on a phone — a bottom sheet, a side drawer, a full-screen
@@ -655,7 +657,13 @@ them. Theme them for one grid with `--wg-sheet-*` on `web-grid`, page-wide with 
 `title-color`, `title-font-size`, `title-font-weight`, `close-size`, `close-icon-size`, `close-icon`,
 `close-color`, `close-bg`, `close-bg-hover`, `close-border`, `close-border-radius`, `close-edge-nudge`,
 `close-focus-color`); all unset by default: `--wg-sheet-*` → `--km-sheet-*` → `--base-*` → core default.
-With `header-bg` unset the sticky header takes the sheet's background (`--wg-dropdown-bg` / the date picker's).
+With `header-bg` unset the header is transparent over the sheet's background.
+
+The sheet panel itself is core's full-screen frame `.km-sheet` (fixed, 100dvw × 100dvh, safe-area padding,
+the modal tier; the options / calendar scroll in its `.km-sheet-body` under the header) with the grid's
+`.wg__dropdown--sheet` / `.wg-datepicker-container--sheet` class kept on it. Its background is
+`--wg-dropdown-bg` (the date editor: its `--wg-dp-background`), its stacking `--wg-z-sheet`
+(→ `--base-z-modal`); page-wide `--km-sheet-bg` / `--km-sheet-color` / `--km-sheet-z-index` apply when those are unset.
 
 Page setup (the component can't set it): `<meta name="viewport" content="width=device-width,
 initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">` — `viewport-fit=cover` makes

@@ -347,8 +347,9 @@
      public --wg-sheet-* variables are inputs, UNSET by default: each maps onto
      core's PRIVATE --_km-sheet-* with NO fallback, so a value resolves
      --wg-sheet-* (this grid) -> --km-sheet-* (every sheet on the page, set on
-     :root) -> --base-* -> core's default. header-bg unset -> the sheet's own
-     background (css/sheet.css, the sticky header).
+     :root) -> --base-* -> core's default. header-bg unset -> transparent (the
+     sheet's own background shows through). The sheet panel itself is core's
+     .km-sheet frame: css/sheet.css maps --wg-dropdown-bg / --wg-z-sheet onto it.
      ========================================================================== */
   --_km-sheet-header-gap: var(--wg-sheet-header-gap);
   --_km-sheet-header-padding-block: var(--wg-sheet-header-padding-block);

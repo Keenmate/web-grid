@@ -91,6 +91,8 @@ test.describe('phone: the cell popups are a full-screen sheet', () => {
 			await openEditor(page, col)
 			await expect(sheetOf(page)).toHaveCount(1)
 			const viewport = page.viewportSize()!
+			// core's .km-sheet enter animation (a short slide-up) is over
+			await sheetOf(page).evaluate((el) => Promise.all(el.getAnimations().map((a) => a.finished)))
 			const geo = await sheetOf(page).evaluate((el) => {
 				const r = el.getBoundingClientRect()
 				const close = el.querySelector('.wg__sheet-close')!.getBoundingClientRect()
@@ -108,9 +110,11 @@ test.describe('phone: the cell popups are a full-screen sheet', () => {
 						label: el.querySelector('.wg__sheet-close')!.getAttribute('aria-label'),
 						isCoreHeader: !!el.querySelector('.km-sheet-header.wg__sheet-header > .km-sheet-title.wg__sheet-title'),
 					},
-					// the sticky header takes the sheet's own background (the rows scroll under it)
-					headerBg: getComputedStyle(el.querySelector('.wg__sheet-header')!).backgroundColor,
+					// core's full-screen frame (.km-sheet): the header, then the scrolling body; the grid's background on it
+					isCoreFrame: el.classList.contains('km-sheet') && el.querySelector(':scope > .km-sheet-header + .km-sheet-body') !== null,
+					bodyOverflow: getComputedStyle(el.querySelector(':scope > .km-sheet-body')!).overflowY,
 					sheetBg: getComputedStyle(el).backgroundColor,
+					ariaModal: el.getAttribute('aria-modal'),
 					bodyLocked: getComputedStyle(document.body).position === 'fixed',
 				}
 			})
@@ -124,8 +128,10 @@ test.describe('phone: the cell popups are a full-screen sheet', () => {
 			expect(geo.role).toBe('dialog')
 			expect(geo.close.w).toBeGreaterThanOrEqual(44)
 			expect(geo.close.h).toBeGreaterThanOrEqual(44)
-			expect(geo.headerBg).toBe(geo.sheetBg)
-			expect(geo.headerBg).not.toBe('rgba(0, 0, 0, 0)')
+			expect(geo.isCoreFrame).toBe(true)
+			expect(geo.bodyOverflow).toBe('auto')
+			expect(geo.sheetBg).not.toBe('rgba(0, 0, 0, 0)')
+			expect(geo.ariaModal).toBe('true')
 			expect(geo.closeChrome).toEqual({ isCore: true, text: '', label: 'Close', isCoreHeader: true })
 			expect(geo.bodyLocked).toBe(true)
 			expect((await snap(page, col)).focus).toBe('sheet')
@@ -329,6 +335,81 @@ test.describe('phone: the cell popups are a full-screen sheet', () => {
 		await sheetOf(page).locator('.wg__dropdown-option', { hasText: 'On hold' }).tap()
 		await closed(page)
 		expect((await snap(page, 1)).events).toEqual([`cell-edit-start(${ROW}.status)`, `row-change(${ROW}.status=hold)`])
+	})
+})
+
+test.describe('phone: the sheet is modal (core startModalSession — rulebook C-CA-19)', () => {
+	test.use(PHONE)
+
+	/** The page and the grid behind the sheet are inert; the sheet (and its ancestors) are not. */
+	const inertState = (page: Page) => page.evaluate(() => {
+		const g = document.getElementById('grid') as HTMLElement
+		const root = g.shadowRoot as ShadowRoot
+		const sheet = root.querySelector('.wg__dropdown--sheet, .wg-datepicker-container--sheet')
+		return {
+			heading: document.querySelector('h1')!.closest('[inert]') !== null,
+			table: root.querySelector('.wg')?.closest('[inert]') !== null,
+			host: g.closest('[inert]') !== null,
+			sheet: sheet?.closest('[inert]') !== null && sheet !== null,
+			any: document.querySelectorAll('[inert]').length + root.querySelectorAll('[inert]').length,
+		}
+	})
+
+	for (const [col, kind] of [[1, 'select'], [4, 'date']] as const) {
+		test(`${kind}: the page behind is inert while open, interactive again after the close`, async ({ page }) => {
+			await openEditor(page, col)
+			expect(await inertState(page)).toMatchObject({ heading: true, table: true, host: false, sheet: false })
+			await sheetOf(page).locator('.wg__sheet-close').tap()
+			await closed(page)
+			expect((await inertState(page)).any).toBe(0)
+			expect(await sheetOf(page).count()).toBe(0)
+		})
+	}
+
+	test('select: Escape stays with the grid (cancel, Excel rule), not a modal dismiss — the page is live again, focus on the cell', async ({ page }) => {
+		await openEditor(page, 1)
+		await page.keyboard.press('ArrowDown')
+		await page.keyboard.press('Escape')
+		await closed(page)
+		expect(await snap(page, 1)).toEqual({ sheet: 0, dropdown: 0, picker: 0, editing: [], focus: `${ROW}:1`, value: 'Open', events: [`cell-edit-start(${ROW}.status)`, `cell-edit-cancel(${ROW}.status)`] })
+		expect((await inertState(page)).any).toBe(0)
+	})
+
+	test('select: Tab never reaches the page behind — it leaves the cell (the grid key): the next cell sheet opens, modal in turn', async ({ page }) => {
+		await openEditor(page, 1)
+		await sheetOf(page).locator('.wg__sheet-close').focus()
+		await page.keyboard.press('Tab')
+		// the status edit ended unchanged; navigate mode opened the next cell's (product, combobox) sheet
+		await expect(cell(page, ROW, 1)).not.toHaveClass(/wg__cell--editing/)
+		await expect(cell(page, ROW, 2)).toHaveClass(/wg__cell--editing/)
+		await expect(sheetOf(page)).toHaveCount(1)
+		await expect(sheetOf(page).locator('.wg__sheet-title')).toHaveText('Product')
+		await expect(sheetOf(page).locator('.wg__sheet-search')).toBeFocused()
+		expect(await inertState(page)).toMatchObject({ heading: true, table: true, host: false, sheet: false })
+		await page.keyboard.press('Escape')
+		await page.keyboard.press('Escape')
+		await closed(page)
+		expect((await inertState(page)).any).toBe(0)
+	})
+
+	test('date: Tab inside the sheet stays inside it or leaves the cell — never the page behind', async ({ page }) => {
+		await openEditor(page, 4)
+		// a focusable outside the grid: inert while the sheet is open
+		await page.evaluate(() => {
+			const b = document.createElement('button')
+			b.id = 'outside'
+			b.textContent = 'outside'
+			document.body.append(b)
+		})
+		await sheetOf(page).locator('.wg__sheet-close').focus()
+		await page.keyboard.press('Shift+Tab')
+		const where = await page.evaluate(() => {
+			let a: Element | null = document.activeElement
+			while (a?.shadowRoot?.activeElement) a = a.shadowRoot.activeElement
+			// the date sheet, a cell, or the next editor's sheet (the edit moved on) — all in the grid
+			return a?.id === 'outside' ? 'outside' : a?.closest('.km-sheet') ? 'sheet' : a?.closest('td.wg__cell') ? 'cell' : a?.tagName
+		})
+		expect(['sheet', 'cell']).toContain(where)
 	})
 })
 

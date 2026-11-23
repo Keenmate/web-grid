@@ -3,23 +3,26 @@
 // Main date picker implementation
 // =============================================================================
 
-import { adoptStyles } from '@keenmate/web-components-core'
+import { adoptStyles, type ModalSession } from '@keenmate/web-components-core'
 import { resolveLocale } from '@keenmate/web-components-core/locale'
 import { createPopover, type PopoverCloseReason, type PopoverHandle } from '@keenmate/web-components-core/positioning'
 import type { DatePickerOptions, DatePickerState, LocaleStrings, FormatSpec } from './types.js'
 import { DEFAULT_LOCALE_STRINGS } from './types.js'
 import { parseFormat, formatDate, normalizeDate, toISODateString } from './formatting.js'
-import { buildSheetHeader, setSheetSemantics, startSheetSession } from '../sheet/index.js'
+import { buildSheetHeader, setSheetSemantics, startSheetModal } from '../sheet/index.js'
 
 // Datepicker styles (adopted into the mount root: the grid's shadow root, else document.head)
 const DATEPICKER_STYLES = `
-.wg-datepicker-container {
-	/* The core popover's panel (placed by anchor()); the picker inside is in flow, so the panel has its size */
+/* The core popover's panel (placed by anchor()); the picker inside is in flow, so the panel has its size.
+   Not as the phone sheet: core's .km-sheet frame places that one (no order fight between the sheets). */
+.wg-datepicker-container:not(.km-sheet) {
 	position: absolute;
 	top: 0;
 	left: 0;
 	z-index: var(--wg-dp-z-index, var(--wg-z-dropdown, var(--base-z-dropdown, 7500)));
+}
 
+.wg-datepicker-container {
 	/* Colors — contract inputs with their defaults and the contract's formulas on them;
 	   light-dark() follows the color-scheme of the mount root (the grid host in its shadow root). */
 	--wg-dp-background: var(--base-main-bg, light-dark(#ffffff, #1e293b));
@@ -273,27 +276,16 @@ const DATEPICKER_STYLES = `
 }
 `
 
-// The phone sheet (DatePicker.setSheet(); responsive-overlay D-RO-*, css/sheet.css holds the shared
-// header's layout around core's sheet chrome): edge-to-edge 100dvw x 100dvh, four-edge safe area (the top one on the sticky header),
-// overscroll contained, tap targets >= --wg-touch-target-min (44px). Geometry only.
+// The phone sheet (DatePicker.setSheet(); responsive-overlay D-RO-*): the panel is core's full-screen
+// frame `.km-sheet` (SHEET_CHROME_CSS — 100dvw x 100dvh, four-edge safe area, overscroll contained, the
+// modal tier) with the calendar in its `.km-sheet-body`; here only the grid's values on core's private
+// --_km-sheet-* (NO fallback: unset falls through to --km-sheet-* / --base-*) and the calendar's
+// sheet layout, tap targets >= --wg-touch-target-min (44px). Geometry only.
 const DATEPICKER_SHEET_STYLES = `
-.wg-datepicker-container.wg-datepicker-container--sheet {
-	position: fixed;
-	inset: 0;
-	box-sizing: border-box;
-	width: 100dvw;
-	height: 100dvh;
-	margin: 0;
-	padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-	overflow-y: auto;
-	overscroll-behavior: contain;
-	background: var(--wg-dp-background);
-	z-index: var(--wg-z-sheet, var(--base-z-modal, 7000));
-	--_wg-sheet-bg: var(--wg-dp-background);
-}
-
-.wg-datepicker-container--sheet:focus {
-	outline: none;
+.wg-datepicker-container {
+	--_km-sheet-bg: var(--wg-dp-background);
+	--_km-sheet-color: var(--wg-dp-text-color);
+	--_km-sheet-z-index: var(--wg-z-sheet);
 }
 
 /* The calendar fills the sheet's width (its day cells are square: 7 columns of it) */
@@ -358,8 +350,8 @@ export class DatePicker {
 	private popover: PopoverHandle | null = null
 	/** Set while dismiss() / the sheet's close closes the popover: its 'api' close is reported as this. */
 	private closingAs: 'dismiss' | 'close' | null = null
-	/** The open picker is the phone sheet: its header + how to undo it (null: anchored / closed). */
-	private sheet: { header: HTMLElement; endSession: () => void } | null = null
+	/** The open picker is the phone sheet: its header, its body (the calendar) + its modal session (null: anchored / closed). */
+	private sheet: { header: HTMLElement; body: HTMLElement; session: ModalSession } | null = null
 	/** Stops following the cell's input (see followInput()). */
 	private unfollowInput: (() => void) | null = null
 	/** The followed input holds text that is not a date the picker accepts (see followInput()). */
@@ -574,9 +566,11 @@ export class DatePicker {
 	}
 
 	/**
-	 * The phone sheet: a header (the column's title + a close button that leaves the cell — the
-	 * owner saves, `'close'`), the page scroll locked, the Back gesture = the close button. The
-	 * focus moves into the sheet (the calendar keys keep working: they are document-level).
+	 * The phone sheet: core's full-screen frame (`.km-sheet`) with a header (the column's title + a
+	 * close button that leaves the cell — the owner saves, `'close'`) and the calendar in its body,
+	 * in a core modal session (page inert, Tab trapped, scroll locked; the Back gesture = the close
+	 * button; Escape stays the popover's = cancel). The focus moves into the sheet (the calendar keys
+	 * keep working: they are document-level).
 	 */
 	private enterSheet(): void {
 		if (this.sheet || !this.element || !this.popover) return
@@ -588,15 +582,19 @@ export class DatePicker {
 		})
 		const panel = this.element
 		// Un-anchored first (core puts back the inline position it found), then the anchored
-		// geometry goes: css/sheet.css places the sheet
+		// geometry goes: core's full-screen frame (.km-sheet) places the sheet, the calendar in its body
 		this.popover.setAnchored(false)
 		panel.style.cssText = ''
-		panel.classList.add('wg-datepicker-container--sheet')
+		const body = document.createElement('div')
+		body.className = 'km-sheet-body wg-datepicker__sheet-body'
+		body.append(...panel.childNodes)
+		panel.classList.add('km-sheet', 'wg-datepicker-container--sheet')
 		setSheetSemantics(panel, title)
-		panel.prepend(header)
-		const endSession = startSheetSession(panel, () => this.closeAs('close'))
-		this.sheet = { header, endSession }
+		panel.append(header, body)
+		// Focus in BEFORE the page goes inert (the cell's input losing focus to inert would end the edit)
 		panel.focus({ preventScroll: true })
+		const session = startSheetModal(panel, () => this.closeAs('close'))
+		this.sheet = { header, body, session }
 	}
 
 	/** Undo the sheet (no-op when anchored). */
@@ -604,10 +602,13 @@ export class DatePicker {
 		const sheet = this.sheet
 		if (!sheet) return
 		this.sheet = null
-		sheet.endSession()
+		// The owner moves the focus itself (to the cell)
+		sheet.session.end({ shouldReturnFocus: false })
 		sheet.header.remove()
 		if (this.element) {
-			this.element.classList.remove('wg-datepicker-container--sheet')
+			this.element.append(...sheet.body.childNodes)
+			sheet.body.remove()
+			this.element.classList.remove('km-sheet', 'wg-datepicker-container--sheet')
 			setSheetSemantics(this.element, null)
 		}
 	}
@@ -760,6 +761,8 @@ export class DatePicker {
 	 */
 	private selectDate(date: Date | null, direction?: 'down' | 'next' | 'prev'): void {
 		if (date) this.state.selectedDate = date
+		// The sheet's modal session ends first: the owner moves the focus to a cell of the (no longer inert) grid
+		this.endSheet()
 		this.options.onSelect?.(date, direction)
 		// onSelect already handled the commit: the close reports 'api' (nothing to do)
 		this.close()

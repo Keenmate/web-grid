@@ -3,7 +3,7 @@
 // Render dropdown overlay — a core createPopover() (/positioning) in the grid's shadow root
 // =============================================================================
 
-import { escapeHtml, renderIcon, renderSlotHtml } from '@keenmate/web-components-core'
+import { escapeHtml, renderIcon, renderSlotHtml, type ModalSession } from '@keenmate/web-components-core'
 import { createPopover, type PopoverCloseReason, type PopoverHandle } from '@keenmate/web-components-core/positioning'
 import type { EditorOption, EditorOptions } from '../../types.js'
 import type { GridHost } from '../grid-context.js'
@@ -14,7 +14,7 @@ import { labelTemplateHtml } from '../../labels.js'
 import { clearEditingVisual, returnFocusToCell } from '../navigation/focus.js'
 import { commitEditorValue } from '../editing/commit-on-transition.js'
 import { renderCell } from '../rendering/cell.js'
-import { buildSheetHeader, setSheetSemantics, startSheetSession } from '../sheet/index.js'
+import { buildSheetHeader, setSheetSemantics, startSheetModal } from '../sheet/index.js'
 import { wireDropdownAria, unwireDropdownAria } from './aria.js'
 import { GRID_ENGINE } from '../grid-context.js'
 
@@ -28,8 +28,8 @@ type EditedCell = { rowIndex: number; field: string } | null
 type PanelInfo = { anchor: HTMLElement; edited: EditedCell; opts: EditorOptions<any> }
 const panelInfos = new WeakMap<Element, PanelInfo>()
 
-/** A dropdown panel presented as the phone sheet: its header and how to undo the sheet. */
-type SheetState = { header: HTMLElement; savedStyle: string; endSession: () => void }
+/** A dropdown panel presented as the phone sheet: its header, its scrolling body (the options) and how to undo the sheet. */
+type SheetState = { header: HTMLElement; body: HTMLElement; savedStyle: string; session: ModalSession }
 const sheets = new WeakMap<Element, SheetState>()
 
 /** Whether the dropdown panel is currently the phone sheet (css/sheet.css `.wg__dropdown--sheet`). */
@@ -103,8 +103,7 @@ export function renderDropdown<T>(
 	const sheet = open ? sheets.get(open) : undefined
 	if (open && sheet && panelInfos.get(open)?.anchor === anchor && ctx.isPhoneSheet) {
 		resetDropdownState(ctx)
-		while (sheet.header.nextSibling) sheet.header.nextSibling.remove()
-		fillDropdown(ctx, open, anchor, options, opts, sheet.header)
+		fillDropdown(ctx, open, anchor, options, opts, sheet.body)
 		ctx.dropdown.setIsOpen(true)
 		return open
 	}
@@ -206,15 +205,15 @@ export function repaintDropdownIcons<T>(ctx: GridHost<T>): void {
 	const info = open ? panelInfos.get(open) : undefined
 	if (!open || !info) return
 	const sheet = sheets.get(open)
-	const scrollTop = open.scrollTop
-	if (sheet) while (sheet.header.nextSibling) sheet.header.nextSibling.remove()
-	fillDropdown(ctx, open, info.anchor, ctx.dropdown.options, info.opts, sheet?.header ?? null)
-	open.scrollTop = scrollTop
+	const scroller = sheet?.body ?? open
+	const scrollTop = scroller.scrollTop
+	fillDropdown(ctx, open, info.anchor, ctx.dropdown.options, info.opts, sheet?.body ?? null)
+	scroller.scrollTop = scrollTop
 }
 
 /**
- * The panel's options (or its empty / no-results / searching message): after `after` (the
- * sheet header), else as its whole content.
+ * The panel's options (or its empty / no-results / searching message): the whole content of
+ * `into` (the sheet's body), else of the panel.
  */
 function fillDropdown<T>(
 	ctx: GridHost<T>,
@@ -222,11 +221,10 @@ function fillDropdown<T>(
 	anchor: HTMLElement,
 	options: EditorOption[],
 	opts: EditorOptions<any>,
-	after: HTMLElement | null
+	into: HTMLElement | null
 ): void {
 	const put = (html: string) => {
-		if (after) after.insertAdjacentHTML('afterend', html)
-		else dropdown.innerHTML = html
+		(into ?? dropdown).innerHTML = html
 	}
 	// Render options
 	if (options.length === 0) {
@@ -333,8 +331,9 @@ function resetDropdownState<T>(ctx: GridHost<T>): void {
 // On a phone (`ctx.isPhoneSheet`, core resolvePresentation()) the open dropdown is the SAME
 // popover un-anchored (setAnchored(false)) and dressed as an edge-to-edge sheet: a header with
 // the column title, a search field for a combobox / autocomplete (it types into the cell's own
-// input, which the sheet covers) and a close button. Focus moves into the sheet and comes back
-// to the cell on close. Keys pressed in the sheet go to the cell's editor (the grid's own key
+// input, which the sheet covers) and a close button — core's full-screen frame (`.km-sheet`, the
+// options in `.km-sheet-body`) in a core modal session (page inert, Tab trapped; startSheetModal).
+// Focus moves into the sheet and comes back to the cell on close. Keys pressed in the sheet go to the cell's editor (the grid's own key
 // pipeline): arrows highlight, Enter picks, Escape CANCELS, Tab leaves. The close button and the
 // phone Back gesture leave the cell → SAVE (closeDropdownSheet(); a select without a pick
 // changes nothing). Crossing the line while open switches the presentation live.
@@ -378,25 +377,34 @@ function enterDropdownSheet<T>(ctx: GridHost<T>, panel: HTMLElement): void {
 	const savedStyle = panel.style.cssText
 	popover.setAnchored(false)
 	panel.style.cssText = ''
-	panel.classList.add('wg__dropdown--sheet')
+	// Core's full-screen frame: the header, then the options in the scrolling body
+	const body = document.createElement('div')
+	body.className = 'km-sheet-body wg__sheet-body'
+	body.append(...panel.childNodes)
+	panel.classList.add('km-sheet', 'wg__dropdown--sheet')
 	setSheetSemantics(panel, title)
-	panel.prepend(header)
-	const endSession = startSheetSession(panel, () => closeDropdownSheet(ctx, panel))
-	sheets.set(panel, { header, savedStyle, endSession })
+	panel.append(header, body)
+	// The grid's keys first (before the session's Tab trap): they go to the cell's editor
 	attachSheetKeys(ctx, panel)
+	// Focus in BEFORE the page goes inert (an inert cell editor losing focus would end the edit)
 	;(search ?? panel).focus({ preventScroll: true })
 	if (search) search.setSelectionRange(search.value.length, search.value.length)
+	const session = startSheetModal(panel, () => closeDropdownSheet(ctx, panel))
+	sheets.set(panel, { header, body, savedStyle, session })
 }
 
-/** Undo the sheet on `panel` (no-op when it isn't one): session ended, header gone, inline geometry back. */
+/** Undo the sheet on `panel` (no-op when it isn't one): session ended, header gone, the options back in the panel, inline geometry back. */
 function endSheet(panel: Element): void {
 	const sheet = sheets.get(panel)
 	if (!sheet) return
 	sheets.delete(panel)
-	sheet.endSession()
+	// The grid moves the focus itself (to the cell)
+	sheet.session.end({ shouldReturnFocus: false })
 	sheet.header.remove()
+	panel.append(...sheet.body.childNodes)
+	sheet.body.remove()
 	const el = panel as HTMLElement
-	el.classList.remove('wg__dropdown--sheet')
+	el.classList.remove('km-sheet', 'wg__dropdown--sheet')
 	setSheetSemantics(el, null)
 	el.style.cssText = sheet.savedStyle
 }

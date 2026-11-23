@@ -126,14 +126,19 @@
    ============================================================================== */
 .wg__dropdown {
   background: var(--wg-dropdown-bg);
+  font-size: var(--wg-font-size-base);
+  font-family: inherit;
+  line-height: var(--wg-line-height-base);
+}
+
+/* The anchored panel's own frame — not as the phone sheet: core's .km-sheet frames that one
+   (css/sheet.css), no order fight between the two in the same layer */
+.wg__dropdown:not(.km-sheet) {
   border: 1px solid var(--wg-border-color);
   border-radius: var(--wg-border-radius-sm);
   box-shadow: var(--wg-toolbar-shadow);
   max-height: var(--wg-dropdown-max-height);
   overflow-y: auto;
-  font-size: var(--wg-font-size-base);
-  font-family: inherit;
-  line-height: var(--wg-line-height-base);
 }
 
 .wg__dropdown-option {

@@ -97,9 +97,10 @@ export function updateDropdownHighlight<T>(ctx: GridHost<T>): void {
  * Scroll highlighted option into view
  */
 export function scrollHighlightedIntoView<T>(ctx: GridHost<T>): void {
-	// Inside the dropdown's own list only (core container scroll) — never the grid or the page
+	// Inside the dropdown's own list only (core container scroll) — never the grid or the page;
+	// as the phone sheet the list is the sheet's body (under the header)
 	const highlighted = ctx.shadow.querySelector('.wg__dropdown-option--highlighted')
-	const list = highlighted?.closest('.wg__dropdown') as HTMLElement | null | undefined
+	const list = highlighted?.closest('.wg__sheet-body, .wg__dropdown') as HTMLElement | null | undefined
 	if (highlighted && list) scrollIntoContainer(highlighted, { block: 'nearest', container: list })
 }
 
