@@ -50,11 +50,11 @@ export function wireDropdownAria(dropdown: HTMLElement, anchor: HTMLElement, hig
 		if (option.classList.contains('wg__dropdown-option--disabled')) option.setAttribute('aria-disabled', 'true')
 	}
 	entry.nav.refresh()
-	syncDropdownActive(dropdown, highlightedIndex)
+	reconcileDropdownActive(dropdown, highlightedIndex)
 }
 
 /** The highlighted option changed: point `aria-activedescendant` at it (`-1` = none). */
-export function syncDropdownActive(dropdown: HTMLElement, highlightedIndex: number): void {
+export function reconcileDropdownActive(dropdown: HTMLElement, highlightedIndex: number): void {
 	wired.get(dropdown)?.nav.setActive(highlightedIndex >= 0 ? highlightedIndex : null)
 }
 

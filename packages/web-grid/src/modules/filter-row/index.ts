@@ -47,8 +47,8 @@ export class FilterRowService {
 	}
 }
 
-/** Apply a filter-row value now (the debounce fired, Enter, Escape). */
-export function applyFilterInput<T>(ctx: GridHost<T>, field: string, text: string): void {
+/** Set a filter-row value now (the debounce fired, Enter, Escape). */
+export function setFilterFromInput<T>(ctx: GridHost<T>, field: string, text: string): void {
 	const svc = ctx.filterRow
 	svc.clearTimer(field)
 	svc.pendingText.delete(field)
@@ -113,7 +113,7 @@ export function watchFilterRowText<T>(ctx: GridHost<T>, root: ShadowRoot): () =>
 		const field = (input as HTMLInputElement).dataset.field ?? ''
 		const svc = ctx.filterRow
 		svc.pendingText.set(field, text)
-		svc.schedule(field, () => applyFilterInput(ctx, field, text))
+		svc.schedule(field, () => setFilterFromInput(ctx, field, text))
 	}, { selector: '.wg__filter-input' })
 }
 
@@ -130,11 +130,11 @@ export function attachFilterRowListeners<T>(ctx: GridHost<T>, container: HTMLEle
 		const field = el.dataset.field ?? ''
 		if (e.key === 'Enter') {
 			e.preventDefault()
-			applyFilterInput(ctx, field, el.value)
+			setFilterFromInput(ctx, field, el.value)
 		} else if (e.key === 'Escape' && el.value !== '') {
 			e.preventDefault()
 			el.value = ''
-			applyFilterInput(ctx, field, '')
+			setFilterFromInput(ctx, field, '')
 		}
 	}, true)
 }

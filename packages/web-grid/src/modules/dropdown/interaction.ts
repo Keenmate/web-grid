@@ -4,8 +4,8 @@
 // =============================================================================
 
 import { createTextMatcher } from '../search/text-match.js'
-import { syncDropdownActive } from './aria.js'
-import { syncLoader } from '../rendering/loader.js'
+import { reconcileDropdownActive } from './aria.js'
+import { reconcileLoader } from '../rendering/loader.js'
 import type { EditorOptions } from '../../types.js'
 import type { GridHost } from '../grid-context.js'
 import { getOptionValue, getOptionLabel, isOptionDisabled, withEmptyOption } from './options.js'
@@ -90,7 +90,7 @@ export function updateDropdownHighlight<T>(ctx: GridHost<T>): void {
 	options.forEach((el, i) => {
 		el.classList.toggle('wg__dropdown-option--highlighted', i === ctx.dropdown.highlightedIndex)
 	})
-	syncDropdownActive(dropdown as HTMLElement, ctx.dropdown.highlightedIndex)
+	reconcileDropdownActive(dropdown as HTMLElement, ctx.dropdown.highlightedIndex)
 }
 
 /**
@@ -111,7 +111,7 @@ export function scrollHighlightedIntoView<T>(ctx: GridHost<T>): void {
 export function updateLoadingIndicator<T>(ctx: GridHost<T>, show: boolean, label = ''): void {
 	const indicator = ctx.shadow.querySelector('.wg__loading-indicator') as HTMLElement | null
 	if (indicator) indicator.hidden = !show
-	syncLoader(ctx, 'search-editor', show ? indicator : null, label)
+	reconcileLoader(ctx, 'search-editor', show ? indicator : null, label)
 	// Hide toggle when loading (they occupy same position)
 	const toggle = ctx.shadow.querySelector('.wg__editor--autocomplete .wg__combobox-toggle') as HTMLElement
 	if (toggle) {

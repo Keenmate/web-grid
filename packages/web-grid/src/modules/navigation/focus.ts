@@ -9,7 +9,7 @@ import { renderCell } from '../rendering/index.js'
 import { removeDropdown } from '../dropdown/rendering.js'
 import { removeFillHandle } from '../fill-handle/index.js'
 import { isInGridMenu } from '../contextmenu/index.js'
-import { revealElement, fieldAt, prepareRowReveal, finishCellReveal } from '../scroll/reveal.js'
+import { revealElement, fieldAt, prepareRowReveal, completeCellReveal } from '../scroll/reveal.js'
 import { deepActiveElement } from '@keenmate/web-components-core'
 import { GRID_ENGINE } from '../grid-context.js'
 
@@ -32,7 +32,7 @@ export function focusCellTd(cell: HTMLElement): void {
  * cell) or a body re-render. When the stop cell isn't rendered (a virtual window, rows
  * replaced) the first rendered data cell takes the stop, so there is always exactly one.
  */
-export function syncTabStop<T>(ctx: GridHost<T>, cell?: HTMLElement | null): void {
+export function reconcileTabStop<T>(ctx: GridHost<T>, cell?: HTMLElement | null): void {
 	const tbody = ctx.shadow.querySelector('.wg__table > tbody') as HTMLElement | null
 	if (!tbody) return
 	let stop = cell && tbody.contains(cell) ? cell : null
@@ -131,7 +131,7 @@ export function focusCellElement<T>(
 		) as HTMLElement | null
 		if (!cell) return
 		focusElementInCell(cell, isAlwaysEditMode)
-		finishCellReveal(ctx, cell, target, 'keyboard', state)
+		completeCellReveal(ctx, cell, target, 'keyboard', state)
 		// Ensure cell isn't hidden behind frozen columns
 		ensureCellNotBehindFrozen(ctx, cell, rowIndex)
 		return
@@ -276,7 +276,7 @@ export function updateFocusVisual<T>(
 			}
 		}
 		// The tab stop follows the active cell (roving tabindex, navigate mode)
-		syncTabStop(ctx)
+		reconcileTabStop(ctx)
 	}
 }
 

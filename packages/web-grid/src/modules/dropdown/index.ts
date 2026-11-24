@@ -20,7 +20,7 @@ export {
 export {
 	renderDropdown,
 	removeDropdown,
-	applyDropdownPresentation,
+	reconcileDropdownPresentation,
 	repaintOpenDropdown,
 	reanchorOpenDropdown,
 	isDropdownSheet

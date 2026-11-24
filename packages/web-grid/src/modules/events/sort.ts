@@ -59,15 +59,15 @@ export function handleSortClick<T>(ctx: GridHost<T>, e: MouseEvent, field?: stri
 		}
 	}
 
-	applySort(ctx, currentSort)
+	setUserSort(ctx, currentSort)
 }
 
 /**
- * Apply a user sort: page 1 (when pageable) + `data-request` (trigger 'sort'). In
+ * Set a user sort: page 1 (when pageable) + `data-request` (trigger 'sort'). In
  * server pagination the rows are swapped, so it runs through
  * `beforePageChangeCallback` first (trigger 'sort'; `false` keeps the old sort).
  */
-export function applySort<T>(ctx: GridHost<T>, nextSort: SortState[]): void {
+export function setUserSort<T>(ctx: GridHost<T>, nextSort: SortState[]): void {
 	const engine = ctx[GRID_ENGINE]
 	const apply = (page: number) => {
 		engine.sort = nextSort

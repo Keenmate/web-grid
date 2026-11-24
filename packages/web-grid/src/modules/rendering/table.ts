@@ -245,7 +245,7 @@ function renderEmptyRow<T>(ctx: GridHost<T>, colspan: number): string {
 /**
  * The infinite-scroll "loading more" row (`messages.loading`; '' = no row), shown
  * while a `load-more` data request is in flight. The loader itself is drawn into
- * `.wg__loading-more-indicator` by syncLoadingMoreLoader() (core renderLoader:
+ * `.wg__loading-more-indicator` by reconcileLoadingMoreLoader() (core renderLoader:
  * `role="status"` + `aria-label` = `ariaLabels.loading`), so the visible text is
  * aria-hidden.
  */
@@ -275,7 +275,7 @@ export function cellAriaAttrs<T>(ctx: GridHost<T>, rowIndex: number, visualIndex
  * A body cell's `tabindex` — roving tabindex (ARIA grid pattern), in every editTrigger mode:
  * `0` on the tab stop (`engine.tabStopCell`, the focused / last focused cell), `-1` on every
  * other cell (focusable by arrows / click, not by Tab). No stop yet / not rendered →
- * navigation's syncTabStop() gives it to the first rendered cell.
+ * navigation's reconcileTabStop() gives it to the first rendered cell.
  */
 function cellTabindexAttr<T>(ctx: GridHost<T>, rowIndex: number, colIndex: number): string {
 	const stop = ctx[GRID_ENGINE].tabStopCell

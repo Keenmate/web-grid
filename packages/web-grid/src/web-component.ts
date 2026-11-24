@@ -75,7 +75,7 @@ import {
 	getOptionValue,
 	renderDropdown,
 	removeDropdown,
-	applyDropdownPresentation,
+	reconcileDropdownPresentation,
 	repaintOpenDropdown,
 	selectDropdownOption,
 	updateDropdownHighlight,
@@ -112,7 +112,7 @@ import {
 	handleTableFocusOut,
 	handleCellKeyDown,
 	restoreFocusAfterRender,
-	syncTabStop,
+	reconcileTabStop,
 	untabCellWidgets,
 	captureEditorText,
 	openGoToRowDialog as openGoToRowDialogModule
@@ -256,8 +256,8 @@ import {
 import type { GridHost } from './modules/grid-context.js'
 import { GRID_ENGINE } from './modules/grid-context.js'
 import { registerEngine } from './modules/engine-registry.js'
-import { syncLoadingMoreLoader, removeAllLoaders } from './modules/rendering/loader.js'
-import { applyGridAria } from './modules/rendering/aria.js'
+import { reconcileLoadingMoreLoader, removeAllLoaders } from './modules/rendering/loader.js'
+import { writeGridAria } from './modules/rendering/aria.js'
 
 // Core: reactive base class + the input-table converters. web-grid keeps its
 // rich data/state property API (columns, items, UI state stay properties);
@@ -1274,7 +1274,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	 * first: the engine's own preset setter applies its settings, and the batch's
 	 * values (core already resolved preset vs explicit) must land after it.
 	 * `isDisabled` is applied by `disabledChanged()` / `reinit()` (core SPEC §6.4). */
-	#applyConfig(cfg: Record<string, unknown>): void {
+	#writeConfigToEngine(cfg: Record<string, unknown>): void {
 		const target = this.#engine as unknown as Record<string, unknown>
 		if ('preset' in cfg) target.preset = cfg.preset
 		for (const key of Object.keys(cfg)) {
@@ -1300,7 +1300,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 	/** The instance + page-wide custom CSS layers (core createCustomStyles(), rulebook C-CA-15). */
 	#customStyles: CustomStylesHandle | null = null
 
-	#applyCustomStyles(): void {
+	#reconcileCustomStyles(): void {
 		if (this.#customStyles) return this.#customStyles.refresh()
 		this.#customStyles = createCustomStyles(this, this.#shadow, this.#customStylesOptions())
 	}
@@ -1324,9 +1324,9 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 
 	protected reinit(): void {
 		// First connect: seed the grid from the merged input config.
-		this.#applyConfig(this.config as Record<string, unknown>)
+		this.#writeConfigToEngine(this.config as Record<string, unknown>)
 		this.#engine.isDisabled = this.isEffectivelyDisabled
-		this.#applyCustomStyles()
+		this.#reconcileCustomStyles()
 		// Persisted column widths / order (async; waits for `columns` when there are none yet)
 		this.#engine.loadPersistedState()
 		this.#isBuilt = true
@@ -1342,7 +1342,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		const isPhoneSheet = resolvePresentation('auto', env) === 'fullscreen'
 		if (isPhoneSheet === this.#host.isPhoneSheet) return
 		this.#host.isPhoneSheet = isPhoneSheet
-		applyDropdownPresentation(this.#host)
+		reconcileDropdownPresentation(this.#host)
 		this.#host.datepicker?.setSheet(isPhoneSheet)
 	}
 
@@ -1380,7 +1380,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 
 	protected update(partial: Record<string, unknown>): void {
 		// Later attribute/property changes: apply just the changed inputs.
-		this.#applyConfig(partial)
+		this.#writeConfigToEngine(partial)
 		// A new key / persist flag / source: load its persisted column state
 		if ('storageKey' in partial || 'shouldPersistColumnWidths' in partial || 'shouldPersistColumnOrder' in partial || 'loadStateCallback' in partial) {
 			this.#engine.loadPersistedState()
@@ -1472,7 +1472,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		// `messages.loading` row goes away with it)
 		this.#host.virtualScroll.setIsLoadingMore(false)
 		this.#shadow?.querySelector('.wg__loading-more-row')?.remove()
-		if (this.#shadow) syncLoadingMoreLoader(this.#host)
+		if (this.#shadow) reconcileLoadingMoreLoader(this.#host)
 		const wasEditing = !!this.#engine.editingCell
 		const hadFocus = !!this.#shadow?.activeElement
 		this.#engine.items = value
@@ -1638,7 +1638,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		if (!value) {
 			this.#host.virtualScroll.setIsLoadingMore(false)
 			this.#shadow?.querySelector('.wg__loading-more-row')?.remove()
-			if (this.#shadow) syncLoadingMoreLoader(this.#host)
+			if (this.#shadow) reconcileLoadingMoreLoader(this.#host)
 		}
 	}
 
@@ -2227,7 +2227,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 
 		// role="grid" / "treegrid" + row / column counts (the surgical path keeps the <table>)
 		const table = container.querySelector('.wg__table') as HTMLTableElement | null
-		if (table) applyGridAria(this.#host, table)
+		if (table) writeGridAria(this.#host, table)
 
 		// Post-render focus restore (editor focus + selection / focused-cell restore)
 		// Extracted to modules/navigation/post-render-focus.ts
@@ -2237,7 +2237,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		reanchorOpenDropdown(this.#host)
 		// Exactly one body cell is the tab stop (roving tabindex); controls inside cells are none
 		untabCellWidgets(container.querySelector('.wg__table > tbody'))
-		syncTabStop(this.#host)
+		reconcileTabStop(this.#host)
 		restoreFilterFocus(this.#host, filterFocus)
 		if (this.#isEditedRowGone) {
 			this.#isEditedRowGone = false
@@ -2283,7 +2283,7 @@ export class GridElement<T = unknown> extends BlissElement<GridEventMap<T>, Grid
 		}
 
 		// The infinite-scroll row's loader (core renderLoader) — redrawn into the new row
-		syncLoadingMoreLoader(this.#host)
+		reconcileLoadingMoreLoader(this.#host)
 
 		gridPerf.end('render() body', this.#engine.displayItems.length)
 		gridPerf.summary('render()')

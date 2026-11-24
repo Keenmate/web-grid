@@ -611,7 +611,7 @@ export class GridEngine<T = unknown> {
 	get preset(): GridPreset { return this._preset }
 	set preset(value: GridPreset) {
 		this._preset = value
-		this.applyPresetDefaults()
+		this.setPresetDefaults()
 		this.checkEditTriggerConflicts()
 		this.requestUpdate()
 	}
@@ -1357,7 +1357,7 @@ export class GridEngine<T = unknown> {
 	// `column-selection-change`): every mutation runs inside `trackSelection`, which
 	// snapshots before / after and notifies only the kinds that actually changed —
 	// once, at the outermost level. A pointer gesture (row / column drag) holds one
-	// more level via `beginSelectionGesture()` … `endSelectionGesture()`, so a drag
+	// more level via `startSelectionGesture()` … `endSelectionGesture()`, so a drag
 	// notifies once on mouseup, not per mousemove.
 	// --------------------------------------------------------------------------
 
@@ -1403,7 +1403,7 @@ export class GridEngine<T = unknown> {
 	 * they fire once, at `endSelectionGesture()`, when the selection changed overall.
 	 * Opening a gesture while one is open closes the previous one first.
 	 */
-	beginSelectionGesture(): void {
+	startSelectionGesture(): void {
 		if (this._isSelectionGestureOpen) this.endSelectionGesture()
 		this._isSelectionGestureOpen = true
 		if (this._selectionDepth++ === 0) this._selectionBefore = this.selectionSnapshot()
@@ -1733,7 +1733,7 @@ export class GridEngine<T = unknown> {
 	}
 
 	/** One `row-expand` / `row-collapse` per changed path, then one `expanded-change` (nothing when `isSilent`). */
-	private notifyExpanded(expanded: string[], collapsed: string[], options?: ExpandOptions): void {
+	private dispatchExpandEvents(expanded: string[], collapsed: string[], options?: ExpandOptions): void {
 		if (options?.isSilent) return
 		for (const path of expanded) this.notify('row-expand', { row: this.getRowByPath(path), path })
 		for (const path of collapsed) this.notify('row-collapse', { row: this.getRowByPath(path), path })
@@ -1803,7 +1803,7 @@ export class GridEngine<T = unknown> {
 		}
 		if (expanded.length === 0 && collapsed.length === 0) return
 		interactionLogger.debug('tree expandRows:', targets, '| size now:', this._expandedPaths.size)
-		this.notifyExpanded(expanded, [], options)
+		this.dispatchExpandEvents(expanded, [], options)
 		this.requestUpdate()
 	}
 
@@ -1812,7 +1812,7 @@ export class GridEngine<T = unknown> {
 		const changed = this.toPathList(paths).filter(p => this._expandedPaths.has(p))
 		if (changed.length === 0) return
 		for (const p of changed) this._expandedPaths.delete(p)
-		this.notifyExpanded([], changed, options)
+		this.dispatchExpandEvents([], changed, options)
 		this.requestUpdate()
 	}
 
@@ -2813,10 +2813,10 @@ export class GridEngine<T = unknown> {
 	// ==========================================================================
 
 	/**
-	 * Apply the settings of the current preset.
+	 * Set the settings of the current preset.
 	 * Called when `preset` is set.
 	 */
-	protected applyPresetDefaults(): void {
+	protected setPresetDefaults(): void {
 		const preset = GRID_PRESETS[this._preset]
 		if (!preset) return
 		if (preset.isEditingEnabled !== undefined) this._isEditingEnabled = preset.isEditingEnabled
@@ -3426,7 +3426,7 @@ export class GridEngine<T = unknown> {
 
 		// Sync result, nothing pending: apply now, then end the edit (the order it always had)
 		if (!(outcome instanceof Promise) && this._pendingCommits === 0) {
-			const rowAdded = this.applyCommit(target, outcome, true)
+			const rowAdded = this.processCommitOutcome(target, outcome, true)
 			this.endEditOnCommit()
 			if (rowAdded) this.requestUpdate()
 			return Promise.resolve()
@@ -3446,7 +3446,7 @@ export class GridEngine<T = unknown> {
 					dataLogger.debug('commitEdit: the row is gone, validation result dropped', { rowIndex, field })
 					return
 				}
-				const rowAdded = this.applyCommit(at, result, false)
+				const rowAdded = this.processCommitOutcome(at, result, false)
 				if (rowAdded) this.requestUpdate()
 				else this._onCommitApplied?.(at.rowIndex, field)
 			})
@@ -3494,12 +3494,12 @@ export class GridEngine<T = unknown> {
 	}
 
 	/**
-	 * Apply a commit's validation result: the draft value, the invalid mark, `validation-error`,
+	 * Process a commit's validation result: the draft value, the invalid mark, `validation-error`,
 	 * `row-change`. Returns true when an empty-row commit added the row to `items` (the caller
 	 * re-renders the grid). `immediate` = applied inside `commitEdit()` (the edit is still the
 	 * committed one, so `currentCellError` follows it).
 	 */
-	private applyCommit(t: CommitTarget<T>, o: CommitOutcome, immediate: boolean): boolean {
+	private processCommitOutcome(t: CommitTarget<T>, o: CommitOutcome, immediate: boolean): boolean {
 		const { item, rowIndex, field, oldValue, source } = t
 		const { isValid, validationError, finalValue } = o
 		const setCellError = (error: string | null) => { if (immediate) this._currentCellError = error }
@@ -4310,12 +4310,12 @@ export class GridEngine<T = unknown> {
 				this._isPersistedStateLoadPending = true
 				return
 			}
-			this.applyPersistedState(state)
+			this.restorePersistedState(state)
 		})
 	}
 
-	/** Apply a loaded state; prune (and re-save) entries of columns that no longer exist. */
-	protected applyPersistedState(state: GridPersistenceState): void {
+	/** Restore a loaded state; prune (and re-save) entries of columns that no longer exist. */
+	protected restorePersistedState(state: GridPersistenceState): void {
 		const validFields = new Set(this._columns.map(c => String(c.field)))
 		const cleaned: GridPersistenceState = {}
 		let needsCleanup = false

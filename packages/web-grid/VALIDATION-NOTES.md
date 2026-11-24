@@ -34,7 +34,7 @@ Shift+Tab from an open editor commit it and skip to the next *editable* cell
 (`docs/accessibility.md` → Keyboard navigation). Its tab-stop RULE mirrors core
 `createRovingFocus` (2026-11-22): the grid is one tab stop in every editTrigger mode — `tabindex="0"` on
 the active cell only (else the first rendered cell), `-1` on the rest, kept across
-re-renders / virtual window swaps (`syncTabStop()`, `src/modules/navigation/focus.ts`);
+re-renders / virtual window swaps (`reconcileTabStop()`, `src/modules/navigation/focus.ts`);
 a non-editing Tab leaves the grid. The C-CA-25 `[semi]` grep
 therefore finds the grid's own `'Arrow…'` handlers (`src/modules/actions/` key mapping,
 `src/modules/events/`, cell-range extension) — expected. What C-CA-25 protects is still there:

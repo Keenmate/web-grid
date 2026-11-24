@@ -12,7 +12,7 @@ import { test, expect, Page, Locator, gridLocator, cell } from './fixtures'
  * Fill mechanics: clicking a cell focuses it (navigate mode), which causes
  * `.wg__fill-handle` to be appended to the grid's .wg container at the cell's
  * bottom-right corner. Mousedown on the handle + ≥5 px move + mouseup over the
- * target cell triggers `applyFill`. The handler listens on document-level
+ * target cell triggers `fillCells`. The handler listens on document-level
  * mousemove/mouseup, so page.mouse primitives work — no shadow piercing needed
  * for the drag itself. Targets are identified by data-row + data-col on cells.
  */
@@ -189,7 +189,7 @@ test.describe('vertical fill — #gridVertical', () => {
 test.describe('fill direction constraint — #gridHorizontal', () => {
 	test('default fillDirection="vertical" leaves adjacent columns untouched on a horizontal drag', async ({ page }) => {
 		// gridHorizontal does not set fillDirection, so the grid default ('vertical')
-		// applies — applyFill constrains targets to the source column even when the
+		// applies — fillCells constrains targets to the source column even when the
 		// drag direction is horizontal.
 		await focusCell(page, 'gridHorizontal', 0, 1)
 		await expect(cell(page, 'gridHorizontal', 0, 1)).toContainText('Hello')

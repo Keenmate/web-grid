@@ -9,7 +9,7 @@ import type { EditorOption, EditorOptions } from '../../types.js'
 import type { GridHost } from '../grid-context.js'
 import { getOptionLabel, getOptionValue, getOptionIcon, getOptionSubtitle, isOptionDisabled, isEmptyOption, optionCtx } from './options.js'
 import { removeFillHandle } from '../fill-handle/index.js'
-import { syncLoader, pruneDetachedLoaders } from '../rendering/loader.js'
+import { reconcileLoader, pruneDetachedLoaders } from '../rendering/loader.js'
 import { labelTemplateHtml } from '../../labels.js'
 import { clearEditingVisual, returnFocusToCell } from '../navigation/focus.js'
 import { commitEditorValue } from '../editing/commit-on-transition.js'
@@ -243,7 +243,7 @@ function fillDropdown<T>(
 			// Typed search in flight: the loader (core renderLoader, context 'search'; ariaLabels.searching) + the text
 			const ariaLabel = opts.labels?.['ariaLabels.searching'] ?? ctx[GRID_ENGINE].labels['ariaLabels.searching']
 			put(`<div class="wg__dropdown-empty wg__dropdown-searching"><span class="wg__dropdown-searching-indicator"></span>${message ? `<span aria-hidden="true">${message}</span>` : ''}</div>`)
-			syncLoader(ctx, 'search-dropdown', dropdown.querySelector('.wg__dropdown-searching-indicator') as HTMLElement, ariaLabel)
+			reconcileLoader(ctx, 'search-dropdown', dropdown.querySelector('.wg__dropdown-searching-indicator') as HTMLElement, ariaLabel)
 		} else {
 			put(message ? `<div class="wg__dropdown-empty">${message}</div>` : '')
 		}
@@ -319,7 +319,7 @@ export function removeDropdown<T>(ctx: GridHost<T>): void {
 
 /** Forget the closed dropdown: loaders, open flag, highlight, filter text. */
 function resetDropdownState<T>(ctx: GridHost<T>): void {
-	syncLoader(ctx, 'search-dropdown', null, '')
+	reconcileLoader(ctx, 'search-dropdown', null, '')
 	pruneDetachedLoaders(ctx)  // e.g. the editor's search loader when the editor closed mid-search
 	ctx.dropdown.setIsOpen(false)
 	ctx.dropdown.setHighlightedIndex(-1)
@@ -470,7 +470,7 @@ function closeDropdownSheet<T>(ctx: GridHost<T>, panel: HTMLElement): void {
  * The phone line was crossed (`ctx.isPhoneSheet` changed, core environment): switch the open
  * dropdown between the sheet and the anchored panel in place — same popover, setAnchored().
  */
-export function applyDropdownPresentation<T>(ctx: GridHost<T>): void {
+export function reconcileDropdownPresentation<T>(ctx: GridHost<T>): void {
 	const panel = ctx.shadow.querySelector('.wg__dropdown') as HTMLElement | null
 	if (!panel || !popovers.has(panel)) return
 	if (ctx.isPhoneSheet) {

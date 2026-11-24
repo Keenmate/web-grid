@@ -162,9 +162,9 @@ function updateFrozenColumnOffsets<T>(ctx: GridHost<T>): void {
 }
 
 /**
- * Apply all stored column widths (called after render)
+ * Write all stored column widths into the colgroup (called after render)
  */
-export function applyStoredColumnWidths<T>(ctx: GridHost<T>): void {
+export function writeStoredColumnWidths<T>(ctx: GridHost<T>): void {
 	const colgroup = ctx.shadow.querySelector('.wg__colgroup')
 	if (!colgroup) return
 

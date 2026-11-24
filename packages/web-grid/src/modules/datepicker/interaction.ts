@@ -89,9 +89,9 @@ export function handleYearClick(target: HTMLElement, state: DatePickerState): vo
 }
 
 /**
- * Apply input mask to enforce date format
+ * Mask typed input to the date format
  */
-export function applyInputMask(
+export function maskDateInput(
 	value: string,
 	formatInfo: FormatSpec
 ): string {
@@ -150,7 +150,7 @@ export function handleInputChange(
 	const cleanValue = currentValue.replace(new RegExp(`[^0-9${escapedSep}]`, 'g'), '')
 
 	// Apply mask
-	const formatted = applyInputMask(cleanValue, formatInfo)
+	const formatted = maskDateInput(cleanValue, formatInfo)
 
 	if (formatted !== currentValue) {
 		input.value = formatted
@@ -259,7 +259,7 @@ export function handleInputPaste(
 	const cleaned = pastedText.replace(new RegExp(`[^0-9${escapedSep}]`, 'g'), '')
 
 	// Apply mask
-	const formatted = applyInputMask(cleaned, formatInfo)
+	const formatted = maskDateInput(cleaned, formatInfo)
 
 	// Insert at cursor
 	const start = input.selectionStart || 0
@@ -267,7 +267,7 @@ export function handleInputPaste(
 	const currentValue = input.value
 
 	const newValue = currentValue.substring(0, start) + formatted + currentValue.substring(end)
-	input.value = applyInputMask(newValue, formatInfo)
+	input.value = maskDateInput(newValue, formatInfo)
 
 	// Set cursor after pasted content
 	const newCursorPos = start + formatted.length

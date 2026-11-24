@@ -19,7 +19,7 @@ Or via HTML attribute:
 
   <web-grid preset="excel"></web-grid>
 
-Setting preset calls applyPresetDefaults() internally, which sets
+Setting preset calls setPresetDefaults() internally, which sets
 isEditingEnabled, isReadonly, editTrigger, cellSelectionMode, dropdownToggleVisibility,
 and shouldOpenDropdownOnFocus to preset-appropriate values.
 

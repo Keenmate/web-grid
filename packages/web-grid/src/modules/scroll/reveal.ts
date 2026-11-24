@@ -144,7 +144,7 @@ export function prepareRowReveal<T>(ctx: GridHost<T>, target: RevealTarget, sour
 	if (!options) return null
 	if (scrollTop !== container.scrollTop) {
 		// The flag stops handleVirtualScroll from rendering again for this scroll
-		ctx.virtualScroll.beginProgrammaticScroll()
+		ctx.virtualScroll.startProgrammaticScroll()
 		container.scrollTop = scrollTop
 		queueMicrotask(() => { ctx.virtualScroll.endProgrammaticScroll() })
 	}
@@ -160,7 +160,7 @@ export function prepareRowReveal<T>(ctx: GridHost<T>, target: RevealTarget, sour
  * gets its window rendered NOW, not by the scroll event a frame later — that late swap re-rendered
  * the body under the next key (an edit started right after the move lost its editor).
  */
-export function finishCellReveal<T>(ctx: GridHost<T>, cell: HTMLElement, target: RevealTarget, source: GridScrollSource, state: RowRevealState): void {
+export function completeCellReveal<T>(ctx: GridHost<T>, cell: HTMLElement, target: RevealTarget, source: GridScrollSource, state: RowRevealState): void {
 	if (state === undefined) {
 		revealElement(ctx, cell, target, source)
 	} else if (state) {
@@ -173,14 +173,14 @@ export function finishCellReveal<T>(ctx: GridHost<T>, cell: HTMLElement, target:
 	} else {
 		return  // skipped: the window was stretched to hold the row — keep it
 	}
-	syncVirtualWindow(ctx)
+	reconcileVirtualWindow(ctx)
 }
 
 /**
  * Virtual scroll: render the window for the container's CURRENT scrollTop now, when it differs
  * from the rendered one (what the scroll handler would do on the next frame). No-op otherwise.
  */
-export function syncVirtualWindow<T>(ctx: GridHost<T>): void {
+export function reconcileVirtualWindow<T>(ctx: GridHost<T>): void {
 	if (!ctx[GRID_ENGINE].shouldUseVirtualScroll()) return
 	const container = bodyScroller(ctx)
 	if (!container) return
@@ -223,7 +223,7 @@ export function scrollRowIntoView<T>(ctx: GridHost<T>, rowIndex: number, source:
 	// Update range and render ONCE (before scroll)
 	if (ctx.virtualScroll.setRange(startIndex, endIndex)) renderVirtualRows(ctx, container)
 	// Now scroll — the flag prevents handleVirtualScroll from re-rendering
-	ctx.virtualScroll.beginProgrammaticScroll()
+	ctx.virtualScroll.startProgrammaticScroll()
 	container.scrollTop = scrollTop
 	queueMicrotask(() => { ctx.virtualScroll.endProgrammaticScroll() })
 	return nextFrame()

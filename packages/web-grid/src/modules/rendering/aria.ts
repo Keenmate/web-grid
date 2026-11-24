@@ -43,7 +43,7 @@ export function dataRowAriaIndex<T>(ctx: GridHost<T>, rowIndex: number): number 
  * The grid-level attributes, written on the <table> after every render (the
  * surgical render path keeps the table element, so these can't live in markup).
  */
-export function applyGridAria<T>(ctx: GridHost<T>, table: HTMLTableElement): void {
+export function writeGridAria<T>(ctx: GridHost<T>, table: HTMLTableElement): void {
 	const e = ctx[GRID_ENGINE]
 	table.setAttribute('role', e.isTreeMode ? 'treegrid' : 'grid')
 	// An empty grid still renders one message row
@@ -85,7 +85,7 @@ export function isCellSelectable<T>(ctx: GridHost<T>): boolean {
  * Mirror the selection classes onto `aria-selected` after a surgical selection
  * update (one that toggles the classes without re-rendering the rows).
  */
-export function syncSelectedAria(ctx: { shadow: ParentNode, [GRID_ENGINE]: { cellSelectionMode: string } }): void {
+export function reconcileSelectedAria(ctx: { shadow: ParentNode, [GRID_ENGINE]: { cellSelectionMode: string } }): void {
 	ctx.shadow.querySelectorAll<HTMLElement>('tbody tr.wg__row').forEach(row => {
 		row.setAttribute('aria-selected', String(row.classList.contains('wg__row--selected')))
 	})

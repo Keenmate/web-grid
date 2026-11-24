@@ -26,7 +26,7 @@ function executeNavigate(ctx: ExecutorContext, action: NavigateAction): GridActi
 	const from = action.from ?? ctx[GRID_ENGINE].focusedCell
 	if (!from) return
 
-	const target = calculateTarget(ctx, from, action)
+	const target = resolveNavigateTarget(ctx, from, action)
 
 	// Check if we're currently editing this cell
 	const fromColumn = ctx[GRID_ENGINE].columns[from.colIndex]
@@ -97,9 +97,9 @@ function getEmptyRowCommitFocusCol(ctx: ExecutorContext, from: CellCoordinates, 
 }
 
 /**
- * Calculate the target cell based on direction
+ * Resolve the target cell for the direction (also tracks the Tab-traversal start column)
  */
-function calculateTarget(
+function resolveNavigateTarget(
 	ctx: ExecutorContext,
 	from: CellCoordinates,
 	action: NavigateAction

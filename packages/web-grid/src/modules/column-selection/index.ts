@@ -85,7 +85,7 @@ export function handleHeaderMouseDown<T>(ctx: GridHost<T>, colIndex: number, eve
 	cleanupEditState(ctx)
 
 	// One selection-change notification per gesture (ends on mouseup, or below for Ctrl)
-	ctx[GRID_ENGINE].beginSelectionGesture()
+	ctx[GRID_ENGINE].startSelectionGesture()
 
 	// Clear cell range selection when selecting columns
 	if (ctx[GRID_ENGINE].selectedCellRange) {

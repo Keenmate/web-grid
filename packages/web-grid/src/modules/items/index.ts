@@ -35,7 +35,7 @@ import type {
 	GridRenderContext,
 } from '../../interaction.js'
 import { isTypingTarget, matchesShortcut, parseShortcut, type ShortcutBinding } from '@keenmate/web-components-core/actions'
-import { applySort } from '../events/sort.js'
+import { setUserSort } from '../events/sort.js'
 import { GRID_ENGINE } from '../grid-context.js'
 
 const ROW_ACTIONS: readonly GridRowAction[] = ['add', 'delete', 'duplicate', 'move-up', 'move-down']
@@ -331,14 +331,14 @@ function runHeaderBuiltIn<T>(host: GridHost<T>, d: GridActionEventDetail<T>): vo
 				const i = next.findIndex(s => s.column === field)
 				if (i >= 0) next[i] = { column: field, direction }
 				else next.push({ column: field, direction })
-				applySort(host, next)
+				setUserSort(host, next)
 			} else {
-				applySort(host, [{ column: field, direction }])
+				setUserSort(host, [{ column: field, direction }])
 			}
 			return
 		}
 		case 'clear-sort':
-			applySort(host, engine.sort.filter(s => s.column !== field))
+			setUserSort(host, engine.sort.filter(s => s.column !== field))
 			return
 		case 'hide-column': {
 			// Refuse to hide the tree column in tree mode — chevrons would be orphaned

@@ -35,7 +35,7 @@ export class VirtualScrollService {
 		this._isLoadingMore = value
 	}
 
-	beginProgrammaticScroll(): void {
+	startProgrammaticScroll(): void {
 		this._isProgrammatic = true
 	}
 

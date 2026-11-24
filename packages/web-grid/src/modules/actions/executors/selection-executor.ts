@@ -10,7 +10,7 @@ import { removeRangeBorder } from '../../cell-selection/index.js'
 import { removeRowSelectionBorders, removeColumnSelectionBorders } from '../../selection-border/index.js'
 import { removeFillHandle } from '../../fill-handle/index.js'
 import { interactionLogger } from '../../../logger.js'
-import { syncSelectedAria } from '../../rendering/aria.js'
+import { reconcileSelectedAria } from '../../rendering/aria.js'
 import { GRID_ENGINE } from '../../grid-context.js'
 
 /**
@@ -154,7 +154,7 @@ function updateRowSelectionVisual(ctx: ExecutorContext): void {
 			row.classList.add('wg__row--selected')
 		}
 	}
-	syncSelectedAria(ctx)
+	reconcileSelectedAria(ctx)
 }
 
 /**
@@ -182,7 +182,7 @@ function updateColumnSelectionVisual(ctx: ExecutorContext): void {
 			header.classList.add('wg__header--selected')
 		}
 	}
-	syncSelectedAria(ctx)
+	reconcileSelectedAria(ctx)
 }
 
 /**
@@ -196,7 +196,7 @@ function updateCellRangeVisual(ctx: ExecutorContext): void {
 	// Add class to cells in range
 	const range = ctx[GRID_ENGINE].selectedCellRange
 	if (!range) {
-		syncSelectedAria(ctx)
+		reconcileSelectedAria(ctx)
 		return
 	}
 
@@ -218,5 +218,5 @@ function updateCellRangeVisual(ctx: ExecutorContext): void {
 			}
 		}
 	}
-	syncSelectedAria(ctx)
+	reconcileSelectedAria(ctx)
 }

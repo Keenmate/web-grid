@@ -4,10 +4,10 @@
 // =============================================================================
 
 import type { GridHost } from '../grid-context.js'
-import { syncSelectedAria } from '../rendering/aria.js'
+import { reconcileSelectedAria } from '../rendering/aria.js'
 import type { CellRange, Column } from '../../types.js'
 import { updateFocusVisual, focusCellElement } from '../navigation/index.js'
-import { fieldAt, prepareRowReveal, finishCellReveal } from '../scroll/reveal.js'
+import { fieldAt, prepareRowReveal, completeCellReveal } from '../scroll/reveal.js'
 import { GRID_ENGINE } from '../grid-context.js'
 
 /** Minimum distance (px) mouse must move before drag starts */
@@ -219,7 +219,7 @@ function processDragUpdate(): void {
 
 		// Write phase: update cell classes and border element
 		updateCellHighlighting(activeContext)
-		applyRangeBorder(activeContext, borderPositions)
+		renderRangeBorder(activeContext, borderPositions)
 	}
 }
 
@@ -283,7 +283,7 @@ function updateCellHighlighting<T>(ctx: GridHost<T>): void {
 			}
 		}
 	}
-	syncSelectedAria(ctx)
+	reconcileSelectedAria(ctx)
 }
 
 /**
@@ -331,7 +331,7 @@ function handleDocumentMouseUp(e: MouseEvent): void {
 		// User canceled selection by returning to start - restore focus, clear highlighting
 		const allCells = ctx.shadow.querySelectorAll('.wg__cell--in-range')
 		allCells.forEach(cell => cell.classList.remove('wg__cell--in-range'))
-		syncSelectedAria(ctx)
+		reconcileSelectedAria(ctx)
 		removeRangeBorder()
 
 		// Restore focus on the start cell (was cleared when drag began)
@@ -340,7 +340,7 @@ function handleDocumentMouseUp(e: MouseEvent): void {
 		cleanup(ctx)
 	} else {
 		// Actual multi-cell selection made - apply it (this clears focus)
-		applySelection(ctx)
+		selectDraggedRange(ctx)
 		cleanup(ctx)
 
 		// Focus the container so keyboard shortcuts work
@@ -376,7 +376,7 @@ function handleDocumentKeyDown(e: KeyboardEvent): void {
 		if (selectionState.isDragging) {
 			const allCells = ctx.shadow.querySelectorAll('.wg__cell--in-range')
 			allCells.forEach(cell => cell.classList.remove('wg__cell--in-range'))
-			syncSelectedAria(ctx)
+			reconcileSelectedAria(ctx)
 			removeRangeBorder()
 
 			restoreStartFocus(ctx)
@@ -406,9 +406,9 @@ function findCellAtPoint<T>(ctx: GridHost<T>, x: number, y: number): { rowIndex:
 }
 
 /**
- * Apply the cell range selection
+ * Select the dragged cell range on the grid
  */
-function applySelection<T>(ctx: GridHost<T>): void {
+function selectDraggedRange<T>(ctx: GridHost<T>): void {
 	const { startRowIndex, startColIndex, currentRowIndex, currentColIndex } = selectionState
 
 	// Get the columns
@@ -484,10 +484,10 @@ function computeRangeBorderPositions<T>(ctx: GridHost<T>): BorderPositions | nul
 }
 
 /**
- * Apply pre-computed border positions to DOM (WRITE-ONLY).
+ * Render pre-computed border positions into the DOM (WRITE-ONLY).
  * Reuses existing border element when possible to avoid DOM churn.
  */
-function applyRangeBorder<T>(_ctx: GridHost<T>, positions: BorderPositions | null): void {
+function renderRangeBorder<T>(_ctx: GridHost<T>, positions: BorderPositions | null): void {
 	if (!positions) {
 		removeRangeBorder()
 		return
@@ -513,7 +513,7 @@ function applyRangeBorder<T>(_ctx: GridHost<T>, positions: BorderPositions | nul
  */
 function createRangeBorderDuringDrag<T>(ctx: GridHost<T>): void {
 	const positions = computeRangeBorderPositions(ctx)
-	applyRangeBorder(ctx, positions)
+	renderRangeBorder(ctx, positions)
 }
 
 /**
@@ -736,7 +736,7 @@ export function extendCellRangeByKey<T>(ctx: GridHost<T>, e: KeyboardEvent): boo
 	const state = prepareRowReveal(ctx, target, 'keyboard')
 	requestAnimationFrame(() => {
 		const cell = ctx.shadow.querySelector(`td.wg__cell[data-row="${row}"][data-col="${col}"]`) as HTMLElement | null
-		if (cell) finishCellReveal(ctx, cell, target, 'keyboard', state)
+		if (cell) completeCellReveal(ctx, cell, target, 'keyboard', state)
 	})
 	return true
 }

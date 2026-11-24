@@ -7,7 +7,7 @@
 // (drawn from the --wg-loader-* tokens in states.css).
 //
 // The grid renders by innerHTML, so a loader's container can be replaced at any
-// time. Each loading state has one slot per grid; syncLoader() keeps it in step
+// time. Each loading state has one slot per grid; reconcileLoader() keeps it in step
 // with the DOM: same container → nothing, new container → the old loader's
 // remove() (hook cleanup) then a fresh draw, none → remove().
 
@@ -35,7 +35,7 @@ const drawn = new WeakMap<object, Map<GridLoaderSlot, DrawnLoader>>()
  * Draw the `slot` loader into `container` (or remove it when `container` is null).
  * Idempotent for the same container.
  */
-export function syncLoader<T>(ctx: GridHost<T>, slot: GridLoaderSlot, container: HTMLElement | null, label: string): void {
+export function reconcileLoader<T>(ctx: GridHost<T>, slot: GridLoaderSlot, container: HTMLElement | null, label: string): void {
 	let slots = drawn.get(ctx)
 	const current = slots?.get(slot)
 	if (current && current.container === container) return
@@ -65,10 +65,10 @@ export function pruneDetachedLoaders<T>(ctx: GridHost<T>): void {
 }
 
 /** The infinite-scroll "loading more" row: draw into its indicator, or clean up when it's gone. */
-export function syncLoadingMoreLoader<T>(ctx: GridHost<T>): void {
+export function reconcileLoadingMoreLoader<T>(ctx: GridHost<T>): void {
 	pruneDetachedLoaders(ctx)
 	const container = ctx.shadow.querySelector('.wg__loading-more-indicator') as HTMLElement | null
-	syncLoader(ctx, 'row', container, ctx[GRID_ENGINE].labels['ariaLabels.loading'])
+	reconcileLoader(ctx, 'row', container, ctx[GRID_ENGINE].labels['ariaLabels.loading'])
 }
 
 /** Remove every loader of this grid (destroy). */

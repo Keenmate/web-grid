@@ -8,10 +8,10 @@
 // the cell dropdown on scroll is core createPopover()'s — see dropdown/rendering.ts.)
 
 import type { GridHost } from '../grid-context.js'
-import { updateFocusVisual, focusCellTd, syncTabStop } from '../navigation/focus.js'
+import { updateFocusVisual, focusCellTd, reconcileTabStop } from '../navigation/focus.js'
 import { untabCellWidgets } from '../rendering/cell-widgets.js'
 import { renderDataRowsVirtual, renderLoadingMoreRow, type VirtualScrollParams } from '../rendering/table.js'
-import { syncLoadingMoreLoader } from '../rendering/loader.js'
+import { reconcileLoadingMoreLoader } from '../rendering/loader.js'
 import { visibleRowRange, shouldTriggerInfiniteScroll } from './calculations.js'
 import { reanchorOpenDropdown } from '../dropdown/rendering.js'
 import { GRID_ENGINE } from '../grid-context.js'
@@ -59,7 +59,7 @@ export function renderVirtualRows<T>(ctx: GridHost<T>, container: HTMLElement): 
 	tbody.innerHTML = renderDataRowsVirtual(ctx, params)
 	untabCellWidgets(tbody)
 	reanchorOpenDropdown(ctx)  // an open dropdown follows its cell's new editor
-	syncLoadingMoreLoader(ctx)
+	reconcileLoadingMoreLoader(ctx)
 
 	// Re-focus the focusedCell after re-render (if it's in the rendered range).
 	// Use the saved value since blur event may have cleared it.
@@ -81,7 +81,7 @@ export function renderVirtualRows<T>(ctx: GridHost<T>, container: HTMLElement): 
 		}
 	}
 	// The new window keeps exactly one tab stop (roving tabindex)
-	syncTabStop(ctx)
+	reconcileTabStop(ctx)
 }
 
 /**
@@ -102,7 +102,7 @@ export function handleInfiniteScroll<T>(ctx: GridHost<T>, container: HTMLElement
 		// The `messages.loading` row at the bottom (gone with the next render / items set)
 		const tbody = container.querySelector('tbody')
 		if (tbody && !tbody.querySelector('.wg__loading-more-row')) tbody.insertAdjacentHTML('beforeend', renderLoadingMoreRow(ctx))
-		syncLoadingMoreLoader(ctx)
+		reconcileLoadingMoreLoader(ctx)
 
 		// Fire data request with loadMore trigger
 		ctx[GRID_ENGINE].fireDataRequest('load-more')

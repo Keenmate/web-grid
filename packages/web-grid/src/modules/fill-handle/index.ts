@@ -395,7 +395,7 @@ function handleDocumentMouseUp(e: MouseEvent): void {
 	if (!fillState.isDragging) return
 
 	// Apply the fill
-	applyFill(ctx)
+	fillCells(ctx)
 
 	// Cleanup
 	cleanup(ctx)
@@ -457,9 +457,9 @@ function getDirection(
 }
 
 /**
- * Apply the fill operation
+ * Fill the target cells from the source cell
  */
-async function applyFill<T>(ctx: GridHost<T>): Promise<void> {
+async function fillCells<T>(ctx: GridHost<T>): Promise<void> {
 	const { startRowIndex, startColIndex, currentRowIndex, currentColIndex, startField } = fillState
 
 	// Get the source cell value

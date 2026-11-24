@@ -7,7 +7,7 @@ import type { ActionExecutor, ExecutorContext } from '../pipeline.js'
 import type { GridAction, FocusCellAction, BlurCellAction } from '../types.js'
 import { updateFocusVisual, focusCellTd } from '../../navigation/index.js'
 import { updateFillHandle } from '../../fill-handle/index.js'
-import { fieldAt, prepareRowReveal, finishCellReveal } from '../../scroll/reveal.js'
+import { fieldAt, prepareRowReveal, completeCellReveal } from '../../scroll/reveal.js'
 import { GRID_ENGINE } from '../../grid-context.js'
 
 /**
@@ -115,7 +115,7 @@ function executeFocusCell(ctx: ExecutorContext, action: FocusCellAction): GridAc
 	}
 
 	// Scroll into view if needed (core container scroll, gated by beforeScrollCallback)
-	finishCellReveal(ctx, cell, revealTarget, 'keyboard', revealState)
+	completeCellReveal(ctx, cell, revealTarget, 'keyboard', revealState)
 
 	// Update fill handle position for the newly focused cell
 	updateFillHandle(ctx)

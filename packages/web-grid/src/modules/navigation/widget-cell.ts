@@ -2,7 +2,7 @@
 // Widget cells — interactive controls inside body cells (ARIA grid pattern)
 // =============================================================================
 // The grid is ONE tab stop (roving tabindex on the cells, navigation/focus.ts
-// syncTabStop). Controls inside body cells are never tab stops of their own
+// reconcileTabStop). Controls inside body cells are never tab stops of their own
 // (`tabindex="-1"`): the row-actions trigger (actions column), the inline row
 // actions (`toolbarPosition: 'inline'`), and whatever a `renderCellCallback`
 // renders (links, buttons, inputs — rendering/cell-widgets.ts `untabCellWidgets()` takes them out of the
@@ -23,7 +23,7 @@
 // Mouse behaviour is unchanged: the controls are still clicked directly.
 
 import type { GridHost } from '../grid-context.js'
-import { moveFocus, focusCellTd, syncTabStop } from './focus.js'
+import { moveFocus, focusCellTd, reconcileTabStop } from './focus.js'
 import { prepareRowReveal, revealElement, fieldAt } from '../scroll/reveal.js'
 import { GRID_ENGINE } from '../grid-context.js'
 export { untabCellWidgets } from '../rendering/cell-widgets.js'
@@ -53,7 +53,7 @@ function edgeDataCell(row: HTMLElement, edge: 'first' | 'last'): HTMLElement | n
 /** Focus a lead widget cell: it becomes the tab stop, the grid scrolls it into view. */
 function focusWidgetCell<T>(ctx: GridHost<T>, cell: HTMLElement): void {
 	cell.focus({ preventScroll: true })
-	syncTabStop(ctx, cell)
+	reconcileTabStop(ctx, cell)
 	const rowIndex = Number(cell.dataset.widgetRow)
 	const first = cell.closest('tr') ? edgeDataCell(cell.closest('tr') as HTMLElement, 'first') : null
 	revealElement(ctx, cell, { rowIndex, field: fieldAt(ctx, Number(first?.dataset.col ?? 0)) }, 'keyboard')

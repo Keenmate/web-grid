@@ -83,7 +83,7 @@ export function handleRowNumberMouseDown<T>(ctx: GridHost<T>, rowIndex: number, 
 	cleanupEditState(ctx)
 
 	// One selection-change notification per gesture (ends on mouseup, or below for Ctrl / Shift)
-	ctx[GRID_ENGINE].beginSelectionGesture()
+	ctx[GRID_ENGINE].startSelectionGesture()
 
 	// Clear cell range selection when selecting rows
 	if (ctx[GRID_ENGINE].selectedCellRange) {
