@@ -28,7 +28,7 @@ function setPagerBusy<T>(ctx: GridHost<T>, isBusy: boolean): void {
 }
 
 /**
- * Run `apply(page)` for a user page change, after `beforePageChangeCallback`
+ * Run `setPage(page)` for a user page change, after `beforePageChangeCallback`
  * allowed it. Returns `true` when it was applied synchronously, `false` when it
  * was cancelled, ignored (another change pending) or deferred (async hook — it
  * applies + renders itself when the hook resolves).
@@ -37,13 +37,13 @@ export function guardPageChange<T>(
 	ctx: GridHost<T>,
 	trigger: PageChangeTrigger,
 	toPage: number,
-	apply: (page: number) => void
+	setPage: (page: number) => void
 ): boolean {
 	const engine = ctx[GRID_ENGINE]
 	if (engine.isPageChangePending) return false
 	const hook = engine.beforePageChangeCallback
 	if (!hook) {
-		apply(toPage)
+		setPage(toPage)
 		return true
 	}
 
@@ -54,18 +54,18 @@ export function guardPageChange<T>(
 		drafts: engine.getDrafts()
 	})
 	const clamp = (page: number) => Math.max(1, Math.min(Math.trunc(page), Math.max(1, engine.totalPages)))
-	const finish = (result: { isRejected: boolean; hasValue?: boolean; value?: unknown }): boolean => {
+	const complete = (result: { isRejected: boolean; hasValue?: boolean; value?: unknown }): boolean => {
 		if (result.isRejected) return false
 		const page = result.hasValue && typeof result.value === 'number' && Number.isFinite(result.value)
 			? clamp(result.value)
 			: toPage
-		apply(page)
+		setPage(page)
 		return true
 	}
 
 	const result = runBeforeCallbackEager(hook, detail, 'beforePageChangeCallback', ctx)
 	if (!(result instanceof Promise)) {
-		const isApplied = finish(result)
+		const isApplied = complete(result)
 		if (!isApplied) ctx.render()  // restore the pager (e.g. the page-size select)
 		return isApplied
 	}
@@ -74,7 +74,7 @@ export function guardPageChange<T>(
 	setPagerBusy(ctx, true)
 	void result.then(r => {
 		engine.isPageChangePending = false
-		finish(r)
+		complete(r)
 		setPagerBusy(ctx, false)
 		ctx.render()
 	})

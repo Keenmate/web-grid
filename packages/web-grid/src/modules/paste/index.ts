@@ -417,7 +417,7 @@ export async function executePaste<T>(
 				const item = grid.items[absoluteRowIndex]
 				if (item && grid.shouldValidateOnPaste && parseError) {
 					grid.addInvalidCell(displayRowIndex, field, parseError)
-					grid.notify('validation-error', { row: item, rowIndex: displayRowIndex, field, error: parseError, source: 'paste' })
+					grid.dispatchEngineEvent('validation-error', { row: item, rowIndex: displayRowIndex, field, error: parseError, source: 'paste' })
 					cellResults.push({
 						rowIndex: displayRowIndex,
 						field,
@@ -446,7 +446,7 @@ export async function executePaste<T>(
 					if (!isValid) {
 						// Use displayRowIndex for invalid cell tracking (render uses display indices)
 						grid.addInvalidCell(displayRowIndex, field, errorMsg || 'Invalid value')
-						grid.notify('validation-error', { row: item, rowIndex: displayRowIndex, field, error: errorMsg || 'Invalid value', source: 'paste' })
+						grid.dispatchEngineEvent('validation-error', { row: item, rowIndex: displayRowIndex, field, error: errorMsg || 'Invalid value', source: 'paste' })
 					}
 
 					cellResults.push({
@@ -520,7 +520,7 @@ export async function executePaste<T>(
 		hadHeaders: hasHeaders
 	}
 
-	grid.notify('cell-paste', pasteDetail)
+	grid.dispatchEngineEvent('cell-paste', pasteDetail)
 
 	return pasteDetail
 }

@@ -69,14 +69,14 @@ export function handleSortClick<T>(ctx: GridHost<T>, e: MouseEvent, field?: stri
  */
 export function setUserSort<T>(ctx: GridHost<T>, nextSort: SortState[]): void {
 	const engine = ctx[GRID_ENGINE]
-	const apply = (page: number) => {
+	const setSortAtPage = (page: number) => {
 		engine.sort = nextSort
 		if (engine.isPagingEnabled) engine.currentPage = page
-		engine.fireDataRequest('sort')
+		engine.dispatchDataRequest('sort')
 	}
 	if (engine.paginationMode === 'server' && engine.isPagingEnabled) {
-		guardPageChange(ctx, 'sort', 1, apply)
+		guardPageChange(ctx, 'sort', 1, setSortAtPage)
 	} else {
-		apply(1)
+		setSortAtPage(1)
 	}
 }

@@ -39,7 +39,7 @@ export class VirtualScrollService {
 		this._isProgrammatic = true
 	}
 
-	endProgrammaticScroll(): void {
+	completeProgrammaticScroll(): void {
 		this._isProgrammatic = false
 	}
 }

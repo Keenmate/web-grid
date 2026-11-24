@@ -105,7 +105,7 @@ export function handleInfiniteScroll<T>(ctx: GridHost<T>, container: HTMLElement
 		reconcileLoadingMoreLoader(ctx)
 
 		// Fire data request with loadMore trigger
-		ctx[GRID_ENGINE].fireDataRequest('load-more')
+		ctx[GRID_ENGINE].dispatchDataRequest('load-more')
 
 		// The consumer is responsible for:
 		// 1. Fetching more data

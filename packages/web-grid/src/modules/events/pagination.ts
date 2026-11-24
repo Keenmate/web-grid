@@ -30,7 +30,7 @@ export function handlePaginationClick<T>(ctx: GridHost<T>, e: Event): boolean {
 
 	return guardPageChange(ctx, 'page', toPage, page => {
 		engine.currentPage = page
-		engine.fireDataRequest('page')
+		engine.dispatchDataRequest('page')
 	})
 }
 
@@ -44,7 +44,7 @@ export function handlePageSizeChange<T>(ctx: GridHost<T>, select: HTMLSelectElem
 	return guardPageChange(ctx, 'page-size', 1, page => {
 		ctx.setProperties({ pageSize: newPageSize })
 		ctx[GRID_ENGINE].currentPage = page
-		ctx[GRID_ENGINE].fireDataRequest('page-size')
+		ctx[GRID_ENGINE].dispatchDataRequest('page-size')
 	})
 }
 

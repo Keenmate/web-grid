@@ -146,7 +146,7 @@ export function prepareRowReveal<T>(ctx: GridHost<T>, target: RevealTarget, sour
 		// The flag stops handleVirtualScroll from rendering again for this scroll
 		ctx.virtualScroll.startProgrammaticScroll()
 		container.scrollTop = scrollTop
-		queueMicrotask(() => { ctx.virtualScroll.endProgrammaticScroll() })
+		queueMicrotask(() => { ctx.virtualScroll.completeProgrammaticScroll() })
 	}
 	return options
 }
@@ -225,6 +225,6 @@ export function scrollRowIntoView<T>(ctx: GridHost<T>, rowIndex: number, source:
 	// Now scroll — the flag prevents handleVirtualScroll from re-rendering
 	ctx.virtualScroll.startProgrammaticScroll()
 	container.scrollTop = scrollTop
-	queueMicrotask(() => { ctx.virtualScroll.endProgrammaticScroll() })
+	queueMicrotask(() => { ctx.virtualScroll.completeProgrammaticScroll() })
 	return nextFrame()
 }

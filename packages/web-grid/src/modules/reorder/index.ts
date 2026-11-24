@@ -122,7 +122,7 @@ export function createColumnReorder<T>(ctx: GridHost<T>, host: HTMLElement): Poi
 				// Adjust toIndex if moving right (since we remove from original position first)
 				const adjustedToIndex = toIndex > fromIndex ? toIndex - 1 : toIndex
 				ctx[GRID_ENGINE].moveColumn(field, adjustedToIndex)
-				ctx[GRID_ENGINE].notify('column-reorder', {
+				ctx[GRID_ENGINE].dispatchEngineEvent('column-reorder', {
 					field,
 					fromIndex,
 					toIndex: adjustedToIndex,

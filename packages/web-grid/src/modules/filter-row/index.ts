@@ -30,11 +30,11 @@ export class FilterRowService {
 	readonly pendingText = new Map<string, string>()
 	readonly #debounces = new Map<string, Debounce<[() => void]>>()
 
-	/** Run `apply` once typing in `field` pauses for FILTER_DEBOUNCE_MS (the last call wins). */
-	schedule(field: string, apply: () => void): void {
+	/** Run `commit` once typing in `field` pauses for FILTER_DEBOUNCE_MS (the last call wins). */
+	schedule(field: string, commit: () => void): void {
 		let debounce = this.#debounces.get(field)
 		if (!debounce) this.#debounces.set(field, (debounce = createDebounce((run: () => void) => run(), FILTER_DEBOUNCE_MS)))
-		debounce.schedule(apply)
+		debounce.schedule(commit)
 	}
 
 	clearTimer(field: string): void {
@@ -59,7 +59,7 @@ export function setFilterFromInput<T>(ctx: GridHost<T>, field: string, text: str
 		guardPageChange(ctx, 'filter', 1, page => {
 			engine.setFilter(field, text)
 			engine.currentPage = page
-			engine.fireDataRequest('filter')
+			engine.dispatchDataRequest('filter')
 		})
 		return
 	}

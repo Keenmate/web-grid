@@ -94,7 +94,7 @@ export function createColumnResize<T>(ctx: GridHost<T>, host: HTMLElement): Poin
 			const col = ctx.shadow.querySelector(`col[data-field="${field}"]`) as HTMLElement | null
 			if (col) col.style.width = newWidthStr
 			endResizeVisuals(ctx)
-			ctx[GRID_ENGINE].notify('column-resize', {
+			ctx[GRID_ENGINE].dispatchEngineEvent('column-resize', {
 				field,
 				oldWidth: `${startWidth}px`,
 				newWidth: newWidthStr,
@@ -157,25 +157,6 @@ function updateFrozenColumnOffsets<T>(ctx: GridHost<T>): void {
 
 			// Increment offset for next column
 			offset += header.getBoundingClientRect().width
-		}
-	}
-}
-
-/**
- * Write all stored column widths into the colgroup (called after render)
- */
-export function writeStoredColumnWidths<T>(ctx: GridHost<T>): void {
-	const colgroup = ctx.shadow.querySelector('.wg__colgroup')
-	if (!colgroup) return
-
-	for (const column of ctx[GRID_ENGINE].columns) {
-		const fieldStr = String(column.field)
-		const storedWidth = ctx[GRID_ENGINE].getColumnWidth(fieldStr)
-		if (storedWidth) {
-			const col = colgroup.querySelector(`col[data-field="${fieldStr}"]`) as HTMLElement
-			if (col) {
-				col.style.width = storedWidth
-			}
 		}
 	}
 }

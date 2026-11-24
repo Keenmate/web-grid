@@ -32,7 +32,7 @@ export function matchesFilterTerm(term: ActiveSearchTerm, prepared: string): boo
 }
 
 /**
- * Normalized cell values per field, indexed by the row's position in `items`. `sync(items)` drops
+ * Normalized cell values per field, indexed by the row's position in `items`. `reconcile(items)` drops
  * everything when the items array changes; a value edited in place is caught by the raw-string check.
  */
 export class FilterTextCache {
@@ -40,7 +40,7 @@ export class FilterTextCache {
 	readonly #fields = new Map<string, { raws: string[]; norms: string[] }>()
 
 	/** Call once per filter pass with the current items array. */
-	sync(items: readonly unknown[]): void {
+	reconcile(items: readonly unknown[]): void {
 		if (items === this.#items) return
 		this.#items = items
 		this.#fields.clear()

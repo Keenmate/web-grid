@@ -105,7 +105,7 @@ export function handleRowNumberMouseDown<T>(ctx: GridHost<T>, rowIndex: number, 
 	if (event.ctrlKey || event.metaKey) {
 		// Ctrl+Click: Toggle selection
 		ctx[GRID_ENGINE].selectRow(rowIndex, 'toggle')
-		ctx[GRID_ENGINE].endSelectionGesture()
+		ctx[GRID_ENGINE].completeSelectionGesture()
 		focusContainerForShortcuts(ctx)
 		return
 	}
@@ -113,7 +113,7 @@ export function handleRowNumberMouseDown<T>(ctx: GridHost<T>, rowIndex: number, 
 	if (event.shiftKey) {
 		// Shift+Click: Range selection from last selected
 		ctx[GRID_ENGINE].selectRow(rowIndex, 'range')
-		ctx[GRID_ENGINE].endSelectionGesture()
+		ctx[GRID_ENGINE].completeSelectionGesture()
 		focusContainerForShortcuts(ctx)
 		return
 	}
@@ -192,7 +192,7 @@ function handleDocumentMouseUp(): void {
 	const ctx = activeContext
 
 	// The drag is over: notify the row selection once
-	ctx[GRID_ENGINE].endSelectionGesture()
+	ctx[GRID_ENGINE].completeSelectionGesture()
 
 	// Remove selecting class
 	const container = ctx.shadow.querySelector('.wg') as HTMLElement | null

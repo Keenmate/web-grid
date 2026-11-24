@@ -111,9 +111,9 @@ describe('notifications', () => {
 		expect(events.find(e => e.name === 'validation-error')?.detail).toMatchObject({ error: 'too many', source: 'paste' })
 	})
 
-	it('fireDataRequest always notifies data-request', () => {
+	it('dispatchDataRequest always dispatches data-request', () => {
 		const { grid, events } = makeGrid()
-		grid.fireDataRequest('sort')
+		grid.dispatchDataRequest('sort')
 		expect(events.at(-1)).toMatchObject({ name: 'data-request', detail: { trigger: 'sort', mode: 'replace' } })
 	})
 })

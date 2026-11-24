@@ -387,21 +387,21 @@ export class GridEngine<T = unknown> {
 	// values (GridRenderContext: `labels`, `isReadonly`, `isDisabled`) are getters on
 	// it too — read live when the callback runs.
 	protected _ctxProto: object = this.createCtxProto({})
-	protected _notifier: (<K extends GridEventName>(name: K, detail: object) => void) | null = null
+	protected _eventDispatcher: (<K extends GridEventName>(name: K, detail: object) => void) | null = null
 	/** The element (`attachHost`) — core's `source` for number parsing (page settings, logger); `null` standalone. */
 	protected _hostElement: HTMLElement | null = null
 
 	/**
 	 * Wire the component context: every ctx / event detail gets `controller` +
-	 * `element`, and notifications go to `notify` (the element's `emit`). A
+	 * `element`, and events go to `dispatch` (the element's `emit`). A
 	 * standalone engine runs without it (no events, ctx without the context).
 	 */
-	attachHost(element: HTMLElement, getController: () => GridController<T>, notify: <K extends GridEventName>(name: K, detail: object) => void): void {
+	attachHost(element: HTMLElement, getController: () => GridController<T>, dispatch: <K extends GridEventName>(name: K, detail: object) => void): void {
 		this._ctxProto = this.createCtxProto({
 			controller: { get: getController, enumerable: false },
 			element: { value: element, enumerable: false }
 		})
-		this._notifier = notify
+		this._eventDispatcher = dispatch
 		this._hostElement = element
 	}
 
@@ -434,8 +434,8 @@ export class GridEngine<T = unknown> {
 	}
 
 	/** Report a happening: the element emits it (DOM event + `on*` twin). */
-	notify<K extends GridEventName>(name: K, detail: Omit<GridEventMap<T>[K], 'controller' | 'element'>): void {
-		this._notifier?.(name, detail as object)
+	dispatchEngineEvent<K extends GridEventName>(name: K, detail: Omit<GridEventMap<T>[K], 'controller' | 'element'>): void {
+		this._eventDispatcher?.(name, detail as object)
 	}
 
 	// ==========================================================================
@@ -1357,7 +1357,7 @@ export class GridEngine<T = unknown> {
 	// `column-selection-change`): every mutation runs inside `trackSelection`, which
 	// snapshots before / after and notifies only the kinds that actually changed —
 	// once, at the outermost level. A pointer gesture (row / column drag) holds one
-	// more level via `startSelectionGesture()` … `endSelectionGesture()`, so a drag
+	// more level via `startSelectionGesture()` … `completeSelectionGesture()`, so a drag
 	// notifies once on mouseup, not per mousemove.
 	// --------------------------------------------------------------------------
 
@@ -1390,26 +1390,26 @@ export class GridEngine<T = unknown> {
 		this._selectionBefore = null
 		if (!before) return
 		const after = this.selectionSnapshot()
-		if (before.range !== after.range) this.notify('cell-selection-change', this.cellSelectionDetail())
+		if (before.range !== after.range) this.dispatchEngineEvent('cell-selection-change', this.cellSelectionDetail())
 		if (before.rows !== after.rows) {
 			const rowIndices = this.selectedRowIndices
-			this.notify('row-selection-change', { rows: rowIndices.map(i => this.displayItems[i]).filter(Boolean), rowIndices })
+			this.dispatchEngineEvent('row-selection-change', { rows: rowIndices.map(i => this.displayItems[i]).filter(Boolean), rowIndices })
 		}
-		if (before.cols !== after.cols) this.notify('column-selection-change', { fields: this.selectedColumnFields() })
+		if (before.cols !== after.cols) this.dispatchEngineEvent('column-selection-change', { fields: this.selectedColumnFields() })
 	}
 
 	/**
 	 * Hold selection-change notifications for a pointer gesture (row / column drag):
-	 * they fire once, at `endSelectionGesture()`, when the selection changed overall.
+	 * they fire once, at `completeSelectionGesture()`, when the selection changed overall.
 	 * Opening a gesture while one is open closes the previous one first.
 	 */
 	startSelectionGesture(): void {
-		if (this._isSelectionGestureOpen) this.endSelectionGesture()
+		if (this._isSelectionGestureOpen) this.completeSelectionGesture()
 		this._isSelectionGestureOpen = true
 		if (this._selectionDepth++ === 0) this._selectionBefore = this.selectionSnapshot()
 	}
 
-	endSelectionGesture(): void {
+	completeSelectionGesture(): void {
 		if (!this._isSelectionGestureOpen) return
 		this._isSelectionGestureOpen = false
 		this.endSelectionLevel()
@@ -1735,9 +1735,9 @@ export class GridEngine<T = unknown> {
 	/** One `row-expand` / `row-collapse` per changed path, then one `expanded-change` (nothing when `isSilent`). */
 	private dispatchExpandEvents(expanded: string[], collapsed: string[], options?: ExpandOptions): void {
 		if (options?.isSilent) return
-		for (const path of expanded) this.notify('row-expand', { row: this.getRowByPath(path), path })
-		for (const path of collapsed) this.notify('row-collapse', { row: this.getRowByPath(path), path })
-		this.notify('expanded-change', { paths: [...this._expandedPaths] })
+		for (const path of expanded) this.dispatchEngineEvent('row-expand', { row: this.getRowByPath(path), path })
+		for (const path of collapsed) this.dispatchEngineEvent('row-collapse', { row: this.getRowByPath(path), path })
+		this.dispatchEngineEvent('expanded-change', { paths: [...this._expandedPaths] })
 	}
 
 	/** `string | string[] | null` → the non-empty paths. */
@@ -1848,7 +1848,7 @@ export class GridEngine<T = unknown> {
 		}
 		for (const p of toExpand) this._expandedPaths.add(p)
 		interactionLogger.debug('tree expandAll:', paths ?? '(all)', '| size =', this._expandedPaths.size)
-		if (!options?.isSilent) this.notify('expanded-change', { paths: [...this._expandedPaths] })
+		if (!options?.isSilent) this.dispatchEngineEvent('expanded-change', { paths: [...this._expandedPaths] })
 		this.requestUpdate()
 	}
 
@@ -1862,7 +1862,7 @@ export class GridEngine<T = unknown> {
 			for (const p of toCollapse) this._expandedPaths.delete(p)
 		}
 		interactionLogger.debug('tree collapseAll:', paths ?? '(all)')
-		if (!options?.isSilent) this.notify('expanded-change', { paths: [...this._expandedPaths] })
+		if (!options?.isSilent) this.dispatchEngineEvent('expanded-change', { paths: [...this._expandedPaths] })
 		this.requestUpdate()
 	}
 
@@ -2084,7 +2084,7 @@ export class GridEngine<T = unknown> {
 		// Core /search "contains", case- and accent-insensitive (the same rule as filteredItems)
 		const terms = filterEntries.map(([field, value]) => [field, prepareFilterTerm(value)] as const)
 		const cache = this._filterTextCache
-		cache.sync(this._items)
+		cache.reconcile(this._items)
 		const matched = new Set<string>()
 		for (const node of this._treeIndex.nodes.values()) {
 			const item = this._items[node.rowIndex] as Record<string, unknown>
@@ -2515,7 +2515,7 @@ export class GridEngine<T = unknown> {
 			term: prepareFilterTerm(filterValue),
 		}))
 		const cache = this._filterTextCache
-		cache.sync(this._items)
+		cache.reconcile(this._items)
 		return this._items.filter((item, index) => {
 			return filters.every(({ field, filterValue, column, term }) => {
 				// Per-column custom filter callback overrides built-in substring match
@@ -2568,7 +2568,7 @@ export class GridEngine<T = unknown> {
 			this._filters = next
 		}
 		this.resetPageAfterFilterChange(prev)
-		if (!options?.isSilent) this.notify('filter-change', { filters: { ...this._filters } })
+		if (!options?.isSilent) this.dispatchEngineEvent('filter-change', { filters: { ...this._filters } })
 		this.requestUpdate()
 	}
 
@@ -2773,7 +2773,7 @@ export class GridEngine<T = unknown> {
 	/**
 	 * Fire the `data-request` event with the current state
 	 */
-	fireDataRequest(trigger: DataRequestTrigger): void {
+	dispatchDataRequest(trigger: DataRequestTrigger): void {
 		{
 			// For loadMore, skip is current item count; for pagination, it's page-based
 			const skip = trigger === 'load-more'
@@ -2788,8 +2788,8 @@ export class GridEngine<T = unknown> {
 				mode: trigger === 'load-more' ? 'append' : 'replace',
 				skip
 			}
-			dataLogger.debug('fireDataRequest:', trigger, detail)
-			this.notify('data-request', detail)
+			dataLogger.debug('dispatchDataRequest:', trigger, detail)
+			this.dispatchEngineEvent('data-request', detail)
 		}
 	}
 
@@ -3307,7 +3307,7 @@ export class GridEngine<T = unknown> {
 		this._currentCellError = null
 		// NOTE: No requestUpdate() - caller (tryStartEdit) handles surgical DOM update
 
-		this.notify('cell-edit-start', { row: item, rowIndex, field })
+		this.dispatchEngineEvent('cell-edit-start', { row: item, rowIndex, field })
 	}
 
 	/**
@@ -3323,7 +3323,7 @@ export class GridEngine<T = unknown> {
 			const prev = this._editingCell
 			const { rowIndex, field } = prev
 			if (item) {
-				this.notify('cell-edit-cancel', { row: item, rowIndex, field })
+				this.dispatchEngineEvent('cell-edit-cancel', { row: item, rowIndex, field })
 			}
 			this._editingCell = null
 			this._onInteractionChange?.('editingCell', { prev, current: null })
@@ -3516,7 +3516,7 @@ export class GridEngine<T = unknown> {
 			if (!isValid) {
 				this.addInvalidCell(rowIndex, field, validationError || "Invalid value")
 				setCellError(validationError)
-				this.notify('validation-error', { row: item, rowIndex, field, error: validationError || "Invalid value", source })
+				this.dispatchEngineEvent('validation-error', { row: item, rowIndex, field, error: validationError || "Invalid value", source })
 			} else {
 				this.removeInvalidCell(rowIndex, field)
 				setCellError(null)
@@ -3566,7 +3566,7 @@ export class GridEngine<T = unknown> {
 					const rowHasInvalidCells = this._invalidCells.some(c => c.rowKey === newRowKey)
 
 					// Fire row-change with validation state
-					this.notify('row-change', {
+					this.dispatchEngineEvent('row-change', {
 						row: newRow,
 						draftRow: newRow,
 						rowIndex: newRowIndex,
@@ -3602,7 +3602,7 @@ export class GridEngine<T = unknown> {
 		} else {
 			this.addInvalidCell(rowIndex, field, validationError || "Invalid value")
 			setCellError(validationError)
-			this.notify('validation-error', { row: item, rowIndex, field, error: validationError || "Invalid value", source })
+			this.dispatchEngineEvent('validation-error', { row: item, rowIndex, field, error: validationError || "Invalid value", source })
 		}
 
 		// A draft that is back to the original values (and has no invalid cell) is dropped,
@@ -3618,7 +3618,7 @@ export class GridEngine<T = unknown> {
 		// and exits via arrow keys without typing.
 		const valueChanged = finalValue !== oldValue
 		if (valueChanged || !isValid) {
-			this.notify('row-change', {
+			this.dispatchEngineEvent('row-change', {
 				row: item,
 				draftRow,
 				rowIndex,
@@ -3665,7 +3665,7 @@ export class GridEngine<T = unknown> {
 		// Fire row-change only when the value actually changed
 		if (newValue !== oldValue) {
 			const draftRow = this.draftAt(rowIndex) || this._emptyRowDraft || item
-			this.notify('row-change', {
+			this.dispatchEngineEvent('row-change', {
 				row: item,
 				draftRow,
 				rowIndex,
@@ -3902,7 +3902,7 @@ export class GridEngine<T = unknown> {
 		this._onInteractionChange?.('focusedRow', { prev: oldRowIndex, current: rowIndex })
 
 		const row = this.displayItems[rowIndex]
-		if (row && !options?.isSilent) this.notify('focus-change', { rowIndex, row, oldRowIndex })
+		if (row && !options?.isSilent) this.dispatchEngineEvent('focus-change', { rowIndex, row, oldRowIndex })
 	}
 
 	// ==========================================================================
@@ -4027,7 +4027,7 @@ export class GridEngine<T = unknown> {
 
 		this.requestUpdate()
 
-		this.notify('row-lock-change', {
+		this.dispatchEngineEvent('row-lock-change', {
 			rowId: id,
 			row,
 			rowIndex,
@@ -4048,7 +4048,7 @@ export class GridEngine<T = unknown> {
 			this.requestUpdate()
 
 			const row = this.getRowById(id)
-			this.notify('row-lock-change', {
+			this.dispatchEngineEvent('row-lock-change', {
 				rowId: id,
 				row,
 				rowIndex: row ? this.getRowIndex(row) : -1,

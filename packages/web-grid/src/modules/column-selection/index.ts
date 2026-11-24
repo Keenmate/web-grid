@@ -97,7 +97,7 @@ export function handleHeaderMouseDown<T>(ctx: GridHost<T>, colIndex: number, eve
 	if (event.ctrlKey || event.metaKey) {
 		// Ctrl+Click: Toggle selection
 		ctx[GRID_ENGINE].selectColumnAt(colIndex, 'toggle')
-		ctx[GRID_ENGINE].endSelectionGesture()
+		ctx[GRID_ENGINE].completeSelectionGesture()
 		focusContainerForShortcuts(ctx)
 		return
 	}
@@ -181,7 +181,7 @@ function handleDocumentMouseUp(): void {
 	const ctx = activeContext
 
 	// The drag is over: notify the column selection once
-	ctx[GRID_ENGINE].endSelectionGesture()
+	ctx[GRID_ENGINE].completeSelectionGesture()
 
 	// Remove selecting class
 	const container = ctx.shadow.querySelector('.wg') as HTMLElement | null

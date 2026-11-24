@@ -228,7 +228,7 @@ deprecated)? Fixtures set both for now.
 **Fixed:** `expandedPaths: new Set(this._expandedPaths)` in all five `expanded-change` notifications.
 
 **Where:** `grid.ts:1420, 1429, 1436, 1457, 1475` —
-`notify('expanded-change', { …, expandedPaths: this._expandedPaths })`.
+`dispatchEngineEvent('expanded-change', { …, expandedPaths: this._expandedPaths })`.
 
 **Symptom:** a stored detail changes after later toggles (collapse 1.1 → detail
 shows `['1']`; collapse 1 → the *same* earlier detail now shows `[]`). A consumer
