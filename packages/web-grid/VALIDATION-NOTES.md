@@ -155,3 +155,12 @@ it the auto-script flags the file every run. The verdict should be
 ✅ Pass with this note as the citation: D-NC-9 was answered "No"
 intentionally; the grid's config surface is JavaScript properties,
 not HTML attributes.
+
+## C-RO-18 — no `fullscreen-autofocus` (accepted exception)
+
+The grid's phone sheets with a typeable field (the combobox / autocomplete cell editor sheet) open from
+an edit already in progress — often started by a typed key, whose text the sheet's search carries — so
+the search is ALWAYS focused on open, before the page goes inert (an inert cell editor losing focus
+would end the edit; `modules/sheet/index.ts`). An option to open with the keyboard down would break
+the Excel model (`grid-follows-excel`): the user is mid-typing. The date cell sheet holds no typeable
+field (N/A). Decision 2026-11-26 (feature audit 11-23, Q2 follow-up).
