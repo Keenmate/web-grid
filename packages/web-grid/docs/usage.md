@@ -471,7 +471,7 @@ goes through core `renderIcon` (SPEC §12.33), first match wins:
 |---|---|---|
 | `add`, `delete` | row toolbar / inline row actions | built-in names → the theme's `--base-icon-add` / `--base-icon-delete` (+ / trash can) |
 | `duplicate`, `move-up`, `move-down` | row toolbar / inline row actions | SVG |
-| `expand`, `collapse` | cell menu (tree) | built-in names → `--base-icon-expand` / `--base-icon-collapse` |
+| `expand-node`, `collapse-node` | cell menu (tree) | `▾` `▸` |
 | `expand-subtree`, `collapse-subtree`, `expand-all`, `collapse-all` | cell menu (tree) | `⇊` `⇈` `⤓` `⤒` |
 | `sort-asc`, `sort-desc`, `clear-sort`, `hide-column`, `freeze-column`, `unfreeze-column`, `column-visibility` | header menu | `↑` `↓` `✕` `👁` `❄` `☀` `👁` |
 | `calendar` | date cell trigger | SVG |
@@ -479,8 +479,8 @@ goes through core `renderIcon` (SPEC §12.33), first match wins:
 | `shortcuts-help` | the keyboard-shortcuts help button | SVG |
 | `header-info` | a column's `headerInfo` marker | SVG |
 
-The built-in names draw from the theme's `--base-icon-*` tokens (`@keenmate/base-css-variables`); without them on the
-page they draw nothing — map them (`icons`) or load the tokens.
+The built-in names draw the theme's `--base-icon-*` tokens (`@keenmate/base-css-variables`) when the page has them,
+else core's own copy of the same glyphs — they draw without the tokens too.
 
 | Property | Type | Default | Description |
 |---|---|---|---|

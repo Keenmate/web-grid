@@ -199,7 +199,7 @@ export async function activateGridItem<T>(host: GridHost<T>, opts: ActivateOptio
 	const ran = await runAction<any, GridAction>({
 		detail: detail as any,
 		beforeActionCallback: engine.beforeActionCallback as any,
-		emitAction: (d) => engine.dispatchEngineEvent('action', d as any),
+		dispatchAction: (d) => engine.dispatchEngineEvent('action', d as any),
 		runBuiltIn: (d) => runBuiltIn(host, d as unknown as GridActionEventDetail<T>)
 	})
 	if (ran) opts.after?.(detail)

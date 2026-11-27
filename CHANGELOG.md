@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 A major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Changed — core `^1.0.0-rc27` (2026-11-27)
+- `@keenmate/web-components-core` `^1.0.0-rc27`: core's renamed verbs (`runAction`'s `emitAction` →
+  `dispatchAction`); the built-in icon names (`add`, `delete`, `close`, …) draw without `base-css-variables` on the
+  page (core's own copy of the glyphs; a page `--base-icon-<name>` still wins).
+- Docs: the icon table lists the tree menu's `expand-node` / `collapse-node` (was `expand` / `collapse`).
+
 ### Changed — BREAKING: tree menu icon names `expand-node` / `collapse-node` (2026-11-27)
 - The cell-menu "Expand" / "Collapse" items draw the icons named `expand-node` / `collapse-node` (default ▾ / ▸).
   They were `expand` / `collapse` — core built-in names, so the theme's `--base-icon-expand` / `-collapse` glyph won
