@@ -80,9 +80,9 @@
 			Hover a <strong>Note</strong> cell; leave a field empty for the default.
 		</p>
 		<div class="controls">
-			<label>width <input type="number" id="ttWidth" min="0" step="10" placeholder="auto" class="w-sm"> px</label>
-			<label>min-width <input type="number" id="ttMinWidth" min="0" step="10" placeholder="0" class="w-sm"> px</label>
-			<label>max-width <input type="number" id="ttMaxWidth" min="0" step="10" placeholder="300" class="w-sm"> px</label>
+			<label>width <input type="number" id="ttWidth" data-kmwc-css-variable="--wg-tooltip-width" data-kmwc-css-unit="px" data-kmwc-css-target="#tooltipWidthGrid" min="0" step="10" placeholder="auto" class="w-sm"> px</label>
+			<label>min-width <input type="number" id="ttMinWidth" data-kmwc-css-variable="--wg-tooltip-min-width" data-kmwc-css-unit="px" data-kmwc-css-target="#tooltipWidthGrid" min="0" step="10" placeholder="0" class="w-sm"> px</label>
+			<label>max-width <input type="number" id="ttMaxWidth" data-kmwc-css-variable="--wg-tooltip-max-width" data-kmwc-css-unit="px" data-kmwc-css-target="#tooltipWidthGrid" min="0" step="10" placeholder="300" class="w-sm"> px</label>
 		</div>
 		<web-grid id="tooltipWidthGrid" tooltip-show-delay="0"></web-grid>
 	</div>
@@ -410,13 +410,7 @@
 		{ id: 2, name: 'Medium', note: 'Waiting for the signed order form.' },
 		{ id: 3, name: 'Long', note: 'Customer asked to split the delivery into two shipments: the first half before the end of the quarter, the rest once the warehouse confirms stock.' }
 	]
-	for (const [id, cssVar] of [['ttWidth', '--wg-tooltip-width'], ['ttMinWidth', '--wg-tooltip-min-width'], ['ttMaxWidth', '--wg-tooltip-max-width']]) {
-		document.getElementById(id).addEventListener('input', (e) => {
-			const v = e.target.value
-			if (v === '') tooltipGrid.style.removeProperty(cssVar)
-			else tooltipGrid.style.setProperty(cssVar, `${v}px`)
-		})
-	}
+	// The tooltip width inputs are the devkit's (data-kmwc-css-variable on #tooltipWidthGrid; empty = the default)
 
 	// Initial render
 	render()

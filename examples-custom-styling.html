@@ -38,13 +38,13 @@
         <div class="controls">
             <label>
                 Header Height:
-                <input type="range" id="headerHeightRange" min="24" max="60" value="32" class="w-sm">
-                <span id="headerHeightValue" class="mono">32px</span>
+                <input type="range" id="headerHeightRange" min="24" max="60" value="32" class="w-sm" data-kmwc-css-variable="--wg-header-min-height" data-kmwc-css-unit="px" data-kmwc-css-target="#grid" data-kmwc-css-start-is-default>
+                <output id="headerHeightValue" class="mono" for="headerHeightRange">32px</output>
             </label>
             <label>
                 Row Min Height:
-                <input type="range" id="rowHeightRange" min="20" max="80" value="32" class="w-sm">
-                <span id="rowHeightValue" class="mono">32px</span>
+                <input type="range" id="rowHeightRange" min="20" max="80" value="32" class="w-sm" data-kmwc-css-variable="--wg-row-min-height" data-kmwc-css-unit="px" data-kmwc-css-target="#grid" data-kmwc-css-start-is-default>
+                <output id="rowHeightValue" class="mono" for="rowHeightRange">32px</output>
             </label>
             <label>
                 Bio Max Lines:
@@ -432,23 +432,7 @@ grid.customStyles = '.wg__cell { color: #92400e; }'</code></pre></div>
         }
     `
 
-    // Header height control
-    const headerHeightRange = document.getElementById('headerHeightRange')
-    const headerHeightValue = document.getElementById('headerHeightValue')
-    headerHeightRange.addEventListener('input', () => {
-        const value = headerHeightRange.value + 'px'
-        headerHeightValue.textContent = value
-        grid.style.setProperty('--wg-header-min-height', value)
-    })
-
-    // Row height control
-    const rowHeightRange = document.getElementById('rowHeightRange')
-    const rowHeightValue = document.getElementById('rowHeightValue')
-    rowHeightRange.addEventListener('input', () => {
-        const value = rowHeightRange.value + 'px'
-        rowHeightValue.textContent = value
-        grid.style.setProperty('--wg-row-min-height', value)
-    })
+    // Header / row height: the devkit's (data-kmwc-css-variable on #grid, <output for>)
 
     // Bio max lines control
     const maxLinesRange = document.getElementById('maxLinesRange')
