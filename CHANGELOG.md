@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 A major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Changed — base-css-variables `^2.2.0` (2026-11-27)
+- `@keenmate/base-css-variables` `^2.2.0` (contract `--base-rem` = 10px): without pure-admin the grid now renders at its
+  intended size (was 1.6× larger); the `--base-rem` contract allowance is removed (the grid had none to drop).
+
 ### Changed — core `^1.0.0-rc27` (2026-11-27)
 - `@keenmate/web-components-core` `^1.0.0-rc27`: core's renamed verbs (`runAction`'s `emitAction` →
   `dispatchAction`); the built-in icon names (`add`, `delete`, `close`, …) draw without `base-css-variables` on the

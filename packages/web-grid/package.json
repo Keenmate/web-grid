@@ -85,7 +85,7 @@
 	"homepage": "https://github.com/KeenMate/web-grid#readme",
 	"devDependencies": {
 		"@custom-elements-manifest/analyzer": "^0.11.0",
-		"@keenmate/base-css-variables": "^2.0.2",
+		"@keenmate/base-css-variables": "^2.2.0",
 		"@vitest/ui": "^4.1.10",
 		"custom-element-jet-brains-integration": "^1.8.0",
 		"custom-element-vs-code-integration": "^1.5.0",
