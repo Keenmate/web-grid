@@ -181,6 +181,9 @@ test.describe('cellContextMenu — predefined tree items', () => {
 		await expect(menu).toBeVisible()
 		await expect(menu.locator('[data-action="expand"]')).toHaveText(/Expand/)
 		await expect(menu.locator('[data-action="collapse"]')).toHaveText(/Collapse/)
+		// Own icon names (not the core built-ins expand / collapse): the grid's ▾ / ▸
+		await expect(menu.locator('[data-action="expand"] .km-menu__icon')).toHaveText('▾')
+		await expect(menu.locator('[data-action="collapse"] .km-menu__icon')).toHaveText('▸')
 	})
 
 	// Menu items are clicked via `clickMenuItem` (a JS click): the Floating-UI menu is

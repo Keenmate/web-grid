@@ -10,6 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 A major: the callback, event and item API below is breaking, so
 `^1.x` consumers (web-grid-showcase `^1.0.0`) must not auto-pull it.
 
+### Changed — BREAKING: tree menu icon names `expand-node` / `collapse-node` (2026-11-27)
+- The cell-menu "Expand" / "Collapse" items draw the icons named `expand-node` / `collapse-node` (default ▾ / ▸).
+  They were `expand` / `collapse` — core built-in names, so the theme's `--base-icon-expand` / `-collapse` glyph won
+  over the grid's ▾ / ▸ (and without base-css-variables nothing was drawn). `el.icons = { expand: … }` →
+  `{ 'expand-node': … }`; the action names (`expand`, `collapse`) are unchanged. `GRID_ICONS` drops its dead
+  `add` / `delete` entries (core built-ins always answered those first).
+
 ### Changed — leftovers removed now that core covers them (2026-11-24)
 - The engine on its own (no element) resolves its labels through core `createLabels(null, …, { tag: 'web-grid' })`
   instead of a private copy of core's `{ctx.*}` / HTML-param escaping — same chain as with the element, so a page-wide

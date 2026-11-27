@@ -92,11 +92,11 @@ export function cellMenuDefaults<T>(host: GridHost<T>, action: string | undefine
 		// expand / collapse = one level; *-subtree = the row and everything under it.
 		case 'expand': {
 			const targets = treeTargetPaths(host, ctx.row)
-			return { text: labels['menuItems.expand'], icon: 'expand', isVisible: targets.length > 0, isDisabled: targets.every(p => engine.isPathExpanded(p)) }
+			return { text: labels['menuItems.expand'], icon: 'expand-node', isVisible: targets.length > 0, isDisabled: targets.every(p => engine.isPathExpanded(p)) }
 		}
 		case 'collapse': {
 			const targets = treeTargetPaths(host, ctx.row)
-			return { text: labels['menuItems.collapse'], icon: 'collapse', isVisible: targets.length > 0, isDisabled: !targets.some(p => engine.isPathExpanded(p)) }
+			return { text: labels['menuItems.collapse'], icon: 'collapse-node', isVisible: targets.length > 0, isDisabled: !targets.some(p => engine.isPathExpanded(p)) }
 		}
 		case 'expand-subtree': return { text: labels['menuItems.expandSubtree'], icon: 'expand-subtree', isVisible: treeTargetPaths(host, ctx.row).length > 0 }
 		case 'collapse-subtree': return { text: labels['menuItems.collapseSubtree'], icon: 'collapse-subtree', isVisible: treeTargetPaths(host, ctx.row).length > 0 }

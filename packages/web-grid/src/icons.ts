@@ -7,9 +7,9 @@
 // `renderIconCallback`. Order: markup → el.icons → page map → built-in name → element hook → page
 // hook → this table → class list → text.
 //
-// A name equal to a core built-in (`add`, `delete`, `expand`, `collapse`) draws the theme's
-// `--base-icon-<name>` glyph — the built-in step comes before this table; the entry here is only
-// reached when no theme glyph exists in the chain (kept as the documented look of the grid).
+// `add` / `delete` are core built-in names: they draw the theme's `--base-icon-<name>` glyph (core carries the
+// base-css-variables default when the page has none), so this table has no entry for them — it would never be
+// reached. The tree items use their own names (`expand-node` / `collapse-node`) to keep the grid's ▾ / ▸.
 
 import type { GridIconName } from './types.js'
 
@@ -21,16 +21,14 @@ const INFO = (size: number) =>
 	`<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>`
 
 /** The grid's icons by name (see `GridIconName` for where each one shows). */
-export const GRID_ICONS: Readonly<Record<GridIconName, string>> = Object.freeze({
-	// Row built-ins (row toolbar / inline row actions)
-	'add': svg16('stroke-width="2" stroke-linecap="round"', '<path d="M8 3v10M3 8h10"/>'),
-	'delete': svg16('stroke-width="2" stroke-linecap="round"', '<path d="M3 3l10 10M13 3L3 13"/>'),
+export const GRID_ICONS: Readonly<Record<Exclude<GridIconName, 'add' | 'delete'>, string>> = Object.freeze({
+	// Row built-ins (row toolbar / inline row actions; `add` / `delete` = core built-in names)
 	'duplicate': svg16('stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"', '<rect x="5" y="5" width="8" height="8" rx="1"/><path d="M3 11V4a1 1 0 011-1h7"/>'),
 	'move-up': svg16('stroke-width="2" stroke-linecap="round" stroke-linejoin="round"', '<path d="M8 13V3M4 7l4-4 4 4"/>'),
 	'move-down': svg16('stroke-width="2" stroke-linecap="round" stroke-linejoin="round"', '<path d="M8 3v10M4 9l4 4 4-4"/>'),
 	// Cell menu — tree built-ins
-	'expand': '▾',
-	'collapse': '▸',
+	'expand-node': '▾',
+	'collapse-node': '▸',
 	'expand-subtree': '⇊',
 	'collapse-subtree': '⇈',
 	'expand-all': '⤓',

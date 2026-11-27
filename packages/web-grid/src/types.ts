@@ -699,7 +699,7 @@ export type GridLabelsInput = Partial<GridLabels> & { readonly [fullKey: `web-gr
  */
 export type GridIconName =
 	| 'add' | 'delete' | 'duplicate' | 'move-up' | 'move-down'
-	| 'expand' | 'collapse' | 'expand-subtree' | 'collapse-subtree' | 'expand-all' | 'collapse-all'
+	| 'expand-node' | 'collapse-node' | 'expand-subtree' | 'collapse-subtree' | 'expand-all' | 'collapse-all'
 	| 'sort-asc' | 'sort-desc' | 'clear-sort' | 'hide-column' | 'freeze-column' | 'unfreeze-column' | 'column-visibility'
 	| 'calendar' | 'prev-month' | 'next-month' | 'shortcuts-help' | 'header-info'
 
