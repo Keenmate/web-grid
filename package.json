@@ -79,7 +79,7 @@
 		}
 	},
 	"devDependencies": {
-		"@keenmate/web-components-devkit": "^1.0.0-rc15",
+		"@keenmate/web-components-devkit": "^1.0.0-rc16",
 		"@playwright/test": "^1.62.1",
 		"rimraf": "^5.0.10",
 		"vite": "^7.3.8"

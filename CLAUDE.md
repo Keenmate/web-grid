@@ -27,7 +27,7 @@ locally — every local fork is how they drifted apart.
 - **Example page styles:** shared rules are in `@layer kmwc` and read
   `--base-*` tokens (pages support light / dark / auto via the theme switch), so
   any unlayered rule wins. Put component-only rules in `examples-local.css`.
-  Re-theme with `kmwc.theme.accentColor`, never by copying CSS. Native form
+  Never re-theme by copying CSS (the colours are the registry `accent`). Native form
   controls (inputs, selects, checkboxes, radios, `role="switch"`, buttons) and
   tables are already styled by the kit (`.reference-table`, `.table-striped`,
   `.table-compact`, …; on a phone a `.reference-table` stacks into cards,
@@ -37,7 +37,12 @@ locally — every local fork is how they drifted apart.
   write event-log lines with `appendLogLine(panel, { name, detail, variant })`
   from `@keenmate/web-components-devkit/examples`, never an `innerHTML` template.
   `<kbd>`, `<mark>`, field widths (`.w-xs` … `.w-lg`) and `.push-end` are kit
-  too — no inline styles for them. Page colours come from the kit's `--kmwc-*`
+  too — no inline styles for them. A container-responsive demo sits in a
+  `.resize-frame` with a `.width-readout` (`data-kmwc-width-readout="<id>"`,
+  `data-kmwc-narrow-below`) — no page `ResizeObserver` or frame CSS. An input that drives
+  a CSS variable carries `data-kmwc-css-variable` (+ `-unit`, `-target`; `<output for>`,
+  `data-kmwc-css-variables-readout`, `-reset`) and a `<pre>` that shows a component's value
+  carries `data-kmwc-value-readout="<id>"` — no `setProperty` / `JSON.stringify` wiring. Page colours come from the kit's `--kmwc-*`
   tokens or `light-dark()` — a literal doesn't follow dark mode (doctor warns);
   a demo that shows fixed colours on purpose goes in `<style data-kmwc-fixed-colors>`
   (one rule: a `/* kmwc-fixed-colors: why */` comment before it; an element's own
