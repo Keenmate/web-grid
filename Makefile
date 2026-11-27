@@ -5,11 +5,11 @@
 # redefined there wins, with a make "overriding recipe" warning). Per-developer
 # overrides (container runner, image name, port) go in .makefile.env.
 
-.PHONY: help setup dev kill-port build build-examples preview-examples package publish-dry publish publish-rc clean check-version check-vars doctor check-pages sync test test-e2e test-e2e-ui test-e2e-headed test-e2e-install image-build image-run image-stop image-clean
+.PHONY: help setup dev kill-port build build-examples preview-examples package publish-dry publish publish-rc clean check-version check-vars doctor check-pages sync test test-e2e test-e2e-ui test-e2e-headed test-e2e-install image-build image-run image-stop image-logs image-push image-clean
 
 -include .makefile.env
 DOCKER_RUNNER  ?= podman
-IMAGE_NAME     ?= registry.km8.es/web-grid-examples:prod
+IMAGE_NAME     ?= registry.keenmate.dev/web-grid-examples:prod
 CONTAINER_NAME ?= web-grid-examples
 IMAGE_PORT     ?= 12610
 DEV_PORT       := 12600
@@ -125,6 +125,12 @@ image-run: ## Run the examples image on IMAGE_PORT (default 12610)
 
 image-stop: ## Stop and remove the examples container
 	-@$(DOCKER_RUNNER) rm -f $(CONTAINER_NAME) >/dev/null 2>&1
+
+image-logs: ## Follow the examples container logs
+	$(DOCKER_RUNNER) logs -f $(CONTAINER_NAME)
+
+image-push: ## Push the examples image to the registry (log in first: $(DOCKER_RUNNER) login <registry>)
+	$(DOCKER_RUNNER) push $(IMAGE_NAME)
 
 image-clean: image-stop ## Remove the examples container and image
 	-@$(DOCKER_RUNNER) rmi $(IMAGE_NAME) >/dev/null 2>&1

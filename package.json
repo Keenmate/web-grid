@@ -48,8 +48,11 @@
 			"dev": 12600,
 			"image": 12610
 		},
+		"examples": {
+			"canonicalOrigin": "https://examples.web-grid.keenmate.dev"
+		},
 		"image": {
-			"name": "registry.km8.es/web-grid-examples:prod",
+			"name": "registry.keenmate.dev/web-grid-examples:prod",
 			"runner": "podman",
 			"packageJsonPaths": [
 				"package.json",
@@ -76,7 +79,7 @@
 		}
 	},
 	"devDependencies": {
-		"@keenmate/web-components-devkit": "^1.0.0-rc14",
+		"@keenmate/web-components-devkit": "^1.0.0-rc15",
 		"@playwright/test": "^1.62.1",
 		"rimraf": "^5.0.10",
 		"vite": "^7.3.8"
